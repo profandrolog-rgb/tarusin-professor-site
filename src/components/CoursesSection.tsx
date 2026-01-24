@@ -43,6 +43,13 @@ const courses = [
 ];
 
 const CoursesSection = () => {
+  const scrollToContact = () => {
+    const element = document.querySelector("#contact");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section id="courses" className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
@@ -117,10 +124,7 @@ const CoursesSection = () => {
           <Button 
             variant="outline" 
             size="lg"
-            onClick={() => {
-              const element = document.querySelector("#contact");
-              if (element) element.scrollIntoView({ behavior: "smooth" });
-            }}
+            onClick={scrollToContact}
           >
             Связаться для консультации
           </Button>
