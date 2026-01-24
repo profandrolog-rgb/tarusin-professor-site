@@ -17,7 +17,7 @@ const HeroSection = () => {
           <div className="text-center lg:text-left order-2 lg:order-1">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
               <Award size={16} />
-              <span>Профессор медицинских наук</span>
+              <span>Доктор медицинских наук, профессор</span>
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
@@ -26,10 +26,10 @@ const HeroSection = () => {
             </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground mb-4">
-              Андролог (детский и взрослый) • Педиатр • Детский хирург
+              Андролог (детский и взрослый) • Детский уролог • Детский хирург
             </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8">
-              Микрохирург • Пластический хирург • Сексолог • Специалист УЗИ
+              Член-корреспондент РАЕН • Специалист УЗИ
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -55,9 +55,9 @@ const HeroSection = () => {
               <div className="text-center lg:text-left">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-primary mb-1">
                   <Award size={20} />
-                  <span className="text-2xl md:text-3xl font-bold">25+</span>
+                  <span className="text-2xl md:text-3xl font-bold">32</span>
                 </div>
-                <p className="text-sm text-muted-foreground">лет опыта</p>
+                <p className="text-sm text-muted-foreground">года опыта</p>
               </div>
               <div className="text-center lg:text-left">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-primary mb-1">
@@ -69,9 +69,9 @@ const HeroSection = () => {
               <div className="text-center lg:text-left">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-primary mb-1">
                   <Stethoscope size={20} />
-                  <span className="text-2xl md:text-3xl font-bold">7</span>
+                  <span className="text-2xl md:text-3xl font-bold">200</span>
                 </div>
-                <p className="text-sm text-muted-foreground">специализаций</p>
+                <p className="text-sm text-muted-foreground">операций в год</p>
               </div>
             </div>
           </div>

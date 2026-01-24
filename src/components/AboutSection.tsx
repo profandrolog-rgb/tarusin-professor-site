@@ -31,8 +31,9 @@ const AboutSection = () => {
             Обо мне
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Профессор медицинских наук с многолетним опытом работы в ведущих клиниках России. 
-            Специализируюсь на комплексном подходе к здоровью пациентов всех возрастов.
+            Доктор медицинских наук, профессор, член-корреспондент РАЕН. 
+            Создатель отделения урологии и андрологии в Морозовской детской больнице. 
+            Более 32 лет помогаю пациентам от новорождённых до взрослых.
           </p>
         </div>
 
@@ -64,20 +65,20 @@ const AboutSection = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-secondary rounded-xl p-6 text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">25+</div>
-                  <div className="text-sm text-muted-foreground">Лет опыта</div>
+                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">32</div>
+                  <div className="text-sm text-muted-foreground">Года опыта</div>
                 </div>
                 <div className="bg-secondary rounded-xl p-6 text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">7</div>
-                  <div className="text-sm text-muted-foreground">Специализаций</div>
+                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">д.м.н.</div>
+                  <div className="text-sm text-muted-foreground">Доктор наук</div>
                 </div>
                 <div className="bg-secondary rounded-xl p-6 text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">10K+</div>
-                  <div className="text-sm text-muted-foreground">Пациентов</div>
+                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">200</div>
+                  <div className="text-sm text-muted-foreground">Операций в год</div>
                 </div>
                 <div className="bg-secondary rounded-xl p-6 text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">5K+</div>
-                  <div className="text-sm text-muted-foreground">Операций</div>
+                  <div className="text-3xl md:text-4xl font-bold text-primary mb-2">22+</div>
+                  <div className="text-sm text-muted-foreground">Отзывов 5.0★</div>
                 </div>
               </div>
             </div>
