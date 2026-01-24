@@ -576,6 +576,13 @@ const ReviewsSection = () => {
             <Button 
               variant="outline" 
               size="sm"
+              onClick={() => window.open("https://yandex.ru/maps/org/klinika_doktora_matara/1124622894/reviews/", "_blank")}
+            >
+              Читать на Яндексе
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
               onClick={() => window.open("https://prodoctorov.ru/moskva/vrach/32554-tarusin/otzivi/", "_blank")}
             >
               Читать на ПроДокторов
