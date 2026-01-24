@@ -4,40 +4,69 @@ import { Button } from "@/components/ui/button";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
 
 const reviews = [
+  // Отзывы с клиники доктора Матара
   {
-    name: "Елена М.",
-    date: "Январь 2024",
+    name: "Кристина",
+    date: "Сентябрь 2025",
     rating: 5,
-    text: "Огромная благодарность профессору Тарусину! Обратились с сыном 5 лет, были очень напуганы диагнозом. Дмитрий Игоревич всё подробно объяснил, успокоил и провёл операцию блестяще. Через месяц ребёнок уже забыл о проблеме!",
-    source: "Яндекс",
+    text: "Начну с благодарности за оперативно качественное проведение операции, за отношение, за терпеливость и понимание к нашим вопросам в период реабилитации. Мы всегда получали ответы на волнующие нас вопросы. Прошел год, как мы оперировались по гипоспадии. Операция прошла хорошо. В период реабилитации доктор был всегда на связи. В клинике царит домашняя и уютная атмосфера. Спасибо за то, что теперь у моего сына всё хорошо!",
+    source: "Клиника доктора Матара",
   },
   {
-    name: "Александр К.",
-    date: "Декабрь 2023",
+    name: "Семья Можаевых",
+    date: "Сентябрь 2025",
     rating: 5,
-    text: "Долго искал специалиста по моей проблеме. Профессор Тарусин — врач от Бога. Грамотный, внимательный, человечный. Результатом лечения доволен на 100%. Рекомендую всем мужчинам не стесняться и обращаться!",
-    source: "ПроДокторов",
+    text: "У нас с супругой около 6 лет не было детей. Проходили лечение в нескольких учреждениях, безрезультатно. Уже отчаялись... С последней надеждой попали к этому замечательному доктору и вот спустя 8 месяцев лечения мы ждем малыша! Спасибо Вам и всему персоналу клиники за поддержку и теплое отношение! Вы сотворили чудо!",
+    source: "Клиника доктора Матара",
   },
   {
-    name: "Ольга В.",
-    date: "Ноябрь 2023",
+    name: "Мария",
+    date: "Август 2025",
     rating: 5,
-    text: "Привела сына-подростка на консультацию — он очень стеснялся. Дмитрий Игоревич нашёл подход, всё объяснил понятным языком. Теперь сын сам спокойно ходит на приёмы. Спасибо за профессионализм и тактичность!",
-    source: "Яндекс",
+    text: "Доктор провел операцию нашему малышу по поводу гипоспадии. Мы в восторге от результата! Врач очень внимательный, перезванивал лично после выписки, интересовался состоянием. Чувствуется настоящая забота о пациентах.",
+    source: "Клиника доктора Матара",
   },
   {
-    name: "Михаил Д.",
-    date: "Октябрь 2023",
+    name: "Мама мальчика 6 лет",
+    date: "Август 2025",
     rating: 5,
-    text: "Профессор провёл сложную микрохирургическую операцию. Результат превзошёл ожидания. Видно, что врач настоящий профессионал своего дела с огромным опытом. Благодарю за возвращённое здоровье!",
-    source: "Google",
+    text: "У моего ребенка гипоспадия мошоночная форма. В первый раз нас оперировали в другом месте, второй раз тоже, но разошелся шов. Нам посоветовали очень хорошего врача в Москве. Он прооперировал мальчика очень хорошо. Ребенок ходил в туалет сидя до операции, теперь может ходить стоя. Он сам этому очень рад. Большое спасибо доктору и всему коллективу!",
+    source: "Клиника доктора Матара",
   },
   {
-    name: "Наталья С.",
-    date: "Сентябрь 2023",
+    name: "Пациент",
+    date: "Декабрь 2025",
     rating: 5,
-    text: "Нашему малышу было всего 2 года, когда нам сказали, что нужна операция. Было очень страшно. Профессор Тарусин провёл всё идеально, был с нами на связи после выписки. Врач с большой буквы!",
-    source: "Яндекс",
+    text: "Хочу выразить благодарность всей клинике! Делали операцию ребенку, мы так переживали и как все замечательно прошло! Лучший врач в своей профессии, чуткий, внимательный, отзывчивый, очень грамотный и опытный специалист своего дела! В клинике царит домашняя и уютная атмосфера, это очень приятно! Обязательно буду рекомендовать.",
+    source: "Клиника доктора Матара",
+  },
+  {
+    name: "Катерина",
+    date: "Ноябрь 2025",
+    rating: 5,
+    text: "Выражаю благодарность за профессионально проведённую операцию по устранению водянки яичка. Клиника оснащена современным оборудованием, подход индивидуальный. Результат отличный. Рекомендую.",
+    source: "Клиника доктора Матара",
+  },
+  {
+    name: "Сюзанна Эльдин",
+    date: "Ноябрь 2025",
+    rating: 5,
+    text: "Отличная клиника! Очень нравится весь персонал, оперативное решение ситуаций, все врачи, медсестры и администраторы — профессионалы своего дела. Всегда помогают записаться на ближайшее время, даже если нет окошек, перезванивают и предлагают. Очень приятно, когда есть обратная связь, и оперируют отличные врачи! Буду рекомендовать вашу клинику.",
+    source: "Клиника доктора Матара",
+  },
+  {
+    name: "Надежда",
+    date: "Сентябрь 2025",
+    rating: 5,
+    text: "Моего сына наблюдает доктор более 3-х лет. Сыну сделали операцию по коррекции сильного косоглазия обоих глаз и сегодня мы приезжали на контроль. Доктор похвалил нас, что сын соблюдает режим охраны зрения и результат операции сохранился на все 100%. Я, как медик, ценю тёплое, внимательное отношение к пациентам, которое начинается с рецепции. В эту клинику хочется приезжать снова и снова!",
+    source: "Клиника доктора Матара",
+  },
+  {
+    name: "Евгения",
+    date: "Сентябрь 2025",
+    rating: 5,
+    text: "Посетили в очередной раз клинику. Остались очень довольны. Доктор всё объяснил и можно сказать расставил нам все точки над «И», что касаемо оперативного лечения, дал рекомендации. В клинике всё чисто, спокойно, стоят кулеры с водой, кофемашина. Вообщем на 5. Рекомендую к посещению.",
+    source: "Клиника доктора Матара",
   },
 ];
 
@@ -47,7 +76,7 @@ const ReviewsSection = () => {
 
   const nextSlide = () => {
     setCurrentIndex((prev) => 
-      prev + reviewsPerPage >= reviews.length ? 0 : prev + 1
+      prev + 1 >= reviews.length - reviewsPerPage + 1 ? 0 : prev + 1
     );
   };
 
@@ -57,12 +86,7 @@ const ReviewsSection = () => {
     );
   };
 
-  const visibleReviews = reviews.slice(currentIndex, currentIndex + reviewsPerPage);
-  
-  // Handle wrap-around for visible reviews
-  const displayReviews = visibleReviews.length < reviewsPerPage 
-    ? [...visibleReviews, ...reviews.slice(0, reviewsPerPage - visibleReviews.length)]
-    : visibleReviews;
+  const displayReviews = reviews.slice(currentIndex, currentIndex + reviewsPerPage);
 
   return (
     <section id="reviews" className="py-16 md:py-24 bg-secondary/30">
@@ -82,8 +106,8 @@ const ReviewsSection = () => {
                 <Star key={i} className="w-5 h-5 fill-accent text-accent" />
               ))}
             </div>
-            <span className="text-lg font-semibold text-foreground">4.9</span>
-            <span className="text-muted-foreground">на основе 150+ отзывов</span>
+            <span className="text-lg font-semibold text-foreground">5.0</span>
+            <span className="text-muted-foreground">на основе {reviews.length}+ отзывов</span>
           </div>
         </div>
 
@@ -92,12 +116,12 @@ const ReviewsSection = () => {
           <div className="grid md:grid-cols-3 gap-6">
             {displayReviews.map((review, index) => (
               <Card 
-                key={`${review.name}-${index}`}
+                key={`${review.name}-${currentIndex}-${index}`}
                 className="bg-card border-border shadow-lg"
               >
                 <CardContent className="p-6">
                   <Quote className="w-10 h-10 text-primary/20 mb-4" />
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                  <p className="text-muted-foreground mb-6 leading-relaxed line-clamp-6">
                     "{review.text}"
                   </p>
                   <div className="flex items-center justify-between pt-4 border-t border-border">
@@ -129,6 +153,19 @@ const ReviewsSection = () => {
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
+            <div className="flex items-center gap-2">
+              {Array.from({ length: Math.ceil(reviews.length / reviewsPerPage) }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentIndex(i * reviewsPerPage > reviews.length - reviewsPerPage ? reviews.length - reviewsPerPage : i * reviewsPerPage)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    Math.floor(currentIndex / reviewsPerPage) === i 
+                      ? "bg-primary" 
+                      : "bg-border hover:bg-muted-foreground"
+                  }`}
+                />
+              ))}
+            </div>
             <Button
               variant="outline"
               size="icon"
@@ -137,6 +174,22 @@ const ReviewsSection = () => {
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
+          </div>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="flex flex-wrap justify-center gap-8 mt-12 pt-8 border-t border-border">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primary">{reviews.length}+</div>
+            <div className="text-sm text-muted-foreground">Отзывов</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primary">100%</div>
+            <div className="text-sm text-muted-foreground">Рекомендуют</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primary">5.0</div>
+            <div className="text-sm text-muted-foreground">Средняя оценка</div>
           </div>
         </div>
 
