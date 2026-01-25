@@ -31,7 +31,7 @@ const Header = () => {
               ТД
             </div>
             <div className="hidden sm:block">
-              <p className="font-semibold text-foreground">Проф. Тарусин Д.И.</p>
+              <p className="font-semibold text-foreground">Профессор Тарусин Д.И.</p>
               <p className="text-xs text-muted-foreground">Основатель детской андрологии в России</p>
             </div>
           </div>
