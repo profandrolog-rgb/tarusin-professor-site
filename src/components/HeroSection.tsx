@@ -1,23 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Award, Stethoscope, Users } from "lucide-react";
-
 const HeroSection = () => {
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+      element.scrollIntoView({
+        behavior: "smooth"
+      });
     }
   };
-
-  return (
-    <section id="hero" className="pt-20 md:pt-24 pb-16 md:pb-24 bg-gradient-to-b from-secondary/50 to-background">
+  return <section id="hero" className="pt-20 md:pt-24 pb-16 md:pb-24 bg-gradient-to-b from-secondary/50 to-background">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
               <Award size={16} />
-              <span>Член-корреспондент РАЕН, доктор медицинских наук, профессор</span>
+              <span>Член-корреспондент РАЕН, доктор медицинских наук, профессор,
+врач вышей категории</span>
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
@@ -33,19 +33,10 @@ const HeroSection = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button
-                size="lg"
-                onClick={() => scrollToSection("#contact")}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8"
-              >
+              <Button size="lg" onClick={() => scrollToSection("#contact")} className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8">
                 Записаться на приём
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => scrollToSection("#about")}
-                className="text-lg px-8"
-              >
+              <Button size="lg" variant="outline" onClick={() => scrollToSection("#about")} className="text-lg px-8">
                 Узнать больше
               </Button>
             </div>
@@ -91,8 +82,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
