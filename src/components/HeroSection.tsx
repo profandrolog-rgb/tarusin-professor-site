@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Award, Stethoscope, Users } from "lucide-react";
+import { Award, Syringe, Stethoscope, Users } from "lucide-react";
 const HeroSection = () => {
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
@@ -15,7 +15,7 @@ const HeroSection = () => {
           {/* Content */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
-              <Award size={16} />
+              <Syringe size={16} />
               <span>Член-корреспондент РАЕН, доктор медицинских наук, профессор,
 врач вышей категории</span>
             </div>
