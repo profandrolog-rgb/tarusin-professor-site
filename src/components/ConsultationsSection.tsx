@@ -224,7 +224,11 @@ const ConsultationsSection = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5" />
-                    <span className="text-sm">+7 (495) 374-81-81</span>
+                    <span className="text-sm">+7 (495) 374-81-81 (для справок)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5" />
+                    <span className="text-sm">+7 (926) 600-555-0 (WhatsApp для записи)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5" />
