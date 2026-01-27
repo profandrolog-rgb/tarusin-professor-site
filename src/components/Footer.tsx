@@ -21,12 +21,12 @@ const Footer = () => {
                 ТД
               </div>
               <div>
-                <p className="font-semibold">Проф. Тарусин Д.И.</p>
+                <p className="font-semibold">Профессор Тарусин Д.И.</p>
               </div>
             </div>
             <p className="text-background/70 text-sm">
-              Профессор медицинских наук, андролог, хирург. 
-              Более 25 лет помогаю пациентам всех возрастов.
+              Доктор медицинских наук, член-корр. РАЕН. Основатель детской урологии-андрологии в России. 
+              Более 32 лет помогаю пациентам всех возрастов.
             </p>
           </div>
 
@@ -58,11 +58,11 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Специализации</h4>
             <ul className="space-y-2 text-sm text-background/70">
-              <li>Детская андрология</li>
-              <li>Взрослая андрология</li>
+              <li>Детская урология-андрология</li>
+              <li>Урология взрослых</li>
               <li>Педиатрия</li>
-              <li>Детская хирургия</li>
               <li>Микрохирургия</li>
+              <li>Пластическая хирургия</li>
               <li>УЗИ-диагностика</li>
             </ul>
           </div>
@@ -71,29 +71,29 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Контакты</h4>
             <ul className="space-y-3">
-              <li className="flex items-start gap-3 text-sm">
-                <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
-                <span className="text-background/70">
-                  г. Москва, ул. Примерная, д. 1
-                </span>
-              </li>
               <li className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
                 <a 
-                  href="tel:+74951234567" 
+                  href="tel:+79778085544" 
                   className="text-background/70 hover:text-background transition-colors"
                 >
-                  +7 (495) 123-45-67
+                  +7 (977) 808-55-44
                 </a>
               </li>
               <li className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 flex-shrink-0 text-background/70" />
                 <a 
-                  href="mailto:info@doctor-tarusin.ru"
+                  href="mailto:boy.doc@yandex.ru"
                   className="text-background/70 hover:text-background transition-colors"
                 >
-                  info@doctor-tarusin.ru
+                  boy.doc@yandex.ru
                 </a>
+              </li>
+              <li className="flex items-start gap-3 text-sm">
+                <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
+                <span className="text-background/70">
+                  Морозовская ДГКБ, Международный центр андрологии
+                </span>
               </li>
             </ul>
           </div>

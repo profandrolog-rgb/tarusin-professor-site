@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Award, Syringe, Stethoscope, Users } from "lucide-react";
+import { Award, Syringe, Stethoscope, Users, Phone } from "lucide-react";
+
 const HeroSection = () => {
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
@@ -9,15 +10,16 @@ const HeroSection = () => {
       });
     }
   };
-  return <section id="hero" className="pt-20 md:pt-24 pb-16 md:pb-24 bg-gradient-to-b from-secondary/50 to-background">
+
+  return (
+    <section id="hero" className="pt-20 md:pt-24 pb-16 md:pb-24 bg-gradient-to-b from-secondary/50 to-background">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <div className="text-center lg:text-left order-2 lg:order-1">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-6">
               <Syringe size={16} />
-              <span>Член-корреспондент РАЕН, доктор медицинских наук, профессор,
-врач вышей категории</span>
+              <span>Член-корреспондент РАЕН, доктор медицинских наук, профессор, врач высшей категории</span>
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
@@ -25,18 +27,31 @@ const HeroSection = () => {
               <span className="text-primary">Дмитрий Игоревич</span>
             </h1>
             
+            <p className="text-lg md:text-xl text-muted-foreground mb-2">
+              Основатель детской урологии-андрологии в России
+            </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-4">
               Андролог (детский и взрослый) • Детский уролог • Детский хирург
             </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8">
-              Специалист УЗИ
+              Специалист УЗИ • Сексолог
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" onClick={() => scrollToSection("#contact")} className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8">
-                Записаться на приём
+              <Button 
+                size="lg" 
+                onClick={() => window.open("tel:+79778085544")} 
+                className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8"
+              >
+                <Phone className="w-5 h-5 mr-2" />
+                +7 (977) 808-55-44
               </Button>
-              <Button size="lg" variant="outline" onClick={() => scrollToSection("#about")} className="text-lg px-8">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={() => scrollToSection("#about")} 
+                className="text-lg px-8"
+              >
                 Узнать больше
               </Button>
             </div>
@@ -53,16 +68,16 @@ const HeroSection = () => {
               <div className="text-center lg:text-left">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-primary mb-1">
                   <Users size={20} />
-                  <span className="text-2xl md:text-3xl font-bold">10 000+</span>
+                  <span className="text-2xl md:text-3xl font-bold">860+</span>
                 </div>
-                <p className="text-sm text-muted-foreground">пациентов</p>
+                <p className="text-sm text-muted-foreground">выступлений</p>
               </div>
               <div className="text-center lg:text-left">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-primary mb-1">
                   <Stethoscope size={20} />
-                  <span className="text-2xl md:text-3xl font-bold">200</span>
+                  <span className="text-2xl md:text-3xl font-bold">126+</span>
                 </div>
-                <p className="text-sm text-muted-foreground">операций в год</p>
+                <p className="text-sm text-muted-foreground">публикаций</p>
               </div>
             </div>
           </div>
@@ -82,6 +97,8 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default HeroSection;
