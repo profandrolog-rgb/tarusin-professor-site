@@ -231,6 +231,10 @@ const ConsultationsSection = () => {
                     <span className="text-sm">+7 (926) 600-555-0 (WhatsApp для записи)</span>
                   </div>
                   <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5" />
+                    <span className="text-sm">+7 (977) 807-55-44 (для срочных вопросов)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5" />
                     <span className="text-sm">Пн-Пт: 9:00 - 18:00</span>
                   </div>

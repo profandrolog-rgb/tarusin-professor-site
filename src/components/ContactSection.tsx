@@ -238,7 +238,8 @@ const ContactSection = () => {
                       <p className="font-medium mb-1">Телефон</p>
                       <p className="text-primary-foreground/80 text-sm">
                         +7 (495) 374-81-81 (для справок)<br />
-                        +7 (926) 600-555-0 (WhatsApp для записи)
+                        +7 (926) 600-555-0 (WhatsApp для записи)<br />
+                        +7 (977) 807-55-44 (для срочных вопросов)
                       </p>
                     </div>
                   </div>
