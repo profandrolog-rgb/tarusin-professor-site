@@ -19,7 +19,7 @@ const courses = [
     duration: "8 часов",
     format: "Очно",
     audience: "Для хирургов",
-    price: "35 000 ₽",
+    price: "120 000 ₽",
     badge: null,
   },
   {
