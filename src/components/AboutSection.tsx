@@ -155,7 +155,7 @@ const AboutSection = () => {
               <CardContent className="p-6 text-center">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors overflow-hidden">
                   {spec.customIcon ? (
-                    <img src={spec.customIcon} alt={spec.title} className="w-8 h-8 object-contain" />
+                    <img src={spec.customIcon} alt={spec.title} className="w-8 h-8 object-contain" style={{ filter: 'invert(32%) sepia(98%) saturate(1234%) hue-rotate(196deg) brightness(94%) contrast(91%)' }} />
                   ) : spec.icon ? (
                     <spec.icon className="w-7 h-7 text-primary" />
                   ) : null}
