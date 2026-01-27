@@ -10,19 +10,29 @@ import {
   Calendar
 } from "lucide-react";
 
-const symptoms = [
-  "Проблемы с мочеиспусканием у детей",
+const childSymptoms = [
+  "Проблемы с мочеиспусканием",
   "Боли в области паха или яичек",
   "Крипторхизм (неопущение яичка)",
   "Фимоз и парафимоз",
   "Варикоцеле",
   "Водянка яичка (гидроцеле)",
-  "Паховые грыжи у детей",
+  "Паховые грыжи",
   "Нарушения полового развития",
+];
+
+const adultSymptoms = [
   "Мужское бесплодие",
+  "Нарушение потенции",
+  "Угасание либидо",
+  "Хроническая усталость",
+  "Дефицит тестостерона",
+  "Ожирение",
+  "Нарушение обмена веществ",
+  "Сексология",
+  "Хроническая боль",
   "Эректильная дисфункция",
   "Реконструктивные операции",
-  "Профилактические осмотры",
 ];
 
 const preparations = [
@@ -139,13 +149,36 @@ const ConsultationsSection = () => {
               <CardTitle className="text-xl">С чем обращаются</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-2">
-                {symptoms.map((symptom, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{symptom}</span>
+              <div className="space-y-4">
+                {/* Children Section */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                    <span className="text-sm font-semibold text-primary">Дети</span>
                   </div>
-                ))}
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {childSymptoms.map((symptom, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-muted-foreground">{symptom}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Adults Section */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                    <span className="text-sm font-semibold text-primary">Мужчины</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {adultSymptoms.map((symptom, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-muted-foreground">{symptom}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
