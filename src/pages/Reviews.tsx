@@ -50,7 +50,7 @@ const Reviews = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Отзывы и рейтинги</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Реальные отзывы пациентов на независимых платформах
+            Реальные отзывы пациентов на независимых платформах — 8+ медицинских агрегаторов
           </p>
         </div>
       </header>
@@ -72,8 +72,8 @@ const Reviews = () => {
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4</div>
-              <div className="text-sm text-muted-foreground">Платформы</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">8+</div>
+              <div className="text-sm text-muted-foreground">Платформ</div>
             </CardContent>
           </Card>
           <Card className="bg-secondary border-none">
@@ -124,6 +124,27 @@ const Reviews = () => {
           </div>
         </div>
 
+        {/* Summary Card */}
+        <Card className="mb-12 bg-accent/10 border-accent/30">
+          <CardContent className="p-8">
+            <h3 className="text-xl font-bold text-foreground mb-4">Оценка интернет-видимости</h3>
+            <div className="grid sm:grid-cols-3 gap-6">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Профессиональная видимость</div>
+                <div className="font-bold text-primary">ВЫСОКАЯ</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Репутация</div>
+                <div className="font-bold text-primary">ПРЕВОСХОДНАЯ</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Медицинские агрегаторы</div>
+                <div className="font-bold text-primary">8+ ПЛАТФОРМ</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Trust Banner */}
         <Card className="bg-primary text-primary-foreground">
           <CardContent className="p-8 md:p-12 text-center">
@@ -135,7 +156,7 @@ const Reviews = () => {
               Каждый положительный отзыв — это история успешного лечения и благодарность, 
               которая вдохновляет продолжать работу.
             </p>
-            <Link to="/#contact">
+            <Link to="/contacts">
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                 Записаться на консультацию
               </Button>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Mail, MapPin, Send, Instagram, Youtube } from "lucide-react";
+import { ArrowLeft, Mail, MapPin, Send, Instagram, Youtube, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -113,17 +113,20 @@ const Contacts = () => {
               <CardContent className="p-6">
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-5 h-5 text-primary" />
+                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground mb-1">Место приёма</h3>
-                      <p className="text-muted-foreground">
-                        Приём веду в Международном центре андрологии (Москва) и ряде клиник-партнёров
-                      </p>
+                      <h3 className="font-semibold text-foreground mb-1">Телефон</h3>
+                      <a 
+                        href="tel:+79778085544" 
+                        className="text-primary text-lg font-medium hover:underline"
+                      >
+                        +7 (977) 808-55-44
+                      </a>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Mail className="w-5 h-5 text-primary" />
@@ -131,11 +134,25 @@ const Contacts = () => {
                     <div>
                       <h3 className="font-semibold text-foreground mb-1">Email</h3>
                       <a 
-                        href="mailto:prof.tarusin@yandex.ru" 
+                        href="mailto:boy.doc@yandex.ru" 
                         className="text-primary hover:underline"
                       >
-                        prof.tarusin@yandex.ru
+                        boy.doc@yandex.ru
                       </a>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">Места приёма</h3>
+                      <div className="text-muted-foreground space-y-2">
+                        <p><span className="font-medium text-foreground">Морозовская ДГКБ</span> — Городской центр охраны репродуктивного здоровья детей и подростков</p>
+                        <p><span className="font-medium text-foreground">Международный центр андрологии</span> — Москва</p>
+                        <p><span className="font-medium text-foreground">Семейная клиника доктора Матара</span></p>
+                      </div>
                     </div>
                   </div>
                 </div>
