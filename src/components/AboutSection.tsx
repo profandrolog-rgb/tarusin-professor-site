@@ -86,7 +86,7 @@ const AboutSection = () => {
                 <p className="text-sm text-muted-foreground mt-1">Международный центр андрологии, Москва</p>
               </div>
               <div className="bg-background rounded-lg p-4 border border-border">
-                <p className="font-medium text-foreground">Консультант</p>
+                <p className="font-medium text-foreground">Профессор - консультант</p>
                 <p className="text-sm text-muted-foreground mt-1">Семейная клиника доктора Матара</p>
               </div>
               <div className="bg-background rounded-lg p-4 border border-border">
