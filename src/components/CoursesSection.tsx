@@ -37,7 +37,7 @@ const courses = [
     duration: "12 часов",
     format: "Очно",
     audience: "Для врачей",
-    price: "20 000 ₽",
+    price: "150 000 ₽",
     badge: null,
   },
 ];
