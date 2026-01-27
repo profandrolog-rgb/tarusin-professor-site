@@ -261,10 +261,9 @@ const ContactSection = () => {
                       <Clock className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-medium mb-1">Часы работы</p>
+                      <p className="font-medium mb-1">Запись на приём</p>
                       <p className="text-primary-foreground/80 text-sm">
-                        Понедельник – Пятница: 9:00 – 18:00<br />
-                        Суббота: 10:00 – 15:00
+                        Только по предварительной записи
                       </p>
                     </div>
                   </div>
