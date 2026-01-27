@@ -109,13 +109,22 @@ const ConsultationsSection = () => {
                   4
                 </div>
                 <div>
+                  <p className="font-medium text-foreground">Оценка результатов</p>
+                  <p className="text-sm text-muted-foreground">Оценка результатов обследований и назначение дообследований при необходимости</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  5
+                </div>
+                <div>
                   <p className="font-medium text-foreground">План лечения</p>
                   <p className="text-sm text-muted-foreground">Индивидуальные рекомендации и назначения</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  5
+                  6
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Подготовка к операции</p>
@@ -124,7 +133,7 @@ const ConsultationsSection = () => {
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  6
+                  7
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Операция</p>
@@ -133,7 +142,7 @@ const ConsultationsSection = () => {
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  7
+                  8
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Реабилитация</p>
