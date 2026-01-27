@@ -49,14 +49,22 @@ const AboutSection = () => {
           </p>
         </div>
 
-        {/* Current Positions */}
+        {/* Career Milestones */}
         <Card className="mb-12 md:mb-16 bg-primary/5 border-primary/20">
           <CardContent className="p-6 md:p-10">
             <h3 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-3">
               <Shield className="w-7 h-7 text-primary" />
-              Текущие должности
+              Вехи карьеры
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-background rounded-lg p-4 border border-border">
+                <p className="font-medium text-foreground">Руководитель Центра детской и подростковой андрологии г. Москвы</p>
+                <p className="text-sm text-muted-foreground mt-1">С 2001 года</p>
+              </div>
+              <div className="bg-background rounded-lg p-4 border border-border">
+                <p className="font-medium text-foreground">Директор Научно-практического центра детской андрологии</p>
+                <p className="text-sm text-muted-foreground mt-1">С 2003 года</p>
+              </div>
               <div className="bg-background rounded-lg p-4 border border-border">
                 <p className="font-medium text-foreground">Руководитель Городского центра охраны репродуктивного здоровья детей и подростков</p>
                 <p className="text-sm text-muted-foreground mt-1">Морозовская ДГКБ — единственный в России (с 2018 года)</p>
