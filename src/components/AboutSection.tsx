@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   Stethoscope, 
   Baby, 
-  Heart, 
+  User,
   Scissors, 
   Microscope, 
   Sparkles, 
@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 
 const specializations = [
-  { icon: Heart, title: "Детская урология-андрология", description: "Создатель специальности в России (с 2003 года)" },
-  { icon: Stethoscope, title: "Урология взрослых", description: "Диагностика и лечение мужских заболеваний" },
+  { icon: Baby, title: "Детская урология-андрология", description: "Создатель специальности в России (с 2003 года)" },
+  { icon: User, title: "Андрология взрослых", description: "Диагностика и лечение мужских заболеваний" },
   { icon: Baby, title: "Педиатрия", description: "Комплексное наблюдение и лечение детей" },
   { icon: Scissors, title: "Детская хирургия", description: "Хирургическое лечение врождённых и приобретённых патологий" },
   { icon: Microscope, title: "Микрохирургия", description: "Операции с точностью офтальмологической хирургии" },
