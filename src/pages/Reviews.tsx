@@ -103,8 +103,12 @@ const Reviews = () => {
                 onClick={() => window.open(platform.url, "_blank")}
               >
                 <CardContent className="p-6">
-                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 overflow-hidden">
-                    <img src={platform.logo} alt={platform.name} className="w-8 h-8 object-contain" />
+                  <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-4 p-2">
+                    <img 
+                      src={platform.logo} 
+                      alt={platform.name} 
+                      className="w-full h-full object-contain mix-blend-multiply" 
+                    />
                   </div>
                   
                   <h3 className="text-lg font-semibold text-foreground mb-1">{platform.name}</h3>
