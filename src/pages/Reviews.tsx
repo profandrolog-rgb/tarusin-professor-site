@@ -107,7 +107,7 @@ const Reviews = () => {
                     <img 
                       src={platform.logo} 
                       alt={platform.name} 
-                      className="w-full h-full object-contain mix-blend-multiply" 
+                      className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110" 
                     />
                   </div>
                   
