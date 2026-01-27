@@ -1,8 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Stethoscope, 
-  Baby, 
-  User,
   Scissors, 
   Microscope, 
   Sparkles, 
@@ -10,12 +8,24 @@ import {
   MonitorCheck,
   Shield,
   Bone,
-  Building
+  Building,
+  Baby
 } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
-const specializations = [
-  { icon: Baby, title: "Детская урология-андрология", description: "Создатель специальности в России (с 2003 года)" },
-  { icon: User, title: "Андрология взрослых", description: "Диагностика и лечение мужских заболеваний" },
+import boyIcon from "@/assets/icons/boy-icon.png";
+import manIcon from "@/assets/icons/man-icon.png";
+
+type SpecializationType = {
+  icon?: LucideIcon;
+  customIcon?: string;
+  title: string;
+  description: string;
+};
+
+const specializations: SpecializationType[] = [
+  { customIcon: boyIcon, title: "Детская урология-андрология", description: "Создатель специальности в России (с 2003 года)" },
+  { customIcon: manIcon, title: "Андрология взрослых", description: "Диагностика и лечение мужских заболеваний" },
   { icon: Baby, title: "Педиатрия", description: "Комплексное наблюдение и лечение детей" },
   { icon: Scissors, title: "Детская хирургия", description: "Хирургическое лечение врождённых и приобретённых патологий" },
   { icon: Microscope, title: "Микрохирургия", description: "Операции с точностью офтальмологической хирургии" },
@@ -143,8 +153,12 @@ const AboutSection = () => {
               className="group bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300"
             >
               <CardContent className="p-6 text-center">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
-                  <spec.icon className="w-7 h-7 text-primary" />
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors overflow-hidden">
+                  {spec.customIcon ? (
+                    <img src={spec.customIcon} alt={spec.title} className="w-8 h-8 object-contain" />
+                  ) : spec.icon ? (
+                    <spec.icon className="w-7 h-7 text-primary" />
+                  ) : null}
                 </div>
                 <h4 className="font-semibold text-foreground mb-2 text-sm">{spec.title}</h4>
                 <p className="text-xs text-muted-foreground">{spec.description}</p>
