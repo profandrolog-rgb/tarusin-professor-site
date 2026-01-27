@@ -14,7 +14,7 @@ import {
 import { LucideIcon } from "lucide-react";
 
 import boyIcon from "@/assets/icons/boy-icon.png";
-import manIcon from "@/assets/icons/man-icon.png";
+import manIcon from "@/assets/icons/man-icon.svg";
 
 type SpecializationType = {
   icon?: LucideIcon;
