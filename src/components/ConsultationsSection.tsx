@@ -80,7 +80,7 @@ const ConsultationsSection = () => {
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Stethoscope className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle className="text-xl">Как проходит приём</CardTitle>
+              <CardTitle className="text-xl">Путь пациента</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
