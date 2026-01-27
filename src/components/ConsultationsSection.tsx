@@ -224,7 +224,7 @@ const ConsultationsSection = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5" />
-                    <span className="text-sm">+7 (495) 123-45-67</span>
+                    <span className="text-sm">+7 (495) 374-81-81</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5" />
