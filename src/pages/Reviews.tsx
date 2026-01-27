@@ -103,7 +103,7 @@ const Reviews = () => {
                 onClick={() => window.open(platform.url, "_blank")}
               >
                 <CardContent className="p-6">
-                  <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center mb-4 overflow-hidden">
+                  <div className="w-24 h-24 rounded-xl bg-muted flex items-center justify-center mb-4 overflow-hidden">
                     <img 
                       src={platform.logo} 
                       alt={platform.name} 
