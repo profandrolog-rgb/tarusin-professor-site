@@ -3,6 +3,11 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
+import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
+import docdocLogo from "@/assets/platforms/docdoc.png";
+import zoonLogo from "@/assets/platforms/zoon.png";
+
 const reviewPlatforms = [
   {
     name: "ProDoctorov",
@@ -10,7 +15,7 @@ const reviewPlatforms = [
     reviewCount: "22+",
     description: "Крупнейший сервис поиска врачей в России",
     url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/",
-    color: "bg-green-500"
+    logo: prodoctorovLogo
   },
   {
     name: "Яндекс.Здоровье",
@@ -18,7 +23,7 @@ const reviewPlatforms = [
     reviewCount: "15+",
     description: "Медицинский сервис Яндекса",
     url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ",
-    color: "bg-yellow-500"
+    logo: yandexHealthLogo
   },
   {
     name: "DocDoc",
@@ -26,7 +31,7 @@ const reviewPlatforms = [
     reviewCount: "10+",
     description: "Сервис записи к врачам онлайн",
     url: "https://docdoc.ru/doctor/Tarusin_Dmitriy",
-    color: "bg-blue-500"
+    logo: docdocLogo
   },
   {
     name: "Zoon",
@@ -34,7 +39,7 @@ const reviewPlatforms = [
     reviewCount: "5+",
     description: "Рекомендательный сервис",
     url: "https://zoon.ru/msk/p-doctor/dmitrij_igorevich_tarusin-e3e8/",
-    color: "bg-purple-500"
+    logo: zoonLogo
   }
 ];
 
@@ -98,8 +103,8 @@ const Reviews = () => {
                 onClick={() => window.open(platform.url, "_blank")}
               >
                 <CardContent className="p-6">
-                  <div className={`w-12 h-12 rounded-xl ${platform.color} flex items-center justify-center mb-4`}>
-                    <Star className="w-6 h-6 text-white fill-white" />
+                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 overflow-hidden">
+                    <img src={platform.logo} alt={platform.name} className="w-8 h-8 object-contain" />
                   </div>
                   
                   <h3 className="text-lg font-semibold text-foreground mb-1">{platform.name}</h3>
