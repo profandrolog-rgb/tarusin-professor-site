@@ -16,6 +16,7 @@ import { LucideIcon } from "lucide-react";
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
+import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
 
 type SpecializationType = {
   icon?: LucideIcon;
@@ -29,7 +30,7 @@ const specializations: SpecializationType[] = [
   { customIcon: manIcon, title: "Андрология взрослых", description: "Диагностика и лечение мужских заболеваний" },
   { icon: Baby, title: "Педиатрия", description: "Комплексное наблюдение и лечение детей" },
   { customIcon: surgeryIcon, title: "Детская хирургия", description: "Хирургическое лечение врождённых и приобретённых патологий" },
-  { icon: Microscope, title: "Микрохирургия", description: "Операции с точностью офтальмологической хирургии" },
+  { customIcon: microsurgeryIcon, title: "Микрохирургия", description: "Операции с точностью офтальмологической хирургии" },
   { icon: Sparkles, title: "Пластическая хирургия", description: "Реконструктивные и эстетические операции" },
   { icon: Brain, title: "Сексология", description: "Консультации по вопросам интимного здоровья" },
   { icon: MonitorCheck, title: "УЗИ-диагностика", description: "Мировой эксперт в УЗИ органов репродуктивной системы" },
