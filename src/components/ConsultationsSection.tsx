@@ -155,6 +155,15 @@ const ConsultationsSection = () => {
                   <p className="text-sm text-muted-foreground">Послеоперационное наблюдение и восстановление</p>
                 </div>
               </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
+                  9
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Пожизненное наблюдение</p>
+                  <p className="text-sm text-muted-foreground">Наблюдение по мужским функциям и болезням</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
