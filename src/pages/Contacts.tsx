@@ -119,10 +119,10 @@ const Contacts = () => {
                     <div>
                       <h3 className="font-semibold text-foreground mb-1">Телефон</h3>
                       <a 
-                        href="tel:+79778085544" 
+                        href="tel:+74953748181" 
                         className="text-primary text-lg font-medium hover:underline"
                       >
-                        +7 (977) 808-55-44
+                        +7 (495) 374-81-81
                       </a>
                     </div>
                   </div>

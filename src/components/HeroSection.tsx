@@ -40,11 +40,11 @@ const HeroSection = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button 
                 size="lg" 
-                onClick={() => window.open("tel:+79778085544")} 
+                onClick={() => window.open("tel:+74953748181")} 
                 className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8"
               >
                 <Phone className="w-5 h-5 mr-2" />
-                +7 (977) 808-55-44
+                +7 (495) 374-81-81
               </Button>
               <Button 
                 size="lg" 
