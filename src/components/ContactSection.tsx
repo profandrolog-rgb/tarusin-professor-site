@@ -224,8 +224,8 @@ const ContactSection = () => {
                     <div>
                       <p className="font-medium mb-1">Адрес</p>
                       <p className="text-primary-foreground/80 text-sm">
-                        г. Москва, ул. Примерная, д. 1<br />
-                        Клиника «Здоровье»
+                        с. Немчиновка, 3-я Запрудная ул. дом 16<br />
+                        AVE-CLINIC
                       </p>
                     </div>
                   </div>
@@ -274,7 +274,7 @@ const ContactSection = () => {
               <CardContent className="p-6">
                 <h4 className="font-semibold text-foreground mb-2">Как добраться</h4>
                 <p className="text-sm text-muted-foreground">
-                  Ближайшие станции метро: «Примерная» (5 мин пешком). 
+                  Клиника AVE-CLINIC расположена в с. Немчиновка. 
                   Есть парковка для посетителей клиники.
                 </p>
               </CardContent>

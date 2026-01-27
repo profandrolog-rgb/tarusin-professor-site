@@ -220,7 +220,7 @@ const ConsultationsSection = () => {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <MapPin className="w-5 h-5" />
-                    <span className="text-sm">г. Москва, ул. Примерная, д. 1</span>
+                    <span className="text-sm">с. Немчиновка, 3-я Запрудная ул. дом 16, AVE-CLINIC</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5" />
