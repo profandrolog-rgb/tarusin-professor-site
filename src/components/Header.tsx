@@ -1,20 +1,38 @@
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const navItems = [
-  { label: "Главная", href: "#hero" },
-  { label: "Обо мне", href: "#about" },
-  { label: "Консультации", href: "#consultations" },
-  { label: "Курсы", href: "#courses" },
-  { label: "Отзывы", href: "#reviews" },
-  { label: "Контакты", href: "#contact" },
+const mainNavItems = [
+  { label: "Главная", href: "#hero", isAnchor: true },
+  { label: "Обо мне", href: "#about", isAnchor: true },
+  { label: "Консультации", href: "#consultations", isAnchor: true },
+];
+
+const moreNavItems = [
+  { label: "Для родителей", href: "/for-parents" },
+  { label: "Для врачей", href: "/for-doctors" },
+  { label: "СМИ и ТВ", href: "/media" },
+  { label: "Отзывы", href: "/reviews" },
+  { label: "Контакты", href: "/contacts" },
 ];
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   const scrollToSection = (href: string) => {
+    if (!isHomePage) {
+      window.location.href = "/" + href;
+      return;
+    }
     const element = document.querySelector(href);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -26,7 +44,7 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
               ТД
             </div>
@@ -34,11 +52,11 @@ const Header = () => {
               <p className="font-semibold text-foreground">Профессор Тарусин Д.И.</p>
               <p className="text-xs text-muted-foreground">Основатель детской андрологии в России</p>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
-            {navItems.map((item) => (
+            {mainNavItems.map((item) => (
               <button
                 key={item.href}
                 onClick={() => scrollToSection(item.href)}
@@ -47,15 +65,32 @@ const Header = () => {
                 {item.label}
               </button>
             ))}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary inline-flex items-center gap-1">
+                  Ещё
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {moreNavItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link to={item.href} className="w-full">
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button
-              onClick={() => scrollToSection("#contact")}
-              className="hidden sm:flex bg-accent hover:bg-accent/90 text-accent-foreground"
-            >
-              Записаться
-            </Button>
+            <Link to="/contacts">
+              <Button className="hidden sm:flex bg-accent hover:bg-accent/90 text-accent-foreground">
+                Записаться
+              </Button>
+            </Link>
 
             {/* Mobile Menu Button */}
             <button
@@ -72,7 +107,7 @@ const Header = () => {
         {isMenuOpen && (
           <nav className="lg:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-1">
-              {navItems.map((item) => (
+              {mainNavItems.map((item) => (
                 <button
                   key={item.href}
                   onClick={() => scrollToSection(item.href)}
@@ -81,12 +116,25 @@ const Header = () => {
                   {item.label}
                 </button>
               ))}
-              <Button
-                onClick={() => scrollToSection("#contact")}
-                className="mt-2 bg-accent hover:bg-accent/90 text-accent-foreground"
-              >
-                Записаться на приём
-              </Button>
+              
+              <div className="border-t border-border my-2" />
+              
+              {moreNavItems.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              
+              <Link to="/contacts" onClick={() => setIsMenuOpen(false)}>
+                <Button className="mt-2 w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                  Записаться на приём
+                </Button>
+              </Link>
             </div>
           </nav>
         )}
