@@ -397,14 +397,24 @@ const Contacts = () => {
                   <p className="text-xs text-muted-foreground text-center">
                     Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
                   </p>
-                  
-                  <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
-                    <p className="text-sm text-foreground">
-                      <span className="font-medium">🚗 Парковка:</span> для пациентов предусмотрена закрытая парковка. 
-                      На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
+                </form>
+              </CardContent>
+            </Card>
+            
+            {/* Parking Info */}
+            <Card className="mt-6">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">🚗</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">Парковка</h3>
+                    <p className="text-muted-foreground">
+                      Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
                     </p>
                   </div>
-                </form>
+                </div>
               </CardContent>
             </Card>
           </div>
