@@ -10,6 +10,7 @@ import {
   Star,
   Phone,
   ChevronLeft,
+  BookOpen,
 } from "lucide-react";
 
 import {
@@ -38,6 +39,7 @@ const pageNavItems = [
   { title: "Для врачей", url: "/for-doctors", icon: GraduationCap },
   { title: "СМИ и ТВ", url: "/media", icon: Tv },
   { title: "Видео", url: "/videos", icon: Video },
+  { title: "Публикации", url: "/publications", icon: BookOpen },
   { title: "Отзывы", url: "/reviews", icon: Star },
   { title: "Контакты", url: "/contacts", icon: Phone },
 ];
