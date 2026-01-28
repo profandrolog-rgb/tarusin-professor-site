@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Mail, MapPin, Send, Instagram, Youtube, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Send, Instagram, Youtube, Phone, MessageCircle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -117,28 +117,39 @@ const Contacts = () => {
                       <Phone className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground mb-1">Телефон</h3>
-                      <a 
-                        href="tel:+74953748181" 
-                        className="text-primary text-lg font-medium hover:underline"
-                      >
-                        +7 (495) 374-81-81
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground mb-1">Email</h3>
-                      <a 
-                        href="mailto:boy.doc@yandex.ru" 
-                        className="text-primary hover:underline"
-                      >
-                        boy.doc@yandex.ru
-                      </a>
+                      <h3 className="font-semibold text-foreground mb-2">Телефоны</h3>
+                      <div className="space-y-2">
+                        <div>
+                          <a 
+                            href="tel:+74953748181" 
+                            className="text-primary font-medium hover:underline"
+                          >
+                            +7 (495) 374-81-81
+                          </a>
+                          <span className="text-muted-foreground text-sm ml-2">(для справок)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-accent" />
+                          <a 
+                            href="https://wa.me/79266005550" 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary font-medium hover:underline"
+                          >
+                            +7 (926) 600-555-0
+                          </a>
+                          <span className="text-muted-foreground text-sm">(WhatsApp для записи)</span>
+                        </div>
+                        <div>
+                          <a 
+                            href="tel:+79778075544" 
+                            className="text-primary font-medium hover:underline"
+                          >
+                            +7 (977) 807-55-44
+                          </a>
+                          <span className="text-muted-foreground text-sm ml-2">(для срочных вопросов)</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
@@ -147,12 +158,21 @@ const Contacts = () => {
                       <MapPin className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground mb-1">Места приёма</h3>
-                      <div className="text-muted-foreground space-y-2">
-                        <p><span className="font-medium text-foreground">Морозовская ДГКБ</span> — Городской центр охраны репродуктивного здоровья детей и подростков</p>
-                        <p><span className="font-medium text-foreground">Международный центр андрологии</span> — Москва</p>
-                        <p><span className="font-medium text-foreground">Семейная клиника доктора Матара</span></p>
-                      </div>
+                      <h3 className="font-semibold text-foreground mb-1">Место приёма</h3>
+                      <p className="text-muted-foreground">
+                        <span className="font-medium text-foreground">AVE-CLINIC</span><br />
+                        с. Немчиновка, 3-я Запрудная ул. дом 16
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">Приём</h3>
+                      <p className="text-muted-foreground">Только по предварительной записи</p>
                     </div>
                   </div>
                 </div>
