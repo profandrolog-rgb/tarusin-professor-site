@@ -113,41 +113,45 @@ const Contacts = () => {
               <CardContent className="p-6">
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-5 h-5 text-accent" />
+                    <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-accent" />
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                        <MessageCircle className="w-5 h-5 text-accent" />
+                      </div>
                     </div>
                     <div>
                       <h3 className="font-semibold text-foreground mb-2">Телефоны</h3>
                       <div className="space-y-2">
-                        <div>
+                        <div className="flex items-baseline gap-2">
                           <a 
                             href="tel:+74953748181" 
-                            className="text-primary font-medium hover:underline"
+                            className="text-primary font-medium hover:underline min-w-[170px]"
                           >
                             +7 (495) 374-81-81
                           </a>
-                          <span className="text-muted-foreground text-sm ml-2">(для справок)</span>
+                          <span className="text-muted-foreground text-sm">(для справок)</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-accent" />
+                        <div className="flex items-baseline gap-2">
                           <a 
                             href="https://wa.me/79266005550" 
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-primary font-medium hover:underline"
+                            className="text-primary font-medium hover:underline min-w-[170px]"
                           >
                             +7 (926) 600-555-0
                           </a>
                           <span className="text-muted-foreground text-sm">(WhatsApp для записи)</span>
                         </div>
-                        <div>
+                        <div className="flex items-baseline gap-2">
                           <a 
                             href="tel:+79778075544" 
-                            className="text-primary font-medium hover:underline"
+                            className="text-primary font-medium hover:underline min-w-[170px]"
                           >
                             +7 (977) 807-55-44
                           </a>
-                          <span className="text-muted-foreground text-sm ml-2">(для срочных вопросов)</span>
+                          <span className="text-muted-foreground text-sm">(для срочных вопросов)</span>
                         </div>
                       </div>
                     </div>
