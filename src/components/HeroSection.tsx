@@ -83,7 +83,7 @@ const HeroSection = () => {
           {/* Image */}
           <div className="order-1 lg:order-2 flex justify-center">
             <div className="relative">
-              <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full bg-gradient-to-br from-primary to-primary/60 p-1 shadow-2xl">
+              <div className="w-72 h-72 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] rounded-full bg-gradient-to-br from-primary to-primary/60 p-1 shadow-2xl">
                 <img 
                   src={professorPhoto} 
                   alt="Профессор Тарусин Дмитрий Игоревич" 
