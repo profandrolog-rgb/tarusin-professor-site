@@ -70,6 +70,14 @@ const AboutSection = () => {
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-background rounded-lg p-4 border border-border">
+                <p className="font-medium text-foreground">Врач по оказанию экстренной хирургической помощи детям</p>
+                <p className="text-sm text-muted-foreground mt-1">Тушинская ДГКБ № 7, ныне: больница им. З.А. Башляевой (с 1993 года)</p>
+              </div>
+              <div className="bg-background rounded-lg p-4 border border-border">
+                <p className="font-medium text-foreground">Научный сотрудник отдела детской хирургии</p>
+                <p className="text-sm text-muted-foreground mt-1">Кафедра хирургии детского возраста РМАПО (с 1994 года)</p>
+              </div>
+              <div className="bg-background rounded-lg p-4 border border-border">
                 <p className="font-medium text-foreground">Руководитель Центра детской и подростковой андрологии г. Москвы</p>
                 <p className="text-sm text-muted-foreground mt-1">С 2001 года</p>
               </div>
