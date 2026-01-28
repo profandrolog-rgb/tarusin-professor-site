@@ -19,6 +19,7 @@ const moreNavItems = [
   { label: "Для родителей", href: "/for-parents" },
   { label: "Для врачей", href: "/for-doctors" },
   { label: "СМИ и ТВ", href: "/media" },
+  { label: "Видео", href: "/videos" },
   { label: "Отзывы", href: "/reviews" },
   { label: "Контакты", href: "/contacts" },
 ];
