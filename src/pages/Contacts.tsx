@@ -228,7 +228,7 @@ const Contacts = () => {
                     </div>
                   </div>
                   
-                  {/* Bus routes */}
+                  {/* Bus routes from Setun */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Bus className="w-4 h-4 text-primary" />
@@ -242,6 +242,20 @@ const Contacts = () => {
                       <div className="p-3 bg-secondary/50 rounded-lg">
                         <div className="font-medium text-foreground mb-1">Автобус № 597м, 597</div>
                         <p className="text-muted-foreground">до остановки «Немчиновка» — 4 остановки</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Bus routes from Nemchinovka MCD */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Train className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground">От МЦД Немчиновка</span>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="font-medium text-foreground mb-1">Автобус № 597м</div>
+                        <p className="text-muted-foreground">до остановки «Немчиновка» — 3 остановки</p>
                       </div>
                     </div>
                   </div>
