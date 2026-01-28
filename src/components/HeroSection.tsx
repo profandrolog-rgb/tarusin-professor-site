@@ -30,11 +30,11 @@ const HeroSection = () => {
             <p className="text-lg md:text-xl text-muted-foreground mb-2">
               Основатель детской урологии-андрологии в России
             </p>
-            <p className="text-lg md:text-xl text-muted-foreground mb-4">
+            <p className="text-lg md:text-xl text-muted-foreground mb-2">
               Андролог (детский и взрослый) • Детский уролог • Детский хирург
             </p>
             <p className="text-lg md:text-xl text-muted-foreground mb-8">
-              Специалист УЗИ • Сексолог
+              Эксперт УЗИ диагностики • Микрохирург • Пластический хирург • Ортопед • Сексолог
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
