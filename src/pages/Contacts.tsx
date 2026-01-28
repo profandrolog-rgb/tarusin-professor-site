@@ -123,32 +123,32 @@ const Contacts = () => {
                       <div className="flex items-center">
                         <a 
                           href="tel:+74953748181" 
-                          className="text-primary font-medium hover:underline w-[175px]"
+                          className="text-primary font-medium hover:underline"
                         >
                           +7 (495) 374-81-81
                         </a>
-                        <span className="text-muted-foreground text-sm">(для справок)</span>
+                        <span className="text-muted-foreground text-sm ml-3">(для справок)</span>
                       </div>
-                      <div className="flex items-center -ml-6">
-                        <MessageCircle className="w-4 h-4 text-accent mr-2 flex-shrink-0" />
+                      <div className="flex items-center">
+                        <MessageCircle className="w-4 h-4 text-accent flex-shrink-0" />
                         <a 
                           href="https://wa.me/79266005550" 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary font-medium hover:underline w-[175px]"
+                          className="text-primary font-medium hover:underline ml-2"
                         >
                           +7 (926) 600-555-0
                         </a>
-                        <span className="text-muted-foreground text-sm">(WhatsApp для записи)</span>
+                        <span className="text-muted-foreground text-sm ml-3">(WhatsApp для записи)</span>
                       </div>
                       <div className="flex items-center">
                         <a 
                           href="tel:+79778075544" 
-                          className="text-primary font-medium hover:underline w-[175px]"
+                          className="text-primary font-medium hover:underline"
                         >
                           +7 (977) 807-55-44
                         </a>
-                        <span className="text-muted-foreground text-sm">(для срочных вопросов)</span>
+                        <span className="text-muted-foreground text-sm ml-3">(для срочных вопросов)</span>
                       </div>
                     </div>
                   </div>
