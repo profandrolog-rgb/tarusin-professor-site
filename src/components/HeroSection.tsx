@@ -61,7 +61,7 @@ const HeroSection = () => {
               <div className="text-center lg:text-left">
                 <div className="flex items-center justify-center lg:justify-start gap-2 text-primary mb-1">
                   <Award size={20} />
-                  <span className="text-2xl md:text-3xl font-bold">32</span>
+                  <span className="text-2xl md:text-3xl font-bold">42</span>
                 </div>
                 <p className="text-sm text-muted-foreground">года опыта</p>
               </div>
