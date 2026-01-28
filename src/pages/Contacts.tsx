@@ -179,7 +179,21 @@ const Contacts = () => {
               </CardContent>
             </Card>
 
-            {/* Social Links */}
+            {/* Map */}
+            <Card className="mb-8 overflow-hidden">
+              <CardContent className="p-0">
+                <iframe
+                  src="https://yandex.ru/map-widget/v1/?ll=37.370515%2C55.723389&z=16&pt=37.370515%2C55.723389%2Cpm2rdm&l=map"
+                  width="100%"
+                  height="300"
+                  frameBorder="0"
+                  title="Карта AVE-CLINIC"
+                  className="w-full"
+                  allowFullScreen
+                />
+              </CardContent>
+            </Card>
+
             <h3 className="text-lg font-semibold text-foreground mb-4">Социальные сети</h3>
             <div className="grid grid-cols-2 gap-4">
               {socialLinks.map((social, index) => {
