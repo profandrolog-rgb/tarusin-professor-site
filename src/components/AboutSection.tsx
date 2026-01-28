@@ -39,7 +39,7 @@ const specializations: SpecializationType[] = [
 ];
 
 const achievements = [
-  { value: "32", label: "Года опыта" },
+  { value: "42", label: "Года опыта" },
   { value: "126+", label: "Научных статей" },
   { value: "6", label: "Глав в нац. руководствах" },
   { value: "9+", label: "Подготовленных кандидатов наук" },
