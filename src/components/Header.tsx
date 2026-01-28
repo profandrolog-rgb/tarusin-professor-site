@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu, X, ChevronDown, LogIn, LogOut } from "lucide-react";
+import headerPhoto from "@/assets/header-photo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,9 +56,11 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg">
-              ТД
-            </div>
+            <img 
+              src={headerPhoto} 
+              alt="Профессор Тарусин Д.И." 
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <div className="hidden sm:block">
               <p className="font-semibold text-foreground">Профессор Тарусин Д.И.</p>
               <p className="text-xs text-muted-foreground">Основатель детской андрологии в России</p>
