@@ -10,6 +10,7 @@ import ForDoctors from "./pages/ForDoctors";
 import Media from "./pages/Media";
 import Reviews from "./pages/Reviews";
 import Contacts from "./pages/Contacts";
+import Videos from "./pages/Videos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/for-parents" element={<ForParents />} />
             <Route path="/for-doctors" element={<ForDoctors />} />
             <Route path="/media" element={<Media />} />
+            <Route path="/videos" element={<Videos />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/contacts" element={<Contacts />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -6,6 +6,7 @@ import {
   Users,
   GraduationCap,
   Tv,
+  Video,
   Star,
   Phone,
   ChevronLeft,
@@ -36,6 +37,7 @@ const pageNavItems = [
   { title: "Для родителей", url: "/for-parents", icon: Users },
   { title: "Для врачей", url: "/for-doctors", icon: GraduationCap },
   { title: "СМИ и ТВ", url: "/media", icon: Tv },
+  { title: "Видео", url: "/videos", icon: Video },
   { title: "Отзывы", url: "/reviews", icon: Star },
   { title: "Контакты", url: "/contacts", icon: Phone },
 ];
