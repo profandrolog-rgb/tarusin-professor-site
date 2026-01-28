@@ -130,12 +130,11 @@ const Contacts = () => {
                         <span className="text-muted-foreground text-sm ml-3">(для справок)</span>
                       </div>
                       <div className="flex items-center">
-                        <MessageCircle className="w-4 h-4 text-accent flex-shrink-0" />
                         <a 
                           href="https://wa.me/79266005550" 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary font-medium hover:underline ml-2"
+                          className="text-primary font-medium hover:underline"
                         >
                           +7 (926) 600-555-0
                         </a>
