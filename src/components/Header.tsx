@@ -22,6 +22,7 @@ const moreNavItems = [
   { label: "Для врачей", href: "/for-doctors" },
   { label: "СМИ и ТВ", href: "/media" },
   { label: "Видео", href: "/videos" },
+  { label: "Публикации", href: "/publications" },
   { label: "Отзывы", href: "/reviews" },
   { label: "Контакты", href: "/contacts" },
 ];
