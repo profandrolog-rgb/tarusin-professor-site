@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,7 +7,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
 
 const mainNavItems = [
   { label: "Главная", href: "#hero", isAnchor: true },
@@ -28,6 +30,12 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+  };
 
   const scrollToSection = (href: string) => {
     if (!isHomePage) {
@@ -82,6 +90,20 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                 ))}
+                <DropdownMenuSeparator />
+                {user ? (
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Выйти
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link to="/auth" className="w-full flex items-center">
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Войти
+                    </Link>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
@@ -136,6 +158,27 @@ const Header = () => {
                   Записаться на приём
                 </Button>
               </Link>
+              
+              <div className="border-t border-border my-2" />
+              
+              {user ? (
+                <button
+                  onClick={handleSignOut}
+                  className="px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-secondary rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Выйти
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Войти
+                </Link>
+              )}
             </div>
           </nav>
         )}
