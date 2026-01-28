@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Award, Syringe, Stethoscope, Users, Phone } from "lucide-react";
+import professorPhoto from "@/assets/professor-photo.png";
 
 const HeroSection = () => {
   const scrollToSection = (href: string) => {
@@ -82,10 +83,12 @@ const HeroSection = () => {
           {/* Image */}
           <div className="order-1 lg:order-2 flex justify-center">
             <div className="relative">
-              <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-2xl">
-                <div className="w-56 h-56 md:w-72 md:h-72 lg:w-88 lg:h-88 rounded-full bg-card flex items-center justify-center border-4 border-background">
-                  <span className="text-6xl md:text-7xl lg:text-8xl font-bold text-primary">ТД</span>
-                </div>
+              <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full bg-gradient-to-br from-primary to-primary/60 p-1 shadow-2xl">
+                <img 
+                  src={professorPhoto} 
+                  alt="Профессор Тарусин Дмитрий Игоревич" 
+                  className="w-full h-full rounded-full object-cover border-4 border-background"
+                />
               </div>
               {/* Decorative elements */}
               <div className="absolute -top-4 -right-4 w-20 h-20 bg-accent/20 rounded-full blur-xl"></div>
