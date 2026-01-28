@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Upload, Play, Video, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Play, Video, Trash2, Loader2, LogIn, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface VideoFile {
   name: string;
@@ -18,6 +19,7 @@ const Videos = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   useEffect(() => {
     fetchVideos();
@@ -56,7 +58,6 @@ const Videos = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Check file type
     if (!file.type.startsWith("video/")) {
       toast({
         title: "Неверный формат",
@@ -66,7 +67,6 @@ const Videos = () => {
       return;
     }
 
-    // Check file size (max 100MB for videos)
     if (file.size > 100 * 1024 * 1024) {
       toast({
         title: "Файл слишком большой",
@@ -153,7 +153,7 @@ const Videos = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        {/* Upload Section */}
+        {/* Upload Section - Only for admins */}
         <div className="mb-12">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -165,28 +165,52 @@ const Videos = () => {
               </h2>
             </div>
             
-            <div className="relative">
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={uploading}
-              />
-              <Button disabled={uploading}>
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Загрузка...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Загрузить видео
-                  </>
-                )}
+            {authLoading ? (
+              <Button disabled>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Загрузка...
               </Button>
-            </div>
+            ) : isAdmin ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Shield className="w-4 h-4 text-primary" />
+                  Администратор
+                </span>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={uploading}
+                  />
+                  <Button disabled={uploading}>
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Загрузка...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Загрузить видео
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : user ? (
+              <span className="text-sm text-muted-foreground">
+                Только администраторы могут загружать видео
+              </span>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Войти для управления
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -219,9 +243,11 @@ const Videos = () => {
             <p className="text-lg text-muted-foreground">
               Видео пока не загружены
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Нажмите «Загрузить видео» чтобы добавить первое видео
-            </p>
+            {isAdmin && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Нажмите «Загрузить видео» чтобы добавить первое видео
+              </p>
+            )}
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -250,17 +276,19 @@ const Videos = () => {
                     <p className="font-medium text-foreground truncate flex-1">
                       {video.name.replace(/^\d+-/, "").replace(/_/g, " ")}
                     </p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(video.name);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(video.name);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
