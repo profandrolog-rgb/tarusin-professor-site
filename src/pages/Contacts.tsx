@@ -397,6 +397,13 @@ const Contacts = () => {
                   <p className="text-xs text-muted-foreground text-center">
                     Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
                   </p>
+                  
+                  <div className="mt-4 p-4 bg-secondary/50 rounded-lg">
+                    <p className="text-sm text-foreground">
+                      <span className="font-medium">🚗 Парковка:</span> для пациентов предусмотрена закрытая парковка. 
+                      На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
+                    </p>
+                  </div>
                 </form>
               </CardContent>
             </Card>
