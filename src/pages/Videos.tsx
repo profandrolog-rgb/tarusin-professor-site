@@ -33,15 +33,26 @@ const Videos = () => {
 
       if (error) throw error;
 
-      const videoFiles: VideoFile[] = (data || [])
-        .filter((file) => file.name !== ".emptyFolderPlaceholder")
-        .map((file) => ({
-          name: file.name,
-          url: supabase.storage.from("videos").getPublicUrl(file.name).data.publicUrl,
-          created_at: file.created_at || "",
-        }));
+      const filteredFiles = (data || []).filter(
+        (file) => file.name !== ".emptyFolderPlaceholder"
+      );
 
-      setVideos(videoFiles);
+      // Generate signed URLs for private bucket (valid for 1 hour)
+      const videoFilesWithUrls = await Promise.all(
+        filteredFiles.map(async (file) => {
+          const { data: signedUrlData } = await supabase.storage
+            .from("videos")
+            .createSignedUrl(file.name, 3600); // 1 hour expiry
+
+          return {
+            name: file.name,
+            url: signedUrlData?.signedUrl || "",
+            created_at: file.created_at || "",
+          };
+        })
+      );
+
+      setVideos(videoFilesWithUrls.filter((v) => v.url));
     } catch (error) {
       console.error("Error fetching videos:", error);
       toast({
