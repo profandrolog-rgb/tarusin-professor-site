@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, MapPin, Send, Instagram, Youtube, Phone, MessageCircle, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Send, Instagram, Youtube, Phone, Clock, Train, Bus, Navigation } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -190,6 +190,62 @@ const Contacts = () => {
                   className="w-full"
                   allowFullScreen
                 />
+              </CardContent>
+            </Card>
+
+            {/* How to get there */}
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Navigation className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground text-lg">Как добраться</h3>
+                </div>
+                
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {/* Metro & MCD */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Train className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground">Метро и МЦД</span>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-primary">М Немчиновка</span>
+                          <span className="text-muted-foreground">14 мин (950 м)</span>
+                        </div>
+                        <p className="text-muted-foreground">Пешком</p>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-primary">ЖД Немчиновка</span>
+                          <span className="text-muted-foreground">13 мин (900 м)</span>
+                        </div>
+                        <p className="text-muted-foreground">Пешком</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Bus routes */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bus className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground">От станции Сетунь</span>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="font-medium text-foreground mb-1">Автобус № 794</div>
+                        <p className="text-muted-foreground">до остановки «Немчиновка» — 3 остановки</p>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="font-medium text-foreground mb-1">Автобус № 597м, 597</div>
+                        <p className="text-muted-foreground">до остановки «Немчиновка» — 4 остановки</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
