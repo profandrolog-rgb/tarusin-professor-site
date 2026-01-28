@@ -120,33 +120,31 @@ const Contacts = () => {
                       <h3 className="font-semibold text-foreground">Телефоны</h3>
                     </div>
                     <div className="space-y-2 ml-14">
-                      <div className="flex items-baseline gap-2">
+                      <div className="flex items-center">
                         <a 
                           href="tel:+74953748181" 
-                          className="text-primary font-medium hover:underline min-w-[170px]"
+                          className="text-primary font-medium hover:underline w-[175px]"
                         >
                           +7 (495) 374-81-81
                         </a>
                         <span className="text-muted-foreground text-sm">(для справок)</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                          <MessageCircle className="w-4 h-4 text-accent" />
-                        </div>
+                      <div className="flex items-center -ml-6">
+                        <MessageCircle className="w-4 h-4 text-accent mr-2 flex-shrink-0" />
                         <a 
                           href="https://wa.me/79266005550" 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary font-medium hover:underline min-w-[145px]"
+                          className="text-primary font-medium hover:underline w-[175px]"
                         >
                           +7 (926) 600-555-0
                         </a>
                         <span className="text-muted-foreground text-sm">(WhatsApp для записи)</span>
                       </div>
-                      <div className="flex items-baseline gap-2 ml-7">
+                      <div className="flex items-center">
                         <a 
                           href="tel:+79778075544" 
-                          className="text-primary font-medium hover:underline min-w-[170px]"
+                          className="text-primary font-medium hover:underline w-[175px]"
                         >
                           +7 (977) 807-55-44
                         </a>
