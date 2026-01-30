@@ -16,6 +16,7 @@ const mainNavItems = [
   { label: "Главная", href: "#hero", isAnchor: true },
   { label: "Обо мне", href: "#about", isAnchor: true },
   { label: "Консультации", href: "#consultations", isAnchor: true },
+  { label: "Методики", href: "/methodologies", isAnchor: false },
 ];
 
 const moreNavItems = [
@@ -70,13 +71,23 @@ const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
             {mainNavItems.map((item) => (
-              <button
-                key={item.href}
-                onClick={() => scrollToSection(item.href)}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary"
-              >
-                {item.label}
-              </button>
+              item.isAnchor ? (
+                <button
+                  key={item.href}
+                  onClick={() => scrollToSection(item.href)}
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary"
+                >
+                  {item.label}
+                </button>
+              ) : (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-secondary"
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
             
             <DropdownMenu>
@@ -135,13 +146,24 @@ const Header = () => {
           <nav className="lg:hidden py-4 border-t border-border">
             <div className="flex flex-col gap-1">
               {mainNavItems.map((item) => (
-                <button
-                  key={item.href}
-                  onClick={() => scrollToSection(item.href)}
-                  className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
-                >
-                  {item.label}
-                </button>
+                item.isAnchor ? (
+                  <button
+                    key={item.href}
+                    onClick={() => scrollToSection(item.href)}
+                    className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                )
               ))}
               
               <div className="border-t border-border my-2" />

@@ -13,6 +13,7 @@ import Reviews from "./pages/Reviews";
 import Contacts from "./pages/Contacts";
 import Videos from "./pages/Videos";
 import Publications from "./pages/Publications";
+import Methodologies from "./pages/Methodologies";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/publications" element={<Publications />} />
+              <Route path="/methodologies" element={<Methodologies />} />
               <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
