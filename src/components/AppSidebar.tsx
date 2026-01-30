@@ -11,6 +11,7 @@ import {
   Phone,
   ChevronLeft,
   BookOpen,
+  Microscope,
 } from "lucide-react";
 
 import {
@@ -32,6 +33,7 @@ const mainNavItems = [
   { title: "Главная", url: "/", icon: Home },
   { title: "Обо мне", url: "/#about", icon: User },
   { title: "Консультации", url: "/#consultations", icon: Stethoscope },
+  { title: "Методики", url: "/methodologies", icon: Microscope },
 ];
 
 const pageNavItems = [
