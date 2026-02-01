@@ -185,6 +185,16 @@ export type Database = {
         | "varicocele"
         | "phimosis"
         | "other"
+        | "sexology"
+        | "psychology"
+        | "infertility"
+        | "erectile_dysfunction"
+        | "enuresis"
+        | "pelvic_pain"
+        | "scrotal_pain"
+        | "hernia"
+        | "complications"
+        | "rarities"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -321,6 +331,16 @@ export const Constants = {
         "varicocele",
         "phimosis",
         "other",
+        "sexology",
+        "psychology",
+        "infertility",
+        "erectile_dysfunction",
+        "enuresis",
+        "pelvic_pain",
+        "scrotal_pain",
+        "hernia",
+        "complications",
+        "rarities",
       ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },

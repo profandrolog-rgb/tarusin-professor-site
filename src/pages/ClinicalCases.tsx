@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
-type CaseCategory = "hydrocele" | "cryptorchidism" | "hypospadias" | "varicocele" | "phimosis" | "other";
+type CaseCategory = "hydrocele" | "cryptorchidism" | "hypospadias" | "varicocele" | "phimosis" | "sexology" | "psychology" | "infertility" | "erectile_dysfunction" | "enuresis" | "pelvic_pain" | "scrotal_pain" | "hernia" | "complications" | "rarities" | "other";
 
 interface ClinicalCase {
   id: string;
@@ -41,6 +41,16 @@ const categoryLabels: Record<CaseCategory, string> = {
   hypospadias: "Гипоспадия",
   varicocele: "Варикоцеле",
   phimosis: "Фимоз",
+  sexology: "Сексология",
+  psychology: "Психология",
+  infertility: "Бесплодие",
+  erectile_dysfunction: "Эректильная дисфункция",
+  enuresis: "Энурез",
+  pelvic_pain: "Тазовая боль",
+  scrotal_pain: "Боль в мошонке",
+  hernia: "Грыжи",
+  complications: "Осложнения",
+  rarities: "Раритеты",
   other: "Другое",
 };
 
@@ -50,6 +60,16 @@ const categoryColors: Record<CaseCategory, string> = {
   hypospadias: "bg-purple-100 text-purple-800",
   varicocele: "bg-orange-100 text-orange-800",
   phimosis: "bg-pink-100 text-pink-800",
+  sexology: "bg-rose-100 text-rose-800",
+  psychology: "bg-indigo-100 text-indigo-800",
+  infertility: "bg-amber-100 text-amber-800",
+  erectile_dysfunction: "bg-red-100 text-red-800",
+  enuresis: "bg-cyan-100 text-cyan-800",
+  pelvic_pain: "bg-teal-100 text-teal-800",
+  scrotal_pain: "bg-yellow-100 text-yellow-800",
+  hernia: "bg-lime-100 text-lime-800",
+  complications: "bg-fuchsia-100 text-fuchsia-800",
+  rarities: "bg-violet-100 text-violet-800",
   other: "bg-gray-100 text-gray-800",
 };
 
