@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from "lucide-react";
+import { MapPin, Phone, Clock, Send, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -222,10 +222,10 @@ const ContactSection = () => {
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-medium mb-1">Адрес</p>
+                      <p className="font-medium mb-1">Место приёма</p>
                       <p className="text-primary-foreground/80 text-sm">
-                        с. Немчиновка, 3-я Запрудная ул. дом 16<br />
-                        AVE-CLINIC
+                        <span className="font-medium text-primary-foreground">AVE-CLINIC</span><br />
+                        с. Немчиновка, 3-я Запрудная ул. дом 16
                       </p>
                     </div>
                   </div>
@@ -235,24 +235,27 @@ const ContactSection = () => {
                       <Phone className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-medium mb-1">Телефон</p>
-                      <p className="text-primary-foreground/80 text-sm">
-                        +7 (495) 374-81-81 (для справок)<br />
-                        +7 (926) 600-555-0 (WhatsApp для записи)<br />
-                        +7 (977) 807-55-44 (для срочных вопросов)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium mb-1">Email</p>
-                      <p className="text-primary-foreground/80 text-sm">
-                        info@doctor-tarusin.ru
-                      </p>
+                      <p className="font-medium mb-1">Телефоны</p>
+                      <div className="text-primary-foreground/80 text-sm space-y-1">
+                        <div>
+                          <a href="tel:+74953748181" className="hover:text-primary-foreground transition-colors">
+                            +7 (495) 374-81-81
+                          </a>
+                          <span className="ml-2 opacity-70">(для справок)</span>
+                        </div>
+                        <div>
+                          <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="hover:text-primary-foreground transition-colors">
+                            +7 (926) 600-555-0
+                          </a>
+                          <span className="ml-2 opacity-70">(WhatsApp для записи)</span>
+                        </div>
+                        <div>
+                          <a href="tel:+79778075544" className="hover:text-primary-foreground transition-colors">
+                            +7 (977) 807-55-44
+                          </a>
+                          <span className="ml-2 opacity-70">(для срочных вопросов)</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -261,7 +264,7 @@ const ContactSection = () => {
                       <Clock className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-medium mb-1">Запись на приём</p>
+                      <p className="font-medium mb-1">Приём</p>
                       <p className="text-primary-foreground/80 text-sm">
                         Только по предварительной записи
                       </p>
