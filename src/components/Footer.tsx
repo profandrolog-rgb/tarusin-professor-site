@@ -1,4 +1,5 @@
 import { MapPin, Phone, Mail, MessageCircle } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 // Custom SVG icons for social media
 const TelegramIcon = ({
@@ -38,12 +39,19 @@ const WhatsAppIcon = ({
   </svg>;
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({
-        behavior: "smooth"
-      });
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavClick = (href: string) => {
+    if (location.pathname === "/") {
+      // Already on home page, just scroll
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      // Navigate to home page with hash
+      navigate("/" + href);
     }
   };
   const socialLinks = [{
@@ -114,7 +122,7 @@ const Footer = () => {
               label: "Контакты",
               href: "#contact"
             }].map(item => <li key={item.href}>
-                  <button onClick={() => scrollToSection(item.href)} className="text-background/70 hover:text-background transition-colors text-sm">
+                  <button onClick={() => handleNavClick(item.href)} className="text-background/70 hover:text-background transition-colors text-sm">
                     {item.label}
                   </button>
                 </li>)}
