@@ -177,7 +177,7 @@ const TravelNotes = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Путёвые заметки</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Фотографии из путешествий и личные заметки
+            Take off - no go around. Бортовой журнал. От школьной хирургии до академического эшелона. Сквозь года и континенты
           </p>
         </div>
       </header>

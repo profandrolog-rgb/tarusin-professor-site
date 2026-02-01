@@ -36,21 +36,21 @@ interface CaseImage {
 }
 
 const categoryLabels: Record<CaseCategory, string> = {
-  hydrocele: "Гидроцеле",
-  cryptorchidism: "Крипторхизм",
-  hypospadias: "Гипоспадия",
-  varicocele: "Варикоцеле",
-  phimosis: "Фимоз",
-  sexology: "Сексология",
-  psychology: "Психология",
   infertility: "Бесплодие",
-  erectile_dysfunction: "Эректильная дисфункция",
-  enuresis: "Энурез",
-  pelvic_pain: "Тазовая боль",
   scrotal_pain: "Боль в мошонке",
+  varicocele: "Варикоцеле",
+  hydrocele: "Гидроцеле",
+  hypospadias: "Гипоспадия",
   hernia: "Грыжи",
+  cryptorchidism: "Крипторхизм",
   complications: "Осложнения",
+  psychology: "Психология",
   rarities: "Раритеты",
+  sexology: "Сексология",
+  pelvic_pain: "Тазовая боль",
+  phimosis: "Фимоз",
+  enuresis: "Энурез",
+  erectile_dysfunction: "Эректильная дисфункция",
   other: "Другое",
 };
 
