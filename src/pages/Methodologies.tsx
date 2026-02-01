@@ -32,7 +32,7 @@ const Methodologies = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4 font-normal">
-                    Высокоточные операции с использованием микроскопа и специализированного инструментария. Precision sugery   
+                    Высокоточные операции с использованием микроскопа и специализированного инструментария. <span className="font-bold">Precision surgery</span>
                   </p>
                   <div className="space-y-2">
                     {microsurgeryTechniques.map((technique, index) => <div key={index} className="flex items-start gap-2">
