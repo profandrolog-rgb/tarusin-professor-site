@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Upload, Play, Video, Trash2, Loader2, LogIn, Shield } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, Upload, Play, Video, Trash2, Loader2, LogIn, Shield, Lock } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,10 +20,44 @@ const Videos = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchVideos();
-  }, []);
+    if (!authLoading && user) {
+      fetchVideos();
+    } else if (!authLoading && !user) {
+      setLoading(false);
+    }
+  }, [authLoading, user]);
+
+  // Prevent right-click and copy attempts
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Копирование запрещено",
+      description: "Копирование категорически запрещено!",
+      variant: "destructive",
+    });
+    return false;
+  }, [toast]);
+
+  // Prevent keyboard shortcuts for saving
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent Ctrl+S, Ctrl+Shift+S
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        toast({
+          title: "Копирование запрещено",
+          description: "Копирование категорически запрещено!",
+          variant: "destructive",
+        });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [toast]);
 
   const fetchVideos = async () => {
     try {
@@ -144,8 +178,61 @@ const Videos = () => {
     }
   };
 
+  const handleLoginRedirect = () => {
+    navigate("/auth", { state: { from: "/videos" } });
+  };
+
+  // Show login required message for unauthenticated users
+  if (!authLoading && !user) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="bg-primary text-primary-foreground py-12 md:py-20">
+          <div className="container mx-auto px-4">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              На главную
+            </Link>
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">Видео</h1>
+            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
+              Обучающие видео и записи лекций
+            </p>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-12 md:py-16">
+          <div className="max-w-lg mx-auto text-center">
+            <Card className="p-8">
+              <CardContent className="pt-6">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                  <Lock className="w-10 h-10 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-4">
+                  Для просмотра видео необходима авторизация
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Пожалуйста, войдите в систему или зарегистрируйтесь, чтобы получить доступ к обучающим видео и записям лекций.
+                </p>
+                <Button onClick={handleLoginRedirect} size="lg" className="w-full">
+                  <LogIn className="w-5 h-5 mr-2" />
+                  Войти или зарегистрироваться
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen bg-background"
+      onContextMenu={handleContextMenu}
+    >
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
@@ -210,31 +297,23 @@ const Videos = () => {
                   </Button>
                 </div>
               </div>
-            ) : user ? (
-              <span className="text-sm text-muted-foreground">
-                Только администраторы могут загружать видео
-              </span>
-            ) : (
-              <Link to="/auth">
-                <Button variant="outline">
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Войти для управления
-                </Button>
-              </Link>
-            )}
+            ) : null}
           </div>
         </div>
 
         {/* Selected Video Player */}
         {selectedVideo && (
-          <div className="mb-12">
+          <div className="mb-12" onContextMenu={handleContextMenu}>
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <video
                   src={selectedVideo}
                   controls
                   autoPlay
+                  controlsList="nodownload"
+                  onContextMenu={handleContextMenu}
                   className="w-full aspect-video bg-black"
+                  style={{ pointerEvents: "auto" }}
                 >
                   Ваш браузер не поддерживает видео.
                 </video>
@@ -266,6 +345,7 @@ const Videos = () => {
               <Card
                 key={video.name}
                 className="group overflow-hidden hover:shadow-lg transition-shadow"
+                onContextMenu={handleContextMenu}
               >
                 <div
                   className="aspect-video bg-muted relative cursor-pointer"
@@ -275,6 +355,7 @@ const Videos = () => {
                     src={video.url}
                     className="w-full h-full object-cover"
                     preload="metadata"
+                    onContextMenu={handleContextMenu}
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
