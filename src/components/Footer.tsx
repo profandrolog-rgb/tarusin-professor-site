@@ -1,4 +1,4 @@
-import { MapPin, Phone, Mail, MessageCircle } from "lucide-react";
+import { MapPin, Phone } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 // Custom SVG icons for social media
@@ -148,26 +148,36 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
-                <a href="tel:+74953748181" className="text-background/70 hover:text-background transition-colors">
-                  +7 (495) 374-81-81
-                </a>
+                <div>
+                  <a href="tel:+74953748181" className="text-background/70 hover:text-background transition-colors">
+                    +7 (495) 374-81-81
+                  </a>
+                  <span className="text-background/50 ml-1">(для справок)</span>
+                </div>
               </li>
               <li className="flex items-center gap-3 text-sm">
                 <WhatsAppIcon className="w-4 h-4 flex-shrink-0 text-background/70" />
-                <a href="https://wa.me/79778075544" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">
-                  +7 (977) 807-55-44
-                </a>
+                <div>
+                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">
+                    +7 (926) 600-555-0
+                  </a>
+                  <span className="text-background/50 ml-1">(WhatsApp)</span>
+                </div>
               </li>
               <li className="flex items-center gap-3 text-sm">
-                <Mail className="w-4 h-4 flex-shrink-0 text-background/70" />
-                <a href="mailto:boy.doc@yandex.ru" className="text-background/70 hover:text-background transition-colors">
-                  boy.doc@yandex.ru
-                </a>
+                <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
+                <div>
+                  <a href="tel:+79778075544" className="text-background/70 hover:text-background transition-colors">
+                    +7 (977) 807-55-44
+                  </a>
+                  <span className="text-background/50 ml-1">(срочные)</span>
+                </div>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
                 <span className="text-background/70">
-                  Морозовская ДГКБ, Международный центр андрологии
+                  <span className="font-medium text-background/90">AVE-CLINIC</span><br />
+                  с. Немчиновка, 3-я Запрудная ул. дом 16
                 </span>
               </li>
             </ul>
