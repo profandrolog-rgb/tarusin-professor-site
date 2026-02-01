@@ -1,49 +1,12 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Microscope, 
-  Syringe, 
-  Activity,
-  CheckCircle2
-} from "lucide-react";
-
-const microsurgeryTechniques = [
-  "Микрохирургическое лечение варикоцеле",
-  "Реконструктивные операции на половом члене",
-  "Операции при болезни Пейрони",
-  "Микрохирургическая вазэктомия",
-  "Восстановление проходимости семявыносящих путей",
-  "Операции при крипторхизме",
-  "Коррекция гидроцеле",
-  "Орхопексия",
-];
-
-const diagnosticMethods = [
-  "УЗИ органов мошонки с допплерографией",
-  "УЗИ предстательной железы",
-  "УЗИ мочевого пузыря",
-  "Гормональная диагностика",
-  "Спермограмма и MAR-тест",
-  "Генетические исследования",
-  "Биопсия яичка",
-  "Термография мошонки",
-];
-
-const treatmentApproaches = [
-  "Индивидуальный подход к каждому пациенту",
-  "Малоинвазивные хирургические техники",
-  "Применение современного микрохирургического оборудования",
-  "Гормональная терапия",
-  "Реабилитационные программы",
-  "Психологическая поддержка пациентов",
-  "Консервативное лечение",
-  "Профилактические осмотры",
-];
-
+import { Microscope, Syringe, Activity, CheckCircle2 } from "lucide-react";
+const microsurgeryTechniques = ["Микрохирургическое лечение варикоцеле", "Реконструктивные операции на половом члене", "Операции при болезни Пейрони", "Микрохирургическая вазэктомия", "Восстановление проходимости семявыносящих путей", "Операции при крипторхизме", "Коррекция гидроцеле", "Орхопексия"];
+const diagnosticMethods = ["УЗИ органов мошонки с допплерографией", "УЗИ предстательной железы", "УЗИ мочевого пузыря", "Гормональная диагностика", "Спермограмма и MAR-тест", "Генетические исследования", "Биопсия яичка", "Термография мошонки"];
+const treatmentApproaches = ["Индивидуальный подход к каждому пациенту", "Малоинвазивные хирургические техники", "Применение современного микрохирургического оборудования", "Гормональная терапия", "Реабилитационные программы", "Психологическая поддержка пациентов", "Консервативное лечение", "Профилактические осмотры"];
 const Methodologies = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-20">
         <section className="py-16 md:py-24 bg-secondary/30">
@@ -54,8 +17,7 @@ const Methodologies = () => {
                 Методики
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Современные подходы к диагностике и лечению урологических 
-                и андрологических заболеваний
+                 Инновационные авторские подходы к диагностике и лечению урологических и андрологических заболеваний
               </p>
             </div>
 
@@ -73,12 +35,10 @@ const Methodologies = () => {
                     Высокоточные операции с использованием микроскопа и специализированного инструментария
                   </p>
                   <div className="space-y-2">
-                    {microsurgeryTechniques.map((technique, index) => (
-                      <div key={index} className="flex items-start gap-2">
+                    {microsurgeryTechniques.map((technique, index) => <div key={index} className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-muted-foreground">{technique}</span>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </CardContent>
               </Card>
@@ -96,12 +56,10 @@ const Methodologies = () => {
                     Комплексное обследование с применением современного диагностического оборудования
                   </p>
                   <div className="space-y-2">
-                    {diagnosticMethods.map((method, index) => (
-                      <div key={index} className="flex items-start gap-2">
+                    {diagnosticMethods.map((method, index) => <div key={index} className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-muted-foreground">{method}</span>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </CardContent>
               </Card>
@@ -119,12 +77,10 @@ const Methodologies = () => {
                     Персонализированные программы лечения и реабилитации
                   </p>
                   <div className="space-y-2">
-                    {treatmentApproaches.map((approach, index) => (
-                      <div key={index} className="flex items-start gap-2">
+                    {treatmentApproaches.map((approach, index) => <div key={index} className="flex items-start gap-2">
                         <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                         <span className="text-sm text-muted-foreground">{approach}</span>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </CardContent>
               </Card>
@@ -133,8 +89,6 @@ const Methodologies = () => {
         </section>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Methodologies;
