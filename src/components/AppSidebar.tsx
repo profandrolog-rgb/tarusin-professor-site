@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   BookOpen,
   Microscope,
+  Camera,
+  ClipboardList,
 } from "lucide-react";
 
 import {
@@ -42,6 +44,8 @@ const pageNavItems = [
   { title: "СМИ и ТВ", url: "/media", icon: Tv },
   { title: "Видео", url: "/videos", icon: Video },
   { title: "Публикации", url: "/publications", icon: BookOpen },
+  { title: "Клинические случаи", url: "/clinical-cases", icon: ClipboardList },
+  { title: "Путёвые заметки", url: "/travel-notes", icon: Camera },
   { title: "Отзывы", url: "/reviews", icon: Star },
   { title: "Контакты", url: "/contacts", icon: Phone },
 ];

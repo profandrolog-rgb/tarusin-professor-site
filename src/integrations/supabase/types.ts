@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      clinical_case_images: {
+        Row: {
+          caption: string | null
+          case_id: string
+          created_at: string
+          id: string
+          image_path: string
+          sort_order: number | null
+        }
+        Insert: {
+          caption?: string | null
+          case_id: string
+          created_at?: string
+          id?: string
+          image_path: string
+          sort_order?: number | null
+        }
+        Update: {
+          caption?: string | null
+          case_id?: string
+          created_at?: string
+          id?: string
+          image_path?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_case_images_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_cases: {
+        Row: {
+          category: Database["public"]["Enums"]["case_category"]
+          conclusions: string | null
+          created_at: string
+          history: string
+          id: string
+          is_published: boolean
+          recommendations: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["case_category"]
+          conclusions?: string | null
+          created_at?: string
+          history: string
+          id?: string
+          is_published?: boolean
+          recommendations?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["case_category"]
+          conclusions?: string | null
+          created_at?: string
+          history?: string
+          id?: string
+          is_published?: boolean
+          recommendations?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -38,6 +109,36 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
+        }
+        Relationships: []
+      }
+      travel_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          image_path: string
+          sort_order: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_path: string
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -77,6 +178,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      case_category:
+        | "hydrocele"
+        | "cryptorchidism"
+        | "hypospadias"
+        | "varicocele"
+        | "phimosis"
+        | "other"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -206,6 +314,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      case_category: [
+        "hydrocele",
+        "cryptorchidism",
+        "hypospadias",
+        "varicocele",
+        "phimosis",
+        "other",
+      ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },
   },
