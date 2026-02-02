@@ -112,6 +112,54 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          conditions: string
+          created_at: string
+          description: string
+          experience_years: number
+          full_name: string
+          id: string
+          is_published: boolean
+          mission: string
+          photo_path: string | null
+          professor_opinion: string
+          sort_order: number | null
+          specialties: string[]
+          updated_at: string
+        }
+        Insert: {
+          conditions: string
+          created_at?: string
+          description: string
+          experience_years: number
+          full_name: string
+          id?: string
+          is_published?: boolean
+          mission: string
+          photo_path?: string | null
+          professor_opinion: string
+          sort_order?: number | null
+          specialties: string[]
+          updated_at?: string
+        }
+        Update: {
+          conditions?: string
+          created_at?: string
+          description?: string
+          experience_years?: number
+          full_name?: string
+          id?: string
+          is_published?: boolean
+          mission?: string
+          photo_path?: string | null
+          professor_opinion?: string
+          sort_order?: number | null
+          specialties?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       travel_photos: {
         Row: {
           caption: string | null

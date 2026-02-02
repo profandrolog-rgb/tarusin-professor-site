@@ -39,6 +39,7 @@ const mainNavItems = [
 ];
 
 const pageNavItems = [
+  { title: "Команда профессора", url: "/team", icon: Users },
   { title: "Для родителей", url: "/for-parents", icon: Users },
   { title: "Для врачей", url: "/for-doctors", icon: GraduationCap },
   { title: "СМИ и ТВ", url: "/media", icon: Tv },
