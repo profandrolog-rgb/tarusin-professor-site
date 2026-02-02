@@ -1,7 +1,8 @@
 import * as React from "react";
-
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Stethoscope, Scissors, Microscope, Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
+import { Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import {
   type CarouselApi,
@@ -16,21 +17,13 @@ import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
 import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
 
-// Placeholder certificates - replace with actual certificate images
-const certificates = [
-  { id: 1, title: "Диплом врача", image: "/placeholder.svg" },
-  { id: 2, title: "Сертификат детского уролога-андролога", image: "/placeholder.svg" },
-  { id: 3, title: "Сертификат андролога", image: "/placeholder.svg" },
-  { id: 4, title: "Сертификат педиатра", image: "/placeholder.svg" },
-  { id: 5, title: "Сертификат детского хирурга", image: "/placeholder.svg" },
-  { id: 6, title: "Сертификат пластического хирурга", image: "/placeholder.svg" },
-  { id: 7, title: "Сертификат УЗИ-диагностики", image: "/placeholder.svg" },
-  { id: 8, title: "Сертификат травматолога-ортопеда", image: "/placeholder.svg" },
-  { id: 9, title: "Сертификат микрохирурга", image: "/placeholder.svg" },
-  { id: 10, title: "Сертификат сексолога", image: "/placeholder.svg" },
-  { id: 11, title: "Сертификат по организации здравоохранения", image: "/placeholder.svg" },
-  { id: 12, title: "Повышение квалификации (пример)", image: "/placeholder.svg" },
-];
+type Certificate = {
+  id: string;
+  title: string;
+  image_path: string;
+  sort_order: number;
+  is_published: boolean;
+};
 
 type SpecializationType = {
   icon?: LucideIcon;
@@ -38,6 +31,7 @@ type SpecializationType = {
   title: string;
   description: string;
 };
+
 const specializations: SpecializationType[] = [{
   customIcon: boyIcon,
   title: "Детская урология-андрология",
@@ -79,6 +73,7 @@ const specializations: SpecializationType[] = [{
   title: "Организация здравоохранения",
   description: "Руководство Городским центром охраны репродуктивного здоровья"
 }];
+
 const achievements = [{
   value: "42",
   label: "Года опыта"
@@ -92,10 +87,30 @@ const achievements = [{
   value: "9+",
   label: "Подготовленных кандидатов наук"
 }];
+
 const AboutSection = () => {
   const [certApi, setCertApi] = React.useState<CarouselApi>();
   const [certPageCount, setCertPageCount] = React.useState(0);
   const [certCurrentPage, setCertCurrentPage] = React.useState(0);
+
+  const { data: certificates = [] } = useQuery({
+    queryKey: ["certificates-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("*")
+        .eq("is_published", true)
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+      return data as Certificate[];
+    },
+  });
+
+  const getImageUrl = (imagePath: string) => {
+    const { data } = supabase.storage.from("certificates").getPublicUrl(imagePath);
+    return data.publicUrl;
+  };
 
   React.useEffect(() => {
     if (!certApi) return;
@@ -254,23 +269,22 @@ const AboutSection = () => {
               className="w-full"
             >
               <CarouselContent className="-ml-2 md:-ml-4">
-                {certificates.map((cert) => (
+                {certificates.map((cert, index) => (
                   <CarouselItem
                     key={cert.id}
-                    className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                    className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
                   >
                     <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
                       <CardContent className="p-0">
-                        <div className="aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
+                        <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
                           <img
-                            src={cert.image}
+                            src={getImageUrl(cert.image_path)}
                             alt={cert.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
                         <div className="p-3 text-center">
                           <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">Документ {cert.id}</p>
                         </div>
                       </CardContent>
                     </Card>
