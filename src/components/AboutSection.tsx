@@ -1,10 +1,24 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Stethoscope, Scissors, Microscope, Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
 import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
+
+// Placeholder certificates - replace with actual certificate images
+const certificates = [
+  { id: 1, title: "Диплом врача", image: "/placeholder.svg" },
+  { id: 2, title: "Сертификат детского уролога-андролога", image: "/placeholder.svg" },
+  { id: 3, title: "Сертификат андролога", image: "/placeholder.svg" },
+  { id: 4, title: "Сертификат педиатра", image: "/placeholder.svg" },
+  { id: 5, title: "Сертификат детского хирурга", image: "/placeholder.svg" },
+  { id: 6, title: "Сертификат пластического хирурга", image: "/placeholder.svg" },
+  { id: 7, title: "Сертификат УЗИ-диагностики", image: "/placeholder.svg" },
+  { id: 8, title: "Сертификат травматолога-ортопеда", image: "/placeholder.svg" },
+];
+
 type SpecializationType = {
   icon?: LucideIcon;
   customIcon?: string;
@@ -181,6 +195,51 @@ const AboutSection = () => {
                 <p className="text-xs text-muted-foreground">{spec.description}</p>
               </CardContent>
             </Card>)}
+        </div>
+
+        {/* Certificates Gallery */}
+        <div className="mt-12 md:mt-16">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Дипломы и сертификаты
+            </h3>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Подтверждение квалификации и непрерывного профессионального развития
+            </p>
+          </div>
+
+          <div className="px-12">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {certificates.map((cert) => (
+                  <CarouselItem key={cert.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                    <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-0">
+                        <div className="aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
+                          <img
+                            src={cert.image}
+                            alt={cert.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-3 text-center">
+                          <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden sm:flex" />
+              <CarouselNext className="hidden sm:flex" />
+            </Carousel>
+          </div>
         </div>
 
         {/* Fun Fact */}
