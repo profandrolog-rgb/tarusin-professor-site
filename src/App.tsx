@@ -16,6 +16,7 @@ import Publications from "./pages/Publications";
 import Methodologies from "./pages/Methodologies";
 import TravelNotes from "./pages/TravelNotes";
 import ClinicalCases from "./pages/ClinicalCases";
+import Team from "./pages/Team";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/methodologies" element={<Methodologies />} />
               <Route path="/travel-notes" element={<TravelNotes />} />
               <Route path="/clinical-cases" element={<ClinicalCases />} />
+              <Route path="/team" element={<Team />} />
               <Route path="/auth" element={<Auth />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

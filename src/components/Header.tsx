@@ -20,6 +20,7 @@ const mainNavItems = [
 ];
 
 const moreNavItems = [
+  { label: "Команда профессора", href: "/team" },
   { label: "Для родителей", href: "/for-parents" },
   { label: "Для врачей", href: "/for-doctors" },
   { label: "СМИ и ТВ", href: "/media" },
