@@ -7,7 +7,8 @@ import {
   Camera, 
   ClipboardList, 
   ArrowLeft,
-  Loader2
+  Loader2,
+  Award
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,13 @@ const adminSections = [
     icon: Camera,
     href: "/travel-notes",
     color: "text-purple-500",
+  },
+  {
+    title: "Сертификаты и дипломы",
+    description: "Управление галереей сертификатов",
+    icon: Award,
+    href: "/admin/certificates",
+    color: "text-amber-500",
   },
 ];
 
