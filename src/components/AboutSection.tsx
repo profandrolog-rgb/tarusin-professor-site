@@ -1,7 +1,16 @@
+import * as React from "react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Stethoscope, Scissors, Microscope, Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import {
+  type CarouselApi,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
@@ -17,6 +26,10 @@ const certificates = [
   { id: 6, title: "Сертификат пластического хирурга", image: "/placeholder.svg" },
   { id: 7, title: "Сертификат УЗИ-диагностики", image: "/placeholder.svg" },
   { id: 8, title: "Сертификат травматолога-ортопеда", image: "/placeholder.svg" },
+  { id: 9, title: "Сертификат микрохирурга", image: "/placeholder.svg" },
+  { id: 10, title: "Сертификат сексолога", image: "/placeholder.svg" },
+  { id: 11, title: "Сертификат по организации здравоохранения", image: "/placeholder.svg" },
+  { id: 12, title: "Повышение квалификации (пример)", image: "/placeholder.svg" },
 ];
 
 type SpecializationType = {
@@ -80,6 +93,28 @@ const achievements = [{
   label: "Подготовленных кандидатов наук"
 }];
 const AboutSection = () => {
+  const [certApi, setCertApi] = React.useState<CarouselApi>();
+  const [certPageCount, setCertPageCount] = React.useState(0);
+  const [certCurrentPage, setCertCurrentPage] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!certApi) return;
+
+    const update = () => {
+      setCertPageCount(certApi.scrollSnapList().length);
+      setCertCurrentPage(certApi.selectedScrollSnap() + 1);
+    };
+
+    update();
+    certApi.on("reInit", update);
+    certApi.on("select", update);
+
+    return () => {
+      certApi.off("reInit", update);
+      certApi.off("select", update);
+    };
+  }, [certApi]);
+
   return <section id="about" className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
@@ -213,12 +248,17 @@ const AboutSection = () => {
               opts={{
                 align: "start",
                 loop: true,
+                slidesToScroll: 1,
               }}
+              setApi={setCertApi}
               className="w-full"
             >
               <CarouselContent className="-ml-2 md:-ml-4">
                 {certificates.map((cert) => (
-                  <CarouselItem key={cert.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                  <CarouselItem
+                    key={cert.id}
+                    className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                  >
                     <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
                       <CardContent className="p-0">
                         <div className="aspect-[3/4] bg-muted flex items-center justify-center overflow-hidden">
@@ -230,15 +270,22 @@ const AboutSection = () => {
                         </div>
                         <div className="p-3 text-center">
                           <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Документ {cert.id}</p>
                         </div>
                       </CardContent>
                     </Card>
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="hidden sm:flex left-0 -translate-x-0" />
-              <CarouselNext className="hidden sm:flex right-0 translate-x-0" />
+              <CarouselPrevious className="hidden sm:flex left-2 z-10" />
+              <CarouselNext className="hidden sm:flex right-2 z-10" />
             </Carousel>
+
+            {certPageCount > 1 && (
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                Страница {certCurrentPage} из {certPageCount}
+              </div>
+            )}
           </div>
         </div>
 
