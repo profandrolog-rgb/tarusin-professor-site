@@ -18,6 +18,8 @@ import TravelNotes from "./pages/TravelNotes";
 import ClinicalCases from "./pages/ClinicalCases";
 import Team from "./pages/Team";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
+import AdminRequests from "./pages/AdminRequests";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ const App = () => (
               <Route path="/clinical-cases" element={<ClinicalCases />} />
               <Route path="/team" element={<Team />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/requests" element={<AdminRequests />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

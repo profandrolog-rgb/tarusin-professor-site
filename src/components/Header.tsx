@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, ChevronDown, LogIn, LogOut } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LogOut, Settings } from "lucide-react";
 import headerPhoto from "@/assets/header-photo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -107,6 +107,14 @@ const Header = () => {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="w-full flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Админ-панель
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 {user ? (
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
@@ -187,6 +195,17 @@ const Header = () => {
               </Link>
               
               <div className="border-t border-border my-2" />
+              
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Админ-панель
+                </Link>
+              )}
               
               {user ? (
                 <button
