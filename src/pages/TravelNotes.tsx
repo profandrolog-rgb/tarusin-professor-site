@@ -169,11 +169,11 @@ const TravelNotes = () => {
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link
-            to="/"
+            to={isAdmin ? "/admin" : "/"}
             className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            На главную
+            {isAdmin ? "К панели администратора" : "На главную"}
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Путёвые заметки</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">

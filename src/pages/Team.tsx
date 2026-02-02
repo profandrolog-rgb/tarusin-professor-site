@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ArrowLeft } from "lucide-react";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -91,6 +92,15 @@ export default function Team() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12">
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            К панели администратора
+          </Link>
+        )}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
