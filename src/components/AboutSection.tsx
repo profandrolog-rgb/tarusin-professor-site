@@ -1,53 +1,72 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Stethoscope, 
-  Scissors, 
-  Microscope, 
-  Sparkles, 
-  Brain, 
-  MonitorCheck,
-  Shield,
-  Bone,
-  Building,
-  Baby
-} from "lucide-react";
+import { Stethoscope, Scissors, Microscope, Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
 import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
-
 type SpecializationType = {
   icon?: LucideIcon;
   customIcon?: string;
   title: string;
   description: string;
 };
-
-const specializations: SpecializationType[] = [
-  { customIcon: boyIcon, title: "Детская урология-андрология", description: "Создатель специальности в России (с 2003 года)" },
-  { customIcon: manIcon, title: "Андрология взрослых", description: "Диагностика и лечение мужских заболеваний" },
-  { icon: Baby, title: "Педиатрия", description: "Комплексное наблюдение и лечение детей" },
-  { customIcon: surgeryIcon, title: "Детская хирургия", description: "Хирургическое лечение врождённых и приобретённых патологий" },
-  { customIcon: microsurgeryIcon, title: "Микрохирургия", description: "Операции с точностью офтальмологической хирургии" },
-  { icon: Sparkles, title: "Пластическая хирургия", description: "Реконструктивные и эстетические операции" },
-  { icon: Brain, title: "Сексология", description: "Консультации по вопросам интимного здоровья" },
-  { icon: MonitorCheck, title: "УЗИ-диагностика", description: "Мировой эксперт в УЗИ органов репродуктивной системы" },
-  { icon: Bone, title: "Травматология-ортопедия", description: "Лечение травм и патологий опорно-двигательного аппарата" },
-  { icon: Building, title: "Организация здравоохранения", description: "Руководство Городским центром охраны репродуктивного здоровья" },
-];
-
-const achievements = [
-  { value: "42", label: "Года опыта" },
-  { value: "126+", label: "Научных статей" },
-  { value: "6", label: "Глав в нац. руководствах" },
-  { value: "9+", label: "Подготовленных кандидатов наук" },
-];
-
+const specializations: SpecializationType[] = [{
+  customIcon: boyIcon,
+  title: "Детская урология-андрология",
+  description: "Создатель специальности в России (с 2003 года)"
+}, {
+  customIcon: manIcon,
+  title: "Андрология взрослых",
+  description: "Диагностика и лечение мужских заболеваний"
+}, {
+  icon: Baby,
+  title: "Педиатрия",
+  description: "Комплексное наблюдение и лечение детей"
+}, {
+  customIcon: surgeryIcon,
+  title: "Детская хирургия",
+  description: "Хирургическое лечение врождённых и приобретённых патологий"
+}, {
+  customIcon: microsurgeryIcon,
+  title: "Микрохирургия",
+  description: "Операции с точностью офтальмологической хирургии"
+}, {
+  icon: Sparkles,
+  title: "Пластическая хирургия",
+  description: "Реконструктивные и эстетические операции"
+}, {
+  icon: Brain,
+  title: "Сексология",
+  description: "Консультации по вопросам интимного здоровья"
+}, {
+  icon: MonitorCheck,
+  title: "УЗИ-диагностика",
+  description: "Мировой эксперт в УЗИ органов репродуктивной системы"
+}, {
+  icon: Bone,
+  title: "Травматология-ортопедия",
+  description: "Лечение травм и патологий опорно-двигательного аппарата"
+}, {
+  icon: Building,
+  title: "Организация здравоохранения",
+  description: "Руководство Городским центром охраны репродуктивного здоровья"
+}];
+const achievements = [{
+  value: "42",
+  label: "Года опыта"
+}, {
+  value: "126+",
+  label: "Научных статей"
+}, {
+  value: "6",
+  label: "Глав в нац. руководствах"
+}, {
+  value: "9+",
+  label: "Подготовленных кандидатов наук"
+}];
 const AboutSection = () => {
-  return (
-    <section id="about" className="py-16 md:py-24 bg-background">
+  return <section id="about" className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">
@@ -118,11 +137,7 @@ const AboutSection = () => {
                   Мой подход к лечению
                 </h3>
                 <div className="space-y-4 text-muted-foreground">
-                  <p>
-                    За более чем 32 года практики я помог тысячам пациентов — от новорождённых 
-                    до взрослых мужчин. Каждый случай уникален, и я убеждён, что успешное 
-                    лечение начинается с внимательного отношения к пациенту.
-                  </p>
+                  <p>За более чем 42 года практики я помог тысячам пациентов — от новорождённых до взрослых мужчин. Каждый случай уникален, и я убеждён, что успешное лечение начинается с внимательного отношения к пациенту.</p>
                   <p>
                     Мои операции выполняются с деликатностью, сопоставимой с офтальмологической хирургией. 
                     Использую современные микрохирургические методы при крипторхизме, водянке, 
@@ -135,12 +150,10 @@ const AboutSection = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {achievements.map((item, index) => (
-                  <div key={index} className="bg-secondary rounded-xl p-6 text-center">
+                {achievements.map((item, index) => <div key={index} className="bg-secondary rounded-xl p-6 text-center">
                     <div className="text-3xl md:text-4xl font-bold text-primary mb-2">{item.value}</div>
                     <div className="text-sm text-muted-foreground">{item.label}</div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
           </CardContent>
@@ -157,24 +170,17 @@ const AboutSection = () => {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
-          {specializations.map((spec, index) => (
-            <Card 
-              key={index} 
-              className="group bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300"
-            >
+          {specializations.map((spec, index) => <Card key={index} className="group bg-card border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6 text-center">
                 <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors overflow-hidden">
-                  {spec.customIcon ? (
-                    <img src={spec.customIcon} alt={spec.title} className="w-8 h-8 object-contain" style={{ filter: 'invert(32%) sepia(98%) saturate(1234%) hue-rotate(196deg) brightness(94%) contrast(91%)' }} />
-                  ) : spec.icon ? (
-                    <spec.icon className="w-7 h-7 text-primary" />
-                  ) : null}
+                  {spec.customIcon ? <img src={spec.customIcon} alt={spec.title} className="w-8 h-8 object-contain" style={{
+                filter: 'invert(32%) sepia(98%) saturate(1234%) hue-rotate(196deg) brightness(94%) contrast(91%)'
+              }} /> : spec.icon ? <spec.icon className="w-7 h-7 text-primary" /> : null}
                 </div>
                 <h4 className="font-semibold text-foreground mb-2 text-sm">{spec.title}</h4>
                 <p className="text-xs text-muted-foreground">{spec.description}</p>
               </CardContent>
-            </Card>
-          ))}
+            </Card>)}
         </div>
 
         {/* Fun Fact */}
@@ -187,8 +193,6 @@ const AboutSection = () => {
           </CardContent>
         </Card>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default AboutSection;
