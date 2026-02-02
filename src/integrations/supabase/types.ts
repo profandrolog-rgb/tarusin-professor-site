@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_requests: {
+        Row: {
+          child_age: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          parent_name: string | null
+          problem_description: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          child_age: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          parent_name?: string | null
+          problem_description: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          child_age?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          parent_name?: string | null
+          problem_description?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clinical_case_images: {
         Row: {
           caption: string | null
