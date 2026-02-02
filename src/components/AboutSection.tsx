@@ -208,7 +208,7 @@ const AboutSection = () => {
             </p>
           </div>
 
-          <div className="px-12">
+          <div className="relative">
             <Carousel
               opts={{
                 align: "start",
@@ -236,8 +236,8 @@ const AboutSection = () => {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="hidden sm:flex" />
-              <CarouselNext className="hidden sm:flex" />
+              <CarouselPrevious className="hidden sm:flex left-0 -translate-x-0" />
+              <CarouselNext className="hidden sm:flex right-0 translate-x-0" />
             </Carousel>
           </div>
         </div>
