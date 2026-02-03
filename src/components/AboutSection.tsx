@@ -4,19 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-import {
-  type CarouselApi,
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel";
+import { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
 import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
-
 type Certificate = {
   id: string;
   title: string;
@@ -24,14 +16,12 @@ type Certificate = {
   sort_order: number;
   is_published: boolean;
 };
-
 type SpecializationType = {
   icon?: LucideIcon;
   customIcon?: string;
   title: string;
   description: string;
 };
-
 const specializations: SpecializationType[] = [{
   customIcon: boyIcon,
   title: "Детская урология-андрология",
@@ -73,7 +63,6 @@ const specializations: SpecializationType[] = [{
   title: "Организация здравоохранения",
   description: "Руководство Городским центром охраны репродуктивного здоровья"
 }];
-
 const achievements = [{
   value: "42",
   label: "Года опыта"
@@ -87,49 +76,45 @@ const achievements = [{
   value: "9+",
   label: "Подготовленных кандидатов наук"
 }];
-
 const AboutSection = () => {
   const [certApi, setCertApi] = React.useState<CarouselApi>();
   const [certPageCount, setCertPageCount] = React.useState(0);
   const [certCurrentPage, setCertCurrentPage] = React.useState(0);
-
-  const { data: certificates = [] } = useQuery({
+  const {
+    data: certificates = []
+  } = useQuery({
     queryKey: ["certificates-public"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("certificates")
-        .select("*")
-        .eq("is_published", true)
-        .order("sort_order", { ascending: true });
-
+      const {
+        data,
+        error
+      } = await supabase.from("certificates").select("*").eq("is_published", true).order("sort_order", {
+        ascending: true
+      });
       if (error) throw error;
       return data as Certificate[];
-    },
+    }
   });
-
   const getImageUrl = (imagePath: string) => {
-    const { data } = supabase.storage.from("certificates").getPublicUrl(imagePath);
+    const {
+      data
+    } = supabase.storage.from("certificates").getPublicUrl(imagePath);
     return data.publicUrl;
   };
-
   React.useEffect(() => {
     if (!certApi) return;
-
     const update = () => {
       setCertPageCount(certApi.scrollSnapList().length);
       setCertCurrentPage(certApi.selectedScrollSnap() + 1);
     };
-
     update();
     certApi.on("reInit", update);
     certApi.on("select", update);
-
     return () => {
       certApi.off("reInit", update);
       certApi.off("select", update);
     };
   }, [certApi]);
-
   return <section id="about" className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
@@ -258,68 +243,38 @@ const AboutSection = () => {
             </p>
           </div>
 
-          {/* Opinion Card */}
-          <Card className="mb-8 bg-muted/30 border-border">
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">
-                💬 <span className="font-medium text-foreground">Мнение:</span> на самом деле, я считаю исключительной глупостью систему подготовки кадров в России и бесконечный перевод бумаги на «удостоверения, сертификаты, дипломы, свидетельства». Более пустого времяпрепровождения, чем 40 лет накапливать макулатуру, я за свою жизнь не знал. Здесь представлены не все документы — в целом их целый большой чемодан.
-              </p>
-            </CardContent>
-          </Card>
-
-          {certificates.length === 0 ? (
-            <Card className="bg-muted/30 border-dashed">
+          {certificates.length === 0 ? <Card className="bg-muted/30 border-dashed">
               <CardContent className="p-12 text-center">
-                <p className="text-muted-foreground">
-                  Сертификаты будут добавлены в ближайшее время
-                </p>
+                <p className="text-muted-foreground">на самом деле, я считаю исключительной глупостью систему подготовки кадров в России и бесконечный перевод бумаги на «удостоверения, сертификаты, дипломы, свидетельства». Более пустого времяпрепровождения, чем 40 лет накапливать макулатуру, я за свою жизнь не знал. Здесь представлены не все документы — в целом их у меня большой чемодан. Здесь примерно треть (а всего 188 "бумажек")</p>
               </CardContent>
-            </Card>
-          ) : (
-            <div className="relative">
-              <Carousel
-                opts={{
-                  align: "start",
-                  loop: true,
-                  slidesToScroll: 1,
-                }}
-                setApi={setCertApi}
-                className="w-full"
-              >
+            </Card> : <div className="relative">
+              <Carousel opts={{
+            align: "start",
+            loop: true,
+            slidesToScroll: 1
+          }} setApi={setCertApi} className="w-full">
                 <CarouselContent className="-ml-2 md:-ml-4">
-                  {certificates.map((cert) => (
-                    <CarouselItem
-                      key={cert.id}
-                      className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3"
-                    >
+                  {certificates.map(cert => <CarouselItem key={cert.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                       <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
                         <CardContent className="p-0">
                           <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                            <img
-                              src={getImageUrl(cert.image_path)}
-                              alt={cert.title}
-                              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                            />
+                            <img src={getImageUrl(cert.image_path)} alt={cert.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
                           </div>
                           <div className="p-3 text-center">
                             <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
                           </div>
                         </CardContent>
                       </Card>
-                    </CarouselItem>
-                  ))}
+                    </CarouselItem>)}
                 </CarouselContent>
                 <CarouselPrevious className="hidden sm:flex left-2 z-10" />
                 <CarouselNext className="hidden sm:flex right-2 z-10" />
               </Carousel>
 
-              {certPageCount > 1 && (
-                <div className="mt-4 text-center text-sm text-muted-foreground">
+              {certPageCount > 1 && <div className="mt-4 text-center text-sm text-muted-foreground">
                   Страница {certCurrentPage} из {certPageCount}
-                </div>
-              )}
-            </div>
-          )}
+                </div>}
+            </div>}
         </div>
 
         {/* Fun Fact */}
