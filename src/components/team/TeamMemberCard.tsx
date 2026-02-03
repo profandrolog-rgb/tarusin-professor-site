@@ -71,9 +71,9 @@ export function TeamMemberCard({
       <div className="flex flex-col md:flex-row gap-6 py-6">
         {/* Photo */}
         <div className="flex-shrink-0">
-          <Avatar className="w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64">
-            <AvatarImage src={photoUrl || undefined} alt={member.full_name} className="object-cover object-top" />
-            <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+          <Avatar className="w-48 h-56 md:w-56 md:h-64 lg:w-64 lg:h-72 rounded-xl">
+            <AvatarImage src={photoUrl || undefined} alt={member.full_name} className="object-cover object-top rounded-xl" />
+            <AvatarFallback className="text-2xl bg-primary/10 text-primary rounded-xl">
               {photoUrl ? getInitials(member.full_name) : <User className="w-12 h-12" />}
             </AvatarFallback>
           </Avatar>
