@@ -243,9 +243,18 @@ const AboutSection = () => {
             </p>
           </div>
 
+          {/* Opinion Card */}
+          <Card className="mb-8 bg-muted/30 border-dashed">
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">
+                💬 <span className="font-medium text-foreground">Мнение:</span> на самом деле, я считаю исключительной глупостью систему подготовки кадров в России и бесконечный перевод бумаги на «удостоверения, сертификаты, дипломы, свидетельства». Более пустого времяпрепровождения, чем 40 лет накапливать макулатуру, я за свою жизнь не знал. Здесь представлены не все документы — в целом их целый большой чемодан.
+              </p>
+            </CardContent>
+          </Card>
+
           {certificates.length === 0 ? <Card className="bg-muted/30 border-dashed">
               <CardContent className="p-12 text-center">
-                <p className="text-muted-foreground">на самом деле, я считаю исключительной глупостью систему подготовки кадров в России и бесконечный перевод бумаги на «удостоверения, сертификаты, дипломы, свидетельства». Более пустого времяпрепровождения, чем 40 лет накапливать макулатуру, я за свою жизнь не знал. Здесь представлены не все документы — в целом их у меня большой чемодан. Здесь примерно треть (а всего 188 "бумажек")</p>
+                <p className="text-muted-foreground">Сертификаты скоро появятся</p>
               </CardContent>
             </Card> : <div className="relative">
               <Carousel opts={{
