@@ -41,13 +41,14 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
   const navigate = useNavigate();
   const location = useLocation();
-
   const handleNavClick = (href: string) => {
     if (location.pathname === "/") {
       // Already on home page, just scroll
       const element = document.querySelector(href);
       if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
+        element.scrollIntoView({
+          behavior: "smooth"
+        });
       }
     } else {
       // Navigate to home page with hash
@@ -175,8 +176,8 @@ const Footer = () => {
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
-                <span className="text-background/70">
-                  <span className="font-medium text-background/90">AVE-CLINIC</span><br />
+                <span className="text-background/70">AVE-CLINIC (клиника персональной медицины)
+с. Немчиновка, 3-я Запрудная ул. дом 16<span className="font-medium text-background/90">AVE-CLINIC</span><br />
                   с. Немчиновка, 3-я Запрудная ул. дом 16
                 </span>
               </li>
