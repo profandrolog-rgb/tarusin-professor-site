@@ -247,17 +247,8 @@ const AboutSection = () => {
             </Card>)}
         </div>
 
-        {/* Opinion Card */}
-        <Card className="mt-12 md:mt-16 bg-muted/30 border-border">
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">
-              💬 <span className="font-medium text-foreground">Мнение:</span> на самом деле, я считаю исключительной глупостью систему подготовки кадров в России и бесконечный перевод бумаги на «удостоверения, сертификаты, дипломы, свидетельства». Более пустого времяпрепровождения, чем 40 лет накапливать макулатуру, я за свою жизнь не знал. Здесь представлены не все документы — в целом их целый большой чемодан.
-            </p>
-          </CardContent>
-        </Card>
-
         {/* Certificates Gallery */}
-        <div className="mt-8">
+        <div className="mt-12 md:mt-16">
           <div className="text-center mb-8">
             <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
               Дипломы и сертификаты
@@ -266,6 +257,15 @@ const AboutSection = () => {
               Подтверждение квалификации и непрерывного профессионального развития
             </p>
           </div>
+
+          {/* Opinion Card */}
+          <Card className="mb-8 bg-muted/30 border-border">
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">
+                💬 <span className="font-medium text-foreground">Мнение:</span> на самом деле, я считаю исключительной глупостью систему подготовки кадров в России и бесконечный перевод бумаги на «удостоверения, сертификаты, дипломы, свидетельства». Более пустого времяпрепровождения, чем 40 лет накапливать макулатуру, я за свою жизнь не знал. Здесь представлены не все документы — в целом их целый большой чемодан.
+              </p>
+            </CardContent>
+          </Card>
 
           {certificates.length === 0 ? (
             <Card className="bg-muted/30 border-dashed">
