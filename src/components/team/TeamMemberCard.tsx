@@ -72,7 +72,7 @@ export function TeamMemberCard({
         {/* Photo */}
         <div className="flex-shrink-0">
           <Avatar className="w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64">
-            <AvatarImage src={photoUrl || undefined} alt={member.full_name} className="object-cover" />
+            <AvatarImage src={photoUrl || undefined} alt={member.full_name} className="object-cover object-top" />
             <AvatarFallback className="text-2xl bg-primary/10 text-primary">
               {photoUrl ? getInitials(member.full_name) : <User className="w-12 h-12" />}
             </AvatarFallback>
