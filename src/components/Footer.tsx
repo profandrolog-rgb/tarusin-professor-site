@@ -177,7 +177,9 @@ const Footer = () => {
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
                 <span className="text-background/70">AVE-CLINIC (клиника персональной медицины)
-с. Немчиновка, 3-я Запрудная ул. дом 16<span className="font-medium text-background/90">AVE-CLINIC</span><br />
+с. Немчиновка, 3-я Запрудная ул. дом 14-16
+
+                <span className="font-medium text-background/90">AVE-CLINIC</span><br />
                   с. Немчиновка, 3-я Запрудная ул. дом 16
                 </span>
               </li>
