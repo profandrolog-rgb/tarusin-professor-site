@@ -11,10 +11,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Character limits
 const LIMITS = {
-  mission: 150,
-  description: 500,
-  conditions: 300,
-  professor_opinion: 300,
+  mission: 300,
+  description: 1000,
+  conditions: 600,
+  professor_opinion: 600,
 };
 
 interface TeamMember {
