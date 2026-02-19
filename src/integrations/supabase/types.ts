@@ -127,6 +127,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          excerpt: string | null
           id: string
           image_path: string | null
           is_published: boolean
@@ -137,6 +138,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          excerpt?: string | null
           id?: string
           image_path?: string | null
           is_published?: boolean
@@ -147,6 +149,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          excerpt?: string | null
           id?: string
           image_path?: string | null
           is_published?: boolean
