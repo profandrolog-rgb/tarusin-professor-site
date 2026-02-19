@@ -761,7 +761,7 @@ const Blog = () => {
                                 <img
                                   src={url!}
                                   alt={post.title}
-                                  className="w-full h-28 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="w-full h-36 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                                   style={{ objectPosition: img.object_position || "center" }}
                                   onClick={() => setLightboxUrl(url!)}
                                 />
@@ -782,7 +782,7 @@ const Blog = () => {
                             <img
                               src={legacyUrl}
                               alt={post.title}
-                              className="w-full h-28 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              className="w-full h-36 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => setLightboxUrl(legacyUrl)}
                             />
                           )}
