@@ -582,9 +582,9 @@ const Blog = () => {
                       Свернуть <ChevronUp className="w-4 h-4" />
                     </div>
 
-                    <div className={`flex flex-col ${hasImages ? "lg:flex-row" : ""} gap-6`}>
+                    <div className={`flex flex-col ${hasImages ? "lg:flex-row lg:items-start" : ""} gap-6`}>
                       {hasImages && (
-                        <div className="lg:w-1/3 flex-shrink-0 space-y-3">
+                        <div className="lg:w-1/5 flex-shrink-0 space-y-2 lg:max-h-[600px] lg:overflow-y-auto">
                           {postImages.map((img) => {
                             const url = getImageUrl(img.image_path);
                             return (
@@ -592,7 +592,7 @@ const Blog = () => {
                                 <img
                                   src={url!}
                                   alt={post.title}
-                                  className="w-full rounded-lg object-cover"
+                                  className="w-full max-h-40 rounded-lg object-cover"
                                 />
                                 {isAdmin && (
                                   <Button
