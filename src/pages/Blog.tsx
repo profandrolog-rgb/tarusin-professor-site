@@ -69,7 +69,8 @@ const Blog = () => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
-  
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["blog-posts"],
@@ -488,6 +489,27 @@ const Blog = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Lightbox */}
+        {lightboxUrl && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center cursor-pointer"
+            onClick={() => setLightboxUrl(null)}
+          >
+            <img
+              src={lightboxUrl}
+              alt=""
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              className="absolute top-4 right-4 text-white/80 hover:text-white"
+              onClick={() => setLightboxUrl(null)}
+            >
+              <X className="w-8 h-8" />
+            </button>
+          </div>
+        )}
+
         {/* Login prompt */}
         <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
           <DialogContent>
@@ -570,7 +592,8 @@ const Blog = () => {
                           <img
                             src={firstImage}
                             alt={post.title}
-                            className="w-full h-36 sm:h-32 rounded-lg object-cover"
+                            className="w-full h-36 sm:h-32 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); setLightboxUrl(firstImage); }}
                           />
                         </div>
                       )}
@@ -607,10 +630,11 @@ const Blog = () => {
                             const url = getImageUrl(img.image_path);
                             return (
                               <div key={img.id} className="relative group">
-                                <img
+                              <img
                                   src={url!}
                                   alt={post.title}
-                                  className="w-full max-h-40 rounded-lg object-cover"
+                                  className="w-full max-h-40 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setLightboxUrl(url!)}
                                 />
                                 {isAdmin && (
                                   <Button
@@ -629,7 +653,8 @@ const Blog = () => {
                             <img
                               src={legacyUrl}
                               alt={post.title}
-                              className="w-full rounded-lg object-cover"
+                              className="w-full rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => setLightboxUrl(legacyUrl)}
                             />
                           )}
                         </div>
