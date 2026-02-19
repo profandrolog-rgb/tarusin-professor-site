@@ -33,12 +33,12 @@ const ContactSection = () => {
       name,
       value
     } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [name]: ""
       }));
@@ -60,7 +60,7 @@ const ContactSection = () => {
       setIsSubmitting(true);
 
       // Simulate form submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setIsSubmitted(true);
       toast({
         title: "Заявка отправлена!",
@@ -81,7 +81,7 @@ const ContactSection = () => {
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
-        error.errors.forEach(err => {
+        error.errors.forEach((err) => {
           if (err.path[0]) {
             newErrors[err.path[0] as string] = err.message;
           }
@@ -147,7 +147,7 @@ const ContactSection = () => {
                   </div>
 
                   <div className="flex items-start gap-2">
-                    <Checkbox id="agree" checked={agreed} onCheckedChange={checked => setAgreed(checked === true)} />
+                    <Checkbox id="agree" checked={agreed} onCheckedChange={(checked) => setAgreed(checked === true)} />
                     <Label htmlFor="agree" className="text-sm text-muted-foreground leading-tight">
                       Я согласен на обработку персональных данных в соответствии с политикой конфиденциальности
                     </Label>
@@ -229,8 +229,8 @@ const ContactSection = () => {
             <Card className="bg-secondary border-border">
               <CardContent className="p-6">
                 <h4 className="font-semibold text-foreground mb-2">Как добраться</h4>
-                <p className="text-sm text-muted-foreground">Клиника AVE-CLINIC расположена в с. Немчиновка, МКАД, наружная сторона, 55 км
-Есть парковка для посетителей клиники. На шлагбауме пароль "</p>
+                <p className="text-sm text-muted-foreground">Клиника AVE-CLINIC расположена в с. Немчиновка, МКАД, наружная сторона, 55 км Есть парковка для посетителей клиники. На шлагбауме пароль "В клинику"   
+              </p>
               </CardContent>
             </Card>
           </div>
