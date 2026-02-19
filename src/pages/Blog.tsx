@@ -751,9 +751,9 @@ const Blog = () => {
                       Свернуть <ChevronUp className="w-4 h-4" />
                     </div>
 
-                    <div className={`flex flex-col ${hasImages ? "lg:flex-row lg:items-start" : ""} gap-6`}>
-                      {hasImages && (
-                        <div className="lg:w-1/4 flex-shrink-0 space-y-2 lg:sticky lg:top-24 lg:self-start">
+                    {hasImages ? (
+                      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
+                        <div className="space-y-2">
                           {postImages.map((img) => {
                             const url = getImageUrl(img.image_path);
                             return (
@@ -787,8 +787,19 @@ const Blog = () => {
                             />
                           )}
                         </div>
-                      )}
-                      <div className="flex-1 min-w-0">
+                        <div className="overflow-y-auto min-h-0">
+                          <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
+                          <p className="text-xs text-muted-foreground mb-4">
+                            {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
+                          </p>
+                          <div
+                            className="prose prose-sm max-w-none text-foreground/90"
+                            dangerouslySetInnerHTML={{ __html: post.content }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
                         <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
                         <p className="text-xs text-muted-foreground mb-4">
                           {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
@@ -798,7 +809,7 @@ const Blog = () => {
                           dangerouslySetInnerHTML={{ __html: post.content }}
                         />
                       </div>
-                    </div>
+                    )}
 
                     {/* Likes / Dislikes */}
                     <div className="mt-6 flex items-center gap-3">
