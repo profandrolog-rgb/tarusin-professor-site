@@ -753,7 +753,7 @@ const Blog = () => {
 
                     <div className={`flex flex-col ${hasImages ? "lg:flex-row lg:items-start" : ""} gap-6`}>
                       {hasImages && (
-                        <div className="lg:w-1/5 flex-shrink-0 space-y-2 lg:max-h-[600px] lg:overflow-y-auto">
+                        <div className="lg:w-1/4 flex-shrink-0 space-y-2 lg:sticky lg:top-24 lg:self-start">
                           {postImages.map((img) => {
                             const url = getImageUrl(img.image_path);
                             return (
@@ -761,7 +761,7 @@ const Blog = () => {
                                 <img
                                   src={url!}
                                   alt={post.title}
-                                  className="w-full max-h-40 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="w-full rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                                   style={{ objectPosition: img.object_position || "center" }}
                                   onClick={() => setLightboxUrl(url!)}
                                 />
@@ -788,7 +788,7 @@ const Blog = () => {
                           )}
                         </div>
                       )}
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
                         <p className="text-xs text-muted-foreground mb-4">
                           {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
