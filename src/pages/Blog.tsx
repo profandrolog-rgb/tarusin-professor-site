@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, GripVertical } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload } from "lucide-react";
+import RichTextEditor from "@/components/blog/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -330,11 +331,10 @@ const Blog = () => {
                 value={postForm.title}
                 onChange={(e) => setPostForm((p) => ({ ...p, title: e.target.value }))}
               />
-              <Textarea
+              <RichTextEditor
+                content={postForm.content}
+                onChange={(html) => setPostForm((p) => ({ ...p, content: html }))}
                 placeholder="Текст..."
-                rows={12}
-                value={postForm.content}
-                onChange={(e) => setPostForm((p) => ({ ...p, content: e.target.value }))}
               />
 
               {/* Image slots info */}
@@ -520,9 +520,10 @@ const Blog = () => {
                     <p className="text-xs text-muted-foreground mb-4">
                       {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
                     </p>
-                    <div className="prose prose-sm max-w-none text-foreground/90 whitespace-pre-wrap">
-                      {post.content}
-                    </div>
+                    <div
+                      className="prose prose-sm max-w-none text-foreground/90"
+                      dangerouslySetInnerHTML={{ __html: post.content }}
+                    />
                   </div>
                 </div>
 
