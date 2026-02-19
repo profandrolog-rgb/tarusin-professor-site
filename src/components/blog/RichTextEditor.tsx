@@ -26,6 +26,17 @@ const RichTextEditor = ({ content, onChange, placeholder }: RichTextEditorProps)
         class:
           "min-h-[200px] p-3 text-sm text-foreground focus:outline-none prose prose-sm max-w-none",
       },
+      handleKeyDown: (view, event) => {
+        if (event.key === "Tab") {
+          event.preventDefault();
+          const { state, dispatch } = view;
+          const { from } = state.selection;
+          const indent = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";
+          dispatch(state.tr.insertText(indent, from));
+          return true;
+        }
+        return false;
+      },
     },
   });
 
