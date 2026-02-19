@@ -761,7 +761,7 @@ const Blog = () => {
                                 <img
                                   src={url!}
                                   alt={post.title}
-                                  className="w-full h-32 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="w-full h-28 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                                   style={{ objectPosition: img.object_position || "center" }}
                                   onClick={() => setLightboxUrl(url!)}
                                 />
@@ -782,20 +782,22 @@ const Blog = () => {
                             <img
                               src={legacyUrl}
                               alt={post.title}
-                              className="w-full h-32 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              className="w-full h-28 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => setLightboxUrl(legacyUrl)}
                             />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
-                          <p className="text-xs text-muted-foreground mb-4">
-                            {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
-                          </p>
-                          <div
-                            className="prose prose-sm max-w-none text-foreground/90"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
-                          />
+                        <div className="flex-1 min-w-0 relative">
+                          <div className="lg:absolute lg:inset-0 lg:overflow-y-auto lg:pr-2">
+                            <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
+                            <p className="text-xs text-muted-foreground mb-4">
+                              {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
+                            </p>
+                            <div
+                              className="prose prose-sm max-w-none text-foreground/90"
+                              dangerouslySetInnerHTML={{ __html: post.content }}
+                            />
+                          </div>
                         </div>
                       </div>
                     ) : (
