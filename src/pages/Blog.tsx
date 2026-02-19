@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,14 @@ interface BlogPost {
   created_at: string;
 }
 
+interface BlogPostImage {
+  id: string;
+  post_id: string;
+  image_path: string;
+  sort_order: number | null;
+  created_at: string;
+}
+
 interface BlogComment {
   id: string;
   post_id: string;
@@ -33,6 +41,17 @@ interface BlogComment {
   created_at: string;
 }
 
+const IMAGE_HEIGHT_PX = 220; // approximate height per image in the column
+const LINE_HEIGHT_PX = 24; // approximate line height for text
+
+function estimateImageSlots(text: string): number {
+  // Rough estimate: ~80 chars per line, each image takes ~IMAGE_HEIGHT_PX
+  const lines = Math.max(1, Math.ceil(text.length / 80));
+  const textHeight = lines * LINE_HEIGHT_PX;
+  const slots = Math.max(1, Math.floor(textHeight / IMAGE_HEIGHT_PX));
+  return slots;
+}
+
 const Blog = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -41,10 +60,12 @@ const Blog = () => {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [postForm, setPostForm] = useState({ title: "", content: "" });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["blog-posts"],
@@ -55,6 +76,18 @@ const Blog = () => {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as BlogPost[];
+    },
+  });
+
+  const { data: allPostImages = [] } = useQuery({
+    queryKey: ["blog-post-images"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_post_images")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data as BlogPostImage[];
     },
   });
 
@@ -78,7 +111,7 @@ const Blog = () => {
 
   const uploadImage = async (file: File): Promise<string> => {
     const ext = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${ext}`;
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage.from("blog-images").upload(fileName, file);
     if (error) throw error;
     return fileName;
@@ -87,29 +120,46 @@ const Blog = () => {
   const savePost = async () => {
     setSavingPost(true);
     try {
+      // Keep legacy image_path for backward compat
       let imagePath = editingPost?.image_path || null;
-      if (imageFile) {
-        imagePath = await uploadImage(imageFile);
-      }
 
+      let postId: string;
       if (editingPost) {
         const { error } = await supabase
           .from("blog_posts")
           .update({ title: postForm.title, content: postForm.content, image_path: imagePath })
           .eq("id", editingPost.id);
         if (error) throw error;
+        postId = editingPost.id;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("blog_posts")
-          .insert({ title: postForm.title, content: postForm.content, image_path: imagePath });
+          .insert({ title: postForm.title, content: postForm.content, image_path: imagePath })
+          .select("id")
+          .single();
         if (error) throw error;
+        postId = data.id;
+      }
+
+      // Upload new images
+      if (imageFiles.length > 0) {
+        const existingCount = allPostImages.filter((i) => i.post_id === postId).length;
+        for (let i = 0; i < imageFiles.length; i++) {
+          const path = await uploadImage(imageFiles[i]);
+          await supabase.from("blog_post_images").insert({
+            post_id: postId,
+            image_path: path,
+            sort_order: existingCount + i,
+          });
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["blog-post-images"] });
       setEditingPost(null);
       setIsCreating(false);
       setPostForm({ title: "", content: "" });
-      setImageFile(null);
+      setImageFiles([]);
       toast({ title: editingPost ? "Запись обновлена" : "Запись создана" });
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
@@ -131,7 +181,18 @@ const Blog = () => {
       const { error } = await supabase.from("blog_posts").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-posts"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blog-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["blog-post-images"] });
+    },
+  });
+
+  const deleteImage = useMutation({
+    mutationFn: async (imageId: string) => {
+      const { error } = await supabase.from("blog_post_images").delete().eq("id", imageId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-post-images"] }),
   });
 
   const addComment = useMutation({
@@ -170,16 +231,55 @@ const Blog = () => {
 
   const openCreate = () => {
     setPostForm({ title: "", content: "" });
-    setImageFile(null);
+    setImageFiles([]);
     setEditingPost(null);
     setIsCreating(true);
   };
 
   const openEdit = (post: BlogPost) => {
     setPostForm({ title: post.title, content: post.content });
-    setImageFile(null);
+    setImageFiles([]);
     setEditingPost(post);
     setIsCreating(true);
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+    const maxSlots = estimateImageSlots(postForm.content);
+    const currentCount = editingPost
+      ? allPostImages.filter((i) => i.post_id === editingPost.id).length + imageFiles.length
+      : imageFiles.length;
+    const remaining = Math.max(0, maxSlots - currentCount);
+    setImageFiles((prev) => [...prev, ...files.slice(0, remaining)]);
+  }, [postForm.content, editingPost, allPostImages, imageFiles]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
+    const maxSlots = estimateImageSlots(postForm.content);
+    const currentCount = editingPost
+      ? allPostImages.filter((i) => i.post_id === editingPost.id).length + imageFiles.length
+      : imageFiles.length;
+    const remaining = Math.max(0, maxSlots - currentCount);
+    setImageFiles((prev) => [...prev, ...files.slice(0, remaining)]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeNewFile = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const visiblePosts = isAdmin ? posts : posts.filter((p) => p.is_published);
@@ -191,6 +291,11 @@ const Blog = () => {
       </div>
     );
   }
+
+  const maxSlots = estimateImageSlots(postForm.content);
+  const existingImages = editingPost ? allPostImages.filter((i) => i.post_id === editingPost.id) : [];
+  const totalImages = existingImages.length + imageFiles.length;
+  const canAddMore = totalImages < maxSlots;
 
   return (
     <div className="min-h-screen bg-background">
@@ -231,13 +336,89 @@ const Blog = () => {
                 value={postForm.content}
                 onChange={(e) => setPostForm((p) => ({ ...p, content: e.target.value }))}
               />
-              <div>
-                <label className="text-sm text-muted-foreground block mb-1">Иллюстрация</label>
-                <Input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
-                {editingPost?.image_path && !imageFile && (
-                  <p className="text-xs text-muted-foreground mt-1">Текущее изображение сохранится</p>
-                )}
+
+              {/* Image slots info */}
+              <div className="text-sm text-muted-foreground">
+                Фото: {totalImages} / {maxSlots} (рассчитано по длине текста)
               </div>
+
+              {/* Existing images (for edit mode) */}
+              {existingImages.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Загруженные фото</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {existingImages.map((img) => {
+                      const url = getImageUrl(img.image_path);
+                      return (
+                        <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border">
+                          <img src={url!} alt="" className="w-full h-24 object-cover" />
+                          <Button
+                            size="icon"
+                            variant="destructive"
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => deleteImage.mutate(img.id)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* New files preview */}
+              {imageFiles.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Новые фото</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {imageFiles.map((file, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden border border-border">
+                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-24 object-cover" />
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeNewFile(i)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Drag-and-drop zone */}
+              {canAddMore && (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    isDragging
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Перетащите фото сюда или нажмите для выбора
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Можно добавить ещё {maxSlots - totalImages}
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreating(false)}>Отмена</Button>
@@ -272,7 +453,10 @@ const Blog = () => {
 
         <div className="space-y-12">
           {visiblePosts.map((post) => {
-            const imgUrl = getImageUrl(post.image_path);
+            const postImages = allPostImages.filter((i) => i.post_id === post.id);
+            // Legacy single image support
+            const legacyUrl = post.image_path ? getImageUrl(post.image_path) : null;
+            const hasImages = postImages.length > 0 || legacyUrl;
             const postComments = allComments.filter((c) => c.post_id === post.id);
             const visibleComments = isAdmin ? postComments : postComments.filter((c) => c.is_approved || c.user_id === user?.id);
 
@@ -297,14 +481,38 @@ const Blog = () => {
                 )}
 
                 {/* Post content */}
-                <div className={`flex flex-col ${imgUrl ? "lg:flex-row" : ""} gap-6`}>
-                  {imgUrl && (
-                    <div className="lg:w-1/3 flex-shrink-0">
-                      <img
-                        src={imgUrl}
-                        alt={post.title}
-                        className="w-full rounded-lg object-cover max-h-80"
-                      />
+                <div className={`flex flex-col ${hasImages ? "lg:flex-row" : ""} gap-6`}>
+                  {hasImages && (
+                    <div className="lg:w-1/3 flex-shrink-0 space-y-3">
+                      {postImages.map((img) => {
+                        const url = getImageUrl(img.image_path);
+                        return (
+                          <div key={img.id} className="relative group">
+                            <img
+                              src={url!}
+                              alt={post.title}
+                              className="w-full rounded-lg object-cover"
+                            />
+                            {isAdmin && (
+                              <Button
+                                size="icon"
+                                variant="destructive"
+                                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => deleteImage.mutate(img.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {legacyUrl && postImages.length === 0 && (
+                        <img
+                          src={legacyUrl}
+                          alt={post.title}
+                          className="w-full rounded-lg object-cover"
+                        />
+                      )}
                     </div>
                   )}
                   <div className="flex-1">
