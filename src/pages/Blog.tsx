@@ -424,7 +424,7 @@ const Blog = () => {
               <Button variant="outline" onClick={() => setIsCreating(false)}>Отмена</Button>
               <Button onClick={savePost} disabled={savingPost || !postForm.title.trim() || !postForm.content.trim()}>
                 {savingPost ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Сохранить
+                {editingPost ? "Сохранить изменения" : "Создать"}
               </Button>
             </DialogFooter>
           </DialogContent>
