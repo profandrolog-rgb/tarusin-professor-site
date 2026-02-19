@@ -752,8 +752,8 @@ const Blog = () => {
                     </div>
 
                     {hasImages ? (
-                      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6 lg:max-h-[70vh]">
-                        <div className="space-y-2 overflow-y-auto min-h-0">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="lg:w-48 flex-shrink-0 flex flex-col gap-2">
                           {postImages.map((img) => {
                             const url = getImageUrl(img.image_path);
                             return (
@@ -761,7 +761,7 @@ const Blog = () => {
                                 <img
                                   src={url!}
                                   alt={post.title}
-                                  className="w-full rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="w-full h-32 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                                   style={{ objectPosition: img.object_position || "center" }}
                                   onClick={() => setLightboxUrl(url!)}
                                 />
@@ -782,12 +782,12 @@ const Blog = () => {
                             <img
                               src={legacyUrl}
                               alt={post.title}
-                              className="w-full rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                              className="w-full h-32 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => setLightboxUrl(legacyUrl)}
                             />
                           )}
                         </div>
-                        <div className="overflow-y-auto min-h-0">
+                        <div className="flex-1 min-w-0">
                           <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
                           <p className="text-xs text-muted-foreground mb-4">
                             {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
