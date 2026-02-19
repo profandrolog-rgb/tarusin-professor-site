@@ -752,8 +752,8 @@ const Blog = () => {
                     </div>
 
                     {hasImages ? (
-                      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
-                        <div className="space-y-2">
+                      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6 lg:max-h-[70vh]">
+                        <div className="space-y-2 overflow-y-auto min-h-0">
                           {postImages.map((img) => {
                             const url = getImageUrl(img.image_path);
                             return (
