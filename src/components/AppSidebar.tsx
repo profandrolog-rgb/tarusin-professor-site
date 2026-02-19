@@ -47,6 +47,7 @@ const pageNavItems = [
   { title: "Публикации", url: "/publications", icon: BookOpen },
   { title: "Клинические случаи", url: "/clinical-cases", icon: ClipboardList },
   { title: "Путёвые заметки", url: "/travel-notes", icon: Camera },
+  { title: "Размышлизмы", url: "/blog", icon: BookOpen },
   { title: "Отзывы", url: "/reviews", icon: Star },
   { title: "Контакты", url: "/contacts", icon: Phone },
 ];

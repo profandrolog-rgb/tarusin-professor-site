@@ -16,6 +16,7 @@ import Publications from "./pages/Publications";
 import Methodologies from "./pages/Methodologies";
 import TravelNotes from "./pages/TravelNotes";
 import ClinicalCases from "./pages/ClinicalCases";
+import Blog from "./pages/Blog";
 import Team from "./pages/Team";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/methodologies" element={<Methodologies />} />
               <Route path="/travel-notes" element={<TravelNotes />} />
               <Route path="/clinical-cases" element={<ClinicalCases />} />
+              <Route path="/blog" element={<Blog />} />
               <Route path="/team" element={<Team />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />

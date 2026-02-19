@@ -49,6 +49,13 @@ const adminSections = [
     href: "/admin/certificates",
     color: "text-amber-500",
   },
+  {
+    title: "Размышлизмы",
+    description: "Блог профессора — публикация заметок",
+    icon: FileText,
+    href: "/blog",
+    color: "text-teal-500",
+  },
 ];
 
 const Admin = () => {
