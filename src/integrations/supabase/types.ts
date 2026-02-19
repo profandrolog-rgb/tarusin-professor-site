@@ -96,6 +96,7 @@ export type Database = {
           created_at: string
           id: string
           image_path: string
+          object_position: string
           post_id: string
           sort_order: number | null
         }
@@ -103,6 +104,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_path: string
+          object_position?: string
           post_id: string
           sort_order?: number | null
         }
@@ -110,12 +112,45 @@ export type Database = {
           created_at?: string
           id?: string
           image_path?: string
+          object_position?: string
           post_id?: string
           sort_order?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "blog_post_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_reactions_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "blog_posts"

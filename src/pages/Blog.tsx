@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, Move } from "lucide-react";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ interface BlogPostImage {
   post_id: string;
   image_path: string;
   sort_order: number | null;
+  object_position: string;
   created_at: string;
 }
 
@@ -42,6 +43,13 @@ interface BlogComment {
   content: string;
   is_approved: boolean;
   created_at: string;
+}
+
+interface BlogReaction {
+  id: string;
+  post_id: string;
+  user_id: string;
+  reaction_type: "like" | "dislike";
 }
 
 const IMAGE_HEIGHT_PX = 220;
@@ -70,7 +78,7 @@ const Blog = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-
+  const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["blog-posts"],
@@ -105,6 +113,17 @@ const Blog = () => {
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as BlogComment[];
+    },
+  });
+
+  const { data: allReactions = [] } = useQuery({
+    queryKey: ["blog-reactions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_post_reactions")
+        .select("*");
+      if (error) throw error;
+      return data as BlogReaction[];
     },
   });
 
@@ -198,6 +217,14 @@ const Blog = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-post-images"] }),
   });
 
+  const updateImagePosition = useMutation({
+    mutationFn: async ({ imageId, position }: { imageId: string; position: string }) => {
+      const { error } = await supabase.from("blog_post_images").update({ object_position: position }).eq("id", imageId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-post-images"] }),
+  });
+
   const reorderPosts = useMutation({
     mutationFn: async (orderedIds: string[]) => {
       for (let i = 0; i < orderedIds.length; i++) {
@@ -226,6 +253,33 @@ const Blog = () => {
       toast({ title: "Ошибка сортировки", variant: "destructive" });
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["blog-posts"] }),
+  });
+
+  const toggleReaction = useMutation({
+    mutationFn: async ({ postId, type }: { postId: string; type: "like" | "dislike" }) => {
+      if (!user) throw new Error("Не авторизован");
+      const existing = allReactions.find((r) => r.post_id === postId && r.user_id === user.id);
+      if (existing) {
+        if (existing.reaction_type === type) {
+          // Remove reaction
+          const { error } = await supabase.from("blog_post_reactions").delete().eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          // Change reaction
+          const { error } = await supabase.from("blog_post_reactions").update({ reaction_type: type }).eq("id", existing.id);
+          if (error) throw error;
+        }
+      } else {
+        // New reaction
+        const { error } = await supabase.from("blog_post_reactions").insert({
+          post_id: postId,
+          user_id: user.id,
+          reaction_type: type,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-reactions"] }),
   });
 
   const addComment = useMutation({
@@ -285,7 +339,6 @@ const Blog = () => {
     });
   };
 
-  // Move post up or down
   const movePost = (postId: string, direction: "up" | "down") => {
     const currentOrder = visiblePosts.map((p) => p.id);
     const index = currentOrder.indexOf(postId);
@@ -296,6 +349,42 @@ const Blog = () => {
     currentOrder.splice(newIndex, 0, postId);
     reorderPosts.mutate(currentOrder);
   };
+
+  // Image position drag handler
+  const handlePositionDrag = useCallback((imageId: string, e: React.MouseEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const rect = container.getBoundingClientRect();
+    const startY = e.clientY;
+    const img = allPostImages.find((i) => i.id === imageId);
+    const currentPos = img?.object_position || "center";
+    // Parse current Y percentage
+    let startPct = 50;
+    const match = currentPos.match(/(\d+)%\s*$/);
+    if (match) startPct = parseInt(match[1]);
+    if (currentPos === "top") startPct = 0;
+    if (currentPos === "bottom") startPct = 100;
+
+    const onMove = (ev: MouseEvent) => {
+      const dy = ev.clientY - startY;
+      const pct = Math.max(0, Math.min(100, startPct + (dy / rect.height) * 100));
+      // Update locally via style
+      const imgEl = container.querySelector("img");
+      if (imgEl) imgEl.style.objectPosition = `center ${Math.round(pct)}%`;
+    };
+
+    const onUp = (ev: MouseEvent) => {
+      const dy = ev.clientY - startY;
+      const pct = Math.max(0, Math.min(100, Math.round(startPct + (dy / rect.height) * 100)));
+      updateImagePosition.mutate({ imageId, position: `center ${pct}%` });
+      setDraggingImageId(null);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+
+    setDraggingImageId(imageId);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [allPostImages, updateImagePosition]);
 
   // Drag and drop handlers for images
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -334,6 +423,15 @@ const Blog = () => {
 
   const removeNewFile = (index: number) => {
     setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const getReactionCounts = (postId: string) => {
+    const postReactions = allReactions.filter((r) => r.post_id === postId);
+    return {
+      likes: postReactions.filter((r) => r.reaction_type === "like").length,
+      dislikes: postReactions.filter((r) => r.reaction_type === "dislike").length,
+      userReaction: user ? postReactions.find((r) => r.user_id === user.id)?.reaction_type || null : null,
+    };
   };
 
   const visiblePosts = isAdmin ? posts : posts.filter((p) => p.is_published);
@@ -405,12 +503,32 @@ const Blog = () => {
               {existingImages.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Загруженные фото</label>
+                  <p className="text-xs text-muted-foreground">Перетаскивайте фото вверх/вниз для настройки кадрирования</p>
                   <div className="grid grid-cols-3 gap-2">
                     {existingImages.map((img) => {
                       const url = getImageUrl(img.image_path);
                       return (
-                        <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border">
-                          <img src={url!} alt="" className="w-full h-24 object-cover" />
+                        <div
+                          key={img.id}
+                          className={`relative group rounded-lg overflow-hidden border ${draggingImageId === img.id ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                        >
+                          <div
+                            className="relative h-24 cursor-move select-none"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handlePositionDrag(img.id, e);
+                            }}
+                          >
+                            <img
+                              src={url!}
+                              alt=""
+                              className="w-full h-full object-cover pointer-events-none"
+                              style={{ objectPosition: img.object_position || "center" }}
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                              <Move className="w-5 h-5 text-white drop-shadow" />
+                            </div>
+                          </div>
                           <Button
                             size="icon"
                             variant="destructive"
@@ -515,7 +633,7 @@ const Blog = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Требуется регистрация</DialogTitle>
-              <DialogDescription>Для отправки комментариев необходимо зарегистрироваться на сайте.</DialogDescription>
+              <DialogDescription>Для отправки комментариев и оценок необходимо зарегистрироваться на сайте.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowLoginDialog(false)}>Отмена</Button>
@@ -536,10 +654,12 @@ const Blog = () => {
             const postImages = allPostImages.filter((i) => i.post_id === post.id);
             const legacyUrl = post.image_path ? getImageUrl(post.image_path) : null;
             const firstImage = postImages.length > 0 ? getImageUrl(postImages[0].image_path) : legacyUrl;
+            const firstImagePosition = postImages.length > 0 ? postImages[0].object_position : "center";
             const hasImages = postImages.length > 0 || legacyUrl;
             const postComments = allComments.filter((c) => c.post_id === post.id);
             const visibleComments = isAdmin ? postComments : postComments.filter((c) => c.is_approved || c.user_id === user?.id);
             const isExpanded = expandedPosts.has(post.id);
+            const { likes, dislikes, userReaction } = getReactionCounts(post.id);
 
             return (
               <Card
@@ -580,7 +700,7 @@ const Blog = () => {
                   </div>
                 )}
 
-                {/* Collapsed view: first image + title + excerpt */}
+                {/* Collapsed view */}
                 {!isExpanded && (
                   <div
                     className="cursor-pointer"
@@ -593,6 +713,7 @@ const Blog = () => {
                             src={firstImage}
                             alt={post.title}
                             className="w-full h-36 sm:h-32 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            style={{ objectPosition: firstImagePosition }}
                             onClick={(e) => { e.stopPropagation(); setLightboxUrl(firstImage); }}
                           />
                         </div>
@@ -605,15 +726,22 @@ const Blog = () => {
                         {post.excerpt && (
                           <p className="text-foreground/70 text-sm line-clamp-3">{post.excerpt}</p>
                         )}
-                        <div className="flex items-center gap-1 mt-3 text-primary text-sm font-medium">
-                          Читать далее <ChevronDown className="w-4 h-4" />
+                        <div className="flex items-center gap-4 mt-3">
+                          <span className="text-primary text-sm font-medium flex items-center gap-1">
+                            Читать далее <ChevronDown className="w-4 h-4" />
+                          </span>
+                          {/* Compact reaction counts in collapsed view */}
+                          <span className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {likes}</span>
+                            <span className="flex items-center gap-1"><ThumbsDown className="w-3.5 h-3.5" /> {dislikes}</span>
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Expanded view: full post */}
+                {/* Expanded view */}
                 {isExpanded && (
                   <>
                     <div
@@ -630,10 +758,11 @@ const Blog = () => {
                             const url = getImageUrl(img.image_path);
                             return (
                               <div key={img.id} className="relative group">
-                              <img
+                                <img
                                   src={url!}
                                   alt={post.title}
                                   className="w-full max-h-40 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  style={{ objectPosition: img.object_position || "center" }}
                                   onClick={() => setLightboxUrl(url!)}
                                 />
                                 {isAdmin && (
@@ -669,6 +798,32 @@ const Blog = () => {
                           dangerouslySetInnerHTML={{ __html: post.content }}
                         />
                       </div>
+                    </div>
+
+                    {/* Likes / Dislikes */}
+                    <div className="mt-6 flex items-center gap-3">
+                      <Button
+                        variant={userReaction === "like" ? "default" : "outline"}
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          if (!user) { setShowLoginDialog(true); return; }
+                          toggleReaction.mutate({ postId: post.id, type: "like" });
+                        }}
+                      >
+                        <ThumbsUp className="w-4 h-4" /> {likes}
+                      </Button>
+                      <Button
+                        variant={userReaction === "dislike" ? "default" : "outline"}
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          if (!user) { setShowLoginDialog(true); return; }
+                          toggleReaction.mutate({ postId: post.id, type: "dislike" });
+                        }}
+                      >
+                        <ThumbsDown className="w-4 h-4" /> {dislikes}
+                      </Button>
                     </div>
 
                     {/* Comments section */}
