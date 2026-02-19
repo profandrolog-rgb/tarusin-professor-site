@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,10 @@ interface BlogPost {
   id: string;
   title: string;
   content: string;
+  excerpt: string | null;
   image_path: string | null;
   is_published: boolean;
+  sort_order: number | null;
   created_at: string;
 }
 
@@ -42,11 +44,10 @@ interface BlogComment {
   created_at: string;
 }
 
-const IMAGE_HEIGHT_PX = 220; // approximate height per image in the column
-const LINE_HEIGHT_PX = 24; // approximate line height for text
+const IMAGE_HEIGHT_PX = 220;
+const LINE_HEIGHT_PX = 24;
 
 function estimateImageSlots(text: string): number {
-  // Rough estimate: ~80 chars per line, each image takes ~IMAGE_HEIGHT_PX
   const lines = Math.max(1, Math.ceil(text.length / 80));
   const textHeight = lines * LINE_HEIGHT_PX;
   const slots = Math.max(1, Math.floor(textHeight / IMAGE_HEIGHT_PX));
@@ -60,13 +61,15 @@ const Blog = () => {
 
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [postForm, setPostForm] = useState({ title: "", content: "" });
+  const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "" });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
+  const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["blog-posts"],
@@ -74,7 +77,7 @@ const Blog = () => {
       const { data, error } = await supabase
         .from("blog_posts")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       return data as BlogPost[];
     },
@@ -121,28 +124,26 @@ const Blog = () => {
   const savePost = async () => {
     setSavingPost(true);
     try {
-      // Keep legacy image_path for backward compat
       let imagePath = editingPost?.image_path || null;
 
       let postId: string;
       if (editingPost) {
         const { error } = await supabase
           .from("blog_posts")
-          .update({ title: postForm.title, content: postForm.content, image_path: imagePath })
+          .update({ title: postForm.title, content: postForm.content, excerpt: postForm.excerpt || null, image_path: imagePath })
           .eq("id", editingPost.id);
         if (error) throw error;
         postId = editingPost.id;
       } else {
         const { data, error } = await supabase
           .from("blog_posts")
-          .insert({ title: postForm.title, content: postForm.content, image_path: imagePath })
+          .insert({ title: postForm.title, content: postForm.content, excerpt: postForm.excerpt || null, image_path: imagePath, sort_order: posts.length })
           .select("id")
           .single();
         if (error) throw error;
         postId = data.id;
       }
 
-      // Upload new images
       if (imageFiles.length > 0) {
         const existingCount = allPostImages.filter((i) => i.post_id === postId).length;
         for (let i = 0; i < imageFiles.length; i++) {
@@ -159,7 +160,7 @@ const Blog = () => {
       queryClient.invalidateQueries({ queryKey: ["blog-post-images"] });
       setEditingPost(null);
       setIsCreating(false);
-      setPostForm({ title: "", content: "" });
+      setPostForm({ title: "", content: "", excerpt: "" });
       setImageFiles([]);
       toast({ title: editingPost ? "Запись обновлена" : "Запись создана" });
     } catch (err: any) {
@@ -194,6 +195,16 @@ const Blog = () => {
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-post-images"] }),
+  });
+
+  const reorderPosts = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const updates = orderedIds.map((id, index) =>
+        supabase.from("blog_posts").update({ sort_order: index }).eq("id", id)
+      );
+      await Promise.all(updates);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-posts"] }),
   });
 
   const addComment = useMutation({
@@ -231,20 +242,53 @@ const Blog = () => {
   });
 
   const openCreate = () => {
-    setPostForm({ title: "", content: "" });
+    setPostForm({ title: "", content: "", excerpt: "" });
     setImageFiles([]);
     setEditingPost(null);
     setIsCreating(true);
   };
 
   const openEdit = (post: BlogPost) => {
-    setPostForm({ title: post.title, content: post.content });
+    setPostForm({ title: post.title, content: post.content, excerpt: post.excerpt || "" });
     setImageFiles([]);
     setEditingPost(post);
     setIsCreating(true);
   };
 
-  // Drag and drop handlers
+  const toggleExpanded = (postId: string) => {
+    setExpandedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+  };
+
+  // Drag and drop for post reordering (admin)
+  const handlePostDragStart = (e: React.DragEvent, postId: string) => {
+    setDraggedPostId(postId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handlePostDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handlePostDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedPostId || draggedPostId === targetId) return;
+    const currentOrder = visiblePosts.map((p) => p.id);
+    const fromIndex = currentOrder.indexOf(draggedPostId);
+    const toIndex = currentOrder.indexOf(targetId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    currentOrder.splice(fromIndex, 1);
+    currentOrder.splice(toIndex, 0, draggedPostId);
+    reorderPosts.mutate(currentOrder);
+    setDraggedPostId(null);
+  };
+
+  // Drag and drop handlers for images
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -330,6 +374,12 @@ const Blog = () => {
                 placeholder="Название темы"
                 value={postForm.title}
                 onChange={(e) => setPostForm((p) => ({ ...p, title: e.target.value }))}
+              />
+              <Textarea
+                placeholder="Краткая аннотация (будет видна в свёрнутом виде)"
+                value={postForm.excerpt}
+                onChange={(e) => setPostForm((p) => ({ ...p, excerpt: e.target.value }))}
+                rows={2}
               />
               <RichTextEditor
                 content={postForm.content}
@@ -451,20 +501,30 @@ const Blog = () => {
           <p className="text-center text-muted-foreground py-16">Записей пока нет</p>
         )}
 
-        <div className="space-y-12">
+        <div className="space-y-6">
           {visiblePosts.map((post) => {
             const postImages = allPostImages.filter((i) => i.post_id === post.id);
-            // Legacy single image support
             const legacyUrl = post.image_path ? getImageUrl(post.image_path) : null;
+            const firstImage = postImages.length > 0 ? getImageUrl(postImages[0].image_path) : legacyUrl;
             const hasImages = postImages.length > 0 || legacyUrl;
             const postComments = allComments.filter((c) => c.post_id === post.id);
             const visibleComments = isAdmin ? postComments : postComments.filter((c) => c.is_approved || c.user_id === user?.id);
+            const isExpanded = expandedPosts.has(post.id);
 
             return (
-              <Card key={post.id} className="p-6 lg:p-8">
+              <Card
+                key={post.id}
+                className={`p-6 lg:p-8 transition-shadow ${isAdmin && draggedPostId === post.id ? "opacity-50" : ""}`}
+                draggable={isAdmin}
+                onDragStart={(e) => handlePostDragStart(e, post.id)}
+                onDragOver={handlePostDragOver}
+                onDrop={(e) => handlePostDrop(e, post.id)}
+                onDragEnd={() => setDraggedPostId(null)}
+              >
                 {/* Admin controls */}
                 {isAdmin && (
                   <div className="flex items-center gap-2 mb-4">
+                    <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
                     <Badge variant={post.is_published ? "default" : "secondary"}>
                       {post.is_published ? "Опубликовано" : "Черновик"}
                     </Badge>
@@ -480,112 +540,155 @@ const Blog = () => {
                   </div>
                 )}
 
-                {/* Post content */}
-                <div className={`flex flex-col ${hasImages ? "lg:flex-row" : ""} gap-6`}>
-                  {hasImages && (
-                    <div className="lg:w-1/3 flex-shrink-0 space-y-3">
-                      {postImages.map((img) => {
-                        const url = getImageUrl(img.image_path);
-                        return (
-                          <div key={img.id} className="relative group">
+                {/* Collapsed view: first image + title + excerpt */}
+                {!isExpanded && (
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => toggleExpanded(post.id)}
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {firstImage && (
+                        <div className="sm:w-48 flex-shrink-0">
+                          <img
+                            src={firstImage}
+                            alt={post.title}
+                            className="w-full h-36 sm:h-32 rounded-lg object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-2xl font-bold text-foreground mb-1">{post.title}</h2>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
+                        </p>
+                        {post.excerpt && (
+                          <p className="text-foreground/70 text-sm line-clamp-3">{post.excerpt}</p>
+                        )}
+                        <div className="flex items-center gap-1 mt-3 text-primary text-sm font-medium">
+                          Читать далее <ChevronDown className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Expanded view: full post */}
+                {isExpanded && (
+                  <>
+                    <div
+                      className="cursor-pointer flex items-center gap-1 text-primary text-sm font-medium mb-4"
+                      onClick={() => toggleExpanded(post.id)}
+                    >
+                      Свернуть <ChevronUp className="w-4 h-4" />
+                    </div>
+
+                    <div className={`flex flex-col ${hasImages ? "lg:flex-row" : ""} gap-6`}>
+                      {hasImages && (
+                        <div className="lg:w-1/3 flex-shrink-0 space-y-3">
+                          {postImages.map((img) => {
+                            const url = getImageUrl(img.image_path);
+                            return (
+                              <div key={img.id} className="relative group">
+                                <img
+                                  src={url!}
+                                  alt={post.title}
+                                  className="w-full rounded-lg object-cover"
+                                />
+                                {isAdmin && (
+                                  <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => deleteImage.mutate(img.id)}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {legacyUrl && postImages.length === 0 && (
                             <img
-                              src={url!}
+                              src={legacyUrl}
                               alt={post.title}
                               className="w-full rounded-lg object-cover"
                             />
-                            {isAdmin && (
-                              <Button
-                                size="icon"
-                                variant="destructive"
-                                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => deleteImage.mutate(img.id)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {legacyUrl && postImages.length === 0 && (
-                        <img
-                          src={legacyUrl}
-                          alt={post.title}
-                          className="w-full rounded-lg object-cover"
-                        />
-                      )}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
-                    </p>
-                    <div
-                      className="prose prose-sm max-w-none text-foreground/90"
-                      dangerouslySetInnerHTML={{ __html: post.content }}
-                    />
-                  </div>
-                </div>
-
-                {/* Comments section */}
-                <div className="mt-8 border-t border-border pt-6">
-                  <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4">
-                    <MessageSquare className="w-4 h-4" />
-                    Комментарии ({visibleComments.filter((c) => c.is_approved).length})
-                  </h3>
-
-                  {visibleComments.length > 0 && (
-                    <div className="space-y-3 mb-4">
-                      {visibleComments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          className={`p-3 rounded-lg text-sm ${comment.is_approved ? "bg-secondary" : "bg-secondary/50 border border-dashed border-border"}`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-medium text-foreground">{comment.author_email}</span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(comment.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
-                              </span>
-                              {isAdmin && !comment.is_approved && (
-                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => approveComment.mutate({ id: comment.id, approved: true })}>
-                                  <Check className="w-3 h-3 text-green-600" />
-                                </Button>
-                              )}
-                              {isAdmin && (
-                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => deleteComment.mutate(comment.id)}>
-                                  <X className="w-3 h-3 text-destructive" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          {!comment.is_approved && (
-                            <Badge variant="outline" className="text-xs mb-1">На модерации</Badge>
                           )}
-                          <p className="text-foreground/80">{comment.content}</p>
                         </div>
-                      ))}
+                      )}
+                      <div className="flex-1">
+                        <h2 className="text-2xl font-bold text-foreground mb-2">{post.title}</h2>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          {format(new Date(post.created_at), "d MMMM yyyy", { locale: ru })}
+                        </p>
+                        <div
+                          className="prose prose-sm max-w-none text-foreground/90"
+                          dangerouslySetInnerHTML={{ __html: post.content }}
+                        />
+                      </div>
                     </div>
-                  )}
 
-                  {/* Comment input */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={user ? "Написать комментарий..." : "Войдите, чтобы комментировать"}
-                      value={commentTexts[post.id] || ""}
-                      onChange={(e) => setCommentTexts((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                      onFocus={() => { if (!user) setShowLoginDialog(true); }}
-                      readOnly={!user}
-                    />
-                    <Button
-                      size="icon"
-                      disabled={!user || !commentTexts[post.id]?.trim()}
-                      onClick={() => addComment.mutate({ postId: post.id, content: commentTexts[post.id]!.trim() })}
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
+                    {/* Comments section */}
+                    <div className="mt-8 border-t border-border pt-6">
+                      <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4">
+                        <MessageSquare className="w-4 h-4" />
+                        Комментарии ({visibleComments.filter((c) => c.is_approved).length})
+                      </h3>
+
+                      {visibleComments.length > 0 && (
+                        <div className="space-y-3 mb-4">
+                          {visibleComments.map((comment) => (
+                            <div
+                              key={comment.id}
+                              className={`p-3 rounded-lg text-sm ${comment.is_approved ? "bg-secondary" : "bg-secondary/50 border border-dashed border-border"}`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-foreground">{comment.author_email}</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(comment.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
+                                  </span>
+                                  {isAdmin && !comment.is_approved && (
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => approveComment.mutate({ id: comment.id, approved: true })}>
+                                      <Check className="w-3 h-3 text-green-600" />
+                                    </Button>
+                                  )}
+                                  {isAdmin && (
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => deleteComment.mutate(comment.id)}>
+                                      <X className="w-3 h-3 text-destructive" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                              {!comment.is_approved && (
+                                <Badge variant="outline" className="text-xs mb-1">На модерации</Badge>
+                              )}
+                              <p className="text-foreground/80">{comment.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Comment input */}
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder={user ? "Написать комментарий..." : "Войдите, чтобы комментировать"}
+                          value={commentTexts[post.id] || ""}
+                          onChange={(e) => setCommentTexts((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                          onFocus={() => { if (!user) setShowLoginDialog(true); }}
+                          readOnly={!user}
+                        />
+                        <Button
+                          size="icon"
+                          disabled={!user || !commentTexts[post.id]?.trim()}
+                          onClick={() => addComment.mutate({ postId: post.id, content: commentTexts[post.id]!.trim() })}
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </Card>
             );
           })}
