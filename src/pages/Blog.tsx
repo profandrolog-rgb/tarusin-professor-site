@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from "lucide-react";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ const Blog = () => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
-  const [draggedPostId, setDraggedPostId] = useState<string | null>(null);
+  
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["blog-posts"],
@@ -199,12 +199,32 @@ const Blog = () => {
 
   const reorderPosts = useMutation({
     mutationFn: async (orderedIds: string[]) => {
-      const updates = orderedIds.map((id, index) =>
-        supabase.from("blog_posts").update({ sort_order: index }).eq("id", id)
-      );
-      await Promise.all(updates);
+      for (let i = 0; i < orderedIds.length; i++) {
+        const { error } = await supabase
+          .from("blog_posts")
+          .update({ sort_order: i })
+          .eq("id", orderedIds[i]);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-posts"] }),
+    onMutate: async (orderedIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: ["blog-posts"] });
+      const previous = queryClient.getQueryData<BlogPost[]>(["blog-posts"]);
+      if (previous) {
+        const reordered = orderedIds
+          .map((id) => previous.find((p) => p.id === id))
+          .filter(Boolean) as BlogPost[];
+        queryClient.setQueryData(["blog-posts"], reordered.map((p, i) => ({ ...p, sort_order: i })));
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["blog-posts"], context.previous);
+      }
+      toast({ title: "Ошибка сортировки", variant: "destructive" });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["blog-posts"] }),
   });
 
   const addComment = useMutation({
@@ -264,28 +284,16 @@ const Blog = () => {
     });
   };
 
-  // Drag and drop for post reordering (admin)
-  const handlePostDragStart = (e: React.DragEvent, postId: string) => {
-    setDraggedPostId(postId);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handlePostDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handlePostDrop = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (!draggedPostId || draggedPostId === targetId) return;
+  // Move post up or down
+  const movePost = (postId: string, direction: "up" | "down") => {
     const currentOrder = visiblePosts.map((p) => p.id);
-    const fromIndex = currentOrder.indexOf(draggedPostId);
-    const toIndex = currentOrder.indexOf(targetId);
-    if (fromIndex === -1 || toIndex === -1) return;
-    currentOrder.splice(fromIndex, 1);
-    currentOrder.splice(toIndex, 0, draggedPostId);
+    const index = currentOrder.indexOf(postId);
+    if (index === -1) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= currentOrder.length) return;
+    currentOrder.splice(index, 1);
+    currentOrder.splice(newIndex, 0, postId);
     reorderPosts.mutate(currentOrder);
-    setDraggedPostId(null);
   };
 
   // Drag and drop handlers for images
@@ -514,17 +522,27 @@ const Blog = () => {
             return (
               <Card
                 key={post.id}
-                className={`p-6 lg:p-8 transition-shadow ${isAdmin && draggedPostId === post.id ? "opacity-50" : ""}`}
-                draggable={isAdmin}
-                onDragStart={(e) => handlePostDragStart(e, post.id)}
-                onDragOver={handlePostDragOver}
-                onDrop={(e) => handlePostDrop(e, post.id)}
-                onDragEnd={() => setDraggedPostId(null)}
+                className="p-6 lg:p-8 transition-shadow"
               >
                 {/* Admin controls */}
                 {isAdmin && (
                   <div className="flex items-center gap-2 mb-4">
-                    <GripVertical className="w-5 h-5 text-muted-foreground cursor-grab" />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => movePost(post.id, "up")}
+                      disabled={visiblePosts.indexOf(post) === 0}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => movePost(post.id, "down")}
+                      disabled={visiblePosts.indexOf(post) === visiblePosts.length - 1}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
                     <Badge variant={post.is_published ? "default" : "secondary"}>
                       {post.is_published ? "Опубликовано" : "Черновик"}
                     </Badge>
