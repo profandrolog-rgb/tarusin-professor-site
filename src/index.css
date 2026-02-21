@@ -96,3 +96,14 @@
     scroll-behavior: smooth;
   }
 }
+
+/* Hide video download/overflow menu buttons */
+video::-webkit-media-controls-enclosure {
+  overflow: hidden;
+}
+video::-internal-media-controls-download-button {
+  display: none !important;
+}
+video::-webkit-media-controls-overflow-button {
+  display: none !important;
+}
