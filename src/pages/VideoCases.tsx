@@ -33,6 +33,7 @@ const VideoCases = () => {
   const [formTitle, setFormTitle] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formVideoUrl, setFormVideoUrl] = useState("");
+  const [formVideoType, setFormVideoType] = useState<"url" | "embed">("url");
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -102,6 +103,7 @@ const VideoCases = () => {
     setFormTitle("");
     setFormDescription("");
     setFormVideoUrl("");
+    setFormVideoType("url");
   };
 
   const handleAdd = async () => {
@@ -135,6 +137,7 @@ const VideoCases = () => {
     setFormTitle(c.title);
     setFormDescription(c.description || "");
     setFormVideoUrl(c.video_path);
+    setFormVideoType(c.video_path.trim().startsWith("<iframe") || c.video_path.trim().startsWith("<embed") ? "embed" : "url");
     setEditDialogOpen(true);
   };
 
@@ -202,11 +205,20 @@ const VideoCases = () => {
     }
   };
 
+  const isEmbedCode = (path: string) => {
+    return path.trim().startsWith("<iframe") || path.trim().startsWith("<embed");
+  };
+
   const getVideoType = (url: string) => {
     const lower = url.toLowerCase();
     if (lower.endsWith(".mov")) return "video/quicktime";
     if (lower.endsWith(".webm")) return "video/webm";
     return "video/mp4";
+  };
+
+  const extractEmbedSrc = (embed: string) => {
+    const match = embed.match(/src=["']([^"']+)["']/);
+    return match ? match[1] : "";
   };
 
   return (
@@ -249,7 +261,15 @@ const VideoCases = () => {
                   <div className="space-y-4">
                     <Input placeholder="Название" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
                     <Textarea placeholder="Описание (необязательно)" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
-                    <Input placeholder="Ссылка на видео (URL)" value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} />
+                    <div className="flex gap-2">
+                      <Button type="button" variant={formVideoType === "url" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("url")}>Ссылка (URL)</Button>
+                      <Button type="button" variant={formVideoType === "embed" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("embed")}>Embed-код</Button>
+                    </div>
+                    {formVideoType === "url" ? (
+                      <Input placeholder="Ссылка на видео (URL)" value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} />
+                    ) : (
+                      <Textarea placeholder='Вставьте embed-код (например <iframe src="..."></iframe>)' value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} rows={4} />
+                    )}
                   </div>
                   <DialogFooter>
                     <Button onClick={handleAdd} disabled={saving} className="w-full">
@@ -269,7 +289,15 @@ const VideoCases = () => {
             <div className="space-y-4">
               <Input placeholder="Название" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
               <Textarea placeholder="Описание (необязательно)" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
-              <Input placeholder="Ссылка на видео (URL)" value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} />
+              <div className="flex gap-2">
+                <Button type="button" variant={formVideoType === "url" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("url")}>Ссылка (URL)</Button>
+                <Button type="button" variant={formVideoType === "embed" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("embed")}>Embed-код</Button>
+              </div>
+              {formVideoType === "url" ? (
+                <Input placeholder="Ссылка на видео (URL)" value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} />
+              ) : (
+                <Textarea placeholder='Вставьте embed-код (например <iframe src="..."></iframe>)' value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} rows={4} />
+              )}
             </div>
             <DialogFooter>
               <Button onClick={handleEdit} disabled={saving} className="w-full">
@@ -292,23 +320,34 @@ const VideoCases = () => {
                 >
                   <X className="w-5 h-5" />
                 </Button>
-                <video
-                  key={selectedVideo.id}
-                  controls
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                  controlsList="nodownload nofullscreen noremoteplayback"
-                  disablePictureInPicture
-                  disableRemotePlayback
-                  onContextMenu={handleContextMenu}
-                  onDragStart={(e) => e.preventDefault()}
-                  className="w-full max-h-[80vh] bg-black mx-auto"
-                >
-                  <source src={selectedVideo.video_path} type={getVideoType(selectedVideo.video_path)} />
-                  <source src={selectedVideo.video_path} type="video/mp4" />
-                  Ваш браузер не поддерживает воспроизведение этого видео.
-                </video>
+                {isEmbedCode(selectedVideo.video_path) ? (
+                  <iframe
+                    key={selectedVideo.id}
+                    src={extractEmbedSrc(selectedVideo.video_path)}
+                    className="w-full aspect-[9/16] max-h-[80vh] bg-black mx-auto"
+                    allowFullScreen
+                    allow="autoplay; encrypted-media"
+                    frameBorder="0"
+                  />
+                ) : (
+                  <video
+                    key={selectedVideo.id}
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="auto"
+                    controlsList="nodownload nofullscreen noremoteplayback"
+                    disablePictureInPicture
+                    disableRemotePlayback
+                    onContextMenu={handleContextMenu}
+                    onDragStart={(e) => e.preventDefault()}
+                    className="w-full max-h-[80vh] bg-black mx-auto"
+                  >
+                    <source src={selectedVideo.video_path} type={getVideoType(selectedVideo.video_path)} />
+                    <source src={selectedVideo.video_path} type="video/mp4" />
+                    Ваш браузер не поддерживает воспроизведение этого видео.
+                  </video>
+                )}
               </CardContent>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
@@ -337,20 +376,26 @@ const VideoCases = () => {
                   className="aspect-[9/16] max-h-80 bg-muted relative cursor-pointer overflow-hidden"
                   onClick={() => setSelectedVideo(c)}
                 >
-                  <video
-                    className="w-full h-full object-cover"
-                    preload="metadata"
-                    playsInline
-                    muted
-                    controlsList="nodownload"
-                    disablePictureInPicture
-                    disableRemotePlayback
-                    onContextMenu={handleContextMenu}
-                    onDragStart={(e) => e.preventDefault()}
-                  >
-                    <source src={c.video_path} type={getVideoType(c.video_path)} />
-                    <source src={c.video_path} type="video/mp4" />
-                  </video>
+                  {isEmbedCode(c.video_path) ? (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <Video className="w-12 h-12 text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <video
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                      playsInline
+                      muted
+                      controlsList="nodownload"
+                      disablePictureInPicture
+                      disableRemotePlayback
+                      onContextMenu={handleContextMenu}
+                      onDragStart={(e) => e.preventDefault()}
+                    >
+                      <source src={c.video_path} type={getVideoType(c.video_path)} />
+                      <source src={c.video_path} type="video/mp4" />
+                    </video>
+                  )}
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
                       <Play className="w-8 h-8 text-accent-foreground" />
