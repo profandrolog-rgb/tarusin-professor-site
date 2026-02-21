@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, LogIn, Plus, Link2 } from "lucide-react";
+import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,12 +25,14 @@ interface VideoCase {
 const VideoCases = () => {
   const [cases, setCases] = useState<VideoCase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoCase | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-  const [newVideoUrl, setNewVideoUrl] = useState("");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingCase, setEditingCase] = useState<VideoCase | null>(null);
+  const [formTitle, setFormTitle] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formVideoUrl, setFormVideoUrl] = useState("");
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -95,32 +98,71 @@ const VideoCases = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormTitle("");
+    setFormDescription("");
+    setFormVideoUrl("");
+  };
+
   const handleAdd = async () => {
-    if (!newTitle.trim() || !newVideoUrl.trim()) {
+    if (!formTitle.trim() || !formVideoUrl.trim()) {
       toast({ title: "Заполните поля", description: "Название и ссылка на видео обязательны", variant: "destructive" });
       return;
     }
 
-    setUploading(true);
+    setSaving(true);
     try {
-      const { error: insertError } = await supabase.from("video_cases").insert({
-        title: newTitle.trim(),
-        description: newDescription.trim() || null,
-        video_path: newVideoUrl.trim(),
+      const { error } = await supabase.from("video_cases").insert({
+        title: formTitle.trim(),
+        description: formDescription.trim() || null,
+        video_path: formVideoUrl.trim(),
       });
-      if (insertError) throw insertError;
+      if (error) throw error;
 
       toast({ title: "Успешно", description: "Видео-кейс добавлен" });
-      setNewTitle("");
-      setNewDescription("");
-      setNewVideoUrl("");
-      setDialogOpen(false);
+      resetForm();
+      setAddDialogOpen(false);
       fetchCases();
     } catch (error: any) {
-      console.error("Error adding video case:", error);
       toast({ title: "Ошибка", description: error.message || "Не удалось добавить", variant: "destructive" });
     } finally {
-      setUploading(false);
+      setSaving(false);
+    }
+  };
+
+  const openEditDialog = (c: VideoCase) => {
+    setEditingCase(c);
+    setFormTitle(c.title);
+    setFormDescription(c.description || "");
+    setFormVideoUrl(c.video_path);
+    setEditDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingCase || !formTitle.trim() || !formVideoUrl.trim()) {
+      toast({ title: "Заполните поля", description: "Название и ссылка обязательны", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("video_cases").update({
+        title: formTitle.trim(),
+        description: formDescription.trim() || null,
+        video_path: formVideoUrl.trim(),
+      }).eq("id", editingCase.id);
+      if (error) throw error;
+
+      toast({ title: "Сохранено", description: "Видео-кейс обновлён" });
+      resetForm();
+      setEditDialogOpen(false);
+      setEditingCase(null);
+      if (selectedVideo?.id === editingCase.id) setSelectedVideo(null);
+      fetchCases();
+    } catch (error: any) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -148,26 +190,11 @@ const VideoCases = () => {
       if (!existing) return;
 
       if (existing.user_reaction === type) {
-        // Remove reaction
-        await supabase
-          .from("video_case_reactions")
-          .delete()
-          .eq("video_case_id", caseId)
-          .eq("user_id", user.id);
+        await supabase.from("video_case_reactions").delete().eq("video_case_id", caseId).eq("user_id", user.id);
       } else if (existing.user_reaction) {
-        // Change reaction
-        await supabase
-          .from("video_case_reactions")
-          .update({ reaction_type: type })
-          .eq("video_case_id", caseId)
-          .eq("user_id", user.id);
+        await supabase.from("video_case_reactions").update({ reaction_type: type }).eq("video_case_id", caseId).eq("user_id", user.id);
       } else {
-        // New reaction
-        await supabase.from("video_case_reactions").insert({
-          video_case_id: caseId,
-          user_id: user.id,
-          reaction_type: type,
-        });
+        await supabase.from("video_case_reactions").insert({ video_case_id: caseId, user_id: user.id, reaction_type: type });
       }
       fetchCases();
     } catch (error: any) {
@@ -175,9 +202,15 @@ const VideoCases = () => {
     }
   };
 
+  const getVideoType = (url: string) => {
+    const lower = url.toLowerCase();
+    if (lower.endsWith(".mov")) return "video/quicktime";
+    if (lower.endsWith(".webm")) return "video/webm";
+    return "video/mp4";
+  };
+
   return (
     <div className="min-h-screen bg-background select-none" onContextMenu={handleContextMenu} onCopy={(e) => e.preventDefault()}>
-      {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
@@ -207,57 +240,77 @@ const VideoCases = () => {
                 <Shield className="w-4 h-4 text-primary" />
                 Администратор
               </span>
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetForm(); }}>
                 <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Добавить кейс
-                  </Button>
+                  <Button><Plus className="w-4 h-4 mr-2" />Добавить кейс</Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Новый видео-кейс</DialogTitle>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle>Новый видео-кейс</DialogTitle></DialogHeader>
                   <div className="space-y-4">
-                    <Input placeholder="Название" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-                    <Textarea placeholder="Описание (необязательно)" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} />
-                    <Input placeholder="Ссылка на видео (URL)" value={newVideoUrl} onChange={(e) => setNewVideoUrl(e.target.value)} />
-                    <Button onClick={handleAdd} disabled={uploading} className="w-full">
-                      {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Сохранение...</> : <><Link2 className="w-4 h-4 mr-2" />Добавить</>}
-                    </Button>
+                    <Input placeholder="Название" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
+                    <Textarea placeholder="Описание (необязательно)" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+                    <Input placeholder="Ссылка на видео (URL)" value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} />
                   </div>
+                  <DialogFooter>
+                    <Button onClick={handleAdd} disabled={saving} className="w-full">
+                      {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Сохранение...</> : <><Link2 className="w-4 h-4 mr-2" />Добавить</>}
+                    </Button>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
           )}
         </div>
 
-        {/* Selected Video */}
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={(open) => { setEditDialogOpen(open); if (!open) { resetForm(); setEditingCase(null); } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle>Редактировать видео-кейс</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <Input placeholder="Название" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
+              <Textarea placeholder="Описание (необязательно)" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+              <Input placeholder="Ссылка на видео (URL)" value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} />
+            </div>
+            <DialogFooter>
+              <Button onClick={handleEdit} disabled={saving} className="w-full">
+                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Сохранение...</> : "Сохранить изменения"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Selected Video Player */}
         {selectedVideo && (
           <div className="mb-12" onContextMenu={handleContextMenu}>
             <Card className="overflow-hidden">
-              <CardContent className="p-0">
+              <CardContent className="p-0 relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 z-10 bg-black/50 text-white hover:bg-black/70"
+                  onClick={() => setSelectedVideo(null)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
                 <video
                   key={selectedVideo.id}
                   controls
                   autoPlay
                   playsInline
+                  preload="auto"
                   controlsList="nodownload"
                   onContextMenu={handleContextMenu}
                   className="w-full max-h-[80vh] bg-black mx-auto"
                 >
+                  <source src={selectedVideo.video_path} type={getVideoType(selectedVideo.video_path)} />
                   <source src={selectedVideo.video_path} type="video/mp4" />
-                  <source src={selectedVideo.video_path} type="video/quicktime" />
                   Ваш браузер не поддерживает воспроизведение этого видео.
                 </video>
               </CardContent>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
                 {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
-                <ReactionButtons
-                  caseItem={selectedVideo}
-                  onReaction={handleReaction}
-                />
+                <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
               </div>
             </Card>
           </div>
@@ -288,8 +341,8 @@ const VideoCases = () => {
                     muted
                     onContextMenu={handleContextMenu}
                   >
+                    <source src={c.video_path} type={getVideoType(c.video_path)} />
                     <source src={c.video_path} type="video/mp4" />
-                    <source src={c.video_path} type="video/quicktime" />
                   </video>
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
@@ -303,14 +356,42 @@ const VideoCases = () => {
                   <div className="flex items-center justify-between">
                     <ReactionButtons caseItem={c} onReaction={handleReaction} compact />
                     {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-primary"
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(c); }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Удалить видео-кейс?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                «{c.title}» будет удалён без возможности восстановления.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Отмена</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Удалить
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </div>
                 </CardContent>
