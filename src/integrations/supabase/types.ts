@@ -455,6 +455,7 @@ export type Database = {
       }
       video_cases: {
         Row: {
+          category: Database["public"]["Enums"]["case_category"]
           created_at: string
           description: string | null
           id: string
@@ -465,6 +466,7 @@ export type Database = {
           video_path: string
         }
         Insert: {
+          category?: Database["public"]["Enums"]["case_category"]
           created_at?: string
           description?: string | null
           id?: string
@@ -475,6 +477,7 @@ export type Database = {
           video_path: string
         }
         Update: {
+          category?: Database["public"]["Enums"]["case_category"]
           created_at?: string
           description?: string | null
           id?: string
