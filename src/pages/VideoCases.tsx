@@ -22,6 +22,24 @@ const CATEGORY_LABELS: Record<CaseCategory, string> = {
   varicocele: "Варикоцеле",
   phimosis: "Фимоз",
   hernia: "Грыжа",
+  spermatocele: "Сперматоцеле",
+  spermatic_cord_cyst: "Киста семенного канатика",
+  short_frenulum: "Короткая уздечка",
+  hydatids: "Гидатиды",
+  penile_curvature: "Искривление полового члена",
+  nevi: "Невусы",
+  papillomas: "Папилломы",
+  scars: "Рубцы",
+  meatostenosis: "Меатостеноз",
+  testicular_torsion: "Перекрут яичка",
+  preputial_synechiae: "Синехии крайней плоти",
+  paraphimosis: "Парафимоз",
+  buried_penis: "Скрытый половой член",
+  lymphocele: "Лимфоцеле",
+  scrotal_atheroma: "Атерома мошонки",
+  micro_tese: "Micro-TESE",
+  orchiectomy: "Орхиэктомия",
+  // legacy — hidden from UI
   enuresis: "Энурез",
   pelvic_pain: "Тазовая боль",
   scrotal_pain: "Боль в мошонке",
@@ -30,14 +48,17 @@ const CATEGORY_LABELS: Record<CaseCategory, string> = {
   sexology: "Сексология",
   psychology: "Психология",
   complications: "Осложнения",
-  rarities: "Редкое",
   other: "Разное",
+  rarities: "Редкое",
 };
 
-const CATEGORY_ORDER: CaseCategory[] = [
-  "hydrocele", "cryptorchidism", "hypospadias", "varicocele", "phimosis",
-  "hernia", "enuresis", "pelvic_pain", "scrotal_pain", "infertility",
-  "erectile_dysfunction", "sexology", "psychology", "complications", "rarities", "other",
+// Only these categories are shown in the UI selector & grouping
+const VISIBLE_CATEGORIES: CaseCategory[] = [
+  "hydrocele", "cryptorchidism", "hypospadias", "varicocele", "phimosis", "hernia",
+  "spermatocele", "spermatic_cord_cyst", "short_frenulum", "hydatids", "penile_curvature",
+  "nevi", "papillomas", "scars", "meatostenosis", "testicular_torsion",
+  "preputial_synechiae", "paraphimosis", "buried_penis", "lymphocele", "scrotal_atheroma",
+  "micro_tese", "orchiectomy", "rarities", "other",
 ];
 
 interface VideoCase {
@@ -260,7 +281,7 @@ const VideoCases = () => {
   // Group cases by category
   const groupedCases = useMemo(() => {
     const groups: { category: CaseCategory; label: string; items: VideoCase[] }[] = [];
-    for (const cat of CATEGORY_ORDER) {
+    for (const cat of VISIBLE_CATEGORIES) {
       const items = cases.filter((c) => c.category === cat);
       if (items.length > 0) {
         groups.push({ category: cat, label: CATEGORY_LABELS[cat], items });
@@ -275,7 +296,7 @@ const VideoCases = () => {
         <SelectValue placeholder="Категория" />
       </SelectTrigger>
       <SelectContent>
-        {CATEGORY_ORDER.map((cat) => (
+        {VISIBLE_CATEGORIES.map((cat) => (
           <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
         ))}
       </SelectContent>

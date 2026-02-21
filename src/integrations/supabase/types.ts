@@ -521,6 +521,23 @@ export type Database = {
         | "hernia"
         | "complications"
         | "rarities"
+        | "spermatocele"
+        | "spermatic_cord_cyst"
+        | "short_frenulum"
+        | "hydatids"
+        | "penile_curvature"
+        | "nevi"
+        | "papillomas"
+        | "scars"
+        | "meatostenosis"
+        | "testicular_torsion"
+        | "preputial_synechiae"
+        | "paraphimosis"
+        | "buried_penis"
+        | "lymphocele"
+        | "scrotal_atheroma"
+        | "micro_tese"
+        | "orchiectomy"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -667,6 +684,23 @@ export const Constants = {
         "hernia",
         "complications",
         "rarities",
+        "spermatocele",
+        "spermatic_cord_cyst",
+        "short_frenulum",
+        "hydatids",
+        "penile_curvature",
+        "nevi",
+        "papillomas",
+        "scars",
+        "meatostenosis",
+        "testicular_torsion",
+        "preputial_synechiae",
+        "paraphimosis",
+        "buried_penis",
+        "lymphocele",
+        "scrotal_atheroma",
+        "micro_tese",
+        "orchiectomy",
       ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },
