@@ -507,14 +507,14 @@ function VideoCaseCard({
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow" onContextMenu={onContextMenu}>
       <div
-        className="aspect-[9/16] max-h-80 bg-muted relative cursor-pointer overflow-hidden flex items-center justify-center"
+        className="aspect-[9/16] max-h-80 bg-black relative cursor-pointer overflow-hidden"
         onClick={() => onSelect(c)}
       >
         {isEmbedCode(c.video_path) ? (
           <Video className="w-12 h-12 text-muted-foreground" />
         ) : (
           <video
-            className="h-full object-contain"
+            className="w-full h-full object-cover"
             preload="metadata"
             playsInline
             muted
