@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,15 +7,45 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import type { Database } from "@/integrations/supabase/types";
+
+type CaseCategory = Database["public"]["Enums"]["case_category"];
+
+const CATEGORY_LABELS: Record<CaseCategory, string> = {
+  hydrocele: "Гидроцеле",
+  cryptorchidism: "Крипторхизм",
+  hypospadias: "Гипоспадия",
+  varicocele: "Варикоцеле",
+  phimosis: "Фимоз",
+  hernia: "Грыжа",
+  enuresis: "Энурез",
+  pelvic_pain: "Тазовая боль",
+  scrotal_pain: "Боль в мошонке",
+  infertility: "Бесплодие",
+  erectile_dysfunction: "Эректильная дисфункция",
+  sexology: "Сексология",
+  psychology: "Психология",
+  complications: "Осложнения",
+  rarities: "Редкое",
+  other: "Разное",
+};
+
+const CATEGORY_ORDER: CaseCategory[] = [
+  "hydrocele", "cryptorchidism", "hypospadias", "varicocele", "phimosis",
+  "hernia", "enuresis", "pelvic_pain", "scrotal_pain", "infertility",
+  "erectile_dysfunction", "sexology", "psychology", "complications", "rarities", "other",
+];
 
 interface VideoCase {
   id: string;
   title: string;
   description: string | null;
   video_path: string;
+  category: CaseCategory;
   created_at: string;
   likes: number;
   dislikes: number;
@@ -34,6 +64,7 @@ const VideoCases = () => {
   const [formDescription, setFormDescription] = useState("");
   const [formVideoUrl, setFormVideoUrl] = useState("");
   const [formVideoType, setFormVideoType] = useState<"url" | "embed">("url");
+  const [formCategory, setFormCategory] = useState<CaseCategory>("other");
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -83,6 +114,7 @@ const VideoCases = () => {
           title: c.title,
           description: c.description,
           video_path: c.video_path,
+          category: c.category as CaseCategory,
           created_at: c.created_at,
           likes,
           dislikes,
@@ -104,6 +136,7 @@ const VideoCases = () => {
     setFormDescription("");
     setFormVideoUrl("");
     setFormVideoType("url");
+    setFormCategory("other");
   };
 
   const handleAdd = async () => {
@@ -118,6 +151,7 @@ const VideoCases = () => {
         title: formTitle.trim(),
         description: formDescription.trim() || null,
         video_path: formVideoUrl.trim(),
+        category: formCategory,
       });
       if (error) throw error;
 
@@ -138,6 +172,7 @@ const VideoCases = () => {
     setFormDescription(c.description || "");
     setFormVideoUrl(c.video_path);
     setFormVideoType(c.video_path.trim().startsWith("<iframe") || c.video_path.trim().startsWith("<embed") ? "embed" : "url");
+    setFormCategory(c.category);
     setEditDialogOpen(true);
   };
 
@@ -153,6 +188,7 @@ const VideoCases = () => {
         title: formTitle.trim(),
         description: formDescription.trim() || null,
         video_path: formVideoUrl.trim(),
+        category: formCategory,
       }).eq("id", editingCase.id);
       if (error) throw error;
 
@@ -221,6 +257,31 @@ const VideoCases = () => {
     return match ? match[1] : "";
   };
 
+  // Group cases by category
+  const groupedCases = useMemo(() => {
+    const groups: { category: CaseCategory; label: string; items: VideoCase[] }[] = [];
+    for (const cat of CATEGORY_ORDER) {
+      const items = cases.filter((c) => c.category === cat);
+      if (items.length > 0) {
+        groups.push({ category: cat, label: CATEGORY_LABELS[cat], items });
+      }
+    }
+    return groups;
+  }, [cases]);
+
+  const CategorySelect = ({ value, onChange }: { value: CaseCategory; onChange: (v: CaseCategory) => void }) => (
+    <Select value={value} onValueChange={(v) => onChange(v as CaseCategory)}>
+      <SelectTrigger>
+        <SelectValue placeholder="Категория" />
+      </SelectTrigger>
+      <SelectContent>
+        {CATEGORY_ORDER.map((cat) => (
+          <SelectItem key={cat} value={cat}>{CATEGORY_LABELS[cat]}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="min-h-screen bg-background select-none" onContextMenu={handleContextMenu} onCopy={(e) => e.preventDefault()}>
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
@@ -261,6 +322,7 @@ const VideoCases = () => {
                   <div className="space-y-4">
                     <Input placeholder="Название" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
                     <Textarea placeholder="Описание (необязательно)" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+                    <CategorySelect value={formCategory} onChange={setFormCategory} />
                     <div className="flex gap-2">
                       <Button type="button" variant={formVideoType === "url" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("url")}>Ссылка (URL)</Button>
                       <Button type="button" variant={formVideoType === "embed" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("embed")}>Embed-код</Button>
@@ -289,6 +351,7 @@ const VideoCases = () => {
             <div className="space-y-4">
               <Input placeholder="Название" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} />
               <Textarea placeholder="Описание (необязательно)" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} rows={3} />
+              <CategorySelect value={formCategory} onChange={setFormCategory} />
               <div className="flex gap-2">
                 <Button type="button" variant={formVideoType === "url" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("url")}>Ссылка (URL)</Button>
                 <Button type="button" variant={formVideoType === "embed" ? "default" : "outline"} size="sm" onClick={() => setFormVideoType("embed")}>Embed-код</Button>
@@ -350,6 +413,11 @@ const VideoCases = () => {
                 )}
               </CardContent>
               <div className="p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {CATEGORY_LABELS[selectedVideo.category]}
+                  </span>
+                </div>
                 <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
                 {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
                 <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
@@ -358,7 +426,7 @@ const VideoCases = () => {
           </div>
         )}
 
-        {/* Grid */}
+        {/* Grouped sections */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -369,85 +437,30 @@ const VideoCases = () => {
             <p className="text-lg text-muted-foreground">Видео-кейсы пока не добавлены</p>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cases.map((c) => (
-              <Card key={c.id} className="group overflow-hidden hover:shadow-lg transition-shadow" onContextMenu={handleContextMenu}>
-                <div
-                  className="aspect-[9/16] max-h-80 bg-muted relative cursor-pointer overflow-hidden"
-                  onClick={() => setSelectedVideo(c)}
-                >
-                  {isEmbedCode(c.video_path) ? (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <Video className="w-12 h-12 text-muted-foreground" />
-                    </div>
-                  ) : (
-                    <video
-                      className="w-full h-full object-cover"
-                      preload="metadata"
-                      playsInline
-                      muted
-                      controlsList="nodownload"
-                      disablePictureInPicture
-                      disableRemotePlayback
+          <div className="space-y-16">
+            {groupedCases.map(({ category, label, items }) => (
+              <section key={category}>
+                <h3 className="text-xl md:text-2xl font-bold text-foreground mb-6 pb-2 border-b border-border">
+                  {label}
+                  <span className="text-sm font-normal text-muted-foreground ml-2">({items.length})</span>
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {items.map((c) => (
+                    <VideoCaseCard
+                      key={c.id}
+                      c={c}
+                      isAdmin={isAdmin}
+                      onSelect={setSelectedVideo}
+                      onEdit={openEditDialog}
+                      onDelete={handleDelete}
+                      onReaction={handleReaction}
                       onContextMenu={handleContextMenu}
-                      onDragStart={(e) => e.preventDefault()}
-                    >
-                      <source src={c.video_path} type={getVideoType(c.video_path)} />
-                      <source src={c.video_path} type="video/mp4" />
-                    </video>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
-                      <Play className="w-8 h-8 text-accent-foreground" />
-                    </div>
-                  </div>
+                      isEmbedCode={isEmbedCode}
+                      getVideoType={getVideoType}
+                    />
+                  ))}
                 </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{c.title}</h3>
-                  {c.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>}
-                  <div className="flex items-center justify-between">
-                    <ReactionButtons caseItem={c} onReaction={handleReaction} compact />
-                    {isAdmin && (
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-primary"
-                          onClick={(e) => { e.stopPropagation(); openEditDialog(c); }}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-muted-foreground hover:text-destructive"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Удалить видео-кейс?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                «{c.title}» будет удалён без возможности восстановления.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Отмена</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Удалить
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              </section>
             ))}
           </div>
         )}
@@ -455,6 +468,99 @@ const VideoCases = () => {
     </div>
   );
 };
+
+// Extracted card component
+function VideoCaseCard({
+  c, isAdmin, onSelect, onEdit, onDelete, onReaction, onContextMenu, isEmbedCode, getVideoType,
+}: {
+  c: VideoCase;
+  isAdmin: boolean;
+  onSelect: (v: VideoCase) => void;
+  onEdit: (v: VideoCase) => void;
+  onDelete: (id: string) => void;
+  onReaction: (id: string, type: "like" | "dislike") => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  isEmbedCode: (p: string) => boolean;
+  getVideoType: (u: string) => string;
+}) {
+  return (
+    <Card className="group overflow-hidden hover:shadow-lg transition-shadow" onContextMenu={onContextMenu}>
+      <div
+        className="aspect-[9/16] max-h-80 bg-muted relative cursor-pointer overflow-hidden flex items-center justify-center"
+        onClick={() => onSelect(c)}
+      >
+        {isEmbedCode(c.video_path) ? (
+          <Video className="w-12 h-12 text-muted-foreground" />
+        ) : (
+          <video
+            className="h-full object-contain"
+            preload="metadata"
+            playsInline
+            muted
+            controlsList="nodownload"
+            disablePictureInPicture
+            disableRemotePlayback
+            onContextMenu={onContextMenu}
+            onDragStart={(e) => e.preventDefault()}
+          >
+            <source src={c.video_path} type={getVideoType(c.video_path)} />
+            <source src={c.video_path} type="video/mp4" />
+          </video>
+        )}
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
+            <Play className="w-8 h-8 text-accent-foreground" />
+          </div>
+        </div>
+      </div>
+      <CardContent className="p-4">
+        <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{c.title}</h3>
+        {c.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>}
+        <div className="flex items-center justify-between">
+          <ReactionButtons caseItem={c} onReaction={onReaction} compact />
+          {isAdmin && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-primary"
+                onClick={(e) => { e.stopPropagation(); onEdit(c); }}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Удалить видео-кейс?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      «{c.title}» будет удалён без возможности восстановления.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Удалить
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function ReactionButtons({ caseItem, onReaction, compact }: { caseItem: VideoCase; onReaction: (id: string, type: "like" | "dislike") => void; compact?: boolean }) {
   const size = compact ? "sm" : "default";
