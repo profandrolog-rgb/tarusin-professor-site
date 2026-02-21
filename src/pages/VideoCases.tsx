@@ -48,7 +48,7 @@ const VideoCases = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'u' || e.key === 'U')) {
         e.preventDefault();
         toast({ title: "Копирование запрещено", description: "Копирование категорически запрещено!", variant: "destructive" });
       }
@@ -298,8 +298,11 @@ const VideoCases = () => {
                   autoPlay
                   playsInline
                   preload="auto"
-                  controlsList="nodownload"
+                  controlsList="nodownload nofullscreen noremoteplayback"
+                  disablePictureInPicture
+                  disableRemotePlayback
                   onContextMenu={handleContextMenu}
+                  onDragStart={(e) => e.preventDefault()}
                   className="w-full max-h-[80vh] bg-black mx-auto"
                 >
                   <source src={selectedVideo.video_path} type={getVideoType(selectedVideo.video_path)} />
@@ -339,7 +342,11 @@ const VideoCases = () => {
                     preload="metadata"
                     playsInline
                     muted
+                    controlsList="nodownload"
+                    disablePictureInPicture
+                    disableRemotePlayback
                     onContextMenu={handleContextMenu}
+                    onDragStart={(e) => e.preventDefault()}
                   >
                     <source src={c.video_path} type={getVideoType(c.video_path)} />
                     <source src={c.video_path} type="video/mp4" />
