@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Upload, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, LogIn, Plus } from "lucide-react";
+import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, LogIn, Plus, Link2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +29,7 @@ const VideoCases = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newFile, setNewFile] = useState<File | null>(null);
+  const [newVideoUrl, setNewVideoUrl] = useState("");
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -74,13 +74,11 @@ const VideoCases = () => {
         const dislikes = caseReactions.filter((r) => r.reaction_type === "dislike").length;
         const userReaction = user ? caseReactions.find((r) => r.user_id === user.id)?.reaction_type || null : null;
 
-        const { data: urlData } = supabase.storage.from("video-cases").getPublicUrl(c.video_path);
-
         return {
           id: c.id,
           title: c.title,
           description: c.description,
-          video_path: urlData.publicUrl,
+          video_path: c.video_path,
           created_at: c.created_at,
           likes,
           dislikes,
@@ -97,56 +95,37 @@ const VideoCases = () => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!newTitle.trim() || !newFile) {
-      toast({ title: "Заполните поля", description: "Название и видео обязательны", variant: "destructive" });
-      return;
-    }
-
-    if (!newFile.type.startsWith("video/")) {
-      toast({ title: "Неверный формат", description: "Загрузите видеофайл", variant: "destructive" });
-      return;
-    }
-
-    if (newFile.size > 100 * 1024 * 1024) {
-      toast({ title: "Файл слишком большой", description: "Максимум 100 МБ", variant: "destructive" });
+  const handleAdd = async () => {
+    if (!newTitle.trim() || !newVideoUrl.trim()) {
+      toast({ title: "Заполните поля", description: "Название и ссылка на видео обязательны", variant: "destructive" });
       return;
     }
 
     setUploading(true);
     try {
-      const fileName = `${Date.now()}-${newFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-      const { error: uploadError } = await supabase.storage.from("video-cases").upload(fileName, newFile);
-      if (uploadError) throw uploadError;
-
       const { error: insertError } = await supabase.from("video_cases").insert({
         title: newTitle.trim(),
         description: newDescription.trim() || null,
-        video_path: fileName,
+        video_path: newVideoUrl.trim(),
       });
       if (insertError) throw insertError;
 
       toast({ title: "Успешно", description: "Видео-кейс добавлен" });
       setNewTitle("");
       setNewDescription("");
-      setNewFile(null);
+      setNewVideoUrl("");
       setDialogOpen(false);
       fetchCases();
     } catch (error: any) {
-      console.error("Upload error:", error);
-      toast({ title: "Ошибка", description: error.message || "Не удалось загрузить", variant: "destructive" });
+      console.error("Error adding video case:", error);
+      toast({ title: "Ошибка", description: error.message || "Не удалось добавить", variant: "destructive" });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (id: string, videoPath: string) => {
+  const handleDelete = async (id: string) => {
     try {
-      // Extract filename from public URL
-      const parts = videoPath.split("/");
-      const fileName = parts[parts.length - 1];
-
-      await supabase.storage.from("video-cases").remove([fileName]);
       const { error } = await supabase.from("video_cases").delete().eq("id", id);
       if (error) throw error;
 
@@ -242,9 +221,9 @@ const VideoCases = () => {
                   <div className="space-y-4">
                     <Input placeholder="Название" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
                     <Textarea placeholder="Описание (необязательно)" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} />
-                    <Input type="file" accept="video/*" onChange={(e) => setNewFile(e.target.files?.[0] || null)} />
-                    <Button onClick={handleUpload} disabled={uploading} className="w-full">
-                      {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Загрузка...</> : <><Upload className="w-4 h-4 mr-2" />Загрузить</>}
+                    <Input placeholder="Ссылка на видео (URL)" value={newVideoUrl} onChange={(e) => setNewVideoUrl(e.target.value)} />
+                    <Button onClick={handleAdd} disabled={uploading} className="w-full">
+                      {uploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Сохранение...</> : <><Link2 className="w-4 h-4 mr-2" />Добавить</>}
                     </Button>
                   </div>
                 </DialogContent>
@@ -319,7 +298,7 @@ const VideoCases = () => {
                         variant="ghost"
                         size="icon"
                         className="text-muted-foreground hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(c.id, c.video_path); }}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
