@@ -507,14 +507,16 @@ function VideoCaseCard({
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow" onContextMenu={onContextMenu}>
       <div
-        className="aspect-[9/16] max-h-80 bg-black relative cursor-pointer overflow-hidden"
+        className="aspect-[3/4] bg-black relative cursor-pointer overflow-hidden"
         onClick={() => onSelect(c)}
       >
         {isEmbedCode(c.video_path) ? (
-          <Video className="w-12 h-12 text-muted-foreground" />
+          <div className="w-full h-full flex items-center justify-center">
+            <Video className="w-12 h-12 text-muted-foreground" />
+          </div>
         ) : (
           <video
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             preload="metadata"
             playsInline
             muted
@@ -524,13 +526,13 @@ function VideoCaseCard({
             onContextMenu={onContextMenu}
             onDragStart={(e) => e.preventDefault()}
           >
-            <source src={c.video_path} type={getVideoType(c.video_path)} />
-            <source src={c.video_path} type="video/mp4" />
+            <source src={c.video_path + "#t=0.1"} type={getVideoType(c.video_path)} />
+            <source src={c.video_path + "#t=0.1"} type="video/mp4" />
           </video>
         )}
-        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
-            <Play className="w-8 h-8 text-accent-foreground" />
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/50 transition-colors">
+          <div className="w-16 h-16 rounded-full bg-accent/90 flex items-center justify-center shadow-lg">
+            <Play className="w-8 h-8 text-accent-foreground ml-1" />
           </div>
         </div>
       </div>
