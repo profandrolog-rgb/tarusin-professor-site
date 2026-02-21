@@ -461,6 +461,7 @@ export type Database = {
           id: string
           is_published: boolean
           sort_order: number | null
+          thumbnail_path: string | null
           title: string
           updated_at: string
           video_path: string
@@ -472,6 +473,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           sort_order?: number | null
+          thumbnail_path?: string | null
           title: string
           updated_at?: string
           video_path: string
@@ -483,6 +485,7 @@ export type Database = {
           id?: string
           is_published?: boolean
           sort_order?: number | null
+          thumbnail_path?: string | null
           title?: string
           updated_at?: string
           video_path?: string

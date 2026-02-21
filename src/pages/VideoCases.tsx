@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,6 +66,7 @@ interface VideoCase {
   title: string;
   description: string | null;
   video_path: string;
+  thumbnail_path: string | null;
   category: CaseCategory;
   created_at: string;
   likes: number;
@@ -86,6 +87,9 @@ const VideoCases = () => {
   const [formVideoUrl, setFormVideoUrl] = useState("");
   const [formVideoType, setFormVideoType] = useState<"url" | "embed">("url");
   const [formCategory, setFormCategory] = useState<CaseCategory>("other");
+  const [formThumbnail, setFormThumbnail] = useState<File | null>(null);
+  const [formThumbnailPreview, setFormThumbnailPreview] = useState<string | null>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -135,6 +139,7 @@ const VideoCases = () => {
           title: c.title,
           description: c.description,
           video_path: c.video_path,
+          thumbnail_path: c.thumbnail_path || null,
           category: c.category as CaseCategory,
           created_at: c.created_at,
           likes,
@@ -158,6 +163,25 @@ const VideoCases = () => {
     setFormVideoUrl("");
     setFormVideoType("url");
     setFormCategory("other");
+    setFormThumbnail(null);
+    setFormThumbnailPreview(null);
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormThumbnail(file);
+      setFormThumbnailPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadThumbnail = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("video-cases").upload(fileName, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("video-cases").getPublicUrl(fileName);
+    return urlData.publicUrl;
   };
 
   const handleAdd = async () => {
@@ -168,11 +192,16 @@ const VideoCases = () => {
 
     setSaving(true);
     try {
+      let thumbnailUrl: string | null = null;
+      if (formThumbnail) {
+        thumbnailUrl = await uploadThumbnail(formThumbnail);
+      }
       const { error } = await supabase.from("video_cases").insert({
         title: formTitle.trim(),
         description: formDescription.trim() || null,
         video_path: formVideoUrl.trim(),
         category: formCategory,
+        thumbnail_path: thumbnailUrl,
       });
       if (error) throw error;
 
@@ -194,6 +223,8 @@ const VideoCases = () => {
     setFormVideoUrl(c.video_path);
     setFormVideoType(c.video_path.trim().startsWith("<iframe") || c.video_path.trim().startsWith("<embed") ? "embed" : "url");
     setFormCategory(c.category);
+    setFormThumbnail(null);
+    setFormThumbnailPreview(c.thumbnail_path || null);
     setEditDialogOpen(true);
   };
 
@@ -205,12 +236,20 @@ const VideoCases = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from("video_cases").update({
+      let thumbnailUrl: string | null | undefined = undefined;
+      if (formThumbnail) {
+        thumbnailUrl = await uploadThumbnail(formThumbnail);
+      }
+      const updateData: any = {
         title: formTitle.trim(),
         description: formDescription.trim() || null,
         video_path: formVideoUrl.trim(),
         category: formCategory,
-      }).eq("id", editingCase.id);
+      };
+      if (thumbnailUrl !== undefined) {
+        updateData.thumbnail_path = thumbnailUrl;
+      }
+      const { error } = await supabase.from("video_cases").update(updateData).eq("id", editingCase.id);
       if (error) throw error;
 
       toast({ title: "Сохранено", description: "Видео-кейс обновлён" });
@@ -353,6 +392,22 @@ const VideoCases = () => {
                     ) : (
                       <Textarea placeholder='Вставьте embed-код (например <iframe src="..."></iframe>)' value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} rows={4} />
                     )}
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Обложка (превью)</label>
+                      <input type="file" accept="image/*" ref={thumbnailInputRef} className="hidden" onChange={handleThumbnailChange} />
+                      {formThumbnailPreview ? (
+                        <div className="relative w-32 h-24 rounded overflow-hidden border">
+                          <img src={formThumbnailPreview} alt="Превью" className="w-full h-full object-cover" />
+                          <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 bg-black/50 text-white h-6 w-6" onClick={() => { setFormThumbnail(null); setFormThumbnailPreview(null); }}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button type="button" variant="outline" size="sm" onClick={() => thumbnailInputRef.current?.click()}>
+                          <ImagePlus className="w-4 h-4 mr-2" />Загрузить обложку
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button onClick={handleAdd} disabled={saving} className="w-full">
@@ -382,6 +437,22 @@ const VideoCases = () => {
               ) : (
                 <Textarea placeholder='Вставьте embed-код (например <iframe src="..."></iframe>)' value={formVideoUrl} onChange={(e) => setFormVideoUrl(e.target.value)} rows={4} />
               )}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">Обложка (превью)</label>
+                <input type="file" accept="image/*" className="hidden" id="edit-thumbnail" onChange={handleThumbnailChange} />
+                {formThumbnailPreview ? (
+                  <div className="relative w-32 h-24 rounded overflow-hidden border">
+                    <img src={formThumbnailPreview} alt="Превью" className="w-full h-full object-cover" />
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 bg-black/50 text-white h-6 w-6" onClick={() => { setFormThumbnail(null); setFormThumbnailPreview(null); }}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("edit-thumbnail")?.click()}>
+                    <ImagePlus className="w-4 h-4 mr-2" />Загрузить обложку
+                  </Button>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button onClick={handleEdit} disabled={saving} className="w-full">
@@ -510,7 +581,15 @@ function VideoCaseCard({
         className="aspect-[3/4] bg-black relative cursor-pointer overflow-hidden"
         onClick={() => onSelect(c)}
       >
-        {isEmbedCode(c.video_path) ? (
+        {c.thumbnail_path ? (
+          <img
+            src={c.thumbnail_path}
+            alt={c.title}
+            className="absolute inset-0 w-full h-full object-cover"
+            onContextMenu={onContextMenu}
+            onDragStart={(e) => e.preventDefault()}
+          />
+        ) : isEmbedCode(c.video_path) ? (
           <div className="w-full h-full flex items-center justify-center">
             <Video className="w-12 h-12 text-muted-foreground" />
           </div>
