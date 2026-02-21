@@ -38,6 +38,9 @@ const moreNavItems = [{
   label: "Видео",
   href: "/videos"
 }, {
+  label: "Видео-кейсы",
+  href: "/video-cases"
+}, {
   label: "Публикации",
   href: "/publications"
 }, {

@@ -421,6 +421,71 @@ export type Database = {
         }
         Relationships: []
       }
+      video_case_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          reaction_type: string
+          user_id: string
+          video_case_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reaction_type: string
+          user_id: string
+          video_case_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          user_id?: string
+          video_case_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_case_reactions_video_case_id_fkey"
+            columns: ["video_case_id"]
+            isOneToOne: false
+            referencedRelation: "video_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_cases: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          sort_order: number | null
+          title: string
+          updated_at: string
+          video_path: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          video_path: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+          video_path?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

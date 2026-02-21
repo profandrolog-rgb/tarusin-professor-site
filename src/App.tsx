@@ -12,6 +12,7 @@ import Media from "./pages/Media";
 import Reviews from "./pages/Reviews";
 import Contacts from "./pages/Contacts";
 import Videos from "./pages/Videos";
+import VideoCasesPage from "./pages/VideoCases";
 import Publications from "./pages/Publications";
 import Methodologies from "./pages/Methodologies";
 import TravelNotes from "./pages/TravelNotes";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/travel-notes" element={<TravelNotes />} />
               <Route path="/clinical-cases" element={<ClinicalCases />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/video-cases" element={<VideoCasesPage />} />
               <Route path="/team" element={<Team />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
