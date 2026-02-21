@@ -238,13 +238,18 @@ const VideoCases = () => {
             <Card className="overflow-hidden">
               <CardContent className="p-0">
                 <video
-                  src={selectedVideo.video_path}
+                  key={selectedVideo.id}
                   controls
                   autoPlay
+                  playsInline
                   controlsList="nodownload"
                   onContextMenu={handleContextMenu}
                   className="w-full max-h-[80vh] bg-black mx-auto"
-                />
+                >
+                  <source src={selectedVideo.video_path} type="video/mp4" />
+                  <source src={selectedVideo.video_path} type="video/quicktime" />
+                  Ваш браузер не поддерживает воспроизведение этого видео.
+                </video>
               </CardContent>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
@@ -277,11 +282,15 @@ const VideoCases = () => {
                   onClick={() => setSelectedVideo(c)}
                 >
                   <video
-                    src={c.video_path}
                     className="w-full h-full object-cover"
                     preload="metadata"
+                    playsInline
+                    muted
                     onContextMenu={handleContextMenu}
-                  />
+                  >
+                    <source src={c.video_path} type="video/mp4" />
+                    <source src={c.video_path} type="video/quicktime" />
+                  </video>
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center">
                       <Play className="w-8 h-8 text-accent-foreground" />
