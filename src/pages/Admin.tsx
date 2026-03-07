@@ -8,7 +8,8 @@ import {
   ClipboardList, 
   ArrowLeft,
   Loader2,
-  Award
+  Award,
+  Pill
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,13 @@ const adminSections = [
     icon: FileText,
     href: "/blog",
     color: "text-teal-500",
+  },
+  {
+    title: "Выписка рецептов",
+    description: "Форма 107/у — рецепт на лекарственные препараты",
+    icon: Pill,
+    href: "/admin/prescriptions",
+    color: "text-red-500",
   },
 ];
 
