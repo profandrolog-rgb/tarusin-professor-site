@@ -202,6 +202,23 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
           {printPrescription && <PrescriptionPrint prescription={printPrescription} />}
         </div>
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить рецепт?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие необратимо. Рецепт и все связанные данные будут удалены из базы.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Удалить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
