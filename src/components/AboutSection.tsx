@@ -262,7 +262,7 @@ const AboutSection = () => {
             </Card> : <div className="relative">
               <Carousel opts={{
             align: "start",
-            loop: true,
+            loop: certificates.length <= 24,
             slidesToScroll: 1
           }} setApi={setCertApi} className="w-full">
                 <CarouselContent className="-ml-2 md:-ml-4">
@@ -270,7 +270,7 @@ const AboutSection = () => {
                       <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
                         <CardContent className="p-0">
                           <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                            <img src={getImageUrl(cert.image_path)} alt={cert.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                            <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
                           </div>
                           <div className="p-3 text-center">
                             <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
