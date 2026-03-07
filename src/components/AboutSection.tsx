@@ -76,6 +76,8 @@ const achievements = [{
   value: "9+",
   label: "Подготовленных кандидатов наук"
 }];
+const MAX_PUBLIC_CERTIFICATES = 60;
+
 const AboutSection = () => {
   const [certApi, setCertApi] = React.useState<CarouselApi>();
   const [certPageCount, setCertPageCount] = React.useState(0);
@@ -83,17 +85,18 @@ const AboutSection = () => {
   const {
     data: certificates = []
   } = useQuery({
-    queryKey: ["certificates-public"],
+    queryKey: ["certificates-public", MAX_PUBLIC_CERTIFICATES],
     queryFn: async () => {
       const {
         data,
         error
-      } = await supabase.from("certificates").select("*").eq("is_published", true).order("sort_order", {
+      } = await supabase.from("certificates").select("id,title,image_path,sort_order,is_published").eq("is_published", true).order("sort_order", {
         ascending: true
-      });
+      }).limit(MAX_PUBLIC_CERTIFICATES);
       if (error) throw error;
       return data as Certificate[];
-    }
+    },
+    staleTime: 1000 * 60 * 5
   });
   const getImageUrl = (imagePath: string) => {
     const {
@@ -259,7 +262,7 @@ const AboutSection = () => {
             </Card> : <div className="relative">
               <Carousel opts={{
             align: "start",
-            loop: true,
+            loop: certificates.length <= 24,
             slidesToScroll: 1
           }} setApi={setCertApi} className="w-full">
                 <CarouselContent className="-ml-2 md:-ml-4">
@@ -267,7 +270,7 @@ const AboutSection = () => {
                       <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
                         <CardContent className="p-0">
                           <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                            <img src={getImageUrl(cert.image_path)} alt={cert.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                            <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
                           </div>
                           <div className="p-3 text-center">
                             <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
