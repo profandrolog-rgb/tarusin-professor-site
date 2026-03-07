@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { PatientSelect } from "./PatientSelect";
 import { MedicationSearch } from "./MedicationSearch";
 import { PrescriptionPrint } from "./PrescriptionPrint";
+import { PrescriptionPreview } from "./PrescriptionPreview";
 
 interface PrescriptionItem {
   medication_latin_name: string;
