@@ -76,6 +76,8 @@ const achievements = [{
   value: "9+",
   label: "Подготовленных кандидатов наук"
 }];
+const MAX_PUBLIC_CERTIFICATES = 60;
+
 const AboutSection = () => {
   const [certApi, setCertApi] = React.useState<CarouselApi>();
   const [certPageCount, setCertPageCount] = React.useState(0);
@@ -83,17 +85,18 @@ const AboutSection = () => {
   const {
     data: certificates = []
   } = useQuery({
-    queryKey: ["certificates-public"],
+    queryKey: ["certificates-public", MAX_PUBLIC_CERTIFICATES],
     queryFn: async () => {
       const {
         data,
         error
-      } = await supabase.from("certificates").select("*").eq("is_published", true).order("sort_order", {
+      } = await supabase.from("certificates").select("id,title,image_path,sort_order,is_published").eq("is_published", true).order("sort_order", {
         ascending: true
-      });
+      }).limit(MAX_PUBLIC_CERTIFICATES);
       if (error) throw error;
       return data as Certificate[];
-    }
+    },
+    staleTime: 1000 * 60 * 5
   });
   const getImageUrl = (imagePath: string) => {
     const {
