@@ -57,6 +57,13 @@ const adminSections = [
     href: "/blog",
     color: "text-teal-500",
   },
+  {
+    title: "Выписка рецептов",
+    description: "Форма 107/у — рецепт на лекарственные препараты",
+    icon: Pill,
+    href: "/admin/prescriptions",
+    color: "text-red-500",
+  },
 ];
 
 const Admin = () => {
