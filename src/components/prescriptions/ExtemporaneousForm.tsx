@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { PatientSelect } from "./PatientSelect";
 import { PrescriptionPrint } from "./PrescriptionPrint";
+import { PrescriptionPreview } from "./PrescriptionPreview";
 import { Textarea } from "@/components/ui/textarea";
 
 interface Ingredient {
