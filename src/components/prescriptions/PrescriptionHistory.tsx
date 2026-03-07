@@ -186,6 +186,9 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
                   <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить рецепт">
                     <Copy className="h-4 w-4" />
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => setDeleteId(p.id)} title="Удалить рецепт" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
