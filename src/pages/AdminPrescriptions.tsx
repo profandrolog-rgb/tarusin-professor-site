@@ -8,6 +8,7 @@ import { PrescriptionForm } from "@/components/prescriptions/PrescriptionForm";
 import { ExtemporaneousForm } from "@/components/prescriptions/ExtemporaneousForm";
 import { PrescriptionHistory } from "@/components/prescriptions/PrescriptionHistory";
 import { DrugReference } from "@/components/prescriptions/DrugReference";
+import { DosageCalculator } from "@/components/prescriptions/DosageCalculator";
 
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
