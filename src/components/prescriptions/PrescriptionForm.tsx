@@ -279,9 +279,27 @@ export function PrescriptionForm({ repeatPrescriptionId, onSaved }: Prescription
             ))}
           </div>
 
-          <Button onClick={handleSave} disabled={saving || !patient || items.length === 0} className="w-full">
-            {saving ? "Сохранение..." : "Сохранить рецепт"}
-          </Button>
+          <div className="flex gap-3">
+            {patient && items.length > 0 && (
+              <PrescriptionPreview
+                prescription={{
+                  prescription_date: format(prescriptionDate, "yyyy-MM-dd"),
+                  doctor_name: "Профессор, д.м.н. Тарусин Дмитрий Игоревич",
+                  prescription_type: "standard",
+                  patient,
+                  items,
+                }}
+                trigger={
+                  <Button variant="outline" type="button">
+                    <Eye className="h-4 w-4 mr-2" /> Предпросмотр
+                  </Button>
+                }
+              />
+            )}
+            <Button onClick={handleSave} disabled={saving || !patient || items.length === 0} className="flex-1">
+              {saving ? "Сохранение..." : "Сохранить рецепт"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
