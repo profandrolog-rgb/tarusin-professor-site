@@ -102,6 +102,7 @@ function getMisceFormLabel(formType?: string): string {
   return formType ? (FORM_LABELS[formType] || formType) : "unguentum";
 }
 
+export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
   const date = new Date(prescription.prescription_date);
   const birthDate = new Date(prescription.patient.birth_date);
 
