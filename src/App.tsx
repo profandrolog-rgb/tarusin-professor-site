@@ -23,6 +23,7 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import AdminRequests from "./pages/AdminRequests";
 import AdminCertificates from "./pages/AdminCertificates";
+import AdminPrescriptions from "./pages/AdminPrescriptions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
