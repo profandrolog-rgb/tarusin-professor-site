@@ -22,6 +22,12 @@ import {
 import { toast } from "sonner";
 import { MedicationSearch } from "./MedicationSearch";
 
+interface PracticalDose {
+  form: string;
+  single_dose_practical: string;
+  calculation_detail: string;
+}
+
 interface DosageResult {
   is_contraindicated: boolean;
   contraindication_warning?: string;
@@ -35,6 +41,7 @@ interface DosageResult {
   calculation_method?: string;
   formula_used?: string;
   available_forms?: string;
+  practical_dosing?: PracticalDose[];
   notes?: string;
   bsa_calculated?: number;
 }
