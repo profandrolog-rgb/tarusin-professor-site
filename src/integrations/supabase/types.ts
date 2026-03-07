@@ -333,6 +333,42 @@ export type Database = {
           },
         ]
       }
+      extemporaneous_substances: {
+        Row: {
+          category: string
+          compatible_forms: Database["public"]["Enums"]["extemporaneous_form_type"][]
+          created_at: string
+          default_unit: string
+          description: string | null
+          id: string
+          is_base: boolean
+          latin_name: string
+          russian_name: string
+        }
+        Insert: {
+          category?: string
+          compatible_forms?: Database["public"]["Enums"]["extemporaneous_form_type"][]
+          created_at?: string
+          default_unit?: string
+          description?: string | null
+          id?: string
+          is_base?: boolean
+          latin_name: string
+          russian_name: string
+        }
+        Update: {
+          category?: string
+          compatible_forms?: Database["public"]["Enums"]["extemporaneous_form_type"][]
+          created_at?: string
+          default_unit?: string
+          description?: string | null
+          id?: string
+          is_base?: boolean
+          latin_name?: string
+          russian_name?: string
+        }
+        Relationships: []
+      }
       medications: {
         Row: {
           created_at: string
@@ -435,28 +471,34 @@ export type Database = {
         Row: {
           created_at: string
           doctor_name: string
+          extemporaneous_form_type: string | null
           id: string
           patient_id: string
           prescription_date: string
           prescription_type: string
+          signa: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           doctor_name?: string
+          extemporaneous_form_type?: string | null
           id?: string
           patient_id: string
           prescription_date?: string
           prescription_type?: string
+          signa?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           doctor_name?: string
+          extemporaneous_form_type?: string | null
           id?: string
           patient_id?: string
           prescription_date?: string
           prescription_type?: string
+          signa?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -715,6 +757,17 @@ export type Database = {
         | "scrotal_atheroma"
         | "micro_tese"
         | "orchiectomy"
+      extemporaneous_form_type:
+        | "unguentum"
+        | "suspensio"
+        | "suppositoria"
+        | "mixtura"
+        | "tinctura"
+        | "linimentum"
+        | "pasta"
+        | "cremor"
+        | "gel"
+        | "solutio"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -878,6 +931,18 @@ export const Constants = {
         "scrotal_atheroma",
         "micro_tese",
         "orchiectomy",
+      ],
+      extemporaneous_form_type: [
+        "unguentum",
+        "suspensio",
+        "suppositoria",
+        "mixtura",
+        "tinctura",
+        "linimentum",
+        "pasta",
+        "cremor",
+        "gel",
+        "solutio",
       ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },
