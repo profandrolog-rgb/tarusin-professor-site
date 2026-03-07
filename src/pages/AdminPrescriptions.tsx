@@ -63,6 +63,7 @@ const AdminPrescriptions = () => {
               Форма 107/у — рецепт на лекарственные препараты
             </p>
           </div>
+          <DrugReference />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
