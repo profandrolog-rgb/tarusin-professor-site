@@ -4,9 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Printer, Copy, Search, Loader2 } from "lucide-react";
+import { Printer, Copy, Search, Loader2, Trash2 } from "lucide-react";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PrescriptionHistoryProps {
   onRepeat: (prescriptionId: string) => void;
@@ -17,6 +27,8 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [printPrescription, setPrintPrescription] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const fetchPrescriptions = async () => {
@@ -89,6 +101,23 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
     }, 100);
   };
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    // Delete related items first, then the prescription
+    await supabase.from("prescription_items").delete().eq("prescription_id", deleteId);
+    await supabase.from("extemporaneous_ingredients").delete().eq("prescription_id", deleteId);
+    const { error } = await supabase.from("prescriptions").delete().eq("id", deleteId);
+    if (error) {
+      toast.error("Ошибка при удалении рецепта");
+    } else {
+      toast.success("Рецепт удалён");
+      fetchPrescriptions();
+    }
+    setDeleteId(null);
+    setDeleting(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -157,6 +186,9 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
                   <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить рецепт">
                     <Copy className="h-4 w-4" />
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => setDeleteId(p.id)} title="Удалить рецепт" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -170,6 +202,23 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
           {printPrescription && <PrescriptionPrint prescription={printPrescription} />}
         </div>
       </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить рецепт?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие необратимо. Рецепт и все связанные данные будут удалены из базы.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Удалить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
