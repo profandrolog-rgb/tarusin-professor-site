@@ -7,6 +7,8 @@ interface PrescriptionPrintProps {
     doctor_name: string;
     prescription_type: string;
     patient: { full_name: string; birth_date: string };
+    signa?: string;
+    extemporaneous_form_type?: string;
     items?: Array<{
       medication_latin_name: string;
       dosage_form?: string;
@@ -89,6 +91,16 @@ const s = {
     textAlign: "center" as const,
   },
 };
+
+const FORM_LABELS: Record<string, string> = {
+  unguentum: "unguentum", pasta: "pastam", cremor: "cremorem", gel: "gel",
+  linimentum: "linimentum", suspensio: "suspensionem", suppositoria: "suppositoria",
+  mixtura: "mixturam", tinctura: "tincturam", solutio: "solutionem",
+};
+
+function getMisceFormLabel(formType?: string): string {
+  return formType ? (FORM_LABELS[formType] || formType) : "unguentum";
+}
 
 export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
   const date = new Date(prescription.prescription_date);
@@ -224,11 +236,14 @@ export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
               {ing.ingredient_name} {ing.amount} {ing.unit}
             </div>
           ))}
-          <div style={{ paddingLeft: "8mm", marginTop: "1mm" }}>
-            M.f. — Misce, fiat
+          <div style={{ paddingLeft: "8mm", marginTop: "1mm", fontStyle: "italic" }}>
+            M.f. {getMisceFormLabel(prescription.extemporaneous_form_type)}
           </div>
-          <div style={{ paddingLeft: "8mm" }}>
-            D.S. По назначению врача
+          <div style={{ paddingLeft: "8mm", fontSize: "7pt", color: "#555" }}>
+            Misce ut fiat — Смешай, чтобы получилось
+          </div>
+          <div style={{ paddingLeft: "8mm", marginTop: "1mm" }}>
+            D.S. {prescription.signa || "По назначению врача"}
           </div>
           <div style={{ textAlign: "right", fontSize: "8pt", marginTop: "0.5mm" }}>
             _______ руб. _______ коп.
