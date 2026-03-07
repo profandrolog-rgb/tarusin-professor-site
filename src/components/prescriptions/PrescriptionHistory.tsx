@@ -27,6 +27,8 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [printPrescription, setPrintPrescription] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const fetchPrescriptions = async () => {
