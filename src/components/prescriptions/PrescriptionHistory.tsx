@@ -4,9 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Printer, Copy, Search, Loader2 } from "lucide-react";
+import { Printer, Copy, Search, Loader2, Trash2 } from "lucide-react";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PrescriptionHistoryProps {
   onRepeat: (prescriptionId: string) => void;
