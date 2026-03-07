@@ -23,111 +23,236 @@ interface PrescriptionPrintProps {
   };
 }
 
+const s = {
+  page: {
+    width: "148.5mm",
+    minHeight: "105mm",
+    padding: "5mm 6mm",
+    fontFamily: "Times New Roman, serif",
+    fontSize: "9pt",
+    border: "1px solid #000",
+    boxSizing: "border-box" as const,
+    background: "#fff",
+    color: "#000",
+    lineHeight: "1.4",
+    position: "relative" as const,
+  },
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "7pt",
+    marginBottom: "1mm",
+  },
+  headerLeft: {
+    borderBottom: "1px solid #000",
+    minWidth: "55mm",
+    textAlign: "center" as const,
+    paddingBottom: "0.5mm",
+    fontSize: "7pt",
+  },
+  headerRight: {
+    textAlign: "right" as const,
+    fontSize: "7pt",
+  },
+  formTitle: {
+    textAlign: "center" as const,
+    marginTop: "2mm",
+    marginBottom: "2mm",
+  },
+  line: {
+    borderBottom: "1px solid #000",
+    display: "inline-block",
+    minWidth: "20mm",
+    verticalAlign: "bottom",
+  },
+  fieldRow: {
+    marginBottom: "1.5mm",
+    fontSize: "9pt",
+  },
+  separator: {
+    borderTop: "1px solid #000",
+    margin: "2mm 0",
+  },
+  rpBlock: {
+    fontSize: "9pt",
+    marginBottom: "2mm",
+  },
+  sigRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "3mm",
+    fontSize: "9pt",
+  },
+  bottomNote: {
+    fontSize: "7pt",
+    marginTop: "2mm",
+    textAlign: "center" as const,
+  },
+};
+
 export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
   const date = new Date(prescription.prescription_date);
   const birthDate = new Date(prescription.patient.birth_date);
 
+  // Calculate age
+  const now = date;
+  let age = now.getFullYear() - birthDate.getFullYear();
+  const m = now.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birthDate.getDate())) age--;
+
   return (
-    <div className="prescription-print-area" style={{ width: "148.5mm", minHeight: "105mm", padding: "8mm", fontFamily: "Times New Roman, serif", fontSize: "11pt", border: "1px solid #000", boxSizing: "border-box", background: "#fff", color: "#000" }}>
-      {/* Header */}
-      <div style={{ textAlign: "center", borderBottom: "1px solid #000", paddingBottom: "4mm", marginBottom: "4mm" }}>
-        <div style={{ fontSize: "8pt", marginBottom: "2mm" }}>
-          Министерство здравоохранения Российской Федерации
+    <div className="prescription-print-area" style={s.page}>
+      {/* === HEADER === */}
+      <div style={s.headerRow}>
+        <div>
+          <div style={{ fontSize: "7pt", marginBottom: "0.5mm" }}>
+            Министерство здравоохранения
+          </div>
+          <div style={{ fontSize: "7pt", marginBottom: "0.5mm" }}>
+            Российской Федерации
+          </div>
+          <div style={{ ...s.headerLeft, minWidth: "50mm", marginTop: "1mm" }}>
+            &nbsp;
+          </div>
+          <div style={{ fontSize: "6pt", textAlign: "center" }}>
+            Наименование (штамп)
+          </div>
+          <div style={{ fontSize: "6pt", textAlign: "center" }}>
+            медицинской организации
+          </div>
         </div>
-        <div style={{ fontSize: "9pt", fontWeight: "bold" }}>
+        <div style={s.headerRight}>
+          <div>Код формы по ОКУД _______</div>
+          <div>Код учреждения по ОКПО _______</div>
+          <div style={{ marginTop: "1mm" }}>Медицинская документация</div>
+          <div style={{ fontWeight: "bold" }}>Форма № 107-1/у</div>
+          <div style={{ fontSize: "6pt" }}>
+            Утверждена Приказом
+          </div>
+          <div style={{ fontSize: "6pt" }}>
+            Министерства здравоохранения
+          </div>
+          <div style={{ fontSize: "6pt" }}>
+            Российской Федерации
+          </div>
+          <div style={{ fontSize: "6pt" }}>
+            от 24 ноября 2021 г. № 1094н
+          </div>
+        </div>
+      </div>
+
+      {/* === TITLE === */}
+      <div style={s.formTitle}>
+        <div style={{ fontSize: "11pt", fontWeight: "bold", letterSpacing: "2px" }}>
           РЕЦЕПТ
         </div>
         <div style={{ fontSize: "8pt" }}>
-          (форма № 107-1/у)
+          (взрослый, детский — <span style={{ textDecoration: prescription.patient.birth_date && age < 18 ? "underline" : "none" }}>нужное подчеркнуть</span>)
         </div>
       </div>
 
-      {/* Date */}
-      <div style={{ marginBottom: "3mm", fontSize: "10pt" }}>
-        <span>Дата: «</span>
-        <span style={{ borderBottom: "1px solid #000", padding: "0 2mm", minWidth: "8mm", display: "inline-block" }}>
-          {format(date, "dd")}
-        </span>
-        <span>» </span>
-        <span style={{ borderBottom: "1px solid #000", padding: "0 2mm", minWidth: "30mm", display: "inline-block" }}>
+      {/* === DATE === */}
+      <div style={s.fieldRow}>
+        «<span style={{ ...s.line, minWidth: "8mm", textAlign: "center" }}>{format(date, "dd")}</span>»{" "}
+        <span style={{ ...s.line, minWidth: "30mm", textAlign: "center" }}>
           {format(date, "LLLL", { locale: ru })}
-        </span>
-        <span> </span>
-        <span style={{ borderBottom: "1px solid #000", padding: "0 2mm" }}>
+        </span>{" "}
+        <span style={{ ...s.line, minWidth: "15mm", textAlign: "center" }}>
           {format(date, "yyyy")}
-        </span>
-        <span> г.</span>
+        </span>{" "}г.
       </div>
 
-      {/* Patient info */}
-      <div style={{ marginBottom: "2mm", fontSize: "10pt" }}>
-        <span>Ф.И.О. пациента: </span>
-        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80mm" }}>
+      {/* === PATIENT === */}
+      <div style={s.fieldRow}>
+        Ф.И.О. пациента:{" "}
+        <span style={{ ...s.line, minWidth: "85mm" }}>
           {prescription.patient.full_name}
         </span>
       </div>
 
-      <div style={{ marginBottom: "2mm", fontSize: "10pt" }}>
-        <span>Дата рождения: </span>
-        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "30mm" }}>
+      <div style={s.fieldRow}>
+        Дата рождения:{" "}
+        <span style={{ ...s.line, minWidth: "25mm" }}>
           {format(birthDate, "dd.MM.yyyy")}
+        </span>
+        {" "}Возраст:{" "}
+        <span style={{ ...s.line, minWidth: "15mm" }}>
+          {age} {age % 10 === 1 && age !== 11 ? "год" : (age % 10 >= 2 && age % 10 <= 4 && (age < 12 || age > 14)) ? "года" : "лет"}
         </span>
       </div>
 
-      {/* Doctor */}
-      <div style={{ marginBottom: "4mm", fontSize: "10pt" }}>
-        <span>Ф.И.О. врача: </span>
-        <span style={{ borderBottom: "1px solid #000", display: "inline-block", minWidth: "80mm" }}>
+      {/* === DOCTOR === */}
+      <div style={s.fieldRow}>
+        Ф.И.О. врача (фельдшера, акушерки):{" "}
+        <span style={{ ...s.line, minWidth: "60mm" }}>
           {prescription.doctor_name}
         </span>
       </div>
 
-      {/* Prescription body */}
-      <div style={{ borderTop: "1px solid #000", paddingTop: "3mm" }}>
-        {prescription.prescription_type === "standard" && prescription.items?.map((item, idx) => (
-          <div key={idx} style={{ marginBottom: "3mm", fontSize: "10pt" }}>
-            <div style={{ fontWeight: "bold" }}>
-              Rp: {item.medication_latin_name}
-              {item.dosage_form && ` (${item.dosage_form})`}
-              {item.dose && ` ${item.dose}`}
-            </div>
-            <div style={{ paddingLeft: "10mm" }}>
-              D.t.d. N {item.quantity}
-            </div>
-            {(item.frequency || item.duration) && (
-              <div style={{ paddingLeft: "10mm" }}>
-                S. {item.frequency}{item.frequency && item.duration ? ", " : ""}{item.duration}
-              </div>
-            )}
-          </div>
-        ))}
+      {/* === SEPARATOR === */}
+      <div style={s.separator}></div>
 
-        {prescription.prescription_type === "extemporaneous" && prescription.ingredients && (
-          <div style={{ fontSize: "10pt" }}>
-            <div style={{ fontWeight: "bold" }}>Rp:</div>
-            {prescription.ingredients.map((ing, idx) => (
-              <div key={idx} style={{ paddingLeft: "10mm" }}>
-                {ing.ingredient_name} {ing.amount} {ing.unit}
-              </div>
-            ))}
-            <div style={{ paddingLeft: "10mm", marginTop: "2mm" }}>
-              M.f. — Misce, fiat
-            </div>
-            <div style={{ paddingLeft: "10mm" }}>
-              D.S. Наружно / По назначению врача
-            </div>
+      {/* === Rp: BODY === */}
+      {prescription.prescription_type === "standard" && prescription.items?.map((item, idx) => (
+        <div key={idx} style={s.rpBlock}>
+          <div>
+            <strong>Rp:</strong>{" "}
+            {item.medication_latin_name}
+            {item.dosage_form ? ` (${item.dosage_form})` : ""}
+            {item.dose ? ` ${item.dose}` : ""}
           </div>
-        )}
-      </div>
-
-      {/* Signature */}
-      <div style={{ marginTop: "6mm", display: "flex", justifyContent: "space-between", fontSize: "10pt" }}>
-        <div>
-          Подпись врача: _______________
+          <div style={{ paddingLeft: "8mm" }}>
+            D.t.d. N {item.quantity}
+          </div>
+          {(item.frequency || item.duration) && (
+            <div style={{ paddingLeft: "8mm" }}>
+              S. {item.frequency}{item.frequency && item.duration ? ", " : ""}{item.duration}
+            </div>
+          )}
+          {/* Price line */}
+          <div style={{ textAlign: "right", fontSize: "8pt", marginTop: "0.5mm" }}>
+            _______ руб. _______ коп.
+          </div>
         </div>
+      ))}
+
+      {prescription.prescription_type === "extemporaneous" && prescription.ingredients && (
+        <div style={s.rpBlock}>
+          <div><strong>Rp:</strong></div>
+          {prescription.ingredients.map((ing, idx) => (
+            <div key={idx} style={{ paddingLeft: "8mm" }}>
+              {ing.ingredient_name} {ing.amount} {ing.unit}
+            </div>
+          ))}
+          <div style={{ paddingLeft: "8mm", marginTop: "1mm" }}>
+            M.f. — Misce, fiat
+          </div>
+          <div style={{ paddingLeft: "8mm" }}>
+            D.S. По назначению врача
+          </div>
+          <div style={{ textAlign: "right", fontSize: "8pt", marginTop: "0.5mm" }}>
+            _______ руб. _______ коп.
+          </div>
+        </div>
+      )}
+
+      {/* === SIGNATURE === */}
+      <div style={s.sigRow}>
         <div>
+          Подпись и печать лечащего<br/>
+          врача (фельдшера, акушерки) _______________
+        </div>
+        <div style={{ textAlign: "right" }}>
           М.П.
         </div>
+      </div>
+
+      {/* === VALIDITY === */}
+      <div style={s.separator}></div>
+      <div style={s.bottomNote}>
+        Рецепт действителен в течение <span style={{ textDecoration: "underline" }}>60 дней</span>, 15 дней
+        <br/>
+        (нужное подчеркнуть) (количество)
       </div>
     </div>
   );
