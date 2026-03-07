@@ -192,9 +192,27 @@ export function ExtemporaneousForm({ onSaved }: ExtemporaneousFormProps) {
             ))}
           </div>
 
-          <Button onClick={handleSave} disabled={saving || !patient} className="w-full">
-            {saving ? "Сохранение..." : "Сохранить рецепт"}
-          </Button>
+          <div className="flex gap-3">
+            {patient && ingredients.some(i => i.ingredient_name) && (
+              <PrescriptionPreview
+                prescription={{
+                  prescription_date: format(prescriptionDate, "yyyy-MM-dd"),
+                  doctor_name: "Профессор, д.м.н. Тарусин Дмитрий Игоревич",
+                  prescription_type: "extemporaneous",
+                  patient,
+                  ingredients,
+                }}
+                trigger={
+                  <Button variant="outline" type="button">
+                    <Eye className="h-4 w-4 mr-2" /> Предпросмотр
+                  </Button>
+                }
+              />
+            )}
+            <Button onClick={handleSave} disabled={saving || !patient} className="flex-1">
+              {saving ? "Сохранение..." : "Сохранить рецепт"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
