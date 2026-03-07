@@ -7,6 +7,8 @@ interface PrescriptionPrintProps {
     doctor_name: string;
     prescription_type: string;
     patient: { full_name: string; birth_date: string };
+    signa?: string;
+    extemporaneous_form_type?: string;
     items?: Array<{
       medication_latin_name: string;
       dosage_form?: string;
