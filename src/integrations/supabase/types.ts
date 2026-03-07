@@ -369,6 +369,42 @@ export type Database = {
         }
         Relationships: []
       }
+      medication_digests: {
+        Row: {
+          contraindications: string | null
+          created_at: string
+          dosage_info: string | null
+          id: string
+          indications: string | null
+          medication_name: string
+          pharmacological_group: string | null
+          synonyms: string | null
+          updated_at: string
+        }
+        Insert: {
+          contraindications?: string | null
+          created_at?: string
+          dosage_info?: string | null
+          id?: string
+          indications?: string | null
+          medication_name: string
+          pharmacological_group?: string | null
+          synonyms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contraindications?: string | null
+          created_at?: string
+          dosage_info?: string | null
+          id?: string
+          indications?: string | null
+          medication_name?: string
+          pharmacological_group?: string | null
+          synonyms?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medications: {
         Row: {
           created_at: string
