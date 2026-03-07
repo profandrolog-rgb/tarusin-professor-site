@@ -91,6 +91,10 @@ const AdminPrescriptions = () => {
             />
           </TabsContent>
 
+          <TabsContent value="dosage">
+            <DosageCalculator />
+          </TabsContent>
+
           <TabsContent value="history">
             <PrescriptionHistory onRepeat={handleRepeat} />
           </TabsContent>
