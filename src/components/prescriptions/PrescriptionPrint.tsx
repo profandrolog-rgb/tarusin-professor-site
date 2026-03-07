@@ -92,7 +92,16 @@ const s = {
   },
 };
 
-export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
+const FORM_LABELS: Record<string, string> = {
+  unguentum: "unguentum", pasta: "pastam", cremor: "cremorem", gel: "gel",
+  linimentum: "linimentum", suspensio: "suspensionem", suppositoria: "suppositoria",
+  mixtura: "mixturam", tinctura: "tincturam", solutio: "solutionem",
+};
+
+function getMisceFormLabel(formType?: string): string {
+  return formType ? (FORM_LABELS[formType] || formType) : "unguentum";
+}
+
   const date = new Date(prescription.prescription_date);
   const birthDate = new Date(prescription.patient.birth_date);
 
