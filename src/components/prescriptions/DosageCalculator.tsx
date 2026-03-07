@@ -212,10 +212,13 @@ export function DosageCalculator() {
                   <ShieldAlert className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
                   <div>
                     <h3 className="font-bold text-destructive text-lg">
-                      ⚠️ Противопоказан детям!
+                      ⚠️ Противопоказан детям (off-label)
                     </h3>
                     <p className="text-sm text-destructive/80 mt-1">
                       {result.contraindication_warning}
+                    </p>
+                    <p className="text-xs text-destructive/60 mt-2 italic">
+                      Расчёт дозы выполнен для off-label назначения. Требуется информированное согласие.
                     </p>
                   </div>
                 </div>
@@ -237,53 +240,87 @@ export function DosageCalculator() {
             </Card>
           )}
 
-          {/* Dosage info */}
-          {!result.is_contraindicated && (
+          {/* Dosage info — always shown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CheckCircle2 className={`h-5 w-5 ${result.is_contraindicated ? 'text-yellow-600' : 'text-green-600'}`} />
+                Результат расчёта
+                {result.is_contraindicated && (
+                  <span className="text-xs font-normal text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">off-label</span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3">
+                {result.formula_used && (
+                  <ResultRow icon={<Calculator className="h-4 w-4" />} label="Формула" value={result.formula_used} highlight />
+                )}
+                {result.single_dose && (
+                  <ResultRow icon={<Pill className="h-4 w-4" />} label="Разовая доза" value={result.single_dose} />
+                )}
+                {result.daily_dose && (
+                  <ResultRow icon={<Pill className="h-4 w-4" />} label="Суточная доза" value={result.daily_dose} />
+                )}
+                {result.max_daily_dose && (
+                  <ResultRow icon={<AlertTriangle className="h-4 w-4" />} label="Макс. суточная" value={result.max_daily_dose} />
+                )}
+                {result.frequency && (
+                  <ResultRow icon={<Clock className="h-4 w-4" />} label="Кратность" value={result.frequency} />
+                )}
+                {result.route && (
+                  <ResultRow icon={<Syringe className="h-4 w-4" />} label="Путь введения" value={result.route} />
+                )}
+                {result.duration && (
+                  <ResultRow icon={<Clock className="h-4 w-4" />} label="Длительность" value={result.duration} />
+                )}
+                {result.calculation_method && (
+                  <ResultRow icon={<Info className="h-4 w-4" />} label="Метод расчёта" value={result.calculation_method} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Practical dosing */}
+          {result.practical_dosing && result.practical_dosing.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  Результат расчёта
+                  <Syringe className="h-5 w-5 text-primary" />
+                  Практическое дозирование
                 </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Как доставить рассчитанную разовую дозу в конкретной лекарственной форме
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3">
-                  {result.formula_used && (
-                    <ResultRow icon={<Calculator className="h-4 w-4" />} label="Формула" value={result.formula_used} highlight />
-                  )}
-                  {result.single_dose && (
-                    <ResultRow icon={<Pill className="h-4 w-4" />} label="Разовая доза" value={result.single_dose} />
-                  )}
-                  {result.daily_dose && (
-                    <ResultRow icon={<Pill className="h-4 w-4" />} label="Суточная доза" value={result.daily_dose} />
-                  )}
-                  {result.max_daily_dose && (
-                    <ResultRow icon={<AlertTriangle className="h-4 w-4" />} label="Макс. суточная" value={result.max_daily_dose} />
-                  )}
-                  {result.frequency && (
-                    <ResultRow icon={<Clock className="h-4 w-4" />} label="Кратность" value={result.frequency} />
-                  )}
-                  {result.route && (
-                    <ResultRow icon={<Syringe className="h-4 w-4" />} label="Путь введения" value={result.route} />
-                  )}
-                  {result.duration && (
-                    <ResultRow icon={<Clock className="h-4 w-4" />} label="Длительность" value={result.duration} />
-                  )}
-                  {result.calculation_method && (
-                    <ResultRow icon={<Info className="h-4 w-4" />} label="Метод расчёта" value={result.calculation_method} />
-                  )}
-                  {result.available_forms && (
-                    <ResultRow icon={<Pill className="h-4 w-4" />} label="Детские формы" value={result.available_forms} />
-                  )}
-                  {result.notes && (
-                    <div className="mt-3 p-3 rounded-lg bg-secondary/30 border text-sm text-muted-foreground">
-                      <span className="font-semibold text-foreground">Примечания: </span>
-                      {result.notes}
+                  {result.practical_dosing.map((pd, idx) => (
+                    <div
+                      key={idx}
+                      className="border rounded-lg p-3 space-y-1.5 bg-secondary/20"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-foreground">{pd.form}</span>
+                        <span className="text-sm font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                          {pd.single_dose_practical}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {pd.calculation_detail}
+                      </p>
                     </div>
-                  )}
+                  ))}
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {result.notes && (
+            <div className="p-3 rounded-lg bg-secondary/30 border text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">Примечания: </span>
+              {result.notes}
+            </div>
           )}
 
           <p className="text-[10px] text-muted-foreground/60 text-center">
