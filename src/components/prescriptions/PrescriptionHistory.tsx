@@ -101,6 +101,23 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
     }, 100);
   };
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    // Delete related items first, then the prescription
+    await supabase.from("prescription_items").delete().eq("prescription_id", deleteId);
+    await supabase.from("extemporaneous_ingredients").delete().eq("prescription_id", deleteId);
+    const { error } = await supabase.from("prescriptions").delete().eq("id", deleteId);
+    if (error) {
+      toast.error("Ошибка при удалении рецепта");
+    } else {
+      toast.success("Рецепт удалён");
+      fetchPrescriptions();
+    }
+    setDeleteId(null);
+    setDeleting(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
