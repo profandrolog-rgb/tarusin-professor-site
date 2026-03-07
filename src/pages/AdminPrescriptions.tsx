@@ -8,6 +8,7 @@ import { PrescriptionForm } from "@/components/prescriptions/PrescriptionForm";
 import { ExtemporaneousForm } from "@/components/prescriptions/ExtemporaneousForm";
 import { PrescriptionHistory } from "@/components/prescriptions/PrescriptionHistory";
 import { DrugReference } from "@/components/prescriptions/DrugReference";
+import { DosageCalculator } from "@/components/prescriptions/DosageCalculator";
 
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -70,6 +71,7 @@ const AdminPrescriptions = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="new">Стандартный рецепт</TabsTrigger>
             <TabsTrigger value="extemporaneous">Экстемпоральная пропись</TabsTrigger>
+            <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
             <TabsTrigger value="history">История рецептов</TabsTrigger>
           </TabsList>
 
@@ -87,6 +89,10 @@ const AdminPrescriptions = () => {
             <ExtemporaneousForm
               onSaved={() => setActiveTab("history")}
             />
+          </TabsContent>
+
+          <TabsContent value="dosage">
+            <DosageCalculator />
           </TabsContent>
 
           <TabsContent value="history">
