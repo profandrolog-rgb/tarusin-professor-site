@@ -71,6 +71,7 @@ const AdminPrescriptions = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="new">Стандартный рецепт</TabsTrigger>
             <TabsTrigger value="extemporaneous">Экстемпоральная пропись</TabsTrigger>
+            <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
             <TabsTrigger value="history">История рецептов</TabsTrigger>
           </TabsList>
 
