@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PrescriptionForm } from "@/components/prescriptions/PrescriptionForm";
 import { ExtemporaneousForm } from "@/components/prescriptions/ExtemporaneousForm";
 import { PrescriptionHistory } from "@/components/prescriptions/PrescriptionHistory";
+import { DrugReference } from "@/components/prescriptions/DrugReference";
 
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
