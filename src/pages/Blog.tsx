@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -816,7 +817,7 @@ const Blog = () => {
                             </p>
                             <div
                               className="prose prose-sm max-w-none text-foreground/90"
-                              dangerouslySetInnerHTML={{ __html: post.content }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                             />
                           </div>
                         </div>
@@ -829,7 +830,7 @@ const Blog = () => {
                         </p>
                         <div
                           className="prose prose-sm max-w-none text-foreground/90"
-                          dangerouslySetInnerHTML={{ __html: post.content }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                         />
                       </div>
                     )}
