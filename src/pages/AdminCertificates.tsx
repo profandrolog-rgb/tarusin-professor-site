@@ -28,7 +28,25 @@ type Certificate = {
 };
 
 const AdminCertificates = () => {
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      navigate('/auth', { state: { from: '/admin/certificates' } });
+    }
+  }, [user, isAdmin, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) return null;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
   const [title, setTitle] = useState("");
