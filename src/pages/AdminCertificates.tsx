@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Upload, X, GripVertical } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Upload, X, GripVertical, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,8 @@ type Certificate = {
 };
 
 const AdminCertificates = () => {
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCertificate, setEditingCertificate] = useState<Certificate | null>(null);
@@ -188,6 +191,22 @@ const AdminCertificates = () => {
       queryClient.invalidateQueries({ queryKey: ["certificates"] });
     },
   });
+
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      navigate('/auth', { state: { from: '/admin/certificates' } });
+    }
+  }, [user, isAdmin, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) return null;
 
   const resetForm = () => {
     setTitle("");
