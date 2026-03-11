@@ -817,7 +817,7 @@ const Blog = () => {
                             </p>
                             <div
                               className="prose prose-sm max-w-none text-foreground/90"
-                              dangerouslySetInnerHTML={{ __html: post.content }}
+                              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                             />
                           </div>
                         </div>
@@ -830,7 +830,7 @@ const Blog = () => {
                         </p>
                         <div
                           className="prose prose-sm max-w-none text-foreground/90"
-                          dangerouslySetInnerHTML={{ __html: post.content }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                         />
                       </div>
                     )}
