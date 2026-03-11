@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Upload, X, GripVertical } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown, Upload, X, GripVertical, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
