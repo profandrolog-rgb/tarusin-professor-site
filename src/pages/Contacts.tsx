@@ -139,10 +139,11 @@ const Contacts = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Info */}
+        {/* Two Clinics Grid */}
+        <div className="grid lg:grid-cols-2 gap-12 mb-16">
+          {/* Clinic 1 - AVE-CLINIC */}
           <div>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Информация</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-6">AVE-CLINIC</h2>
             
             <Card className="mb-8">
               <CardContent className="p-6">
@@ -325,116 +326,177 @@ const Contacts = () => {
             </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Clinic 2 - Клиника доктора Матара */}
           <div>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Форма заявки</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Клиника доктора Матара</h2>
             
-            <Card>
+            <Card className="mb-8">
               <CardContent className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Имя *</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Ваше имя"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Возраст пациента</Label>
-                      <Input
-                        id="age"
-                        name="age"
-                        value={formData.age}
-                        onChange={handleChange}
-                        placeholder="Например: 7 лет"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="email@example.com"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Телефон</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="+7 (___) ___-__-__"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Краткое описание проблемы *</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      placeholder="Опишите вашу ситуацию или вопрос..."
-                      rows={5}
-                      required
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    size="lg" 
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      "Отправка..."
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Отправить заявку
-                      </>
-                    )}
-                  </Button>
-                  
-                  <p className="text-xs text-muted-foreground text-center">
-                    Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
-                  </p>
-                </form>
-              </CardContent>
-            </Card>
-            
-            {/* Parking Info */}
-            <Card className="mt-6">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">🚗</span>
-                  </div>
+                <div className="space-y-6">
                   <div>
-                    <h3 className="font-semibold text-foreground mb-2">Парковка</h3>
-                    <p className="text-muted-foreground">
-                      Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-4 font-medium">Международный андрологический центр</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                        <Phone className="w-5 h-5 text-accent" />
+                      </div>
+                      <h3 className="font-semibold text-foreground">Телефоны</h3>
+                    </div>
+                    <div className="space-y-2 ml-14">
+                      <div className="flex items-center">
+                        <a href="tel:+74953030000" className="text-primary font-medium hover:underline">
+                          +7 (495) 303-00-00
+                        </a>
+                        <span className="text-muted-foreground text-sm ml-3">(регистратура)</span>
+                      </div>
+                      <div className="flex items-center">
+                        <a href="tel:+79263030111" className="text-primary font-medium hover:underline">
+                          +7 (926) 303-01-11
+                        </a>
+                        <span className="text-muted-foreground text-sm ml-3">(запись)</span>
+                      </div>
+                      <div className="flex items-center">
+                        <a href="tel:+79160303031" className="text-primary font-medium hover:underline">
+                          +7 (916) 030-30-31
+                        </a>
+                        <span className="text-muted-foreground text-sm ml-3">(запись)</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">Место приёма</h3>
+                      <p className="text-muted-foreground">
+                        <span className="font-medium text-foreground">Клиника доктора Матара</span><br />
+                        г. Москва, Коровинское шоссе д. 9 к. 2
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">Приём</h3>
+                      <p className="text-muted-foreground">Только по предварительной записи</p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Map */}
+            <Card className="mb-8 overflow-hidden">
+              <CardContent className="p-0">
+                <iframe
+                  src="https://yandex.ru/map-widget/v1/?ll=37.556500%2C55.893000&z=16&pt=37.556500%2C55.893000%2Cpm2rdm&l=map"
+                  width="100%"
+                  height="300"
+                  frameBorder="0"
+                  title="Карта Клиники доктора Матара"
+                  className="w-full"
+                  allowFullScreen
+                />
+              </CardContent>
+            </Card>
+
+            <h3 className="text-lg font-semibold text-foreground mb-4">Социальные сети</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {socialLinks.map((social, index) => {
+                const IconComponent = social.Icon;
+                return (
+                  <Card 
+                    key={index}
+                    className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
+                    onClick={() => window.open(social.url, "_blank")}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <IconComponent className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground text-sm">{social.name}</div>
+                          <div className="text-xs text-muted-foreground">{social.handle}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
+        </div>
+
+        {/* Contact Form - Full Width */}
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold text-foreground mb-6">Форма заявки</h2>
+          
+          <Card>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Имя *</Label>
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} placeholder="Ваше имя" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Возраст пациента</Label>
+                    <Input id="age" name="age" value={formData.age} onChange={handleChange} placeholder="Например: 7 лет" />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="email@example.com" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Телефон</Label>
+                    <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+7 (___) ___-__-__" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message">Краткое описание проблемы *</Label>
+                  <Textarea id="message" name="message" value={formData.message} onChange={handleChange} placeholder="Опишите вашу ситуацию или вопрос..." rows={5} required />
+                </div>
+                <Button type="submit" size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
+                  {isSubmitting ? "Отправка..." : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Отправить заявку
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+          
+          {/* Parking Info */}
+          <Card className="mt-6">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">🚗</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Парковка (AVE-CLINIC)</h3>
+                  <p className="text-muted-foreground">
+                    Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
