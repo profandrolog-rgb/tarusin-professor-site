@@ -139,10 +139,11 @@ const Contacts = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Info */}
+        {/* Two Clinics Grid */}
+        <div className="grid lg:grid-cols-2 gap-12 mb-16">
+          {/* Clinic 1 - AVE-CLINIC */}
           <div>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Информация</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-6">AVE-CLINIC</h2>
             
             <Card className="mb-8">
               <CardContent className="p-6">
