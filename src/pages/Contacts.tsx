@@ -323,10 +323,119 @@ const Contacts = () => {
                   </Card>
                 );
               })}
-            </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Clinic 2 - Клиника доктора Матара */}
+          <div>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Клиника доктора Матара</h2>
+            
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-4 font-medium">Международный андрологический центр</p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                        <Phone className="w-5 h-5 text-accent" />
+                      </div>
+                      <h3 className="font-semibold text-foreground">Телефоны</h3>
+                    </div>
+                    <div className="space-y-2 ml-14">
+                      <div className="flex items-center">
+                        <a href="tel:+74953030000" className="text-primary font-medium hover:underline">
+                          +7 (495) 303-00-00
+                        </a>
+                        <span className="text-muted-foreground text-sm ml-3">(регистратура)</span>
+                      </div>
+                      <div className="flex items-center">
+                        <a href="tel:+79263030111" className="text-primary font-medium hover:underline">
+                          +7 (926) 303-01-11
+                        </a>
+                        <span className="text-muted-foreground text-sm ml-3">(запись)</span>
+                      </div>
+                      <div className="flex items-center">
+                        <a href="tel:+79160303031" className="text-primary font-medium hover:underline">
+                          +7 (916) 030-30-31
+                        </a>
+                        <span className="text-muted-foreground text-sm ml-3">(запись)</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">Место приёма</h3>
+                      <p className="text-muted-foreground">
+                        <span className="font-medium text-foreground">Клиника доктора Матара</span><br />
+                        г. Москва, Коровинское шоссе д. 9 к. 2
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">Приём</h3>
+                      <p className="text-muted-foreground">Только по предварительной записи</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Map */}
+            <Card className="mb-8 overflow-hidden">
+              <CardContent className="p-0">
+                <iframe
+                  src="https://yandex.ru/map-widget/v1/?ll=37.556500%2C55.893000&z=16&pt=37.556500%2C55.893000%2Cpm2rdm&l=map"
+                  width="100%"
+                  height="300"
+                  frameBorder="0"
+                  title="Карта Клиники доктора Матара"
+                  className="w-full"
+                  allowFullScreen
+                />
+              </CardContent>
+            </Card>
+
+            <h3 className="text-lg font-semibold text-foreground mb-4">Социальные сети</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {socialLinks.map((social, index) => {
+                const IconComponent = social.Icon;
+                return (
+                  <Card 
+                    key={index}
+                    className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
+                    onClick={() => window.open(social.url, "_blank")}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          <IconComponent className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-foreground text-sm">{social.name}</div>
+                          <div className="text-xs text-muted-foreground">{social.handle}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Form - Full Width */}
+        <div className="max-w-2xl mx-auto">
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-6">Форма заявки</h2>
             
