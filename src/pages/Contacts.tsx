@@ -436,115 +436,66 @@ const Contacts = () => {
 
         {/* Contact Form - Full Width */}
         <div className="max-w-2xl mx-auto">
-          <div>
-            <h2 className="text-2xl font-bold text-foreground mb-6">Форма заявки</h2>
-            
-            <Card>
-              <CardContent className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Имя *</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Ваше имя"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Возраст пациента</Label>
-                      <Input
-                        id="age"
-                        name="age"
-                        value={formData.age}
-                        onChange={handleChange}
-                        placeholder="Например: 7 лет"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="email@example.com"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Телефон</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="+7 (___) ___-__-__"
-                      />
-                    </div>
-                  </div>
-                  
+          <h2 className="text-2xl font-bold text-foreground mb-6">Форма заявки</h2>
+          
+          <Card>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="message">Краткое описание проблемы *</Label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      placeholder="Опишите вашу ситуацию или вопрос..."
-                      rows={5}
-                      required
-                    />
+                    <Label htmlFor="name">Имя *</Label>
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} placeholder="Ваше имя" required />
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    size="lg" 
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      "Отправка..."
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Отправить заявку
-                      </>
-                    )}
-                  </Button>
-                  
-                  <p className="text-xs text-muted-foreground text-center">
-                    Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
-                  </p>
-                </form>
-              </CardContent>
-            </Card>
-            
-            {/* Parking Info */}
-            <Card className="mt-6">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">🚗</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">Парковка</h3>
-                    <p className="text-muted-foreground">
-                      Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
-                    </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Возраст пациента</Label>
+                    <Input id="age" name="age" value={formData.age} onChange={handleChange} placeholder="Например: 7 лет" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="email@example.com" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Телефон</Label>
+                    <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="+7 (___) ___-__-__" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message">Краткое описание проблемы *</Label>
+                  <Textarea id="message" name="message" value={formData.message} onChange={handleChange} placeholder="Опишите вашу ситуацию или вопрос..." rows={5} required />
+                </div>
+                <Button type="submit" size="lg" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
+                  {isSubmitting ? "Отправка..." : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Отправить заявку
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+          
+          {/* Parking Info */}
+          <Card className="mt-6">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">🚗</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground mb-2">Парковка (AVE-CLINIC)</h3>
+                  <p className="text-muted-foreground">
+                    Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
