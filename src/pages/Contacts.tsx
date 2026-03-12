@@ -281,10 +281,7 @@ const Contacts = () => {
 
           {/* Clinic 2 - Клиника доктора Матара */}
           <div className="flex flex-col">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground">Клиника доктора Матара</h2>
-              <p className="text-sm text-muted-foreground mt-1">Международный андрологический центр</p>
-            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-6">Клиника доктора Матара</h2>
             
             {/* Info Card */}
             <Card className="mb-6 flex-shrink-0">
