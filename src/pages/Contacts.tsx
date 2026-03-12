@@ -352,18 +352,68 @@ const Contacts = () => {
               </CardContent>
             </Card>
 
-            {/* Placeholder card to match height */}
+            {/* How to get there */}
             <Card className="flex-1">
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-primary" />
+                    <Navigation className="w-5 h-5 text-primary" />
                   </div>
                   <h3 className="font-semibold text-foreground text-lg">Как добраться</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Клиника расположена на Коровинском шоссе, в районе Западное Дегунино (САО).
-                </p>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Train className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground text-sm">Метро</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-primary">М Селигерская</span>
+                          <span className="text-muted-foreground text-xs">15 мин</span>
+                        </div>
+                        <p className="text-muted-foreground text-xs">Авт. 672, 179 до «Коровинское ш.»</p>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-primary">М Ховрино</span>
+                          <span className="text-muted-foreground text-xs">10 мин</span>
+                        </div>
+                        <p className="text-muted-foreground text-xs">Авт. 672 до «Коровинское ш.»</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bus className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-foreground text-sm">Автобусы</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="font-medium text-foreground mb-1">№ 672</div>
+                        <p className="text-muted-foreground text-xs">от м. Ховрино / Селигерская</p>
+                      </div>
+                      <div className="p-3 bg-secondary/50 rounded-lg">
+                        <div className="font-medium text-foreground mb-1">№ 179</div>
+                        <p className="text-muted-foreground text-xs">от м. Селигерская</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* On foot */}
+                <div className="mt-4 p-3 bg-accent/10 rounded-lg flex items-start gap-3">
+                  <span className="text-lg">🚶</span>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Пешком от м. Ховрино</p>
+                    <p className="text-xs text-muted-foreground">
+                      ~20 мин (1.5 км). Выход №3, по Коровинскому шоссе в сторону области до д. 9 к. 2
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
