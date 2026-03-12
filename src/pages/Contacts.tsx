@@ -323,6 +323,7 @@ const Contacts = () => {
                   </Card>
                 );
               })}
+            </div>
           </div>
 
           {/* Clinic 2 - Клиника доктора Матара */}
