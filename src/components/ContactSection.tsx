@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { MapPin, Phone, Clock, Send, CheckCircle } from "lucide-react";
+import { MapPin, Phone, Clock, Send, CheckCircle, Navigation, Train, Bus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -16,20 +16,42 @@ const contactSchema = z.object({
   message: z.string().trim().min(10, "Сообщение должно содержать минимум 10 символов").max(1000, "Сообщение слишком длинное")
 });
 
+interface TransportRoute {
+  name: string;
+  time: string;
+  detail: string;
+}
+
+interface BusRoute {
+  number: string;
+  detail: string;
+}
+
+interface ParkingInfo {
+  emoji: string;
+  title: string;
+  description: React.ReactNode;
+}
+
+interface DirectionsData {
+  metro: TransportRoute[];
+  buses: BusRoute[];
+  extras?: { emoji: string; title: string; description: string }[];
+  parking?: ParkingInfo;
+}
+
 interface ClinicCardProps {
   name: string;
-  subtitle?: string;
   address: string;
   phones: { number: string; href: string; label: string; isWhatsApp?: boolean }[];
   schedule: string;
-  directions?: string;
+  directions?: DirectionsData;
 }
 
-const ClinicCard = ({ name, subtitle, address, phones, schedule, directions }: ClinicCardProps) => (
+const ClinicCard = ({ name, address, phones, schedule, directions }: ClinicCardProps) => (
   <Card className="bg-primary text-primary-foreground shadow-lg h-full">
     <CardContent className="p-6 md:p-8">
       <h3 className="text-xl font-semibold mb-6">{name}</h3>
-      {subtitle && <p className="text-primary-foreground/80 text-sm mb-4 -mt-4">{subtitle}</p>}
       <div className="space-y-5">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
@@ -76,18 +98,120 @@ const ClinicCard = ({ name, subtitle, address, phones, schedule, directions }: C
         </div>
       </div>
     </CardContent>
+
+    {/* Directions block */}
     {directions && (
       <div className="px-6 pb-6 md:px-8 md:pb-8 pt-0">
         <Card className="bg-primary-foreground/10 border-primary-foreground/20">
           <CardContent className="p-4">
-            <h4 className="font-semibold text-primary-foreground mb-2">Как добраться</h4>
-            <p className="text-sm text-primary-foreground/80">{directions}</p>
+            <div className="flex items-center gap-2 mb-3">
+              <Navigation className="w-4 h-4" />
+              <h4 className="font-semibold text-primary-foreground">Как добраться</h4>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              {/* Metro */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Train className="w-3.5 h-3.5 opacity-80" />
+                  <span className="text-xs font-medium">Метро / МЦД</span>
+                </div>
+                <div className="space-y-1.5">
+                  {directions.metro.map((r, i) => (
+                    <div key={i} className="p-2 bg-primary-foreground/10 rounded-md">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-medium">{r.name}</span>
+                        <span className="text-[10px] opacity-70">{r.time}</span>
+                      </div>
+                      <p className="text-[10px] opacity-70">{r.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buses */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Bus className="w-3.5 h-3.5 opacity-80" />
+                  <span className="text-xs font-medium">Автобусы</span>
+                </div>
+                <div className="space-y-1.5">
+                  {directions.buses.map((b, i) => (
+                    <div key={i} className="p-2 bg-primary-foreground/10 rounded-md">
+                      <div className="text-xs font-medium mb-0.5">№ {b.number}</div>
+                      <p className="text-[10px] opacity-70">{b.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Extras (walking etc.) */}
+            {directions.extras?.map((ex, i) => (
+              <div key={i} className="mt-2 p-2 bg-primary-foreground/10 rounded-md flex items-start gap-2">
+                <span className="text-sm">{ex.emoji}</span>
+                <div>
+                  <p className="text-xs font-medium">{ex.title}</p>
+                  <p className="text-[10px] opacity-70">{ex.description}</p>
+                </div>
+              </div>
+            ))}
+
+            {/* Parking */}
+            {directions.parking && (
+              <div className="mt-2 p-2 bg-primary-foreground/10 rounded-md flex items-start gap-2">
+                <span className="text-sm">{directions.parking.emoji}</span>
+                <div>
+                  <p className="text-xs font-medium">{directions.parking.title}</p>
+                  <p className="text-[10px] opacity-70">{directions.parking.description}</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     )}
   </Card>
 );
+
+const aveClinicDirections: DirectionsData = {
+  metro: [
+    { name: "М Немчиновка", time: "14 мин", detail: "Пешком (950 м)" },
+    { name: "ЖД Немчиновка", time: "13 мин", detail: "Пешком (900 м)" },
+  ],
+  buses: [
+    { number: "794", detail: "до «Немчиновка» — 3 ост." },
+    { number: "597м, 597", detail: "до «Немчиновка» — 4 ост." },
+  ],
+  parking: {
+    emoji: "🚗",
+    title: "Парковка",
+    description: <>Закрытая парковка. Пароль — <span className="font-semibold">«В медицинский центр»</span></>,
+  },
+};
+
+const mataraClinicDirections: DirectionsData = {
+  metro: [
+    { name: "М Селигерская", time: "15 мин", detail: "Авт. 672, 179 до «Коровинское ш.»" },
+    { name: "М Ховрино", time: "10 мин", detail: "Авт. 672 до «Коровинское ш.»" },
+  ],
+  buses: [
+    { number: "672", detail: "от м. Ховрино / Селигерская" },
+    { number: "179", detail: "от м. Селигерская" },
+  ],
+  extras: [
+    {
+      emoji: "🚶",
+      title: "Пешком от м. Ховрино",
+      description: "~20 мин (1.5 км). Выход №3, по Коровинскому шоссе в сторону области до д. 9 к. 2",
+    },
+  ],
+  parking: {
+    emoji: "🚗",
+    title: "Парковка",
+    description: <>Въезд к наружной стороне дома (не во двор). Шлагбаумы <span className="font-semibold">№1</span> и <span className="font-semibold">№3</span> — для открытия позвоните по одному из телефонов клиники.</>,
+  },
+};
 
 const ContactSection = () => {
   const { toast } = useToast();
@@ -174,11 +298,10 @@ const ContactSection = () => {
               { number: "+7 (977) 807-55-44", href: "+79778075544", label: "для срочных вопросов" },
             ]}
             schedule="Только по предварительной записи"
-            directions='Клиника расположена в с. Немчиновка, МКАД, наружная сторона, 55 км. Есть парковка для посетителей. На шлагбауме пароль "В клинику"'
+            directions={aveClinicDirections}
           />
           <ClinicCard
             name="Клиника доктора Матара"
-            subtitle="Международный андрологический центр"
             address="г. Москва, Коровинское шоссе д. 9 к. 2"
             phones={[
               { number: "+7 (495) 303-00-00", href: "+74953030000", label: "регистратура" },
@@ -186,6 +309,7 @@ const ContactSection = () => {
               { number: "+7 (916) 030-30-31", href: "+79160303031", label: "запись" },
             ]}
             schedule="Только по предварительной записи"
+            directions={mataraClinicDirections}
           />
         </div>
 
