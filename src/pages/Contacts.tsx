@@ -140,14 +140,15 @@ const Contacts = () => {
 
       <main className="container mx-auto px-4 py-12 md:py-16">
         {/* Two Clinics Grid */}
-        <div className="grid lg:grid-cols-2 gap-12 mb-16">
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
           {/* Clinic 1 - AVE-CLINIC */}
-          <div>
+          <div className="flex flex-col">
             <h2 className="text-2xl font-bold text-foreground mb-6">AVE-CLINIC</h2>
             
-            <Card className="mb-8">
+            {/* Info Card */}
+            <Card className="mb-6 flex-shrink-0">
               <CardContent className="p-6">
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div>
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
@@ -157,32 +158,15 @@ const Contacts = () => {
                     </div>
                     <div className="space-y-2 ml-14">
                       <div className="flex items-center">
-                        <a 
-                          href="tel:+74953748181" 
-                          className="text-primary font-medium hover:underline"
-                        >
-                          +7 (495) 374-81-81
-                        </a>
+                        <a href="tel:+74953748181" className="text-primary font-medium hover:underline">+7 (495) 374-81-81</a>
                         <span className="text-muted-foreground text-sm ml-3">(для справок)</span>
                       </div>
                       <div className="flex items-center">
-                        <a 
-                          href="https://wa.me/79266005550" 
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary font-medium hover:underline"
-                        >
-                          +7 (926) 600-555-0
-                        </a>
+                        <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">+7 (926) 600-555-0</a>
                         <span className="text-muted-foreground text-sm ml-3">(WhatsApp для записи)</span>
                       </div>
                       <div className="flex items-center">
-                        <a 
-                          href="tel:+79778075544" 
-                          className="text-primary font-medium hover:underline"
-                        >
-                          +7 (977) 807-55-44
-                        </a>
+                        <a href="tel:+79778075544" className="text-primary font-medium hover:underline">+7 (977) 807-55-44</a>
                         <span className="text-muted-foreground text-sm ml-3">(для срочных вопросов)</span>
                       </div>
                     </div>
@@ -215,12 +199,12 @@ const Contacts = () => {
             </Card>
 
             {/* Map */}
-            <Card className="mb-8 overflow-hidden">
+            <Card className="mb-6 overflow-hidden flex-shrink-0">
               <CardContent className="p-0">
                 <iframe
                   src="https://yandex.ru/map-widget/v1/?ll=37.370515%2C55.723389&z=16&pt=37.370515%2C55.723389%2Cpm2rdm&l=map"
                   width="100%"
-                  height="300"
+                  height="280"
                   frameBorder="0"
                   title="Карта AVE-CLINIC"
                   className="w-full"
@@ -230,7 +214,7 @@ const Contacts = () => {
             </Card>
 
             {/* How to get there */}
-            <Card className="mb-8">
+            <Card className="flex-1">
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -239,104 +223,71 @@ const Contacts = () => {
                   <h3 className="font-semibold text-foreground text-lg">Как добраться</h3>
                 </div>
                 
-                <div className="grid sm:grid-cols-2 gap-6">
-                  {/* Metro & MCD */}
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Train className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground">Метро и МЦД</span>
+                      <span className="font-medium text-foreground text-sm">Метро и МЦД</span>
                     </div>
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-2 text-sm">
                       <div className="p-3 bg-secondary/50 rounded-lg">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-primary">М Немчиновка</span>
-                          <span className="text-muted-foreground">14 мин (950 м)</span>
+                          <span className="text-muted-foreground text-xs">14 мин</span>
                         </div>
-                        <p className="text-muted-foreground">Пешком</p>
+                        <p className="text-muted-foreground text-xs">Пешком (950 м)</p>
                       </div>
                       <div className="p-3 bg-secondary/50 rounded-lg">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-primary">ЖД Немчиновка</span>
-                          <span className="text-muted-foreground">13 мин (900 м)</span>
+                          <span className="text-muted-foreground text-xs">13 мин</span>
                         </div>
-                        <p className="text-muted-foreground">Пешком</p>
+                        <p className="text-muted-foreground text-xs">Пешком (900 м)</p>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Bus routes from Setun */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Bus className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground">От станции Сетунь</span>
+                      <span className="font-medium text-foreground text-sm">Автобусы</span>
                     </div>
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-2 text-sm">
                       <div className="p-3 bg-secondary/50 rounded-lg">
-                        <div className="font-medium text-foreground mb-1">Автобус № 794</div>
-                        <p className="text-muted-foreground">до остановки «Немчиновка» — 3 остановки</p>
+                        <div className="font-medium text-foreground mb-1">№ 794</div>
+                        <p className="text-muted-foreground text-xs">до «Немчиновка» — 3 ост.</p>
                       </div>
                       <div className="p-3 bg-secondary/50 rounded-lg">
-                        <div className="font-medium text-foreground mb-1">Автобус № 597м, 597</div>
-                        <p className="text-muted-foreground">до остановки «Немчиновка» — 4 остановки</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Bus routes from Nemchinovka MCD */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Train className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground">От МЦД Немчиновка</span>
-                    </div>
-                    <div className="space-y-3 text-sm">
-                      <div className="p-3 bg-secondary/50 rounded-lg">
-                        <div className="font-medium text-foreground mb-1">Автобус № 597м</div>
-                        <p className="text-muted-foreground">до остановки «Немчиновка» — 3 остановки</p>
+                        <div className="font-medium text-foreground mb-1">№ 597м, 597</div>
+                        <p className="text-muted-foreground text-xs">до «Немчиновка» — 4 ост.</p>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Parking */}
+                <div className="mt-4 p-3 bg-accent/10 rounded-lg flex items-start gap-3">
+                  <span className="text-lg">🚗</span>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Парковка</p>
+                    <p className="text-xs text-muted-foreground">
+                      Закрытая парковка. Пароль — <span className="font-semibold text-primary">«В медицинский центр»</span>
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-
-            <h3 className="text-lg font-semibold text-foreground mb-4">Социальные сети</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {socialLinks.map((social, index) => {
-                const IconComponent = social.Icon;
-                return (
-                  <Card 
-                    key={index}
-                    className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
-                    onClick={() => window.open(social.url, "_blank")}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                          <IconComponent className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-sm">{social.name}</div>
-                          <div className="text-xs text-muted-foreground">{social.handle}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
           </div>
 
           {/* Clinic 2 - Клиника доктора Матара */}
-          <div>
+          <div className="flex flex-col">
             <h2 className="text-2xl font-bold text-foreground mb-6">Клиника доктора Матара</h2>
             
-            <Card className="mb-8">
+            {/* Info Card */}
+            <Card className="mb-6 flex-shrink-0">
               <CardContent className="p-6">
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-4 font-medium">Международный андрологический центр</p>
-                  </div>
-
+                <p className="text-sm text-muted-foreground font-medium mb-4">Международный андрологический центр</p>
+                <div className="space-y-5">
                   <div>
                     <div className="flex items-center gap-4 mb-3">
                       <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
@@ -346,21 +297,15 @@ const Contacts = () => {
                     </div>
                     <div className="space-y-2 ml-14">
                       <div className="flex items-center">
-                        <a href="tel:+74953030000" className="text-primary font-medium hover:underline">
-                          +7 (495) 303-00-00
-                        </a>
+                        <a href="tel:+74953030000" className="text-primary font-medium hover:underline">+7 (495) 303-00-00</a>
                         <span className="text-muted-foreground text-sm ml-3">(регистратура)</span>
                       </div>
                       <div className="flex items-center">
-                        <a href="tel:+79263030111" className="text-primary font-medium hover:underline">
-                          +7 (926) 303-01-11
-                        </a>
+                        <a href="tel:+79263030111" className="text-primary font-medium hover:underline">+7 (926) 303-01-11</a>
                         <span className="text-muted-foreground text-sm ml-3">(запись)</span>
                       </div>
                       <div className="flex items-center">
-                        <a href="tel:+79160303031" className="text-primary font-medium hover:underline">
-                          +7 (916) 030-30-31
-                        </a>
+                        <a href="tel:+79160303031" className="text-primary font-medium hover:underline">+7 (916) 030-30-31</a>
                         <span className="text-muted-foreground text-sm ml-3">(запись)</span>
                       </div>
                     </div>
@@ -393,12 +338,12 @@ const Contacts = () => {
             </Card>
 
             {/* Map */}
-            <Card className="mb-8 overflow-hidden">
+            <Card className="mb-6 overflow-hidden flex-shrink-0">
               <CardContent className="p-0">
                 <iframe
                   src="https://yandex.ru/map-widget/v1/?ll=37.556500%2C55.893000&z=16&pt=37.556500%2C55.893000%2Cpm2rdm&l=map"
                   width="100%"
-                  height="300"
+                  height="280"
                   frameBorder="0"
                   title="Карта Клиники доктора Матара"
                   className="w-full"
@@ -407,31 +352,49 @@ const Contacts = () => {
               </CardContent>
             </Card>
 
-            <h3 className="text-lg font-semibold text-foreground mb-4">Социальные сети</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {socialLinks.map((social, index) => {
-                const IconComponent = social.Icon;
-                return (
-                  <Card 
-                    key={index}
-                    className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
-                    onClick={() => window.open(social.url, "_blank")}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                          <IconComponent className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-foreground text-sm">{social.name}</div>
-                          <div className="text-xs text-muted-foreground">{social.handle}</div>
-                        </div>
+            {/* Placeholder card to match height */}
+            <Card className="flex-1">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground text-lg">Как добраться</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Клиника расположена на Коровинском шоссе, в районе Западное Дегунино (САО).
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Shared Social Links */}
+        <div className="mb-12">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Социальные сети</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {socialLinks.map((social, index) => {
+              const IconComponent = social.Icon;
+              return (
+                <Card 
+                  key={index}
+                  className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
+                  onClick={() => window.open(social.url, "_blank")}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors flex-shrink-0">
+                        <IconComponent className="w-5 h-5" />
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-foreground text-sm">{social.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">{social.handle}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
 
