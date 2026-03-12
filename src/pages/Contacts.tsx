@@ -414,6 +414,17 @@ const Contacts = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Parking */}
+                <div className="mt-4 p-3 bg-accent/10 rounded-lg flex items-start gap-3">
+                  <span className="text-lg">🚗</span>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Парковка</p>
+                    <p className="text-xs text-muted-foreground">
+                      Въезд к наружной стороне дома (не во двор). Шлагбаумы <span className="font-semibold text-primary">№1</span> и <span className="font-semibold text-primary">№3</span> — для открытия позвоните по одному из телефонов клиники.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
