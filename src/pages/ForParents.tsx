@@ -2,6 +2,8 @@ import { ArrowLeft, BookOpen, Video, Headphones, ExternalLink } from "lucide-rea
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageMeta from "@/components/PageMeta";
+import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 
 const articles = [
   {
