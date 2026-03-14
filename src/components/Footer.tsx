@@ -104,29 +104,34 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Навигация</h4>
             <ul className="space-y-2">
-              {[{
-              label: "Главная",
-              href: "#hero"
-            }, {
-              label: "Обо мне",
-              href: "#about"
-            }, {
-              label: "Консультации",
-              href: "#consultations"
-            }, {
-              label: "Курсы",
-              href: "#courses"
-            }, {
-              label: "Отзывы",
-              href: "#reviews"
-            }, {
-              label: "Контакты",
-              href: "#contact"
-            }].map(item => <li key={item.href}>
-                  <button onClick={() => handleNavClick(item.href)} className="text-background/70 hover:text-background transition-colors text-sm">
-                    {item.label}
-                  </button>
-                </li>)}
+              {[
+                { label: "Главная", href: "#hero", type: "anchor" },
+                { label: "Обо мне", href: "#about", type: "anchor" },
+                { label: "Консультации", href: "#consultations", type: "anchor" },
+                { label: "Методики", href: "/methodologies", type: "link" },
+                { label: "Команда", href: "/team", type: "link" },
+                { label: "Для родителей", href: "/for-parents", type: "link" },
+                { label: "Для врачей", href: "/for-doctors", type: "link" },
+                { label: "СМИ и ТВ", href: "/media", type: "link" },
+                { label: "Видео", href: "/videos", type: "link" },
+                { label: "Публикации", href: "/publications", type: "link" },
+                { label: "Отзывы", href: "/reviews", type: "link" },
+                { label: "Контакты", href: "/contacts", type: "link" },
+              ].map(item =>
+                item.type === "anchor" ? (
+                  <li key={item.href}>
+                    <button onClick={() => handleNavClick(item.href)} className="text-background/70 hover:text-background transition-colors text-sm">
+                      {item.label}
+                    </button>
+                  </li>
+                ) : (
+                  <li key={item.href}>
+                    <Link to={item.href} className="text-background/70 hover:text-background transition-colors text-sm">
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 
