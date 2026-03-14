@@ -86,6 +86,7 @@ const Publications = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta title="Научные публикации — Проф. Тарусин Д.И." description="Полный список научных работ профессора Тарусина Д.И.: 126+ статей, 6 глав в национальных руководствах, патенты на изобретения." path="/publications" />
       <Header />
       <main className="pt-20 md:pt-24">
         {/* Hero Section */}
