@@ -125,6 +125,7 @@ const Contacts = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta title="Контакты и запись — Проф. Тарусин Д.И." description="Запись на приём к профессору Тарусину Д.И. в AVE-CLINIC (Немчиновка) и клинику доктора Матара (Москва). Телефоны, адреса, как добраться." path="/contacts" />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">

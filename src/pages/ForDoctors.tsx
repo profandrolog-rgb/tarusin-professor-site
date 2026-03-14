@@ -75,7 +75,9 @@ const schools = [
 
 const ForDoctors = () => {
   return (
+    <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
+      <PageMeta title="Для врачей — Проф. Тарусин Д.И." description="Научные публикации, видеолекции и образовательные материалы для коллег от профессора Тарусина Д.И." path="/for-doctors" />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
