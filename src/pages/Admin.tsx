@@ -9,7 +9,13 @@ import {
   ArrowLeft,
   Loader2,
   Award,
-  Pill
+  Pill,
+  BarChart3,
+  ExternalLink,
+  TrendingUp,
+  Eye,
+  MousePointer,
+  Clock
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,6 +72,25 @@ const adminSections = [
   },
 ];
 
+const analyticsServices = [
+  {
+    name: "Яндекс.Метрика",
+    id: "107704601",
+    icon: "📊",
+    dashboardUrl: "https://metrika.yandex.ru/dashboard?id=107704601",
+    features: ["Вебвизор", "Карта кликов", "Источники трафика", "Показатель отказов"],
+    color: "border-yellow-500/50 bg-yellow-500/5",
+  },
+  {
+    name: "Google Analytics 4",
+    id: "G-5M2VCL4QN5",
+    icon: "📈",
+    dashboardUrl: "https://analytics.google.com/analytics/web/",
+    features: ["Воронки конверсий", "Когортный анализ", "Демография", "Поведение"],
+    color: "border-blue-500/50 bg-blue-500/5",
+  },
+];
+
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
@@ -108,6 +133,90 @@ const Admin = () => {
           </p>
         </div>
 
+        {/* Analytics Section */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Аналитика и счётчики</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {analyticsServices.map((service) => (
+              <Card key={service.id} className={`border ${service.color}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{service.icon}</span>
+                      <div>
+                        <CardTitle className="text-base">{service.name}</CardTitle>
+                        <CardDescription className="text-xs font-mono">{service.id}</CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Активен
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {service.features.map((feature) => (
+                      <span key={feature} className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground">
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                  <a
+                    href={service.dashboardUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button variant="outline" size="sm" className="w-full gap-2 mt-1">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Открыть личный кабинет
+                    </Button>
+                  </a>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick tips */}
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              <Eye className="w-4 h-4 text-primary flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Просмотры</p>
+                <p className="text-sm font-medium text-foreground">Метрика → Сводка</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              <TrendingUp className="w-4 h-4 text-primary flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Источники</p>
+                <p className="text-sm font-medium text-foreground">GA4 → Источники</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              <MousePointer className="w-4 h-4 text-primary flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Карта кликов</p>
+                <p className="text-sm font-medium text-foreground">Метрика → Карты</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Время на сайте</p>
+                <p className="text-sm font-medium text-foreground">GA4 → Вовлечённость</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Management */}
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-foreground">Управление контентом</h2>
+        </div>
         <div className="grid gap-6 md:grid-cols-2">
           {adminSections.map((section) => (
             <Link key={section.href} to={section.href}>
