@@ -562,6 +562,7 @@ const VideoCases = () => {
         )}
       </main>
     </div>
+    </AgeConfirmationModal>
   );
 };
 
