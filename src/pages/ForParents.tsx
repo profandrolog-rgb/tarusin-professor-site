@@ -50,7 +50,9 @@ const podcasts = [
 
 const ForParents = () => {
   return (
+    <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
+      <PageMeta title="Для родителей — Проф. Тарусин Д.И." description="Полезные материалы о мужском здоровье детей от профессора Тарусина: статьи, видео и подкасты для родителей." path="/for-parents" />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
