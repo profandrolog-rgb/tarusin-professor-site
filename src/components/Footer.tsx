@@ -89,9 +89,9 @@ const Footer = () => {
                 <p className="font-semibold">Профессор Тарусин Д.И.</p>
               </div>
             </div>
-            <p className="text-background/70 text-sm mb-4">Член-корреспондент РАЕН, профессор, доктор медицинских наук, врач высшей категории. Основатель детской андрологии в России. Headliner (НД), Opinion Lrader (OL)
+            <p className="text-background/70 text-sm mb-4">Член-корреспондент РАЕН, профессор, доктор медицинских наук, врач высшей категории. Основатель детской андрологии в России. Headliner (НД), Opinion Leader (OL)
 Более 42 лет на страже мужского здоровья      
-          </p>
+           </p>
             {/* Social Links */}
             <div className="flex gap-3">
               {socialLinks.map(social => <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-background/10 hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors" aria-label={social.label}>
