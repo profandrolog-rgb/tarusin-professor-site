@@ -9,6 +9,7 @@ import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import PageMeta from "@/components/PageMeta";
 interface TeamMember {
   id: string;
   full_name: string;
