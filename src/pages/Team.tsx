@@ -9,6 +9,7 @@ import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import PageMeta from "@/components/PageMeta";
 interface TeamMember {
   id: string;
   full_name: string;
@@ -109,6 +110,7 @@ export default function Team() {
     setEditingMember(null);
   };
   return <div className="min-h-screen bg-background">
+      <PageMeta title="Команда профессора Тарусина Д.И." description="Врачи и специалисты команды профессора Тарусина — андрологи, урологи и хирурги с многолетним опытом в детской и взрослой андрологии." path="/team" />
       <div className="container mx-auto px-4 py-12">
         {isAdmin && <Link to="/admin" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />

@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageMeta from "@/components/PageMeta";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Microscope, Syringe, Activity, CheckCircle2 } from "lucide-react";
 
@@ -93,6 +94,7 @@ const Methodologies = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <PageMeta title="Методики лечения — Проф. Тарусин Д.И." description="Микрохирургические, диагностические и физиотерапевтические методики профессора Тарусина для лечения урологических и андрологических заболеваний." path="/methodologies" />
       <main className="pt-20">
         <section className="py-16 md:py-24 bg-secondary/30">
           <div className="container mx-auto px-4">
