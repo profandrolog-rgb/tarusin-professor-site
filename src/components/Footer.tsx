@@ -114,7 +114,11 @@ const Footer = () => {
                 { label: "Для врачей", href: "/for-doctors", type: "link" },
                 { label: "СМИ и ТВ", href: "/media", type: "link" },
                 { label: "Видео", href: "/videos", type: "link" },
+                { label: "Видео-кейсы", href: "/video-cases", type: "link" },
                 { label: "Публикации", href: "/publications", type: "link" },
+                { label: "Клинические случаи", href: "/clinical-cases", type: "link" },
+                { label: "Путёвые заметки", href: "/travel-notes", type: "link" },
+                { label: "Размышлизмы", href: "/blog", type: "link" },
                 { label: "Отзывы", href: "/reviews", type: "link" },
                 { label: "Контакты", href: "/contacts", type: "link" },
               ].map(item =>
