@@ -461,6 +461,7 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen bg-background select-none" onContextMenu={(e) => e.preventDefault()} onCopy={(e) => e.preventDefault()}>
+      <PageMeta title="Размышлизмы — Проф. Тарусин Д.И." description="Авторский блог профессора Тарусина — размышления о медицине, андрологии, жизни и профессиональном пути." path="/blog" />
       <div className="container mx-auto px-4 py-8 pt-24">
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />
