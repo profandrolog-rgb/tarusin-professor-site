@@ -338,7 +338,28 @@ const ContactSection = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Телефон *</Label>
-                      <Input id="phone" name="phone" type="tel" placeholder="+7 (999) 123-45-67" value={formData.phone} onChange={handleChange} className={errors.phone ? "border-destructive" : ""} />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        placeholder="+7 (___) ___-__-__"
+                        value={formData.phone}
+                        onChange={(e) => {
+                          // Auto-format phone number
+                          let val = e.target.value.replace(/\D/g, "");
+                          if (val.startsWith("8")) val = "7" + val.slice(1);
+                          if (!val.startsWith("7") && val.length > 0) val = "7" + val;
+                          let formatted = "";
+                          if (val.length > 0) formatted = "+7";
+                          if (val.length > 1) formatted += " (" + val.slice(1, 4);
+                          if (val.length >= 4) formatted += ") " + val.slice(4, 7);
+                          if (val.length >= 7) formatted += "-" + val.slice(7, 9);
+                          if (val.length >= 9) formatted += "-" + val.slice(9, 11);
+                          setFormData((prev) => ({ ...prev, phone: formatted }));
+                          if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+                        }}
+                        className={errors.phone ? "border-destructive" : ""}
+                      />
                       {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                     </div>
                   </div>
