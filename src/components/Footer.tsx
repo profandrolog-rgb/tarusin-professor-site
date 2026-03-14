@@ -197,12 +197,12 @@ const Footer = () => {
               © {currentYear} Профессор Тарусин Дмитрий Игоревич. Все права защищены.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="text-sm text-background/60 hover:text-background transition-colors">
+              <Link to="/privacy-policy" className="text-sm text-background/60 hover:text-background transition-colors">
                 Политика конфиденциальности
-              </a>
-              <a href="#" className="text-sm text-background/60 hover:text-background transition-colors">
+              </Link>
+              <Link to="/consent" className="text-sm text-background/60 hover:text-background transition-colors">
                 Согласие на обработку данных
-              </a>
+              </Link>
             </div>
           </div>
         </div>
