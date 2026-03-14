@@ -1,5 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageMeta from "@/components/PageMeta";
+import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, FileText, Award, Microscope } from "lucide-react";
 
