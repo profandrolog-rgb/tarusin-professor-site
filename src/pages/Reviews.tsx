@@ -46,6 +46,11 @@ const reviewPlatforms = [
 const Reviews = () => {
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta
+        title="Отзывы пациентов — Проф. Тарусин Д.И."
+        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 5.0 на 8+ медицинских агрегаторах."
+        path="/reviews"
+      />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
