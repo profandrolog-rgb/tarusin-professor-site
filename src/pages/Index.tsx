@@ -6,10 +6,78 @@ import CoursesSection from "@/components/CoursesSection";
 import ReviewsSection from "@/components/ReviewsSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
+import PageMeta from "@/components/PageMeta";
+import { Helmet } from "react-helmet-async";
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": "https://tarusin-professor-site.lovable.app/#person",
+      "name": "Тарусин Дмитрий Игоревич",
+      "jobTitle": "Профессор, доктор медицинских наук",
+      "description": "Основатель детской урологии-андрологии в России. Член-корреспондент РАЕН, врач высшей категории.",
+      "url": "https://tarusin-professor-site.lovable.app",
+      "telephone": ["+74953748181", "+74953030000"],
+      "medicalSpecialty": ["Андрология", "Детская урология-андрология", "Микрохирургия", "УЗИ-диагностика"],
+      "knowsAbout": ["Варикоцеле", "Крипторхизм", "Гипоспадия", "Фимоз", "Детская андрология"],
+      "sameAs": [
+        "https://t.me/Professor_DI",
+        "https://www.instagram.com/androlog_di",
+        "https://www.facebook.com/tarusindi",
+        "https://dzen.ru/boymanblog"
+      ]
+    },
+    {
+      "@type": "MedicalClinic",
+      "name": "AVE-CLINIC",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "3-я Запрудная ул. дом 16",
+        "addressLocality": "с. Немчиновка",
+        "addressCountry": "RU"
+      },
+      "telephone": "+74953748181",
+      "medicalSpecialty": "Андрология"
+    },
+    {
+      "@type": "MedicalClinic",
+      "name": "Клиника доктора Матара",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Коровинское шоссе д. 9 к. 2",
+        "addressLocality": "Москва",
+        "addressCountry": "RU"
+      },
+      "telephone": "+74953030000",
+      "medicalSpecialty": "Андрология"
+    },
+    {
+      "@type": "AggregateRating",
+      "itemReviewed": {
+        "@type": "Physician",
+        "name": "Тарусин Дмитрий Игоревич"
+      },
+      "ratingValue": "5.0",
+      "bestRating": "5",
+      "ratingCount": "69",
+      "reviewCount": "69"
+    }
+  ]
+};
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta
+        title="Профессор Тарусин Д.И. — Андролог, детский уролог-андролог, Москва"
+        description="Профессор Тарусин Дмитрий Игоревич — основатель детской урологии-андрологии в России. Доктор медицинских наук, 42 года опыта. Запись на приём."
+        path="/"
+      />
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
       <Header />
       <main>
         <HeroSection />

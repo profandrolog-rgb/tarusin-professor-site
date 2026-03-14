@@ -2,6 +2,7 @@ import { ArrowLeft, Star, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import PageMeta from "@/components/PageMeta";
 
 import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
 import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
@@ -46,6 +47,11 @@ const reviewPlatforms = [
 const Reviews = () => {
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta
+        title="Отзывы пациентов — Проф. Тарусин Д.И."
+        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 5.0 на 8+ медицинских агрегаторах."
+        path="/reviews"
+      />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
@@ -65,7 +71,7 @@ const Reviews = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">50+</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">69+</div>
               <div className="text-sm text-muted-foreground">Отзывов</div>
             </CardContent>
           </Card>
@@ -83,7 +89,7 @@ const Reviews = () => {
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">32</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">42</div>
               <div className="text-sm text-muted-foreground">Года опыта</div>
             </CardContent>
           </Card>
@@ -161,7 +167,7 @@ const Reviews = () => {
               Доверие пациентов — главная награда
             </h2>
             <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-8">
-              За 32 года практики тысячи семей доверили мне здоровье своих детей. 
+              За 42 года практики тысячи семей доверили мне здоровье своих детей. 
               Каждый положительный отзыв — это история успешного лечения и благодарность, 
               которая вдохновляет продолжать работу.
             </p>

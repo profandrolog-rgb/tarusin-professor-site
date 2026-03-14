@@ -89,9 +89,9 @@ const Footer = () => {
                 <p className="font-semibold">Профессор Тарусин Д.И.</p>
               </div>
             </div>
-            <p className="text-background/70 text-sm mb-4">Член-корреспондент РАЕН, профессор, доктор медицинских наук, врач высшей категории. Основатель детской андрологии в России. Headliner (НД), Opinion Lrader (OL)
+            <p className="text-background/70 text-sm mb-4">Член-корреспондент РАЕН, профессор, доктор медицинских наук, врач высшей категории. Основатель детской андрологии в России. Headliner (НД), Opinion Leader (OL)
 Более 42 лет на страже мужского здоровья      
-          </p>
+           </p>
             {/* Social Links */}
             <div className="flex gap-3">
               {socialLinks.map(social => <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-background/10 hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors" aria-label={social.label}>
@@ -104,29 +104,34 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Навигация</h4>
             <ul className="space-y-2">
-              {[{
-              label: "Главная",
-              href: "#hero"
-            }, {
-              label: "Обо мне",
-              href: "#about"
-            }, {
-              label: "Консультации",
-              href: "#consultations"
-            }, {
-              label: "Курсы",
-              href: "#courses"
-            }, {
-              label: "Отзывы",
-              href: "#reviews"
-            }, {
-              label: "Контакты",
-              href: "#contact"
-            }].map(item => <li key={item.href}>
-                  <button onClick={() => handleNavClick(item.href)} className="text-background/70 hover:text-background transition-colors text-sm">
-                    {item.label}
-                  </button>
-                </li>)}
+              {[
+                { label: "Главная", href: "#hero", type: "anchor" },
+                { label: "Обо мне", href: "#about", type: "anchor" },
+                { label: "Консультации", href: "#consultations", type: "anchor" },
+                { label: "Методики", href: "/methodologies", type: "link" },
+                { label: "Команда", href: "/team", type: "link" },
+                { label: "Для родителей", href: "/for-parents", type: "link" },
+                { label: "Для врачей", href: "/for-doctors", type: "link" },
+                { label: "СМИ и ТВ", href: "/media", type: "link" },
+                { label: "Видео", href: "/videos", type: "link" },
+                { label: "Публикации", href: "/publications", type: "link" },
+                { label: "Отзывы", href: "/reviews", type: "link" },
+                { label: "Контакты", href: "/contacts", type: "link" },
+              ].map(item =>
+                item.type === "anchor" ? (
+                  <li key={item.href}>
+                    <button onClick={() => handleNavClick(item.href)} className="text-background/70 hover:text-background transition-colors text-sm">
+                      {item.label}
+                    </button>
+                  </li>
+                ) : (
+                  <li key={item.href}>
+                    <Link to={item.href} className="text-background/70 hover:text-background transition-colors text-sm">
+                      {item.label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 
@@ -176,10 +181,8 @@ const Footer = () => {
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
-                <span className="text-background/70">AVE-CLINIC (клиника персональной медицины)
-с. Немчиновка, 3-я Запрудная ул. дом 14-16
-
-                <span className="font-medium text-background/90">AVE-CLINIC</span><br />
+                <span className="text-background/70">
+                  <span className="font-medium text-background/90">AVE-CLINIC</span><br />
                   с. Немчиновка, 3-я Запрудная ул. дом 16
                 </span>
               </li>
@@ -194,12 +197,12 @@ const Footer = () => {
               © {currentYear} Профессор Тарусин Дмитрий Игоревич. Все права защищены.
             </p>
             <div className="flex gap-6">
-              <a href="#" className="text-sm text-background/60 hover:text-background transition-colors">
+              <Link to="/privacy-policy" className="text-sm text-background/60 hover:text-background transition-colors">
                 Политика конфиденциальности
-              </a>
-              <a href="#" className="text-sm text-background/60 hover:text-background transition-colors">
+              </Link>
+              <Link to="/consent" className="text-sm text-background/60 hover:text-background transition-colors">
                 Согласие на обработку данных
-              </a>
+              </Link>
             </div>
           </div>
         </div>

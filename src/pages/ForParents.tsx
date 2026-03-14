@@ -2,6 +2,8 @@ import { ArrowLeft, BookOpen, Video, Headphones, ExternalLink } from "lucide-rea
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageMeta from "@/components/PageMeta";
+import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 
 const articles = [
   {
@@ -50,7 +52,9 @@ const podcasts = [
 
 const ForParents = () => {
   return (
+    <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
+      <PageMeta title="Для родителей — Проф. Тарусин Д.И." description="Полезные материалы о мужском здоровье детей от профессора Тарусина: статьи, видео и подкасты для родителей." path="/for-parents" />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
@@ -66,11 +70,6 @@ const ForParents = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        {/* Disclaimer */}
-        <div className="mb-8 border border-destructive rounded-lg p-4 text-sm text-muted-foreground leading-relaxed">
-          Изображения и видео, приведенные во всех разделах сайта не являются порнографическими изображениями, так как приводятся только в научно-образовательных и клинических целях. Материалы не предназначены для возбуждения сексуального интереса и не являются «информацией порнографического характера» в смысле п.&nbsp;8 ст.&nbsp;2 Федерального закона №&nbsp;436‑ФЗ от 29.12.2010&nbsp;г. и Постановления ВС РФ от 15.12.2022&nbsp;г. Нажимая на кнопку просмотра Вы подтверждаете свое совершеннолетие (18+). Нажимая на кнопку просмотра Вы делаете это на свой страх и риск. Все — даже обезличенные материалы, опубликованные на сайте в виде историй болезни, кейсов, фрагментов презентаций, видеофайлы, изображения опубликованы на основании универсального информированного согласия, упоминающего возможность использования материалов в научных, аналитических, учебных, образовательных, просветительских целях. Профессор не несет ответственности за Ваши эмоции, переживания, моральную травматизацию и неограниченный круг возможных последствий, наступление которых возможно при просмотре материалов, представленных на сайте.
-        </div>
-
         {/* Articles Section */}
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
@@ -202,6 +201,7 @@ const ForParents = () => {
         </div>
       </section>
     </div>
+    </AgeConfirmationModal>
   );
 };
 

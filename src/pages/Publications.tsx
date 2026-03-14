@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageMeta from "@/components/PageMeta";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, FileText, Award, Microscope } from "lucide-react";
 
@@ -62,7 +63,7 @@ const publications = [
 ];
 
 const stats = [
-  { icon: FileText, value: "61+", label: "Научных публикаций" },
+  { icon: FileText, value: "126+", label: "Научных публикаций" },
   { icon: BookOpen, value: "6", label: "Глав в нац. руководствах" },
   { icon: Award, value: "3", label: "Патента на изобретения" },
   { icon: Microscope, value: "1210+", label: "Цитирований" },
@@ -86,6 +87,7 @@ const Publications = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta title="Научные публикации — Проф. Тарусин Д.И." description="Полный список научных работ профессора Тарусина Д.И.: 126+ статей, 6 глав в национальных руководствах, патенты на изобретения." path="/publications" />
       <Header />
       <main className="pt-20 md:pt-24">
         {/* Hero Section */}

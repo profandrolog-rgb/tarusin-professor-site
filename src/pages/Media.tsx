@@ -2,6 +2,7 @@ import { ArrowLeft, Newspaper, Tv, Headphones, ExternalLink, Play } from "lucide
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageMeta from "@/components/PageMeta";
 
 const pressArticles = [
   {
@@ -67,6 +68,7 @@ const podcasts = [
 const Media = () => {
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta title="СМИ, ТВ и подкасты — Проф. Тарусин Д.И." description="Публикации в прессе, телевизионные проекты и подкасты с участием профессора Тарусина Д.И." path="/media" />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">

@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import PageMeta from "@/components/PageMeta";
+import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 
 type CaseCategory = "hydrocele" | "cryptorchidism" | "hypospadias" | "varicocele" | "phimosis" | "sexology" | "psychology" | "infertility" | "erectile_dysfunction" | "enuresis" | "pelvic_pain" | "scrotal_pain" | "hernia" | "complications" | "rarities" | "other";
 
@@ -280,14 +282,12 @@ const ClinicalCases = () => {
   }, {} as Record<CaseCategory, ClinicalCase[]>);
 
   return (
+    <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      <PageMeta title="Клинические случаи — Проф. Тарусин Д.И." description="Описания клинических случаев из практики профессора Тарусина Д.И. с иллюстрациями и выводами." path="/clinical-cases" />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
-          <Link
-            to={isAdmin ? "/admin" : "/"}
-            className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"
-          >
+          <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             {isAdmin ? "К панели администратора" : "На главную"}
           </Link>
@@ -299,10 +299,6 @@ const ClinicalCases = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        {/* Disclaimer */}
-        <div className="mb-8 border border-destructive rounded-lg p-4 text-sm text-muted-foreground leading-relaxed">
-          Изображения и видео, приведенные во всех разделах сайта не являются порнографическими изображениями, так как приводятся только в научно-образовательных и клинических целях. Материалы не предназначены для возбуждения сексуального интереса и не являются «информацией порнографического характера» в смысле п.&nbsp;8 ст.&nbsp;2 Федерального закона №&nbsp;436‑ФЗ от 29.12.2010&nbsp;г. и Постановления ВС РФ от 15.12.2022&nbsp;г. Нажимая на кнопку просмотра Вы подтверждаете свое совершеннолетие (18+). Нажимая на кнопку просмотра Вы делаете это на свой страх и риск. Все — даже обезличенные материалы, опубликованные на сайте в виде историй болезни, кейсов, фрагментов презентаций, видеофайлы, изображения опубликованы на основании универсального информированного согласия, упоминающего возможность использования материалов в научных, аналитических, учебных, образовательных, просветительских целях. Профессор не несет ответственности за Ваши эмоции, переживания, моральную травматизацию и неограниченный круг возможных последствий, наступление которых возможно при просмотре материалов, представленных на сайте.
-        </div>
 
         {/* Admin Section */}
         <div className="mb-12">
@@ -566,6 +562,7 @@ const ClinicalCases = () => {
         )}
       </main>
     </div>
+    </AgeConfirmationModal>
   );
 };
 
