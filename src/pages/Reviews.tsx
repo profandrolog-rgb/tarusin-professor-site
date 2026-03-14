@@ -92,7 +92,7 @@ const Reviews = () => {
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">32</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">42</div>
               <div className="text-sm text-muted-foreground">Года опыта</div>
             </CardContent>
           </Card>
