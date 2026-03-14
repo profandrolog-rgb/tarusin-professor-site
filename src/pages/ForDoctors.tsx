@@ -305,6 +305,7 @@ const ForDoctors = () => {
         </section>
       </main>
     </div>
+    </AgeConfirmationModal>
   );
 };
 
