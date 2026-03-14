@@ -2,6 +2,7 @@ import { ArrowLeft, Newspaper, Tv, Headphones, ExternalLink, Play } from "lucide
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageMeta from "@/components/PageMeta";
 
 const pressArticles = [
   {
