@@ -201,6 +201,7 @@ const ForParents = () => {
         </div>
       </section>
     </div>
+    </AgeConfirmationModal>
   );
 };
 
