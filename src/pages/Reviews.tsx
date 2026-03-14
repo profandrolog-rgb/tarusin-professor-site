@@ -74,7 +74,7 @@ const Reviews = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">50+</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">69+</div>
               <div className="text-sm text-muted-foreground">Отзывов</div>
             </CardContent>
           </Card>
