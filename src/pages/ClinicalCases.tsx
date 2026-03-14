@@ -562,6 +562,7 @@ const ClinicalCases = () => {
         )}
       </main>
     </div>
+    </AgeConfirmationModal>
   );
 };
 
