@@ -62,7 +62,7 @@ const publications = [
 ];
 
 const stats = [
-  { icon: FileText, value: "61+", label: "Научных публикаций" },
+  { icon: FileText, value: "126+", label: "Научных публикаций" },
   { icon: BookOpen, value: "6", label: "Глав в нац. руководствах" },
   { icon: Award, value: "3", label: "Патента на изобретения" },
   { icon: Microscope, value: "1210+", label: "Цитирований" },
