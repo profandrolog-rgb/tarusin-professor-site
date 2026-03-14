@@ -49,38 +49,38 @@ interface ClinicCardProps {
 }
 
 const ClinicCard = ({ name, address, phones, schedule, directions }: ClinicCardProps) => (
-  <Card className="bg-primary text-primary-foreground shadow-lg h-full">
+  <Card className="bg-card border-border shadow-lg h-full">
     <CardContent className="p-6 md:p-8">
-      <h3 className="text-xl font-semibold mb-6">{name}</h3>
+      <h3 className="text-xl font-semibold text-primary mb-6">{name}</h3>
       <div className="space-y-5">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-            <MapPin className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <MapPin className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="font-medium mb-1">Место приёма</p>
-            <p className="text-primary-foreground/80 text-sm">{address}</p>
+            <p className="font-medium text-foreground mb-1">Место приёма</p>
+            <p className="text-muted-foreground text-sm">{address}</p>
           </div>
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-            <Phone className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Phone className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="font-medium mb-1">Телефоны</p>
-            <div className="text-primary-foreground/80 text-sm space-y-1">
+            <p className="font-medium text-foreground mb-1">Телефоны</p>
+            <div className="text-sm space-y-1">
               {phones.map((phone, i) => (
                 <div key={i}>
                   <a
                     href={phone.isWhatsApp ? `https://wa.me/${phone.href}` : `tel:${phone.href}`}
                     target={phone.isWhatsApp ? "_blank" : undefined}
                     rel={phone.isWhatsApp ? "noopener noreferrer" : undefined}
-                    className="hover:text-primary-foreground transition-colors"
+                    className="text-primary font-medium hover:underline transition-colors"
                   >
                     {phone.number}
                   </a>
-                  <span className="ml-2 opacity-70">({phone.label})</span>
+                  <span className="ml-2 text-muted-foreground">({phone.label})</span>
                 </div>
               ))}
             </div>
@@ -88,12 +88,12 @@ const ClinicCard = ({ name, address, phones, schedule, directions }: ClinicCardP
         </div>
 
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-            <Clock className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="font-medium mb-1">Приём</p>
-            <p className="text-primary-foreground/80 text-sm">{schedule}</p>
+            <p className="font-medium text-foreground mb-1">Приём</p>
+            <p className="text-muted-foreground text-sm">{schedule}</p>
           </div>
         </div>
       </div>
@@ -102,28 +102,28 @@ const ClinicCard = ({ name, address, phones, schedule, directions }: ClinicCardP
     {/* Directions block */}
     {directions && (
       <div className="px-6 pb-6 md:px-8 md:pb-8 pt-0">
-        <Card className="bg-primary-foreground/10 border-primary-foreground/20">
+        <Card className="bg-secondary/50 border-border">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Navigation className="w-4 h-4" />
-              <h4 className="font-semibold text-primary-foreground">Как добраться</h4>
+              <Navigation className="w-4 h-4 text-primary" />
+              <h4 className="font-semibold text-foreground">Как добраться</h4>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-3">
               {/* Metro */}
               <div>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Train className="w-3.5 h-3.5 opacity-80" />
-                  <span className="text-xs font-medium">Метро / МЦД</span>
+                  <Train className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-foreground">Метро / МЦД</span>
                 </div>
                 <div className="space-y-1.5">
                   {directions.metro.map((r, i) => (
-                    <div key={i} className="p-2 bg-primary-foreground/10 rounded-md">
+                    <div key={i} className="p-2 bg-card rounded-md border border-border">
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs font-medium">{r.name}</span>
-                        <span className="text-[10px] opacity-70">{r.time}</span>
+                        <span className="text-xs font-medium text-foreground">{r.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{r.time}</span>
                       </div>
-                      <p className="text-[10px] opacity-70">{r.detail}</p>
+                      <p className="text-[10px] text-muted-foreground">{r.detail}</p>
                     </div>
                   ))}
                 </div>
@@ -132,14 +132,14 @@ const ClinicCard = ({ name, address, phones, schedule, directions }: ClinicCardP
               {/* Buses */}
               <div>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Bus className="w-3.5 h-3.5 opacity-80" />
-                  <span className="text-xs font-medium">Автобусы</span>
+                  <Bus className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-foreground">Автобусы</span>
                 </div>
                 <div className="space-y-1.5">
                   {directions.buses.map((b, i) => (
-                    <div key={i} className="p-2 bg-primary-foreground/10 rounded-md">
-                      <div className="text-xs font-medium mb-0.5">№ {b.number}</div>
-                      <p className="text-[10px] opacity-70">{b.detail}</p>
+                    <div key={i} className="p-2 bg-card rounded-md border border-border">
+                      <div className="text-xs font-medium text-foreground mb-0.5">№ {b.number}</div>
+                      <p className="text-[10px] text-muted-foreground">{b.detail}</p>
                     </div>
                   ))}
                 </div>
@@ -148,22 +148,22 @@ const ClinicCard = ({ name, address, phones, schedule, directions }: ClinicCardP
 
             {/* Extras (walking etc.) */}
             {directions.extras?.map((ex, i) => (
-              <div key={i} className="mt-2 p-2 bg-primary-foreground/10 rounded-md flex items-start gap-2">
+              <div key={i} className="mt-2 p-2 bg-card rounded-md border border-border flex items-start gap-2">
                 <span className="text-sm">{ex.emoji}</span>
                 <div>
-                  <p className="text-xs font-medium">{ex.title}</p>
-                  <p className="text-[10px] opacity-70">{ex.description}</p>
+                  <p className="text-xs font-medium text-foreground">{ex.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{ex.description}</p>
                 </div>
               </div>
             ))}
 
             {/* Parking */}
             {directions.parking && (
-              <div className="mt-2 p-2 bg-primary-foreground/10 rounded-md flex items-start gap-2">
+              <div className="mt-2 p-2 bg-card rounded-md border border-border flex items-start gap-2">
                 <span className="text-sm">{directions.parking.emoji}</span>
                 <div>
-                  <p className="text-xs font-medium">{directions.parking.title}</p>
-                  <p className="text-[10px] opacity-70">{directions.parking.description}</p>
+                  <p className="text-xs font-medium text-foreground">{directions.parking.title}</p>
+                  <p className="text-[10px] text-muted-foreground">{directions.parking.description}</p>
                 </div>
               </div>
             )}
