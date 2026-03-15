@@ -102,6 +102,8 @@ export function AnthropometryCalculator() {
           harmony: result.harmony,
           reference_standard: "WHO",
           notes: notes || null,
+          foot_length_cm: parseFloat(footLength) || null,
+          shoe_size_ru: footLength ? getRussianShoeSize(parseFloat(footLength)) : null,
         } as any);
 
       if (error) throw error;
