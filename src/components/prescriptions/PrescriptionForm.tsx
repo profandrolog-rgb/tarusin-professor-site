@@ -59,11 +59,15 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
       .single();
 
     if (prescription) {
-      setPatient({
-        id: (prescription as any).patients.id,
-        full_name: (prescription as any).patients.full_name,
-        birth_date: (prescription as any).patients.birth_date,
-      });
+      if (!repeatWithoutPatient) {
+        setPatient({
+          id: (prescription as any).patients.id,
+          full_name: (prescription as any).patients.full_name,
+          birth_date: (prescription as any).patients.birth_date,
+        });
+      } else {
+        setPatient(null);
+      }
       setPrescriptionDate(new Date());
 
       const { data: prescItems } = await supabase
