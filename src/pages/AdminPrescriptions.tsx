@@ -11,6 +11,7 @@ import { DrugReference } from "@/components/prescriptions/DrugReference";
 import { DosageCalculator } from "@/components/prescriptions/DosageCalculator";
 import { SubstanceReference } from "@/components/prescriptions/SubstanceReference";
 import { AnthropometryCalculator } from "@/components/anthropometry/AnthropometryCalculator";
+import { AnthropometryErrorBoundary } from "@/components/anthropometry/AnthropometryErrorBoundary";
 import { LabResultsPanel } from "@/components/labs/LabResultsPanel";
 import { UltrasoundPanel } from "@/components/ultrasound/UltrasoundPanel";
 
