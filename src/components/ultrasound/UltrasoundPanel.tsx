@@ -103,9 +103,9 @@ export function UltrasoundPanel() {
   const ageYears = patient ? calculateAge(new Date(patient.birth_date), examDate).years : 0;
   const volumeNorm = getTesticularVolumeNorm(ageYears);
 
-  const rightTestisVol = calcVolume(numVal("right_testis_length"), numVal("right_testis_width"), numVal("right_testis_depth"));
-  const leftTestisVol = calcVolume(numVal("left_testis_length"), numVal("left_testis_width"), numVal("left_testis_depth"));
-  const prostateVol = calcProstateVolume(numVal("prostate_length"), numVal("prostate_width"), numVal("prostate_depth"));
+  const rightTestisVol = numVal("right_testis_volume") ?? null;
+  const leftTestisVol = numVal("left_testis_volume") ?? null;
+  const prostateVol = numVal("prostate_volume") ?? null;
 
   // Calculated indices
   const rightDeficit = calcVolumeDeficit(rightTestisVol, volumeNorm);
@@ -120,13 +120,7 @@ export function UltrasoundPanel() {
       const row: any = {
         patient_id: patient.id,
         exam_date: format(examDate, "yyyy-MM-dd"),
-        right_testis_length: numVal("right_testis_length") ?? null,
-        right_testis_width: numVal("right_testis_width") ?? null,
-        right_testis_depth: numVal("right_testis_depth") ?? null,
         right_testis_volume: rightTestisVol,
-        left_testis_length: numVal("left_testis_length") ?? null,
-        left_testis_width: numVal("left_testis_width") ?? null,
-        left_testis_depth: numVal("left_testis_depth") ?? null,
         left_testis_volume: leftTestisVol,
         right_testis_echostructure: form.right_testis_echostructure || null,
         left_testis_echostructure: form.left_testis_echostructure || null,
@@ -142,9 +136,6 @@ export function UltrasoundPanel() {
         valsalva_reflux_left: form.valsalva_reflux_left ?? false,
         valsalva_max_velocity_right: numVal("valsalva_max_velocity_right") ?? null,
         valsalva_max_velocity_left: numVal("valsalva_max_velocity_left") ?? null,
-        prostate_length: numVal("prostate_length") ?? null,
-        prostate_width: numVal("prostate_width") ?? null,
-        prostate_depth: numVal("prostate_depth") ?? null,
         prostate_volume: prostateVol,
         prostate_echostructure: form.prostate_echostructure || null,
         penile_length: numVal("penile_length") ?? null,
@@ -270,11 +261,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Яичко правое</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <MeasurementInput label="Длина" field="right_testis_length" />
-                  <MeasurementInput label="Ширина" field="right_testis_width" />
-                  <MeasurementInput label="Толщина" field="right_testis_depth" />
-                </div>
+                <MeasurementInput label="Объём" field="right_testis_volume" unit="мл" />
                 <TestisVolumeDisplay vol={rightTestisVol} side="right" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
@@ -289,11 +276,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Яичко левое</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <MeasurementInput label="Длина" field="left_testis_length" />
-                  <MeasurementInput label="Ширина" field="left_testis_width" />
-                  <MeasurementInput label="Толщина" field="left_testis_depth" />
-                </div>
+                <MeasurementInput label="Объём" field="left_testis_volume" unit="мл" />
                 <TestisVolumeDisplay vol={leftTestisVol} side="left" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
@@ -351,8 +334,8 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Придатки яичек</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <MeasurementInput label="Головка правого" field="right_epididymis_head" />
-                  <MeasurementInput label="Головка левого" field="left_epididymis_head" />
+                  <MeasurementInput label="Головка правого (объём)" field="right_epididymis_head" unit="мм" />
+                  <MeasurementInput label="Головка левого (объём)" field="left_epididymis_head" unit="мм" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -419,16 +402,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Предстательная железа</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <MeasurementInput label="Длина" field="prostate_length" />
-                  <MeasurementInput label="Ширина" field="prostate_width" />
-                  <MeasurementInput label="Толщина" field="prostate_depth" />
-                </div>
-                {prostateVol && (
-                  <div className="text-sm p-2 rounded bg-accent/50">
-                    Объём: <span className="font-bold">{prostateVol} мл</span>
-                  </div>
-                )}
+                <MeasurementInput label="Объём" field="prostate_volume" unit="мл" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
                   <Select value={form.prostate_echostructure || ""} onValueChange={(v) => update("prostate_echostructure", v)}>
