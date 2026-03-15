@@ -334,8 +334,8 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Придатки яичек</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <MeasurementInput label="Головка правого" field="right_epididymis_head" />
-                  <MeasurementInput label="Головка левого" field="left_epididymis_head" />
+                  <MeasurementInput label="Головка правого (объём)" field="right_epididymis_head" unit="мм" />
+                  <MeasurementInput label="Головка левого (объём)" field="left_epididymis_head" unit="мм" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
