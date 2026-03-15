@@ -88,14 +88,21 @@ export function AnthropometryCalculator() {
 
   // Auto-calculate when inputs change
   useEffect(() => {
-    if (!patient) { setResult(null); return; }
+    if (!patient) {
+      setResult(null);
+      return;
+    }
+
     const birthDate = new Date(patient.birth_date);
     const w = parseFloat(weight) || undefined;
     const h = parseFloat(height) || undefined;
     const hc = parseFloat(headCircumference) || undefined;
     const wc = parseFloat(waistCircumference) || undefined;
 
-    if (!w && !h) { setResult(null); return; }
+    if (!w && !h) {
+      setResult(null);
+      return;
+    }
 
     const res = calculateAnthropometry({
       birthDate,
@@ -106,8 +113,15 @@ export function AnthropometryCalculator() {
       headCircumference: hc,
       waistCircumference: wc,
     });
+
     setResult(res);
   }, [patient, measurementDate, sex, weight, height, headCircumference, waistCircumference]);
+
+  useEffect(() => {
+    if (!patient && activeSubTab === "trends") {
+      setActiveSubTab("calculator");
+    }
+  }, [patient, activeSubTab]);
 
   const handleSave = async () => {
     if (!patient || !result) return;
