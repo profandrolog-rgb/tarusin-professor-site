@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Printer, Copy, Search, Loader2, Trash2 } from "lucide-react";
+import { Printer, Copy, Search, Loader2, Trash2, UserPlus } from "lucide-react";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { toast } from "sonner";
 import {
@@ -20,9 +20,10 @@ import {
 
 interface PrescriptionHistoryProps {
   onRepeat: (prescriptionId: string) => void;
+  onRepeatForOther: (prescriptionId: string) => void;
 }
 
-export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
+export function PrescriptionHistory({ onRepeat, onRepeatForOther }: PrescriptionHistoryProps) {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -183,8 +184,11 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
                   <Button variant="outline" size="sm" onClick={() => handlePrint(p)} title="Печать">
                     <Printer className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить рецепт">
+                  <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить тому же пациенту">
                     <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onRepeatForOther(p.id)} title="Копировать для другого пациента">
+                    <UserPlus className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setDeleteId(p.id)} title="Удалить рецепт" className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4" />

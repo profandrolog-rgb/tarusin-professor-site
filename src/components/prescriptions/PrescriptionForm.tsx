@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Printer, Plus, Trash2, Eye } from "lucide-react";
+import { CalendarIcon, Printer, Plus, Trash2, Eye, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -32,10 +32,11 @@ interface Patient {
 
 interface PrescriptionFormProps {
   repeatPrescriptionId?: string | null;
+  repeatWithoutPatient?: boolean;
   onSaved: () => void;
 }
 
-export function PrescriptionForm({ repeatPrescriptionId, onSaved }: PrescriptionFormProps) {
+export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, onSaved }: PrescriptionFormProps) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [prescriptionDate, setPrescriptionDate] = useState<Date>(new Date());
   const [items, setItems] = useState<PrescriptionItem[]>([]);
@@ -48,7 +49,7 @@ export function PrescriptionForm({ repeatPrescriptionId, onSaved }: Prescription
     if (repeatPrescriptionId) {
       loadRepeatPrescription(repeatPrescriptionId);
     }
-  }, [repeatPrescriptionId]);
+  }, [repeatPrescriptionId, repeatWithoutPatient]);
 
   const loadRepeatPrescription = async (id: string) => {
     const { data: prescription } = await supabase
@@ -58,11 +59,15 @@ export function PrescriptionForm({ repeatPrescriptionId, onSaved }: Prescription
       .single();
 
     if (prescription) {
-      setPatient({
-        id: (prescription as any).patients.id,
-        full_name: (prescription as any).patients.full_name,
-        birth_date: (prescription as any).patients.birth_date,
-      });
+      if (!repeatWithoutPatient) {
+        setPatient({
+          id: (prescription as any).patients.id,
+          full_name: (prescription as any).patients.full_name,
+          birth_date: (prescription as any).patients.birth_date,
+        });
+      } else {
+        setPatient(null);
+      }
       setPrescriptionDate(new Date());
 
       const { data: prescItems } = await supabase
@@ -210,6 +215,23 @@ export function PrescriptionForm({ repeatPrescriptionId, onSaved }: Prescription
           <CardTitle>Форма 107/у — Стандартный рецепт</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Repeat banner */}
+          {repeatPrescriptionId && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 border border-accent">
+              <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">
+                  {repeatWithoutPatient
+                    ? "Копия рецепта — выберите нового пациента"
+                    : "Повтор рецепта — пациент и препараты загружены"}
+                </p>
+                <p className="text-muted-foreground">
+                  Вы можете изменить пациента, добавить/удалить препараты и отредактировать дозировки перед сохранением.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Date */}
           <div className="space-y-2">
             <Label>Дата рецепта</Label>

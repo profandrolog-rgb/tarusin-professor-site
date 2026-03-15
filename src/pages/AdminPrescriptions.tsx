@@ -16,6 +16,7 @@ const AdminPrescriptions = () => {
   const [activeTab, setActiveTab] = useState("new");
   const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
   const [repeatPrescriptionId, setRepeatPrescriptionId] = useState<string | null>(null);
+  const [repeatWithoutPatient, setRepeatWithoutPatient] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -35,11 +36,19 @@ const AdminPrescriptions = () => {
 
   const handleRepeat = (prescriptionId: string) => {
     setRepeatPrescriptionId(prescriptionId);
+    setRepeatWithoutPatient(false);
+    setActiveTab("new");
+  };
+
+  const handleRepeatForOther = (prescriptionId: string) => {
+    setRepeatPrescriptionId(prescriptionId);
+    setRepeatWithoutPatient(true);
     setActiveTab("new");
   };
 
   const handleNewPrescription = () => {
     setRepeatPrescriptionId(null);
+    setRepeatWithoutPatient(false);
     setEditingPrescriptionId(null);
     setActiveTab("new");
   };
@@ -78,8 +87,10 @@ const AdminPrescriptions = () => {
           <TabsContent value="new">
             <PrescriptionForm
               repeatPrescriptionId={repeatPrescriptionId}
+              repeatWithoutPatient={repeatWithoutPatient}
               onSaved={() => {
                 setRepeatPrescriptionId(null);
+                setRepeatWithoutPatient(false);
                 setActiveTab("history");
               }}
             />
@@ -96,7 +107,7 @@ const AdminPrescriptions = () => {
           </TabsContent>
 
           <TabsContent value="history">
-            <PrescriptionHistory onRepeat={handleRepeat} />
+            <PrescriptionHistory onRepeat={handleRepeat} onRepeatForOther={handleRepeatForOther} />
           </TabsContent>
         </Tabs>
       </div>
