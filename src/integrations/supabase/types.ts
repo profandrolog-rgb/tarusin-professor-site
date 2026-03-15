@@ -22,6 +22,7 @@ export type Database = {
           bmi_z_score: number | null
           bsa: number | null
           created_at: string
+          foot_length_cm: number | null
           harmony: string | null
           head_circumference_cm: number | null
           head_percentile: number | null
@@ -36,6 +37,7 @@ export type Database = {
           physical_development: string | null
           reference_standard: string | null
           sex: string
+          shoe_size_ru: number | null
           tanner_stage: number | null
           updated_at: string
           waist_circumference_cm: number | null
@@ -51,6 +53,7 @@ export type Database = {
           bmi_z_score?: number | null
           bsa?: number | null
           created_at?: string
+          foot_length_cm?: number | null
           harmony?: string | null
           head_circumference_cm?: number | null
           head_percentile?: number | null
@@ -65,6 +68,7 @@ export type Database = {
           physical_development?: string | null
           reference_standard?: string | null
           sex?: string
+          shoe_size_ru?: number | null
           tanner_stage?: number | null
           updated_at?: string
           waist_circumference_cm?: number | null
@@ -80,6 +84,7 @@ export type Database = {
           bmi_z_score?: number | null
           bsa?: number | null
           created_at?: string
+          foot_length_cm?: number | null
           harmony?: string | null
           head_circumference_cm?: number | null
           head_percentile?: number | null
@@ -94,6 +99,7 @@ export type Database = {
           physical_development?: string | null
           reference_standard?: string | null
           sex?: string
+          shoe_size_ru?: number | null
           tanner_stage?: number | null
           updated_at?: string
           waist_circumference_cm?: number | null

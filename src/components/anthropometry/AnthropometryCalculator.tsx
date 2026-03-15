@@ -42,6 +42,7 @@ export function AnthropometryCalculator() {
   const [headCircumference, setHeadCircumference] = useState("");
   const [waistCircumference, setWaistCircumference] = useState("");
   const [tannerStage, setTannerStage] = useState<string>("");
+  const [footLength, setFootLength] = useState("");
   const [notes, setNotes] = useState("");
   const [result, setResult] = useState<AnthropometryResult | null>(null);
   const [saving, setSaving] = useState(false);
