@@ -124,7 +124,7 @@ export function AnthropometryCalculator() {
           height_cm: parseFloat(height) || null,
           head_circumference_cm: parseFloat(headCircumference) || null,
           waist_circumference_cm: parseFloat(waistCircumference) || null,
-          tanner_stage: tannerStage ? parseInt(tannerStage) : null,
+          tanner_stage: tannerStage && tannerStage !== "none" ? parseInt(tannerStage) : null,
           bmi: result.bmi,
           bsa: result.bsa,
           waist_height_ratio: result.waistHeightRatio,
@@ -276,7 +276,7 @@ export function AnthropometryCalculator() {
                   <Select value={tannerStage} onValueChange={setTannerStage}>
                     <SelectTrigger><SelectValue placeholder="Не указана" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Не указана</SelectItem>
+                      <SelectItem value="none">Не указана</SelectItem>
                       {[1, 2, 3, 4, 5].map(s => (
                         <SelectItem key={s} value={String(s)}>
                           {s} — {TANNER_DESCRIPTIONS[s]}
