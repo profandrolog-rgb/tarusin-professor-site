@@ -103,9 +103,9 @@ export function UltrasoundPanel() {
   const ageYears = patient ? calculateAge(new Date(patient.birth_date), examDate).years : 0;
   const volumeNorm = getTesticularVolumeNorm(ageYears);
 
-  const rightTestisVol = calcVolume(numVal("right_testis_length"), numVal("right_testis_width"), numVal("right_testis_depth"));
-  const leftTestisVol = calcVolume(numVal("left_testis_length"), numVal("left_testis_width"), numVal("left_testis_depth"));
-  const prostateVol = calcProstateVolume(numVal("prostate_length"), numVal("prostate_width"), numVal("prostate_depth"));
+  const rightTestisVol = numVal("right_testis_volume") ?? null;
+  const leftTestisVol = numVal("left_testis_volume") ?? null;
+  const prostateVol = numVal("prostate_volume") ?? null;
 
   // Calculated indices
   const rightDeficit = calcVolumeDeficit(rightTestisVol, volumeNorm);
