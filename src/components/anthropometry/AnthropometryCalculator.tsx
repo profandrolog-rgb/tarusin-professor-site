@@ -195,7 +195,21 @@ export function AnthropometryCalculator() {
                     <Label className="text-xs">Окружность талии (см)</Label>
                     <Input type="number" step="0.1" min="0" value={waistCircumference} onChange={(e) => setWaistCircumference(e.target.value)} placeholder="50.0" />
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Длина стопы (см)</Label>
+                    <Input type="number" step="0.1" min="0" value={footLength} onChange={(e) => setFootLength(e.target.value)} placeholder="22.0" />
+                  </div>
                 </div>
+
+                {footLength && parseFloat(footLength) > 0 && (
+                  <div className="p-3 rounded-lg bg-accent/50 text-sm">
+                    <span className="font-medium">Размер обуви (РФ): </span>
+                    {getRussianShoeSize(parseFloat(footLength))}
+                    <span className="text-muted-foreground ml-2">
+                      (норма для {result?.ageText ?? "—"}: {result ? getFootNorm(result.ageMonths) : "—"})
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label className="text-xs">Стадия Таннера</Label>
