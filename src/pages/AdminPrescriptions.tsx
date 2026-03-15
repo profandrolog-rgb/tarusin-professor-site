@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Loader2, Plus, Ruler } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PrescriptionForm } from "@/components/prescriptions/PrescriptionForm";
@@ -10,6 +10,8 @@ import { PrescriptionHistory } from "@/components/prescriptions/PrescriptionHist
 import { DrugReference } from "@/components/prescriptions/DrugReference";
 import { DosageCalculator } from "@/components/prescriptions/DosageCalculator";
 import { AnthropometryCalculator } from "@/components/anthropometry/AnthropometryCalculator";
+import { LabResultsPanel } from "@/components/labs/LabResultsPanel";
+import { UltrasoundPanel } from "@/components/ultrasound/UltrasoundPanel";
 
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -68,21 +70,23 @@ const AdminPrescriptions = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              Выписка рецептов
+              Медицинские инструменты
             </h1>
             <p className="text-muted-foreground">
-              Форма 107/у — рецепт на лекарственные препараты
+              Рецепты, анализы, антропометрия, УЗИ
             </p>
           </div>
           <DrugReference />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 flex-wrap">
-            <TabsTrigger value="new">Стандартный рецепт</TabsTrigger>
-            <TabsTrigger value="extemporaneous">Экстемпоральная пропись</TabsTrigger>
+          <TabsList className="mb-6 flex-wrap h-auto gap-1">
+            <TabsTrigger value="new">Рецепт</TabsTrigger>
+            <TabsTrigger value="extemporaneous">Экстемпоральный</TabsTrigger>
             <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
             <TabsTrigger value="anthropometry">Антропометрия</TabsTrigger>
+            <TabsTrigger value="labs">Анализы</TabsTrigger>
+            <TabsTrigger value="ultrasound">УЗИ</TabsTrigger>
             <TabsTrigger value="history">История рецептов</TabsTrigger>
           </TabsList>
 
@@ -110,6 +114,14 @@ const AdminPrescriptions = () => {
 
           <TabsContent value="anthropometry">
             <AnthropometryCalculator />
+          </TabsContent>
+
+          <TabsContent value="labs">
+            <LabResultsPanel />
+          </TabsContent>
+
+          <TabsContent value="ultrasound">
+            <UltrasoundPanel />
           </TabsContent>
 
           <TabsContent value="history">
