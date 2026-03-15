@@ -32,6 +32,7 @@ interface Patient {
 
 interface PrescriptionFormProps {
   repeatPrescriptionId?: string | null;
+  repeatWithoutPatient?: boolean;
   onSaved: () => void;
 }
 
