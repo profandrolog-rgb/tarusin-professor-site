@@ -33,7 +33,43 @@ const TANNER_DESCRIPTIONS: Record<number, string> = {
   5: "Взрослый тип",
 };
 
-export function AnthropometryCalculator() {
+/**
+ * Russian shoe size = foot length (cm) * 1.5 + 1.5 (метрическая система / штихмассовая)
+ * Российский размер ≈ (длина стопы мм / 6.67) rounded, or commonly: (footCm - 1.5) * 1.5
+ * Standard: размер = длина стопы (см) * 1.5 (штихмассовая система)
+ */
+function getRussianShoeSize(footCm: number): number {
+  // Штихмассовая система (Россия/Европа): размер = длина колодки / 0.667 см
+  // Приближённо: размер = footCm * 1.5 + 1.5 (запас на колодку)
+  return Math.round(footCm * 1.5 + 1.5);
+}
+
+/** Нормы длины стопы по возрасту (см), приблизительные средние значения */
+function getFootNorm(ageMonths: number): string {
+  const norms: { maxMonths: number; size: string }[] = [
+    { maxMonths: 6, size: "9–10 см (р. 16)" },
+    { maxMonths: 12, size: "11–12 см (р. 18–19)" },
+    { maxMonths: 18, size: "12–13 см (р. 20–21)" },
+    { maxMonths: 24, size: "13–14 см (р. 22–23)" },
+    { maxMonths: 36, size: "14–15 см (р. 23–25)" },
+    { maxMonths: 48, size: "16–17 см (р. 26–27)" },
+    { maxMonths: 60, size: "17–18 см (р. 27–29)" },
+    { maxMonths: 72, size: "18–19 см (р. 29–30)" },
+    { maxMonths: 84, size: "19–20 см (р. 30–32)" },
+    { maxMonths: 96, size: "20–21 см (р. 32–33)" },
+    { maxMonths: 108, size: "21–22 см (р. 33–34)" },
+    { maxMonths: 120, size: "22–23 см (р. 34–36)" },
+    { maxMonths: 144, size: "23–25 см (р. 36–38)" },
+    { maxMonths: 168, size: "25–27 см (р. 38–41)" },
+    { maxMonths: 216, size: "26–29 см (р. 40–44)" },
+  ];
+  for (const n of norms) {
+    if (ageMonths <= n.maxMonths) return n.size;
+  }
+  return "27–30 см (р. 42–46)";
+}
+
+
   const [patient, setPatient] = useState<Patient | null>(null);
   const [measurementDate, setMeasurementDate] = useState<Date>(new Date());
   const [sex, setSex] = useState<"male" | "female">("male");
