@@ -81,6 +81,7 @@ export function AnthropometryCalculator() {
   const [footLength, setFootLength] = useState("");
   const [penileLength, setPenileLength] = useState("");
   const [penileCircumference, setPenileCircumference] = useState("");
+  const [notes, setNotes] = useState("");
   const [result, setResult] = useState<AnthropometryResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState("calculator");
