@@ -261,11 +261,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Яичко правое</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <MeasurementInput label="Длина" field="right_testis_length" />
-                  <MeasurementInput label="Ширина" field="right_testis_width" />
-                  <MeasurementInput label="Толщина" field="right_testis_depth" />
-                </div>
+                <MeasurementInput label="Объём" field="right_testis_volume" unit="мл" />
                 <TestisVolumeDisplay vol={rightTestisVol} side="right" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
@@ -280,11 +276,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Яичко левое</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
-                  <MeasurementInput label="Длина" field="left_testis_length" />
-                  <MeasurementInput label="Ширина" field="left_testis_width" />
-                  <MeasurementInput label="Толщина" field="left_testis_depth" />
-                </div>
+                <MeasurementInput label="Объём" field="left_testis_volume" unit="мл" />
                 <TestisVolumeDisplay vol={leftTestisVol} side="left" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
