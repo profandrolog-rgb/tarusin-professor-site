@@ -33,6 +33,42 @@ const TANNER_DESCRIPTIONS: Record<number, string> = {
   5: "Взрослый тип",
 };
 
+/**
+ * Russian shoe size = foot length (cm) * 1.5 + 1.5 (метрическая система / штихмассовая)
+ * Российский размер ≈ (длина стопы мм / 6.67) rounded, or commonly: (footCm - 1.5) * 1.5
+ * Standard: размер = длина стопы (см) * 1.5 (штихмассовая система)
+ */
+function getRussianShoeSize(footCm: number): number {
+  // Штихмассовая система (Россия/Европа): размер = длина колодки / 0.667 см
+  // Приближённо: размер = footCm * 1.5 + 1.5 (запас на колодку)
+  return Math.round(footCm * 1.5 + 1.5);
+}
+
+/** Нормы длины стопы по возрасту (см), приблизительные средние значения */
+function getFootNorm(ageMonths: number): string {
+  const norms: { maxMonths: number; size: string }[] = [
+    { maxMonths: 6, size: "9–10 см (р. 16)" },
+    { maxMonths: 12, size: "11–12 см (р. 18–19)" },
+    { maxMonths: 18, size: "12–13 см (р. 20–21)" },
+    { maxMonths: 24, size: "13–14 см (р. 22–23)" },
+    { maxMonths: 36, size: "14–15 см (р. 23–25)" },
+    { maxMonths: 48, size: "16–17 см (р. 26–27)" },
+    { maxMonths: 60, size: "17–18 см (р. 27–29)" },
+    { maxMonths: 72, size: "18–19 см (р. 29–30)" },
+    { maxMonths: 84, size: "19–20 см (р. 30–32)" },
+    { maxMonths: 96, size: "20–21 см (р. 32–33)" },
+    { maxMonths: 108, size: "21–22 см (р. 33–34)" },
+    { maxMonths: 120, size: "22–23 см (р. 34–36)" },
+    { maxMonths: 144, size: "23–25 см (р. 36–38)" },
+    { maxMonths: 168, size: "25–27 см (р. 38–41)" },
+    { maxMonths: 216, size: "26–29 см (р. 40–44)" },
+  ];
+  for (const n of norms) {
+    if (ageMonths <= n.maxMonths) return n.size;
+  }
+  return "27–30 см (р. 42–46)";
+}
+
 export function AnthropometryCalculator() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [measurementDate, setMeasurementDate] = useState<Date>(new Date());
@@ -42,6 +78,7 @@ export function AnthropometryCalculator() {
   const [headCircumference, setHeadCircumference] = useState("");
   const [waistCircumference, setWaistCircumference] = useState("");
   const [tannerStage, setTannerStage] = useState<string>("");
+  const [footLength, setFootLength] = useState("");
   const [notes, setNotes] = useState("");
   const [result, setResult] = useState<AnthropometryResult | null>(null);
   const [saving, setSaving] = useState(false);
@@ -101,6 +138,8 @@ export function AnthropometryCalculator() {
           harmony: result.harmony,
           reference_standard: "WHO",
           notes: notes || null,
+          foot_length_cm: parseFloat(footLength) || null,
+          shoe_size_ru: footLength ? getRussianShoeSize(parseFloat(footLength)) : null,
         } as any);
 
       if (error) throw error;
@@ -194,7 +233,21 @@ export function AnthropometryCalculator() {
                     <Label className="text-xs">Окружность талии (см)</Label>
                     <Input type="number" step="0.1" min="0" value={waistCircumference} onChange={(e) => setWaistCircumference(e.target.value)} placeholder="50.0" />
                   </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Длина стопы (см)</Label>
+                    <Input type="number" step="0.1" min="0" value={footLength} onChange={(e) => setFootLength(e.target.value)} placeholder="22.0" />
+                  </div>
                 </div>
+
+                {footLength && parseFloat(footLength) > 0 && (
+                  <div className="p-3 rounded-lg bg-accent/50 text-sm">
+                    <span className="font-medium">Размер обуви (РФ): </span>
+                    {getRussianShoeSize(parseFloat(footLength))}
+                    <span className="text-muted-foreground ml-2">
+                      (норма для {result?.ageText ?? "—"}: {result ? getFootNorm(result.ageMonths) : "—"})
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label className="text-xs">Стадия Таннера</Label>
