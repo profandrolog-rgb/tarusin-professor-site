@@ -9,6 +9,7 @@ import { ExtemporaneousForm } from "@/components/prescriptions/ExtemporaneousFor
 import { PrescriptionHistory } from "@/components/prescriptions/PrescriptionHistory";
 import { DrugReference } from "@/components/prescriptions/DrugReference";
 import { DosageCalculator } from "@/components/prescriptions/DosageCalculator";
+import { AnthropometryCalculator } from "@/components/anthropometry/AnthropometryCalculator";
 
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
