@@ -108,6 +108,10 @@ const AdminPrescriptions = () => {
             <DosageCalculator />
           </TabsContent>
 
+          <TabsContent value="anthropometry">
+            <AnthropometryCalculator />
+          </TabsContent>
+
           <TabsContent value="history">
             <PrescriptionHistory onRepeat={handleRepeat} onRepeatForOther={handleRepeatForOther} />
           </TabsContent>
