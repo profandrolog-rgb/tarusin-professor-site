@@ -79,6 +79,8 @@ export function AnthropometryCalculator() {
   const [waistCircumference, setWaistCircumference] = useState("");
   const [tannerStage, setTannerStage] = useState<string>("");
   const [footLength, setFootLength] = useState("");
+  const [penileLength, setPenileLength] = useState("");
+  const [penileCircumference, setPenileCircumference] = useState("");
   const [notes, setNotes] = useState("");
   const [result, setResult] = useState<AnthropometryResult | null>(null);
   const [saving, setSaving] = useState(false);
@@ -140,6 +142,8 @@ export function AnthropometryCalculator() {
           notes: notes || null,
           foot_length_cm: parseFloat(footLength) || null,
           shoe_size_ru: footLength ? getRussianShoeSize(parseFloat(footLength)) : null,
+          penile_length_cm: parseFloat(penileLength) || null,
+          penile_circumference_cm: parseFloat(penileCircumference) || null,
         } as any);
 
       if (error) throw error;
@@ -247,6 +251,24 @@ export function AnthropometryCalculator() {
                       (норма для {result?.ageText ?? "—"}: {result ? getFootNorm(result.ageMonths) : "—"})
                     </span>
                   </div>
+                )}
+
+                {sex === "male" && (
+                  <>
+                    <div className="border-t pt-3 mt-2">
+                      <Label className="text-xs font-medium text-muted-foreground mb-2 block">Половой член (антропометрия)</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Длина (см)</Label>
+                          <Input type="number" step="0.1" min="0" value={penileLength} onChange={(e) => setPenileLength(e.target.value)} placeholder="5.0" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Окружность (см)</Label>
+                          <Input type="number" step="0.1" min="0" value={penileCircumference} onChange={(e) => setPenileCircumference(e.target.value)} placeholder="7.0" />
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-2">
