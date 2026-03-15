@@ -87,8 +87,10 @@ const AdminPrescriptions = () => {
           <TabsContent value="new">
             <PrescriptionForm
               repeatPrescriptionId={repeatPrescriptionId}
+              repeatWithoutPatient={repeatWithoutPatient}
               onSaved={() => {
                 setRepeatPrescriptionId(null);
+                setRepeatWithoutPatient(false);
                 setActiveTab("history");
               }}
             />
