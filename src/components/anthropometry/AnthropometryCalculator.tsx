@@ -77,7 +77,7 @@ export function AnthropometryCalculator() {
   const [height, setHeight] = useState("");
   const [headCircumference, setHeadCircumference] = useState("");
   const [waistCircumference, setWaistCircumference] = useState("");
-  const [tannerStage, setTannerStage] = useState<string>("");
+  const [tannerStage, setTannerStage] = useState<string>("none");
   const [footLength, setFootLength] = useState("");
   const [penileLength, setPenileLength] = useState("");
   const [penileCircumference, setPenileCircumference] = useState("");
@@ -88,14 +88,21 @@ export function AnthropometryCalculator() {
 
   // Auto-calculate when inputs change
   useEffect(() => {
-    if (!patient) { setResult(null); return; }
+    if (!patient) {
+      setResult(null);
+      return;
+    }
+
     const birthDate = new Date(patient.birth_date);
     const w = parseFloat(weight) || undefined;
     const h = parseFloat(height) || undefined;
     const hc = parseFloat(headCircumference) || undefined;
     const wc = parseFloat(waistCircumference) || undefined;
 
-    if (!w && !h) { setResult(null); return; }
+    if (!w && !h) {
+      setResult(null);
+      return;
+    }
 
     const res = calculateAnthropometry({
       birthDate,
@@ -106,8 +113,15 @@ export function AnthropometryCalculator() {
       headCircumference: hc,
       waistCircumference: wc,
     });
+
     setResult(res);
   }, [patient, measurementDate, sex, weight, height, headCircumference, waistCircumference]);
+
+  useEffect(() => {
+    if (!patient && activeSubTab === "trends") {
+      setActiveSubTab("calculator");
+    }
+  }, [patient, activeSubTab]);
 
   const handleSave = async () => {
     if (!patient || !result) return;
@@ -124,7 +138,7 @@ export function AnthropometryCalculator() {
           height_cm: parseFloat(height) || null,
           head_circumference_cm: parseFloat(headCircumference) || null,
           waist_circumference_cm: parseFloat(waistCircumference) || null,
-          tanner_stage: tannerStage && tannerStage !== "none" ? parseInt(tannerStage) : null,
+          tanner_stage: tannerStage !== "none" ? parseInt(tannerStage, 10) : null,
           bmi: result.bmi,
           bsa: result.bsa,
           waist_height_ratio: result.waistHeightRatio,
@@ -412,11 +426,17 @@ export function AnthropometryCalculator() {
         </TabsContent>
 
         <TabsContent value="trends">
-          {patient && (
+          {patient ? (
             <div className="space-y-6">
               <GrowthCharts patientId={patient.id} sex={sex} />
               <AnthropometryHistory patientId={patient.id} />
             </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Сначала выберите пациента во вкладке «Калькулятор», чтобы открыть тренды.
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>
