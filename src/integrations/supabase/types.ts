@@ -34,6 +34,8 @@ export type Database = {
           measurement_date: string
           notes: string | null
           patient_id: string
+          penile_circumference_cm: number | null
+          penile_length_cm: number | null
           physical_development: string | null
           reference_standard: string | null
           sex: string
@@ -65,6 +67,8 @@ export type Database = {
           measurement_date?: string
           notes?: string | null
           patient_id: string
+          penile_circumference_cm?: number | null
+          penile_length_cm?: number | null
           physical_development?: string | null
           reference_standard?: string | null
           sex?: string
@@ -96,6 +100,8 @@ export type Database = {
           measurement_date?: string
           notes?: string | null
           patient_id?: string
+          penile_circumference_cm?: number | null
+          penile_length_cm?: number | null
           physical_development?: string | null
           reference_standard?: string | null
           sex?: string
@@ -862,6 +868,8 @@ export type Database = {
           right_testis_width: number | null
           right_varicocele_grade: number | null
           updated_at: string
+          valsalva_max_velocity_left: number | null
+          valsalva_max_velocity_right: number | null
           valsalva_reflux_left: boolean | null
           valsalva_reflux_right: boolean | null
         }
@@ -911,6 +919,8 @@ export type Database = {
           right_testis_width?: number | null
           right_varicocele_grade?: number | null
           updated_at?: string
+          valsalva_max_velocity_left?: number | null
+          valsalva_max_velocity_right?: number | null
           valsalva_reflux_left?: boolean | null
           valsalva_reflux_right?: boolean | null
         }
@@ -960,6 +970,8 @@ export type Database = {
           right_testis_width?: number | null
           right_varicocele_grade?: number | null
           updated_at?: string
+          valsalva_max_velocity_left?: number | null
+          valsalva_max_velocity_right?: number | null
           valsalva_reflux_left?: boolean | null
           valsalva_reflux_right?: boolean | null
         }
