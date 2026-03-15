@@ -36,11 +36,19 @@ const AdminPrescriptions = () => {
 
   const handleRepeat = (prescriptionId: string) => {
     setRepeatPrescriptionId(prescriptionId);
+    setRepeatWithoutPatient(false);
+    setActiveTab("new");
+  };
+
+  const handleRepeatForOther = (prescriptionId: string) => {
+    setRepeatPrescriptionId(prescriptionId);
+    setRepeatWithoutPatient(true);
     setActiveTab("new");
   };
 
   const handleNewPrescription = () => {
     setRepeatPrescriptionId(null);
+    setRepeatWithoutPatient(false);
     setEditingPrescriptionId(null);
     setActiveTab("new");
   };
