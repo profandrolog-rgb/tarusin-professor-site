@@ -48,12 +48,43 @@ const VARICOCELE_GRADES = [
 
 function calcVolume(l?: number, w?: number, d?: number): number | null {
   if (!l || !w || !d) return null;
-  return Math.round(l * w * d * 0.523 * 100) / 100; // Ellipsoid formula
+  return Math.round(l * w * d * 0.523 * 100) / 100;
 }
 
 function calcProstateVolume(l?: number, w?: number, d?: number): number | null {
   if (!l || !w || !d) return null;
   return Math.round(l * w * d * 0.523 * 100) / 100;
+}
+
+/** Calculate volume deficit vs age norm */
+function calcVolumeDeficit(vol: number | null, norm: { min: number; median: number; max: number } | null): { deficit: number; deficitPercent: number } | null {
+  if (!vol || !norm) return null;
+  if (vol >= norm.median) return null;
+  const deficit = Math.round((norm.median - vol) * 100) / 100;
+  const deficitPercent = Math.round((deficit / norm.median) * 100);
+  return { deficit, deficitPercent };
+}
+
+/** Calculate lateralization (difference between R and L) */
+function calcLateralization(rightVol: number | null, leftVol: number | null): { diff: number; diffPercent: number; side: string } | null {
+  if (!rightVol || !leftVol) return null;
+  const diff = Math.round((rightVol - leftVol) * 100) / 100;
+  if (Math.abs(diff) < 0.1) return null;
+  const avg = (rightVol + leftVol) / 2;
+  const diffPercent = Math.round((Math.abs(diff) / avg) * 100);
+  const side = diff > 0 ? "влево (левое меньше)" : "вправо (правое меньше)";
+  return { diff: Math.abs(diff), diffPercent, side };
+}
+
+/** Gonadal-prostatic index: mean testicular vol should equal prostate vol */
+function calcGonadalProstaticIndex(rightVol: number | null, leftVol: number | null, prostateVol: number | null): { meanTestis: number; prostate: number; ratio: number; assessment: string } | null {
+  if (!rightVol || !leftVol || !prostateVol || prostateVol === 0) return null;
+  const meanTestis = (rightVol + leftVol) / 2;
+  const ratio = Math.round((meanTestis / prostateVol) * 100) / 100;
+  let assessment = "Соответствует норме";
+  if (ratio < 0.8) assessment = "Относительная гипоплазия яичек";
+  else if (ratio > 1.3) assessment = "Относительное увеличение яичек / малый объём простаты";
+  return { meanTestis: Math.round(meanTestis * 100) / 100, prostate: prostateVol, ratio, assessment };
 }
 
 export function UltrasoundPanel() {
@@ -65,7 +96,6 @@ export function UltrasoundPanel() {
   const [histLoading, setHistLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Form state
   const [form, setForm] = useState<Record<string, any>>({});
   const update = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
   const numVal = (field: string) => form[field] ? parseFloat(form[field]) : undefined;
@@ -73,10 +103,15 @@ export function UltrasoundPanel() {
   const ageYears = patient ? calculateAge(new Date(patient.birth_date), examDate).years : 0;
   const volumeNorm = getTesticularVolumeNorm(ageYears);
 
-  // Auto-calculate volumes
   const rightTestisVol = calcVolume(numVal("right_testis_length"), numVal("right_testis_width"), numVal("right_testis_depth"));
   const leftTestisVol = calcVolume(numVal("left_testis_length"), numVal("left_testis_width"), numVal("left_testis_depth"));
   const prostateVol = calcProstateVolume(numVal("prostate_length"), numVal("prostate_width"), numVal("prostate_depth"));
+
+  // Calculated indices
+  const rightDeficit = calcVolumeDeficit(rightTestisVol, volumeNorm);
+  const leftDeficit = calcVolumeDeficit(leftTestisVol, volumeNorm);
+  const lateralization = calcLateralization(rightTestisVol, leftTestisVol);
+  const gpi = calcGonadalProstaticIndex(rightTestisVol, leftTestisVol, prostateVol);
 
   const handleSave = async () => {
     if (!patient) { toast.error("Выберите пациента"); return; }
@@ -105,6 +140,8 @@ export function UltrasoundPanel() {
         left_varicocele_grade: form.left_varicocele_grade ? parseInt(form.left_varicocele_grade) : null,
         valsalva_reflux_right: form.valsalva_reflux_right ?? false,
         valsalva_reflux_left: form.valsalva_reflux_left ?? false,
+        valsalva_max_velocity_right: numVal("valsalva_max_velocity_right") ?? null,
+        valsalva_max_velocity_left: numVal("valsalva_max_velocity_left") ?? null,
         prostate_length: numVal("prostate_length") ?? null,
         prostate_width: numVal("prostate_width") ?? null,
         prostate_depth: numVal("prostate_depth") ?? null,
@@ -171,6 +208,25 @@ export function UltrasoundPanel() {
     </div>
   );
 
+  const TestisVolumeDisplay = ({ vol, side }: { vol: number | null; side: "right" | "left" }) => {
+    if (!vol) return null;
+    const deficit = side === "right" ? rightDeficit : leftDeficit;
+    const isAbnormal = volumeNorm && (vol < volumeNorm.min || vol > volumeNorm.max);
+    return (
+      <div className={cn("text-sm p-2 rounded space-y-1", isAbnormal ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
+        <div>
+          Объём: <span className="font-bold">{vol} мл</span>
+          {volumeNorm && <span className="text-xs ml-2">(норма {volumeNorm.min}–{volumeNorm.max})</span>}
+        </div>
+        {deficit && (
+          <div className="text-xs font-medium text-destructive">
+            Дефицит: {deficit.deficit} мл ({deficit.deficitPercent}% от медианы)
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -219,15 +275,7 @@ export function UltrasoundPanel() {
                   <MeasurementInput label="Ширина" field="right_testis_width" />
                   <MeasurementInput label="Толщина" field="right_testis_depth" />
                 </div>
-                {rightTestisVol && (
-                  <div className={cn(
-                    "text-sm p-2 rounded",
-                    volumeNorm && (rightTestisVol < volumeNorm.min || rightTestisVol > volumeNorm.max) ? "bg-destructive/10 text-destructive" : "bg-accent/50"
-                  )}>
-                    Объём: <span className="font-bold">{rightTestisVol} мл</span>
-                    {volumeNorm && <span className="text-xs ml-2">(норма {volumeNorm.min}–{volumeNorm.max})</span>}
-                  </div>
-                )}
+                <TestisVolumeDisplay vol={rightTestisVol} side="right" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
                   <Select value={form.right_testis_echostructure || ""} onValueChange={(v) => update("right_testis_echostructure", v)}>
@@ -246,15 +294,7 @@ export function UltrasoundPanel() {
                   <MeasurementInput label="Ширина" field="left_testis_width" />
                   <MeasurementInput label="Толщина" field="left_testis_depth" />
                 </div>
-                {leftTestisVol && (
-                  <div className={cn(
-                    "text-sm p-2 rounded",
-                    volumeNorm && (leftTestisVol < volumeNorm.min || leftTestisVol > volumeNorm.max) ? "bg-destructive/10 text-destructive" : "bg-accent/50"
-                  )}>
-                    Объём: <span className="font-bold">{leftTestisVol} мл</span>
-                    {volumeNorm && <span className="text-xs ml-2">(норма {volumeNorm.min}–{volumeNorm.max})</span>}
-                  </div>
-                )}
+                <TestisVolumeDisplay vol={leftTestisVol} side="left" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
                   <Select value={form.left_testis_echostructure || ""} onValueChange={(v) => update("left_testis_echostructure", v)}>
@@ -264,6 +304,47 @@ export function UltrasoundPanel() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ЛАТЕРАЛИЗАЦИЯ и ИНДЕКСЫ */}
+            {(lateralization || gpi) && (
+              <Card className="lg:col-span-2">
+                <CardHeader className="pb-2"><CardTitle className="text-base">Расчётные индексы</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {lateralization && (
+                      <div className={cn("p-3 rounded-lg", lateralization.diffPercent > 20 ? "bg-destructive/10" : "bg-accent/50")}>
+                        <p className="text-xs text-muted-foreground">Латерализация</p>
+                        <p className="font-bold text-sm">
+                          Δ = {lateralization.diff} мл ({lateralization.diffPercent}%)
+                        </p>
+                        <p className="text-xs">Смещение {lateralization.side}</p>
+                      </div>
+                    )}
+                    {gpi && (
+                      <div className={cn("p-3 rounded-lg", gpi.ratio < 0.8 || gpi.ratio > 1.3 ? "bg-amber-100 dark:bg-amber-950" : "bg-accent/50")}>
+                        <p className="text-xs text-muted-foreground">Гонадо-простатический индекс</p>
+                        <p className="font-bold text-sm">
+                          {gpi.meanTestis} / {gpi.prostate} = {gpi.ratio}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Среднее яичко / Простата</p>
+                        <p className="text-xs mt-1">{gpi.assessment}</p>
+                      </div>
+                    )}
+                    {rightTestisVol && leftTestisVol && (
+                      <div className="p-3 rounded-lg bg-accent/50">
+                        <p className="text-xs text-muted-foreground">Суммарный объём яичек</p>
+                        <p className="font-bold text-sm">
+                          {Math.round((rightTestisVol + leftTestisVol) * 100) / 100} мл
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {rightTestisVol} (пр.) + {leftTestisVol} (лев.)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* ПРИДАТКИ */}
             <Card>
@@ -320,6 +401,17 @@ export function UltrasoundPanel() {
                     <Label className="text-xs">Рефлюкс при Вальсальве (лев.)</Label>
                   </div>
                 </div>
+                {/* Valsalva max velocity */}
+                {(form.valsalva_reflux_right || form.valsalva_reflux_left) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {form.valsalva_reflux_right && (
+                      <MeasurementInput label="Макс. скорость рефлюкса (пр.)" field="valsalva_max_velocity_right" unit="см/с" />
+                    )}
+                    {form.valsalva_reflux_left && (
+                      <MeasurementInput label="Макс. скорость рефлюкса (лев.)" field="valsalva_max_velocity_left" unit="см/с" />
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -337,6 +429,13 @@ export function UltrasoundPanel() {
                     Объём: <span className="font-bold">{prostateVol} мл</span>
                   </div>
                 )}
+                <div className="space-y-1">
+                  <Label className="text-xs">Эхоструктура</Label>
+                  <Select value={form.prostate_echostructure || ""} onValueChange={(v) => update("prostate_echostructure", v)}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>{ECHOSTRUCTURE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
 
@@ -371,6 +470,23 @@ export function UltrasoundPanel() {
                     {form.left_hydrocele && <MeasurementInput label="Объём (лев.)" field="hydrocele_volume_left" unit="мл" />}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* ПАХОВЫЕ КАНАЛЫ */}
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-base">Паховые каналы</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Правый</Label>
+                    <Input value={form.right_inguinal_canal || ""} onChange={(e) => update("right_inguinal_canal", e.target.value)} className="h-8 text-sm" placeholder="Без особенностей" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Левый</Label>
+                    <Input value={form.left_inguinal_canal || ""} onChange={(e) => update("left_inguinal_canal", e.target.value)} className="h-8 text-sm" placeholder="Без особенностей" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -413,55 +529,78 @@ export function UltrasoundPanel() {
             <Card><CardContent className="py-8 text-center text-muted-foreground">Нет сохранённых УЗИ</CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {history.map((u: any) => (
-                <Card key={u.id}>
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
+              {history.map((u: any) => {
+                const hLat = calcLateralization(u.right_testis_volume, u.left_testis_volume);
+                const hGpi = calcGonadalProstaticIndex(u.right_testis_volume, u.left_testis_volume, u.prostate_volume);
+                return (
+                  <Card key={u.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-3">
                         <span className="font-medium">{format(new Date(u.exam_date), "dd.MM.yyyy")}</span>
+                        <Button variant="ghost" size="sm" onClick={() => setDeleteId(u.id)}>
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteId(u.id)}>
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                      {u.right_testis_volume && (
-                        <div className="p-2 bg-secondary/30 rounded">
-                          <span className="text-muted-foreground text-xs">Яичко (пр.)</span>
-                          <div className="font-medium">{u.right_testis_volume} мл</div>
-                        </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        {u.right_testis_volume && (
+                          <div className="p-2 bg-secondary/30 rounded">
+                            <span className="text-muted-foreground text-xs">Яичко (пр.)</span>
+                            <div className="font-medium">{u.right_testis_volume} мл</div>
+                          </div>
+                        )}
+                        {u.left_testis_volume && (
+                          <div className="p-2 bg-secondary/30 rounded">
+                            <span className="text-muted-foreground text-xs">Яичко (лев.)</span>
+                            <div className="font-medium">{u.left_testis_volume} мл</div>
+                          </div>
+                        )}
+                        {u.prostate_volume && (
+                          <div className="p-2 bg-secondary/30 rounded">
+                            <span className="text-muted-foreground text-xs">Простата</span>
+                            <div className="font-medium">{u.prostate_volume} мл</div>
+                          </div>
+                        )}
+                        {hGpi && (
+                          <div className={cn("p-2 rounded", hGpi.ratio < 0.8 || hGpi.ratio > 1.3 ? "bg-amber-100 dark:bg-amber-950" : "bg-secondary/30")}>
+                            <span className="text-muted-foreground text-xs">ГПИ</span>
+                            <div className="font-medium">{hGpi.ratio}</div>
+                          </div>
+                        )}
+                        {hLat && (
+                          <div className={cn("p-2 rounded", hLat.diffPercent > 20 ? "bg-destructive/10" : "bg-secondary/30")}>
+                            <span className="text-muted-foreground text-xs">Латерализация</span>
+                            <div className="font-medium">{hLat.diffPercent}% {hLat.side}</div>
+                          </div>
+                        )}
+                        {u.penile_length && (
+                          <div className="p-2 bg-secondary/30 rounded">
+                            <span className="text-muted-foreground text-xs">Длина п/ч</span>
+                            <div className="font-medium">{u.penile_length} мм</div>
+                          </div>
+                        )}
+                        {(u.valsalva_max_velocity_left || u.valsalva_max_velocity_right) && (
+                          <div className="p-2 bg-secondary/30 rounded">
+                            <span className="text-muted-foreground text-xs">V макс. Вальсальвы</span>
+                            <div className="font-medium">
+                              {u.valsalva_max_velocity_right && `Пр: ${u.valsalva_max_velocity_right} `}
+                              {u.valsalva_max_velocity_left && `Лев: ${u.valsalva_max_velocity_left}`} см/с
+                            </div>
+                          </div>
+                        )}
+                        {(u.left_varicocele_grade != null && u.left_varicocele_grade > 0) && (
+                          <div className="p-2 bg-amber-50 dark:bg-amber-950 rounded border border-amber-200 dark:border-amber-800">
+                            <span className="text-muted-foreground text-xs">Варикоцеле (лев.)</span>
+                            <div className="font-medium">Степень {u.left_varicocele_grade}</div>
+                          </div>
+                        )}
+                      </div>
+                      {u.conclusion && (
+                        <p className="text-sm mt-2 text-muted-foreground"><span className="font-medium text-foreground">Заключение:</span> {u.conclusion}</p>
                       )}
-                      {u.left_testis_volume && (
-                        <div className="p-2 bg-secondary/30 rounded">
-                          <span className="text-muted-foreground text-xs">Яичко (лев.)</span>
-                          <div className="font-medium">{u.left_testis_volume} мл</div>
-                        </div>
-                      )}
-                      {u.prostate_volume && (
-                        <div className="p-2 bg-secondary/30 rounded">
-                          <span className="text-muted-foreground text-xs">Простата</span>
-                          <div className="font-medium">{u.prostate_volume} мл</div>
-                        </div>
-                      )}
-                      {u.penile_length && (
-                        <div className="p-2 bg-secondary/30 rounded">
-                          <span className="text-muted-foreground text-xs">Длина п/ч</span>
-                          <div className="font-medium">{u.penile_length} мм</div>
-                        </div>
-                      )}
-                      {(u.left_varicocele_grade != null && u.left_varicocele_grade > 0) && (
-                        <div className="p-2 bg-amber-50 rounded border border-amber-200">
-                          <span className="text-muted-foreground text-xs">Варикоцеле (лев.)</span>
-                          <div className="font-medium">Степень {u.left_varicocele_grade}</div>
-                        </div>
-                      )}
-                    </div>
-                    {u.conclusion && (
-                      <p className="text-sm mt-2 text-muted-foreground"><span className="font-medium text-foreground">Заключение:</span> {u.conclusion}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
