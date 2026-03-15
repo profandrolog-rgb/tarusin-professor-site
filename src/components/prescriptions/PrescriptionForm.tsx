@@ -215,6 +215,23 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
           <CardTitle>Форма 107/у — Стандартный рецепт</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Repeat banner */}
+          {repeatPrescriptionId && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/50 border border-accent">
+              <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">
+                  {repeatWithoutPatient
+                    ? "Копия рецепта — выберите нового пациента"
+                    : "Повтор рецепта — пациент и препараты загружены"}
+                </p>
+                <p className="text-muted-foreground">
+                  Вы можете изменить пациента, добавить/удалить препараты и отредактировать дозировки перед сохранением.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Date */}
           <div className="space-y-2">
             <Label>Дата рецепта</Label>
