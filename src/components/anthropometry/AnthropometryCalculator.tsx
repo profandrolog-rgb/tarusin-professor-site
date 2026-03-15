@@ -426,11 +426,17 @@ export function AnthropometryCalculator() {
         </TabsContent>
 
         <TabsContent value="trends">
-          {patient && (
+          {patient ? (
             <div className="space-y-6">
               <GrowthCharts patientId={patient.id} sex={sex} />
               <AnthropometryHistory patientId={patient.id} />
             </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Сначала выберите пациента во вкладке «Калькулятор», чтобы открыть тренды.
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>
