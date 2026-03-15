@@ -183,8 +183,11 @@ export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
                   <Button variant="outline" size="sm" onClick={() => handlePrint(p)} title="Печать">
                     <Printer className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить рецепт">
+                  <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить тому же пациенту">
                     <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onRepeatForOther(p.id)} title="Копировать для другого пациента">
+                    <UserPlus className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setDeleteId(p.id)} title="Удалить рецепт" className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
