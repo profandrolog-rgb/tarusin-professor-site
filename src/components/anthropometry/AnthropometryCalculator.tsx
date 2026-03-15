@@ -69,7 +69,7 @@ function getFootNorm(ageMonths: number): string {
   return "27–30 см (р. 42–46)";
 }
 
-
+export function AnthropometryCalculator() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [measurementDate, setMeasurementDate] = useState<Date>(new Date());
   const [sex, setSex] = useState<"male" | "female">("male");
