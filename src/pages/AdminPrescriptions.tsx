@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Ruler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PrescriptionForm } from "@/components/prescriptions/PrescriptionForm";
@@ -9,6 +9,7 @@ import { ExtemporaneousForm } from "@/components/prescriptions/ExtemporaneousFor
 import { PrescriptionHistory } from "@/components/prescriptions/PrescriptionHistory";
 import { DrugReference } from "@/components/prescriptions/DrugReference";
 import { DosageCalculator } from "@/components/prescriptions/DosageCalculator";
+import { AnthropometryCalculator } from "@/components/anthropometry/AnthropometryCalculator";
 
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -77,10 +78,11 @@ const AdminPrescriptions = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="new">Стандартный рецепт</TabsTrigger>
             <TabsTrigger value="extemporaneous">Экстемпоральная пропись</TabsTrigger>
             <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
+            <TabsTrigger value="anthropometry">Антропометрия</TabsTrigger>
             <TabsTrigger value="history">История рецептов</TabsTrigger>
           </TabsList>
 
@@ -104,6 +106,10 @@ const AdminPrescriptions = () => {
 
           <TabsContent value="dosage">
             <DosageCalculator />
+          </TabsContent>
+
+          <TabsContent value="anthropometry">
+            <AnthropometryCalculator />
           </TabsContent>
 
           <TabsContent value="history">

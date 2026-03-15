@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      anthropometry_measurements: {
+        Row: {
+          age_months: number | null
+          bmi: number | null
+          bmi_percentile: number | null
+          bmi_z_score: number | null
+          bsa: number | null
+          created_at: string
+          harmony: string | null
+          head_circumference_cm: number | null
+          head_percentile: number | null
+          head_z_score: number | null
+          height_cm: number | null
+          height_percentile: number | null
+          height_z_score: number | null
+          id: string
+          measurement_date: string
+          notes: string | null
+          patient_id: string
+          physical_development: string | null
+          reference_standard: string | null
+          sex: string
+          tanner_stage: number | null
+          updated_at: string
+          waist_circumference_cm: number | null
+          waist_height_ratio: number | null
+          weight_kg: number | null
+          weight_percentile: number | null
+          weight_z_score: number | null
+        }
+        Insert: {
+          age_months?: number | null
+          bmi?: number | null
+          bmi_percentile?: number | null
+          bmi_z_score?: number | null
+          bsa?: number | null
+          created_at?: string
+          harmony?: string | null
+          head_circumference_cm?: number | null
+          head_percentile?: number | null
+          head_z_score?: number | null
+          height_cm?: number | null
+          height_percentile?: number | null
+          height_z_score?: number | null
+          id?: string
+          measurement_date?: string
+          notes?: string | null
+          patient_id: string
+          physical_development?: string | null
+          reference_standard?: string | null
+          sex?: string
+          tanner_stage?: number | null
+          updated_at?: string
+          waist_circumference_cm?: number | null
+          waist_height_ratio?: number | null
+          weight_kg?: number | null
+          weight_percentile?: number | null
+          weight_z_score?: number | null
+        }
+        Update: {
+          age_months?: number | null
+          bmi?: number | null
+          bmi_percentile?: number | null
+          bmi_z_score?: number | null
+          bsa?: number | null
+          created_at?: string
+          harmony?: string | null
+          head_circumference_cm?: number | null
+          head_percentile?: number | null
+          head_z_score?: number | null
+          height_cm?: number | null
+          height_percentile?: number | null
+          height_z_score?: number | null
+          id?: string
+          measurement_date?: string
+          notes?: string | null
+          patient_id?: string
+          physical_development?: string | null
+          reference_standard?: string | null
+          sex?: string
+          tanner_stage?: number | null
+          updated_at?: string
+          waist_circumference_cm?: number | null
+          waist_height_ratio?: number | null
+          weight_kg?: number | null
+          weight_percentile?: number | null
+          weight_z_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anthropometry_measurements_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_requests: {
         Row: {
           child_age: string
