@@ -138,7 +138,7 @@ export function AnthropometryCalculator() {
           height_cm: parseFloat(height) || null,
           head_circumference_cm: parseFloat(headCircumference) || null,
           waist_circumference_cm: parseFloat(waistCircumference) || null,
-          tanner_stage: tannerStage && tannerStage !== "none" ? parseInt(tannerStage) : null,
+          tanner_stage: tannerStage !== "none" ? parseInt(tannerStage, 10) : null,
           bmi: result.bmi,
           bsa: result.bsa,
           waist_height_ratio: result.waistHeightRatio,
