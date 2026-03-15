@@ -23,7 +23,7 @@ interface PrescriptionHistoryProps {
   onRepeatForOther: (prescriptionId: string) => void;
 }
 
-export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
+export function PrescriptionHistory({ onRepeat, onRepeatForOther }: PrescriptionHistoryProps) {
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
