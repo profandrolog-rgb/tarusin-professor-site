@@ -36,7 +36,7 @@ interface PrescriptionFormProps {
   onSaved: () => void;
 }
 
-export function PrescriptionForm({ repeatPrescriptionId, onSaved }: PrescriptionFormProps) {
+export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, onSaved }: PrescriptionFormProps) {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [prescriptionDate, setPrescriptionDate] = useState<Date>(new Date());
   const [items, setItems] = useState<PrescriptionItem[]>([]);
