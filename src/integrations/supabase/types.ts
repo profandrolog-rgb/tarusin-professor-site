@@ -467,6 +467,65 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_results: {
+        Row: {
+          created_at: string
+          id: string
+          is_abnormal: boolean | null
+          notes: string | null
+          patient_id: string
+          reference_max: number | null
+          reference_min: number | null
+          test_code: string | null
+          test_date: string
+          test_group: string
+          test_name: string
+          unit: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_abnormal?: boolean | null
+          notes?: string | null
+          patient_id: string
+          reference_max?: number | null
+          reference_min?: number | null
+          test_code?: string | null
+          test_date?: string
+          test_group: string
+          test_name: string
+          unit: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_abnormal?: boolean | null
+          notes?: string | null
+          patient_id?: string
+          reference_max?: number | null
+          reference_min?: number | null
+          test_code?: string | null
+          test_date?: string
+          test_group?: string
+          test_name?: string
+          unit?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_results_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medication_digests: {
         Row: {
           contraindications: string | null
@@ -749,6 +808,164 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ultrasound_results: {
+        Row: {
+          bladder_volume: number | null
+          bladder_wall_thickness: number | null
+          conclusion: string | null
+          created_at: string
+          exam_date: string
+          hydrocele_volume_left: number | null
+          hydrocele_volume_right: number | null
+          id: string
+          left_epididymis_head: number | null
+          left_epididymis_notes: string | null
+          left_hydrocele: boolean | null
+          left_inguinal_canal: string | null
+          left_kidney_length: number | null
+          left_kidney_notes: string | null
+          left_spermatic_vein_diameter: number | null
+          left_testis_depth: number | null
+          left_testis_echostructure: string | null
+          left_testis_length: number | null
+          left_testis_volume: number | null
+          left_testis_width: number | null
+          left_varicocele_grade: number | null
+          notes: string | null
+          patient_id: string
+          penile_length: number | null
+          penile_stretched_length: number | null
+          prostate_depth: number | null
+          prostate_echostructure: string | null
+          prostate_length: number | null
+          prostate_volume: number | null
+          prostate_width: number | null
+          residual_urine: number | null
+          right_epididymis_head: number | null
+          right_epididymis_notes: string | null
+          right_hydrocele: boolean | null
+          right_inguinal_canal: string | null
+          right_kidney_length: number | null
+          right_kidney_notes: string | null
+          right_spermatic_vein_diameter: number | null
+          right_testis_depth: number | null
+          right_testis_echostructure: string | null
+          right_testis_length: number | null
+          right_testis_volume: number | null
+          right_testis_width: number | null
+          right_varicocele_grade: number | null
+          updated_at: string
+          valsalva_reflux_left: boolean | null
+          valsalva_reflux_right: boolean | null
+        }
+        Insert: {
+          bladder_volume?: number | null
+          bladder_wall_thickness?: number | null
+          conclusion?: string | null
+          created_at?: string
+          exam_date?: string
+          hydrocele_volume_left?: number | null
+          hydrocele_volume_right?: number | null
+          id?: string
+          left_epididymis_head?: number | null
+          left_epididymis_notes?: string | null
+          left_hydrocele?: boolean | null
+          left_inguinal_canal?: string | null
+          left_kidney_length?: number | null
+          left_kidney_notes?: string | null
+          left_spermatic_vein_diameter?: number | null
+          left_testis_depth?: number | null
+          left_testis_echostructure?: string | null
+          left_testis_length?: number | null
+          left_testis_volume?: number | null
+          left_testis_width?: number | null
+          left_varicocele_grade?: number | null
+          notes?: string | null
+          patient_id: string
+          penile_length?: number | null
+          penile_stretched_length?: number | null
+          prostate_depth?: number | null
+          prostate_echostructure?: string | null
+          prostate_length?: number | null
+          prostate_volume?: number | null
+          prostate_width?: number | null
+          residual_urine?: number | null
+          right_epididymis_head?: number | null
+          right_epididymis_notes?: string | null
+          right_hydrocele?: boolean | null
+          right_inguinal_canal?: string | null
+          right_kidney_length?: number | null
+          right_kidney_notes?: string | null
+          right_spermatic_vein_diameter?: number | null
+          right_testis_depth?: number | null
+          right_testis_echostructure?: string | null
+          right_testis_length?: number | null
+          right_testis_volume?: number | null
+          right_testis_width?: number | null
+          right_varicocele_grade?: number | null
+          updated_at?: string
+          valsalva_reflux_left?: boolean | null
+          valsalva_reflux_right?: boolean | null
+        }
+        Update: {
+          bladder_volume?: number | null
+          bladder_wall_thickness?: number | null
+          conclusion?: string | null
+          created_at?: string
+          exam_date?: string
+          hydrocele_volume_left?: number | null
+          hydrocele_volume_right?: number | null
+          id?: string
+          left_epididymis_head?: number | null
+          left_epididymis_notes?: string | null
+          left_hydrocele?: boolean | null
+          left_inguinal_canal?: string | null
+          left_kidney_length?: number | null
+          left_kidney_notes?: string | null
+          left_spermatic_vein_diameter?: number | null
+          left_testis_depth?: number | null
+          left_testis_echostructure?: string | null
+          left_testis_length?: number | null
+          left_testis_volume?: number | null
+          left_testis_width?: number | null
+          left_varicocele_grade?: number | null
+          notes?: string | null
+          patient_id?: string
+          penile_length?: number | null
+          penile_stretched_length?: number | null
+          prostate_depth?: number | null
+          prostate_echostructure?: string | null
+          prostate_length?: number | null
+          prostate_volume?: number | null
+          prostate_width?: number | null
+          residual_urine?: number | null
+          right_epididymis_head?: number | null
+          right_epididymis_notes?: string | null
+          right_hydrocele?: boolean | null
+          right_inguinal_canal?: string | null
+          right_kidney_length?: number | null
+          right_kidney_notes?: string | null
+          right_spermatic_vein_diameter?: number | null
+          right_testis_depth?: number | null
+          right_testis_echostructure?: string | null
+          right_testis_length?: number | null
+          right_testis_volume?: number | null
+          right_testis_width?: number | null
+          right_varicocele_grade?: number | null
+          updated_at?: string
+          valsalva_reflux_left?: boolean | null
+          valsalva_reflux_right?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ultrasound_results_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
