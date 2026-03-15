@@ -78,10 +78,11 @@ const AdminPrescriptions = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="new">Стандартный рецепт</TabsTrigger>
             <TabsTrigger value="extemporaneous">Экстемпоральная пропись</TabsTrigger>
             <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
+            <TabsTrigger value="anthropometry">Антропометрия</TabsTrigger>
             <TabsTrigger value="history">История рецептов</TabsTrigger>
           </TabsList>
 
