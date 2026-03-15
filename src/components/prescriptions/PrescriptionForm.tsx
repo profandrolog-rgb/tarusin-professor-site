@@ -49,7 +49,7 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
     if (repeatPrescriptionId) {
       loadRepeatPrescription(repeatPrescriptionId);
     }
-  }, [repeatPrescriptionId]);
+  }, [repeatPrescriptionId, repeatWithoutPatient]);
 
   const loadRepeatPrescription = async (id: string) => {
     const { data: prescription } = await supabase
