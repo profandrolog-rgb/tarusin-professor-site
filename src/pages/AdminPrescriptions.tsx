@@ -81,8 +81,9 @@ const AdminPrescriptions = () => {
             <SubstanceReference />
             <DrugReference />
           </div>
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+
           <TabsList className="mb-6 flex-wrap h-auto gap-1">
             <TabsTrigger value="new">Рецепт</TabsTrigger>
             <TabsTrigger value="extemporaneous">Экстемпоральный</TabsTrigger>
