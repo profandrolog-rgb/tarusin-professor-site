@@ -77,8 +77,10 @@ const AdminPrescriptions = () => {
               Рецепты, анализы, антропометрия, УЗИ
             </p>
           </div>
-          <DrugReference />
-        </div>
+          <div className="flex gap-2">
+            <SubstanceReference />
+            <DrugReference />
+          </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap h-auto gap-1">
