@@ -103,21 +103,22 @@ const ChartTooltipContent = React.forwardRef<
   (
     {
       active,
-      payload,
       className,
       indicator = "dot",
       hideLabel = false,
       hideIndicator = false,
-      label,
       labelFormatter,
       labelClassName,
       formatter,
       color,
       nameKey,
       labelKey,
+      ...props
     },
     ref,
   ) => {
+    const payload = (props as any).payload as any[] | undefined;
+    const label = (props as any).label as string | undefined;
     const { config } = useChart();
 
     const tooltipLabel = React.useMemo(() => {
@@ -230,9 +231,10 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+    Pick<RechartsPrimitive.LegendProps, "verticalAlign"> & {
       hideIcon?: boolean;
       nameKey?: string;
+      payload?: any[];
     }
 >(({ className, hideIcon = false, payload, verticalAlign = "bottom", nameKey }, ref) => {
   const { config } = useChart();
