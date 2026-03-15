@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarIcon, Save, Loader2, Trash2, TrendingUp } from "lucide-react";
+import { CalendarIcon, Save, Loader2, Trash2, Search, Plus, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { calculateAge } from "@/utils/anthropometry/who-reference";
 import { getTesticularVolumeNorm } from "@/utils/lab-reference-ranges";
 import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -46,17 +45,6 @@ const VARICOCELE_GRADES = [
   { value: "3", label: "III — Видно визуально" },
 ];
 
-function calcVolume(l?: number, w?: number, d?: number): number | null {
-  if (!l || !w || !d) return null;
-  return Math.round(l * w * d * 0.523 * 100) / 100;
-}
-
-function calcProstateVolume(l?: number, w?: number, d?: number): number | null {
-  if (!l || !w || !d) return null;
-  return Math.round(l * w * d * 0.523 * 100) / 100;
-}
-
-/** Calculate volume deficit vs age norm */
 function calcVolumeDeficit(vol: number | null, norm: { min: number; median: number; max: number } | null): { deficit: number; deficitPercent: number } | null {
   if (!vol || !norm) return null;
   if (vol >= norm.median) return null;
@@ -65,7 +53,6 @@ function calcVolumeDeficit(vol: number | null, norm: { min: number; median: numb
   return { deficit, deficitPercent };
 }
 
-/** Calculate lateralization (difference between R and L) */
 function calcLateralization(rightVol: number | null, leftVol: number | null): { diff: number; diffPercent: number; side: string } | null {
   if (!rightVol || !leftVol) return null;
   const diff = Math.round((rightVol - leftVol) * 100) / 100;
@@ -76,7 +63,6 @@ function calcLateralization(rightVol: number | null, leftVol: number | null): { 
   return { diff: Math.abs(diff), diffPercent, side };
 }
 
-/** Gonadal-prostatic index: mean testicular vol should equal prostate vol */
 function calcGonadalProstaticIndex(rightVol: number | null, leftVol: number | null, prostateVol: number | null): { meanTestis: number; prostate: number; ratio: number; assessment: string } | null {
   if (!rightVol || !leftVol || !prostateVol || prostateVol === 0) return null;
   const meanTestis = (rightVol + leftVol) / 2;
@@ -87,6 +73,34 @@ function calcGonadalProstaticIndex(rightVol: number | null, leftVol: number | nu
   return { meanTestis: Math.round(meanTestis * 100) / 100, prostate: prostateVol, ratio, assessment };
 }
 
+function recordToForm(record: any): Record<string, any> {
+  const f: Record<string, any> = {};
+  const numericFields = [
+    "right_testis_volume", "left_testis_volume", "right_epididymis_head", "left_epididymis_head",
+    "right_spermatic_vein_diameter", "left_spermatic_vein_diameter",
+    "valsalva_max_velocity_right", "valsalva_max_velocity_left",
+    "prostate_volume", "penile_length", "penile_stretched_length",
+    "hydrocele_volume_right", "hydrocele_volume_left",
+    "bladder_volume", "residual_urine", "bladder_wall_thickness",
+    "right_kidney_length", "left_kidney_length",
+  ];
+  const stringFields = [
+    "right_testis_echostructure", "left_testis_echostructure",
+    "right_epididymis_notes", "left_epididymis_notes",
+    "prostate_echostructure", "right_inguinal_canal", "left_inguinal_canal",
+    "right_kidney_notes", "left_kidney_notes", "conclusion", "notes",
+  ];
+  numericFields.forEach(k => { if (record[k] != null) f[k] = String(record[k]); });
+  stringFields.forEach(k => { if (record[k]) f[k] = record[k]; });
+  if (record.right_varicocele_grade != null) f.right_varicocele_grade = String(record.right_varicocele_grade);
+  if (record.left_varicocele_grade != null) f.left_varicocele_grade = String(record.left_varicocele_grade);
+  f.valsalva_reflux_right = record.valsalva_reflux_right ?? false;
+  f.valsalva_reflux_left = record.valsalva_reflux_left ?? false;
+  f.right_hydrocele = record.right_hydrocele ?? false;
+  f.left_hydrocele = record.left_hydrocele ?? false;
+  return f;
+}
+
 export function UltrasoundPanel() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [examDate, setExamDate] = useState<Date>(new Date());
@@ -95,6 +109,8 @@ export function UltrasoundPanel() {
   const [history, setHistory] = useState<any[]>([]);
   const [histLoading, setHistLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [form, setForm] = useState<Record<string, any>>({});
   const update = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
@@ -107,60 +123,68 @@ export function UltrasoundPanel() {
   const leftTestisVol = numVal("left_testis_volume") ?? null;
   const prostateVol = numVal("prostate_volume") ?? null;
 
-  // Calculated indices
   const rightDeficit = calcVolumeDeficit(rightTestisVol, volumeNorm);
   const leftDeficit = calcVolumeDeficit(leftTestisVol, volumeNorm);
   const lateralization = calcLateralization(rightTestisVol, leftTestisVol);
   const gpi = calcGonadalProstaticIndex(rightTestisVol, leftTestisVol, prostateVol);
 
+  const buildRow = () => ({
+    patient_id: patient!.id,
+    exam_date: format(examDate, "yyyy-MM-dd"),
+    right_testis_volume: rightTestisVol,
+    left_testis_volume: leftTestisVol,
+    right_testis_echostructure: form.right_testis_echostructure || null,
+    left_testis_echostructure: form.left_testis_echostructure || null,
+    right_epididymis_head: numVal("right_epididymis_head") ?? null,
+    left_epididymis_head: numVal("left_epididymis_head") ?? null,
+    right_epididymis_notes: form.right_epididymis_notes || null,
+    left_epididymis_notes: form.left_epididymis_notes || null,
+    right_spermatic_vein_diameter: numVal("right_spermatic_vein_diameter") ?? null,
+    left_spermatic_vein_diameter: numVal("left_spermatic_vein_diameter") ?? null,
+    right_varicocele_grade: form.right_varicocele_grade ? parseInt(form.right_varicocele_grade) : null,
+    left_varicocele_grade: form.left_varicocele_grade ? parseInt(form.left_varicocele_grade) : null,
+    valsalva_reflux_right: form.valsalva_reflux_right ?? false,
+    valsalva_reflux_left: form.valsalva_reflux_left ?? false,
+    valsalva_max_velocity_right: numVal("valsalva_max_velocity_right") ?? null,
+    valsalva_max_velocity_left: numVal("valsalva_max_velocity_left") ?? null,
+    prostate_volume: prostateVol,
+    prostate_echostructure: form.prostate_echostructure || null,
+    penile_length: numVal("penile_length") ?? null,
+    penile_stretched_length: numVal("penile_stretched_length") ?? null,
+    right_hydrocele: form.right_hydrocele ?? false,
+    left_hydrocele: form.left_hydrocele ?? false,
+    hydrocele_volume_right: numVal("hydrocele_volume_right") ?? null,
+    hydrocele_volume_left: numVal("hydrocele_volume_left") ?? null,
+    right_inguinal_canal: form.right_inguinal_canal || null,
+    left_inguinal_canal: form.left_inguinal_canal || null,
+    bladder_volume: numVal("bladder_volume") ?? null,
+    residual_urine: numVal("residual_urine") ?? null,
+    bladder_wall_thickness: numVal("bladder_wall_thickness") ?? null,
+    right_kidney_length: numVal("right_kidney_length") ?? null,
+    left_kidney_length: numVal("left_kidney_length") ?? null,
+    right_kidney_notes: form.right_kidney_notes || null,
+    left_kidney_notes: form.left_kidney_notes || null,
+    conclusion: form.conclusion || null,
+    notes: form.notes || null,
+  });
+
   const handleSave = async () => {
     if (!patient) { toast.error("Выберите пациента"); return; }
     setSaving(true);
     try {
-      const row: any = {
-        patient_id: patient.id,
-        exam_date: format(examDate, "yyyy-MM-dd"),
-        right_testis_volume: rightTestisVol,
-        left_testis_volume: leftTestisVol,
-        right_testis_echostructure: form.right_testis_echostructure || null,
-        left_testis_echostructure: form.left_testis_echostructure || null,
-        right_epididymis_head: numVal("right_epididymis_head") ?? null,
-        left_epididymis_head: numVal("left_epididymis_head") ?? null,
-        right_epididymis_notes: form.right_epididymis_notes || null,
-        left_epididymis_notes: form.left_epididymis_notes || null,
-        right_spermatic_vein_diameter: numVal("right_spermatic_vein_diameter") ?? null,
-        left_spermatic_vein_diameter: numVal("left_spermatic_vein_diameter") ?? null,
-        right_varicocele_grade: form.right_varicocele_grade ? parseInt(form.right_varicocele_grade) : null,
-        left_varicocele_grade: form.left_varicocele_grade ? parseInt(form.left_varicocele_grade) : null,
-        valsalva_reflux_right: form.valsalva_reflux_right ?? false,
-        valsalva_reflux_left: form.valsalva_reflux_left ?? false,
-        valsalva_max_velocity_right: numVal("valsalva_max_velocity_right") ?? null,
-        valsalva_max_velocity_left: numVal("valsalva_max_velocity_left") ?? null,
-        prostate_volume: prostateVol,
-        prostate_echostructure: form.prostate_echostructure || null,
-        penile_length: numVal("penile_length") ?? null,
-        penile_stretched_length: numVal("penile_stretched_length") ?? null,
-        right_hydrocele: form.right_hydrocele ?? false,
-        left_hydrocele: form.left_hydrocele ?? false,
-        hydrocele_volume_right: numVal("hydrocele_volume_right") ?? null,
-        hydrocele_volume_left: numVal("hydrocele_volume_left") ?? null,
-        right_inguinal_canal: form.right_inguinal_canal || null,
-        left_inguinal_canal: form.left_inguinal_canal || null,
-        bladder_volume: numVal("bladder_volume") ?? null,
-        residual_urine: numVal("residual_urine") ?? null,
-        bladder_wall_thickness: numVal("bladder_wall_thickness") ?? null,
-        right_kidney_length: numVal("right_kidney_length") ?? null,
-        left_kidney_length: numVal("left_kidney_length") ?? null,
-        right_kidney_notes: form.right_kidney_notes || null,
-        left_kidney_notes: form.left_kidney_notes || null,
-        conclusion: form.conclusion || null,
-        notes: form.notes || null,
-      };
-      const { error } = await supabase.from("ultrasound_results").insert(row);
-      if (error) throw error;
-      toast.success("УЗИ сохранено");
+      const row = buildRow();
+      if (editingId) {
+        const { error } = await supabase.from("ultrasound_results").update(row).eq("id", editingId);
+        if (error) throw error;
+        toast.success("Протокол обновлён");
+        setEditingId(null);
+      } else {
+        const { error } = await supabase.from("ultrasound_results").insert(row);
+        if (error) throw error;
+        toast.success("УЗИ сохранено");
+      }
       setForm({});
-      if (subTab === "history") fetchHistory();
+      fetchHistory();
     } catch (err: any) {
       toast.error("Ошибка: " + err.message);
     } finally {
@@ -168,21 +192,26 @@ export function UltrasoundPanel() {
     }
   };
 
-  const fetchHistory = async () => {
-    if (!patient) return;
+  const fetchHistory = useCallback(async () => {
     setHistLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from("ultrasound_results")
-      .select("*")
-      .eq("patient_id", patient.id)
-      .order("exam_date", { ascending: false });
+      .select("*, patients!inner(full_name, birth_date)")
+      .order("exam_date", { ascending: false })
+      .limit(100);
+
+    if (patient) {
+      query = query.eq("patient_id", patient.id);
+    }
+
+    const { data } = await query;
     setHistory(data || []);
     setHistLoading(false);
-  };
+  }, [patient]);
 
   useEffect(() => {
-    if (patient && subTab === "history") fetchHistory();
-  }, [patient, subTab]);
+    if (subTab === "protocols") fetchHistory();
+  }, [subTab, patient, fetchHistory]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -191,6 +220,33 @@ export function UltrasoundPanel() {
     else { toast.success("Удалено"); fetchHistory(); }
     setDeleteId(null);
   };
+
+  const handleEdit = (record: any) => {
+    // Load patient info and form data, switch to input tab
+    const p: Patient = {
+      id: record.patient_id,
+      full_name: record.patients?.full_name || "",
+      birth_date: record.patients?.birth_date || "",
+    };
+    setPatient(p);
+    setExamDate(new Date(record.exam_date));
+    setForm(recordToForm(record));
+    setEditingId(record.id);
+    setSubTab("input");
+  };
+
+  const handleNewProtocol = () => {
+    setEditingId(null);
+    setForm({});
+    setExamDate(new Date());
+    setSubTab("input");
+  };
+
+  const filteredHistory = searchQuery.trim()
+    ? history.filter((u: any) =>
+        u.patients?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : history;
 
   const MeasurementInput = ({ label, field, unit = "мм", step = "0.1" }: { label: string; field: string; unit?: string; step?: string }) => (
     <div className="space-y-1">
@@ -251,11 +307,23 @@ export function UltrasoundPanel() {
 
       <Tabs value={subTab} onValueChange={setSubTab}>
         <TabsList>
-          <TabsTrigger value="input">Ввод данных</TabsTrigger>
-          <TabsTrigger value="history" disabled={!patient}>История</TabsTrigger>
+          <TabsTrigger value="input">
+            {editingId ? "Редактирование" : "Ввод данных"}
+          </TabsTrigger>
+          <TabsTrigger value="protocols">Протоколы</TabsTrigger>
         </TabsList>
 
         <TabsContent value="input">
+          {editingId && (
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-accent/50 border border-accent">
+              <Pencil className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Редактирование протокола от {format(examDate, "dd.MM.yyyy")}</span>
+              <Button variant="outline" size="sm" className="ml-auto" onClick={handleNewProtocol}>
+                <Plus className="h-3 w-3 mr-1" /> Новый протокол
+              </Button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* ЯИЧКИ */}
             <Card>
@@ -288,7 +356,7 @@ export function UltrasoundPanel() {
               </CardContent>
             </Card>
 
-            {/* ЛАТЕРАЛИЗАЦИЯ и ИНДЕКСЫ */}
+            {/* ИНДЕКСЫ */}
             {(lateralization || gpi) && (
               <Card className="lg:col-span-2">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Расчётные индексы</CardTitle></CardHeader>
@@ -297,18 +365,14 @@ export function UltrasoundPanel() {
                     {lateralization && (
                       <div className={cn("p-3 rounded-lg", lateralization.diffPercent > 20 ? "bg-destructive/10" : "bg-accent/50")}>
                         <p className="text-xs text-muted-foreground">Латерализация</p>
-                        <p className="font-bold text-sm">
-                          Δ = {lateralization.diff} мл ({lateralization.diffPercent}%)
-                        </p>
+                        <p className="font-bold text-sm">Δ = {lateralization.diff} мл ({lateralization.diffPercent}%)</p>
                         <p className="text-xs">Смещение {lateralization.side}</p>
                       </div>
                     )}
                     {gpi && (
                       <div className={cn("p-3 rounded-lg", gpi.ratio < 0.8 || gpi.ratio > 1.3 ? "bg-amber-100 dark:bg-amber-950" : "bg-accent/50")}>
                         <p className="text-xs text-muted-foreground">Гонадо-простатический индекс</p>
-                        <p className="font-bold text-sm">
-                          {gpi.meanTestis} / {gpi.prostate} = {gpi.ratio}
-                        </p>
+                        <p className="font-bold text-sm">{gpi.meanTestis} / {gpi.prostate} = {gpi.ratio}</p>
                         <p className="text-xs text-muted-foreground">Среднее яичко / Простата</p>
                         <p className="text-xs mt-1">{gpi.assessment}</p>
                       </div>
@@ -316,12 +380,8 @@ export function UltrasoundPanel() {
                     {rightTestisVol && leftTestisVol && (
                       <div className="p-3 rounded-lg bg-accent/50">
                         <p className="text-xs text-muted-foreground">Суммарный объём яичек</p>
-                        <p className="font-bold text-sm">
-                          {Math.round((rightTestisVol + leftTestisVol) * 100) / 100} мл
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {rightTestisVol} (пр.) + {leftTestisVol} (лев.)
-                        </p>
+                        <p className="font-bold text-sm">{Math.round((rightTestisVol + leftTestisVol) * 100) / 100} мл</p>
+                        <p className="text-xs text-muted-foreground">{rightTestisVol} (пр.) + {leftTestisVol} (лев.)</p>
                       </div>
                     )}
                   </div>
@@ -384,7 +444,6 @@ export function UltrasoundPanel() {
                     <Label className="text-xs">Рефлюкс при Вальсальве (лев.)</Label>
                   </div>
                 </div>
-                {/* Valsalva max velocity */}
                 {(form.valsalva_reflux_right || form.valsalva_reflux_left) && (
                   <div className="grid grid-cols-2 gap-3">
                     {form.valsalva_reflux_right && (
@@ -492,28 +551,59 @@ export function UltrasoundPanel() {
 
           <Button onClick={handleSave} disabled={saving || !patient} className="w-full mt-4">
             <Save className="h-4 w-4 mr-2" />
-            {saving ? "Сохранение..." : "Сохранить результаты УЗИ"}
+            {saving ? "Сохранение..." : editingId ? "Обновить протокол" : "Сохранить результаты УЗИ"}
           </Button>
         </TabsContent>
 
-        <TabsContent value="history">
+        <TabsContent value="protocols">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по фамилии пациента..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button onClick={handleNewProtocol}>
+              <Plus className="h-4 w-4 mr-1" /> Новый
+            </Button>
+          </div>
+
+          {!patient && (
+            <p className="text-sm text-muted-foreground mb-3">
+              Показаны все протоколы. Выберите пациента для фильтрации.
+            </p>
+          )}
+
           {histLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-          ) : history.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">Нет сохранённых УЗИ</CardContent></Card>
+          ) : filteredHistory.length === 0 ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground">Нет сохранённых протоколов УЗИ</CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {history.map((u: any) => {
+              {filteredHistory.map((u: any) => {
                 const hLat = calcLateralization(u.right_testis_volume, u.left_testis_volume);
                 const hGpi = calcGonadalProstaticIndex(u.right_testis_volume, u.left_testis_volume, u.prostate_volume);
                 return (
-                  <Card key={u.id}>
+                  <Card key={u.id} className={cn(editingId === u.id && "ring-2 ring-primary")}>
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
-                        <span className="font-medium">{format(new Date(u.exam_date), "dd.MM.yyyy")}</span>
-                        <Button variant="ghost" size="sm" onClick={() => setDeleteId(u.id)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+                        <div>
+                          <span className="font-medium">{u.patients?.full_name || "—"}</span>
+                          <span className="text-muted-foreground text-sm ml-3">
+                            {format(new Date(u.exam_date), "dd.MM.yyyy")}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(u)} title="Редактировать">
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setDeleteId(u.id)} title="Удалить">
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                         {u.right_testis_volume && (
@@ -583,7 +673,7 @@ export function UltrasoundPanel() {
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить результат УЗИ?</AlertDialogTitle>
+            <AlertDialogTitle>Удалить протокол УЗИ?</AlertDialogTitle>
             <AlertDialogDescription>Это действие необратимо.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
