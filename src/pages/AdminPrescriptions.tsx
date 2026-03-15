@@ -107,7 +107,7 @@ const AdminPrescriptions = () => {
           </TabsContent>
 
           <TabsContent value="history">
-            <PrescriptionHistory onRepeat={handleRepeat} />
+            <PrescriptionHistory onRepeat={handleRepeat} onRepeatForOther={handleRepeatForOther} />
           </TabsContent>
         </Tabs>
       </div>
