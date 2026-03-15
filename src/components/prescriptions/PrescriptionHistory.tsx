@@ -20,6 +20,7 @@ import {
 
 interface PrescriptionHistoryProps {
   onRepeat: (prescriptionId: string) => void;
+  onRepeatForOther: (prescriptionId: string) => void;
 }
 
 export function PrescriptionHistory({ onRepeat }: PrescriptionHistoryProps) {
