@@ -276,7 +276,7 @@ export function AnthropometryCalculator() {
                   <Select value={tannerStage} onValueChange={setTannerStage}>
                     <SelectTrigger><SelectValue placeholder="Не указана" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Не указана</SelectItem>
+                      <SelectItem value="none">Не указана</SelectItem>
                       {[1, 2, 3, 4, 5].map(s => (
                         <SelectItem key={s} value={String(s)}>
                           {s} — {TANNER_DESCRIPTIONS[s]}
