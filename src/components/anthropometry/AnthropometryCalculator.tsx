@@ -250,6 +250,24 @@ export function AnthropometryCalculator() {
                   </div>
                 )}
 
+                {sex === "male" && (
+                  <>
+                    <div className="border-t pt-3 mt-2">
+                      <Label className="text-xs font-medium text-muted-foreground mb-2 block">Половой член (антропометрия)</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Длина (см)</Label>
+                          <Input type="number" step="0.1" min="0" value={penileLength} onChange={(e) => setPenileLength(e.target.value)} placeholder="5.0" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Окружность (см)</Label>
+                          <Input type="number" step="0.1" min="0" value={penileCircumference} onChange={(e) => setPenileCircumference(e.target.value)} placeholder="7.0" />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-2">
                   <Label className="text-xs">Стадия Таннера</Label>
                   <Select value={tannerStage} onValueChange={setTannerStage}>
