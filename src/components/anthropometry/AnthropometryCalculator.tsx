@@ -142,6 +142,8 @@ export function AnthropometryCalculator() {
           notes: notes || null,
           foot_length_cm: parseFloat(footLength) || null,
           shoe_size_ru: footLength ? getRussianShoeSize(parseFloat(footLength)) : null,
+          penile_length_cm: parseFloat(penileLength) || null,
+          penile_circumference_cm: parseFloat(penileCircumference) || null,
         } as any);
 
       if (error) throw error;
