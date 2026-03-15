@@ -118,7 +118,9 @@ const AdminPrescriptions = () => {
           </TabsContent>
 
           <TabsContent value="anthropometry">
-            <AnthropometryCalculator />
+            <AnthropometryErrorBoundary>
+              <AnthropometryCalculator />
+            </AnthropometryErrorBoundary>
           </TabsContent>
 
           <TabsContent value="labs">
