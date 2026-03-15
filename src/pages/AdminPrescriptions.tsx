@@ -16,6 +16,7 @@ const AdminPrescriptions = () => {
   const [activeTab, setActiveTab] = useState("new");
   const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
   const [repeatPrescriptionId, setRepeatPrescriptionId] = useState<string | null>(null);
+  const [repeatWithoutPatient, setRepeatWithoutPatient] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
