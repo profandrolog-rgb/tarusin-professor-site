@@ -120,13 +120,7 @@ export function UltrasoundPanel() {
       const row: any = {
         patient_id: patient.id,
         exam_date: format(examDate, "yyyy-MM-dd"),
-        right_testis_length: numVal("right_testis_length") ?? null,
-        right_testis_width: numVal("right_testis_width") ?? null,
-        right_testis_depth: numVal("right_testis_depth") ?? null,
         right_testis_volume: rightTestisVol,
-        left_testis_length: numVal("left_testis_length") ?? null,
-        left_testis_width: numVal("left_testis_width") ?? null,
-        left_testis_depth: numVal("left_testis_depth") ?? null,
         left_testis_volume: leftTestisVol,
         right_testis_echostructure: form.right_testis_echostructure || null,
         left_testis_echostructure: form.left_testis_echostructure || null,
