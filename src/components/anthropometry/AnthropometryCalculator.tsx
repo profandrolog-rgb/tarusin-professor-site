@@ -238,23 +238,23 @@ export function AnthropometryCalculator() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-xs">Масса тела (кг)</Label>
-                    <Input type="number" step="0.1" min="0" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="12.5" />
+                    <DecimalInput value={weight} onValueChange={setWeight} placeholder="12,5" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Рост (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="85.0" />
+                    <DecimalInput value={height} onValueChange={setHeight} placeholder="85,0" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Окружность головы (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={headCircumference} onChange={(e) => setHeadCircumference(e.target.value)} placeholder="46.0" />
+                    <DecimalInput value={headCircumference} onValueChange={setHeadCircumference} placeholder="46,0" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Окружность талии (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={waistCircumference} onChange={(e) => setWaistCircumference(e.target.value)} placeholder="50.0" />
+                    <DecimalInput value={waistCircumference} onValueChange={setWaistCircumference} placeholder="50,0" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Длина стопы (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={footLength} onChange={(e) => setFootLength(e.target.value)} placeholder="22.0" />
+                    <DecimalInput value={footLength} onValueChange={setFootLength} placeholder="22,0" />
                   </div>
                 </div>
 
