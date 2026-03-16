@@ -248,10 +248,22 @@ export function UltrasoundPanel() {
       )
     : history;
 
-  const MeasurementInput = ({ label, field, unit = "мм", step = "0.1" }: { label: string; field: string; unit?: string; step?: string }) => (
+  const MeasurementInput = ({ label, field, unit = "мм" }: { label: string; field: string; unit?: string; step?: string }) => (
     <div className="space-y-1">
       <Label className="text-xs">{label} ({unit})</Label>
-      <Input type="number" step={step} min="0" value={form[field] || ""} onChange={(e) => update(field, e.target.value)} placeholder="—" className="h-8 text-sm" />
+      <Input
+        type="text"
+        inputMode="decimal"
+        value={form[field] || ""}
+        onChange={(e) => {
+          const val = e.target.value;
+          if (val === "" || /^[0-9]*[.,]?[0-9]*$/.test(val)) {
+            update(field, val.replace(",", "."));
+          }
+        }}
+        placeholder="—"
+        className="h-8 text-sm"
+      />
     </div>
   );
 
