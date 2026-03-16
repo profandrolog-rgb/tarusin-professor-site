@@ -289,42 +289,6 @@ export function UltrasoundPanel() {
       )
     : history;
 
-  const MeasurementInput = React.memo(({ label, field, unit = "мм" }: { label: string; field: string; unit?: string; step?: string }) => {
-    const [localVal, setLocalVal] = React.useState<string>(form[field]?.toString() || "");
-    
-    // Sync from parent when field changes externally (e.g. loading saved data)
-    React.useEffect(() => {
-      const parentVal = form[field]?.toString() || "";
-      setLocalVal(prev => {
-        // Don't overwrite if user is actively editing (comma vs dot)
-        const prevNorm = prev.replace(",", ".");
-        if (prevNorm === parentVal) return prev;
-        return parentVal;
-      });
-    }, [form[field]]);
-
-    return (
-      <div className="space-y-1">
-        <Label className="text-xs">{label} ({unit})</Label>
-        <Input
-          type="text"
-          inputMode="decimal"
-          value={localVal}
-          onChange={(e) => {
-            const val = e.target.value;
-            if (val === "" || /^[0-9]*[.,]?[0-9]{0,2}$/.test(val)) {
-              setLocalVal(val);
-              // Send normalized value to parent
-              update(field, val.replace(",", "."));
-            }
-          }}
-          placeholder="—"
-          className="h-8 text-sm"
-        />
-      </div>
-    );
-  });
-
   const TestisVolumeDisplay = ({ vol, side }: { vol: number | null; side: "right" | "left" }) => {
     if (!vol) return null;
     const deficit = side === "right" ? rightDeficit : leftDeficit;
