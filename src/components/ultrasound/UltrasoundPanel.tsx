@@ -271,16 +271,17 @@ export function UltrasoundPanel() {
   const TestisVolumeDisplay = ({ vol, side }: { vol: number | null; side: "right" | "left" }) => {
     if (!vol) return null;
     const deficit = side === "right" ? rightDeficit : leftDeficit;
-    const isAbnormal = volumeNorm && (vol < volumeNorm.min || vol > volumeNorm.max);
+    const normVal = side === "right" ? usNorm?.rightTestisMl : usNorm?.leftTestisMl;
+    const isAbnormal = normVal && vol < normVal;
     return (
       <div className={cn("text-sm p-2 rounded space-y-1", isAbnormal ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
         <div>
           Объём: <span className="font-bold">{vol} мл</span>
-          {volumeNorm && <span className="text-xs ml-2">(норма {volumeNorm.min}–{volumeNorm.max})</span>}
+          {normVal && <span className="text-xs ml-2">(норма {normVal} мл)</span>}
         </div>
         {deficit && (
           <div className="text-xs font-medium text-destructive">
-            Дефицит: {deficit.deficit} мл ({deficit.deficitPercent}% от медианы)
+            Дефицит: {deficit.deficit} мл ({deficit.deficitPercent}%)
           </div>
         )}
       </div>
