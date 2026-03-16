@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Save, Calculator, TrendingUp, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { toast } from "sonner";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { calculateAnthropometry, type AnthropometryResult } from "@/utils/anthropometry/who-reference";
@@ -237,23 +238,23 @@ export function AnthropometryCalculator() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label className="text-xs">Масса тела (кг)</Label>
-                    <Input type="number" step="0.1" min="0" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="12.5" />
+                    <DecimalInput value={weight} onValueChange={setWeight} placeholder="12,5" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Рост (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="85.0" />
+                    <DecimalInput value={height} onValueChange={setHeight} placeholder="85,0" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Окружность головы (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={headCircumference} onChange={(e) => setHeadCircumference(e.target.value)} placeholder="46.0" />
+                    <DecimalInput value={headCircumference} onValueChange={setHeadCircumference} placeholder="46,0" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Окружность талии (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={waistCircumference} onChange={(e) => setWaistCircumference(e.target.value)} placeholder="50.0" />
+                    <DecimalInput value={waistCircumference} onValueChange={setWaistCircumference} placeholder="50,0" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Длина стопы (см)</Label>
-                    <Input type="number" step="0.1" min="0" value={footLength} onChange={(e) => setFootLength(e.target.value)} placeholder="22.0" />
+                    <DecimalInput value={footLength} onValueChange={setFootLength} placeholder="22,0" />
                   </div>
                 </div>
 
@@ -274,11 +275,11 @@ export function AnthropometryCalculator() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <Label className="text-xs">Длина (см)</Label>
-                          <Input type="number" step="0.1" min="0" value={penileLength} onChange={(e) => setPenileLength(e.target.value)} placeholder="5.0" />
+                          <DecimalInput value={penileLength} onValueChange={setPenileLength} placeholder="5,0" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Окружность (см)</Label>
-                          <Input type="number" step="0.1" min="0" value={penileCircumference} onChange={(e) => setPenileCircumference(e.target.value)} placeholder="7.0" />
+                          <DecimalInput value={penileCircumference} onValueChange={setPenileCircumference} placeholder="7,0" />
                         </div>
                       </div>
                     </div>

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, Save, ArrowUp, ArrowDown, Minus, Loader2, Trash2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { toast } from "sonner";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { LAB_TESTS, LAB_GROUPS, type LabTest } from "@/utils/lab-reference-ranges";
@@ -226,11 +227,9 @@ export function LabResultsPanel() {
                         )}
                       </div>
                       <div className="w-24 shrink-0">
-                        <Input
-                          type="number"
-                          step="any"
+                        <DecimalInput
                           value={val}
-                          onChange={(e) => updateEntry(test.code, e.target.value)}
+                          onValueChange={(v) => updateEntry(test.code, v)}
                           placeholder="—"
                           className={cn("h-8 text-sm text-right", isAbnormal && "border-destructive text-destructive")}
                         />
