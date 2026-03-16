@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { calculateAge } from "@/utils/anthropometry/who-reference";
-import { getTesticularVolumeNorm } from "@/utils/lab-reference-ranges";
+import { getUltrasoundNorm } from "@/utils/lab-reference-ranges";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
