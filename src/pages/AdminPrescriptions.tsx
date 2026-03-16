@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, FileText, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PrescriptionForm } from "@/components/prescriptions/PrescriptionForm";
@@ -18,7 +18,9 @@ import { UltrasoundPanel } from "@/components/ultrasound/UltrasoundPanel";
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const [section, setSection] = useState<"prescriptions" | "examinations">("prescriptions");
   const [activeTab, setActiveTab] = useState("new");
+  const [examTab, setExamTab] = useState("anthropometry");
   const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
   const [repeatPrescriptionId, setRepeatPrescriptionId] = useState<string | null>(null);
   const [repeatWithoutPatient, setRepeatWithoutPatient] = useState(false);
@@ -69,72 +71,101 @@ const AdminPrescriptions = () => {
           Назад к панели администратора
         </Link>
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
               Медицинские инструменты
             </h1>
             <p className="text-muted-foreground">
-              Рецепты, анализы, антропометрия, УЗИ
+              Рецепты, обследования, анализы
             </p>
           </div>
-          <div className="flex gap-2">
-            <SubstanceReference />
-            <DrugReference />
-          </div>
+          {section === "prescriptions" && (
+            <div className="flex gap-2">
+              <SubstanceReference />
+              <DrugReference />
+            </div>
+          )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 flex-wrap h-auto gap-1">
-            <TabsTrigger value="new">Рецепт</TabsTrigger>
-            <TabsTrigger value="extemporaneous">Экстемпоральный</TabsTrigger>
-            <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
-            <TabsTrigger value="anthropometry">Антропометрия</TabsTrigger>
-            <TabsTrigger value="labs">Анализы</TabsTrigger>
-            <TabsTrigger value="ultrasound">УЗИ</TabsTrigger>
-            <TabsTrigger value="history">История рецептов</TabsTrigger>
-          </TabsList>
+        {/* Section selector */}
+        <div className="flex gap-2 mb-6">
+          <Button
+            variant={section === "prescriptions" ? "default" : "outline"}
+            onClick={() => setSection("prescriptions")}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Рецепты
+          </Button>
+          <Button
+            variant={section === "examinations" ? "default" : "outline"}
+            onClick={() => setSection("examinations")}
+            className="gap-2"
+          >
+            <Stethoscope className="h-4 w-4" />
+            Обследования
+          </Button>
+        </div>
 
-          <TabsContent value="new">
-            <PrescriptionForm
-              repeatPrescriptionId={repeatPrescriptionId}
-              repeatWithoutPatient={repeatWithoutPatient}
-              onSaved={() => {
-                setRepeatPrescriptionId(null);
-                setRepeatWithoutPatient(false);
-                setActiveTab("history");
-              }}
-            />
-          </TabsContent>
+        {section === "prescriptions" && (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-6 flex-wrap h-auto gap-1">
+              <TabsTrigger value="new">Рецепт</TabsTrigger>
+              <TabsTrigger value="extemporaneous">Экстемпоральный</TabsTrigger>
+              <TabsTrigger value="dosage">Калькулятор дозы</TabsTrigger>
+              <TabsTrigger value="history">История рецептов</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="extemporaneous">
-            <ExtemporaneousForm
-              onSaved={() => setActiveTab("history")}
-            />
-          </TabsContent>
+            <TabsContent value="new">
+              <PrescriptionForm
+                repeatPrescriptionId={repeatPrescriptionId}
+                repeatWithoutPatient={repeatWithoutPatient}
+                onSaved={() => {
+                  setRepeatPrescriptionId(null);
+                  setRepeatWithoutPatient(false);
+                  setActiveTab("history");
+                }}
+              />
+            </TabsContent>
 
-          <TabsContent value="dosage">
-            <DosageCalculator />
-          </TabsContent>
+            <TabsContent value="extemporaneous">
+              <ExtemporaneousForm onSaved={() => setActiveTab("history")} />
+            </TabsContent>
 
-          <TabsContent value="anthropometry">
-            <AnthropometryErrorBoundary>
-              <AnthropometryCalculator />
-            </AnthropometryErrorBoundary>
-          </TabsContent>
+            <TabsContent value="dosage">
+              <DosageCalculator />
+            </TabsContent>
 
-          <TabsContent value="labs">
-            <LabResultsPanel />
-          </TabsContent>
+            <TabsContent value="history">
+              <PrescriptionHistory onRepeat={handleRepeat} onRepeatForOther={handleRepeatForOther} />
+            </TabsContent>
+          </Tabs>
+        )}
 
-          <TabsContent value="ultrasound">
-            <UltrasoundPanel />
-          </TabsContent>
+        {section === "examinations" && (
+          <Tabs value={examTab} onValueChange={setExamTab}>
+            <TabsList className="mb-6 flex-wrap h-auto gap-1">
+              <TabsTrigger value="anthropometry">Антропометрия</TabsTrigger>
+              <TabsTrigger value="labs">Анализы</TabsTrigger>
+              <TabsTrigger value="ultrasound">УЗИ</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="history">
-            <PrescriptionHistory onRepeat={handleRepeat} onRepeatForOther={handleRepeatForOther} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="anthropometry">
+              <AnthropometryErrorBoundary>
+                <AnthropometryCalculator />
+              </AnthropometryErrorBoundary>
+            </TabsContent>
+
+            <TabsContent value="labs">
+              <LabResultsPanel />
+            </TabsContent>
+
+            <TabsContent value="ultrasound">
+              <UltrasoundPanel />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </div>
   );
