@@ -45,11 +45,11 @@ const VARICOCELE_GRADES = [
   { value: "3", label: "III — Видно визуально" },
 ];
 
-function calcVolumeDeficit(vol: number | null, norm: { min: number; median: number; max: number } | null): { deficit: number; deficitPercent: number } | null {
-  if (!vol || !norm) return null;
-  if (vol >= norm.median) return null;
-  const deficit = Math.round((norm.median - vol) * 100) / 100;
-  const deficitPercent = Math.round((deficit / norm.median) * 100);
+function calcVolumeDeficit(vol: number | null, normVal: number | null): { deficit: number; deficitPercent: number } | null {
+  if (!vol || !normVal) return null;
+  if (vol >= normVal) return null;
+  const deficit = Math.round((normVal - vol) * 100) / 100;
+  const deficitPercent = Math.round((deficit / normVal) * 100);
   return { deficit, deficitPercent };
 }
 
