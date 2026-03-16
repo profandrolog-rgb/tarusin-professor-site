@@ -297,10 +297,45 @@ export function UltrasoundPanel() {
       </div>
 
       {patient && (
-        <div className="text-sm text-muted-foreground">
-          Возраст: <span className="font-medium text-foreground">{calculateAge(new Date(patient.birth_date), examDate).text}</span>
+        <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span>
+            Дата рождения:{" "}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="font-medium text-foreground underline decoration-dotted underline-offset-2 hover:text-primary transition-colors cursor-pointer">
+                  {format(new Date(patient.birth_date), "dd.MM.yyyy")}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={new Date(patient.birth_date)}
+                  onSelect={async (d) => {
+                    if (!d) return;
+                    const newDate = format(d, "yyyy-MM-dd");
+                    const { error } = await supabase
+                      .from("patients")
+                      .update({ birth_date: newDate })
+                      .eq("id", patient.id);
+                    if (error) {
+                      toast.error("Не удалось обновить дату рождения");
+                    } else {
+                      setPatient({ ...patient, birth_date: newDate });
+                      toast.success("Дата рождения обновлена");
+                    }
+                  }}
+                  captionLayout="dropdown-buttons"
+                  fromYear={1920}
+                  toYear={new Date().getFullYear()}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </span>
+          <span>·</span>
+          <span>Возраст: <span className="font-medium text-foreground">{calculateAge(new Date(patient.birth_date), examDate).text}</span></span>
           {volumeNorm && (
-            <span> · Норма объёма яичка: {volumeNorm.min}–{volumeNorm.max} мл (медиана {volumeNorm.median})</span>
+            <><span>·</span><span>Норма объёма яичка: {volumeNorm.min}–{volumeNorm.max} мл (медиана {volumeNorm.median})</span></>
           )}
         </div>
       )}
