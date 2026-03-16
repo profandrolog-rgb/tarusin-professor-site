@@ -511,6 +511,17 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Предстательная железа</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <MeasurementInput label="Объём" field="prostate_volume" unit="мл" />
+                {prostateVol != null && usNorm && (
+                  <div className={cn("text-sm p-2 rounded", prostateVol < usNorm.prostateMl ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
+                    Объём: <span className="font-bold">{prostateVol} мл</span>
+                    <span className="text-xs ml-2">(норма {usNorm.prostateMl} мл)</span>
+                    {prostateDeficit && (
+                      <div className="text-xs font-medium text-destructive">
+                        Дефицит: {prostateDeficit.deficit} мл ({prostateDeficit.deficitPercent}%)
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
                   <Select value={form.prostate_echostructure || ""} onValueChange={(v) => update("prostate_echostructure", v)}>
