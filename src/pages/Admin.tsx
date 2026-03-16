@@ -10,6 +10,7 @@ import {
   Loader2,
   Award,
   Pill,
+  Stethoscope,
   BarChart3,
   ExternalLink,
   TrendingUp,
