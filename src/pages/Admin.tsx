@@ -10,6 +10,7 @@ import {
   Loader2,
   Award,
   Pill,
+  Stethoscope,
   BarChart3,
   ExternalLink,
   TrendingUp,
@@ -69,6 +70,13 @@ const adminSections = [
     icon: Pill,
     href: "/admin/prescriptions",
     color: "text-red-500",
+  },
+  {
+    title: "Обследования",
+    description: "УЗИ, анализы, антропометрия",
+    icon: Stethoscope,
+    href: "/admin/prescriptions?section=examinations",
+    color: "text-indigo-500",
   },
 ];
 

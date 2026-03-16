@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Loader2, FileText, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,9 @@ import { UltrasoundPanel } from "@/components/ultrasound/UltrasoundPanel";
 const AdminPrescriptions = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
-  const [section, setSection] = useState<"prescriptions" | "examinations">("prescriptions");
+  const [searchParams] = useSearchParams();
+  const initialSection = searchParams.get("section") === "examinations" ? "examinations" : "prescriptions";
+  const [section, setSection] = useState<"prescriptions" | "examinations">(initialSection);
   const [activeTab, setActiveTab] = useState("new");
   const [examTab, setExamTab] = useState("anthropometry");
   const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
