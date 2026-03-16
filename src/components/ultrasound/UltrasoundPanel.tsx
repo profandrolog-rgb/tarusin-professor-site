@@ -399,7 +399,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Яичко правое</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <MeasurementInput label="Объём" field="right_testis_volume" unit="мл" />
+                <MeasurementInput label="Объём" field="right_testis_volume" unit="мл" value={form.right_testis_volume || ""} onValueChange={update} />
                 <TestisVolumeDisplay vol={rightTestisVol} side="right" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
@@ -414,7 +414,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Яичко левое</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <MeasurementInput label="Объём" field="left_testis_volume" unit="мл" />
+                <MeasurementInput label="Объём" field="left_testis_volume" unit="мл" value={form.left_testis_volume || ""} onValueChange={update} />
                 <TestisVolumeDisplay vol={leftTestisVol} side="left" />
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
@@ -440,7 +440,7 @@ export function UltrasoundPanel() {
                       </div>
                     )}
                     {gpi && (
-                      <div className={cn("p-3 rounded-lg", gpi.ratio < 0.8 || gpi.ratio > 1.3 ? "bg-amber-100 dark:bg-amber-950" : "bg-accent/50")}>
+                      <div className={cn("p-3 rounded-lg", gpi.ratio < 0.8 || gpi.ratio > 1.3 ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
                         <p className="text-xs text-muted-foreground">Гонадо-простатический индекс</p>
                         <p className="font-bold text-sm">{gpi.meanTestis} / {gpi.prostate} = {gpi.ratio}</p>
                         <p className="text-xs text-muted-foreground">Среднее яичко / Простата</p>
@@ -464,8 +464,8 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Придатки яичек</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <MeasurementInput label="Головка правого (объём)" field="right_epididymis_head" unit="мм" />
-                  <MeasurementInput label="Головка левого (объём)" field="left_epididymis_head" unit="мм" />
+                  <MeasurementInput label="Головка правого (объём)" field="right_epididymis_head" unit="мм" value={form.right_epididymis_head || ""} onValueChange={update} />
+                  <MeasurementInput label="Головка левого (объём)" field="left_epididymis_head" unit="мм" value={form.left_epididymis_head || ""} onValueChange={update} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -485,8 +485,8 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Семенной канатик / Варикоцеле</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <MeasurementInput label="Вена справа ∅" field="right_spermatic_vein_diameter" />
-                  <MeasurementInput label="Вена слева ∅" field="left_spermatic_vein_diameter" />
+                  <MeasurementInput label="Вена справа ∅" field="right_spermatic_vein_diameter" value={form.right_spermatic_vein_diameter || ""} onValueChange={update} />
+                  <MeasurementInput label="Вена слева ∅" field="left_spermatic_vein_diameter" value={form.left_spermatic_vein_diameter || ""} onValueChange={update} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
@@ -517,10 +517,10 @@ export function UltrasoundPanel() {
                 {(form.valsalva_reflux_right || form.valsalva_reflux_left) && (
                   <div className="grid grid-cols-2 gap-3">
                     {form.valsalva_reflux_right && (
-                      <MeasurementInput label="Макс. скорость рефлюкса (пр.)" field="valsalva_max_velocity_right" unit="см/с" />
+                      <MeasurementInput label="Макс. скорость рефлюкса (пр.)" field="valsalva_max_velocity_right" unit="см/с" value={form.valsalva_max_velocity_right || ""} onValueChange={update} />
                     )}
                     {form.valsalva_reflux_left && (
-                      <MeasurementInput label="Макс. скорость рефлюкса (лев.)" field="valsalva_max_velocity_left" unit="см/с" />
+                      <MeasurementInput label="Макс. скорость рефлюкса (лев.)" field="valsalva_max_velocity_left" unit="см/с" value={form.valsalva_max_velocity_left || ""} onValueChange={update} />
                     )}
                   </div>
                 )}
@@ -531,7 +531,7 @@ export function UltrasoundPanel() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base">Предстательная железа</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <MeasurementInput label="Объём" field="prostate_volume" unit="мл" />
+                <MeasurementInput label="Объём" field="prostate_volume" unit="мл" value={form.prostate_volume || ""} onValueChange={update} />
                 {prostateVol != null && usNorm && (
                   <div className={cn("text-sm p-2 rounded", prostateVol < usNorm.prostateMl ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
                     Объём: <span className="font-bold">{prostateVol} мл</span>
@@ -558,8 +558,8 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Половой член</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <MeasurementInput label="Длина" field="penile_length" />
-                  <MeasurementInput label="Растянутая длина" field="penile_stretched_length" />
+                  <MeasurementInput label="Длина" field="penile_length" value={form.penile_length || ""} onValueChange={update} />
+                  <MeasurementInput label="Растянутая длина" field="penile_stretched_length" value={form.penile_stretched_length || ""} onValueChange={update} />
                 </div>
               </CardContent>
             </Card>
@@ -580,8 +580,8 @@ export function UltrasoundPanel() {
                 </div>
                 {(form.right_hydrocele || form.left_hydrocele) && (
                   <div className="grid grid-cols-2 gap-3">
-                    {form.right_hydrocele && <MeasurementInput label="Объём (пр.)" field="hydrocele_volume_right" unit="мл" />}
-                    {form.left_hydrocele && <MeasurementInput label="Объём (лев.)" field="hydrocele_volume_left" unit="мл" />}
+                    {form.right_hydrocele && <MeasurementInput label="Объём (пр.)" field="hydrocele_volume_right" unit="мл" value={form.hydrocele_volume_right || ""} onValueChange={update} />}
+                    {form.left_hydrocele && <MeasurementInput label="Объём (лев.)" field="hydrocele_volume_left" unit="мл" value={form.hydrocele_volume_left || ""} onValueChange={update} />}
                   </div>
                 )}
               </CardContent>
@@ -609,13 +609,13 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Мочевой пузырь / Почки</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-3 gap-2">
-                  <MeasurementInput label="Объём пузыря" field="bladder_volume" unit="мл" />
-                  <MeasurementInput label="Остаточная моча" field="residual_urine" unit="мл" />
-                  <MeasurementInput label="Толщина стенки" field="bladder_wall_thickness" />
+                  <MeasurementInput label="Объём пузыря" field="bladder_volume" unit="мл" value={form.bladder_volume || ""} onValueChange={update} />
+                  <MeasurementInput label="Остаточная моча" field="residual_urine" unit="мл" value={form.residual_urine || ""} onValueChange={update} />
+                  <MeasurementInput label="Толщина стенки" field="bladder_wall_thickness" value={form.bladder_wall_thickness || ""} onValueChange={update} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <MeasurementInput label="Почка правая (длина)" field="right_kidney_length" />
-                  <MeasurementInput label="Почка левая (длина)" field="left_kidney_length" />
+                  <MeasurementInput label="Почка правая (длина)" field="right_kidney_length" value={form.right_kidney_length || ""} onValueChange={update} />
+                  <MeasurementInput label="Почка левая (длина)" field="left_kidney_length" value={form.left_kidney_length || ""} onValueChange={update} />
                 </div>
               </CardContent>
             </Card>
