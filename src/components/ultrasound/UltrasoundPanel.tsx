@@ -101,6 +101,46 @@ function recordToForm(record: any): Record<string, any> {
   return f;
 }
 
+type MeasurementInputProps = {
+  label: string;
+  field: string;
+  unit?: string;
+  value: string;
+  onValueChange: (field: string, value: string) => void;
+};
+
+const MeasurementInput = memo(({ label, field, unit = "мм", value, onValueChange }: MeasurementInputProps) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    const normalizedLocal = localValue.replace(",", ".");
+    if (normalizedLocal !== value) {
+      setLocalValue(value);
+    }
+  }, [value]);
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label} ({unit})</Label>
+      <Input
+        type="text"
+        inputMode="decimal"
+        enterKeyHint="done"
+        value={localValue}
+        onChange={(e) => {
+          const nextValue = e.target.value;
+          if (nextValue === "" || /^\d*([.,]\d{0,2})?$/.test(nextValue)) {
+            setLocalValue(nextValue);
+            onValueChange(field, nextValue.replace(",", "."));
+          }
+        }}
+        placeholder="—"
+        className="h-8 text-sm"
+      />
+    </div>
+  );
+});
+
 export function UltrasoundPanel() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [examDate, setExamDate] = useState<Date>(new Date());
