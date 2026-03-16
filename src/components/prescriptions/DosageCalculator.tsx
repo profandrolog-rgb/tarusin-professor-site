@@ -156,13 +156,9 @@ export function DosageCalculator() {
               <Label className="flex items-center gap-1.5 text-xs">
                 <Weight className="h-3.5 w-3.5" /> Вес (кг)
               </Label>
-              <Input
-                type="number"
-                min={0.5}
-                max={150}
-                step={0.1}
+              <DecimalInput
                 value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
+                onValueChange={setWeightKg}
                 placeholder="кг"
               />
             </div>
@@ -170,12 +166,9 @@ export function DosageCalculator() {
               <Label className="flex items-center gap-1.5 text-xs">
                 <Ruler className="h-3.5 w-3.5" /> Рост (см)
               </Label>
-              <Input
-                type="number"
-                min={30}
-                max={200}
+              <DecimalInput
                 value={heightCm}
-                onChange={(e) => setHeightCm(e.target.value)}
+                onValueChange={setHeightCm}
                 placeholder="см"
               />
             </div>

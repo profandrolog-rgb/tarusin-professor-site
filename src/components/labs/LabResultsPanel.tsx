@@ -227,11 +227,9 @@ export function LabResultsPanel() {
                         )}
                       </div>
                       <div className="w-24 shrink-0">
-                        <Input
-                          type="number"
-                          step="any"
+                        <DecimalInput
                           value={val}
-                          onChange={(e) => updateEntry(test.code, e.target.value)}
+                          onValueChange={(v) => updateEntry(test.code, v)}
                           placeholder="—"
                           className={cn("h-8 text-sm text-right", isAbnormal && "border-destructive text-destructive")}
                         />
