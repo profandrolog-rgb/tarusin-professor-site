@@ -348,8 +348,8 @@ export function UltrasoundPanel() {
           </span>
           <span>·</span>
           <span>Возраст: <span className="font-medium text-foreground">{calculateAge(new Date(patient.birth_date), examDate).text}</span></span>
-          {volumeNorm && (
-            <><span>·</span><span>Норма объёма яичка: {volumeNorm.min}–{volumeNorm.max} мл (медиана {volumeNorm.median})</span></>
+          {usNorm && (
+            <><span>·</span><span>Норма: ПЯ {usNorm.rightTestisMl} мл, ЛЯ {usNorm.leftTestisMl} мл, простата {usNorm.prostateMl} мл</span></>
           )}
         </div>
       )}
