@@ -83,9 +83,9 @@ const adminSections = [
 const analyticsServices = [
   {
     name: "Яндекс.Метрика",
-    id: "107704601",
+    id: "107724120",
     icon: "📊",
-    dashboardUrl: "https://metrika.yandex.ru/dashboard?id=107704601",
+    dashboardUrl: "https://metrika.yandex.ru/dashboard?id=107724120",
     features: ["Вебвизор", "Карта кликов", "Источники трафика", "Показатель отказов"],
     color: "border-yellow-500/50 bg-yellow-500/5",
   },
