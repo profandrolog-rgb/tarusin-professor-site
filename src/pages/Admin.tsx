@@ -71,6 +71,13 @@ const adminSections = [
     href: "/admin/prescriptions",
     color: "text-red-500",
   },
+  {
+    title: "Обследования",
+    description: "УЗИ, анализы, антропометрия",
+    icon: Stethoscope,
+    href: "/admin/prescriptions?section=examinations",
+    color: "text-indigo-500",
+  },
 ];
 
 const analyticsServices = [
