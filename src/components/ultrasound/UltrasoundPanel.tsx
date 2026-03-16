@@ -117,14 +117,15 @@ export function UltrasoundPanel() {
   const numVal = (field: string) => form[field] ? parseFloat(form[field]) : undefined;
 
   const ageYears = patient ? calculateAge(new Date(patient.birth_date), examDate).years : 0;
-  const volumeNorm = getTesticularVolumeNorm(ageYears);
+  const usNorm = getUltrasoundNorm(ageYears);
 
   const rightTestisVol = numVal("right_testis_volume") ?? null;
   const leftTestisVol = numVal("left_testis_volume") ?? null;
   const prostateVol = numVal("prostate_volume") ?? null;
 
-  const rightDeficit = calcVolumeDeficit(rightTestisVol, volumeNorm);
-  const leftDeficit = calcVolumeDeficit(leftTestisVol, volumeNorm);
+  const rightDeficit = calcVolumeDeficit(rightTestisVol, usNorm?.rightTestisMl ?? null);
+  const leftDeficit = calcVolumeDeficit(leftTestisVol, usNorm?.leftTestisMl ?? null);
+  const prostateDeficit = calcVolumeDeficit(prostateVol, usNorm?.prostateMl ?? null);
   const lateralization = calcLateralization(rightTestisVol, leftTestisVol);
   const gpi = calcGonadalProstaticIndex(rightTestisVol, leftTestisVol, prostateVol);
 
