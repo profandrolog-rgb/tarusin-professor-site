@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MedicationSearch } from "./MedicationSearch";
+import { DecimalInput } from "@/components/ui/decimal-input";
 
 interface PracticalDose {
   form: string;

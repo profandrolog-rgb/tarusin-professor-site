@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, Save, ArrowUp, ArrowDown, Minus, Loader2, Trash2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { toast } from "sonner";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { LAB_TESTS, LAB_GROUPS, type LabTest } from "@/utils/lab-reference-ranges";

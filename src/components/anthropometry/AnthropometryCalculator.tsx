@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CalendarIcon, Save, Calculator, TrendingUp, AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { toast } from "sonner";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { calculateAnthropometry, type AnthropometryResult } from "@/utils/anthropometry/who-reference";
