@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { calculateAge } from "@/utils/anthropometry/who-reference";
-import { getTesticularVolumeNorm } from "@/utils/lab-reference-ranges";
+import { getUltrasoundNorm } from "@/utils/lab-reference-ranges";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -45,11 +45,11 @@ const VARICOCELE_GRADES = [
   { value: "3", label: "III — Видно визуально" },
 ];
 
-function calcVolumeDeficit(vol: number | null, norm: { min: number; median: number; max: number } | null): { deficit: number; deficitPercent: number } | null {
-  if (!vol || !norm) return null;
-  if (vol >= norm.median) return null;
-  const deficit = Math.round((norm.median - vol) * 100) / 100;
-  const deficitPercent = Math.round((deficit / norm.median) * 100);
+function calcVolumeDeficit(vol: number | null, normVal: number | null): { deficit: number; deficitPercent: number } | null {
+  if (!vol || !normVal) return null;
+  if (vol >= normVal) return null;
+  const deficit = Math.round((normVal - vol) * 100) / 100;
+  const deficitPercent = Math.round((deficit / normVal) * 100);
   return { deficit, deficitPercent };
 }
 
@@ -117,14 +117,15 @@ export function UltrasoundPanel() {
   const numVal = (field: string) => form[field] ? parseFloat(form[field]) : undefined;
 
   const ageYears = patient ? calculateAge(new Date(patient.birth_date), examDate).years : 0;
-  const volumeNorm = getTesticularVolumeNorm(ageYears);
+  const usNorm = getUltrasoundNorm(ageYears);
 
   const rightTestisVol = numVal("right_testis_volume") ?? null;
   const leftTestisVol = numVal("left_testis_volume") ?? null;
   const prostateVol = numVal("prostate_volume") ?? null;
 
-  const rightDeficit = calcVolumeDeficit(rightTestisVol, volumeNorm);
-  const leftDeficit = calcVolumeDeficit(leftTestisVol, volumeNorm);
+  const rightDeficit = calcVolumeDeficit(rightTestisVol, usNorm?.rightTestisMl ?? null);
+  const leftDeficit = calcVolumeDeficit(leftTestisVol, usNorm?.leftTestisMl ?? null);
+  const prostateDeficit = calcVolumeDeficit(prostateVol, usNorm?.prostateMl ?? null);
   const lateralization = calcLateralization(rightTestisVol, leftTestisVol);
   const gpi = calcGonadalProstaticIndex(rightTestisVol, leftTestisVol, prostateVol);
 
@@ -270,16 +271,17 @@ export function UltrasoundPanel() {
   const TestisVolumeDisplay = ({ vol, side }: { vol: number | null; side: "right" | "left" }) => {
     if (!vol) return null;
     const deficit = side === "right" ? rightDeficit : leftDeficit;
-    const isAbnormal = volumeNorm && (vol < volumeNorm.min || vol > volumeNorm.max);
+    const normVal = side === "right" ? usNorm?.rightTestisMl : usNorm?.leftTestisMl;
+    const isAbnormal = normVal && vol < normVal;
     return (
       <div className={cn("text-sm p-2 rounded space-y-1", isAbnormal ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
         <div>
           Объём: <span className="font-bold">{vol} мл</span>
-          {volumeNorm && <span className="text-xs ml-2">(норма {volumeNorm.min}–{volumeNorm.max})</span>}
+          {normVal && <span className="text-xs ml-2">(норма {normVal} мл)</span>}
         </div>
         {deficit && (
           <div className="text-xs font-medium text-destructive">
-            Дефицит: {deficit.deficit} мл ({deficit.deficitPercent}% от медианы)
+            Дефицит: {deficit.deficit} мл ({deficit.deficitPercent}%)
           </div>
         )}
       </div>
@@ -346,8 +348,8 @@ export function UltrasoundPanel() {
           </span>
           <span>·</span>
           <span>Возраст: <span className="font-medium text-foreground">{calculateAge(new Date(patient.birth_date), examDate).text}</span></span>
-          {volumeNorm && (
-            <><span>·</span><span>Норма объёма яичка: {volumeNorm.min}–{volumeNorm.max} мл (медиана {volumeNorm.median})</span></>
+          {usNorm && (
+            <><span>·</span><span>Норма: ПЯ {usNorm.rightTestisMl} мл, ЛЯ {usNorm.leftTestisMl} мл, простата {usNorm.prostateMl} мл</span></>
           )}
         </div>
       )}
@@ -509,6 +511,17 @@ export function UltrasoundPanel() {
               <CardHeader className="pb-2"><CardTitle className="text-base">Предстательная железа</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <MeasurementInput label="Объём" field="prostate_volume" unit="мл" />
+                {prostateVol != null && usNorm && (
+                  <div className={cn("text-sm p-2 rounded", prostateVol < usNorm.prostateMl ? "bg-destructive/10 text-destructive" : "bg-accent/50")}>
+                    Объём: <span className="font-bold">{prostateVol} мл</span>
+                    <span className="text-xs ml-2">(норма {usNorm.prostateMl} мл)</span>
+                    {prostateDeficit && (
+                      <div className="text-xs font-medium text-destructive">
+                        Дефицит: {prostateDeficit.deficit} мл ({prostateDeficit.deficitPercent}%)
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-1">
                   <Label className="text-xs">Эхоструктура</Label>
                   <Select value={form.prostate_echostructure || ""} onValueChange={(v) => update("prostate_echostructure", v)}>

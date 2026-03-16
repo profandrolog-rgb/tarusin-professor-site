@@ -163,28 +163,44 @@ export function getTestsByGroup(group: string): LabTest[] {
   return LAB_TESTS.filter(t => t.group === group);
 }
 
-/** Testicular volume norms by age (boys, ml) - Prader orchidometer */
-export const TESTICULAR_VOLUME_NORMS: { ageYears: number; min: number; median: number; max: number }[] = [
-  { ageYears: 1, min: 0.5, median: 0.8, max: 1.5 },
-  { ageYears: 3, min: 0.5, median: 0.8, max: 1.5 },
-  { ageYears: 5, min: 0.5, median: 1.0, max: 1.5 },
-  { ageYears: 7, min: 0.5, median: 1.0, max: 2.0 },
-  { ageYears: 9, min: 0.8, median: 1.5, max: 3.0 },
-  { ageYears: 10, min: 1.0, median: 2.0, max: 4.0 },
-  { ageYears: 11, min: 1.5, median: 3.0, max: 8.0 },
-  { ageYears: 12, min: 2.0, median: 5.0, max: 12.0 },
-  { ageYears: 13, min: 3.0, median: 8.0, max: 15.0 },
-  { ageYears: 14, min: 5.0, median: 12.0, max: 20.0 },
-  { ageYears: 15, min: 8.0, median: 15.0, max: 25.0 },
-  { ageYears: 16, min: 10.0, median: 18.0, max: 25.0 },
-  { ageYears: 17, min: 12.0, median: 20.0, max: 30.0 },
-  { ageYears: 18, min: 15.0, median: 20.0, max: 30.0 },
+/** Testicular & prostate volume norms by age (boys, ml) — imported reference data */
+export interface UltrasoundAgeNorm {
+  ageYears: number;
+  rightTestisMl: number;
+  leftTestisMl: number;
+  prostateMl: number;
+}
+
+export const ULTRASOUND_AGE_NORMS: UltrasoundAgeNorm[] = [
+  { ageYears: 1, rightTestisMl: 0.48, leftTestisMl: 0.48, prostateMl: 0.66 },
+  { ageYears: 2, rightTestisMl: 0.45, leftTestisMl: 0.47, prostateMl: 0.66 },
+  { ageYears: 3, rightTestisMl: 0.50, leftTestisMl: 0.52, prostateMl: 0.66 },
+  { ageYears: 4, rightTestisMl: 0.50, leftTestisMl: 0.52, prostateMl: 0.66 },
+  { ageYears: 5, rightTestisMl: 0.58, leftTestisMl: 0.59, prostateMl: 1.04 },
+  { ageYears: 6, rightTestisMl: 0.64, leftTestisMl: 0.63, prostateMl: 1.04 },
+  { ageYears: 7, rightTestisMl: 0.66, leftTestisMl: 0.64, prostateMl: 1.04 },
+  { ageYears: 8, rightTestisMl: 0.67, leftTestisMl: 0.64, prostateMl: 1.04 },
+  { ageYears: 9, rightTestisMl: 0.80, leftTestisMl: 0.78, prostateMl: 1.04 },
+  { ageYears: 10, rightTestisMl: 0.99, leftTestisMl: 0.95, prostateMl: 1.04 },
+  { ageYears: 11, rightTestisMl: 1.35, leftTestisMl: 1.31, prostateMl: 2.62 },
+  { ageYears: 12, rightTestisMl: 2.35, leftTestisMl: 2.31, prostateMl: 2.62 },
+  { ageYears: 13, rightTestisMl: 4.62, leftTestisMl: 4.21, prostateMl: 8.41 },
+  { ageYears: 14, rightTestisMl: 7.42, leftTestisMl: 7.20, prostateMl: 8.41 },
+  { ageYears: 15, rightTestisMl: 8.69, leftTestisMl: 8.69, prostateMl: 8.41 },
+  { ageYears: 16, rightTestisMl: 11.55, leftTestisMl: 11.48, prostateMl: 11.50 },
+  { ageYears: 17, rightTestisMl: 12.09, leftTestisMl: 12.14, prostateMl: 11.50 },
 ];
 
+export function getUltrasoundNorm(ageYears: number): UltrasoundAgeNorm | null {
+  if (ageYears < 1 || ageYears > 17) return null;
+  return ULTRASOUND_AGE_NORMS.find(n => n.ageYears === Math.floor(ageYears)) ?? null;
+}
+
+/** @deprecated Use getUltrasoundNorm instead */
 export function getTesticularVolumeNorm(ageYears: number): { min: number; median: number; max: number } | null {
-  if (ageYears < 1 || ageYears > 18) return null;
-  for (let i = TESTICULAR_VOLUME_NORMS.length - 1; i >= 0; i--) {
-    if (ageYears >= TESTICULAR_VOLUME_NORMS[i].ageYears) return TESTICULAR_VOLUME_NORMS[i];
-  }
-  return TESTICULAR_VOLUME_NORMS[0];
+  const norm = getUltrasoundNorm(ageYears);
+  if (!norm) return null;
+  // Use the mean of right+left as median, keep backward compat
+  const avg = (norm.rightTestisMl + norm.leftTestisMl) / 2;
+  return { min: avg * 0.5, median: avg, max: avg * 2.5 };
 }
