@@ -475,7 +475,7 @@ const VideoCases = () => {
 
         {/* Selected Video Player */}
         {selectedVideo && (
-          <div className="mb-12" onContextMenu={handleContextMenu}>
+          <div className="mb-12" onContextMenu={handleContextMenu} ref={playerRef}>
             <Card className="overflow-hidden">
               <CardContent className="p-0 relative">
                 <Button
