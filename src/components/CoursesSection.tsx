@@ -29,7 +29,7 @@ const courses = [
     format: "Очно",
     audience: "Для хирургов",
     price: "120 000 ₽",
-    badge: null,
+    badge: "Авторский курс",
     topics: ["Микрохирургический шов", "Варикоцелэктомия", "Вазовазостомия", "Работа с операционным микроскопом"],
   },
   {
@@ -51,7 +51,7 @@ const courses = [
     format: "Очно",
     audience: "Для врачей",
     price: "150 000 ₽",
-    badge: null,
+    badge: "Авторский курс",
     topics: ["Эхоанатомия органов мошонки", "Допплерография", "Диагностика варикоцеле", "Протоколы исследования"],
   },
   {
@@ -62,7 +62,8 @@ const courses = [
     format: "Очно",
     audience: "Для врачей",
     price: "220 000 ₽",
-    badge: "Новый",
+    badge: "Уникальный авторский курс",
+    highlighted: true,
     topics: ["Нормативное половое развитие", "Нарушения пубертата", "Психосексуальные расстройства", "Гендерная дисфория", "Междисциплинарный подход"],
   },
 ];
@@ -118,11 +119,15 @@ const CoursesSection = () => {
         </div>
 
         {/* Courses Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course, index) => (
             <Card 
               key={index} 
-              className="bg-card border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col"
+              className={`border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col ${
+                (course as any).highlighted 
+                  ? "bg-primary/5 border-primary/20 ring-1 ring-primary/10" 
+                  : "bg-card"
+              }`}
             >
               <CardHeader className="pb-4">
                 {course.badge && (
@@ -130,6 +135,10 @@ const CoursesSection = () => {
                     className={`w-fit mb-2 ${
                       course.badge === "Бесплатно" 
                         ? "bg-green-100 text-green-700 hover:bg-green-100" 
+                        : course.badge === "Уникальный авторский курс"
+                        ? "bg-primary/15 text-primary hover:bg-primary/15"
+                        : course.badge === "Авторский курс"
+                        ? "bg-primary/10 text-primary/80 hover:bg-primary/10"
                         : "bg-accent/10 text-accent hover:bg-accent/10"
                     }`}
                   >
