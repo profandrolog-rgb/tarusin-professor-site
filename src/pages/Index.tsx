@@ -59,10 +59,10 @@ const jsonLd = {
         "@type": "Physician",
         "name": "Тарусин Дмитрий Игоревич"
       },
-      "ratingValue": "5.0",
+      "ratingValue": "4.8",
       "bestRating": "5",
-      "ratingCount": "69",
-      "reviewCount": "69"
+      "ratingCount": "88",
+      "reviewCount": "88"
     }
   ]
 };

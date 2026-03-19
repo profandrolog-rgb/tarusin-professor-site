@@ -77,7 +77,7 @@ const Reviews = () => {
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">5.0</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4.8</div>
               <div className="text-sm text-muted-foreground">Средний рейтинг</div>
             </CardContent>
           </Card>
