@@ -28,8 +28,8 @@ const reviewPlatforms = [
   },
   {
     name: "DocDoc",
-    rating: "5.0",
-    reviewCount: "10+",
+    rating: "4.5",
+    reviewCount: "13",
     description: "Сервис записи к врачам онлайн",
     url: "https://docdoc.ru/doctor/Tarusin_Dmitriy",
     logo: docdocLogo
