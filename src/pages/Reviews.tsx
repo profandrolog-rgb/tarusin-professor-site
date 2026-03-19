@@ -53,7 +53,7 @@ const Reviews = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Отзывы и рейтинги</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Реальные отзывы пациентов на независимых платформах — 8+ медицинских агрегаторов
+            Реальные отзывы пациентов на независимых платформах — 7+ медицинских агрегаторов
           </p>
         </div>
       </header>
