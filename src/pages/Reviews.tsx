@@ -7,7 +7,7 @@ import PageMeta from "@/components/PageMeta";
 import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
 import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
 import docdocLogo from "@/assets/platforms/docdoc.png";
-import zoonLogo from "@/assets/platforms/zoon.png";
+
 
 const reviewPlatforms = [
   {
