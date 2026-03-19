@@ -13,7 +13,7 @@ const reviewPlatforms = [
   {
     name: "ProDoctorov",
     rating: "5.0",
-    reviewCount: "22+",
+    reviewCount: "25",
     description: "Крупнейший сервис поиска врачей в России",
     url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/",
     logo: prodoctorovLogo
@@ -21,23 +21,23 @@ const reviewPlatforms = [
   {
     name: "Яндекс.Здоровье",
     rating: "5.0",
-    reviewCount: "15+",
+    reviewCount: "47+",
     description: "Медицинский сервис Яндекса",
     url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ",
     logo: yandexHealthLogo
   },
   {
     name: "DocDoc",
-    rating: "5.0",
-    reviewCount: "10+",
+    rating: "4.5",
+    reviewCount: "13",
     description: "Сервис записи к врачам онлайн",
     url: "https://docdoc.ru/doctor/Tarusin_Dmitriy",
     logo: docdocLogo
   },
   {
     name: "Zoon",
-    rating: "5.0",
-    reviewCount: "5+",
+    rating: "3.7",
+    reviewCount: "3",
     description: "Рекомендательный сервис",
     url: "https://zoon.ru/msk/p-doctor/dmitrij_igorevich_tarusin-e3e8/",
     logo: zoonLogo
@@ -71,13 +71,13 @@ const Reviews = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">69+</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">88+</div>
               <div className="text-sm text-muted-foreground">Отзывов</div>
             </CardContent>
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">5.0</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4.8</div>
               <div className="text-sm text-muted-foreground">Средний рейтинг</div>
             </CardContent>
           </Card>
