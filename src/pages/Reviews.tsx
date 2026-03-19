@@ -34,14 +34,6 @@ const reviewPlatforms = [
     url: "https://docdoc.ru/doctor/Tarusin_Dmitriy",
     logo: docdocLogo
   },
-  {
-    name: "Zoon",
-    rating: "3.7",
-    reviewCount: "3",
-    description: "Рекомендательный сервис",
-    url: "https://zoon.ru/msk/p-doctor/dmitrij_igorevich_tarusin-e3e8/",
-    logo: zoonLogo
-  }
 ];
 
 const Reviews = () => {
