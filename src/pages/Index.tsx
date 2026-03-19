@@ -61,8 +61,8 @@ const jsonLd = {
       },
       "ratingValue": "4.9",
       "bestRating": "5",
-      "ratingCount": "88",
-      "reviewCount": "88"
+      "ratingCount": "85",
+      "reviewCount": "85"
     }
   ]
 };

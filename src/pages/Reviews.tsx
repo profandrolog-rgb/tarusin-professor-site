@@ -7,7 +7,7 @@ import PageMeta from "@/components/PageMeta";
 import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
 import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
 import docdocLogo from "@/assets/platforms/docdoc.png";
-import zoonLogo from "@/assets/platforms/zoon.png";
+
 
 const reviewPlatforms = [
   {
@@ -34,14 +34,6 @@ const reviewPlatforms = [
     url: "https://docdoc.ru/doctor/Tarusin_Dmitriy",
     logo: docdocLogo
   },
-  {
-    name: "Zoon",
-    rating: "3.7",
-    reviewCount: "3",
-    description: "Рекомендательный сервис",
-    url: "https://zoon.ru/msk/p-doctor/dmitrij_igorevich_tarusin-e3e8/",
-    logo: zoonLogo
-  }
 ];
 
 const Reviews = () => {
@@ -49,7 +41,7 @@ const Reviews = () => {
     <div className="min-h-screen bg-background">
       <PageMeta
         title="Отзывы пациентов — Проф. Тарусин Д.И."
-        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 5.0 на 8+ медицинских агрегаторах."
+        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 4.9 на 7+ медицинских агрегаторах."
         path="/reviews"
       />
       {/* Header */}
@@ -61,7 +53,7 @@ const Reviews = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Отзывы и рейтинги</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Реальные отзывы пациентов на независимых платформах — 8+ медицинских агрегаторов
+            Реальные отзывы пациентов на независимых платформах — 7+ медицинских агрегаторов
           </p>
         </div>
       </header>
@@ -71,7 +63,7 @@ const Reviews = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">88+</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">85+</div>
               <div className="text-sm text-muted-foreground">Отзывов</div>
             </CardContent>
           </Card>
@@ -83,7 +75,7 @@ const Reviews = () => {
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">8+</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">7+</div>
               <div className="text-sm text-muted-foreground">Платформ</div>
             </CardContent>
           </Card>
@@ -154,7 +146,7 @@ const Reviews = () => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Медицинские агрегаторы</div>
-                <div className="font-bold text-primary">8+ ПЛАТФОРМ</div>
+                <div className="font-bold text-primary">7+ ПЛАТФОРМ</div>
               </div>
             </div>
           </CardContent>
