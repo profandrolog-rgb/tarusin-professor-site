@@ -123,7 +123,11 @@ const CoursesSection = () => {
           {courses.map((course, index) => (
             <Card 
               key={index} 
-              className="bg-card border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col"
+              className={`border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col ${
+                (course as any).highlighted 
+                  ? "bg-primary/5 border-primary/20 ring-1 ring-primary/10" 
+                  : "bg-card"
+              }`}
             >
               <CardHeader className="pb-4">
                 {course.badge && (
