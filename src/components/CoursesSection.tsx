@@ -135,6 +135,10 @@ const CoursesSection = () => {
                     className={`w-fit mb-2 ${
                       course.badge === "Бесплатно" 
                         ? "bg-green-100 text-green-700 hover:bg-green-100" 
+                        : course.badge === "Уникальный авторский курс"
+                        ? "bg-primary/15 text-primary hover:bg-primary/15"
+                        : course.badge === "Авторский курс"
+                        ? "bg-primary/10 text-primary/80 hover:bg-primary/10"
                         : "bg-accent/10 text-accent hover:bg-accent/10"
                     }`}
                   >
