@@ -129,60 +129,83 @@ const CoursesSection = () => {
           </p>
         </div>
 
-        {/* Courses Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course, index) => (
-            <Card 
-              key={index} 
-              className={`border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col ${
-                (course as any).highlighted 
-                  ? "bg-primary/5 border-primary/20 ring-1 ring-primary/10" 
-                  : "bg-card"
-              }`}
-            >
-              <CardHeader className="pb-4">
-                {course.badge && (
-                  <Badge 
-                    className={`w-fit mb-2 ${
-                      course.badge === "Бесплатно" 
-                        ? "bg-green-100 text-green-700 hover:bg-green-100" 
-                        : course.badge === "Уникальный авторский курс"
-                        ? "bg-primary/15 text-primary hover:bg-primary/15"
-                        : course.badge === "Авторский курс"
-                        ? "bg-primary/10 text-primary/80 hover:bg-primary/10"
-                        : "bg-accent/10 text-accent hover:bg-accent/10"
+        {/* Courses Carousel */}
+        <div className="relative">
+          <div className="overflow-hidden" ref={emblaRef}>
+            <div className="flex gap-6">
+              {courses.map((course, index) => (
+                <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_48%] lg:flex-[0_0_32%]">
+                  <Card 
+                    className={`border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col h-full ${
+                      (course as any).highlighted 
+                        ? "bg-primary/5 border-primary/20 ring-1 ring-primary/10" 
+                        : "bg-card"
                     }`}
                   >
-                    {course.badge}
-                  </Badge>
-                )}
-                <CardTitle className="text-lg leading-tight">{course.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span className="text-muted-foreground">{course.duration}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <BookOpen className="w-4 h-4 text-primary" />
-                    <span className="text-muted-foreground">{course.format}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span className="text-muted-foreground">{course.audience}</span>
-                  </div>
+                    <CardHeader className="pb-4">
+                      {course.badge && (
+                        <Badge 
+                          className={`w-fit mb-2 ${
+                            course.badge === "Бесплатно" 
+                              ? "bg-green-100 text-green-700 hover:bg-green-100" 
+                              : course.badge === "Уникальный авторский курс"
+                              ? "bg-primary/15 text-primary hover:bg-primary/15"
+                              : course.badge === "Авторский курс"
+                              ? "bg-primary/10 text-primary/80 hover:bg-primary/10"
+                              : "bg-accent/10 text-accent hover:bg-accent/10"
+                          }`}
+                        >
+                          {course.badge}
+                        </Badge>
+                      )}
+                      <CardTitle className="text-lg leading-tight">{course.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <p className="text-sm text-muted-foreground mb-4">{course.description}</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span className="text-muted-foreground">{course.duration}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <BookOpen className="w-4 h-4 text-primary" />
+                          <span className="text-muted-foreground">{course.format}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Users className="w-4 h-4 text-primary" />
+                          <span className="text-muted-foreground">{course.audience}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-3 pt-4 border-t border-border">
+                      <div className="text-2xl font-bold text-foreground w-full">{course.price}</div>
+                      <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => setSelectedCourse(course)}>
+                        Узнать подробнее
+                      </Button>
+                    </CardFooter>
+                  </Card>
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-3 pt-4 border-t border-border">
-                <div className="text-2xl font-bold text-foreground w-full">{course.price}</div>
-                <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => setSelectedCourse(course)}>
-                  Узнать подробнее
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation arrows */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute -left-4 top-1/2 -translate-y-1/2 rounded-full shadow-lg bg-background/90 backdrop-blur-sm hidden md:flex"
+            onClick={scrollPrev}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute -right-4 top-1/2 -translate-y-1/2 rounded-full shadow-lg bg-background/90 backdrop-blur-sm hidden md:flex"
+            onClick={scrollNext}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* CTA */}
