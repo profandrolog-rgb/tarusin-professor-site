@@ -76,6 +76,16 @@ const CoursesSection = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
 
+  const [emblaRef, emblaApi] = useEmblaCarousel({ 
+    align: "start", 
+    loop: false,
+    slidesToScroll: 1,
+    containScroll: "trimSnaps"
+  });
+
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+
   const scrollToContact = () => {
     const element = document.querySelector("#contact");
     if (element) {
