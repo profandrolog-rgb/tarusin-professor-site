@@ -20,6 +20,8 @@ const courses = [
     audience: "Для врачей",
     price: "100 000 ₽",
     badge: "Популярный",
+    nextDate: "Сентябрь 2026",
+    cta: "Количество мест ограничено — забронируйте место заранее",
     topics: ["Анатомия и физиология", "Крипторхизм и гидроцеле", "Фимоз и гипоспадия", "Варикоцеле у подростков", "Диагностические алгоритмы"],
   },
   {
@@ -31,6 +33,8 @@ const courses = [
     audience: "Для хирургов",
     price: "120 000 ₽",
     badge: "Авторский курс",
+    nextDate: "Октябрь 2026",
+    cta: "Группа до 6 человек — успейте занять место",
     topics: ["Микрохирургический шов", "Варикоцелэктомия", "Вазовазостомия", "Работа с операционным микроскопом"],
   },
   {
@@ -42,6 +46,8 @@ const courses = [
     audience: "Для родителей",
     price: "Бесплатно",
     badge: "Бесплатно",
+    nextDate: "Ежемесячно",
+    cta: "Запишитесь — это бесплатно",
     topics: ["Нормы развития", "Тревожные симптомы", "Профилактические осмотры", "Вопросы и ответы"],
   },
   {
@@ -53,6 +59,8 @@ const courses = [
     audience: "Для врачей",
     price: "150 000 ₽",
     badge: "Авторский курс",
+    nextDate: "Ноябрь 2026",
+    cta: "Практика на реальном оборудовании — места заканчиваются",
     topics: ["Эхоанатомия органов мошонки", "Допплерография", "Диагностика варикоцеле", "Протоколы исследования"],
   },
   {
@@ -65,6 +73,8 @@ const courses = [
     price: "220 000 ₽",
     badge: "Уникальный авторский курс",
     highlighted: true,
+    nextDate: "Декабрь 2026",
+    cta: "Первый набор — станьте одним из первых выпускников",
     topics: ["Нормативное половое развитие", "Нарушения пубертата", "Психосексуальные расстройства", "Гендерная дисфория", "Междисциплинарный подход"],
   },
 ];
@@ -177,6 +187,13 @@ const CoursesSection = () => {
                         </div>
                       </div>
                     </CardContent>
+                    {/* Announcement zone */}
+                    <div className="mx-4 mb-2 px-3 py-2.5 rounded-lg bg-accent/10 border border-accent/20">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-accent mb-0.5">
+                        <span>📅 Старт: {course.nextDate}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{course.cta}</p>
+                    </div>
                     <CardFooter className="flex flex-col gap-3 pt-4 border-t border-border">
                       <div className="text-2xl font-bold text-foreground w-full">{course.price}</div>
                       <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => setSelectedCourse(course)}>
