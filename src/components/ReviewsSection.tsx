@@ -669,7 +669,7 @@ const ReviewsSection = () => {
             <div className="text-sm text-muted-foreground">Рекомендуют</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-primary">32</div>
+            <div className="text-3xl font-bold text-primary">42</div>
             <div className="text-sm text-muted-foreground">Года опыта</div>
           </div>
         </div>
