@@ -35,23 +35,41 @@ const HeroSection = () => {
               Андролог (детский и взрослый) • Детский уролог • Детский хирург • Эксперт УЗИ диагностики • Микрохирург • Пластический хирург • Ортопед • Сексолог
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button 
-                size="lg" 
-                onClick={() => window.open("tel:+74953748181")} 
-                className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8"
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                +7 (495) 374-81-81
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => scrollToSection("#about")} 
-                className="text-lg px-8"
-              >
-                Узнать больше
-              </Button>
+            <div className="flex flex-col gap-3 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  size="lg" 
+                  onClick={() => window.open("tel:+74953030000")} 
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-base px-6"
+                >
+                  <Phone className="w-5 h-5 mr-2" />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-xs opacity-80">Клиника доктора Матара</span>
+                    <span>+7 (495) 303-00-00</span>
+                  </span>
+                </Button>
+                <Button 
+                  size="lg" 
+                  onClick={() => window.open("tel:+74953748181")} 
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-base px-6"
+                >
+                  <Phone className="w-5 h-5 mr-2" />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="text-xs opacity-80">AVE-CLINIC</span>
+                    <span>+7 (495) 374-81-81</span>
+                  </span>
+                </Button>
+              </div>
+              <div className="flex justify-center lg:justify-start">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  onClick={() => scrollToSection("#about")} 
+                  className="text-lg px-8"
+                >
+                  Узнать больше
+                </Button>
+              </div>
             </div>
 
             {/* Stats */}
