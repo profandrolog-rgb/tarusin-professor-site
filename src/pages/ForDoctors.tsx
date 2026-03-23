@@ -291,29 +291,33 @@ const ForDoctors = () => {
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {videoLectures.map((lecture, index) => (
-              <Card 
-                key={index} 
-                className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
-                onClick={() => window.open(lecture.url, "_blank")}
+              <a
+                key={index}
+                href={lecture.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
               >
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-accent transition-colors">
-                      <Play className="w-4 h-4 text-accent group-hover:text-accent-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm leading-tight mb-2">
-                        {lecture.title}
-                      </h3>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{lecture.year}</span>
-                        <span>•</span>
-                        <span>{lecture.views} просм.</span>
+                <Card className="h-full cursor-pointer hover:shadow-lg transition-all hover:border-primary/50">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-accent transition-colors">
+                        <Play className="w-4 h-4 text-accent group-hover:text-accent-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm leading-tight mb-2">
+                          {lecture.title}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{lecture.year}</span>
+                          <span>•</span>
+                          <span>{lecture.views} просм.</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </a>
             ))}
           </div>
           
