@@ -274,10 +274,11 @@ const ForDoctors = () => {
           </div>
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {videoLectures.slice(0, 9).map((lecture, index) => (
+            {videoLectures.map((lecture, index) => (
               <Card 
                 key={index} 
                 className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
+                onClick={() => window.open(lecture.url, "_blank")}
               >
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
