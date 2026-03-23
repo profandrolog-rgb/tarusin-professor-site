@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, Video, BookOpen, Award, ExternalLink, Play, Calendar, Users } from "lucide-react";
+import { ArrowLeft, FileText, Video, BookOpen, Award, ExternalLink, Play, Calendar, Users, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +60,22 @@ const videoLectures = [
   { title: "Частно-государственное партнерство в детской урологии-андрологии", views: "1346", year: "2013", url: "https://uro.tv/video/tarusin_di_chastno-gosudarstvennoe_partnerstvo__v_detskoy_urologii-andrologii" },
   { title: "Реорганизация здравоохранения – новые вызовы к качеству уроандрологической помощи детям", views: "1938", year: "2013", url: "https://uro.tv/video/tarusin_di_reorganizatsiya_zdravoohraneniya_%E2%80%93_novie_vizovi_k_poryadku_i_kachestvu_uroandrologicheskoy_pomoshchi_detyam_v_rossii" },
   { title: "Детская урология в Российской Федерации: путь, достижения, перспективы", views: "1175", year: "2013", url: "https://uro.tv/video/tarusin_di_detskaya_urologiya_v_rossiyskoy_federatsii_put_dostigeniya_perspektivi" },
+];
+
+const youtubeVideos = [
+  { title: "С какого возраста эрекция — это нормально?", views: "2.6K", type: "Shorts", url: "https://www.youtube.com/watch?v=DSn8UjdpSGs" },
+  { title: "Воздержание — это полезно? Проверяем тренд ноября!", views: "926", type: "Shorts", url: "https://www.youtube.com/shorts/o2apP98HtJU" },
+  { title: "Новые нормы витамина Д для мужчин!", views: "1.7K", type: "Shorts", url: "https://www.youtube.com/shorts/_3sVOZED_7o" },
+  { title: "Хватит гуглить норму — вот настоящая правда", views: "144", type: "Shorts", url: "https://www.youtube.com/shorts/7z5CxHKjmng" },
+  { title: "За 90 секунд знаешь больше 90% мужчин", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/8ixg9zX-8bs" },
+  { title: "Либидо: норм или стрем? Учу видеть тонкую грань", views: "126", type: "Shorts", url: "https://www.youtube.com/shorts/DVx83ACnb1E" },
+  { title: "Можно ли повлиять на рост полового члена заранее?", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/cJktQWxsuCw" },
+  { title: "Секрет уролога: Правда о мытье рук", views: "115", type: "Видео", url: "https://www.youtube.com/watch?v=H9i2UVTt6Ds" },
+  { title: "Как выбрать наркоз? Какие анализы сдавать?", views: "35", type: "Видео", url: "https://www.youtube.com/watch?v=gYpBBg6APUU" },
+  { title: "Воздержание — польза или вред?", views: "118", type: "Видео", url: "https://www.youtube.com/watch?v=vN8wyhRk6j0" },
+  { title: "Почему рука хуже женщины? Клиническое объяснение", views: "109", type: "Видео", url: "https://www.youtube.com/watch?v=VVvR_FhiDSI" },
+  { title: "Распаковка! Что обрадует доктора? Лайфхак от профессора Тарусина", views: "42", type: "Видео", url: "https://www.youtube.com/watch?v=Sv4BxFxm2Ao" },
+  { title: "Как научить мальчика писать стоя?", views: "—", type: "Видео", url: "https://www.youtube.com/watch?v=yW-S0X0OCVE" },
 ];
 
 const labirintyEpisodes = [
@@ -275,29 +291,33 @@ const ForDoctors = () => {
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {videoLectures.map((lecture, index) => (
-              <Card 
-                key={index} 
-                className="group cursor-pointer hover:shadow-lg transition-all hover:border-primary/50"
-                onClick={() => window.open(lecture.url, "_blank")}
+              <a
+                key={index}
+                href={lecture.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
               >
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-accent transition-colors">
-                      <Play className="w-4 h-4 text-accent group-hover:text-accent-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm leading-tight mb-2">
-                        {lecture.title}
-                      </h3>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>{lecture.year}</span>
-                        <span>•</span>
-                        <span>{lecture.views} просм.</span>
+                <Card className="h-full cursor-pointer hover:shadow-lg transition-all hover:border-primary/50">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-accent transition-colors">
+                        <Play className="w-4 h-4 text-accent group-hover:text-accent-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm leading-tight mb-2">
+                          {lecture.title}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{lecture.year}</span>
+                          <span>•</span>
+                          <span>{lecture.views} просм.</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </a>
             ))}
           </div>
           
@@ -308,6 +328,73 @@ const ForDoctors = () => {
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Смотреть все 22+ доклада на Uro.TV
+            </Button>
+          </div>
+        </section>
+
+        {/* YouTube Channel Section */}
+        <section className="mb-16">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                <Youtube className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">YouTube: Профессор и Андрология</h2>
+                <p className="text-muted-foreground">Короткие видео и ответы на частые вопросы</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}
+              className="hidden md:flex border-red-500/30 text-red-600 hover:bg-red-50"
+            >
+              <Youtube className="w-4 h-4 mr-2" />
+              Подписаться
+            </Button>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {youtubeVideos.map((video, index) => (
+              <a
+                key={index}
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
+              >
+                <Card className="h-full cursor-pointer hover:shadow-lg transition-all hover:border-red-500/50">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500 transition-colors">
+                        <Play className="w-4 h-4 text-red-500 group-hover:text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground group-hover:text-red-600 transition-colors text-sm leading-tight mb-2">
+                          {video.title}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full text-xs font-medium">
+                            {video.type}
+                          </span>
+                          <span>{video.views} просм.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
+          </div>
+          
+          <div className="mt-6 text-center">
+            <Button
+              variant="outline"
+              className="border-red-500/30 text-red-600 hover:bg-red-50"
+              onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}
+            >
+              <Youtube className="w-4 h-4 mr-2" />
+              Смотреть все видео на YouTube
             </Button>
           </div>
         </section>
