@@ -327,6 +327,73 @@ const ForDoctors = () => {
             </Button>
           </div>
         </section>
+
+        {/* YouTube Channel Section */}
+        <section className="mb-16">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                <Youtube className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">YouTube: Профессор и Андрология</h2>
+                <p className="text-muted-foreground">Короткие видео и ответы на частые вопросы</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}
+              className="hidden md:flex border-red-500/30 text-red-600 hover:bg-red-50"
+            >
+              <Youtube className="w-4 h-4 mr-2" />
+              Подписаться
+            </Button>
+          </div>
+          
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {youtubeVideos.map((video, index) => (
+              <a
+                key={index}
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
+              >
+                <Card className="h-full cursor-pointer hover:shadow-lg transition-all hover:border-red-500/50">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-red-500 transition-colors">
+                        <Play className="w-4 h-4 text-red-500 group-hover:text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-foreground group-hover:text-red-600 transition-colors text-sm leading-tight mb-2">
+                          {video.title}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full text-xs font-medium">
+                            {video.type}
+                          </span>
+                          <span>{video.views} просм.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
+          </div>
+          
+          <div className="mt-6 text-center">
+            <Button
+              variant="outline"
+              className="border-red-500/30 text-red-600 hover:bg-red-50"
+              onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}
+            >
+              <Youtube className="w-4 h-4 mr-2" />
+              Смотреть все видео на YouTube
+            </Button>
+          </div>
+        </section>
       </main>
     </div>
     </AgeConfirmationModal>
