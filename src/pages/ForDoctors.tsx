@@ -260,7 +260,7 @@ const ForDoctors = () => {
               </div>
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">Видеолекции на Uro.TV</h2>
-                <p className="text-muted-foreground">22+ докладов, 21 000+ просмотров</p>
+                <p className="text-muted-foreground">22 доклада, 21 000+ просмотров</p>
               </div>
             </div>
             <Button
