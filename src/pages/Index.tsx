@@ -87,9 +87,11 @@ const Index = () => {
         <ConsultationsSection />
         <CoursesSection />
         <ReviewsSection />
+        <QASection />
         <ContactSection />
       </main>
       <Footer />
+      <StickyBottomPanel />
     </div>
   );
 };

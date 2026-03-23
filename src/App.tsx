@@ -58,6 +58,8 @@ const App = () => (
               <Route path="/admin/requests" element={<AdminRequests />} />
               <Route path="/admin/certificates" element={<AdminCertificates />} />
               <Route path="/admin/prescriptions" element={<AdminPrescriptions />} />
+              <Route path="/admin/questions" element={<AdminQuestions />} />
+              <Route path="/qa" element={<QA />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/consent" element={<Consent />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
