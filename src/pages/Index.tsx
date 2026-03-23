@@ -6,6 +6,8 @@ import CoursesSection from "@/components/CoursesSection";
 import ReviewsSection from "@/components/ReviewsSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
+import QASection from "@/components/QASection";
+import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
 import { Helmet } from "react-helmet-async";
 
