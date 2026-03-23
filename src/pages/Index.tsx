@@ -71,7 +71,7 @@ const jsonLd = {
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-14">
       <PageMeta
         title="Профессор Тарусин Д.И. — Андролог, детский уролог-андролог, Москва"
         description="Профессор Тарусин Дмитрий Игоревич — основатель детской урологии-андрологии в России. Доктор медицинских наук, 42 года опыта. Запись на приём."
