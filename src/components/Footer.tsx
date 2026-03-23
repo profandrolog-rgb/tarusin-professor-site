@@ -120,6 +120,7 @@ const Footer = () => {
                 { label: "Путёвые заметки", href: "/travel-notes", type: "link" },
                 { label: "Размышлизмы", href: "/blog", type: "link" },
                 { label: "Отзывы", href: "/reviews", type: "link" },
+                { label: "Вопросы и ответы", href: "/qa", type: "link" },
                 { label: "Контакты", href: "/contacts", type: "link" },
               ].map(item =>
                 item.type === "anchor" ? (

@@ -78,6 +78,13 @@ const adminSections = [
     href: "/admin/prescriptions?section=examinations",
     color: "text-indigo-500",
   },
+  {
+    title: "Вопросы пациентов",
+    description: "Ответы на вопросы, публикация Q&A",
+    icon: ClipboardList,
+    href: "/admin/questions",
+    color: "text-cyan-500",
+  },
 ];
 
 const analyticsServices = [
