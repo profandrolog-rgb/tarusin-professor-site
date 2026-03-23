@@ -1,16 +1,15 @@
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageCircle, ChevronRight } from "lucide-react";
+import { MessageCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
 
 const QASection = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
   const { data: questions = [] } = useQuery({
     queryKey: ["published-questions-preview"],
     queryFn: async () => {
@@ -20,13 +19,31 @@ const QASection = () => {
         .eq("is_published", true)
         .not("answer_text", "is", null)
         .order("answered_at", { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       return data;
     },
   });
 
+  const goNext = useCallback(() => {
+    if (questions.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % questions.length);
+  }, [questions.length]);
+
+  const goPrev = useCallback(() => {
+    if (questions.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + questions.length) % questions.length);
+  }, [questions.length]);
+
+  useEffect(() => {
+    if (isPaused || questions.length <= 1) return;
+    const interval = setInterval(goNext, 6000);
+    return () => clearInterval(interval);
+  }, [isPaused, goNext, questions.length]);
+
   if (questions.length === 0) return null;
+
+  const current = questions[currentIndex];
 
   return (
     <section className="py-16 md:py-24 bg-secondary/30">
@@ -44,34 +61,78 @@ const QASection = () => {
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="space-y-3">
-            {questions.map((q) => (
-              <AccordionItem key={q.id} value={q.id} className="bg-card border border-border rounded-xl px-6 data-[state=open]:shadow-md transition-shadow">
-                <AccordionTrigger className="text-left hover:no-underline py-5">
-                  <div>
-                    <p className="font-medium text-foreground text-base">{q.question_text}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{q.author_name}</p>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-5">
-                  <div className="pl-4 border-l-2 border-primary/30">
-                    <p className="text-muted-foreground whitespace-pre-line">{q.answer_text}</p>
-                    <p className="text-xs text-primary mt-2 font-medium">— Профессор Тарусин Д.И.</p>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-
-          <div className="text-center mt-8">
-            <Link to="/qa">
-              <Button variant="outline" className="gap-2">
-                Все вопросы и ответы
-                <ChevronRight className="w-4 h-4" />
+        <div
+          className="max-w-3xl mx-auto relative"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          {/* Navigation arrows */}
+          {questions.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -left-4 md:-left-14 top-1/2 -translate-y-1/2 z-10 bg-card/80 hover:bg-card shadow-md rounded-full"
+                onClick={goPrev}
+              >
+                <ChevronLeft className="w-5 h-5" />
               </Button>
-            </Link>
-          </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -right-4 md:-right-14 top-1/2 -translate-y-1/2 z-10 bg-card/80 hover:bg-card shadow-md rounded-full"
+                onClick={goNext}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            </>
+          )}
+
+          {/* Card */}
+          <Card className="border border-border shadow-md transition-all duration-500 min-h-[200px]">
+            <CardContent className="p-6 md:p-8">
+              <div className="mb-4">
+                <p className="font-semibold text-foreground text-lg leading-relaxed">
+                  «{current.question_text}»
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {current.author_name} • {new Date(current.created_at).toLocaleDateString("ru-RU")}
+                </p>
+              </div>
+              <div className="pl-4 border-l-2 border-primary/30 mt-4">
+                <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
+                  {current.answer_text}
+                </p>
+                <p className="text-xs text-primary mt-3 font-medium">— Профессор Тарусин Д.И.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dots */}
+          {questions.length > 1 && (
+            <div className="flex justify-center gap-2 mt-6">
+              {questions.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                    idx === currentIndex
+                      ? "bg-primary w-6"
+                      : "bg-primary/25 hover:bg-primary/50"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="text-center mt-8">
+          <Link to="/qa">
+            <Button variant="outline" className="gap-2">
+              Все вопросы и ответы
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
