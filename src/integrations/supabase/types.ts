@@ -743,6 +743,45 @@ export type Database = {
         }
         Relationships: []
       }
+      questions: {
+        Row: {
+          answer_text: string | null
+          answered_at: string | null
+          author_email: string
+          author_name: string
+          created_at: string
+          id: string
+          is_published: boolean
+          question_text: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          answer_text?: string | null
+          answered_at?: string | null
+          author_email: string
+          author_name: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          question_text: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          answer_text?: string | null
+          answered_at?: string | null
+          author_email?: string
+          author_name?: string
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          question_text?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           conditions: string

@@ -6,6 +6,8 @@ import CoursesSection from "@/components/CoursesSection";
 import ReviewsSection from "@/components/ReviewsSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
+import QASection from "@/components/QASection";
+import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
 import { Helmet } from "react-helmet-async";
 
@@ -69,7 +71,7 @@ const jsonLd = {
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-14">
       <PageMeta
         title="Профессор Тарусин Д.И. — Андролог, детский уролог-андролог, Москва"
         description="Профессор Тарусин Дмитрий Игоревич — основатель детской урологии-андрологии в России. Доктор медицинских наук, 42 года опыта. Запись на приём."
@@ -85,9 +87,11 @@ const Index = () => {
         <ConsultationsSection />
         <CoursesSection />
         <ReviewsSection />
+        <QASection />
         <ContactSection />
       </main>
       <Footer />
+      <StickyBottomPanel />
     </div>
   );
 };

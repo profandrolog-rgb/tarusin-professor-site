@@ -24,6 +24,8 @@ import Admin from "./pages/Admin";
 import AdminRequests from "./pages/AdminRequests";
 import AdminCertificates from "./pages/AdminCertificates";
 import AdminPrescriptions from "./pages/AdminPrescriptions";
+import AdminQuestions from "./pages/AdminQuestions";
+import QA from "./pages/QA";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Consent from "./pages/Consent";
 import NotFound from "./pages/NotFound";
@@ -56,6 +58,8 @@ const App = () => (
               <Route path="/admin/requests" element={<AdminRequests />} />
               <Route path="/admin/certificates" element={<AdminCertificates />} />
               <Route path="/admin/prescriptions" element={<AdminPrescriptions />} />
+              <Route path="/admin/questions" element={<AdminQuestions />} />
+              <Route path="/qa" element={<QA />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/consent" element={<Consent />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
