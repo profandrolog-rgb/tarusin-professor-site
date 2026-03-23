@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, Video, BookOpen, Award, ExternalLink, Play, Calendar, Users } from "lucide-react";
+import { ArrowLeft, FileText, Video, BookOpen, Award, ExternalLink, Play, Calendar, Users, Youtube } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
