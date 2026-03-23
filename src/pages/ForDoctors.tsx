@@ -62,6 +62,22 @@ const videoLectures = [
   { title: "Детская урология в Российской Федерации: путь, достижения, перспективы", views: "1175", year: "2013", url: "https://uro.tv/video/tarusin_di_detskaya_urologiya_v_rossiyskoy_federatsii_put_dostigeniya_perspektivi" },
 ];
 
+const youtubeVideos = [
+  { title: "С какого возраста эрекция — это нормально?", views: "2.6K", type: "Shorts", url: "https://www.youtube.com/watch?v=DSn8UjdpSGs" },
+  { title: "Воздержание — это полезно? Проверяем тренд ноября!", views: "926", type: "Shorts", url: "https://www.youtube.com/shorts/o2apP98HtJU" },
+  { title: "Новые нормы витамина Д для мужчин!", views: "1.7K", type: "Shorts", url: "https://www.youtube.com/shorts/_3sVOZED_7o" },
+  { title: "Хватит гуглить норму — вот настоящая правда", views: "144", type: "Shorts", url: "https://www.youtube.com/shorts/7z5CxHKjmng" },
+  { title: "За 90 секунд знаешь больше 90% мужчин", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/8ixg9zX-8bs" },
+  { title: "Либидо: норм или стрем? Учу видеть тонкую грань", views: "126", type: "Shorts", url: "https://www.youtube.com/shorts/DVx83ACnb1E" },
+  { title: "Можно ли повлиять на рост полового члена заранее?", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/cJktQWxsuCw" },
+  { title: "Секрет уролога: Правда о мытье рук", views: "115", type: "Видео", url: "https://www.youtube.com/watch?v=H9i2UVTt6Ds" },
+  { title: "Как выбрать наркоз? Какие анализы сдавать?", views: "35", type: "Видео", url: "https://www.youtube.com/watch?v=gYpBBg6APUU" },
+  { title: "Воздержание — польза или вред?", views: "118", type: "Видео", url: "https://www.youtube.com/watch?v=vN8wyhRk6j0" },
+  { title: "Почему рука хуже женщины? Клиническое объяснение", views: "109", type: "Видео", url: "https://www.youtube.com/watch?v=VVvR_FhiDSI" },
+  { title: "Распаковка! Что обрадует доктора? Лайфхак от профессора Тарусина", views: "42", type: "Видео", url: "https://www.youtube.com/watch?v=Sv4BxFxm2Ao" },
+  { title: "Как научить мальчика писать стоя?", views: "—", type: "Видео", url: "https://www.youtube.com/watch?v=yW-S0X0OCVE" },
+];
+
 const labirintyEpisodes = [
   { title: "Варикоцеле", date: "25.01.2024" },
   { title: "Инфекции мочевой системы у детей с позиции педиатра и нефролога", date: "2024" },
