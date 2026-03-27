@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCategoryLabel } from "./ResearchCategories";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MessageCircle, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
