@@ -30,6 +30,9 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const searchParams = new URLSearchParams(location.search);
+  const initialTab = searchParams.get("tab") === "register" ? "signup" : "signin";
+
   // Get the redirect path from location state or default to "/"
   const from = (location.state as { from?: string })?.from || "/";
 
@@ -170,7 +173,7 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={initialTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Вход</TabsTrigger>
                 <TabsTrigger value="signup">Регистрация</TabsTrigger>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, ChevronDown, LogIn, LogOut, Settings } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LogOut, Settings, UserPlus } from "lucide-react";
 import headerPhoto from "@/assets/header-photo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -133,12 +133,20 @@ const Header = () => {
                 {user ? <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Выйти
-                  </DropdownMenuItem> : <DropdownMenuItem asChild>
-                    <Link to="/auth" className="w-full flex items-center">
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Войти
-                    </Link>
-                  </DropdownMenuItem>}
+                  </DropdownMenuItem> : <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/auth" className="w-full flex items-center">
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Войти
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/auth?tab=register" className="w-full flex items-center">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Регистрация
+                      </Link>
+                    </DropdownMenuItem>
+                  </>}
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
@@ -188,10 +196,16 @@ const Header = () => {
               {user ? <button onClick={handleSignOut} className="px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
                   <LogOut className="w-4 h-4" />
                   Выйти
-                </button> : <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
-                  <LogIn className="w-4 h-4" />
-                  Войти
-                </Link>}
+                </button> : <>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    Войти
+                  </Link>
+                  <Link to="/auth?tab=register" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Регистрация
+                  </Link>
+                </>}
             </div>
           </nav>}
       </div>
