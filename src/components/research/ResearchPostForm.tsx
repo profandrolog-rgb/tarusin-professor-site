@@ -71,9 +71,10 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
             content,
             excerpt: excerpt.trim() || null,
             category,
+            age_group: ageGroup,
             image_path: imagePath,
             is_published: isPublished,
-          })
+          } as any)
           .eq("id", article.id);
         if (error) throw error;
       } else {
@@ -84,9 +85,10 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
             content,
             excerpt: excerpt.trim() || null,
             category,
+            age_group: ageGroup,
             image_path: imagePath,
             is_published: isPublished,
-          })
+          } as any)
           .select("id")
           .single();
         if (error) throw error;
