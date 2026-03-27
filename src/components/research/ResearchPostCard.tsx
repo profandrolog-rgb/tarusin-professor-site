@@ -19,6 +19,7 @@ interface ResearchPostCardProps {
   reactionCount: number;
   viewMode: "grid" | "feed";
   onClick: () => void;
+  onEdit?: () => void;
 }
 
 const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onClick }: ResearchPostCardProps) => {

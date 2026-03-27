@@ -180,13 +180,8 @@ const Research = () => {
                   commentCount={allComments.filter((c) => c.article_id === article.id && c.is_approved).length}
                   reactionCount={allReactions.filter((r) => r.article_id === article.id).length}
                   viewMode={viewMode}
-                  onClick={() => {
-                    if (canEdit) {
-                      setEditArticle(article);
-                    } else {
-                      setSelectedId(article.id);
-                    }
-                  }}
+                  onClick={() => setSelectedId(article.id)}
+                  onEdit={canEdit ? () => setEditArticle(article) : undefined}
                 />
               ))}
             </div>
