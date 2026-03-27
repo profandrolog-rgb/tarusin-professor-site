@@ -18,6 +18,7 @@ interface ResearchPostFormProps {
     content: string;
     excerpt: string | null;
     category: string;
+    age_group?: string;
     image_path: string | null;
     is_published: boolean;
   } | null;
