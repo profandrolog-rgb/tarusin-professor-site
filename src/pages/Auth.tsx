@@ -30,6 +30,9 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const searchParams = new URLSearchParams(location.search);
+  const initialTab = searchParams.get("tab") === "register" ? "signup" : "signin";
+
   // Get the redirect path from location state or default to "/"
   const from = (location.state as { from?: string })?.from || "/";
 
