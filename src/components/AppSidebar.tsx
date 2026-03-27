@@ -48,6 +48,7 @@ const pageNavItems = [
   { title: "Видео-кейсы", url: "/video-cases", icon: Clapperboard },
   { title: "Публикации", url: "/publications", icon: BookOpen },
   { title: "Клинические случаи", url: "/clinical-cases", icon: ClipboardList },
+  { title: "Наши исследования", url: "/research", icon: Microscope },
   { title: "Путёвые заметки", url: "/travel-notes", icon: Camera },
   { title: "Размышлизмы", url: "/blog", icon: BookOpen },
   { title: "Отзывы", url: "/reviews", icon: Star },

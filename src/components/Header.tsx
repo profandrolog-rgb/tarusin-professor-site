@@ -44,6 +44,9 @@ const moreNavItems = [{
   label: "Публикации",
   href: "/publications"
 }, {
+  label: "Наши исследования",
+  href: "/research"
+}, {
   label: "Клинические случаи",
   href: "/clinical-cases"
 }, {
@@ -55,6 +58,9 @@ const moreNavItems = [{
 }, {
   label: "Отзывы",
   href: "/reviews"
+}, {
+  label: "Вопросы и ответы",
+  href: "/qa"
 }, {
   label: "Контакты",
   href: "/contacts"
