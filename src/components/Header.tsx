@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, ChevronDown, LogIn, LogOut, Settings } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LogOut, Settings, UserPlus } from "lucide-react";
 import headerPhoto from "@/assets/header-photo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
