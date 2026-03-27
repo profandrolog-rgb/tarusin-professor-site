@@ -166,6 +166,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
         </Select>
       </div>
 
+      <div className="space-y-2">
         <Label>Краткая аннотация</Label>
         <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Краткое описание для превью..." className="min-h-[60px]" />
       </div>
