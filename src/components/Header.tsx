@@ -196,10 +196,16 @@ const Header = () => {
               {user ? <button onClick={handleSignOut} className="px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
                   <LogOut className="w-4 h-4" />
                   Выйти
-                </button> : <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
-                  <LogIn className="w-4 h-4" />
-                  Войти
-                </Link>}
+                </button> : <>
+                  <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    Войти
+                  </Link>
+                  <Link to="/auth?tab=register" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Регистрация
+                  </Link>
+                </>}
             </div>
           </nav>}
       </div>
