@@ -58,6 +58,11 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
           {!article.is_published && (
             <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Черновик</Badge>
           )}
+          {onEdit && (
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+              <Pencil className="w-3 h-3 mr-1" /> Ред.
+            </Button>
+          )}
         </div>
       </div>
     );
