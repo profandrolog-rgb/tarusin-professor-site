@@ -140,6 +140,20 @@ const Research = () => {
             </div>
           </div>
 
+          {/* Age group filter */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {AGE_GROUPS.map((ag) => (
+              <Badge
+                key={ag.value}
+                variant={filterAgeGroup === (ag.value === "all" ? null : ag.value) ? "default" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => setFilterAgeGroup(ag.value === "all" ? null : ag.value)}
+              >
+                {ag.emoji} {ag.label}
+              </Badge>
+            ))}
+          </div>
+
           {/* Category filter */}
           <div className="flex flex-wrap gap-2 mb-6">
             <Badge
@@ -147,7 +161,7 @@ const Research = () => {
               className="cursor-pointer"
               onClick={() => setFilterCategory(null)}
             >
-              Все
+              Все темы
             </Badge>
             {RESEARCH_CATEGORIES.map((c) => (
               <Badge
