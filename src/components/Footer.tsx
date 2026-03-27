@@ -118,6 +118,7 @@ const Footer = () => {
                 { label: "Публикации", href: "/publications", type: "link" },
                 { label: "Клинические случаи", href: "/clinical-cases", type: "link" },
                 { label: "Путёвые заметки", href: "/travel-notes", type: "link" },
+                { label: "Наши исследования", href: "/research", type: "link" },
                 { label: "Размышлизмы", href: "/blog", type: "link" },
                 { label: "Отзывы", href: "/reviews", type: "link" },
                 { label: "Вопросы и ответы", href: "/qa", type: "link" },
