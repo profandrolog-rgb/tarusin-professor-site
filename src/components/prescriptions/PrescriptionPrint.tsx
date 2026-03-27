@@ -27,8 +27,8 @@ interface PrescriptionPrintProps {
 
 const s = {
   page: {
-    width: "148.5mm",
-    minHeight: "105mm",
+    width: "105mm",
+    minHeight: "148mm",
     padding: "5mm 6mm",
     fontFamily: "Times New Roman, serif",
     fontSize: "9pt",

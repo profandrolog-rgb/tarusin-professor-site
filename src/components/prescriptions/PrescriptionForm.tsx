@@ -169,8 +169,8 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
         <head>
           <title>Рецепт</title>
           <style>
-            @page { size: 148.5mm 105mm; margin: 0; }
-            body { margin: 0; padding: 0; }
+            @page { size: A4 portrait; margin: 0; }
+            body { margin: 0; padding: 0; display: flex; justify-content: flex-end; }
             * { box-sizing: border-box; }
           </style>
         </head>
