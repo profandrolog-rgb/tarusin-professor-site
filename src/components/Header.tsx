@@ -133,12 +133,20 @@ const Header = () => {
                 {user ? <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Выйти
-                  </DropdownMenuItem> : <DropdownMenuItem asChild>
-                    <Link to="/auth" className="w-full flex items-center">
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Войти
-                    </Link>
-                  </DropdownMenuItem>}
+                  </DropdownMenuItem> : <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/auth" className="w-full flex items-center">
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Войти
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/auth?tab=register" className="w-full flex items-center">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Регистрация
+                      </Link>
+                    </DropdownMenuItem>
+                  </>}
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
