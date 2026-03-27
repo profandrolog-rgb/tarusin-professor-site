@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCategoryLabel } from "./ResearchCategories";
+import { getCategoryLabel, getAgeGroupLabel, AGE_GROUPS } from "./ResearchCategories";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Pencil } from "lucide-react";
