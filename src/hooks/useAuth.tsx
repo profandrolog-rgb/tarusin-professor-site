@@ -22,19 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isEditor, setIsEditor] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkRole = async (userId: string, role: string) => {
     try {
       const { data, error } = await supabase.rpc("has_role", {
         _user_id: userId,
-        _role: "admin",
+        _role: role,
       });
       if (error) {
-        console.error("Error checking admin role:", error);
+        console.error(`Error checking ${role} role:`, error);
         return false;
       }
       return data === true;
     } catch (err) {
-      console.error("Error checking admin role:", err);
+      console.error(`Error checking ${role} role:`, err);
       return false;
     }
   };
