@@ -33,6 +33,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
   const [content, setContent] = useState(article?.content || "");
   const [excerpt, setExcerpt] = useState(article?.excerpt || "");
   const [category, setCategory] = useState(article?.category || "general");
+  const [ageGroup, setAgeGroup] = useState(article?.age_group || "all");
   const [isPublished, setIsPublished] = useState(article?.is_published ?? false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
