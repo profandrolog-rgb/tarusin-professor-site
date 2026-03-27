@@ -85,6 +85,13 @@ const adminSections = [
     href: "/admin/questions",
     color: "text-cyan-500",
   },
+  {
+    title: "Наши исследования",
+    description: "Публикации и научные статьи",
+    icon: FileText,
+    href: "/research",
+    color: "text-emerald-500",
+  },
 ];
 
 const analyticsServices = [
