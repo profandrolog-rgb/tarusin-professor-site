@@ -101,6 +101,11 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
                 <MessageCircle className="w-3 h-3" /> {commentCount}
               </span>
             )}
+            {onEdit && (
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs ml-auto" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                <Pencil className="w-3 h-3 mr-1" /> Ред.
+              </Button>
+            )}
           </div>
         </div>
       </div>
