@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/blog/RichTextEditor";
-import RESEARCH_CATEGORIES from "./ResearchCategories";
+import RESEARCH_CATEGORIES, { AGE_GROUPS } from "./ResearchCategories";
 import { Upload, X, FileText, Loader2 } from "lucide-react";
 
 interface ResearchPostFormProps {
