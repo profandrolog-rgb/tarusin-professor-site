@@ -9,7 +9,7 @@ import PageMeta from "@/components/PageMeta";
 import ResearchPostCard from "@/components/research/ResearchPostCard";
 import ResearchPostDetail from "@/components/research/ResearchPostDetail";
 import ResearchPostForm from "@/components/research/ResearchPostForm";
-import RESEARCH_CATEGORIES, { getCategoryLabel } from "@/components/research/ResearchCategories";
+import RESEARCH_CATEGORIES, { getCategoryLabel, AGE_GROUPS } from "@/components/research/ResearchCategories";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Grid3X3, List, Loader2 } from "lucide-react";
