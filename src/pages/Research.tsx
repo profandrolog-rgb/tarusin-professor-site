@@ -56,9 +56,9 @@ const Research = () => {
     },
   });
 
-  const filtered = filterCategory
-    ? articles.filter((a) => a.category === filterCategory)
-    : articles;
+  const filtered = articles
+    .filter((a) => !filterCategory || a.category === filterCategory)
+    .filter((a) => !filterAgeGroup || (a as any).age_group === filterAgeGroup || (a as any).age_group === "all");
 
   if (selectedId) {
     return (
