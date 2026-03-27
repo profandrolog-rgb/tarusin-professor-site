@@ -22,6 +22,7 @@ const Research = () => {
   const [showForm, setShowForm] = useState(false);
   const [editArticle, setEditArticle] = useState<any>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [filterAgeGroup, setFilterAgeGroup] = useState<string | null>(null);
 
   const { data: articles = [], isLoading, refetch } = useQuery({
     queryKey: ["research-articles"],
