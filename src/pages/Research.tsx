@@ -9,7 +9,7 @@ import PageMeta from "@/components/PageMeta";
 import ResearchPostCard from "@/components/research/ResearchPostCard";
 import ResearchPostDetail from "@/components/research/ResearchPostDetail";
 import ResearchPostForm from "@/components/research/ResearchPostForm";
-import RESEARCH_CATEGORIES, { getCategoryLabel } from "@/components/research/ResearchCategories";
+import RESEARCH_CATEGORIES, { getCategoryLabel, AGE_GROUPS } from "@/components/research/ResearchCategories";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Grid3X3, List, Loader2 } from "lucide-react";
@@ -22,6 +22,7 @@ const Research = () => {
   const [showForm, setShowForm] = useState(false);
   const [editArticle, setEditArticle] = useState<any>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [filterAgeGroup, setFilterAgeGroup] = useState<string | null>(null);
 
   const { data: articles = [], isLoading, refetch } = useQuery({
     queryKey: ["research-articles"],
@@ -55,9 +56,9 @@ const Research = () => {
     },
   });
 
-  const filtered = filterCategory
-    ? articles.filter((a) => a.category === filterCategory)
-    : articles;
+  const filtered = articles
+    .filter((a) => !filterCategory || a.category === filterCategory)
+    .filter((a) => !filterAgeGroup || (a as any).age_group === filterAgeGroup || (a as any).age_group === "all");
 
   if (selectedId) {
     return (
@@ -139,6 +140,20 @@ const Research = () => {
             </div>
           </div>
 
+          {/* Age group filter */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {AGE_GROUPS.map((ag) => (
+              <Badge
+                key={ag.value}
+                variant={filterAgeGroup === (ag.value === "all" ? null : ag.value) ? "default" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => setFilterAgeGroup(ag.value === "all" ? null : ag.value)}
+              >
+                {ag.emoji} {ag.label}
+              </Badge>
+            ))}
+          </div>
+
           {/* Category filter */}
           <div className="flex flex-wrap gap-2 mb-6">
             <Badge
@@ -146,7 +161,7 @@ const Research = () => {
               className="cursor-pointer"
               onClick={() => setFilterCategory(null)}
             >
-              Все
+              Все темы
             </Badge>
             {RESEARCH_CATEGORIES.map((c) => (
               <Badge

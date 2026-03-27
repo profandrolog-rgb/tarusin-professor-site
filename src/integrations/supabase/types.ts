@@ -982,6 +982,7 @@ export type Database = {
       }
       research_articles: {
         Row: {
+          age_group: string
           category: string
           content: string
           created_at: string
@@ -994,6 +995,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age_group?: string
           category?: string
           content?: string
           created_at?: string
@@ -1006,6 +1008,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age_group?: string
           category?: string
           content?: string
           created_at?: string

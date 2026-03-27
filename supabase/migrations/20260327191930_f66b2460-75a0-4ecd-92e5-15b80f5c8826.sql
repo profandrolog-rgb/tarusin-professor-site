@@ -1,0 +1,1 @@
+ALTER TABLE public.research_articles ADD COLUMN IF NOT EXISTS age_group text NOT NULL DEFAULT 'all';

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/blog/RichTextEditor";
-import RESEARCH_CATEGORIES from "./ResearchCategories";
+import RESEARCH_CATEGORIES, { AGE_GROUPS } from "./ResearchCategories";
 import { Upload, X, FileText, Loader2 } from "lucide-react";
 
 interface ResearchPostFormProps {
@@ -18,6 +18,7 @@ interface ResearchPostFormProps {
     content: string;
     excerpt: string | null;
     category: string;
+    age_group?: string;
     image_path: string | null;
     is_published: boolean;
   } | null;
@@ -32,6 +33,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
   const [content, setContent] = useState(article?.content || "");
   const [excerpt, setExcerpt] = useState(article?.excerpt || "");
   const [category, setCategory] = useState(article?.category || "general");
+  const [ageGroup, setAgeGroup] = useState(article?.age_group || "all");
   const [isPublished, setIsPublished] = useState(article?.is_published ?? false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
@@ -69,9 +71,10 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
             content,
             excerpt: excerpt.trim() || null,
             category,
+            age_group: ageGroup,
             image_path: imagePath,
             is_published: isPublished,
-          })
+          } as any)
           .eq("id", article.id);
         if (error) throw error;
       } else {
@@ -82,9 +85,10 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
             content,
             excerpt: excerpt.trim() || null,
             category,
+            age_group: ageGroup,
             image_path: imagePath,
             is_published: isPublished,
-          })
+          } as any)
           .select("id")
           .single();
         if (error) throw error;
@@ -143,6 +147,20 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
           <SelectContent>
             {RESEARCH_CATEGORIES.map((c) => (
               <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Возрастная группа</Label>
+        <Select value={ageGroup} onValueChange={setAgeGroup}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {AGE_GROUPS.map((ag) => (
+              <SelectItem key={ag.value} value={ag.value}>{ag.emoji} {ag.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
