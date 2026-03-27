@@ -17,3 +17,14 @@ export function getCategoryLabel(value: string): string {
   const cat = RESEARCH_CATEGORIES.find((c) => c.value === value);
   return cat?.label ?? value;
 }
+
+export const AGE_GROUPS = [
+  { value: "all", label: "Все возрасты", emoji: "👥" },
+  { value: "children", label: "Дети", emoji: "👶" },
+  { value: "adults", label: "Взрослые", emoji: "🧑" },
+] as const;
+
+export function getAgeGroupLabel(value: string): string {
+  const ag = AGE_GROUPS.find((a) => a.value === value);
+  return ag?.label ?? value;
+}
