@@ -869,8 +869,120 @@ export type Database = {
         }
         Relationships: []
       }
+      research_article_attachments: {
+        Row: {
+          article_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          sort_order: number | null
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_type?: string
+          id?: string
+          sort_order?: number | null
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_article_attachments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "research_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_article_comments: {
+        Row: {
+          article_id: string
+          author_email: string
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          is_approved: boolean
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          author_email: string
+          author_name: string
+          content: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          author_email?: string
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_article_comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "research_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_article_reactions: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_article_reactions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "research_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_articles: {
         Row: {
+          category: string
           content: string
           created_at: string
           excerpt: string | null
@@ -882,6 +994,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           content?: string
           created_at?: string
           excerpt?: string | null
@@ -893,6 +1006,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           content?: string
           created_at?: string
           excerpt?: string | null
