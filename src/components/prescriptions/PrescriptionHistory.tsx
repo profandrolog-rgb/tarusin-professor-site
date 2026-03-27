@@ -93,7 +93,7 @@ export function PrescriptionHistory({ onRepeat, onRepeatForOther }: Prescription
       if (!printWindow) return;
       printWindow.document.write(`
         <html><head><title>Рецепт</title>
-        <style>@page{size:148.5mm 105mm;margin:0}body{margin:0;padding:0}*{box-sizing:border-box}</style>
+        <style>@page{size:A4 portrait;margin:0}body{margin:0;padding:0;display:flex;justify-content:flex-end}*{box-sizing:border-box}</style>
         </head><body>${printContent.innerHTML}</body></html>
       `);
       printWindow.document.close();

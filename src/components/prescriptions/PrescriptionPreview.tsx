@@ -21,7 +21,7 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
       <html><head><title>Рецепт</title>
       <style>
         @page{size:A4 portrait;margin:0}
-        body{margin:0;padding:10mm;box-sizing:border-box}
+        body{margin:0;padding:0;display:flex;justify-content:flex-end}
         *{box-sizing:border-box}
       </style>
       </head><body>${printContent.innerHTML}</body></html>
