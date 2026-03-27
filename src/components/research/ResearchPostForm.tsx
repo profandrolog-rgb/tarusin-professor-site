@@ -153,6 +153,19 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
       </div>
 
       <div className="space-y-2">
+        <Label>Возрастная группа</Label>
+        <Select value={ageGroup} onValueChange={setAgeGroup}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {AGE_GROUPS.map((ag) => (
+              <SelectItem key={ag.value} value={ag.value}>{ag.emoji} {ag.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
         <Label>Краткая аннотация</Label>
         <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Краткое описание для превью..." className="min-h-[60px]" />
       </div>
