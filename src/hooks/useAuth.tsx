@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isEditor: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -18,21 +19,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isEditor, setIsEditor] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkAdminRole = async (userId: string) => {
+  const checkRole = async (userId: string, role: "admin" | "editor" | "user") => {
     try {
       const { data, error } = await supabase.rpc("has_role", {
         _user_id: userId,
-        _role: "admin",
+        _role: role,
       });
       if (error) {
-        console.error("Error checking admin role:", error);
+        console.error(`Error checking ${role} role:`, error);
         return false;
       }
       return data === true;
     } catch (err) {
-      console.error("Error checking admin role:", err);
+      console.error(`Error checking ${role} role:`, err);
       return false;
     }
   };
@@ -47,10 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Defer admin check with setTimeout to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
-            checkAdminRole(session.user.id).then(setIsAdmin);
+            checkRole(session.user.id, "admin").then(setIsAdmin);
+            checkRole(session.user.id, "editor").then(setIsEditor);
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsEditor(false);
         }
       }
     );
@@ -61,8 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminRole(session.user.id).then((admin) => {
+        Promise.all([
+          checkRole(session.user.id, "admin"),
+          checkRole(session.user.id, "editor"),
+        ]).then(([admin, editor]) => {
           setIsAdmin(admin);
+          setIsEditor(editor);
           setLoading(false);
         });
       } else {
@@ -103,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isAdmin,
+        isEditor,
         loading,
         signIn,
         signUp,
