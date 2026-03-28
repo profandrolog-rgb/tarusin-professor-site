@@ -576,6 +576,8 @@ const ReviewsSection = () => {
   const reviewsPerPage = 3;
   const maxIndex = reviews.length - reviewsPerPage;
 
+  const [selectedReview, setSelectedReview] = useState<typeof reviews[0] | null>(null);
+
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
   };
