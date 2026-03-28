@@ -1,28 +1,52 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
-import ResearchPostCard from "@/components/research/ResearchPostCard";
 import ResearchPostDetail from "@/components/research/ResearchPostDetail";
 import ResearchPostForm from "@/components/research/ResearchPostForm";
+import SortableResearchCard from "@/components/research/SortableResearchCard";
 import RESEARCH_CATEGORIES, { getCategoryLabel, AGE_GROUPS } from "@/components/research/ResearchCategories";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Grid3X3, List, Loader2 } from "lucide-react";
+import { Plus, Grid3X3, List, Loader2, ArrowUpDown, Check } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { toast } from "sonner";
 
 const Research = () => {
   const { isAdmin, isEditor } = useAuth();
   const canEdit = isAdmin || isEditor;
+  const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"grid" | "feed">("grid");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editArticle, setEditArticle] = useState<any>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string | null>(null);
+  const [isSorting, setIsSorting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const { data: articles = [], isLoading, refetch } = useQuery({
     queryKey: ["research-articles"],
@@ -30,6 +54,7 @@ const Research = () => {
       const { data, error } = await supabase
         .from("research_articles")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -56,9 +81,37 @@ const Research = () => {
     },
   });
 
-  const filtered = articles
-    .filter((a) => !filterCategory || a.category === filterCategory)
-    .filter((a) => !filterAgeGroup || (a as any).age_group === filterAgeGroup || (a as any).age_group === "all");
+  const filtered = isSorting
+    ? articles // show all when sorting, no filters
+    : articles
+        .filter((a) => !filterCategory || a.category === filterCategory)
+        .filter((a) => !filterAgeGroup || (a as any).age_group === filterAgeGroup || (a as any).age_group === "all");
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filtered.findIndex((a) => a.id === active.id);
+    const newIndex = filtered.findIndex((a) => a.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(filtered, oldIndex, newIndex);
+
+    // Optimistic update
+    queryClient.setQueryData(["research-articles"], reordered);
+
+    // Save to DB
+    try {
+      const updates = reordered.map((article, index) => 
+        supabase.from("research_articles").update({ sort_order: index }).eq("id", article.id)
+      );
+      await Promise.all(updates);
+      toast.success("Порядок сохранён");
+    } catch {
+      toast.error("Ошибка сохранения порядка");
+      refetch();
+    }
+  }, [filtered, queryClient, refetch]);
 
   if (selectedId) {
     return (
@@ -133,9 +186,20 @@ const Research = () => {
                 </button>
               </div>
               {canEdit && (
-                <Button onClick={() => setShowForm(true)} className="gap-2">
-                  <Plus className="w-4 h-4" /> Новая публикация
-                </Button>
+                <>
+                  <Button
+                    variant={isSorting ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsSorting(!isSorting)}
+                    className="gap-1"
+                  >
+                    {isSorting ? <Check className="w-4 h-4" /> : <ArrowUpDown className="w-4 h-4" />}
+                    {isSorting ? "Готово" : "Сортировка"}
+                  </Button>
+                  <Button onClick={() => setShowForm(true)} className="gap-2">
+                    <Plus className="w-4 h-4" /> Новая публикация
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -187,19 +251,27 @@ const Research = () => {
               </p>
             </div>
           ) : (
-            <div className={viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "space-y-4 max-w-3xl"}>
-              {filtered.map((article) => (
-                <ResearchPostCard
-                  key={article.id}
-                  article={article}
-                  commentCount={allComments.filter((c) => c.article_id === article.id && c.is_approved).length}
-                  reactionCount={allReactions.filter((r) => r.article_id === article.id).length}
-                  viewMode={viewMode}
-                  onClick={() => setSelectedId(article.id)}
-                  onEdit={canEdit ? () => setEditArticle(article) : undefined}
-                />
-              ))}
-            </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={filtered.map((a) => a.id)}
+                strategy={viewMode === "grid" ? rectSortingStrategy : verticalListSortingStrategy}
+              >
+                <div className={viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "space-y-4 max-w-3xl"}>
+                  {filtered.map((article) => (
+                    <SortableResearchCard
+                      key={article.id}
+                      article={article}
+                      commentCount={allComments.filter((c) => c.article_id === article.id && c.is_approved).length}
+                      reactionCount={allReactions.filter((r) => r.article_id === article.id).length}
+                      viewMode={viewMode}
+                      onClick={() => !isSorting && setSelectedId(article.id)}
+                      onEdit={canEdit && !isSorting ? () => setEditArticle(article) : undefined}
+                      isSorting={isSorting}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </main>
