@@ -13,15 +13,15 @@ const reviewPlatforms = [
   {
     name: "ProDoctorov",
     rating: "5.0",
-    reviewCount: "25",
+    reviewCount: "26",
     description: "Крупнейший сервис поиска врачей в России",
     url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/",
     logo: prodoctorovLogo
   },
   {
     name: "Яндекс.Здоровье",
-    rating: "5.0",
-    reviewCount: "47+",
+    rating: "4.6",
+    reviewCount: "40",
     description: "Медицинский сервис Яндекса",
     url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ",
     logo: yandexHealthLogo
@@ -41,7 +41,7 @@ const Reviews = () => {
     <div className="min-h-screen bg-background">
       <PageMeta
         title="Отзывы пациентов — Проф. Тарусин Д.И."
-        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 4.9 на 7+ медицинских агрегаторах."
+        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 4.7 на 3+ медицинских агрегаторах."
         path="/reviews"
       />
       {/* Header */}
@@ -53,7 +53,7 @@ const Reviews = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">Отзывы и рейтинги</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Реальные отзывы пациентов на независимых платформах — 7+ медицинских агрегаторов
+            Реальные отзывы пациентов на независимых платформах — 3+ медицинских агрегатора
           </p>
         </div>
       </header>
@@ -63,20 +63,20 @@ const Reviews = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">85+</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">79+</div>
               <div className="text-sm text-muted-foreground">Отзывов</div>
             </CardContent>
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4.9</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4.7</div>
               <div className="text-sm text-muted-foreground">Средний рейтинг</div>
             </CardContent>
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">7+</div>
-              <div className="text-sm text-muted-foreground">Платформ</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">3+</div>
+              <div className="text-sm text-muted-foreground">Платформы</div>
             </CardContent>
           </Card>
           <Card className="bg-secondary border-none">
@@ -146,7 +146,7 @@ const Reviews = () => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Медицинские агрегаторы</div>
-                <div className="font-bold text-primary">7+ ПЛАТФОРМ</div>
+                <div className="font-bold text-primary">3+ ПЛАТФОРМЫ</div>
               </div>
             </div>
           </CardContent>
