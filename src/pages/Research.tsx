@@ -81,9 +81,37 @@ const Research = () => {
     },
   });
 
-  const filtered = articles
-    .filter((a) => !filterCategory || a.category === filterCategory)
-    .filter((a) => !filterAgeGroup || (a as any).age_group === filterAgeGroup || (a as any).age_group === "all");
+  const filtered = isSorting
+    ? articles // show all when sorting, no filters
+    : articles
+        .filter((a) => !filterCategory || a.category === filterCategory)
+        .filter((a) => !filterAgeGroup || (a as any).age_group === filterAgeGroup || (a as any).age_group === "all");
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filtered.findIndex((a) => a.id === active.id);
+    const newIndex = filtered.findIndex((a) => a.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(filtered, oldIndex, newIndex);
+
+    // Optimistic update
+    queryClient.setQueryData(["research-articles"], reordered);
+
+    // Save to DB
+    try {
+      const updates = reordered.map((article, index) => 
+        supabase.from("research_articles").update({ sort_order: index }).eq("id", article.id)
+      );
+      await Promise.all(updates);
+      toast.success("Порядок сохранён");
+    } catch {
+      toast.error("Ошибка сохранения порядка");
+      refetch();
+    }
+  }, [filtered, queryClient, refetch]);
 
   if (selectedId) {
     return (
