@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
+import SocialBar from "@/components/SocialLinks";
 import ResearchPostDetail from "@/components/research/ResearchPostDetail";
 import ResearchPostForm from "@/components/research/ResearchPostForm";
 import SortableResearchCard from "@/components/research/SortableResearchCard";
