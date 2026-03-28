@@ -1,18 +1,35 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
-import ResearchPostCard from "@/components/research/ResearchPostCard";
 import ResearchPostDetail from "@/components/research/ResearchPostDetail";
 import ResearchPostForm from "@/components/research/ResearchPostForm";
+import SortableResearchCard from "@/components/research/SortableResearchCard";
 import RESEARCH_CATEGORIES, { getCategoryLabel, AGE_GROUPS } from "@/components/research/ResearchCategories";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Grid3X3, List, Loader2 } from "lucide-react";
+import { Plus, Grid3X3, List, Loader2, ArrowUpDown, Check } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { toast } from "sonner";
 
 const Research = () => {
   const { isAdmin, isEditor } = useAuth();
