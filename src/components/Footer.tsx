@@ -157,42 +157,78 @@ const Footer = () => {
           {/* Contacts */}
           <div>
             <h4 className="font-semibold mb-4">Контакты</h4>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-sm">
-                <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
-                <div>
-                  <a href="tel:+74953748181" className="text-background/70 hover:text-background transition-colors">
-                    +7 (495) 374-81-81
-                  </a>
-                  <span className="text-background/50 ml-1">(для справок)</span>
-                </div>
-              </li>
-              <li className="flex items-center gap-3 text-sm">
-                <WhatsAppIcon className="w-4 h-4 flex-shrink-0 text-background/70" />
-                <div>
-                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">
-                    +7 (926) 600-555-0
-                  </a>
-                  <span className="text-background/50 ml-1">(WhatsApp)</span>
-                </div>
-              </li>
-              <li className="flex items-center gap-3 text-sm">
-                <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
-                <div>
-                  <a href="tel:+79778075544" className="text-background/70 hover:text-background transition-colors">
-                    +7 (977) 807-55-44
-                  </a>
-                  <span className="text-background/50 ml-1">(срочные)</span>
-                </div>
-              </li>
-              <li className="flex items-start gap-3 text-sm">
-                <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
-                <span className="text-background/70">
-                  <span className="font-medium text-background/90">AVE-CLINIC</span><br />
-                  с. Немчиновка, 3-я Запрудная ул. дом 16
-                </span>
-              </li>
-            </ul>
+            <div className="space-y-4">
+              {/* Клиника доктора Матара */}
+              <div>
+                <p className="font-medium text-background/90 text-sm mb-2">Клиника доктора Матара</p>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-3 text-sm">
+                    <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
+                    <a href="tel:+74953030000" className="text-background/70 hover:text-background transition-colors">
+                      +7 (495) 303-00-00
+                    </a>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm">
+                    <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
+                    <a href="tel:+79263030111" className="text-background/70 hover:text-background transition-colors">
+                      +7 (926) 303-01-11
+                    </a>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm">
+                    <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
+                    <a href="tel:+79160303031" className="text-background/70 hover:text-background transition-colors">
+                      +7 (916) 030-30-31
+                    </a>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm">
+                    <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
+                    <span className="text-background/70">
+                      Москва, Коровинское шоссе, 9 к2
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* AVE-CLINIC */}
+              <div>
+                <p className="font-medium text-background/90 text-sm mb-2">AVE-CLINIC</p>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-3 text-sm">
+                    <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
+                    <div>
+                      <a href="tel:+74953748181" className="text-background/70 hover:text-background transition-colors">
+                        +7 (495) 374-81-81
+                      </a>
+                      <span className="text-background/50 ml-1">(для справок)</span>
+                    </div>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm">
+                    <WhatsAppIcon className="w-4 h-4 flex-shrink-0 text-background/70" />
+                    <div>
+                      <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">
+                        +7 (926) 600-555-0
+                      </a>
+                      <span className="text-background/50 ml-1">(WhatsApp)</span>
+                    </div>
+                  </li>
+                  <li className="flex items-center gap-3 text-sm">
+                    <Phone className="w-4 h-4 flex-shrink-0 text-background/70" />
+                    <div>
+                      <a href="tel:+79778075544" className="text-background/70 hover:text-background transition-colors">
+                        +7 (977) 807-55-44
+                      </a>
+                      <span className="text-background/50 ml-1">(срочные)</span>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3 text-sm">
+                    <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" />
+                    <span className="text-background/70">
+                      с. Немчиновка, 3-я Запрудная ул. дом 16
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
