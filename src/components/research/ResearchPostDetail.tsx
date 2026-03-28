@@ -83,8 +83,8 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
       </Button>
 
       {imageUrl && (
-        <div className="rounded-xl overflow-hidden border aspect-video bg-muted">
-          <img src={imageUrl} alt={article.title} className="w-full h-full object-cover" />
+        <div className="rounded-xl overflow-hidden border bg-muted flex items-center justify-center">
+          <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain" />
         </div>
       )}
 
