@@ -34,9 +34,9 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
         onClick={onClick}
         className="group cursor-pointer rounded-xl overflow-hidden border bg-card hover:shadow-lg transition-all"
       >
-        <div className="aspect-[4/3] bg-muted overflow-hidden">
+        <div className="bg-muted overflow-hidden flex items-center justify-center">
           {imageUrl ? (
-            <img src={imageUrl} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-primary/10 to-accent/10">
               📄
@@ -76,8 +76,8 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
     >
       <div className="flex gap-4 p-4">
         {imageUrl && (
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-            <img src={imageUrl} alt={article.title} className="w-full h-full object-cover" />
+          <div className="w-24 md:w-32 rounded-lg overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center">
+            <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain" />
           </div>
         )}
         <div className="flex-1 min-w-0 space-y-2">
