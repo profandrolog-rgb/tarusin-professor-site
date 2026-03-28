@@ -112,8 +112,8 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
           {imageAttachments.map((att) => {
             const url = supabase.storage.from("research-attachments").getPublicUrl(att.file_path).data.publicUrl;
             return (
-              <div key={att.id} className="rounded-lg overflow-hidden border aspect-square bg-muted">
-                <img src={url} alt={att.file_name} className="w-full h-full object-cover" />
+              <div key={att.id} className="rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+                <img src={url} alt={att.file_name} className="w-full h-auto object-contain" />
               </div>
             );
           })}

@@ -76,8 +76,8 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
     >
       <div className="flex gap-4 p-4">
         {imageUrl && (
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-            <img src={imageUrl} alt={article.title} className="w-full h-full object-cover" />
+          <div className="w-24 md:w-32 rounded-lg overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center">
+            <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain" />
           </div>
         )}
         <div className="flex-1 min-w-0 space-y-2">
