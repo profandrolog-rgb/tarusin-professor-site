@@ -616,7 +616,8 @@ const ReviewsSection = () => {
             {displayReviews.map((review, index) => (
               <Card 
                 key={`${review.name}-${currentIndex}-${index}`}
-                className="bg-card border-border shadow-lg"
+                className="bg-card border-border shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                onClick={() => setSelectedReview(review)}
               >
                 <CardContent className="p-6">
                   <Quote className="w-10 h-10 text-primary/20 mb-4" />
