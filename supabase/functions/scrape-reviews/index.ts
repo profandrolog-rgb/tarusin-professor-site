@@ -8,30 +8,69 @@ const corsHeaders = {
 
 interface PlatformConfig {
   platform_name: string;
+  logo_key: string;
   url: string;
-  extractPrompt: string;
+  ratingRegex: RegExp;
+  countRegex: RegExp;
 }
 
-const platformConfigs: Record<string, PlatformConfig> = {
-  prodoctorov: {
+const platformConfigs: PlatformConfig[] = [
+  {
     platform_name: "ProDoctorov",
+    logo_key: "prodoctorov",
     url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/",
-    extractPrompt:
-      "Extract the doctor's rating (number like 5.0) and total number of reviews (just the number) from this page.",
+    ratingRegex: /(\d+[.,]\d+)\s*(?:из\s*5|★|рейтинг)/i,
+    countRegex: /(\d+)\s*отзыв/i,
   },
-  "yandex-health": {
+  {
     platform_name: "Яндекс.Здоровье",
+    logo_key: "yandex-health",
     url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ",
-    extractPrompt:
-      "Extract the doctor's recommendation percentage and total number of reviews (just the number) from this page. Convert percentage to a 5-point scale (e.g. 92% = 4.6, 100% = 5.0).",
+    ratingRegex: /(\d+)\s*%\s*(?:рекоменд|пациент)/i,
+    countRegex: /(\d+)\s*отзыв/i,
   },
-  docdoc: {
+  {
     platform_name: "DocDoc",
+    logo_key: "docdoc",
     url: "https://docdoc.ru/doctor/Tarusin_Dmitriy",
-    extractPrompt:
-      "Extract the doctor's rating (number like 4.5) and total number of reviews (just the number) from this page.",
+    ratingRegex: /(\d+[.,]\d+)/,
+    countRegex: /(\d+)\s*отзыв/i,
   },
-};
+];
+
+function extractFromMarkdown(markdown: string, config: PlatformConfig): { rating: string | null; reviewCount: string | null } {
+  let rating: string | null = null;
+  let reviewCount: string | null = null;
+
+  // Extract review count
+  const countMatch = markdown.match(config.countRegex);
+  if (countMatch) {
+    reviewCount = countMatch[1];
+  }
+
+  // For Yandex, convert percentage to 5-point scale
+  if (config.logo_key === "yandex-health") {
+    const pctMatch = markdown.match(config.ratingRegex);
+    if (pctMatch) {
+      const pct = parseInt(pctMatch[1], 10);
+      rating = (pct / 20).toFixed(1);
+    }
+  } else {
+    // For others, find rating number
+    const ratingMatch = markdown.match(config.ratingRegex);
+    if (ratingMatch) {
+      rating = ratingMatch[1].replace(",", ".");
+    } else {
+      // Fallback: look for a standalone number like 4.5 or 5.0 near "рейтинг" or "оценка"
+      const fallback = markdown.match(/(?:рейтинг|оценка|rating)[^\d]*(\d+[.,]\d+)/i);
+      if (fallback) {
+        rating = fallback[1].replace(",", ".");
+      }
+    }
+  }
+
+  return { rating, reviewCount };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -53,7 +92,7 @@ Deno.serve(async (req) => {
 
     const results: Record<string, { rating: string; reviewCount: string; error?: string }> = {};
 
-    for (const [key, config] of Object.entries(platformConfigs)) {
+    for (const config of platformConfigs) {
       try {
         console.log(`Scraping ${config.platform_name}...`);
 
@@ -65,56 +104,45 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             url: config.url,
-            formats: [
-              {
-                type: "json",
-                prompt: config.extractPrompt,
-                schema: {
-                  type: "object",
-                  properties: {
-                    rating: { type: "string", description: "Rating as a number string like 5.0 or 4.5" },
-                    review_count: { type: "string", description: "Number of reviews as a plain number string like 26 or 40" },
-                  },
-                  required: ["rating", "review_count"],
-                },
-              },
-            ],
+            formats: ["markdown"],
+            onlyMainContent: true,
             waitFor: 3000,
           }),
         });
 
         const scrapeData = await scrapeResponse.json();
-        console.log(`${config.platform_name} response:`, JSON.stringify(scrapeData));
+        const markdown = scrapeData?.data?.markdown || scrapeData?.markdown || "";
+        
+        console.log(`${config.platform_name} markdown length: ${markdown.length}`);
 
-        const json = scrapeData?.data?.json || scrapeData?.json;
+        const extracted = extractFromMarkdown(markdown, config);
 
-        if (json?.rating && json?.review_count) {
-          const rating = String(json.rating).replace(/[^0-9.]/g, "");
-          const reviewCount = String(json.review_count).replace(/[^0-9+]/g, "");
+        if (extracted.rating || extracted.reviewCount) {
+          const updateData: Record<string, string> = {
+            last_scraped_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          if (extracted.rating) updateData.rating = extracted.rating;
+          if (extracted.reviewCount) updateData.review_count = extracted.reviewCount;
 
           const { error: updateError } = await supabase
             .from("review_platforms")
-            .update({
-              rating,
-              review_count: reviewCount,
-              last_scraped_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("logo_key", key);
+            .update(updateData)
+            .eq("logo_key", config.logo_key);
 
           if (updateError) {
-            console.error(`Error updating ${key}:`, updateError);
-            results[key] = { rating, reviewCount, error: updateError.message };
+            console.error(`Error updating ${config.logo_key}:`, updateError);
+            results[config.logo_key] = { rating: extracted.rating || "N/A", reviewCount: extracted.reviewCount || "N/A", error: updateError.message };
           } else {
-            results[key] = { rating, reviewCount };
+            results[config.logo_key] = { rating: extracted.rating || "N/A", reviewCount: extracted.reviewCount || "N/A" };
           }
         } else {
-          console.error(`No data extracted for ${config.platform_name}`);
-          results[key] = { rating: "N/A", reviewCount: "N/A", error: "No data extracted" };
+          console.error(`No data extracted for ${config.platform_name}. First 500 chars: ${markdown.substring(0, 500)}`);
+          results[config.logo_key] = { rating: "N/A", reviewCount: "N/A", error: "No data extracted from markdown" };
         }
       } catch (err) {
         console.error(`Error scraping ${config.platform_name}:`, err);
-        results[key] = {
+        results[config.logo_key] = {
           rating: "N/A",
           reviewCount: "N/A",
           error: err instanceof Error ? err.message : "Unknown error",
