@@ -20,7 +20,7 @@ const reviewPlatforms = [
   },
   {
     name: "Яндекс.Здоровье",
-    rating: "4.6",
+    rating: "5.0",
     reviewCount: "40",
     description: "Медицинский сервис Яндекса",
     url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ",
@@ -41,7 +41,7 @@ const Reviews = () => {
     <div className="min-h-screen bg-background">
       <PageMeta
         title="Отзывы пациентов — Проф. Тарусин Д.И."
-        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 4.7 на 3+ медицинских агрегаторах."
+        description="Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг 4.8 на 3+ медицинских агрегаторах."
         path="/reviews"
       />
       {/* Header */}
@@ -69,7 +69,7 @@ const Reviews = () => {
           </Card>
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4.7</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">4.8</div>
               <div className="text-sm text-muted-foreground">Средний рейтинг</div>
             </CardContent>
           </Card>
