@@ -205,6 +205,9 @@ const Research = () => {
             </div>
           </div>
 
+          {/* Social media */}
+          <SocialBar className="mb-4" />
+
           {/* Age group filter */}
           <div className="flex flex-wrap gap-2 mb-3">
             {AGE_GROUPS.map((ag) => (
