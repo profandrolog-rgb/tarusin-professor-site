@@ -146,7 +146,7 @@ const Reviews = () => {
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Медицинские агрегаторы</div>
-                <div className="font-bold text-primary">7+ ПЛАТФОРМ</div>
+                <div className="font-bold text-primary">3+ ПЛАТФОРМЫ</div>
               </div>
             </div>
           </CardContent>
