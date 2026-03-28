@@ -13,7 +13,7 @@ const reviewPlatforms = [
   {
     name: "ProDoctorov",
     rating: "5.0",
-    reviewCount: "25",
+    reviewCount: "26",
     description: "Крупнейший сервис поиска врачей в России",
     url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/",
     logo: prodoctorovLogo
