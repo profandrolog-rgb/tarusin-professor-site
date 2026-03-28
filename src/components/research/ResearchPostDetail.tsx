@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Image as ImageIcon, Download } from "lucide-react";
 import { format } from "date-fns";
+import SocialBar from "@/components/SocialLinks";
 import { ru } from "date-fns/locale";
 import DOMPurify from "dompurify";
 
@@ -87,6 +88,9 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
           <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain" />
         </div>
       )}
+
+      {/* Social media links */}
+      <SocialBar />
 
       <div className="space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
