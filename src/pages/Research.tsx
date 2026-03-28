@@ -34,12 +34,19 @@ import { toast } from "sonner";
 const Research = () => {
   const { isAdmin, isEditor } = useAuth();
   const canEdit = isAdmin || isEditor;
+  const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<"grid" | "feed">("grid");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editArticle, setEditArticle] = useState<any>(null);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string | null>(null);
+  const [isSorting, setIsSorting] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const { data: articles = [], isLoading, refetch } = useQuery({
     queryKey: ["research-articles"],
@@ -47,6 +54,7 @@ const Research = () => {
       const { data, error } = await supabase
         .from("research_articles")
         .select("*")
+        .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
