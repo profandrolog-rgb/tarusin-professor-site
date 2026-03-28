@@ -20,7 +20,7 @@ const reviewPlatforms = [
   },
   {
     name: "Яндекс.Здоровье",
-    rating: "4.6",
+    rating: "5.0",
     reviewCount: "40",
     description: "Медицинский сервис Яндекса",
     url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ",
