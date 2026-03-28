@@ -1022,6 +1022,45 @@ export type Database = {
         }
         Relationships: []
       }
+      review_platforms: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          last_scraped_at: string | null
+          logo_key: string
+          platform_name: string
+          rating: string | null
+          review_count: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_scraped_at?: string | null
+          logo_key: string
+          platform_name: string
+          rating?: string | null
+          review_count?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_scraped_at?: string | null
+          logo_key?: string
+          platform_name?: string
+          rating?: string | null
+          review_count?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
