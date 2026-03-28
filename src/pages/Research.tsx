@@ -251,19 +251,27 @@ const Research = () => {
               </p>
             </div>
           ) : (
-            <div className={viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "space-y-4 max-w-3xl"}>
-              {filtered.map((article) => (
-                <ResearchPostCard
-                  key={article.id}
-                  article={article}
-                  commentCount={allComments.filter((c) => c.article_id === article.id && c.is_approved).length}
-                  reactionCount={allReactions.filter((r) => r.article_id === article.id).length}
-                  viewMode={viewMode}
-                  onClick={() => setSelectedId(article.id)}
-                  onEdit={canEdit ? () => setEditArticle(article) : undefined}
-                />
-              ))}
-            </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={filtered.map((a) => a.id)}
+                strategy={viewMode === "grid" ? rectSortingStrategy : verticalListSortingStrategy}
+              >
+                <div className={viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "space-y-4 max-w-3xl"}>
+                  {filtered.map((article) => (
+                    <SortableResearchCard
+                      key={article.id}
+                      article={article}
+                      commentCount={allComments.filter((c) => c.article_id === article.id && c.is_approved).length}
+                      reactionCount={allReactions.filter((r) => r.article_id === article.id).length}
+                      viewMode={viewMode}
+                      onClick={() => !isSorting && setSelectedId(article.id)}
+                      onEdit={canEdit && !isSorting ? () => setEditArticle(article) : undefined}
+                      isSorting={isSorting}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </main>
