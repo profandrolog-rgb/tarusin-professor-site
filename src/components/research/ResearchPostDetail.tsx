@@ -89,6 +89,9 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
         </div>
       )}
 
+      {/* Social media links */}
+      <SocialBar />
+
       <div className="space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="secondary">{getCategoryLabel(article.category)}</Badge>
