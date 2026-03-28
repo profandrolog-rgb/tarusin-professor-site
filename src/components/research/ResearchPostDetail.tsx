@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText, Image as ImageIcon, Download } from "lucide-react";
 import { format } from "date-fns";
+import SocialBar from "@/components/SocialLinks";
 import { ru } from "date-fns/locale";
 import DOMPurify from "dompurify";
 
