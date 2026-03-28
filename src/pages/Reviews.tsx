@@ -44,10 +44,11 @@ const Reviews = () => {
     logo_key: string;
   }>;
 
+  const ratingPlatforms = reviewPlatforms.filter(p => p.logo_key !== "docdoc");
   const totalReviews = reviewPlatforms.reduce((sum, p) => sum + parseInt(p.review_count || "0", 10), 0);
-  const avgRating = (
-    reviewPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / reviewPlatforms.length
-  ).toFixed(1);
+  const avgRating = ratingPlatforms.length > 0
+    ? (ratingPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / ratingPlatforms.length).toFixed(1)
+    : "0";
 
   return (
     <div className="min-h-screen bg-background">
