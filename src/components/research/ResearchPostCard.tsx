@@ -34,9 +34,9 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
         onClick={onClick}
         className="group cursor-pointer rounded-xl overflow-hidden border bg-card hover:shadow-lg transition-all"
       >
-        <div className="aspect-[4/3] bg-muted overflow-hidden">
+        <div className="bg-muted overflow-hidden flex items-center justify-center">
           {imageUrl ? (
-            <img src={imageUrl} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-primary/10 to-accent/10">
               📄
