@@ -186,9 +186,20 @@ const Research = () => {
                 </button>
               </div>
               {canEdit && (
-                <Button onClick={() => setShowForm(true)} className="gap-2">
-                  <Plus className="w-4 h-4" /> Новая публикация
-                </Button>
+                <>
+                  <Button
+                    variant={isSorting ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsSorting(!isSorting)}
+                    className="gap-1"
+                  >
+                    {isSorting ? <Check className="w-4 h-4" /> : <ArrowUpDown className="w-4 h-4" />}
+                    {isSorting ? "Готово" : "Сортировка"}
+                  </Button>
+                  <Button onClick={() => setShowForm(true)} className="gap-2">
+                    <Plus className="w-4 h-4" /> Новая публикация
+                  </Button>
+                </>
               )}
             </div>
           </div>
