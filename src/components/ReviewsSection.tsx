@@ -719,6 +719,32 @@ const ReviewsSection = () => {
             </Button>
           </div>
         </div>
+        {/* Review Detail Dialog */}
+        <Dialog open={!!selectedReview} onOpenChange={() => setSelectedReview(null)}>
+          <DialogContent className="max-w-lg">
+            {selectedReview && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center justify-between">
+                    <span>{selectedReview.name}</span>
+                    <span className="text-sm font-normal text-muted-foreground">{selectedReview.source}</span>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex">
+                    {[...Array(selectedReview.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-accent text-accent" />
+                    ))}
+                  </div>
+                  <span className="text-sm text-muted-foreground">{selectedReview.date}</span>
+                </div>
+                <p className="text-foreground leading-relaxed">
+                  "{selectedReview.text}"
+                </p>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );
