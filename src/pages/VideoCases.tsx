@@ -398,7 +398,27 @@ const VideoCases = () => {
                 <Shield className="w-4 h-4 text-primary" />
                 Администратор
               </span>
-              <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetForm(); }}>
+              <Dialog open={addDialogOpen} onOpenChange={(open) => {
+                setAddDialogOpen(open);
+                if (!open) resetForm();
+                if (open) {
+                  const draft = loadVideoDraft();
+                  if (draft && (draft.formTitle || draft.formDescription)) {
+                    sonnerToast("Найден черновик", {
+                      description: "Восстановить несохранённые изменения?",
+                      action: { label: "Восстановить", onClick: () => {
+                        if (draft.formTitle) setFormTitle(draft.formTitle);
+                        if (draft.formDescription) setFormDescription(draft.formDescription);
+                        if (draft.formVideoUrl) setFormVideoUrl(draft.formVideoUrl);
+                        if (draft.formCategory) setFormCategory(draft.formCategory);
+                        sonnerToast.success("Черновик восстановлен");
+                      }},
+                      cancel: { label: "Отклонить", onClick: () => clearVideoDraft() },
+                      duration: 10000,
+                    });
+                  }
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button><Plus className="w-4 h-4 mr-2" />Добавить кейс</Button>
                 </DialogTrigger>
