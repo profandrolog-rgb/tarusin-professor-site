@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Plus, Loader2, Shield, ChevronDown, ChevronRight, Trash2, Edit, Image } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
