@@ -99,6 +99,16 @@ const VideoCases = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  const videoFormData = useMemo(() => ({
+    formTitle, formDescription, formVideoUrl, formCategory,
+  }), [formTitle, formDescription, formVideoUrl, formCategory]);
+
+  const { save: saveVideoDraft, loadDraft: loadVideoDraft, clearDraft: clearVideoDraft } = useAutoSave({
+    key: editingCase ? `video_edit_${editingCase.id}` : "video_new",
+    data: videoFormData,
+    enabled: addDialogOpen || editDialogOpen,
+  });
+
   useEffect(() => {
     fetchCases();
   }, [user]);
