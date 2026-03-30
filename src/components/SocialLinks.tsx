@@ -113,7 +113,7 @@ export const SOCIAL_LINKS = [
   },
   {
     icon: MaxIcon,
-    href: "https://max.ru/79037258444",
+    href: "https://max.ru/",
     label: "MAX",
     title: "Мессенджер MAX",
   },
