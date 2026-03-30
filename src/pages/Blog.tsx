@@ -339,6 +339,21 @@ const Blog = () => {
     setImageFiles([]);
     setEditingPost(null);
     setIsCreating(true);
+    // Check for draft
+    setTimeout(() => {
+      const draft = loadBlogDraft();
+      if (draft && (draft.title || draft.content)) {
+        sonnerToast("Найден черновик", {
+          description: "Восстановить несохранённые изменения?",
+          action: { label: "Восстановить", onClick: () => {
+            setPostForm({ title: draft.title || "", content: draft.content || "", excerpt: draft.excerpt || "" });
+            sonnerToast.success("Черновик восстановлен");
+          }},
+          cancel: { label: "Отклонить", onClick: () => clearBlogDraft() },
+          duration: 10000,
+        });
+      }
+    }, 100);
   };
 
   const openEdit = (post: BlogPost) => {
