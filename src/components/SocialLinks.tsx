@@ -48,6 +48,12 @@ export const ThreadsIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+export const MaxIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <text x="3" y="18" fontSize="14" fontWeight="bold" fontFamily="Arial, sans-serif">M</text>
+  </svg>
+);
+
 // All social links for the professor
 export const SOCIAL_LINKS = [
   {
@@ -105,11 +111,17 @@ export const SOCIAL_LINKS = [
     href: "https://wa.me/79778075544",
     label: "WhatsApp",
   },
+  {
+    icon: MaxIcon,
+    href: "https://max.ru/",
+    label: "MAX",
+    title: "Мессенджер MAX",
+  },
 ];
 
 // Subset for footer (main ones)
 export const FOOTER_SOCIAL_LINKS = SOCIAL_LINKS.filter((l) =>
-  ["Instagram", "Telegram", "ВКонтакте", "Facebook", "Дзен", "YouTube", "WhatsApp"].includes(l.label)
+  ["Instagram", "Telegram", "ВКонтакте", "Facebook", "Дзен", "YouTube", "WhatsApp", "MAX"].includes(l.label)
 );
 
 // Compact social bar component
