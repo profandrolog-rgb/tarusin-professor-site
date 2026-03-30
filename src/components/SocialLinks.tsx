@@ -1,6 +1,7 @@
 // Shared social media icons and links
 import { useState } from "react";
 import maxQrCode from "@/assets/max-qr.jpg";
+import maxIconImg from "@/assets/icons/max-icon.png";
 
 export const TelegramIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
