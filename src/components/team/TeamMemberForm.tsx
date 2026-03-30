@@ -316,11 +316,15 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
       </div>
 
       {/* Submit */}
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex items-center gap-2 pt-4">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Сохранение..." : member ? "Сохранить" : "Добавить"}
         </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={save} className="ml-auto gap-1 text-muted-foreground">
+          <Save className="w-4 h-4" /> Черновик
+        </Button>
       </div>
+      <p className="text-xs text-muted-foreground">Автосохранение каждые 3 минуты</p>
     </form>
   );
 }
