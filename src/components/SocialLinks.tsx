@@ -121,7 +121,7 @@ export const SOCIAL_LINKS = [
 
 // Subset for footer (main ones)
 export const FOOTER_SOCIAL_LINKS = SOCIAL_LINKS.filter((l) =>
-  ["Instagram", "Telegram", "ВКонтакте", "Facebook", "Дзен", "YouTube", "WhatsApp"].includes(l.label)
+  ["Instagram", "Telegram", "ВКонтакте", "Facebook", "Дзен", "YouTube", "WhatsApp", "MAX"].includes(l.label)
 );
 
 // Compact social bar component
