@@ -10,7 +10,6 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { Upload, X, Save } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast as sonnerToast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Character limits
 const LIMITS = {
