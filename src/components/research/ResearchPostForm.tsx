@@ -274,13 +274,17 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
         <Label>Опубликовать</Label>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 items-center">
         <Button onClick={handleSubmit} disabled={loading}>
           {uploadProgress && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {article ? "Сохранить" : "Создать"}
         </Button>
         <Button variant="outline" onClick={onCancel} disabled={loading}>Отмена</Button>
+        <Button variant="ghost" size="sm" onClick={save} disabled={loading} className="ml-auto gap-1 text-muted-foreground">
+          <Save className="w-4 h-4" /> Сохранить черновик
+        </Button>
       </div>
+      <p className="text-xs text-muted-foreground">Автосохранение каждые 3 минуты</p>
     </div>
   );
 };
