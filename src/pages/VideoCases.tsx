@@ -276,6 +276,7 @@ const VideoCases = () => {
 
       toast({ title: "Сохранено", description: "Видео-кейс обновлён" });
       resetForm();
+      clearVideoDraft();
       setEditDialogOpen(false);
       setEditingCase(null);
       if (selectedVideo?.id === editingCase.id) setSelectedVideo(null);
