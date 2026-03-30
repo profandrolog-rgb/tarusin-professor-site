@@ -111,6 +111,12 @@ export const SOCIAL_LINKS = [
     href: "https://wa.me/79778075544",
     label: "WhatsApp",
   },
+  {
+    icon: MaxIcon,
+    href: "https://max.ru/79037258444",
+    label: "MAX",
+    title: "Мессенджер MAX",
+  },
 ];
 
 // Subset for footer (main ones)
