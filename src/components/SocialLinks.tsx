@@ -48,6 +48,12 @@ export const ThreadsIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+export const MaxIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <text x="3" y="18" fontSize="14" fontWeight="bold" fontFamily="Arial, sans-serif">M</text>
+  </svg>
+);
+
 // All social links for the professor
 export const SOCIAL_LINKS = [
   {
