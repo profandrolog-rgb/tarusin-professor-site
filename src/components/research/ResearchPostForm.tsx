@@ -162,6 +162,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
       }
 
       toast({ title: article ? "Статья обновлена" : "Статья создана" });
+      clearDraft();
       onSave();
     } catch (err: any) {
       toast({ title: "Ошибка сохранения", description: err.message, variant: "destructive" });
