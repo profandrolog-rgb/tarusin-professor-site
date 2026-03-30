@@ -228,6 +228,7 @@ const VideoCases = () => {
 
       toast({ title: "Успешно", description: "Видео-кейс добавлен" });
       resetForm();
+      clearVideoDraft();
       setAddDialogOpen(false);
       fetchCases();
     } catch (error: any) {
