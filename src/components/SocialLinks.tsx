@@ -1,6 +1,7 @@
 // Shared social media icons and links
 import { useState } from "react";
 import maxQrCode from "@/assets/max-qr.jpg";
+import maxIconImg from "@/assets/icons/max-icon.png";
 
 export const TelegramIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -51,9 +52,7 @@ export const ThreadsIcon = ({ className }: { className?: string }) => (
 );
 
 export const MaxIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <text x="3" y="18" fontSize="14" fontWeight="bold" fontFamily="Arial, sans-serif">M</text>
-  </svg>
+  <img src={maxIconImg} alt="MAX" className={`${className} rounded-sm object-contain`} />
 );
 
 // QR code modal for MAX messenger
