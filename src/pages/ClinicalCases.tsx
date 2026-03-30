@@ -234,6 +234,7 @@ const ClinicalCases = () => {
         recommendations: "",
       });
       setPendingImages([]);
+      clearCaseDraft();
       setDialogOpen(false);
       fetchCases();
     } catch (error: any) {
