@@ -31,6 +31,10 @@ interface ResearchPostFormProps {
 const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const autoSaveKey = article ? `research_edit_${article.id}` : "research_new";
+
+  // Check for saved draft on mount
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [title, setTitle] = useState(article?.title || "");
   const [content, setContent] = useState(article?.content || "");
   const [excerpt, setExcerpt] = useState(article?.excerpt || "");
@@ -40,6 +44,44 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(false);
+
+  const formData = useMemo(() => ({
+    title, content, excerpt, category, ageGroup, isPublished,
+  }), [title, content, excerpt, category, ageGroup, isPublished]);
+
+  const { save, loadDraft, clearDraft, hasDraft } = useAutoSave({
+    key: autoSaveKey,
+    data: formData,
+  });
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (draftLoaded) return;
+    setDraftLoaded(true);
+    const draft = loadDraft();
+    if (draft) {
+      sonnerToast("Найден черновик", {
+        description: "Восстановить несохранённые изменения?",
+        action: {
+          label: "Восстановить",
+          onClick: () => {
+            if (draft.title) setTitle(draft.title);
+            if (draft.content) setContent(draft.content);
+            if (draft.excerpt !== undefined) setExcerpt(draft.excerpt);
+            if (draft.category) setCategory(draft.category);
+            if (draft.ageGroup) setAgeGroup(draft.ageGroup);
+            if (draft.isPublished !== undefined) setIsPublished(draft.isPublished);
+            sonnerToast.success("Черновик восстановлен");
+          },
+        },
+        cancel: {
+          label: "Отклонить",
+          onClick: () => clearDraft(),
+        },
+        duration: 10000,
+      });
+    }
+  }, []);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
