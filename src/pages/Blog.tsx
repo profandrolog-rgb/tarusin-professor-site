@@ -200,6 +200,7 @@ const Blog = () => {
       setIsCreating(false);
       setPostForm({ title: "", content: "", excerpt: "" });
       setImageFiles([]);
+      clearBlogDraft();
       toast({ title: editingPost ? "Запись обновлена" : "Запись создана" });
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
