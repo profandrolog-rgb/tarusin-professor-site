@@ -167,6 +167,7 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
 
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       toast({ title: member ? "Специалист обновлён" : "Специалист добавлен" });
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error("Error saving team member:", error);
