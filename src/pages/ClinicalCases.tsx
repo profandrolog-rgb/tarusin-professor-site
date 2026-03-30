@@ -96,6 +96,12 @@ const ClinicalCases = () => {
   const { toast } = useToast();
   const { isAdmin, loading: authLoading } = useAuth();
 
+  const { save: saveCaseDraft, loadDraft: loadCaseDraft, clearDraft: clearCaseDraft } = useAutoSave({
+    key: "clinical_case_new",
+    data: newCase,
+    enabled: dialogOpen,
+  });
+
   useEffect(() => {
     fetchCases();
   }, []);

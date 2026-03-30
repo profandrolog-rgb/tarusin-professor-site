@@ -74,6 +74,12 @@ const Blog = () => {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "" });
+  const blogAutoSaveKey = useMemo(() => editingPost ? `blog_edit_${editingPost.id}` : "blog_new", [editingPost]);
+  const { save: saveBlogDraft, loadDraft: loadBlogDraft, clearDraft: clearBlogDraft } = useAutoSave({
+    key: blogAutoSaveKey,
+    data: postForm,
+    enabled: isCreating,
+  });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [showLoginDialog, setShowLoginDialog] = useState(false);
