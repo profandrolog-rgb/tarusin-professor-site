@@ -58,6 +58,38 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
       : null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  const autoSaveKey = member ? `team_edit_${member.id}` : "team_new";
+  const formData = useMemo(() => ({
+    fullName, experienceYears, specialty1, specialty2, mission, description, conditions, professorOpinion,
+  }), [fullName, experienceYears, specialty1, specialty2, mission, description, conditions, professorOpinion]);
+
+  const { save, loadDraft, clearDraft } = useAutoSave({ key: autoSaveKey, data: formData });
+
+  useEffect(() => {
+    if (draftLoaded) return;
+    setDraftLoaded(true);
+    const draft = loadDraft();
+    if (draft) {
+      sonnerToast("Найден черновик", {
+        description: "Восстановить несохранённые изменения?",
+        action: { label: "Восстановить", onClick: () => {
+          if (draft.fullName) setFullName(draft.fullName);
+          if (draft.experienceYears) setExperienceYears(draft.experienceYears);
+          if (draft.specialty1) setSpecialty1(draft.specialty1);
+          if (draft.specialty2) setSpecialty2(draft.specialty2);
+          if (draft.mission) setMission(draft.mission);
+          if (draft.description) setDescription(draft.description);
+          if (draft.conditions) setConditions(draft.conditions);
+          if (draft.professorOpinion) setProfessorOpinion(draft.professorOpinion);
+          sonnerToast.success("Черновик восстановлен");
+        }},
+        cancel: { label: "Отклонить", onClick: () => clearDraft() },
+        duration: 10000,
+      });
+    }
+  }, []);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
