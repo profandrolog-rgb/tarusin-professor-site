@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import RESEARCH_CATEGORIES, { AGE_GROUPS } from "./ResearchCategories";
-import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { Upload, X, FileText, Loader2, Save } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 
 interface ResearchPostFormProps {
   article?: {
@@ -29,6 +31,10 @@ interface ResearchPostFormProps {
 const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const autoSaveKey = article ? `research_edit_${article.id}` : "research_new";
+
+  // Check for saved draft on mount
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [title, setTitle] = useState(article?.title || "");
   const [content, setContent] = useState(article?.content || "");
   const [excerpt, setExcerpt] = useState(article?.excerpt || "");
@@ -38,6 +44,44 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(false);
+
+  const formData = useMemo(() => ({
+    title, content, excerpt, category, ageGroup, isPublished,
+  }), [title, content, excerpt, category, ageGroup, isPublished]);
+
+  const { save, loadDraft, clearDraft, hasDraft } = useAutoSave({
+    key: autoSaveKey,
+    data: formData,
+  });
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (draftLoaded) return;
+    setDraftLoaded(true);
+    const draft = loadDraft();
+    if (draft) {
+      sonnerToast("Найден черновик", {
+        description: "Восстановить несохранённые изменения?",
+        action: {
+          label: "Восстановить",
+          onClick: () => {
+            if (draft.title) setTitle(draft.title);
+            if (draft.content) setContent(draft.content);
+            if (draft.excerpt !== undefined) setExcerpt(draft.excerpt);
+            if (draft.category) setCategory(draft.category);
+            if (draft.ageGroup) setAgeGroup(draft.ageGroup);
+            if (draft.isPublished !== undefined) setIsPublished(draft.isPublished);
+            sonnerToast.success("Черновик восстановлен");
+          },
+        },
+        cancel: {
+          label: "Отклонить",
+          onClick: () => clearDraft(),
+        },
+        duration: 10000,
+      });
+    }
+  }, []);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -118,6 +162,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
       }
 
       toast({ title: article ? "Статья обновлена" : "Статья создана" });
+      clearDraft();
       onSave();
     } catch (err: any) {
       toast({ title: "Ошибка сохранения", description: err.message, variant: "destructive" });
@@ -229,13 +274,17 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
         <Label>Опубликовать</Label>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 items-center">
         <Button onClick={handleSubmit} disabled={loading}>
           {uploadProgress && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {article ? "Сохранить" : "Создать"}
         </Button>
         <Button variant="outline" onClick={onCancel} disabled={loading}>Отмена</Button>
+        <Button variant="ghost" size="sm" onClick={save} disabled={loading} className="ml-auto gap-1 text-muted-foreground">
+          <Save className="w-4 h-4" /> Сохранить черновик
+        </Button>
       </div>
+      <p className="text-xs text-muted-foreground">Автосохранение каждые 3 минуты</p>
     </div>
   );
 };
