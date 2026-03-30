@@ -1,4 +1,6 @@
 // Shared social media icons and links
+import { useState } from "react";
+import maxQrCode from "@/assets/max-qr.jpg";
 
 export const TelegramIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -53,6 +55,25 @@ export const MaxIcon = ({ className }: { className?: string }) => (
     <text x="3" y="18" fontSize="14" fontWeight="bold" fontFamily="Arial, sans-serif">M</text>
   </svg>
 );
+
+// QR code modal for MAX messenger
+export const MaxQrModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="relative bg-background rounded-2xl p-6 shadow-2xl max-w-xs mx-4 animate-in fade-in zoom-in-95" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground transition-colors">
+          ✕
+        </button>
+        <div className="text-center mb-3">
+          <p className="font-semibold text-foreground">Мессенджер MAX</p>
+          <p className="text-sm text-muted-foreground">Отсканируйте QR-код</p>
+        </div>
+        <img src={maxQrCode} alt="QR-код MAX мессенджера Дмитрия Тарусина" className="w-64 h-64 object-contain rounded-xl" />
+      </div>
+    </div>
+  );
+};
 
 // All social links for the professor
 export const SOCIAL_LINKS = [
@@ -113,9 +134,10 @@ export const SOCIAL_LINKS = [
   },
   {
     icon: MaxIcon,
-    href: "https://max.ru/",
+    href: "#max-qr",
     label: "MAX",
     title: "Мессенджер MAX",
+    isQr: true,
   },
 ];
 
@@ -124,23 +146,44 @@ export const FOOTER_SOCIAL_LINKS = SOCIAL_LINKS.filter((l) =>
   ["Instagram", "Telegram", "ВКонтакте", "Facebook", "Дзен", "YouTube", "WhatsApp", "MAX"].includes(l.label)
 );
 
-// Compact social bar component
-export const SocialBar = ({ className = "" }: { className?: string }) => (
-  <div className={`flex flex-wrap gap-2 ${className}`}>
-    {SOCIAL_LINKS.map((social, i) => (
-      <a
-        key={`${social.label}-${i}`}
-        href={social.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-8 h-8 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors text-muted-foreground"
-        aria-label={social.title || social.label}
-        title={social.title || social.label}
-      >
-        <social.icon className="w-4 h-4" />
-      </a>
-    ))}
-  </div>
-);
+// Compact social bar component with QR support for MAX
+export const SocialBar = ({ className = "" }: { className?: string }) => {
+  const [showMaxQr, setShowMaxQr] = useState(false);
+  return (
+    <>
+      <div className={`flex flex-wrap gap-2 ${className}`}>
+        {SOCIAL_LINKS.map((social, i) => {
+          if ((social as any).isQr) {
+            return (
+              <button
+                key={`${social.label}-${i}`}
+                onClick={() => setShowMaxQr(true)}
+                className="w-8 h-8 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors text-muted-foreground"
+                aria-label={social.title || social.label}
+                title={social.title || social.label}
+              >
+                <social.icon className="w-4 h-4" />
+              </button>
+            );
+          }
+          return (
+            <a
+              key={`${social.label}-${i}`}
+              href={social.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-8 h-8 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors text-muted-foreground"
+              aria-label={social.title || social.label}
+              title={social.title || social.label}
+            >
+              <social.icon className="w-4 h-4" />
+            </a>
+          );
+        })}
+      </div>
+      <MaxQrModal isOpen={showMaxQr} onClose={() => setShowMaxQr(false)} />
+    </>
+  );
+};
 
 export default SocialBar;
