@@ -7,6 +7,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showMaxQr, setShowMaxQr] = useState(false);
   const handleNavClick = (href: string) => {
     if (location.pathname === "/") {
       const element = document.querySelector(href);
@@ -38,20 +39,36 @@ const Footer = () => {
             </p>
             {/* Social Links */}
             <div className="flex flex-wrap gap-2">
-              {FOOTER_SOCIAL_LINKS.map((social, i) => (
-                <a
-                  key={`${social.label}-${i}`}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-background/10 hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors"
-                  aria-label={social.title || social.label}
-                  title={social.title || social.label}
-                >
-                  <social.icon className="w-4 h-4" />
-                </a>
-              ))}
+              {FOOTER_SOCIAL_LINKS.map((social, i) => {
+                if ((social as any).isQr) {
+                  return (
+                    <button
+                      key={`${social.label}-${i}`}
+                      onClick={() => setShowMaxQr(true)}
+                      className="w-9 h-9 rounded-full bg-background/10 hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors"
+                      aria-label={social.title || social.label}
+                      title={social.title || social.label}
+                    >
+                      <social.icon className="w-4 h-4" />
+                    </button>
+                  );
+                }
+                return (
+                  <a
+                    key={`${social.label}-${i}`}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-full bg-background/10 hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors"
+                    aria-label={social.title || social.label}
+                    title={social.title || social.label}
+                  >
+                    <social.icon className="w-4 h-4" />
+                  </a>
+                );
+              })}
             </div>
+            <MaxQrModal isOpen={showMaxQr} onClose={() => setShowMaxQr(false)} />
           </div>
 
           {/* Navigation */}
