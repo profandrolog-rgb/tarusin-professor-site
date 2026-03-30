@@ -10,6 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
@@ -96,6 +98,16 @@ const VideoCases = () => {
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
+
+  const videoFormData = useMemo(() => ({
+    formTitle, formDescription, formVideoUrl, formCategory,
+  }), [formTitle, formDescription, formVideoUrl, formCategory]);
+
+  const { save: saveVideoDraft, loadDraft: loadVideoDraft, clearDraft: clearVideoDraft } = useAutoSave({
+    key: editingCase ? `video_edit_${editingCase.id}` : "video_new",
+    data: videoFormData,
+    enabled: addDialogOpen || editDialogOpen,
+  });
 
   useEffect(() => {
     fetchCases();
@@ -216,6 +228,7 @@ const VideoCases = () => {
 
       toast({ title: "Успешно", description: "Видео-кейс добавлен" });
       resetForm();
+      clearVideoDraft();
       setAddDialogOpen(false);
       fetchCases();
     } catch (error: any) {
@@ -263,6 +276,7 @@ const VideoCases = () => {
 
       toast({ title: "Сохранено", description: "Видео-кейс обновлён" });
       resetForm();
+      clearVideoDraft();
       setEditDialogOpen(false);
       setEditingCase(null);
       if (selectedVideo?.id === editingCase.id) setSelectedVideo(null);
@@ -384,7 +398,27 @@ const VideoCases = () => {
                 <Shield className="w-4 h-4 text-primary" />
                 Администратор
               </span>
-              <Dialog open={addDialogOpen} onOpenChange={(open) => { setAddDialogOpen(open); if (!open) resetForm(); }}>
+              <Dialog open={addDialogOpen} onOpenChange={(open) => {
+                setAddDialogOpen(open);
+                if (!open) resetForm();
+                if (open) {
+                  const draft = loadVideoDraft();
+                  if (draft && (draft.formTitle || draft.formDescription)) {
+                    sonnerToast("Найден черновик", {
+                      description: "Восстановить несохранённые изменения?",
+                      action: { label: "Восстановить", onClick: () => {
+                        if (draft.formTitle) setFormTitle(draft.formTitle);
+                        if (draft.formDescription) setFormDescription(draft.formDescription);
+                        if (draft.formVideoUrl) setFormVideoUrl(draft.formVideoUrl);
+                        if (draft.formCategory) setFormCategory(draft.formCategory);
+                        sonnerToast.success("Черновик восстановлен");
+                      }},
+                      cancel: { label: "Отклонить", onClick: () => clearVideoDraft() },
+                      duration: 10000,
+                    });
+                  }
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button><Plus className="w-4 h-4 mr-2" />Добавить кейс</Button>
                 </DialogTrigger>

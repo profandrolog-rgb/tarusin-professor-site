@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import DOMPurify from "dompurify";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { toast as sonnerToast } from "sonner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -72,6 +74,12 @@ const Blog = () => {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "" });
+  const blogAutoSaveKey = useMemo(() => editingPost ? `blog_edit_${editingPost.id}` : "blog_new", [editingPost]);
+  const { save: saveBlogDraft, loadDraft: loadBlogDraft, clearDraft: clearBlogDraft } = useAutoSave({
+    key: blogAutoSaveKey,
+    data: postForm,
+    enabled: isCreating,
+  });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -192,6 +200,7 @@ const Blog = () => {
       setIsCreating(false);
       setPostForm({ title: "", content: "", excerpt: "" });
       setImageFiles([]);
+      clearBlogDraft();
       toast({ title: editingPost ? "Запись обновлена" : "Запись создана" });
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
@@ -331,6 +340,21 @@ const Blog = () => {
     setImageFiles([]);
     setEditingPost(null);
     setIsCreating(true);
+    // Check for draft
+    setTimeout(() => {
+      const draft = loadBlogDraft();
+      if (draft && (draft.title || draft.content)) {
+        sonnerToast("Найден черновик", {
+          description: "Восстановить несохранённые изменения?",
+          action: { label: "Восстановить", onClick: () => {
+            setPostForm({ title: draft.title || "", content: draft.content || "", excerpt: draft.excerpt || "" });
+            sonnerToast.success("Черновик восстановлен");
+          }},
+          cancel: { label: "Отклонить", onClick: () => clearBlogDraft() },
+          duration: 10000,
+        });
+      }
+    }, 100);
   };
 
   const openEdit = (post: BlogPost) => {

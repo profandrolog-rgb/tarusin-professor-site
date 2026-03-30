@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Plus, Loader2, Shield, ChevronDown, ChevronRight, Trash2, Edit, Image } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
@@ -93,6 +95,12 @@ const ClinicalCases = () => {
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const { toast } = useToast();
   const { isAdmin, loading: authLoading } = useAuth();
+
+  const { save: saveCaseDraft, loadDraft: loadCaseDraft, clearDraft: clearCaseDraft } = useAutoSave({
+    key: "clinical_case_new",
+    data: newCase,
+    enabled: dialogOpen,
+  });
 
   useEffect(() => {
     fetchCases();
@@ -226,6 +234,7 @@ const ClinicalCases = () => {
         recommendations: "",
       });
       setPendingImages([]);
+      clearCaseDraft();
       setDialogOpen(false);
       fetchCases();
     } catch (error: any) {
@@ -313,7 +322,23 @@ const ClinicalCases = () => {
                   <Shield className="w-4 h-4 text-primary" />
                   Администратор
                 </span>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <Dialog open={dialogOpen} onOpenChange={(open) => {
+                  setDialogOpen(open);
+                  if (open) {
+                    const draft = loadCaseDraft();
+                    if (draft && (draft.title || draft.history)) {
+                      sonnerToast("Найден черновик", {
+                        description: "Восстановить несохранённые изменения?",
+                        action: { label: "Восстановить", onClick: () => {
+                          setNewCase(prev => ({ ...prev, ...draft }));
+                          sonnerToast.success("Черновик восстановлен");
+                        }},
+                        cancel: { label: "Отклонить", onClick: () => clearCaseDraft() },
+                        duration: 10000,
+                      });
+                    }
+                  }
+                }}>
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="w-4 h-4 mr-2" />

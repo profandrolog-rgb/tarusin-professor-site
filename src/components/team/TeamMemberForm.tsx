@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X } from "lucide-react";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { Upload, X, Save } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast as sonnerToast } from "sonner";
 
 // Character limits
 const LIMITS = {
@@ -56,6 +58,38 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
       : null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+
+  const autoSaveKey = member ? `team_edit_${member.id}` : "team_new";
+  const formData = useMemo(() => ({
+    fullName, experienceYears, specialty1, specialty2, mission, description, conditions, professorOpinion,
+  }), [fullName, experienceYears, specialty1, specialty2, mission, description, conditions, professorOpinion]);
+
+  const { save, loadDraft, clearDraft } = useAutoSave({ key: autoSaveKey, data: formData });
+
+  useEffect(() => {
+    if (draftLoaded) return;
+    setDraftLoaded(true);
+    const draft = loadDraft();
+    if (draft) {
+      sonnerToast("Найден черновик", {
+        description: "Восстановить несохранённые изменения?",
+        action: { label: "Восстановить", onClick: () => {
+          if (draft.fullName) setFullName(draft.fullName);
+          if (draft.experienceYears) setExperienceYears(draft.experienceYears);
+          if (draft.specialty1) setSpecialty1(draft.specialty1);
+          if (draft.specialty2) setSpecialty2(draft.specialty2);
+          if (draft.mission) setMission(draft.mission);
+          if (draft.description) setDescription(draft.description);
+          if (draft.conditions) setConditions(draft.conditions);
+          if (draft.professorOpinion) setProfessorOpinion(draft.professorOpinion);
+          sonnerToast.success("Черновик восстановлен");
+        }},
+        cancel: { label: "Отклонить", onClick: () => clearDraft() },
+        duration: 10000,
+      });
+    }
+  }, []);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,6 +167,7 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
 
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       toast({ title: member ? "Специалист обновлён" : "Специалист добавлен" });
+      clearDraft();
       onSuccess();
     } catch (error) {
       console.error("Error saving team member:", error);
@@ -281,11 +316,15 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
       </div>
 
       {/* Submit */}
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex items-center gap-2 pt-4">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Сохранение..." : member ? "Сохранить" : "Добавить"}
         </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={save} className="ml-auto gap-1 text-muted-foreground">
+          <Save className="w-4 h-4" /> Черновик
+        </Button>
       </div>
+      <p className="text-xs text-muted-foreground">Автосохранение каждые 3 минуты</p>
     </form>
   );
 }
