@@ -1,0 +1,71 @@
+import { useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
+
+const AUTO_SAVE_INTERVAL = 3 * 60 * 1000; // 3 minutes
+
+interface UseAutoSaveOptions {
+  key: string;
+  data: Record<string, any>;
+  enabled?: boolean;
+}
+
+export function useAutoSave({ key, data, enabled = true }: UseAutoSaveOptions) {
+  const storageKey = `autosave_${key}`;
+  const lastSavedRef = useRef<string>("");
+
+  const save = useCallback(() => {
+    const serialized = JSON.stringify(data);
+    if (serialized !== lastSavedRef.current) {
+      localStorage.setItem(storageKey, serialized);
+      lastSavedRef.current = serialized;
+      toast.success("Черновик сохранён", { duration: 1500, id: "autosave" });
+    }
+  }, [data, storageKey]);
+
+  // Auto-save every 3 minutes
+  useEffect(() => {
+    if (!enabled) return;
+    const interval = setInterval(save, AUTO_SAVE_INTERVAL);
+    return () => clearInterval(interval);
+  }, [save, enabled]);
+
+  // Save on unmount (e.g. accidental close of form)
+  useEffect(() => {
+    if (!enabled) return;
+    return () => {
+      const serialized = JSON.stringify(data);
+      if (serialized !== lastSavedRef.current) {
+        localStorage.setItem(storageKey, serialized);
+      }
+    };
+  }, [data, storageKey, enabled]);
+
+  // Save before page unload
+  useEffect(() => {
+    if (!enabled) return;
+    const handler = () => {
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [data, storageKey, enabled]);
+
+  const loadDraft = useCallback((): Record<string, any> | null => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  }, [storageKey]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(storageKey);
+    lastSavedRef.current = "";
+  }, [storageKey]);
+
+  const hasDraft = useCallback((): boolean => {
+    return !!localStorage.getItem(storageKey);
+  }, [storageKey]);
+
+  return { save, loadDraft, clearDraft, hasDraft };
+}
