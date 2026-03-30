@@ -10,6 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
