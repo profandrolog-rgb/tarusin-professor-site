@@ -43,6 +43,11 @@ interface JournalEntry {
   protocol_notes: string | null;
   surgeon_name: string;
   assistant_name: string | null;
+  postop_course: string | null;
+  complications: string | null;
+  child_notes: string | null;
+  parent_notes: string | null;
+  communication_notes: string | null;
   created_at: string;
 }
 
@@ -55,6 +60,11 @@ const emptyForm = {
   protocol_notes: "",
   surgeon_name: "Профессор, д.м.н. Тарусин Дмитрий Игоревич",
   assistant_name: "",
+  postop_course: "",
+  complications: "",
+  child_notes: "",
+  parent_notes: "",
+  communication_notes: "",
 };
 
 const AdminOperationsJournal = () => {
@@ -114,6 +124,11 @@ const AdminOperationsJournal = () => {
       protocol_notes: entry.protocol_notes || "",
       surgeon_name: entry.surgeon_name,
       assistant_name: entry.assistant_name || "",
+      postop_course: entry.postop_course || "",
+      complications: entry.complications || "",
+      child_notes: entry.child_notes || "",
+      parent_notes: entry.parent_notes || "",
+      communication_notes: entry.communication_notes || "",
     });
     setDialogOpen(true);
   };
@@ -134,6 +149,11 @@ const AdminOperationsJournal = () => {
       protocol_notes: form.protocol_notes.trim() || null,
       surgeon_name: form.surgeon_name.trim(),
       assistant_name: form.assistant_name.trim() || null,
+      postop_course: form.postop_course.trim() || null,
+      complications: form.complications.trim() || null,
+      child_notes: form.child_notes.trim() || null,
+      parent_notes: form.parent_notes.trim() || null,
+      communication_notes: form.communication_notes.trim() || null,
     };
 
     let error;
@@ -364,6 +384,51 @@ const AdminOperationsJournal = () => {
                     onChange={(e) => setForm({ ...form, assistant_name: e.target.value })}
                   />
                 </div>
+              </div>
+              <div>
+                <Label>Послеоперационное течение</Label>
+                <Textarea
+                  value={form.postop_course}
+                  onChange={(e) => setForm({ ...form, postop_course: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности послеоперационного течения..."
+                />
+              </div>
+              <div>
+                <Label>Осложнения</Label>
+                <Textarea
+                  value={form.complications}
+                  onChange={(e) => setForm({ ...form, complications: e.target.value })}
+                  rows={2}
+                  placeholder="Осложнения..."
+                />
+              </div>
+              <div>
+                <Label>Особенности ребёнка</Label>
+                <Textarea
+                  value={form.child_notes}
+                  onChange={(e) => setForm({ ...form, child_notes: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности ребёнка..."
+                />
+              </div>
+              <div>
+                <Label>Особенности родителей</Label>
+                <Textarea
+                  value={form.parent_notes}
+                  onChange={(e) => setForm({ ...form, parent_notes: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности родителей..."
+                />
+              </div>
+              <div>
+                <Label>Особенности коммуникации</Label>
+                <Textarea
+                  value={form.communication_notes}
+                  onChange={(e) => setForm({ ...form, communication_notes: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности коммуникации..."
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>

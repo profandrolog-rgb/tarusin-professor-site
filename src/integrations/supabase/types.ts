@@ -691,39 +691,54 @@ export type Database = {
       operations_journal: {
         Row: {
           assistant_name: string | null
+          child_notes: string | null
+          communication_notes: string | null
+          complications: string | null
           created_at: string
           diagnosis: string
           id: string
           operation_date: string
           operation_name: string
+          parent_notes: string | null
           patient_birth_date: string
           patient_name: string
+          postop_course: string | null
           protocol_notes: string | null
           surgeon_name: string
           updated_at: string
         }
         Insert: {
           assistant_name?: string | null
+          child_notes?: string | null
+          communication_notes?: string | null
+          complications?: string | null
           created_at?: string
           diagnosis: string
           id?: string
           operation_date?: string
           operation_name: string
+          parent_notes?: string | null
           patient_birth_date: string
           patient_name: string
+          postop_course?: string | null
           protocol_notes?: string | null
           surgeon_name?: string
           updated_at?: string
         }
         Update: {
           assistant_name?: string | null
+          child_notes?: string | null
+          communication_notes?: string | null
+          complications?: string | null
           created_at?: string
           diagnosis?: string
           id?: string
           operation_date?: string
           operation_name?: string
+          parent_notes?: string | null
           patient_birth_date?: string
           patient_name?: string
+          postop_course?: string | null
           protocol_notes?: string | null
           surgeon_name?: string
           updated_at?: string
