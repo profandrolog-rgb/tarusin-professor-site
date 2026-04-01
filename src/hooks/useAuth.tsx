@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
+  const [isSurgeon, setIsSurgeon] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkRole = async (userId: string, role: "admin" | "editor" | "user") => {
