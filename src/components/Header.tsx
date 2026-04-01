@@ -131,6 +131,12 @@ const Header = () => {
                       Админ-панель
                     </Link>
                   </DropdownMenuItem>}
+                {!isAdmin && isSurgeon && <DropdownMenuItem asChild>
+                    <Link to="/admin/operations-journal" className="w-full flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Операционный журнал
+                    </Link>
+                  </DropdownMenuItem>}
                 {user ? <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Выйти
