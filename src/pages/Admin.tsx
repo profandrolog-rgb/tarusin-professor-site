@@ -93,6 +93,13 @@ const adminSections = [
     href: "/research",
     color: "text-emerald-500",
   },
+  {
+    title: "Операционный журнал",
+    description: "Учёт проведённых операций",
+    icon: BookOpen,
+    href: "/admin/operations-journal",
+    color: "text-rose-500",
+  },
 ];
 
 const analyticsServices = [
