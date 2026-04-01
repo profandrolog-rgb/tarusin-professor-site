@@ -72,9 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Promise.all([
           checkRole(session.user.id, "admin"),
           checkRole(session.user.id, "editor"),
-        ]).then(([admin, editor]) => {
+          checkRole(session.user.id, "surgeon"),
+        ]).then(([admin, editor, surgeon]) => {
           setIsAdmin(admin);
           setIsEditor(editor);
+          setIsSurgeon(surgeon);
           setLoading(false);
         });
       } else {

@@ -58,7 +58,7 @@ const emptyForm = {
 };
 
 const AdminOperationsJournal = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isSurgeon, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
