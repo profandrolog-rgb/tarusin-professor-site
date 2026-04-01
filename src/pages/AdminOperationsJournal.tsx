@@ -95,7 +95,7 @@ const AdminOperationsJournal = () => {
 
   useEffect(() => {
     if (user && hasAccess) fetchEntries();
-  }, [user, isAdmin]);
+  }, [user, hasAccess]);
 
   const openNew = () => {
     setEditingId(null);
