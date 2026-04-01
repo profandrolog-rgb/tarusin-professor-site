@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase.rpc("has_role", {
         _user_id: userId,
-        _role: role,
+        _role: role as any,
       });
       if (error) {
         console.error(`Error checking ${role} role:`, error);
