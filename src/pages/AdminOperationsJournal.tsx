@@ -385,6 +385,51 @@ const AdminOperationsJournal = () => {
                   />
                 </div>
               </div>
+              <div>
+                <Label>Послеоперационное течение</Label>
+                <Textarea
+                  value={form.postop_course}
+                  onChange={(e) => setForm({ ...form, postop_course: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности послеоперационного течения..."
+                />
+              </div>
+              <div>
+                <Label>Осложнения</Label>
+                <Textarea
+                  value={form.complications}
+                  onChange={(e) => setForm({ ...form, complications: e.target.value })}
+                  rows={2}
+                  placeholder="Осложнения..."
+                />
+              </div>
+              <div>
+                <Label>Особенности ребёнка</Label>
+                <Textarea
+                  value={form.child_notes}
+                  onChange={(e) => setForm({ ...form, child_notes: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности ребёнка..."
+                />
+              </div>
+              <div>
+                <Label>Особенности родителей</Label>
+                <Textarea
+                  value={form.parent_notes}
+                  onChange={(e) => setForm({ ...form, parent_notes: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности родителей..."
+                />
+              </div>
+              <div>
+                <Label>Особенности коммуникации</Label>
+                <Textarea
+                  value={form.communication_notes}
+                  onChange={(e) => setForm({ ...form, communication_notes: e.target.value })}
+                  rows={2}
+                  placeholder="Особенности коммуникации..."
+                />
+              </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
                   <X className="w-4 h-4 mr-1" /> Отмена
