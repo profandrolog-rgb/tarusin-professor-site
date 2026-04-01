@@ -124,6 +124,11 @@ const AdminOperationsJournal = () => {
       protocol_notes: entry.protocol_notes || "",
       surgeon_name: entry.surgeon_name,
       assistant_name: entry.assistant_name || "",
+      postop_course: entry.postop_course || "",
+      complications: entry.complications || "",
+      child_notes: entry.child_notes || "",
+      parent_notes: entry.parent_notes || "",
+      communication_notes: entry.communication_notes || "",
     });
     setDialogOpen(true);
   };
