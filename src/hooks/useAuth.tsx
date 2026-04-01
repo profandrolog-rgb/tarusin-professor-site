@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             checkRole(session.user.id, "admin").then(setIsAdmin);
             checkRole(session.user.id, "editor").then(setIsEditor);
+            checkRole(session.user.id, "surgeon").then(setIsSurgeon);
           }, 0);
         } else {
           setIsAdmin(false);
