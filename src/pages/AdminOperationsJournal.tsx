@@ -43,6 +43,11 @@ interface JournalEntry {
   protocol_notes: string | null;
   surgeon_name: string;
   assistant_name: string | null;
+  postop_course: string | null;
+  complications: string | null;
+  child_notes: string | null;
+  parent_notes: string | null;
+  communication_notes: string | null;
   created_at: string;
 }
 
