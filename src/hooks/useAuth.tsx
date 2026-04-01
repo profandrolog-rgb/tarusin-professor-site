@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setIsAdmin(false);
           setIsEditor(false);
+          setIsSurgeon(false);
         }
       }
     );
