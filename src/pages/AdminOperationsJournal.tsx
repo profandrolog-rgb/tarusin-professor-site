@@ -60,6 +60,11 @@ const emptyForm = {
   protocol_notes: "",
   surgeon_name: "Профессор, д.м.н. Тарусин Дмитрий Игоревич",
   assistant_name: "",
+  postop_course: "",
+  complications: "",
+  child_notes: "",
+  parent_notes: "",
+  communication_notes: "",
 };
 
 const AdminOperationsJournal = () => {
