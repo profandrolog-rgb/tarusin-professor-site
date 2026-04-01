@@ -191,7 +191,7 @@ const AdminOperationsJournal = () => {
     );
   }
 
-  if (!user || !isAdmin) return null;
+  if (!user || !hasAccess) return null;
 
   return (
     <div className="min-h-screen bg-background">
