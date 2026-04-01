@@ -25,6 +25,7 @@ import AdminRequests from "./pages/AdminRequests";
 import AdminCertificates from "./pages/AdminCertificates";
 import AdminPrescriptions from "./pages/AdminPrescriptions";
 import AdminQuestions from "./pages/AdminQuestions";
+import AdminOperationsJournal from "./pages/AdminOperationsJournal";
 import QA from "./pages/QA";
 import Research from "./pages/Research";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
