@@ -94,7 +94,7 @@ const AdminOperationsJournal = () => {
   };
 
   useEffect(() => {
-    if (user && isAdmin) fetchEntries();
+    if (user && hasAccess) fetchEntries();
   }, [user, isAdmin]);
 
   const openNew = () => {
