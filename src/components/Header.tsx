@@ -72,6 +72,7 @@ const Header = () => {
   const {
     user,
     isAdmin,
+    isSurgeon,
     signOut
   } = useAuth();
   const handleSignOut = async () => {
@@ -128,6 +129,12 @@ const Header = () => {
                     <Link to="/admin" className="w-full flex items-center">
                       <Settings className="w-4 h-4 mr-2" />
                       Админ-панель
+                    </Link>
+                  </DropdownMenuItem>}
+                {!isAdmin && isSurgeon && <DropdownMenuItem asChild>
+                    <Link to="/admin/operations-journal" className="w-full flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Операционный журнал
                     </Link>
                   </DropdownMenuItem>}
                 {user ? <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
@@ -191,6 +198,10 @@ const Header = () => {
               {isAdmin && <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
                   <Settings className="w-4 h-4" />
                   Админ-панель
+                </Link>}
+              {!isAdmin && isSurgeon && <Link to="/admin/operations-journal" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Операционный журнал
                 </Link>}
               
               {user ? <button onClick={handleSignOut} className="px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
