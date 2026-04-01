@@ -688,6 +688,48 @@ export type Database = {
         }
         Relationships: []
       }
+      operations_journal: {
+        Row: {
+          assistant_name: string | null
+          created_at: string
+          diagnosis: string
+          id: string
+          operation_date: string
+          operation_name: string
+          patient_birth_date: string
+          patient_name: string
+          protocol_notes: string | null
+          surgeon_name: string
+          updated_at: string
+        }
+        Insert: {
+          assistant_name?: string | null
+          created_at?: string
+          diagnosis: string
+          id?: string
+          operation_date?: string
+          operation_name: string
+          patient_birth_date: string
+          patient_name: string
+          protocol_notes?: string | null
+          surgeon_name?: string
+          updated_at?: string
+        }
+        Update: {
+          assistant_name?: string | null
+          created_at?: string
+          diagnosis?: string
+          id?: string
+          operation_date?: string
+          operation_name?: string
+          patient_birth_date?: string
+          patient_name?: string
+          protocol_notes?: string | null
+          surgeon_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           birth_date: string

@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Eye,
   MousePointer,
-  Clock
+  Clock,
+  BookOpen
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,13 @@ const adminSections = [
     icon: FileText,
     href: "/research",
     color: "text-emerald-500",
+  },
+  {
+    title: "Операционный журнал",
+    description: "Учёт проведённых операций",
+    icon: BookOpen,
+    href: "/admin/operations-journal",
+    color: "text-rose-500",
   },
 ];
 
