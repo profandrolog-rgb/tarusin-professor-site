@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isSurgeon, setIsSurgeon] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkRole = async (userId: string, role: "admin" | "editor" | "user") => {
+  const checkRole = async (userId: string, role: string) => {
     try {
       const { data, error } = await supabase.rpc("has_role", {
         _user_id: userId,
