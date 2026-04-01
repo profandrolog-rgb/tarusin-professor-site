@@ -58,7 +58,7 @@ const emptyForm = {
 };
 
 const AdminOperationsJournal = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isSurgeon, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -70,11 +70,13 @@ const AdminOperationsJournal = () => {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
+  const hasAccess = isAdmin || isSurgeon;
+
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !hasAccess)) {
       navigate("/auth", { state: { from: "/admin/operations-journal" } });
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, hasAccess, authLoading, navigate]);
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -92,8 +94,8 @@ const AdminOperationsJournal = () => {
   };
 
   useEffect(() => {
-    if (user && isAdmin) fetchEntries();
-  }, [user, isAdmin]);
+    if (user && hasAccess) fetchEntries();
+  }, [user, hasAccess]);
 
   const openNew = () => {
     setEditingId(null);
@@ -189,7 +191,7 @@ const AdminOperationsJournal = () => {
     );
   }
 
-  if (!user || !isAdmin) return null;
+  if (!user || !hasAccess) return null;
 
   return (
     <div className="min-h-screen bg-background">

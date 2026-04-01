@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   isEditor: boolean;
+  isSurgeon: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -20,13 +21,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
+  const [isSurgeon, setIsSurgeon] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkRole = async (userId: string, role: "admin" | "editor" | "user") => {
+  const checkRole = async (userId: string, role: string) => {
     try {
       const { data, error } = await supabase.rpc("has_role", {
         _user_id: userId,
-        _role: role,
+        _role: role as any,
       });
       if (error) {
         console.error(`Error checking ${role} role:`, error);
@@ -51,10 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             checkRole(session.user.id, "admin").then(setIsAdmin);
             checkRole(session.user.id, "editor").then(setIsEditor);
+            checkRole(session.user.id, "surgeon").then(setIsSurgeon);
           }, 0);
         } else {
           setIsAdmin(false);
           setIsEditor(false);
+          setIsSurgeon(false);
         }
       }
     );
@@ -68,9 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         Promise.all([
           checkRole(session.user.id, "admin"),
           checkRole(session.user.id, "editor"),
-        ]).then(([admin, editor]) => {
+          checkRole(session.user.id, "surgeon"),
+        ]).then(([admin, editor, surgeon]) => {
           setIsAdmin(admin);
           setIsEditor(editor);
+          setIsSurgeon(surgeon);
           setLoading(false);
         });
       } else {
@@ -112,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         isAdmin,
         isEditor,
+        isSurgeon,
         loading,
         signIn,
         signUp,
