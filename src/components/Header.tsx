@@ -199,6 +199,10 @@ const Header = () => {
                   <Settings className="w-4 h-4" />
                   Админ-панель
                 </Link>}
+              {!isAdmin && isSurgeon && <Link to="/admin/operations-journal" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Операционный журнал
+                </Link>}
               
               {user ? <button onClick={handleSignOut} className="px-4 py-3 text-left text-sm font-medium text-destructive hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
                   <LogOut className="w-4 h-4" />
