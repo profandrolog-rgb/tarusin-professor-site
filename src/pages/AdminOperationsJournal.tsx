@@ -149,6 +149,11 @@ const AdminOperationsJournal = () => {
       protocol_notes: form.protocol_notes.trim() || null,
       surgeon_name: form.surgeon_name.trim(),
       assistant_name: form.assistant_name.trim() || null,
+      postop_course: form.postop_course.trim() || null,
+      complications: form.complications.trim() || null,
+      child_notes: form.child_notes.trim() || null,
+      parent_notes: form.parent_notes.trim() || null,
+      communication_notes: form.communication_notes.trim() || null,
     };
 
     let error;
