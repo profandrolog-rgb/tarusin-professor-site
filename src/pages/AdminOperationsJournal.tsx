@@ -70,11 +70,13 @@ const AdminOperationsJournal = () => {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
 
+  const hasAccess = isAdmin || isSurgeon;
+
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !hasAccess)) {
       navigate("/auth", { state: { from: "/admin/operations-journal" } });
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, hasAccess, authLoading, navigate]);
 
   const fetchEntries = async () => {
     setLoading(true);
