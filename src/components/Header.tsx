@@ -72,6 +72,7 @@ const Header = () => {
   const {
     user,
     isAdmin,
+    isSurgeon,
     signOut
   } = useAuth();
   const handleSignOut = async () => {
