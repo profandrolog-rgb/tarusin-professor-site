@@ -109,11 +109,18 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
                 <MessageCircle className="w-3 h-3" /> {commentCount}
               </span>
             )}
-            {onEdit && (
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs ml-auto" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                <Pencil className="w-3 h-3 mr-1" /> Ред.
-              </Button>
-            )}
+            <div className="flex items-center gap-1 ml-auto">
+              {onEdit && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                  <Pencil className="w-3 h-3 mr-1" /> Ред.
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                  <Trash2 className="w-3 h-3 mr-1" /> Удалить
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
