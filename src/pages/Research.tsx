@@ -44,6 +44,29 @@ const Research = () => {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string | null>(null);
   const [isSorting, setIsSorting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      // Delete attachments, reactions, comments first
+      await Promise.all([
+        supabase.from("research_article_attachments").delete().eq("article_id", deleteId),
+        supabase.from("research_article_reactions").delete().eq("article_id", deleteId),
+        supabase.from("research_article_comments").delete().eq("article_id", deleteId),
+      ]);
+      const { error } = await supabase.from("research_articles").delete().eq("id", deleteId);
+      if (error) throw error;
+      toast.success("Публикация удалена");
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["research-all-reactions"] });
+      queryClient.invalidateQueries({ queryKey: ["research-all-comments"] });
+    } catch (err: any) {
+      toast.error("Ошибка удаления: " + err.message);
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
