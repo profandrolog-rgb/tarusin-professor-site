@@ -10,6 +10,7 @@ interface SortableResearchCardProps {
   viewMode: "grid" | "feed";
   onClick: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
   isSorting: boolean;
 }
 

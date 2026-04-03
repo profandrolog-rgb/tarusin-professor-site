@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +44,29 @@ const Research = () => {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string | null>(null);
   const [isSorting, setIsSorting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      // Delete attachments, reactions, comments first
+      await Promise.all([
+        supabase.from("research_article_attachments").delete().eq("article_id", deleteId),
+        supabase.from("research_article_reactions").delete().eq("article_id", deleteId),
+        supabase.from("research_article_comments").delete().eq("article_id", deleteId),
+      ]);
+      const { error } = await supabase.from("research_articles").delete().eq("id", deleteId);
+      if (error) throw error;
+      toast.success("Публикация удалена");
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ["research-all-reactions"] });
+      queryClient.invalidateQueries({ queryKey: ["research-all-comments"] });
+    } catch (err: any) {
+      toast.error("Ошибка удаления: " + err.message);
+    } finally {
+      setDeleteId(null);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -270,6 +294,7 @@ const Research = () => {
                       viewMode={viewMode}
                       onClick={() => !isSorting && setSelectedId(article.id)}
                       onEdit={canEdit && !isSorting ? () => setEditArticle(article) : undefined}
+                      onDelete={canEdit && !isSorting ? () => setDeleteId(article.id) : undefined}
                       isSorting={isSorting}
                     />
                   ))}
@@ -281,6 +306,23 @@ const Research = () => {
       </main>
       <Footer />
       <StickyBottomPanel />
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить публикацию?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие необратимо. Публикация, все вложения, реакции и комментарии будут удалены.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

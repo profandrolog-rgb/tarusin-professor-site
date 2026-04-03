@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCategoryLabel, getAgeGroupLabel, AGE_GROUPS } from "./ResearchCategories";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Pencil } from "lucide-react";
+import { MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -21,9 +21,10 @@ interface ResearchPostCardProps {
   viewMode: "grid" | "feed";
   onClick: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onClick, onEdit }: ResearchPostCardProps) => {
+const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onClick, onEdit, onDelete }: ResearchPostCardProps) => {
   const imageUrl = article.image_path
     ? supabase.storage.from("research-attachments").getPublicUrl(article.image_path).data.publicUrl
     : null;
@@ -58,11 +59,18 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
           {!article.is_published && (
             <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Черновик</Badge>
           )}
-          {onEdit && (
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-              <Pencil className="w-3 h-3 mr-1" /> Ред.
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                <Pencil className="w-3 h-3 mr-1" /> Ред.
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                <Trash2 className="w-3 h-3 mr-1" /> Удалить
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -101,11 +109,18 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
                 <MessageCircle className="w-3 h-3" /> {commentCount}
               </span>
             )}
-            {onEdit && (
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs ml-auto" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                <Pencil className="w-3 h-3 mr-1" /> Ред.
-              </Button>
-            )}
+            <div className="flex items-center gap-1 ml-auto">
+              {onEdit && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                  <Pencil className="w-3 h-3 mr-1" /> Ред.
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                  <Trash2 className="w-3 h-3 mr-1" /> Удалить
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
