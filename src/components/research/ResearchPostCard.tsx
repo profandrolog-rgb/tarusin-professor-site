@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCategoryLabel, getAgeGroupLabel, AGE_GROUPS } from "./ResearchCategories";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Pencil } from "lucide-react";
+import { MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
