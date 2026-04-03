@@ -21,6 +21,7 @@ interface ResearchPostCardProps {
   viewMode: "grid" | "feed";
   onClick: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onClick, onEdit }: ResearchPostCardProps) => {
