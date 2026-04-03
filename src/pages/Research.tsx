@@ -294,6 +294,7 @@ const Research = () => {
                       viewMode={viewMode}
                       onClick={() => !isSorting && setSelectedId(article.id)}
                       onEdit={canEdit && !isSorting ? () => setEditArticle(article) : undefined}
+                      onDelete={canEdit && !isSorting ? () => setDeleteId(article.id) : undefined}
                       isSorting={isSorting}
                     />
                   ))}
