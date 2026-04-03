@@ -283,6 +283,11 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
         <Button variant="ghost" size="sm" onClick={save} disabled={loading} className="ml-auto gap-1 text-muted-foreground">
           <Save className="w-4 h-4" /> Сохранить черновик
         </Button>
+        {hasDraft && (
+          <Button variant="ghost" size="sm" onClick={() => { clearDraft(); toast({ title: "Черновик удалён" }); }} disabled={loading} className="gap-1 text-destructive hover:text-destructive">
+            <Trash2 className="w-4 h-4" /> Удалить черновик
+          </Button>
+        )}
       </div>
       <p className="text-xs text-muted-foreground">Автосохранение каждые 3 минуты</p>
     </div>
