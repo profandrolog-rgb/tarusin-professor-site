@@ -59,11 +59,18 @@ const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onCl
           {!article.is_published && (
             <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Черновик</Badge>
           )}
-          {onEdit && (
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-              <Pencil className="w-3 h-3 mr-1" /> Ред.
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                <Pencil className="w-3 h-3 mr-1" /> Ред.
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                <Trash2 className="w-3 h-3 mr-1" /> Удалить
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
