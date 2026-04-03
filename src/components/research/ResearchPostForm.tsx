@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import RESEARCH_CATEGORIES, { AGE_GROUPS } from "./ResearchCategories";
-import { Upload, X, FileText, Loader2, Save } from "lucide-react";
+import { Upload, X, FileText, Loader2, Save, Trash2 } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 
 interface ResearchPostFormProps {
