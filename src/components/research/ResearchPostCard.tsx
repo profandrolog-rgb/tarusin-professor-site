@@ -24,7 +24,7 @@ interface ResearchPostCardProps {
   onDelete?: () => void;
 }
 
-const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onClick, onEdit }: ResearchPostCardProps) => {
+const ResearchPostCard = ({ article, commentCount, reactionCount, viewMode, onClick, onEdit, onDelete }: ResearchPostCardProps) => {
   const imageUrl = article.image_path
     ? supabase.storage.from("research-attachments").getPublicUrl(article.image_path).data.publicUrl
     : null;
