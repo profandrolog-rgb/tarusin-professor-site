@@ -5,7 +5,8 @@ import ResearchReactions from "./ResearchReactions";
 import ResearchComments from "./ResearchComments";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Image as ImageIcon, Download } from "lucide-react";
+import { ArrowLeft, FileText, Image as ImageIcon, Download, Film, Table2, FileSpreadsheet } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import SocialBar from "@/components/SocialLinks";
 import { ru } from "date-fns/locale";
@@ -75,7 +76,18 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
     : null;
 
   const imageAttachments = attachments.filter((a) => a.file_type === "image");
-  const fileAttachments = attachments.filter((a) => a.file_type !== "image");
+  const videoAttachments = attachments.filter((a) => a.file_type === "video");
+  const previewableAttachments = attachments.filter((a) => ["pdf", "spreadsheet"].includes(a.file_type));
+  const fileAttachments = attachments.filter((a) => !["image", "video", "pdf", "spreadsheet"].includes(a.file_type));
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case "pdf": return <FileText className="w-5 h-5 text-red-500" />;
+      case "video": return <Film className="w-5 h-5 text-purple-500" />;
+      case "spreadsheet": return <FileSpreadsheet className="w-5 h-5 text-green-500" />;
+      default: return <FileText className="w-5 h-5 text-blue-500" />;
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -124,7 +136,59 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
         </div>
       )}
 
-      {/* File attachments */}
+      {/* Video attachments */}
+      {videoAttachments.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Видео</h3>
+          {videoAttachments.map((att) => {
+            const url = supabase.storage.from("research-attachments").getPublicUrl(att.file_path).data.publicUrl;
+            return (
+              <div key={att.id} className="rounded-lg overflow-hidden border bg-black">
+                <video controls className="w-full max-h-[500px]" controlsList="nodownload">
+                  <source src={url} />
+                  Ваш браузер не поддерживает видео
+                </video>
+                <div className="bg-muted px-3 py-1.5 text-xs text-muted-foreground truncate">{att.file_name}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Previewable attachments (PDF, spreadsheets) */}
+      {previewableAttachments.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground">Документы</h3>
+          {previewableAttachments.map((att) => {
+            const url = supabase.storage.from("research-attachments").getPublicUrl(att.file_path).data.publicUrl;
+            return (
+              <div key={att.id} className="space-y-1">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors w-full text-left">
+                      {getFileIcon(att.file_type)}
+                      <span className="text-sm text-foreground flex-1 truncate">{att.file_name}</span>
+                      <span className="text-xs text-muted-foreground">Предпросмотр</span>
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl w-[95vw] h-[80vh] p-0">
+                    <iframe
+                      src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+                      className="w-full h-full rounded-lg"
+                      title={att.file_name}
+                    />
+                  </DialogContent>
+                </Dialog>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline ml-10 inline-flex items-center gap-1">
+                  <Download className="w-3 h-3" /> Скачать
+                </a>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Other file attachments */}
       {fileAttachments.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground">Вложения</h3>
@@ -138,7 +202,7 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
               >
-                {att.file_type === "pdf" ? <FileText className="w-5 h-5 text-red-500" /> : <ImageIcon className="w-5 h-5 text-blue-500" />}
+                {getFileIcon(att.file_type)}
                 <span className="text-sm text-foreground flex-1 truncate">{att.file_name}</span>
                 <Download className="w-4 h-4 text-muted-foreground" />
               </a>
