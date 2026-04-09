@@ -146,6 +146,10 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
           ? "image"
           : ext === "pdf"
           ? "pdf"
+          : ["mp4", "mov", "webm", "avi", "mkv"].includes(ext)
+          ? "video"
+          : ["xlsx", "xls", "csv"].includes(ext)
+          ? "spreadsheet"
           : "document";
         const path = `attachments/${articleId}/${Date.now()}-${file.name}`;
         const { error: uploadError } = await supabase.storage
@@ -245,7 +249,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
           <input
             type="file"
             multiple
-            accept="image/*,.pdf,.doc,.docx"
+            accept="image/*,.pdf,.doc,.docx,.xlsx,.xls,.csv,video/*"
             className="hidden"
             onChange={(e) => {
               if (e.target.files) {
