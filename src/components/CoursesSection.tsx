@@ -113,8 +113,8 @@ const CoursesSection = () => {
               ))}
             </div>
           </div>
-          <Button variant="outline" size="icon" className="absolute -left-4 top-1/2 -translate-y-1/2 rounded-full shadow-lg bg-background/90 backdrop-blur-sm hidden md:flex" onClick={scrollPrev}><ChevronLeft className="w-5 h-5" /></Button>
-          <Button variant="outline" size="icon" className="absolute -right-4 top-1/2 -translate-y-1/2 rounded-full shadow-lg bg-background/90 backdrop-blur-sm hidden md:flex" onClick={scrollNext}><ChevronRight className="w-5 h-5" /></Button>
+          <Button variant="outline" size="icon" className="absolute -left-2 md:-left-4 top-1/2 -translate-y-1/2 rounded-full shadow-lg bg-background/90 backdrop-blur-sm z-10 flex" onClick={scrollPrev}><ChevronLeft className="w-5 h-5" /></Button>
+          <Button variant="outline" size="icon" className="absolute -right-2 md:-right-4 top-1/2 -translate-y-1/2 rounded-full shadow-lg bg-background/90 backdrop-blur-sm z-10 flex" onClick={scrollNext}><ChevronRight className="w-5 h-5" /></Button>
         </div>
 
         <div className="text-center mt-12">
