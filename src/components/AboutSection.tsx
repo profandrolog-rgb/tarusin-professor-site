@@ -168,30 +168,32 @@ const AboutSection = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {certificates.map((cert, idx) => (
-                <Card
-                  key={cert.id}
-                  className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                  onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
-                >
-                  <CardContent className="p-0">
-                    <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                      <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
-                    </div>
-                    <div className="p-3 text-center">
-                      <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <CertificateLightbox
-              images={certImages}
-              initialIndex={lightboxIndex}
-              open={lightboxOpen}
-              onOpenChange={setLightboxOpen}
-            />
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {certificates.map((cert, idx) => (
+                  <Card
+                    key={cert.id}
+                    className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                  >
+                    <CardContent className="p-0">
+                      <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+                        <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                      <div className="p-3 text-center">
+                        <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <CertificateLightbox
+                images={certImages}
+                initialIndex={lightboxIndex}
+                open={lightboxOpen}
+                onOpenChange={setLightboxOpen}
+              />
+            </>
           )}
         </div>
 
