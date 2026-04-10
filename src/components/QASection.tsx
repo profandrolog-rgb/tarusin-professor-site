@@ -5,8 +5,10 @@ import { MessageCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "react-i18next";
 
 const QASection = () => {
+  const { t, i18n } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -44,6 +46,7 @@ const QASection = () => {
   if (questions.length === 0) return null;
 
   const current = questions[currentIndex];
+  const locale = i18n.language === "en" ? "en-US" : "ru-RU";
 
   return (
     <section className="py-16 md:py-24 bg-secondary/30">
@@ -51,76 +54,43 @@ const QASection = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary text-sm font-medium mb-4">
             <MessageCircle size={16} />
-            <span>Часто задаваемые вопросы</span>
+            <span>{t("qa.badge")}</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Вопросы и ответы
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Ответы профессора Тарусина Д.И. на вопросы пациентов
-          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{t("qa.title")}</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("qa.subtitle")}</p>
         </div>
 
-        <div
-          className="max-w-3xl mx-auto relative"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          {/* Navigation arrows */}
+        <div className="max-w-3xl mx-auto relative" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)}>
           {questions.length > 1 && (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute -left-4 md:-left-14 top-1/2 -translate-y-1/2 z-10 bg-card/80 hover:bg-card shadow-md rounded-full"
-                onClick={goPrev}
-              >
+              <Button variant="ghost" size="icon" className="absolute -left-4 md:-left-14 top-1/2 -translate-y-1/2 z-10 bg-card/80 hover:bg-card shadow-md rounded-full" onClick={goPrev}>
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute -right-4 md:-right-14 top-1/2 -translate-y-1/2 z-10 bg-card/80 hover:bg-card shadow-md rounded-full"
-                onClick={goNext}
-              >
+              <Button variant="ghost" size="icon" className="absolute -right-4 md:-right-14 top-1/2 -translate-y-1/2 z-10 bg-card/80 hover:bg-card shadow-md rounded-full" onClick={goNext}>
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </>
           )}
 
-          {/* Card */}
           <Card className="border border-border shadow-md transition-all duration-500 min-h-[200px]">
             <CardContent className="p-6 md:p-8">
               <div className="mb-4">
-                <p className="font-semibold text-foreground text-lg leading-relaxed">
-                  «{current.question_text}»
-                </p>
+                <p className="font-semibold text-foreground text-lg leading-relaxed">«{current.question_text}»</p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {current.author_name} • {new Date(current.created_at).toLocaleDateString("ru-RU")}
+                  {current.author_name} • {new Date(current.created_at).toLocaleDateString(locale)}
                 </p>
               </div>
               <div className="pl-4 border-l-2 border-primary/30 mt-4">
-                <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
-                  {current.answer_text}
-                </p>
-                <p className="text-xs text-primary mt-3 font-medium">— Профессор Тарусин Д.И.</p>
+                <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{current.answer_text}</p>
+                <p className="text-xs text-primary mt-3 font-medium">{t("qa.answeredBy")}</p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Dots */}
           {questions.length > 1 && (
             <div className="flex justify-center gap-2 mt-6">
               {questions.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                    idx === currentIndex
-                      ? "bg-primary w-6"
-                      : "bg-primary/25 hover:bg-primary/50"
-                  }`}
-                />
+                <button key={idx} onClick={() => setCurrentIndex(idx)} className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === currentIndex ? "bg-primary w-6" : "bg-primary/25 hover:bg-primary/50"}`} />
               ))}
             </div>
           )}
@@ -129,7 +99,7 @@ const QASection = () => {
         <div className="text-center mt-8">
           <Link to="/qa">
             <Button variant="outline" className="gap-2">
-              Все вопросы и ответы
+              {t("qa.allQA")}
               <ChevronRight className="w-4 h-4" />
             </Button>
           </Link>
