@@ -14,7 +14,7 @@ import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
 import { Helmet } from "react-helmet-async";
 import DiagnosticChecklist from "@/components/DiagnosticChecklist";
-import BeforeAfterGallery from "@/components/BeforeAfterGallery";
+import ResultsCTA from "@/components/ResultsCTA";
 import PatientJourney from "@/components/PatientJourney";
 
 const jsonLd = {
@@ -94,7 +94,7 @@ const Index = () => {
         <ProfessorMessageSection />
         <InternationalSection />
         <DiagnosticChecklist />
-        <BeforeAfterGallery />
+        <ResultsCTA />
         <PatientJourney />
         <ConsultationsSection />
         <CoursesSection />
