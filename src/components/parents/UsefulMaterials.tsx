@@ -17,7 +17,7 @@ const articles = [
     description: "Статья о применении Balaneks Kids — современного средства для лечения и профилактики воспалительных заболеваний крайней плоти у мальчиков.",
     url: "https://www.uroweb.ru/article/reshenie-problemi-balanopostita-u-detey-aktualnoe-novoe-balaneks-kids",
     source: "Uroweb.ru",
-    preview: "https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&h=400&fit=crop",
+    preview: "https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?w=600&h=400&fit=crop",
     emoji: "💊",
   },
   {
