@@ -14,7 +14,7 @@ const Header = () => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const { user, isAdmin, isSurgeon, signOut } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const mainNavItems = [
     { label: t("nav.home"), href: "#hero", isAnchor: true },
