@@ -195,7 +195,9 @@ const PublicationsList = () => {
     }
 
     result.sort((a, b) => {
-      const diff = parseInt(a.year) - parseInt(b.year);
+      const ya = parseInt(a.year) || 0;
+      const yb = parseInt(b.year) || 0;
+      const diff = ya - yb;
       return sortOrder === "desc" ? -diff : diff;
     });
 
@@ -204,8 +206,8 @@ const PublicationsList = () => {
 
   const groupedPublications = useMemo(() => {
     return filteredPublications.reduce((acc, pub) => {
-      const decade = Math.floor(parseInt(pub.year) / 10) * 10;
-      const decadeLabel = `${decade}-е`;
+      const yr = parseInt(pub.year);
+      const decadeLabel = isNaN(yr) ? "Год не указан" : `${Math.floor(yr / 10) * 10}-е`;
       if (!acc[decadeLabel]) {
         acc[decadeLabel] = [];
       }
