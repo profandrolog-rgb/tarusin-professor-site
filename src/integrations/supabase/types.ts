@@ -405,6 +405,60 @@ export type Database = {
         }
         Relationships: []
       }
+      disease_articles: {
+        Row: {
+          age_group: string
+          article_content: string | null
+          audio_path: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_published: boolean
+          keywords: string[] | null
+          slug: string
+          sort_order: number | null
+          thumbnail_path: string | null
+          title: string
+          updated_at: string
+          video_path: string | null
+        }
+        Insert: {
+          age_group?: string
+          article_content?: string | null
+          audio_path?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string[] | null
+          slug: string
+          sort_order?: number | null
+          thumbnail_path?: string | null
+          title: string
+          updated_at?: string
+          video_path?: string | null
+        }
+        Update: {
+          age_group?: string
+          article_content?: string | null
+          audio_path?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string[] | null
+          slug?: string
+          sort_order?: number | null
+          thumbnail_path?: string | null
+          title?: string
+          updated_at?: string
+          video_path?: string | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
