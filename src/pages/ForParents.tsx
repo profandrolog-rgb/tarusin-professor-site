@@ -8,7 +8,6 @@ import UsefulMaterials from "@/components/parents/UsefulMaterials";
 import DiseaseArticlesList from "@/components/parents/DiseaseArticlesList";
 import PublicationsList from "@/components/parents/PublicationsList";
 import PatientGuide from "@/components/parents/PatientGuide";
-import PublicationsList from "@/components/parents/PublicationsList";
 
 const ForParents = () => {
   return (
