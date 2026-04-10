@@ -213,11 +213,27 @@ const mataraClinicDirections: DirectionsData = {
   },
 };
 
+const countryCodes = [
+  { code: "+7", country: "🇷🇺 Россия", flag: "🇷🇺" },
+  { code: "+7", country: "🇰🇿 Казахстан", flag: "🇰🇿" },
+  { code: "+375", country: "🇧🇾 Беларусь", flag: "🇧🇾" },
+  { code: "+998", country: "🇺🇿 Узбекистан", flag: "🇺🇿" },
+  { code: "+996", country: "🇰🇬 Киргизия", flag: "🇰🇬" },
+  { code: "+374", country: "🇦🇲 Армения", flag: "🇦🇲" },
+  { code: "+995", country: "🇬🇪 Грузия", flag: "🇬🇪" },
+  { code: "+380", country: "🇺🇦 Украина", flag: "🇺🇦" },
+  { code: "+90", country: "🇹🇷 Турция", flag: "🇹🇷" },
+  { code: "+49", country: "🇩🇪 Германия", flag: "🇩🇪" },
+  { code: "+972", country: "🇮🇱 Израиль", flag: "🇮🇱" },
+  { code: "+1", country: "🇺🇸 США", flag: "🇺🇸" },
+];
+
 const ContactSection = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
