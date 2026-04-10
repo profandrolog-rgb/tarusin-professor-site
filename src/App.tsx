@@ -33,6 +33,8 @@ import Research from "./pages/Research";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Consent from "./pages/Consent";
 import Results from "./pages/Results";
+import PatientPortal from "./pages/PatientPortal";
+import AdminPatientCards from "./pages/AdminPatientCards";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
