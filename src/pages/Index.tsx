@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import QASection from "@/components/QASection";
 import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
+import SchemaOrg from "@/components/SchemaOrg";
 import { Helmet } from "react-helmet-async";
 import DiagnosticChecklist from "@/components/DiagnosticChecklist";
 import ResultsCTA from "@/components/ResultsCTA";
