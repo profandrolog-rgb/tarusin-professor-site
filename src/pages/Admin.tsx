@@ -115,6 +115,13 @@ const adminSections = [
     href: "/admin/patient-cards",
     color: "text-violet-500",
   },
+  {
+    title: "Онлайн-консультации",
+    description: "Кейсы консультаций, ИИ-анализ, заключения",
+    icon: Stethoscope,
+    href: "/admin/consultations",
+    color: "text-sky-500",
+  },
 ];
 
 const analyticsServices = [
