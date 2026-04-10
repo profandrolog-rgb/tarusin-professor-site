@@ -108,6 +108,13 @@ const adminSections = [
     href: "/admin/operations-journal",
     color: "text-rose-500",
   },
+  {
+    title: "Карточки пациентов",
+    description: "Портал пациентов: карточки, документы, чат",
+    icon: Users,
+    href: "/admin/patient-cards",
+    color: "text-violet-500",
+  },
 ];
 
 const analyticsServices = [

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, ChevronDown, LogIn, LogOut, Settings, UserPlus } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LogOut, Settings, UserPlus, User } from "lucide-react";
 import headerPhoto from "@/assets/header-photo.png";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ const Header = () => {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const { user, isAdmin, isSurgeon, signOut } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const mainNavItems = [
     { label: t("nav.home"), href: "#hero", isAnchor: true },
@@ -117,10 +117,18 @@ const Header = () => {
                   </DropdownMenuItem>
                 )}
                 {user ? (
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {t("nav.signOut")}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/portal" className="w-full flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        {i18n.language === "en" ? "My Portal" : "Мой кабинет"}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      {t("nav.signOut")}
+                    </DropdownMenuItem>
+                  </>
                 ) : (
                   <>
                     <DropdownMenuItem asChild>

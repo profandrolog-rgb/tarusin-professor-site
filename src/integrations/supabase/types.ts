@@ -799,6 +799,137 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_cards: {
+        Row: {
+          ai_reasoning: string | null
+          communication_notes: string | null
+          created_at: string
+          diagnosis: string | null
+          has_insurance: boolean | null
+          id: string
+          notes: string | null
+          parent_name: string | null
+          parent_phone: string | null
+          parent_telegram: string | null
+          parent_whatsapp: string | null
+          patient_full_name: string
+          patient_specifics: string | null
+          patient_telegram: string | null
+          patient_whatsapp: string | null
+          treatment_plan: string | null
+          treatment_tactics: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          communication_notes?: string | null
+          created_at?: string
+          diagnosis?: string | null
+          has_insurance?: boolean | null
+          id?: string
+          notes?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          parent_telegram?: string | null
+          parent_whatsapp?: string | null
+          patient_full_name?: string
+          patient_specifics?: string | null
+          patient_telegram?: string | null
+          patient_whatsapp?: string | null
+          treatment_plan?: string | null
+          treatment_tactics?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          communication_notes?: string | null
+          created_at?: string
+          diagnosis?: string | null
+          has_insurance?: boolean | null
+          id?: string
+          notes?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          parent_telegram?: string | null
+          parent_whatsapp?: string | null
+          patient_full_name?: string
+          patient_specifics?: string | null
+          patient_telegram?: string | null
+          patient_whatsapp?: string | null
+          treatment_plan?: string | null
+          treatment_tactics?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      patient_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      patient_documents: {
+        Row: {
+          card_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          uploaded_by: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_type?: string
+          id?: string
+          uploaded_by?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          uploaded_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_documents_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "patient_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string
