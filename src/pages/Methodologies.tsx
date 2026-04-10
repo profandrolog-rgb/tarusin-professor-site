@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageMeta from "@/components/PageMeta";
@@ -91,20 +92,22 @@ const scrollToDescription = (name: string) => {
 };
 
 const Methodologies = () => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <PageMeta title="Методики лечения — Проф. Тарусин Д.И." description="Микрохирургические, диагностические и физиотерапевтические методики профессора Тарусина для лечения урологических и андрологических заболеваний." path="/methodologies" />
+      <PageMeta title={isEn ? "Treatment Methods — Prof. Tarusin" : "Методики лечения — Проф. Тарусин Д.И."} description={isEn ? "Microsurgical, diagnostic and physiotherapy methods by Professor Tarusin." : "Микрохирургические, диагностические и физиотерапевтические методики профессора Тарусина."} path="/methodologies" />
       <main className="pt-20">
         <section className="py-16 md:py-24 bg-secondary/30">
           <div className="container mx-auto px-4">
-            {/* Section Header */}
             <div className="text-center mb-12 md:mb-16">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Методики
+                {isEn ? "Methods" : "Методики"}
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Инновационные авторские подходы к диагностике и лечению урологических и андрологических заболеваний
+                {isEn ? "Innovative approaches to diagnostics and treatment of urological and andrological conditions" : "Инновационные авторские подходы к диагностике и лечению урологических и андрологических заболеваний"}
               </p>
             </div>
 
@@ -115,7 +118,7 @@ const Methodologies = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Microscope className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle className="text-xl">Микрохирургия</CardTitle>
+                  <CardTitle className="text-xl">{isEn ? "Microsurgery" : "Микрохирургия"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4 font-normal">
@@ -143,7 +146,7 @@ const Methodologies = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Activity className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle className="text-xl">Диагностика</CardTitle>
+                  <CardTitle className="text-xl">{isEn ? "Diagnostics" : "Диагностика"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -171,7 +174,7 @@ const Methodologies = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Syringe className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle className="text-xl">Подходы к лечению</CardTitle>
+                  <CardTitle className="text-xl">{isEn ? "Treatment Approaches" : "Подходы к лечению"}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -194,7 +197,7 @@ const Methodologies = () => {
                   <hr className="my-4 border-border" />
 
                   <p className="text-sm text-muted-foreground mb-4 font-medium">
-                    Физиотерапия и альтернативные методы
+                    {isEn ? "Physiotherapy & Alternative Methods" : "Физиотерапия и альтернативные методы"}
                   </p>
                   <div className="space-y-2">
                     {physiotherapyMethods.map((method, index) => (
@@ -219,7 +222,7 @@ const Methodologies = () => {
         <section className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-12 text-center">
-              Подробное описание методик
+              {isEn ? "Detailed Method Descriptions" : "Подробное описание методик"}
             </h2>
 
             {/* Microsurgery Descriptions */}
@@ -228,7 +231,7 @@ const Methodologies = () => {
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Microscope className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-foreground">Микрохирургия</h3>
+                <h3 className="text-xl md:text-2xl font-semibold text-foreground">{isEn ? "Microsurgery" : "Микрохирургия"}</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 {microsurgeryTechniques.map((technique, index) => (
@@ -250,7 +253,7 @@ const Methodologies = () => {
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Activity className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-foreground">Диагностика</h3>
+                <h3 className="text-xl md:text-2xl font-semibold text-foreground">{isEn ? "Diagnostics" : "Диагностика"}</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 {diagnosticMethods.map((method, index) => (
@@ -272,7 +275,7 @@ const Methodologies = () => {
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Syringe className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-foreground">Подходы к лечению</h3>
+                <h3 className="text-xl md:text-2xl font-semibold text-foreground">{isEn ? "Treatment Approaches" : "Подходы к лечению"}</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 {treatmentApproaches.map((approach, index) => (
@@ -294,7 +297,7 @@ const Methodologies = () => {
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Syringe className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="text-xl md:text-2xl font-semibold text-foreground">Физиотерапия и альтернативные методы</h3>
+                <h3 className="text-xl md:text-2xl font-semibold text-foreground">{isEn ? "Physiotherapy & Alternative Methods" : "Физиотерапия и альтернативные методы"}</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 {physiotherapyMethods.map((method, index) => (

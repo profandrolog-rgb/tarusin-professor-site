@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,8 @@ interface VideoCase {
 }
 
 const VideoCases = () => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
   const [cases, setCases] = useState<VideoCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -368,16 +371,16 @@ const VideoCases = () => {
   return (
     <AgeConfirmationModal>
     <div className="min-h-screen bg-background select-none" onContextMenu={handleContextMenu} onCopy={(e) => e.preventDefault()}>
-      <PageMeta title="Видео-кейсы — Проф. Тарусин Д.И." description="Короткие видео из операционной, заметки и разборы клинических случаев профессора Тарусина Д.И." path="/video-cases" />
+      <PageMeta title={isEn ? "Video Cases — Prof. Tarusin" : "Видео-кейсы — Проф. Тарусин Д.И."} description={isEn ? "Short surgical videos, notes and clinical case reviews by Professor Tarusin." : "Короткие видео из операционной, заметки и разборы клинических случаев профессора Тарусина Д.И."} path="/video-cases" />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            На главную
+            {isEn ? "Home" : "На главную"}
           </Link>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Видео-кейсы</h1>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "Video Cases" : "Видео-кейсы"}</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Короткие видео из операционной, заметки и разборы клинических случаев
+            {isEn ? "Short surgical videos, notes and clinical case reviews" : "Короткие видео из операционной, заметки и разборы клинических случаев"}
           </p>
         </div>
       </header>
@@ -389,7 +392,7 @@ const VideoCases = () => {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <Video className="w-6 h-6 text-primary" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">Все кейсы</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "All Cases" : "Все кейсы"}</h2>
           </div>
 
           {isAdmin && (
@@ -571,7 +574,7 @@ const VideoCases = () => {
         ) : cases.length === 0 ? (
           <div className="text-center py-20">
             <Video className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg text-muted-foreground">Видео-кейсы пока не добавлены</p>
+            <p className="text-lg text-muted-foreground">{isEn ? "No video cases added yet" : "Видео-кейсы пока не добавлены"}</p>
           </div>
         ) : (
           <div className="space-y-16">
