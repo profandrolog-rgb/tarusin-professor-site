@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const publications = [
