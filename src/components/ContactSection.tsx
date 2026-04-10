@@ -132,7 +132,17 @@ const ContactSection = () => {
       contactSchema.parse(formData);
       setErrors({});
       setIsSubmitting(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const { error } = await supabase.from("appointment_requests").insert({
+        parent_name: formData.name.trim(),
+        contact_email: formData.email.trim(),
+        contact_phone: formData.phone.trim(),
+        problem_description: formData.message.trim(),
+        child_age: "—",
+      });
+
+      if (error) throw error;
+
       setIsSubmitted(true);
       toast({ title: t("contact.sent"), description: t("contact.sentDesc") });
       setTimeout(() => { setFormData({ name: "", email: "", phone: "", message: "" }); setAgreed(false); setIsSubmitted(false); }, 3000);
@@ -141,6 +151,8 @@ const ContactSection = () => {
         const newErrors: Record<string, string> = {};
         error.errors.forEach((err) => { if (err.path[0]) newErrors[err.path[0] as string] = err.message; });
         setErrors(newErrors);
+      } else {
+        toast({ title: isEn ? "Error sending" : "Ошибка отправки", description: isEn ? "Please try again or contact us by phone" : "Попробуйте ещё раз или свяжитесь по телефону", variant: "destructive" });
       }
     } finally { setIsSubmitting(false); }
   };
