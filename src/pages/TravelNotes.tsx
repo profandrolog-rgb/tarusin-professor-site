@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Upload, Image, Trash2, Loader2, Shield, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ interface TravelPhoto {
 }
 
 const TravelNotes = () => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
   const [photos, setPhotos] = useState<TravelPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -47,8 +50,8 @@ const TravelNotes = () => {
     } catch (error) {
       console.error("Error fetching photos:", error);
       toast({
-        title: "Ошибка",
-        description: "Не удалось загрузить фотографии",
+        title: isEn ? "Error" : "Ошибка",
+        description: isEn ? "Failed to load photos" : "Не удалось загрузить фотографии",
         variant: "destructive",
       });
     } finally {
@@ -64,8 +67,8 @@ const TravelNotes = () => {
   const handleUpload = async () => {
     if (!newPhoto.file || !newPhoto.title) {
       toast({
-        title: "Заполните поля",
-        description: "Укажите название и выберите фото",
+        title: isEn ? "Fill in the fields" : "Заполните поля",
+        description: isEn ? "Enter a title and select a photo" : "Укажите название и выберите фото",
         variant: "destructive",
       });
       return;
@@ -91,19 +94,15 @@ const TravelNotes = () => {
 
       if (insertError) throw insertError;
 
-      toast({
-        title: "Успешно",
-        description: "Фотография добавлена",
-      });
-
+      toast({ title: isEn ? "Success" : "Успешно", description: isEn ? "Photo added" : "Фотография добавлена" });
       setNewPhoto({ title: "", caption: "", file: null });
       setUploadDialogOpen(false);
       fetchPhotos();
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
-        title: "Ошибка загрузки",
-        description: error.message || "Не удалось загрузить фото",
+        title: isEn ? "Upload error" : "Ошибка загрузки",
+        description: error.message || (isEn ? "Failed to upload photo" : "Не удалось загрузить фото"),
         variant: "destructive",
       });
     } finally {
@@ -116,47 +115,33 @@ const TravelNotes = () => {
       const { error: storageError } = await supabase.storage
         .from("travel-photos")
         .remove([photo.image_path]);
-
       if (storageError) throw storageError;
 
       const { error: dbError } = await supabase
         .from("travel_photos")
         .delete()
         .eq("id", photo.id);
-
       if (dbError) throw dbError;
 
-      toast({
-        title: "Удалено",
-        description: "Фотография удалена",
-      });
-
-      if (selectedIndex !== null) {
-        setSelectedIndex(null);
-      }
+      toast({ title: isEn ? "Deleted" : "Удалено", description: isEn ? "Photo deleted" : "Фотография удалена" });
+      if (selectedIndex !== null) setSelectedIndex(null);
       fetchPhotos();
     } catch (error: any) {
       console.error("Delete error:", error);
       toast({
-        title: "Ошибка удаления",
-        description: error.message || "Не удалось удалить фото",
+        title: isEn ? "Delete error" : "Ошибка удаления",
+        description: error.message || (isEn ? "Failed to delete photo" : "Не удалось удалить фото"),
         variant: "destructive",
       });
     }
   };
 
   const handlePrev = () => {
-    if (selectedIndex !== null && selectedIndex > 0) {
-      setSelectedIndex(selectedIndex - 1);
-    }
+    if (selectedIndex !== null && selectedIndex > 0) setSelectedIndex(selectedIndex - 1);
   };
-
   const handleNext = () => {
-    if (selectedIndex !== null && selectedIndex < photos.length - 1) {
-      setSelectedIndex(selectedIndex + 1);
-    }
+    if (selectedIndex !== null && selectedIndex < photos.length - 1) setSelectedIndex(selectedIndex + 1);
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") handlePrev();
     if (e.key === "ArrowRight") handleNext();
@@ -165,7 +150,6 @@ const TravelNotes = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link
@@ -173,17 +157,20 @@ const TravelNotes = () => {
             className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {isAdmin ? "К панели администратора" : "На главную"}
+            {isAdmin ? (isEn ? "Admin Panel" : "К панели администратора") : (isEn ? "Home" : "На главную")}
           </Link>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Путёвые заметки</h1>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">
+            {isEn ? "Travel Notes" : "Путёвые заметки"}
+          </h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Take off - no go around. Бортовой журнал. От школьной хирургии до академического эшелона. Сквозь года и континенты
+            {isEn
+              ? "Take off — no go around. Flight log. From school surgery to the academic echelon. Through years and continents"
+              : "Take off - no go around. Бортовой журнал. От школьной хирургии до академического эшелона. Сквозь года и континенты"}
           </p>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        {/* Admin Upload Section */}
         <div className="mb-12">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -191,7 +178,7 @@ const TravelNotes = () => {
                 <Image className="w-6 h-6 text-primary" />
               </div>
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                Галерея
+                {isEn ? "Gallery" : "Галерея"}
               </h2>
             </div>
             
@@ -199,41 +186,41 @@ const TravelNotes = () => {
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <Shield className="w-4 h-4 text-primary" />
-                  Администратор
+                  {isEn ? "Administrator" : "Администратор"}
                 </span>
                 <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
                       <Upload className="w-4 h-4 mr-2" />
-                      Добавить фото
+                      {isEn ? "Add Photo" : "Добавить фото"}
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Добавить фотографию</DialogTitle>
+                      <DialogTitle>{isEn ? "Add Photo" : "Добавить фотографию"}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       <div>
-                        <Label htmlFor="title">Название *</Label>
+                        <Label htmlFor="title">{isEn ? "Title" : "Название"} *</Label>
                         <Input
                           id="title"
                           value={newPhoto.title}
                           onChange={(e) => setNewPhoto({ ...newPhoto, title: e.target.value })}
-                          placeholder="Например: Закат в горах"
+                          placeholder={isEn ? "e.g. Mountain sunset" : "Например: Закат в горах"}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="caption">Подпись</Label>
+                        <Label htmlFor="caption">{isEn ? "Caption" : "Подпись"}</Label>
                         <Textarea
                           id="caption"
                           value={newPhoto.caption}
                           onChange={(e) => setNewPhoto({ ...newPhoto, caption: e.target.value })}
-                          placeholder="Описание фотографии..."
+                          placeholder={isEn ? "Photo description..." : "Описание фотографии..."}
                           rows={3}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="photo">Фотография *</Label>
+                        <Label htmlFor="photo">{isEn ? "Photo" : "Фотография"} *</Label>
                         <Input
                           id="photo"
                           type="file"
@@ -241,19 +228,10 @@ const TravelNotes = () => {
                           onChange={(e) => setNewPhoto({ ...newPhoto, file: e.target.files?.[0] || null })}
                         />
                       </div>
-                      <Button 
-                        onClick={handleUpload} 
-                        disabled={uploading} 
-                        className="w-full"
-                      >
+                      <Button onClick={handleUpload} disabled={uploading} className="w-full">
                         {uploading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Загрузка...
-                          </>
-                        ) : (
-                          "Добавить"
-                        )}
+                          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{isEn ? "Uploading..." : "Загрузка..."}</>
+                        ) : (isEn ? "Add" : "Добавить")}
                       </Button>
                     </div>
                   </DialogContent>
@@ -263,7 +241,6 @@ const TravelNotes = () => {
           </div>
         </div>
 
-        {/* Photos Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -272,119 +249,56 @@ const TravelNotes = () => {
           <div className="text-center py-20">
             <Image className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <p className="text-lg text-muted-foreground">
-              Фотографии пока не добавлены
+              {isEn ? "No photos added yet" : "Фотографии пока не добавлены"}
             </p>
             {isAdmin && (
               <p className="text-sm text-muted-foreground mt-2">
-                Нажмите «Добавить фото» чтобы добавить первую фотографию
+                {isEn ? "Click \"Add Photo\" to upload the first one" : "Нажмите «Добавить фото» чтобы добавить первую фотографию"}
               </p>
             )}
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {photos.map((photo, index) => (
-              <Card
-                key={photo.id}
-                className="group overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => setSelectedIndex(index)}
-              >
+              <Card key={photo.id} className="group overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedIndex(index)}>
                 <div className="aspect-square relative overflow-hidden">
-                  <img
-                    src={getPublicUrl(photo.image_path)}
-                    alt={photo.title}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                  />
+                  <img src={getPublicUrl(photo.image_path)} alt={photo.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                   {isAdmin && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(photo);
-                      }}
-                    >
+                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleDelete(photo); }}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
                 <CardContent className="p-3">
                   <h3 className="font-medium text-foreground truncate">{photo.title}</h3>
-                  {photo.caption && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                      {photo.caption}
-                    </p>
-                  )}
+                  {photo.caption && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{photo.caption}</p>}
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
 
-        {/* Lightbox */}
         {selectedIndex !== null && photos[selectedIndex] && (
-          <div
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
-            onClick={() => setSelectedIndex(null)}
-            onKeyDown={handleKeyDown}
-            tabIndex={0}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4 text-white hover:bg-white/20"
-              onClick={() => setSelectedIndex(null)}
-            >
+          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={() => setSelectedIndex(null)} onKeyDown={handleKeyDown} tabIndex={0}>
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 text-white hover:bg-white/20" onClick={() => setSelectedIndex(null)}>
               <X className="w-6 h-6" />
             </Button>
-
             {selectedIndex > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePrev();
-                }}
-              >
+              <Button variant="ghost" size="icon" className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20" onClick={(e) => { e.stopPropagation(); handlePrev(); }}>
                 <ChevronLeft className="w-8 h-8" />
               </Button>
             )}
-
             {selectedIndex < photos.length - 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNext();
-                }}
-              >
+              <Button variant="ghost" size="icon" className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
                 <ChevronRight className="w-8 h-8" />
               </Button>
             )}
-
-            <div
-              className="max-w-5xl max-h-[90vh] flex flex-col items-center px-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={getPublicUrl(photos[selectedIndex].image_path)}
-                alt={photos[selectedIndex].title}
-                className="max-h-[70vh] max-w-full object-contain"
-              />
+            <div className="max-w-5xl max-h-[90vh] flex flex-col items-center px-4" onClick={(e) => e.stopPropagation()}>
+              <img src={getPublicUrl(photos[selectedIndex].image_path)} alt={photos[selectedIndex].title} className="max-h-[70vh] max-w-full object-contain" />
               <div className="text-center mt-4 text-white">
                 <h3 className="text-xl font-semibold">{photos[selectedIndex].title}</h3>
-                {photos[selectedIndex].caption && (
-                  <p className="text-white/80 mt-2 max-w-2xl">
-                    {photos[selectedIndex].caption}
-                  </p>
-                )}
-                <p className="text-white/50 text-sm mt-2">
-                  {selectedIndex + 1} / {photos.length}
-                </p>
+                {photos[selectedIndex].caption && <p className="text-white/80 mt-2 max-w-2xl">{photos[selectedIndex].caption}</p>}
+                <p className="text-white/50 text-sm mt-2">{selectedIndex + 1} / {photos.length}</p>
               </div>
             </div>
           </div>

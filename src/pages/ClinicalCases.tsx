@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Plus, Loader2, Shield, ChevronDown, ChevronRight, Trash2, Edit, Image } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,23 +40,23 @@ interface CaseImage {
   sort_order: number;
 }
 
-const categoryLabels: Record<CaseCategory, string> = {
-  infertility: "Бесплодие",
-  scrotal_pain: "Боль в мошонке",
-  varicocele: "Варикоцеле",
-  hydrocele: "Гидроцеле",
-  hypospadias: "Гипоспадия",
-  hernia: "Грыжи",
-  cryptorchidism: "Крипторхизм",
-  complications: "Осложнения",
-  psychology: "Психология",
-  rarities: "Раритеты",
-  sexology: "Сексология",
-  pelvic_pain: "Тазовая боль",
-  phimosis: "Фимоз",
-  enuresis: "Энурез",
-  erectile_dysfunction: "Эректильная дисфункция",
-  other: "Другое",
+const categoryLabels: Record<CaseCategory, { ru: string; en: string }> = {
+  infertility: { ru: "Бесплодие", en: "Infertility" },
+  scrotal_pain: { ru: "Боль в мошонке", en: "Scrotal Pain" },
+  varicocele: { ru: "Варикоцеле", en: "Varicocele" },
+  hydrocele: { ru: "Гидроцеле", en: "Hydrocele" },
+  hypospadias: { ru: "Гипоспадия", en: "Hypospadias" },
+  hernia: { ru: "Грыжи", en: "Hernias" },
+  cryptorchidism: { ru: "Крипторхизм", en: "Cryptorchidism" },
+  complications: { ru: "Осложнения", en: "Complications" },
+  psychology: { ru: "Психология", en: "Psychology" },
+  rarities: { ru: "Раритеты", en: "Rare Cases" },
+  sexology: { ru: "Сексология", en: "Sexology" },
+  pelvic_pain: { ru: "Тазовая боль", en: "Pelvic Pain" },
+  phimosis: { ru: "Фимоз", en: "Phimosis" },
+  enuresis: { ru: "Энурез", en: "Enuresis" },
+  erectile_dysfunction: { ru: "Эректильная дисфункция", en: "Erectile Dysfunction" },
+  other: { ru: "Другое", en: "Other" },
 };
 
 const categoryColors: Record<CaseCategory, string> = {
@@ -78,6 +79,8 @@ const categoryColors: Record<CaseCategory, string> = {
 };
 
 const ClinicalCases = () => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
   const [cases, setCases] = useState<ClinicalCase[]>([]);
   const [caseImages, setCaseImages] = useState<Record<string, CaseImage[]>>({});
   const [loading, setLoading] = useState(true);
@@ -293,16 +296,16 @@ const ClinicalCases = () => {
   return (
     <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
-      <PageMeta title="Клинические случаи — Проф. Тарусин Д.И." description="Описания клинических случаев из практики профессора Тарусина Д.И. с иллюстрациями и выводами." path="/clinical-cases" />
+      <PageMeta title={isEn ? "Clinical Cases — Prof. Tarusin" : "Клинические случаи — Проф. Тарусин Д.И."} description={isEn ? "Clinical case descriptions from Professor Tarusin's practice with illustrations and conclusions." : "Описания клинических случаев из практики профессора Тарусина Д.И. с иллюстрациями и выводами."} path="/clinical-cases" />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            {isAdmin ? "К панели администратора" : "На главную"}
+            {isAdmin ? (isEn ? "Admin Panel" : "К панели администратора") : (isEn ? "Home" : "На главную")}
           </Link>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Клинические случаи</h1>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "Clinical Cases" : "Клинические случаи"}</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Описания клинических случаев из практики профессора
+            {isEn ? "Clinical case descriptions from the professor's practice" : "Описания клинических случаев из практики профессора"}
           </p>
         </div>
       </header>
@@ -313,7 +316,7 @@ const ClinicalCases = () => {
         <div className="mb-12">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-              Все случаи
+              {isEn ? "All Cases" : "Все случаи"}
             </h2>
             
             {!authLoading && isAdmin && (
@@ -372,7 +375,7 @@ const ClinicalCases = () => {
                             <SelectContent>
                               {Object.entries(categoryLabels).map(([key, label]) => (
                                 <SelectItem key={key} value={key}>
-                                  {label}
+                                  {isEn ? label.en : label.ru}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -463,7 +466,7 @@ const ClinicalCases = () => {
           <div className="text-center py-20">
             <div className="w-16 h-16 mx-auto text-muted-foreground mb-4">📋</div>
             <p className="text-lg text-muted-foreground">
-              Клинические случаи пока не добавлены
+              {isEn ? "No clinical cases added yet" : "Клинические случаи пока не добавлены"}
             </p>
             {isAdmin && (
               <p className="text-sm text-muted-foreground mt-2">
@@ -477,7 +480,7 @@ const ClinicalCases = () => {
               <div key={category}>
                 <div className="flex items-center gap-2 mb-4">
                   <Badge className={categoryColors[category as CaseCategory]}>
-                    {categoryLabels[category as CaseCategory]}
+                    {isEn ? categoryLabels[category as CaseCategory].en : categoryLabels[category as CaseCategory].ru}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
                     ({categoryCases.length})
@@ -523,7 +526,7 @@ const ClinicalCases = () => {
                           <CardContent className="pt-0 space-y-6">
                             {/* History */}
                             <div>
-                              <h4 className="font-semibold text-foreground mb-2">История</h4>
+                              <h4 className="font-semibold text-foreground mb-2">{isEn ? "History" : "История"}</h4>
                               <p className="text-muted-foreground whitespace-pre-wrap">
                                 {clinicalCase.history}
                               </p>
@@ -534,7 +537,7 @@ const ClinicalCases = () => {
                               <div>
                                 <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                                   <Image className="w-4 h-4" />
-                                  Иллюстрации
+                                   {isEn ? "Illustrations" : "Иллюстрации"}
                                 </h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                   {caseImages[clinicalCase.id].map((img) => (
@@ -559,7 +562,7 @@ const ClinicalCases = () => {
                             {/* Conclusions */}
                             {clinicalCase.conclusions && (
                               <div>
-                                <h4 className="font-semibold text-foreground mb-2">Выводы</h4>
+                                <h4 className="font-semibold text-foreground mb-2">{isEn ? "Conclusions" : "Выводы"}</h4>
                                 <p className="text-muted-foreground whitespace-pre-wrap">
                                   {clinicalCase.conclusions}
                                 </p>
@@ -569,7 +572,7 @@ const ClinicalCases = () => {
                             {/* Recommendations */}
                             {clinicalCase.recommendations && (
                               <div>
-                                <h4 className="font-semibold text-foreground mb-2">Советы</h4>
+                                <h4 className="font-semibold text-foreground mb-2">{isEn ? "Recommendations" : "Советы"}</h4>
                                 <p className="text-muted-foreground whitespace-pre-wrap">
                                   {clinicalCase.recommendations}
                                 </p>

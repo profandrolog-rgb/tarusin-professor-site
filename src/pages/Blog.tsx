@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import DOMPurify from "dompurify";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +70,8 @@ function estimateImageSlots(text: string): number {
 const Blog = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
   const queryClient = useQueryClient();
 
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
@@ -485,11 +488,11 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen bg-background select-none" onContextMenu={(e) => e.preventDefault()} onCopy={(e) => e.preventDefault()}>
-      <PageMeta title="Размышлизмы — Проф. Тарусин Д.И." description="Авторский блог профессора Тарусина — размышления о медицине, андрологии, жизни и профессиональном пути." path="/blog" />
+      <PageMeta title={isEn ? "Reflections — Prof. Tarusin" : "Размышлизмы — Проф. Тарусин Д.И."} description={isEn ? "Professor Tarusin's personal blog — reflections on medicine, andrology, life and professional journey." : "Авторский блог профессора Тарусина — размышления о медицине, андрологии, жизни и профессиональном пути."} path="/blog" />
       <div className="container mx-auto px-4 py-8 pt-24">
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />
-          На главную
+          {isEn ? "Home" : "На главную"}
         </Link>
 
         {/* Disclaimer */}
@@ -507,12 +510,12 @@ const Blog = () => {
 
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Размышлизмы</h1>
-            <p className="text-muted-foreground">Личный блог профессора Тарусина Д.И.</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{isEn ? "Reflections" : "Размышлизмы"}</h1>
+            <p className="text-muted-foreground">{isEn ? "Professor Tarusin's personal blog" : "Личный блог профессора Тарусина Д.И."}</p>
           </div>
           {isAdmin && (
             <Button onClick={openCreate} className="gap-2">
-              <Plus className="w-4 h-4" /> Новая запись
+              <Plus className="w-4 h-4" /> {isEn ? "New Post" : "Новая запись"}
             </Button>
           )}
         </div>
@@ -694,7 +697,7 @@ const Blog = () => {
 
         {/* Posts */}
         {visiblePosts.length === 0 && (
-          <p className="text-center text-muted-foreground py-16">Записей пока нет</p>
+          <p className="text-center text-muted-foreground py-16">{isEn ? "No posts yet" : "Записей пока нет"}</p>
         )}
 
         <div className="space-y-6">
@@ -776,7 +779,7 @@ const Blog = () => {
                         )}
                         <div className="flex items-center gap-4 mt-3">
                           <span className="text-primary text-sm font-medium flex items-center gap-1">
-                            Читать далее <ChevronDown className="w-4 h-4" />
+                            {isEn ? "Read more" : "Читать далее"} <ChevronDown className="w-4 h-4" />
                           </span>
                           {/* Compact reaction counts in collapsed view */}
                           <span className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -796,7 +799,7 @@ const Blog = () => {
                       className="cursor-pointer flex items-center gap-1 text-primary text-sm font-medium mb-4"
                       onClick={() => toggleExpanded(post.id)}
                     >
-                      Свернуть <ChevronUp className="w-4 h-4" />
+                      {isEn ? "Collapse" : "Свернуть"} <ChevronUp className="w-4 h-4" />
                     </div>
 
                     {hasImages ? (
@@ -891,7 +894,7 @@ const Blog = () => {
                     <div className="mt-8 border-t border-border pt-6">
                       <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4">
                         <MessageSquare className="w-4 h-4" />
-                        Комментарии ({visibleComments.filter((c) => c.is_approved).length})
+                        {isEn ? "Comments" : "Комментарии"} ({visibleComments.filter((c) => c.is_approved).length})
                       </h3>
 
                       {visibleComments.length > 0 && (
@@ -931,7 +934,7 @@ const Blog = () => {
                       {/* Comment input */}
                       <div className="flex gap-2">
                         <Input
-                          placeholder={user ? "Написать комментарий..." : "Войдите, чтобы комментировать"}
+                          placeholder={user ? (isEn ? "Write a comment..." : "Написать комментарий...") : (isEn ? "Sign in to comment" : "Войдите, чтобы комментировать")}
                           value={commentTexts[post.id] || ""}
                           onChange={(e) => setCommentTexts((prev) => ({ ...prev, [post.id]: e.target.value }))}
                           onFocus={() => { if (!user) setShowLoginDialog(true); }}
