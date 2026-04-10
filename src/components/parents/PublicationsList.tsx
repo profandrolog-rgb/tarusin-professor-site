@@ -116,7 +116,7 @@ const publications = [
   { n: 73, title: "Простатопатия у пациентов с варикоцеле — миф или реальность?", authors: "Тарусин Д.И., Жидков М.В. и др.", source: "XI Всероссийская Школа. Тезисы. — М., 2023", year: "2023", url: "https://uroweb.ru/sites/default/files/TEZIS_det_shkola_2023.pdf", categories: ["varicocele"] as Category[] },
   { n: 74, title: "Варикоцеле. To be or not to beat (доклад-обзор)", authors: "Тарусин Д.И.", source: "Uro.TV. Видеодоклад. — 2024", year: "2024", url: "https://uro.tv/speaker/tarusin_dmitriy_igorevich", categories: ["varicocele"] as Category[] },
   { n: 75, title: "«Double Decker» пластика крайней плоти", authors: "Тарусин Д.И., Середницкая Н.А. и др.", source: "XI Всероссийская Школа. Тезисы. — М., 2023", year: "2023", url: "https://uroweb.ru/sites/default/files/TEZIS_det_shkola_2023.pdf", categories: ["foreskin"] as Category[] },
-  { n: 76, title: "Лимфангиома мошонки (клиническое наблюдение)", authors: "Сафин Д.А., Тарусин Д.И., Матар А.А.", source: "Урология (Urologiia). — 2023. — PMID: 37401713", year: "2023", url: "https://pubmed.ncbi.nlm.nih.gov/37401713/", categories: ["acute"] as Category[] },
+  { n: 76, title: "Лимфангиома мошонки (клиническое наблюдение)", authors: "Сафин Д.А., Тарусин Д.И., Матар А.А.", source: "Урология (Urologiia). — 2023. — № 2. — С. 107–110. DOI: 10.18565/urology.2023.2.107-110", year: "2023", url: "https://urologyjournal.ru/ru/archive/article/42874", categories: ["acute"] as Category[] },
   { n: 77, title: "Армагеддон в андрологии: последствия ошибок лечения", authors: "Тарусин Д.И.", source: "Uro.TV / UroWeb.ru. Трансляция. — 2023", year: "2023", url: "https://uroweb.ru/news/tarusin-di---armageddon-v-andrologii-posledstviya-oshibok-lecheniya", categories: ["organization"] as Category[] },
   { n: 78, title: "Психогенные нарушения мочеиспускания у детей", authors: "Тарусин Д.И. и соавт.", source: "XII Всероссийская Школа. Тезисы. — М., 2024", year: "2024", url: "https://uroweb.ru/sites/default/files/TEZIS_det_shkola_2024.pdf", categories: ["psychology"] as Category[] },
   { n: 79, title: "Современные методы диагностики и лечения сосудистых аномалий урогенитальной области", authors: "Тарусин Д.И., Матар А.А. и др.", source: "10-я Школа АСУР. — Севастополь, 2023", year: "2023", url: "https://uroweb.ru/sites/default/files/programma_asur.pdf", categories: ["asur"] as Category[] },
@@ -130,10 +130,16 @@ const publications = [
   { n: 87, title: "Паттерн ночной эрекции — что, зачем, почему?", authors: "Тарусин Д.И., Матар А.А. и др.", source: "XII Всероссийская Школа. Тезисы. — М., 2024. — С. 13", year: "2024", url: "https://uroweb.ru/sites/default/files/TEZIS_det_shkola_2024.pdf", categories: ["reproductive"] as Category[] },
   { n: 88, title: "Новое слово в лечении дисфункции мышц тазового дна и ассоциированных с ним расстройств", authors: "Тарусин Д.И., Матар А.А. и др.", source: "XII Всероссийская Школа. Тезисы. — М., 2024. — С. 11", year: "2024", url: "https://uroweb.ru/sites/default/files/TEZIS_det_shkola_2024.pdf", categories: ["reproductive"] as Category[] },
   { n: 89, title: "Новое слово в лечении дисфункции мышц тазового дна (видеодоклад)", authors: "Тарусин Д.И.", source: "Uro.TV. Видеодоклад. — 2024", year: "2024", url: "https://uro.tv/speaker/tarusin_dmitriy_igorevich", categories: ["reproductive"] as Category[] },
+  // --- Дополнительные публикации, найденные при поиске в интернете ---
+  { n: 90, title: "Болезнь Боуэна — симптомы и лечение (энциклопедическая статья)", authors: "Тарусин Д.И.", source: "ПроБолезни (probolezny.ru). — 2023", year: "2023", url: "https://probolezny.ru/bolezn-bouena/", categories: ["reproductive"] as Category[] },
+  { n: 91, title: "«Проблемой репродуктивного здоровья мальчиков занимались все и никто» (интервью)", authors: "Тарусин Д.И.", source: "Эффективная фармакотерапия. Педиатрия. — № 1", year: "2010", url: "https://umedp.ru/articles/print/1183/", categories: ["organization", "reproductive"] as Category[] },
+  { n: 92, title: "Чем Спок взял весь мир? (колонка эксперта)", authors: "Тарусин Д.И.", source: "АиФ. Здоровье / Аргументы и Факты. — 2016", year: "2016", url: "https://aif.ru/health/opinion/chem_spok_vzyal_ves_mir", categories: ["organization"] as Category[] },
+  { n: 93, title: "Амбулаторная детская хирургия (интервью, программа «Здоровое детство»)", authors: "Тарусин Д.И.", source: "Медиадоктор / doctor.ru. — 2018", year: "2018", url: "https://doctor.ru/view/54982/", categories: ["organization"] as Category[] },
+  { n: 94, title: "Андрология детского возраста (интервью, программа «Здоровое детство»)", authors: "Тарусин Д.И.", source: "Медиадоктор / doctor.ru. — 2019", year: "2019", url: "https://doctor.ru/view/60788/", categories: ["reproductive"] as Category[] },
 ];
 
 const stats = [
-  { value: "89", label: "публикаций" },
+  { value: "94", label: "публикаций" },
   { value: "6", label: "глав в руководствах" },
   { value: "1", label: "докторская диссертация" },
   { value: "30+", label: "лет в медицине" },
