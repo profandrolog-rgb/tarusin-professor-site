@@ -74,6 +74,8 @@ const App = () => (
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/consent" element={<Consent />} />
               <Route path="/results" element={<Results />} />
+              <Route path="/portal" element={<PatientPortal />} />
+              <Route path="/admin/patient-cards" element={<AdminPatientCards />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
