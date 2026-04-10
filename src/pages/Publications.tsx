@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PageMeta from "@/components/PageMeta";
@@ -96,14 +97,16 @@ const publications = [
   { n: 89, title: "Новое слово в лечении дисфункции мышц тазового дна (видеодоклад)", authors: "Тарусин Д.И.", source: "Uro.TV. Видеодоклад. — 2024", year: "2024", url: "https://uro.tv/speaker/tarusin_dmitriy_igorevich" },
 ];
 
-const stats = [
-  { icon: FileText, value: "89", label: "Научных публикаций" },
-  { icon: BookOpen, value: "6", label: "Глав в нац. руководствах" },
-  { icon: Award, value: "1", label: "Докторская диссертация" },
-  { icon: Microscope, value: "30+", label: "Лет в медицине" },
-];
-
 const Publications = () => {
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
+  const stats = [
+    { icon: FileText, value: "89", label: isEn ? "Scientific Publications" : "Научных публикаций" },
+    { icon: BookOpen, value: "6", label: isEn ? "National Guidelines Chapters" : "Глав в нац. руководствах" },
+    { icon: Award, value: "1", label: isEn ? "Doctoral Dissertation" : "Докторская диссертация" },
+    { icon: Microscope, value: "30+", label: isEn ? "Years in Medicine" : "Лет в медицине" },
+  ];
   const groupedPublications = publications.reduce((acc, pub) => {
     const decade = Math.floor(parseInt(pub.year) / 10) * 10;
     const decadeLabel = `${decade}-е`;
@@ -120,19 +123,19 @@ const Publications = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageMeta title="Научные публикации — Проф. Тарусин Д.И." description="Полный список научных работ профессора Тарусина Д.И.: 89 публикаций, 6 глав в национальных руководствах, докторская диссертация." path="/publications" />
+      <PageMeta title={isEn ? "Scientific Publications — Prof. Tarusin" : "Научные публикации — Проф. Тарусин Д.И."} description={isEn ? "Complete list of Professor Tarusin's scientific works: 89 publications, 6 national guidelines chapters, doctoral dissertation." : "Полный список научных работ профессора Тарусина Д.И.: 89 публикаций, 6 глав в национальных руководствах, докторская диссертация."} path="/publications" />
       <Header />
       <main className="pt-20 md:pt-24">
-        {/* Hero Section */}
         <section className="py-16 md:py-24 bg-gradient-to-br from-secondary/50 to-background">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-                Научные публикации
+                {isEn ? "Scientific Publications" : "Научные публикации"}
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-12">
-                Полный список научных работ профессора Тарусина Д.И., включая статьи в рецензируемых журналах, 
-                главы в национальных руководствах, докторскую диссертацию и видеодоклады
+                {isEn
+                  ? "Complete list of Professor Tarusin's scientific works, including peer-reviewed journal articles, national guideline chapters, doctoral dissertation, and video presentations"
+                  : "Полный список научных работ профессора Тарусина Д.И., включая статьи в рецензируемых журналах, главы в национальных руководствах, докторскую диссертацию и видеодоклады"}
               </p>
 
               {/* Stats */}
@@ -162,7 +165,7 @@ const Publications = () => {
                       {decade}
                     </span>
                     <span className="text-muted-foreground text-base font-normal">
-                      ({groupedPublications[decade].length} публикаций)
+                      ({groupedPublications[decade].length} {isEn ? "publications" : "публикаций"})
                     </span>
                   </h2>
                   <div className="space-y-3">
@@ -194,7 +197,7 @@ const Publications = () => {
                                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
                                 >
                                   <ExternalLink className="w-3 h-3" />
-                                  Источник
+                                  {isEn ? "Source" : "Источник"}
                                 </a>
                               )}
                             </div>
@@ -213,7 +216,7 @@ const Publications = () => {
         <section className="py-8 bg-secondary/30">
           <div className="container mx-auto px-4">
             <p className="text-center text-sm text-muted-foreground">
-              Составлено с использованием открытых источников: PubMed, Uro.TV, UroWeb.ru, CyberLeninka.ru, eLibrary.ru, Google Scholar
+              {isEn ? "Compiled from open sources: PubMed, Uro.TV, UroWeb.ru, CyberLeninka.ru, eLibrary.ru, Google Scholar" : "Составлено с использованием открытых источников: PubMed, Uro.TV, UroWeb.ru, CyberLeninka.ru, eLibrary.ru, Google Scholar"}
             </p>
           </div>
         </section>
