@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-import { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
 import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
 import { useTranslation } from "react-i18next";
+import CertificateLightbox from "@/components/CertificateLightbox";
 
 type Certificate = {
   id: string;
