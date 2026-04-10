@@ -71,20 +71,10 @@ const AboutSection = () => {
     return data.publicUrl;
   };
 
-  React.useEffect(() => {
-    if (!certApi) return;
-    const update = () => {
-      setCertPageCount(certApi.scrollSnapList().length);
-      setCertCurrentPage(certApi.selectedScrollSnap() + 1);
-    };
-    update();
-    certApi.on("reInit", update);
-    certApi.on("select", update);
-    return () => {
-      certApi.off("reInit", update);
-      certApi.off("select", update);
-    };
-  }, [certApi]);
+  const certImages = React.useMemo(
+    () => certificates.map((c) => ({ id: c.id, title: c.title, url: getImageUrl(c.image_path) })),
+    [certificates]
+  );
 
   return (
     <section id="about" className="py-16 md:py-24 bg-background">
