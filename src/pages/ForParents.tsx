@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpen, Baby, User } from "lucide-react";
+import { ArrowLeft, BookOpen, Baby, User, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +6,7 @@ import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import UsefulMaterials from "@/components/parents/UsefulMaterials";
 import DiseaseArticlesList from "@/components/parents/DiseaseArticlesList";
+import PublicationsList from "@/components/parents/PublicationsList";
 
 const ForParents = () => {
   return (
