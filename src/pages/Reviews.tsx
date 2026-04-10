@@ -7,191 +7,127 @@ import PageMeta from "@/components/PageMeta";
 import ColleagueReviews from "@/components/ColleagueReviews";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 
 import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
 import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
 import docdocLogo from "@/assets/platforms/docdoc.png";
 
-const logoMap: Record<string, string> = {
-  prodoctorov: prodoctorovLogo,
-  "yandex-health": yandexHealthLogo,
-  docdoc: docdocLogo,
-};
+const logoMap: Record<string, string> = { prodoctorov: prodoctorovLogo, "yandex-health": yandexHealthLogo, docdoc: docdocLogo };
 
 const fallbackPlatforms = [
-  { platform_name: "ProDoctorov", rating: "5.0", review_count: "26", description: "Крупнейший сервис поиска врачей в России", url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/", logo_key: "prodoctorov" },
-  { platform_name: "Яндекс.Здоровье", rating: "5.0", review_count: "40", description: "Медицинский сервис Яндекса", url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ", logo_key: "yandex-health" },
-  { platform_name: "DocDoc", rating: "4.5", review_count: "13", description: "Сервис записи к врачам онлайн", url: "https://docdoc.ru/doctor/Tarusin_Dmitriy", logo_key: "docdoc" },
+  { platform_name: "ProDoctorov", rating: "5.0", review_count: "26", description_ru: "Крупнейший сервис поиска врачей в России", description_en: "Russia's largest doctor search service", url: "https://prodoctorov.ru/moskva/vrach/32554-tarusin/", logo_key: "prodoctorov" },
+  { platform_name: "Yandex Health", rating: "5.0", review_count: "40", description_ru: "Медицинский сервис Яндекса", description_en: "Yandex medical service", url: "https://yandex.ru/medicine/doctor/tarusin_dmitriy_FoTXtQPJy5wOJ", logo_key: "yandex-health" },
+  { platform_name: "DocDoc", rating: "4.5", review_count: "13", description_ru: "Сервис записи к врачам онлайн", description_en: "Online doctor booking service", url: "https://docdoc.ru/doctor/Tarusin_Dmitriy", logo_key: "docdoc" },
 ];
 
 const Reviews = () => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
   const { data: platforms } = useQuery({
     queryKey: ["review-platforms"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("review_platforms")
-        .select("*")
-        .order("created_at");
+      const { data, error } = await supabase.from("review_platforms").select("*").order("created_at");
       if (error) throw error;
       return data;
     },
   });
 
-  const reviewPlatforms = (platforms && platforms.length > 0 ? platforms : fallbackPlatforms) as Array<{
-    platform_name: string;
-    rating: string | null;
-    review_count: string | null;
-    description: string | null;
-    url: string;
-    logo_key: string;
-  }>;
+  const reviewPlatforms = (platforms && platforms.length > 0
+    ? platforms.map(p => ({ ...p, description_ru: p.description, description_en: p.description }))
+    : fallbackPlatforms);
 
   const ratingPlatforms = reviewPlatforms.filter(p => p.logo_key !== "docdoc");
   const totalReviews = reviewPlatforms.reduce((sum, p) => sum + parseInt(p.review_count || "0", 10), 0);
-  const avgRating = ratingPlatforms.length > 0
-    ? (ratingPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / ratingPlatforms.length).toFixed(1)
-    : "0";
+  const avgRating = ratingPlatforms.length > 0 ? (ratingPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / ratingPlatforms.length).toFixed(1) : "0";
 
   return (
     <div className="min-h-screen bg-background">
       <PageMeta
-        title="Отзывы пациентов — Проф. Тарусин Д.И."
-        description={`Реальные отзывы пациентов профессора Тарусина Д.И. на независимых платформах. Рейтинг ${avgRating} на ${reviewPlatforms.length}+ медицинских агрегаторах.`}
+        title={isEn ? "Patient Reviews — Prof. Tarusin D.I." : "Отзывы пациентов — Проф. Тарусин Д.И."}
+        description={isEn ? `Real patient reviews of Professor Tarusin. Rating ${avgRating} on ${reviewPlatforms.length}+ platforms.` : `Реальные отзывы пациентов профессора Тарусина Д.И. Рейтинг ${avgRating}.`}
         path="/reviews"
       />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            На главную
+            {isEn ? "Back to Home" : "На главную"}
           </Link>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Отзывы и рейтинги</h1>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "Reviews & Ratings" : "Отзывы и рейтинги"}</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Реальные отзывы пациентов на независимых платформах — {reviewPlatforms.length}+ медицинских агрегатора
+            {isEn ? `Real patient reviews on independent platforms — ${reviewPlatforms.length}+ medical aggregators` : `Реальные отзывы пациентов на независимых платформах — ${reviewPlatforms.length}+ медицинских агрегатора`}
           </p>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
         <Tabs defaultValue="patients" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 h-auto mb-8">
-          <TabsTrigger value="patients" className="py-3">Отзывы пациентов</TabsTrigger>
-          <TabsTrigger value="colleagues" className="py-3">Отзывы коллег</TabsTrigger>
-        </TabsList>
+          <TabsList className="w-full grid grid-cols-2 h-auto mb-8">
+            <TabsTrigger value="patients" className="py-3">{isEn ? "Patient Reviews" : "Отзывы пациентов"}</TabsTrigger>
+            <TabsTrigger value="colleagues" className="py-3">{isEn ? "Colleague Reviews" : "Отзывы коллег"}</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="patients">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          <Card className="bg-secondary border-none">
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">{totalReviews}+</div>
-              <div className="text-sm text-muted-foreground">Отзывов</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-secondary border-none">
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">{avgRating}</div>
-              <div className="text-sm text-muted-foreground">Средний рейтинг</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-secondary border-none">
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">{reviewPlatforms.length}+</div>
-              <div className="text-sm text-muted-foreground">Платформы</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-secondary border-none">
-            <CardContent className="p-6 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">42</div>
-              <div className="text-sm text-muted-foreground">Года опыта</div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="patients">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+              <Card className="bg-secondary border-none"><CardContent className="p-6 text-center"><div className="text-3xl md:text-4xl font-bold text-primary mb-1">{totalReviews}+</div><div className="text-sm text-muted-foreground">{isEn ? "Reviews" : "Отзывов"}</div></CardContent></Card>
+              <Card className="bg-secondary border-none"><CardContent className="p-6 text-center"><div className="text-3xl md:text-4xl font-bold text-primary mb-1">{avgRating}</div><div className="text-sm text-muted-foreground">{isEn ? "Avg. Rating" : "Средний рейтинг"}</div></CardContent></Card>
+              <Card className="bg-secondary border-none"><CardContent className="p-6 text-center"><div className="text-3xl md:text-4xl font-bold text-primary mb-1">{reviewPlatforms.length}+</div><div className="text-sm text-muted-foreground">{isEn ? "Platforms" : "Платформы"}</div></CardContent></Card>
+              <Card className="bg-secondary border-none"><CardContent className="p-6 text-center"><div className="text-3xl md:text-4xl font-bold text-primary mb-1">42</div><div className="text-sm text-muted-foreground">{isEn ? "Years of Experience" : "Года опыта"}</div></CardContent></Card>
+            </div>
 
-        <div className="mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
-            Читать отзывы на платформах
-          </h2>
-          
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {reviewPlatforms.map((platform, index) => (
-              <Card 
-                key={index} 
-                className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                onClick={() => window.open(platform.url, "_blank")}
-              >
-                <CardContent className="p-6">
-                  <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center mb-4 overflow-hidden">
-                    <img 
-                      src={logoMap[platform.logo_key]} 
-                      alt={platform.platform_name} 
-                      className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110" 
-                    />
-                  </div>
-                  
-                  <h3 className="text-lg font-semibold text-foreground mb-1">{platform.platform_name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{platform.description}</p>
-                  
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                      ))}
-                    </div>
-                    <span className="text-sm font-medium text-foreground">{platform.rating}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{platform.review_count} отзывов</span>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        <Card className="mb-12 bg-accent/10 border-accent/30">
-          <CardContent className="p-8">
-            <h3 className="text-xl font-bold text-foreground mb-4">Оценка интернет-видимости</h3>
-            <div className="grid sm:grid-cols-3 gap-6">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Профессиональная видимость</div>
-                <div className="font-bold text-primary">ВЫСОКАЯ</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Репутация</div>
-                <div className="font-bold text-primary">ПРЕВОСХОДНАЯ</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Медицинские агрегаторы</div>
-                <div className="font-bold text-primary">{reviewPlatforms.length}+ ПЛАТФОРМЫ</div>
+            <div className="mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">{isEn ? "Read Reviews on Platforms" : "Читать отзывы на платформах"}</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {reviewPlatforms.map((platform, index) => (
+                  <Card key={index} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer" onClick={() => window.open(platform.url, "_blank")}>
+                    <CardContent className="p-6">
+                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center mb-4 overflow-hidden">
+                        <img src={logoMap[platform.logo_key]} alt={platform.platform_name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-1">{platform.platform_name}</h3>
+                      <p className="text-sm text-muted-foreground mb-4">{isEn ? platform.description_en : platform.description_ru}</p>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="flex items-center gap-1">{[1,2,3,4,5].map(s => <Star key={s} className="w-4 h-4 text-yellow-500 fill-yellow-500" />)}</div>
+                        <span className="text-sm font-medium text-foreground">{platform.rating}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{platform.review_count} {isEn ? "reviews" : "отзывов"}</span>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="bg-primary text-primary-foreground">
-          <CardContent className="p-8 md:p-12 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Доверие пациентов — главная награда
-            </h2>
-            <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-8">
-              За 42 года практики тысячи семей доверили мне здоровье своих детей. 
-              Каждый положительный отзыв — это история успешного лечения и благодарность, 
-              которая вдохновляет продолжать работу.
-            </p>
-            <Link to="/contacts">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                Записаться на консультацию
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-        </TabsContent>
+            <Card className="mb-12 bg-accent/10 border-accent/30">
+              <CardContent className="p-8">
+                <h3 className="text-xl font-bold text-foreground mb-4">{isEn ? "Online Visibility Assessment" : "Оценка интернет-видимости"}</h3>
+                <div className="grid sm:grid-cols-3 gap-6">
+                  <div><div className="text-sm text-muted-foreground mb-1">{isEn ? "Professional Visibility" : "Профессиональная видимость"}</div><div className="font-bold text-primary">{isEn ? "HIGH" : "ВЫСОКАЯ"}</div></div>
+                  <div><div className="text-sm text-muted-foreground mb-1">{isEn ? "Reputation" : "Репутация"}</div><div className="font-bold text-primary">{isEn ? "EXCELLENT" : "ПРЕВОСХОДНАЯ"}</div></div>
+                  <div><div className="text-sm text-muted-foreground mb-1">{isEn ? "Medical Aggregators" : "Медицинские агрегаторы"}</div><div className="font-bold text-primary">{reviewPlatforms.length}+ {isEn ? "PLATFORMS" : "ПЛАТФОРМЫ"}</div></div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="colleagues">
-          <ColleagueReviews />
-        </TabsContent>
+            <Card className="bg-primary text-primary-foreground">
+              <CardContent className="p-8 md:p-12 text-center">
+                <h2 className="text-2xl md:text-3xl font-bold mb-4">{isEn ? "Patient Trust — The Greatest Reward" : "Доверие пациентов — главная награда"}</h2>
+                <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-8">
+                  {isEn
+                    ? "Over 42 years of practice, thousands of families have trusted me with their children's health. Every positive review is a story of successful treatment and gratitude that inspires me to continue."
+                    : "За 42 года практики тысячи семей доверили мне здоровье своих детей. Каждый положительный отзыв — это история успешного лечения и благодарность, которая вдохновляет продолжать работу."
+                  }
+                </p>
+                <Link to="/contacts"><Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">{isEn ? "Book a Consultation" : "Записаться на консультацию"}</Button></Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="colleagues"><ColleagueReviews /></TabsContent>
         </Tabs>
       </main>
     </div>

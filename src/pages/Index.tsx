@@ -92,7 +92,7 @@ const Index = () => {
         <AboutSection />
         <PioneersSection />
         <ProfessorMessageSection />
-        <InternationalSection />
+        {/* <InternationalSection /> — hidden for redesign */}
         <DiagnosticChecklist />
         <ResultsCTA />
         <PatientJourney />
