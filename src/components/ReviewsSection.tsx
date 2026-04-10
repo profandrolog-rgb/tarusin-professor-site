@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -572,6 +573,7 @@ const reviews = [
 ];
 
 const ReviewsSection = () => {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const reviewsPerPage = 3;
   const maxIndex = reviews.length - reviewsPerPage;
@@ -594,10 +596,10 @@ const ReviewsSection = () => {
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Отзывы пациентов
+            {t("reviews.title")}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Доверие пациентов — моя главная награда. Реальные отзывы с проверенных платформ
+            {t("reviews.subtitle")}
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             <div className="flex">
@@ -606,7 +608,7 @@ const ReviewsSection = () => {
               ))}
             </div>
             <span className="text-lg font-semibold text-foreground">5.0</span>
-            <span className="text-muted-foreground">на основе {reviews.length}+ отзывов</span>
+            <span className="text-muted-foreground">{reviews.length}+ {t("reviews.reviewsCount")}</span>
           </div>
         </div>
 
@@ -671,51 +673,35 @@ const ReviewsSection = () => {
         <div className="flex flex-wrap justify-center gap-8 mt-12 pt-8 border-t border-border">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">{reviews.length}+</div>
-            <div className="text-sm text-muted-foreground">Отзывов на платформах</div>
+            <div className="text-sm text-muted-foreground">{t("reviews.reviewsCount")}</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">100%</div>
-            <div className="text-sm text-muted-foreground">Рекомендуют</div>
+            <div className="text-sm text-muted-foreground">{t("lang") === "en" ? "Recommend" : "Рекомендуют"}</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">42</div>
-            <div className="text-sm text-muted-foreground">Года опыта</div>
+            <div className="text-sm text-muted-foreground">{t("about.achYears")}</div>
           </div>
         </div>
 
         {/* CTA */}
         <div className="text-center mt-12">
           <p className="text-muted-foreground mb-4">
-            Все отзывы проверены и опубликованы на независимых платформах
+            {t("lang") === "en" ? "All reviews are verified and published on independent platforms" : "Все отзывы проверены и опубликованы на независимых платформах"}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open("https://yandex.ru/maps/org/klinika_doktora_matara/1124622894/reviews/", "_blank")}
-            >
-              Читать на Яндексе
+            <Button variant="outline" size="sm" onClick={() => window.open("https://yandex.ru/maps/org/klinika_doktora_matara/1124622894/reviews/", "_blank")}>
+              {t("lang") === "en" ? "Read on Yandex" : "Читать на Яндексе"}
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open("https://prodoctorov.ru/moskva/vrach/32554-tarusin/otzivi/", "_blank")}
-            >
-              Читать на ПроДокторов
+            <Button variant="outline" size="sm" onClick={() => window.open("https://prodoctorov.ru/moskva/vrach/32554-tarusin/otzivi/", "_blank")}>
+              {t("lang") === "en" ? "Read on ProDoctors" : "Читать на ПроДокторов"}
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open("https://docdoc.ru/doctor/Tarusin_Dmitriy#reviews", "_blank")}
-            >
-              Читать на DocDoc
+            <Button variant="outline" size="sm" onClick={() => window.open("https://docdoc.ru/doctor/Tarusin_Dmitriy#reviews", "_blank")}>
+              {t("lang") === "en" ? "Read on DocDoc" : "Читать на DocDoc"}
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open("https://www.matar-clinic.ru/reviews/", "_blank")}
-            >
-              Клиника доктора Матара
+            <Button variant="outline" size="sm" onClick={() => window.open("https://www.matar-clinic.ru/reviews/", "_blank")}>
+              {t("lang") === "en" ? "Dr. Matara's Clinic" : "Клиника доктора Матара"}
             </Button>
           </div>
         </div>
