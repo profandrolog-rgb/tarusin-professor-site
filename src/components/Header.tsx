@@ -117,10 +117,18 @@ const Header = () => {
                   </DropdownMenuItem>
                 )}
                 {user ? (
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {t("nav.signOut")}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/portal" className="w-full flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        {i18n.language === "en" ? "My Portal" : "Мой кабинет"}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      {t("nav.signOut")}
+                    </DropdownMenuItem>
+                  </>
                 ) : (
                   <>
                     <DropdownMenuItem asChild>
