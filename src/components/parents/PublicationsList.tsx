@@ -161,7 +161,7 @@ const PublicationsList = () => {
                       <p className="text-xs text-muted-foreground/70">
                         {pub.source}
                       </p>
-                      {pub.url && (
+                      {pub.url ? (
                         <a
                           href={pub.url}
                           target="_blank"
@@ -170,6 +170,16 @@ const PublicationsList = () => {
                         >
                           <ExternalLink className="w-3 h-3" />
                           Источник
+                        </a>
+                      ) : (
+                        <a
+                          href={`https://elibrary.ru/query_results.asp?search_text=${encodeURIComponent(pub.title)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary hover:underline mt-1"
+                        >
+                          <Search className="w-3 h-3" />
+                          Найти в eLibrary
                         </a>
                       )}
                     </div>
