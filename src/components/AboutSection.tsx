@@ -23,9 +23,8 @@ const MAX_PUBLIC_CERTIFICATES = 60;
 
 const AboutSection = () => {
   const { t } = useTranslation();
-  const [certApi, setCertApi] = React.useState<CarouselApi>();
-  const [certPageCount, setCertPageCount] = React.useState(0);
-  const [certCurrentPage, setCertCurrentPage] = React.useState(0);
+  const [lightboxOpen, setLightboxOpen] = React.useState(false);
+  const [lightboxIndex, setLightboxIndex] = React.useState(0);
 
   const specializations = [
     { customIcon: boyIcon, titleKey: "about.specPedUroAndro", descKey: "about.specPedUroAndroDesc" },
