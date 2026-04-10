@@ -87,6 +87,7 @@ const Index = () => {
       <Helmet>
         <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       </Helmet>
+      <SchemaOrg />
       <Header />
       <main>
         <HeroSection />
