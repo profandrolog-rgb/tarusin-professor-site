@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
+import { useTranslation } from "react-i18next";
 
 interface VideoFile {
   name: string;
@@ -22,6 +23,8 @@ const Videos = () => {
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isEn = i18n.language === "en";
 
   useEffect(() => {
     if (!authLoading && user) {
