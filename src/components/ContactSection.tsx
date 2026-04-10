@@ -354,28 +354,36 @@ const ContactSection = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone">Телефон *</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        placeholder="+7 (___) ___-__-__"
-                        value={formData.phone}
-                        onChange={(e) => {
-                          // Auto-format phone number
-                          let val = e.target.value.replace(/\D/g, "");
-                          if (val.startsWith("8")) val = "7" + val.slice(1);
-                          if (!val.startsWith("7") && val.length > 0) val = "7" + val;
-                          let formatted = "";
-                          if (val.length > 0) formatted = "+7";
-                          if (val.length > 1) formatted += " (" + val.slice(1, 4);
-                          if (val.length >= 4) formatted += ") " + val.slice(4, 7);
-                          if (val.length >= 7) formatted += "-" + val.slice(7, 9);
-                          if (val.length >= 9) formatted += "-" + val.slice(9, 11);
-                          setFormData((prev) => ({ ...prev, phone: formatted }));
-                          if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
-                        }}
-                        className={errors.phone ? "border-destructive" : ""}
-                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={selectedCountry.country}
+                          onChange={(e) => {
+                            const found = countryCodes.find(c => c.country === e.target.value);
+                            if (found) {
+                              setSelectedCountry(found);
+                              setFormData(prev => ({ ...prev, phone: "" }));
+                            }
+                          }}
+                          className="flex h-10 rounded-md border border-input bg-background px-2 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-[140px] flex-shrink-0"
+                        >
+                          {countryCodes.map((c, i) => (
+                            <option key={i} value={c.country}>{c.country}</option>
+                          ))}
+                        </select>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          placeholder={selectedCountry.code === "+7" ? "(___) ___-__-__" : "Номер телефона"}
+                          value={formData.phone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^\d\s\-()]/g, "").slice(0, 20);
+                            setFormData((prev) => ({ ...prev, phone: val }));
+                            if (errors.phone) setErrors((prev) => ({ ...prev, phone: "" }));
+                          }}
+                          className={errors.phone ? "border-destructive" : ""}
+                        />
+                      </div>
                       {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                     </div>
                   </div>
