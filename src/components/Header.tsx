@@ -53,6 +53,9 @@ const moreNavItems = [{
   label: "Путёвые заметки",
   href: "/travel-notes"
 }, {
+  label: "Мастер-классы",
+  href: "/masterclasses"
+}, {
   label: "Размышлизмы",
   href: "/blog"
 }, {

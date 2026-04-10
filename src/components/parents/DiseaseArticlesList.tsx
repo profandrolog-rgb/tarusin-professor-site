@@ -64,59 +64,102 @@ const DiseaseArticlesList = ({ ageGroup }: DiseaseArticlesListProps) => {
   }, [articles, searchQuery, selectedCategory]);
 
   return (
-    <div>
-      {/* Search and filters */}
-      <div className="mb-8 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Поиск по заболеваниям..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+    <div className="flex gap-6">
+      {/* Sidebar tree navigation */}
+      <div className="hidden lg:block w-64 flex-shrink-0">
+        <div className="sticky top-24 space-y-1">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Filter className="w-4 h-4" />
+            Разделы
+          </h3>
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              selectedCategory === null
+                ? "bg-primary text-primary-foreground font-medium"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            Все заболевания ({articles.length})
+          </button>
+          {categories.map((cat) => {
+            const count = articles.filter(a => a.category === cat).length;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                  selectedCategory === cat
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <span>{categoryLabels[cat] || cat}</span>
+                <span className={`text-xs ${selectedCategory === cat ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 min-w-0">
+        {/* Mobile search and filters */}
+        <div className="mb-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск по заболеваниям..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Mobile category filter */}
+          {categories.length > 1 && (
+            <div className="flex items-center gap-2 flex-wrap lg:hidden">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Badge
+                variant={selectedCategory === null ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setSelectedCategory(null)}
+              >
+                Все
+              </Badge>
+              {categories.map((cat) => (
+                <Badge
+                  key={cat}
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
+                >
+                  {categoryLabels[cat] || cat}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
-        {categories.length > 1 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Badge
-              variant={selectedCategory === null ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setSelectedCategory(null)}
-            >
-              Все
-            </Badge>
-            {categories.map((cat) => (
-              <Badge
-                key={cat}
-                variant={selectedCategory === cat ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => setSelectedCategory(cat === selectedCategory ? null : cat)}
-              >
-                {categoryLabels[cat] || cat}
-              </Badge>
+        {/* Articles grid */}
+        {loading ? (
+          <div className="text-center py-12 text-muted-foreground">Загрузка...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              {searchQuery ? "Ничего не найдено. Попробуйте другой запрос." : "Материалы скоро появятся."}
+            </p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {filtered.map((article) => (
+              <DiseaseArticleCard key={article.id} article={article} />
             ))}
           </div>
         )}
       </div>
-
-      {/* Articles grid */}
-      {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Загрузка...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            {searchQuery ? "Ничего не найдено. Попробуйте другой запрос." : "Материалы скоро появятся."}
-          </p>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-6">
-          {filtered.map((article) => (
-            <DiseaseArticleCard key={article.id} article={article} />
-          ))}
-        </div>
-      )}
     </div>
   );
 };

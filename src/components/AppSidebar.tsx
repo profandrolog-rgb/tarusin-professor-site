@@ -51,6 +51,7 @@ const pageNavItems = [
   { title: "Клинические случаи", url: "/clinical-cases", icon: ClipboardList },
   { title: "Наши исследования", url: "/research", icon: Microscope },
   { title: "Путёвые заметки", url: "/travel-notes", icon: Camera },
+  { title: "Мастер-классы", url: "/masterclasses", icon: GraduationCap },
   { title: "Размышлизмы", url: "/blog", icon: BookOpen },
   { title: "Отзывы", url: "/reviews", icon: Star },
   { title: "Контакты", url: "/contacts", icon: Phone },

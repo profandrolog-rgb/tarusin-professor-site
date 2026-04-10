@@ -2,7 +2,9 @@ import { ArrowLeft, Star, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageMeta from "@/components/PageMeta";
+import ColleagueReviews from "@/components/ColleagueReviews";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -71,6 +73,13 @@ const Reviews = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
+        <Tabs defaultValue="patients" className="w-full">
+        <TabsList className="w-full grid grid-cols-2 h-auto mb-8">
+          <TabsTrigger value="patients" className="py-3">Отзывы пациентов</TabsTrigger>
+          <TabsTrigger value="colleagues" className="py-3">Отзывы коллег</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="patients">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           <Card className="bg-secondary border-none">
             <CardContent className="p-6 text-center">
@@ -178,6 +187,12 @@ const Reviews = () => {
             </Link>
           </CardContent>
         </Card>
+        </TabsContent>
+
+        <TabsContent value="colleagues">
+          <ColleagueReviews />
+        </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

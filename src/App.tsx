@@ -16,6 +16,7 @@ import VideoCasesPage from "./pages/VideoCases";
 import Publications from "./pages/Publications";
 import Methodologies from "./pages/Methodologies";
 import TravelNotes from "./pages/TravelNotes";
+import Masterclasses from "./pages/Masterclasses";
 import ClinicalCases from "./pages/ClinicalCases";
 import Blog from "./pages/Blog";
 import Team from "./pages/Team";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/publications" element={<Publications />} />
               <Route path="/methodologies" element={<Methodologies />} />
               <Route path="/travel-notes" element={<TravelNotes />} />
+              <Route path="/masterclasses" element={<Masterclasses />} />
               <Route path="/clinical-cases" element={<ClinicalCases />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/video-cases" element={<VideoCasesPage />} />
