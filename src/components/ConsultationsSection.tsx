@@ -108,7 +108,7 @@ const ConsultationsSection = () => {
 
             <Card className="bg-primary text-primary-foreground shadow-lg">
               <CardContent className="p-6 space-y-4">
-                <h4 className="font-semibold text-lg">{t("consultations.contactInfo")}</h4>
+                <h4 className="font-semibold text-lg">{t("consultations.contactInfo")} — AVE-CLINIC</h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <MapPin className="w-5 h-5" />
@@ -125,6 +125,37 @@ const ConsultationsSection = () => {
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5" />
                     <span className="text-sm">+7 (977) 807-55-44 ({t("consultations.urgentQuestions")})</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5" />
+                    <span className="text-sm">{t("consultations.byAppointment")}</span>
+                  </div>
+                </div>
+                <Button onClick={scrollToContact} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground mt-4">
+                  {t("consultations.bookAppointment")}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-primary text-primary-foreground shadow-lg">
+              <CardContent className="p-6 space-y-4">
+                <h4 className="font-semibold text-lg">{t("consultations.contactInfo")} — {t("consultations.mataraName")}</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5" />
+                    <span className="text-sm">{t("consultations.mataraAddress")}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5" />
+                    <span className="text-sm">+7 (495) 303-00-00 ({t("consultations.reception")})</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5" />
+                    <span className="text-sm">+7 (926) 303-01-11 ({t("consultations.booking")})</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-5 h-5" />
+                    <span className="text-sm">+7 (916) 030-30-31 ({t("consultations.booking")})</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5" />
