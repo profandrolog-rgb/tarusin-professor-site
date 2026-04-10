@@ -38,7 +38,7 @@ const ForParents = () => {
 
         <main className="container mx-auto px-4 py-12 md:py-16">
           <Tabs defaultValue="useful" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 h-auto mb-10">
+            <TabsList className="w-full grid grid-cols-4 h-auto mb-10">
               <TabsTrigger value="useful" className="flex items-center gap-2 py-3 text-sm md:text-base">
                 <BookOpen className="w-4 h-4 hidden sm:block" />
                 Полезные материалы
@@ -50,6 +50,10 @@ const ForParents = () => {
               <TabsTrigger value="adults" className="flex items-center gap-2 py-3 text-sm md:text-base">
                 <User className="w-4 h-4 hidden sm:block" />
                 О взрослых болезнях
+              </TabsTrigger>
+              <TabsTrigger value="publications" className="flex items-center gap-2 py-3 text-sm md:text-base">
+                <FileText className="w-4 h-4 hidden sm:block" />
+                Публикации
               </TabsTrigger>
             </TabsList>
 
@@ -63,6 +67,10 @@ const ForParents = () => {
 
             <TabsContent value="adults">
               <DiseaseArticlesList ageGroup="adults" />
+            </TabsContent>
+
+            <TabsContent value="publications">
+              <PublicationsList />
             </TabsContent>
           </Tabs>
         </main>
