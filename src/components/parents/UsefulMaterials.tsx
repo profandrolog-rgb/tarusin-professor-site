@@ -66,19 +66,38 @@ const UsefulMaterials = () => (
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {articles.map((article, index) => (
-          <Card key={index} className="group hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="text-sm text-muted-foreground mb-2">{article.source}</div>
-              <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                {article.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">{article.description}</p>
-              <Button variant="outline" className="w-full" onClick={() => window.open(article.url, "_blank")}>
-                <ExternalLink className="w-4 h-4 mr-2" />
+          <Card
+            key={index}
+            className="group overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => window.open(article.url, "_blank")}
+          >
+            <div className="relative overflow-hidden">
+              <AspectRatio ratio={16 / 10}>
+                <img
+                  src={article.preview}
+                  alt={article.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <div className="absolute top-3 left-3">
+                  <span className="bg-background/90 backdrop-blur-sm text-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+                    {article.source}
+                  </span>
+                </div>
+                <div className="absolute bottom-3 left-3 right-3">
+                  <h3 className="text-white font-semibold text-base leading-snug line-clamp-2">
+                    {article.emoji} {article.title}
+                  </h3>
+                </div>
+              </AspectRatio>
+            </div>
+            <CardContent className="p-4">
+              <p className="text-muted-foreground text-sm line-clamp-3 mb-3">{article.description}</p>
+              <div className="flex items-center text-primary text-sm font-medium group-hover:underline">
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                 Читать статью
-              </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
