@@ -4,113 +4,132 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
-
-const specializations = [
-  "Микрохирургия (варикоцеле, крипторхизм, водянка, сперматоцеле)",
-  "Ультразвуковая диагностика органов мошонки и предстательной железы",
-  "Патология крайней плоти: фимоз, баланопостит, морфологические аспекты",
-  "Неотложные состояния: острые заболевания органов мошонки, перекруты",
-  "Тестикулярный микролитиаз: очаговые и диффузные поражения ткани яичка",
-  "Задержка полового развития: диагностика и тактика у мальчиков",
-  "Эректильная дисфункция и функциональные нарушения",
-  "Юридические аспекты: ошибки, опасности и стратегии в детской уроандрологии"
-];
-
-const publications = [
-  {
-    title: "Урология сегодня",
-    description: "Детская урология и реабилитация — актуальные вопросы",
-    url: "https://abvpress.ru/upload/iblock/a7f/a7fb857a9885cdf8c4603cb8523ef37a.pdf",
-    type: "PDF"
-  },
-  {
-    title: "Журнал «Урологи» (Urodigest)",
-    description: "Публикация в профессиональном урологическом издании",
-    url: "https://urodigest.ru/sites/default/files/issue/02-2012.pdf",
-    type: "PDF"
-  },
-  {
-    title: "Профилактика мужского бесплодия при лечении опухолей",
-    description: "Проблемы и решения — научная статья на CyberLeninka",
-    url: "https://cyberleninka.ru/article/n/profilaktika-muzhskogo-besplodiya-pri-lechenii-opuholey-problemy-i-resheniya",
-    type: "Статья"
-  }
-];
-
-const videoLectures = [
-  { title: "Паттерн ночной эрекции – что, зачем, почему", views: "301", year: "2024", url: "https://uro.tv/video/tarusin_di_-_pattern_nochnoy_erektsii__chto_zachem_pochemu" },
-  { title: "Клиническое наблюдение – полное удвоение уретры при гипоспадии", views: "93", year: "2024", url: "https://uro.tv/video/tarusin_di_-_klinicheskoe_nablyudenie__polnoe_udvoenie_uretri_pri_gipospadii" },
-  { title: "Новое слово в лечении дисфункции мышц тазового дна", views: "49", year: "2024", url: "https://uro.tv/video/tarusin_di_-_novoe_slovo_v_lechenii_disfunktsii_mishts_tazovogo_dna_i_assotsiirovannih_s_nim_rasstroystvmp4" },
-  { title: "Острые и хронические заболевания крайней плоти у детей", views: "98", year: "2024", url: "https://uro.tv/video/tarusin_di_-_ostrie_i_hronicheskie_zabolevaniya_krayney_ploti_u_detey" },
-  { title: "Заболевания крайней плоти и головки полового члена у детей", views: "491", year: "2024", url: "https://uro.tv/video/tarusin_di_-_zabolevaniya_krayney_ploti_i_golovki_polovogo_chlena_u_detey" },
-  { title: "Варикоцеле. To be or not to beat", views: "594", year: "2024", url: "https://uro.tv/video/tarusin_di_-_varikotsele_to_be_or_not_to_beat" },
-  { title: "Армагеддон в андрологии: последствия ошибок лечения", views: "466", year: "2023", url: "https://uro.tv/video/tarusin_di_-_armageddon_v_andrologii_posledstviya_oshibok_lecheniya" },
-  { title: "Симбиоз детского и взрослого уролога как фундамент мужского здоровья", views: "424", year: "2022", url: "https://uro.tv/video/korshunov_mn_tarusin_di_-_simbioz_detskogo_i_vzroslogo_urologa_kak_fundament_mugskogo_zdorovya" },
-  { title: "Варикоцеле. Ab ovo ad absurdum", views: "698", year: "2021", url: "https://uro.tv/video/tarusin_di_-_tema_varikotsele_ab_ovo_ad_absurdum" },
-  { title: "Круглый стол: Варикоцеле — от ребёнка к взрослому", views: "607", year: "2021", url: "https://uro.tv/video/krugliy_stol_1_varikotsele_ot_rebenka_k_vzroslomu_neobichno_ob_obichnom" },
-  { title: "Очаговые и диффузные поражения ткани яичка. Тестикулярный микролитиаз", views: "709", year: "2020", url: "https://uro.tv/video/tarusin_di_-_ochagovie_i_diffuznie_porageniya_tkani_yaichka_u_detey_i_podrostkov_testikulyarniy_mikrolitiaz" },
-  { title: "Стратегия и тактика диагностики и лечения варикоцеле у детей и подростков", views: "893", year: "2019", url: "https://uro.tv/video/tarusin_di_-_strategiya_i_taktika_diagnostiki_i_lecheniya_varikotsele_u_detey_i_podrostkov" },
-  { title: "Болезни крайней плоти – новые морфологические данные", views: "2574", year: "2019", url: "https://uro.tv/video/tarusin_di_-_bolezni_krayney_ploti-novie_morfologicheskie_dannie_o_strukture_patologicheskih_protsessov" },
-  { title: "Ошибки, опасности и юридические стратегии в практике детского уролога-андролога", views: "336", year: "2019", url: "https://uro.tv/video/tarusin_di_-_oshibki_opasnosti_i_yuridicheskie_strategii_v_povsednevnoy_praktike_detskogo_urologa-androloga" },
-  { title: "Крайняя плоть – бескрайняя", views: "1584", year: "2018", url: "https://uro.tv/video/tarusin_di_-_kraynyaya_plot_-_beskraynya" },
-  { title: "Ультразвуковая диагностика острых заболеваний органов мошонки", views: "1014", year: "2018", url: "https://uro.tv/video/tarusin_di_-_ultrazvukovaya_diagnostika_ostrih_zabolevaniy_organov_moshonki" },
-  { title: "Детская и подростковая андрология (интервью)", views: "3638", year: "2018", url: "https://uro.tv/video/detskaya_i_podrostkovaya_andrologiya_intervyu_s_tarusinim_di" },
-  { title: "Неотложные состояния в детской урологии-андрологии", views: "1579", year: "2017", url: "https://uro.tv/video/tarusin_di_-_neotlognie_sostoyaniya_v_detskoy_urologii_-_andrologii" },
-  { title: "Задержка полового развития мальчиков: когда надо беспокоиться? (интервью)", views: "3424", year: "2016", url: "https://uro.tv/video/zadergka_polovogo_razvitiya_malchikov_kogda_nado_bespokoitsya_intervyu_s_tarusinim_di" },
-  { title: "Частно-государственное партнерство в детской урологии-андрологии", views: "1346", year: "2013", url: "https://uro.tv/video/tarusin_di_chastno-gosudarstvennoe_partnerstvo__v_detskoy_urologii-andrologii" },
-  { title: "Реорганизация здравоохранения – новые вызовы к качеству уроандрологической помощи детям", views: "1938", year: "2013", url: "https://uro.tv/video/tarusin_di_reorganizatsiya_zdravoohraneniya_%E2%80%93_novie_vizovi_k_poryadku_i_kachestvu_uroandrologicheskoy_pomoshchi_detyam_v_rossii" },
-  { title: "Детская урология в Российской Федерации: путь, достижения, перспективы", views: "1175", year: "2013", url: "https://uro.tv/video/tarusin_di_detskaya_urologiya_v_rossiyskoy_federatsii_put_dostigeniya_perspektivi" },
-];
-
-const youtubeVideos = [
-  { title: "С какого возраста эрекция — это нормально?", views: "2.6K", type: "Shorts", url: "https://www.youtube.com/watch?v=DSn8UjdpSGs" },
-  { title: "Воздержание — это полезно? Проверяем тренд ноября!", views: "926", type: "Shorts", url: "https://www.youtube.com/shorts/o2apP98HtJU" },
-  { title: "Новые нормы витамина Д для мужчин!", views: "1.7K", type: "Shorts", url: "https://www.youtube.com/shorts/_3sVOZED_7o" },
-  { title: "Хватит гуглить норму — вот настоящая правда", views: "144", type: "Shorts", url: "https://www.youtube.com/shorts/7z5CxHKjmng" },
-  { title: "За 90 секунд знаешь больше 90% мужчин", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/8ixg9zX-8bs" },
-  { title: "Либидо: норм или стрем? Учу видеть тонкую грань", views: "126", type: "Shorts", url: "https://www.youtube.com/shorts/DVx83ACnb1E" },
-  { title: "Можно ли повлиять на рост полового члена заранее?", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/cJktQWxsuCw" },
-  { title: "Секрет уролога: Правда о мытье рук", views: "115", type: "Видео", url: "https://www.youtube.com/watch?v=H9i2UVTt6Ds" },
-  { title: "Как выбрать наркоз? Какие анализы сдавать?", views: "35", type: "Видео", url: "https://www.youtube.com/watch?v=gYpBBg6APUU" },
-  { title: "Воздержание — польза или вред?", views: "118", type: "Видео", url: "https://www.youtube.com/watch?v=vN8wyhRk6j0" },
-  { title: "Почему рука хуже женщины? Клиническое объяснение", views: "109", type: "Видео", url: "https://www.youtube.com/watch?v=VVvR_FhiDSI" },
-  { title: "Распаковка! Что обрадует доктора? Лайфхак от профессора Тарусина", views: "42", type: "Видео", url: "https://www.youtube.com/watch?v=Sv4BxFxm2Ao" },
-  { title: "Как научить мальчика писать стоя?", views: "—", type: "Видео", url: "https://www.youtube.com/watch?v=yW-S0X0OCVE" },
-];
-
-const labirintyEpisodes = [
-  { title: "Варикоцеле", date: "25.01.2024" },
-  { title: "Инфекции мочевой системы у детей с позиции педиатра и нефролога", date: "2024" },
-  { title: "Детская андрология: Перекруты", date: "2024" },
-  { title: "Диагностика и подходы к терапии кристаллурии у детей", date: "2024" },
-  { title: "Энурез как проявление коморбидных состояний", date: "15.04.2025" },
-  { title: "Отчет урологической службы ДЗМ за 2024 год", date: "20.05.2025" },
-  { title: "Мегауретер у детей: этиология, диагностика, тактика", date: "24.06.2025" },
-];
-
-const schools = [
-  { name: "XIII Школа", year: "2025", date: "3-4 апреля", location: "Москва, гостиница Измайлово" },
-  { name: "XII Школа", year: "2024", date: "4-5 апреля", note: "Посвящена 100-летию Н.А. Лопаткина" },
-  { name: "XI Школа", year: "2023", date: "6-7 апреля", location: "Москва, гостиница Измайлово" },
-  { name: "X Школа", year: "2022", date: "—", note: "Юбилейная школа" },
-  { name: "III Школа", year: "2015", date: "28-30 мая", note: "Курс ESPU (Европейская ассоциация детских урологов)" },
-];
+import { useTranslation } from "react-i18next";
 
 const ForDoctors = () => {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
+
+  const specializations = isEn ? [
+    "Microsurgery (varicocele, cryptorchidism, hydrocele, spermatocele)",
+    "Ultrasound diagnostics of scrotal organs and prostate",
+    "Foreskin pathology: phimosis, balanoposthitis, morphological aspects",
+    "Emergency conditions: acute scrotal diseases, torsions",
+    "Testicular microlithiasis: focal and diffuse testicular lesions",
+    "Delayed puberty: diagnosis and management in boys",
+    "Erectile dysfunction and functional disorders",
+    "Legal aspects: errors, risks, and strategies in pediatric uro-andrology"
+  ] : [
+    "Микрохирургия (варикоцеле, крипторхизм, водянка, сперматоцеле)",
+    "Ультразвуковая диагностика органов мошонки и предстательной железы",
+    "Патология крайней плоти: фимоз, баланопостит, морфологические аспекты",
+    "Неотложные состояния: острые заболевания органов мошонки, перекруты",
+    "Тестикулярный микролитиаз: очаговые и диффузные поражения ткани яичка",
+    "Задержка полового развития: диагностика и тактика у мальчиков",
+    "Эректильная дисфункция и функциональные нарушения",
+    "Юридические аспекты: ошибки, опасности и стратегии в детской уроандрологии"
+  ];
+
+  const publications = isEn ? [
+    { title: "Urology Today", description: "Pediatric urology and rehabilitation — current issues", url: "https://abvpress.ru/upload/iblock/a7f/a7fb857a9885cdf8c4603cb8523ef37a.pdf", type: "PDF" },
+    { title: "Urodigest Journal", description: "Publication in a professional urological journal", url: "https://urodigest.ru/sites/default/files/issue/02-2012.pdf", type: "PDF" },
+    { title: "Prevention of Male Infertility in Tumor Treatment", description: "Problems and solutions — scientific article on CyberLeninka", url: "https://cyberleninka.ru/article/n/profilaktika-muzhskogo-besplodiya-pri-lechenii-opuholey-problemy-i-resheniya", type: "Article" },
+  ] : [
+    { title: "Урология сегодня", description: "Детская урология и реабилитация — актуальные вопросы", url: "https://abvpress.ru/upload/iblock/a7f/a7fb857a9885cdf8c4603cb8523ef37a.pdf", type: "PDF" },
+    { title: "Журнал «Урологи» (Urodigest)", description: "Публикация в профессиональном урологическом издании", url: "https://urodigest.ru/sites/default/files/issue/02-2012.pdf", type: "PDF" },
+    { title: "Профилактика мужского бесплодия при лечении опухолей", description: "Проблемы и решения — научная статья на CyberLeninka", url: "https://cyberleninka.ru/article/n/profilaktika-muzhskogo-besplodiya-pri-lechenii-opuholey-problemy-i-resheniya", type: "Статья" },
+  ];
+
+  const videoLectures = [
+    { title: isEn ? "Nocturnal Erection Pattern — What, Why, How" : "Паттерн ночной эрекции – что, зачем, почему", views: "301", year: "2024", url: "https://uro.tv/video/tarusin_di_-_pattern_nochnoy_erektsii__chto_zachem_pochemu" },
+    { title: isEn ? "Clinical Observation — Complete Urethral Duplication with Hypospadias" : "Клиническое наблюдение – полное удвоение уретры при гипоспадии", views: "93", year: "2024", url: "https://uro.tv/video/tarusin_di_-_klinicheskoe_nablyudenie__polnoe_udvoenie_uretri_pri_gipospadii" },
+    { title: isEn ? "New Approach to Pelvic Floor Muscle Dysfunction Treatment" : "Новое слово в лечении дисфункции мышц тазового дна", views: "49", year: "2024", url: "https://uro.tv/video/tarusin_di_-_novoe_slovo_v_lechenii_disfunktsii_mishts_tazovogo_dna_i_assotsiirovannih_s_nim_rasstroystvmp4" },
+    { title: isEn ? "Acute and Chronic Foreskin Diseases in Children" : "Острые и хронические заболевания крайней плоти у детей", views: "98", year: "2024", url: "https://uro.tv/video/tarusin_di_-_ostrie_i_hronicheskie_zabolevaniya_krayney_ploti_u_detey" },
+    { title: isEn ? "Foreskin and Glans Diseases in Children" : "Заболевания крайней плоти и головки полового члена у детей", views: "491", year: "2024", url: "https://uro.tv/video/tarusin_di_-_zabolevaniya_krayney_ploti_i_golovki_polovogo_chlena_u_detey" },
+    { title: isEn ? "Varicocele. To be or not to beat" : "Варикоцеле. To be or not to beat", views: "594", year: "2024", url: "https://uro.tv/video/tarusin_di_-_varikotsele_to_be_or_not_to_beat" },
+    { title: isEn ? "Armageddon in Andrology: Consequences of Treatment Errors" : "Армагеддон в андрологии: последствия ошибок лечения", views: "466", year: "2023", url: "https://uro.tv/video/tarusin_di_-_armageddon_v_andrologii_posledstviya_oshibok_lecheniya" },
+    { title: isEn ? "Symbiosis of Pediatric and Adult Urologist as Foundation of Men's Health" : "Симбиоз детского и взрослого уролога как фундамент мужского здоровья", views: "424", year: "2022", url: "https://uro.tv/video/korshunov_mn_tarusin_di_-_simbioz_detskogo_i_vzroslogo_urologa_kak_fundament_mugskogo_zdorovya" },
+    { title: isEn ? "Varicocele. Ab ovo ad absurdum" : "Варикоцеле. Ab ovo ad absurdum", views: "698", year: "2021", url: "https://uro.tv/video/tarusin_di_-_tema_varikotsele_ab_ovo_ad_absurdum" },
+    { title: isEn ? "Round Table: Varicocele — From Child to Adult" : "Круглый стол: Варикоцеле — от ребёнка к взрослому", views: "607", year: "2021", url: "https://uro.tv/video/krugliy_stol_1_varikotsele_ot_rebenka_k_vzroslomu_neobichno_ob_obichnom" },
+    { title: isEn ? "Focal and Diffuse Testicular Lesions. Testicular Microlithiasis" : "Очаговые и диффузные поражения ткани яичка. Тестикулярный микролитиаз", views: "709", year: "2020", url: "https://uro.tv/video/tarusin_di_-_ochagovie_i_diffuznie_porageniya_tkani_yaichka_u_detey_i_podrostkov_testikulyarniy_mikrolitiaz" },
+    { title: isEn ? "Strategy and Tactics of Varicocele Diagnosis and Treatment in Children" : "Стратегия и тактика диагностики и лечения варикоцеле у детей и подростков", views: "893", year: "2019", url: "https://uro.tv/video/tarusin_di_-_strategiya_i_taktika_diagnostiki_i_lecheniya_varikotsele_u_detey_i_podrostkov" },
+    { title: isEn ? "Foreskin Diseases — New Morphological Data" : "Болезни крайней плоти – новые морфологические данные", views: "2574", year: "2019", url: "https://uro.tv/video/tarusin_di_-_bolezni_krayney_ploti-novie_morfologicheskie_dannie_o_strukture_patologicheskih_protsessov" },
+    { title: isEn ? "Errors, Risks, and Legal Strategies in Pediatric Uro-Andrology" : "Ошибки, опасности и юридические стратегии в практике детского уролога-андролога", views: "336", year: "2019", url: "https://uro.tv/video/tarusin_di_-_oshibki_opasnosti_i_yuridicheskie_strategii_v_povsednevnoy_praktike_detskogo_urologa-androloga" },
+    { title: isEn ? "The Foreskin — Boundless" : "Крайняя плоть – бескрайняя", views: "1584", year: "2018", url: "https://uro.tv/video/tarusin_di_-_kraynyaya_plot_-_beskraynya" },
+    { title: isEn ? "Ultrasound Diagnostics of Acute Scrotal Diseases" : "Ультразвуковая диагностика острых заболеваний органов мошонки", views: "1014", year: "2018", url: "https://uro.tv/video/tarusin_di_-_ultrazvukovaya_diagnostika_ostrih_zabolevaniy_organov_moshonki" },
+    { title: isEn ? "Pediatric and Adolescent Andrology (Interview)" : "Детская и подростковая андрология (интервью)", views: "3638", year: "2018", url: "https://uro.tv/video/detskaya_i_podrostkovaya_andrologiya_intervyu_s_tarusinim_di" },
+    { title: isEn ? "Emergency Conditions in Pediatric Urology-Andrology" : "Неотложные состояния в детской урологии-андрологии", views: "1579", year: "2017", url: "https://uro.tv/video/tarusin_di_-_neotlognie_sostoyaniya_v_detskoy_urologii_-_andrologii" },
+    { title: isEn ? "Delayed Puberty in Boys: When to Worry? (Interview)" : "Задержка полового развития мальчиков: когда надо беспокоиться? (интервью)", views: "3424", year: "2016", url: "https://uro.tv/video/zadergka_polovogo_razvitiya_malchikov_kogda_nado_bespokoitsya_intervyu_s_tarusinim_di" },
+    { title: isEn ? "Public-Private Partnership in Pediatric Urology-Andrology" : "Частно-государственное партнерство в детской урологии-андрологии", views: "1346", year: "2013", url: "https://uro.tv/video/tarusin_di_chastno-gosudarstvennoe_partnerstvo__v_detskoy_urologii-andrologii" },
+    { title: isEn ? "Healthcare Reorganization — New Challenges for Uro-Andrological Care Quality" : "Реорганизация здравоохранения – новые вызовы к качеству уроандрологической помощи детям", views: "1938", year: "2013", url: "https://uro.tv/video/tarusin_di_reorganizatsiya_zdravoohraneniya_%E2%80%93_novie_vizovi_k_poryadku_i_kachestvu_uroandrologicheskoy_pomoshchi_detyam_v_rossii" },
+    { title: isEn ? "Pediatric Urology in Russia: Path, Achievements, Prospects" : "Детская урология в Российской Федерации: путь, достижения, перспективы", views: "1175", year: "2013", url: "https://uro.tv/video/tarusin_di_detskaya_urologiya_v_rossiyskoy_federatsii_put_dostigeniya_perspektivi" },
+  ];
+
+  const youtubeVideos = [
+    { title: isEn ? "At What Age Is Erection Normal?" : "С какого возраста эрекция — это нормально?", views: "2.6K", type: "Shorts", url: "https://www.youtube.com/watch?v=DSn8UjdpSGs" },
+    { title: isEn ? "Is Abstinence Healthy? Testing the November Trend!" : "Воздержание — это полезно? Проверяем тренд ноября!", views: "926", type: "Shorts", url: "https://www.youtube.com/shorts/o2apP98HtJU" },
+    { title: isEn ? "New Vitamin D Norms for Men!" : "Новые нормы витамина Д для мужчин!", views: "1.7K", type: "Shorts", url: "https://www.youtube.com/shorts/_3sVOZED_7o" },
+    { title: isEn ? "Stop Googling the Norm — Here's the Real Truth" : "Хватит гуглить норму — вот настоящая правда", views: "144", type: "Shorts", url: "https://www.youtube.com/shorts/7z5CxHKjmng" },
+    { title: isEn ? "In 90 Seconds You'll Know More Than 90% of Men" : "За 90 секунд знаешь больше 90% мужчин", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/8ixg9zX-8bs" },
+    { title: isEn ? "Libido: Normal or Concerning? Learning the Fine Line" : "Либидо: норм или стрем? Учу видеть тонкую грань", views: "126", type: "Shorts", url: "https://www.youtube.com/shorts/DVx83ACnb1E" },
+    { title: isEn ? "Can You Influence Penile Growth in Advance?" : "Можно ли повлиять на рост полового члена заранее?", views: "1K", type: "Shorts", url: "https://www.youtube.com/shorts/cJktQWxsuCw" },
+    { title: isEn ? "Urologist's Secret: The Truth About Hand Washing" : "Секрет уролога: Правда о мытье рук", views: "115", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=H9i2UVTt6Ds" },
+    { title: isEn ? "How to Choose Anesthesia? What Tests to Get?" : "Как выбрать наркоз? Какие анализы сдавать?", views: "35", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=gYpBBg6APUU" },
+    { title: isEn ? "Abstinence — Benefit or Harm?" : "Воздержание — польза или вред?", views: "118", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=vN8wyhRk6j0" },
+    { title: isEn ? "Why Is the Hand Worse Than a Woman? Clinical Explanation" : "Почему рука хуже женщины? Клиническое объяснение", views: "109", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=VVvR_FhiDSI" },
+    { title: isEn ? "Unboxing! What Makes a Doctor Happy? Lifehack from Professor Tarusin" : "Распаковка! Что обрадует доктора? Лайфхак от профессора Тарусина", views: "42", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=Sv4BxFxm2Ao" },
+    { title: isEn ? "How to Teach a Boy to Urinate Standing Up?" : "Как научить мальчика писать стоя?", views: "—", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=yW-S0X0OCVE" },
+  ];
+
+  const labirintyEpisodes = isEn ? [
+    { title: "Varicocele", date: "Jan 25, 2024" },
+    { title: "Urinary Tract Infections in Children: Pediatrician & Nephrologist View", date: "2024" },
+    { title: "Pediatric Andrology: Torsions", date: "2024" },
+    { title: "Diagnosis and Approaches to Crystalluria Therapy in Children", date: "2024" },
+    { title: "Enuresis as a Manifestation of Comorbid Conditions", date: "Apr 15, 2025" },
+    { title: "Urology Service Report of Moscow Healthcare Dept for 2024", date: "May 20, 2025" },
+    { title: "Megaureter in Children: Etiology, Diagnosis, Tactics", date: "Jun 24, 2025" },
+  ] : [
+    { title: "Варикоцеле", date: "25.01.2024" },
+    { title: "Инфекции мочевой системы у детей с позиции педиатра и нефролога", date: "2024" },
+    { title: "Детская андрология: Перекруты", date: "2024" },
+    { title: "Диагностика и подходы к терапии кристаллурии у детей", date: "2024" },
+    { title: "Энурез как проявление коморбидных состояний", date: "15.04.2025" },
+    { title: "Отчет урологической службы ДЗМ за 2024 год", date: "20.05.2025" },
+    { title: "Мегауретер у детей: этиология, диагностика, тактика", date: "24.06.2025" },
+  ];
+
+  const schools = isEn ? [
+    { name: "XIII School", year: "2025", date: "April 3–4", location: "Moscow, Izmailovo Hotel" },
+    { name: "XII School", year: "2024", date: "April 4–5", note: "Dedicated to N.A. Lopatkin's 100th Anniversary" },
+    { name: "XI School", year: "2023", date: "April 6–7", location: "Moscow, Izmailovo Hotel" },
+    { name: "X School", year: "2022", date: "—", note: "Jubilee school" },
+    { name: "III School", year: "2015", date: "May 28–30", note: "ESPU Course (European Society for Paediatric Urology)" },
+  ] : [
+    { name: "XIII Школа", year: "2025", date: "3-4 апреля", location: "Москва, гостиница Измайлово" },
+    { name: "XII Школа", year: "2024", date: "4-5 апреля", note: "Посвящена 100-летию Н.А. Лопаткина" },
+    { name: "XI Школа", year: "2023", date: "6-7 апреля", location: "Москва, гостиница Измайлово" },
+    { name: "X Школа", year: "2022", date: "—", note: "Юбилейная школа" },
+    { name: "III Школа", year: "2015", date: "28-30 мая", note: "Курс ESPU (Европейская ассоциация детских урологов)" },
+  ];
+
   return (
     <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
-      <PageMeta title="Для врачей — Проф. Тарусин Д.И." description="Научные публикации, видеолекции и образовательные материалы для коллег от профессора Тарусина Д.И." path="/for-doctors" />
-      {/* Header */}
+      <PageMeta
+        title={isEn ? "For Doctors — Prof. Tarusin D.I." : "Для врачей — Проф. Тарусин Д.И."}
+        description={isEn ? "Scientific publications, video lectures, and educational materials for colleagues from Professor Tarusin D.I." : "Научные публикации, видеолекции и образовательные материалы для коллег от профессора Тарусина Д.И."}
+        path="/for-doctors"
+      />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            На главную
+            {isEn ? "Home" : "На главную"}
           </Link>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Для врачей</h1>
+          <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "For Doctors" : "Для врачей"}</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            Научные публикации, видеолекции и образовательные материалы для коллег
+            {isEn ? "Scientific publications, video lectures, and educational materials for colleagues" : "Научные публикации, видеолекции и образовательные материалы для коллег"}
           </p>
         </div>
       </header>
@@ -126,36 +145,36 @@ const ForDoctors = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    Профессор Тарусин Дмитрий Игоревич
+                    {isEn ? "Professor Tarusin Dmitry Igorevich" : "Профессор Тарусин Дмитрий Игоревич"}
                   </h2>
                   <p className="text-lg text-muted-foreground mb-4">
-                    Доктор медицинских наук (с 2005), профессор, член-корреспондент РАЕН, врач высшей категории. 
-                    В 2003 году совместно с профессором Казанской И.В. организовал новую медицинскую 
-                    специальность «детская урология-андрология» в России.
+                    {isEn
+                      ? "Doctor of Medical Sciences (since 2005), Professor, Corresponding Member of RANS, Highest Category Physician. In 2003, together with Professor Kazanskaya I.V., established the new medical specialty 'Pediatric Urology-Andrology' in Russia."
+                      : "Доктор медицинских наук (с 2005), профессор, член-корреспондент РАЕН, врач высшей категории. В 2003 году совместно с профессором Казанской И.В. организовал новую медицинскую специальность «детская урология-андрология» в России."}
                   </p>
                   <div className="grid sm:grid-cols-4 gap-4 mt-6">
                     <div className="bg-background rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-primary">126+</div>
-                      <div className="text-sm text-muted-foreground">Научных статей</div>
+                      <div className="text-sm text-muted-foreground">{isEn ? "Scientific articles" : "Научных статей"}</div>
                     </div>
                     <div className="bg-background rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-primary">6</div>
-                      <div className="text-sm text-muted-foreground">Глав в нац. руководствах</div>
+                      <div className="text-sm text-muted-foreground">{isEn ? "National guideline chapters" : "Глав в нац. руководствах"}</div>
                     </div>
                     <div className="bg-background rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-primary">860+</div>
-                      <div className="text-sm text-muted-foreground">Выступлений</div>
+                      <div className="text-sm text-muted-foreground">{isEn ? "Presentations" : "Выступлений"}</div>
                     </div>
                     <div className="bg-background rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-primary">9+</div>
-                      <div className="text-sm text-muted-foreground">Кандидатов наук</div>
+                      <div className="text-sm text-muted-foreground">{isEn ? "PhD candidates" : "Кандидатов наук"}</div>
                     </div>
                   </div>
                 </div>
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">Основные направления и темы выступлений</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">{isEn ? "Key Topics and Presentation Areas" : "Основные направления и темы выступлений"}</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {specializations.map((spec, index) => (
                     <div key={index} className="flex items-start gap-3 bg-background rounded-lg p-4">
@@ -177,8 +196,8 @@ const ForDoctors = () => {
                 <div className="flex items-center gap-4">
                   <BookOpen className="w-10 h-10 text-accent" />
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground">Проект «Лабиринты детской урологии»</h2>
-                    <p className="text-muted-foreground">Авторский образовательный проект (с 2024 года)</p>
+                    <h2 className="text-2xl font-bold text-foreground">{isEn ? '"Labyrinths of Pediatric Urology" Project' : 'Проект «Лабиринты детской урологии»'}</h2>
+                    <p className="text-muted-foreground">{isEn ? "Author's educational project (since 2024)" : "Авторский образовательный проект (с 2024 года)"}</p>
                   </div>
                 </div>
                 <Button
@@ -186,7 +205,7 @@ const ForDoctors = () => {
                   onClick={() => window.open("https://uroweb.ru/news/tarusin-d-i-priglashaet-prisoedinitsya-k-novomu-proektu-labirinti-detskoy-urologii", "_blank")}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Присоединиться
+                  {isEn ? "Join" : "Присоединиться"}
                 </Button>
               </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -208,8 +227,8 @@ const ForDoctors = () => {
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground">Всероссийская школа по детской урологии-андрологии</h2>
-              <p className="text-muted-foreground">Сопредседатель ежегодной школы с 2012 года</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "National School of Pediatric Urology-Andrology" : "Всероссийская школа по детской урологии-андрологии"}</h2>
+              <p className="text-muted-foreground">{isEn ? "Co-chair of the annual school since 2012" : "Сопредседатель ежегодной школы с 2012 года"}</p>
             </div>
           </div>
           
@@ -236,7 +255,7 @@ const ForDoctors = () => {
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               <FileText className="w-6 h-6 text-primary" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">Публикации и статьи</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "Publications & Articles" : "Публикации и статьи"}</h2>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -253,13 +272,9 @@ const ForDoctors = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">{pub.description}</p>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => window.open(pub.url, "_blank")}
-                  >
+                  <Button variant="outline" className="w-full" onClick={() => window.open(pub.url, "_blank")}>
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Открыть
+                    {isEn ? "Open" : "Открыть"}
                   </Button>
                 </CardContent>
               </Card>
@@ -275,29 +290,19 @@ const ForDoctors = () => {
                 <Video className="w-6 h-6 text-accent" />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground">Видеолекции на Uro.TV</h2>
-                <p className="text-muted-foreground">22 доклада, 21 000+ просмотров</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "Video Lectures on Uro.TV" : "Видеолекции на Uro.TV"}</h2>
+                <p className="text-muted-foreground">{isEn ? "22 reports, 21,000+ views" : "22 доклада, 21 000+ просмотров"}</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => window.open("https://uro.tv/speaker2021/tarusin_dmitriy_igorevich", "_blank")}
-              className="hidden md:flex"
-            >
+            <Button variant="outline" onClick={() => window.open("https://uro.tv/speaker2021/tarusin_dmitriy_igorevich", "_blank")} className="hidden md:flex">
               <ExternalLink className="w-4 h-4 mr-2" />
-              Все выступления
+              {isEn ? "All Presentations" : "Все выступления"}
             </Button>
           </div>
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {videoLectures.map((lecture, index) => (
-              <a
-                key={index}
-                href={lecture.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
+              <a key={index} href={lecture.url} target="_blank" rel="noopener noreferrer" className="block group">
                 <Card className="h-full cursor-pointer hover:shadow-lg transition-all hover:border-primary/50">
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
@@ -305,13 +310,11 @@ const ForDoctors = () => {
                         <Play className="w-4 h-4 text-accent group-hover:text-accent-foreground" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm leading-tight mb-2">
-                          {lecture.title}
-                        </h3>
+                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors text-sm leading-tight mb-2">{lecture.title}</h3>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{lecture.year}</span>
                           <span>•</span>
-                          <span>{lecture.views} просм.</span>
+                          <span>{lecture.views} {isEn ? "views" : "просм."}</span>
                         </div>
                       </div>
                     </div>
@@ -322,12 +325,9 @@ const ForDoctors = () => {
           </div>
           
           <div className="mt-6 text-center">
-            <Button
-              variant="outline"
-              onClick={() => window.open("https://uro.tv/speaker2021/tarusin_dmitriy_igorevich", "_blank")}
-            >
+            <Button variant="outline" onClick={() => window.open("https://uro.tv/speaker2021/tarusin_dmitriy_igorevich", "_blank")}>
               <ExternalLink className="w-4 h-4 mr-2" />
-              Смотреть все 22+ доклада на Uro.TV
+              {isEn ? "Watch all 22+ reports on Uro.TV" : "Смотреть все 22+ доклада на Uro.TV"}
             </Button>
           </div>
         </section>
@@ -340,29 +340,19 @@ const ForDoctors = () => {
                 <Youtube className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground">YouTube: Профессор и Андрология</h2>
-                <p className="text-muted-foreground">Короткие видео и ответы на частые вопросы</p>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "YouTube: Professor & Andrology" : "YouTube: Профессор и Андрология"}</h2>
+                <p className="text-muted-foreground">{isEn ? "Short videos and answers to common questions" : "Короткие видео и ответы на частые вопросы"}</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}
-              className="hidden md:flex border-red-500/30 text-red-600 hover:bg-red-50"
-            >
+            <Button variant="outline" onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")} className="hidden md:flex border-red-500/30 text-red-600 hover:bg-red-50">
               <Youtube className="w-4 h-4 mr-2" />
-              Подписаться
+              {isEn ? "Subscribe" : "Подписаться"}
             </Button>
           </div>
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {youtubeVideos.map((video, index) => (
-              <a
-                key={index}
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group"
-              >
+              <a key={index} href={video.url} target="_blank" rel="noopener noreferrer" className="block group">
                 <Card className="h-full cursor-pointer hover:shadow-lg transition-all hover:border-red-500/50">
                   <CardContent className="p-5">
                     <div className="flex items-start gap-4">
@@ -370,14 +360,10 @@ const ForDoctors = () => {
                         <Play className="w-4 h-4 text-red-500 group-hover:text-white" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-foreground group-hover:text-red-600 transition-colors text-sm leading-tight mb-2">
-                          {video.title}
-                        </h3>
+                        <h3 className="font-medium text-foreground group-hover:text-red-600 transition-colors text-sm leading-tight mb-2">{video.title}</h3>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full text-xs font-medium">
-                            {video.type}
-                          </span>
-                          <span>{video.views} просм.</span>
+                          <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full text-xs font-medium">{video.type}</span>
+                          <span>{video.views} {isEn ? "views" : "просм."}</span>
                         </div>
                       </div>
                     </div>
@@ -388,13 +374,9 @@ const ForDoctors = () => {
           </div>
           
           <div className="mt-6 text-center">
-            <Button
-              variant="outline"
-              className="border-red-500/30 text-red-600 hover:bg-red-50"
-              onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}
-            >
+            <Button variant="outline" className="border-red-500/30 text-red-600 hover:bg-red-50" onClick={() => window.open("https://www.youtube.com/@androlog_di", "_blank")}>
               <Youtube className="w-4 h-4 mr-2" />
-              Смотреть все видео на YouTube
+              {isEn ? "Watch all videos on YouTube" : "Смотреть все видео на YouTube"}
             </Button>
           </div>
         </section>
