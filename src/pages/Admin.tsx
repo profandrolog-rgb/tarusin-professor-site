@@ -17,7 +17,8 @@ import {
   Eye,
   MousePointer,
   Clock,
-  BookOpen
+  BookOpen,
+  Baby
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,13 @@ const adminSections = [
     icon: FileText,
     href: "/research",
     color: "text-emerald-500",
+  },
+  {
+    title: "Материалы о заболеваниях",
+    description: "Видео, подкасты и статьи для родителей и пациентов",
+    icon: Baby,
+    href: "/admin/disease-articles",
+    color: "text-pink-500",
   },
   {
     title: "Операционный журнал",
