@@ -17,7 +17,7 @@ import { Helmet } from "react-helmet-async";
 import DiagnosticChecklist from "@/components/DiagnosticChecklist";
 import ResultsCTA from "@/components/ResultsCTA";
 import PatientJourney from "@/components/PatientJourney";
-
+import ExitIntentPopup from "@/components/ExitIntentPopup";
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
@@ -106,6 +106,7 @@ const Index = () => {
       </main>
       <Footer />
       <StickyBottomPanel />
+      <ExitIntentPopup />
     </div>
   );
 };
