@@ -1,7 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, lazy, Suspense } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Menu } from "lucide-react";
+
+const PatientChatbot = lazy(() => import("@/components/PatientChatbot"));
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -22,6 +24,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       <main className="w-full min-h-screen">
         {children}
       </main>
+
+      {/* AI Patient Chatbot */}
+      <Suspense fallback={null}>
+        <PatientChatbot />
+      </Suspense>
     </SidebarProvider>
   );
 }
