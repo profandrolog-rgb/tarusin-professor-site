@@ -26,7 +26,7 @@ const moreNavItems = [{
   label: "Команда профессора",
   href: "/team"
 }, {
-  label: "Для родителей",
+  label: "Для родителей и пациентов",
   href: "/for-parents"
 }, {
   label: "Для врачей",
