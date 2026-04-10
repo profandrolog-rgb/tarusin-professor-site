@@ -13,6 +13,9 @@ import QASection from "@/components/QASection";
 import StickyBottomPanel from "@/components/StickyBottomPanel";
 import PageMeta from "@/components/PageMeta";
 import { Helmet } from "react-helmet-async";
+import DiagnosticChecklist from "@/components/DiagnosticChecklist";
+import BeforeAfterGallery from "@/components/BeforeAfterGallery";
+import PatientJourney from "@/components/PatientJourney";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -90,6 +93,9 @@ const Index = () => {
         <PioneersSection />
         <ProfessorMessageSection />
         <InternationalSection />
+        <DiagnosticChecklist />
+        <BeforeAfterGallery />
+        <PatientJourney />
         <ConsultationsSection />
         <CoursesSection />
         <ReviewsSection />
