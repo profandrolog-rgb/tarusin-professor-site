@@ -375,7 +375,7 @@ const ClinicalCases = () => {
                             <SelectContent>
                               {Object.entries(categoryLabels).map(([key, label]) => (
                                 <SelectItem key={key} value={key}>
-                                  {label}
+                                  {isEn ? label.en : label.ru}
                                 </SelectItem>
                               ))}
                             </SelectContent>
