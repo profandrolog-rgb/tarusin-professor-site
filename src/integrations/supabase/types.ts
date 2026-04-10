@@ -405,6 +405,157 @@ export type Database = {
         }
         Relationships: []
       }
+      consultation_cases: {
+        Row: {
+          created_at: string
+          has_insurance: boolean | null
+          id: string
+          notification_email: string | null
+          parent_name: string | null
+          parent_phone: string | null
+          parent_telegram: string | null
+          parent_whatsapp: string | null
+          patient_acknowledged_at: string | null
+          patient_full_name: string
+          patient_next_step: string | null
+          patient_telegram: string | null
+          patient_whatsapp: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          has_insurance?: boolean | null
+          id?: string
+          notification_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          parent_telegram?: string | null
+          parent_whatsapp?: string | null
+          patient_acknowledged_at?: string | null
+          patient_full_name?: string
+          patient_next_step?: string | null
+          patient_telegram?: string | null
+          patient_whatsapp?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          has_insurance?: boolean | null
+          id?: string
+          notification_email?: string | null
+          parent_name?: string | null
+          parent_phone?: string | null
+          parent_telegram?: string | null
+          parent_whatsapp?: string | null
+          patient_acknowledged_at?: string | null
+          patient_full_name?: string
+          patient_next_step?: string | null
+          patient_telegram?: string | null
+          patient_whatsapp?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      consultation_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          round_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_type?: string
+          id?: string
+          round_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          round_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_documents_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consultation_rounds: {
+        Row: {
+          ai_assessment: string | null
+          ai_assessment_date: string | null
+          case_id: string
+          complaints: string | null
+          created_at: string
+          doctor_conclusion: string | null
+          doctor_conclusion_date: string | null
+          id: string
+          is_complete: boolean | null
+          medical_history: string | null
+          round_number: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_assessment?: string | null
+          ai_assessment_date?: string | null
+          case_id: string
+          complaints?: string | null
+          created_at?: string
+          doctor_conclusion?: string | null
+          doctor_conclusion_date?: string | null
+          id?: string
+          is_complete?: boolean | null
+          medical_history?: string | null
+          round_number?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_assessment?: string | null
+          ai_assessment_date?: string | null
+          case_id?: string
+          complaints?: string | null
+          created_at?: string
+          doctor_conclusion?: string | null
+          doctor_conclusion_date?: string | null
+          id?: string
+          is_complete?: boolean | null
+          medical_history?: string | null
+          round_number?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultation_rounds_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disease_articles: {
         Row: {
           age_group: string
