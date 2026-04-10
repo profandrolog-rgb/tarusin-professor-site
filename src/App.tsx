@@ -26,6 +26,7 @@ import AdminCertificates from "./pages/AdminCertificates";
 import AdminPrescriptions from "./pages/AdminPrescriptions";
 import AdminQuestions from "./pages/AdminQuestions";
 import AdminOperationsJournal from "./pages/AdminOperationsJournal";
+import AdminDiseaseArticles from "./pages/AdminDiseaseArticles";
 import QA from "./pages/QA";
 import Research from "./pages/Research";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/admin/prescriptions" element={<AdminPrescriptions />} />
               <Route path="/admin/questions" element={<AdminQuestions />} />
               <Route path="/admin/operations-journal" element={<AdminOperationsJournal />} />
+              <Route path="/admin/disease-articles" element={<AdminDiseaseArticles />} />
               <Route path="/qa" element={<QA />} />
               <Route path="/research" element={<Research />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
