@@ -1,25 +1,32 @@
 import { BookOpen, Video, Headphones, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const articles = [
   {
     title: "Как гарантированно стать дедушкой",
-    description: "О долгосрочной заботе о мужском здоровье",
+    description: "О долгосрочной заботе о мужском здоровье. Что нужно знать родителям мальчиков, чтобы в будущем их сыновья стали здоровыми отцами.",
     url: "https://caprice-lifestyle.com/health-beauty/dmitriy-tarusin",
     source: "Caprice Lifestyle",
+    preview: "https://images.unsplash.com/photo-1491013516836-7db643ee125a?w=600&h=400&fit=crop",
+    emoji: "👴",
   },
   {
     title: "Баланопостит у детей: актуальное решение",
-    description: "Статья о применении Balaneks Kids",
+    description: "Статья о применении Balaneks Kids — современного средства для лечения и профилактики воспалительных заболеваний крайней плоти у мальчиков.",
     url: "https://www.uroweb.ru/article/reshenie-problemi-balanopostita-u-detey-aktualnoe-novoe-balaneks-kids",
     source: "Uroweb.ru",
+    preview: "https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&h=400&fit=crop",
+    emoji: "💊",
   },
   {
     title: "Орхит: причины, симптомы и лечение",
-    description: "Подробная статья о воспалении яичка",
+    description: "Подробная статья о воспалении яичка — причины возникновения, основные симптомы, методы диагностики и современные подходы к лечению.",
     url: "https://probolezny.ru/orhit/",
     source: "ProBolezny.ru",
+    preview: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&h=400&fit=crop",
+    emoji: "🏥",
   },
 ];
 
@@ -59,19 +66,38 @@ const UsefulMaterials = () => (
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {articles.map((article, index) => (
-          <Card key={index} className="group hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="text-sm text-muted-foreground mb-2">{article.source}</div>
-              <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                {article.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">{article.description}</p>
-              <Button variant="outline" className="w-full" onClick={() => window.open(article.url, "_blank")}>
-                <ExternalLink className="w-4 h-4 mr-2" />
+          <Card
+            key={index}
+            className="group overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => window.open(article.url, "_blank")}
+          >
+            <div className="relative overflow-hidden">
+              <AspectRatio ratio={16 / 10}>
+                <img
+                  src={article.preview}
+                  alt={article.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <div className="absolute top-3 left-3">
+                  <span className="bg-background/90 backdrop-blur-sm text-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+                    {article.source}
+                  </span>
+                </div>
+                <div className="absolute bottom-3 left-3 right-3">
+                  <h3 className="text-white font-semibold text-base leading-snug line-clamp-2">
+                    {article.emoji} {article.title}
+                  </h3>
+                </div>
+              </AspectRatio>
+            </div>
+            <CardContent className="p-4">
+              <p className="text-muted-foreground text-sm line-clamp-3 mb-3">{article.description}</p>
+              <div className="flex items-center text-primary text-sm font-medium group-hover:underline">
+                <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                 Читать статью
-              </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
