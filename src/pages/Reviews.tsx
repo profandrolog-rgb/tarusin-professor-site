@@ -187,6 +187,12 @@ const Reviews = () => {
             </Link>
           </CardContent>
         </Card>
+        </TabsContent>
+
+        <TabsContent value="colleagues">
+          <ColleagueReviews />
+        </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
