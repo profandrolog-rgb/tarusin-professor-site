@@ -48,7 +48,8 @@ const publications = [
   { n: 5, title: "Детская уроандрология в системе охраны здоровья детей", authors: "Тарусин Д.И., Казанская И.В., Окулов А.Б.", source: "Приказ МЗ РФ № 404 от 12.08.2003 г.", year: "2003", categories: ["organization"] as Category[] },
   { n: 6, title: "Крипторхизм. Классификация, диагностика, тактика лечения", authors: "Казанская И.В., Григорьев К.И., Тарусин Д.И., Окулов А.Б.", source: "Педиатрия. — 2004", year: "2004", categories: ["cryptorchidism"] as Category[] },
   { n: 7, title: "Организация уроандрологической помощи в детской поликлинике", authors: "Тарусин Д.И.", source: "eLibrary.ru / РИНЦ", year: "2004", categories: ["organization"] as Category[] },
-  { n: 8, title: "Факторы риска репродуктивных расстройств у мальчиков и юношей-подростков", authors: "Тарусин Д.И.", source: "Докторская диссертация. РГМУ, Москва", year: "2005", url: "https://medical-diss.com/medicina/faktory-riska-reproduktivnyh-rasstroystv-u-malchikov-i-yunoshey-podrostkov", categories: ["monograph"] as Category[] },
+  { n: 8, title: "Кандидатская диссертация", authors: "Тарусин Д.И.", source: "Кандидатская диссертация. НИИ детской гематологии МЗ РФ, Москва", year: "2000", categories: ["monograph"] as Category[] },
+  { n: 9, title: "Факторы риска репродуктивных расстройств у мальчиков и юношей-подростков", authors: "Тарусин Д.И.", source: "Докторская диссертация. РГМУ, Москва", year: "2005", url: "https://medical-diss.com/medicina/faktory-riska-reproduktivnyh-rasstroystv-u-malchikov-i-yunoshey-podrostkov", categories: ["monograph"] as Category[] },
   { n: 9, title: "Детская урология-андрология. Глава в национальном руководстве по педиатрии", authors: "Тарусин Д.И., Казанская И.В.", source: "Национальное руководство по педиатрии. — М.: ГЭОТАР-Медиа, 2005", year: "2005", categories: ["guidelines"] as Category[] },
   { n: 10, title: "Детская уроандрология в системе охраны здоровья", authors: "Окулов А.Б., Казанская И.В., Тарусин Д.И.", source: "Андрология и генитальная хирургия. — 2005. — № 3. — С. 55–58", year: "2005", categories: ["organization", "varicocele"] as Category[] },
   { n: 11, title: "Воспалительные заболевания в детской андрологической практике", authors: "Тарусин Д.И., Садчиков С.С.", source: "Лечащий врач. — 2005. — № 10", year: "2005", url: "https://www.lvrach.ru/2005/10/4533235", categories: ["foreskin"] as Category[] },
@@ -136,22 +137,28 @@ const publications = [
   { n: 92, title: "Чем Спок взял весь мир? (колонка эксперта)", authors: "Тарусин Д.И.", source: "АиФ. Здоровье / Аргументы и Факты. — 2016", year: "2016", url: "https://aif.ru/health/opinion/chem_spok_vzyal_ves_mir", categories: ["organization"] as Category[] },
   { n: 93, title: "Амбулаторная детская хирургия (интервью, программа «Здоровое детство»)", authors: "Тарусин Д.И.", source: "Медиадоктор / doctor.ru. — 2018", year: "2018", url: "https://doctor.ru/view/54982/", categories: ["organization"] as Category[] },
   { n: 94, title: "Андрология детского возраста (интервью, программа «Здоровое детство»)", authors: "Тарусин Д.И.", source: "Медиадоктор / doctor.ru. — 2019", year: "2019", url: "https://doctor.ru/view/60788/", categories: ["reproductive"] as Category[] },
+  // --- Диссертации под руководством Тарусина Д.И. ---
+  { n: 95, title: "Синдром рецидивирующих болей внизу живота у мальчиков и подростков (клиническое значение эхографических признаков для дифференциальной диагностики и выбора тактики лечения)", authors: "Аристангалиев М.Т.", source: "Канд. дисс. Науч. рук. проф. Тарусин Д.И. — М., 2004", year: "2004", url: "https://www.dissercat.com/content/sindrom-retsidiviruyushchikh-bolei-vnizu-zhivota-u-malchikov-i-podrostkov-klinicheskoe-znach", categories: ["monograph", "psychology"] as Category[] },
+  { n: 96, title: "Диссертация под науч. руководством проф. Тарусина Д.И.", authors: "Задыкян С.С.", source: "Канд. дисс. Науч. рук. проф. Тарусин Д.И.", year: "", categories: ["monograph"] as Category[] },
+  { n: 97, title: "Диссертация под науч. руководством проф. Тарусина Д.И.", authors: "Омаров М.Г.", source: "Канд. дисс. Науч. рук. проф. Тарусин Д.И.", year: "", categories: ["monograph"] as Category[] },
+  { n: 98, title: "Диссертация под науч. руководством проф. Тарусина Д.И.", authors: "Садчиков С.С.", source: "Канд. дисс. Науч. рук. проф. Тарусин Д.И.", year: "", categories: ["monograph"] as Category[] },
+  { n: 99, title: "Диссертация под науч. руководством проф. Тарусина Д.И.", authors: "Винокуров А.А.", source: "Канд. дисс. Науч. рук. проф. Тарусин Д.И.", year: "", categories: ["monograph"] as Category[] },
   // --- I Конгресс РОДУА, 2026 ---
-  { n: 95, title: "Глюкокортикостероиды в лечении заболеваний крайней плоти у детей: эффективность, рецидивы и предикторы неудачи терапии", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 52", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["foreskin"] as Category[] },
-  { n: 96, title: "Контрастная лимфопресервация при микрохирургическом лигировании вен левого семенного канатика у пациентов с варикоцеле", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 57", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["varicocele"] as Category[] },
-  { n: 97, title: "Скрытый половой член: анализ эмбриологических причин патологии и эффективность упрощённой хирургической техники", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 58", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["hypospadias"] as Category[] },
-  { n: 98, title: "Гинекомастия и гинеколипомастия у подростков: алгоритм показаний к операции и результаты субареолярной мастэктомии с предварительной тумесцентной липоскацией", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 59", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["puberty"] as Category[] },
-  { n: 99, title: "Хроническая боль в мошонке у детей и взрослых: роль патологически изменённых гидатид и результаты хирургического лечения через минидоступ", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 61", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["acute"] as Category[] },
-  { n: 100, title: "Микрокисты головки придатка яичка у детей и подростков: тактика обоснованной эскалации лечебной агрессии и показания к микрохирургической энуклеации", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 62", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["hydrocele"] as Category[] },
-  { n: 101, title: "Нарушение архитектоники ночного сна как ведущий патогенетический механизм первичного ночного энуреза у детей: клинические маркеры и этапная терапия", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 63", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["psychology"] as Category[] },
-  { n: 102, title: "Умеют ли делать операцию обрезания? Анализ типичных технических ошибок и их последствий в педиатрической практике", authors: "Тарусин Д.И., Матар А.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 65", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["foreskin"] as Category[] },
+  { n: 100, title: "Глюкокортикостероиды в лечении заболеваний крайней плоти у детей: эффективность, рецидивы и предикторы неудачи терапии", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 52", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["foreskin"] as Category[] },
+  { n: 101, title: "Контрастная лимфопресервация при микрохирургическом лигировании вен левого семенного канатика у пациентов с варикоцеле", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 57", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["varicocele"] as Category[] },
+  { n: 102, title: "Скрытый половой член: анализ эмбриологических причин патологии и эффективность упрощённой хирургической техники", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 58", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["hypospadias"] as Category[] },
+  { n: 103, title: "Гинекомастия и гинеколипомастия у подростков: алгоритм показаний к операции и результаты субареолярной мастэктомии с предварительной тумесцентной липоскацией", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 59", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["puberty"] as Category[] },
+  { n: 104, title: "Хроническая боль в мошонке у детей и взрослых: роль патологически изменённых гидатид и результаты хирургического лечения через минидоступ", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 61", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["acute"] as Category[] },
+  { n: 105, title: "Микрокисты головки придатка яичка у детей и подростков: тактика обоснованной эскалации лечебной агрессии и показания к микрохирургической энуклеации", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 62", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["hydrocele"] as Category[] },
+  { n: 106, title: "Нарушение архитектоники ночного сна как ведущий патогенетический механизм первичного ночного энуреза у детей: клинические маркеры и этапная терапия", authors: "Тарусин Д.И., Матар А.А., Петинати Я.А., Матар С.А., Середницкая Н.А., Жидков М.В., Матар Ах.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 63", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["psychology"] as Category[] },
+  { n: 107, title: "Умеют ли делать операцию обрезания? Анализ типичных технических ошибок и их последствий в педиатрической практике", authors: "Тарусин Д.И., Матар А.А.", source: "I Конгресс РОДУА. Тезисы. — М., 2026. — С. 65", year: "2026", url: "https://uroweb.ru/sites/default/files/TEZIS_RODUA2026.pdf", categories: ["foreskin"] as Category[] },
 ];
 
 const stats = [
-  { value: "102", label: "публикаций" },
+  { value: "107", label: "публикаций" },
   { value: "6", label: "глав в руководствах" },
-  { value: "1", label: "докторская диссертация" },
-  { value: "30+", label: "лет в медицине" },
+  { value: "2", label: "диссертации (канд. + докт.)" },
+  { value: "5", label: "науч. руководство дисс." },
 ];
 
 const PublicationsList = () => {
@@ -188,7 +195,9 @@ const PublicationsList = () => {
     }
 
     result.sort((a, b) => {
-      const diff = parseInt(a.year) - parseInt(b.year);
+      const ya = parseInt(a.year) || 0;
+      const yb = parseInt(b.year) || 0;
+      const diff = ya - yb;
       return sortOrder === "desc" ? -diff : diff;
     });
 
@@ -197,8 +206,8 @@ const PublicationsList = () => {
 
   const groupedPublications = useMemo(() => {
     return filteredPublications.reduce((acc, pub) => {
-      const decade = Math.floor(parseInt(pub.year) / 10) * 10;
-      const decadeLabel = `${decade}-е`;
+      const yr = parseInt(pub.year);
+      const decadeLabel = isNaN(yr) ? "Год не указан" : `${Math.floor(yr / 10) * 10}-е`;
       if (!acc[decadeLabel]) {
         acc[decadeLabel] = [];
       }
