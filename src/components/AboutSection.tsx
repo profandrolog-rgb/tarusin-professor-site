@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, Brain, MonitorCheck, Shield, Bone, Building, Baby } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-import { type CarouselApi, Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import boyIcon from "@/assets/icons/boy-icon.png";
 import manIcon from "@/assets/icons/man-icon.svg";
 import surgeryIcon from "@/assets/icons/surgery-icon.svg";
 import microsurgeryIcon from "@/assets/icons/microsurgery-icon.svg";
 import { useTranslation } from "react-i18next";
+import CertificateLightbox from "@/components/CertificateLightbox";
 
 type Certificate = {
   id: string;
@@ -23,9 +23,8 @@ const MAX_PUBLIC_CERTIFICATES = 60;
 
 const AboutSection = () => {
   const { t } = useTranslation();
-  const [certApi, setCertApi] = React.useState<CarouselApi>();
-  const [certPageCount, setCertPageCount] = React.useState(0);
-  const [certCurrentPage, setCertCurrentPage] = React.useState(0);
+  const [lightboxOpen, setLightboxOpen] = React.useState(false);
+  const [lightboxIndex, setLightboxIndex] = React.useState(0);
 
   const specializations = [
     { customIcon: boyIcon, titleKey: "about.specPedUroAndro", descKey: "about.specPedUroAndroDesc" },
@@ -72,20 +71,10 @@ const AboutSection = () => {
     return data.publicUrl;
   };
 
-  React.useEffect(() => {
-    if (!certApi) return;
-    const update = () => {
-      setCertPageCount(certApi.scrollSnapList().length);
-      setCertCurrentPage(certApi.selectedScrollSnap() + 1);
-    };
-    update();
-    certApi.on("reInit", update);
-    certApi.on("select", update);
-    return () => {
-      certApi.off("reInit", update);
-      certApi.off("select", update);
-    };
-  }, [certApi]);
+  const certImages = React.useMemo(
+    () => certificates.map((c) => ({ id: c.id, title: c.title, url: getImageUrl(c.image_path) })),
+    [certificates]
+  );
 
   return (
     <section id="about" className="py-16 md:py-24 bg-background">
@@ -179,33 +168,32 @@ const AboutSection = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="relative">
-              <Carousel opts={{ align: "start", loop: certificates.length <= 24, slidesToScroll: 1 }} setApi={setCertApi} className="w-full">
-                <CarouselContent className="-ml-2 md:-ml-4">
-                  {certificates.map((cert) => (
-                    <CarouselItem key={cert.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
-                      <Card className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                        <CardContent className="p-0">
-                          <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                            <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
-                          </div>
-                          <div className="p-3 text-center">
-                            <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="hidden sm:flex left-2 z-10" />
-                <CarouselNext className="hidden sm:flex right-2 z-10" />
-              </Carousel>
-              {certPageCount > 1 && (
-                <div className="mt-4 text-center text-sm text-muted-foreground">
-                  {t("about.pageOf", { current: certCurrentPage, total: certPageCount })}
-                </div>
-              )}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {certificates.map((cert, idx) => (
+                  <Card
+                    key={cert.id}
+                    className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                  >
+                    <CardContent className="p-0">
+                      <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+                        <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                      <div className="p-3 text-center">
+                        <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <CertificateLightbox
+                images={certImages}
+                initialIndex={lightboxIndex}
+                open={lightboxOpen}
+                onOpenChange={setLightboxOpen}
+              />
+            </>
           )}
         </div>
 
