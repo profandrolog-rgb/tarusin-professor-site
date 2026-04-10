@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -140,10 +141,12 @@ const Header = () => {
             </DropdownMenu>
 
             <LanguageSwitcher />
+            <ThemeToggle />
           </nav>
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <ThemeToggle />
             <Link to="/contacts">
               <Button className="hidden sm:flex bg-accent hover:bg-accent/90 text-accent-foreground">
                 {t("nav.bookAppointment")}
