@@ -15,7 +15,8 @@ const StickyBottomPanel = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", question: "" });
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === "en";
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,48 +49,26 @@ const StickyBottomPanel = () => {
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-foreground">{t("sticky.bookAppointment")}</h3>
-              <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)}>
-                <X className="w-5 h-5" />
-              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)}><X className="w-5 h-5" /></Button>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-accent/10 border-2 border-accent/30 relative">
-                <div className="absolute -top-2.5 left-4 px-2 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full uppercase tracking-wider">
-                  {t("sticky.priority")}
-                </div>
-                <h4 className="font-semibold text-foreground mb-2 mt-1">{t("hero.mataraClinic")}</h4>
-                <p className="text-xs text-muted-foreground mb-3">Москва, Коровинское шоссе д. 9 к. 2</p>
+                <div className="absolute -top-2.5 left-4 px-2 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full uppercase tracking-wider">{t("sticky.priority")}</div>
+                <h4 className="font-semibold text-foreground mb-2 mt-1">{isEn ? "Dr. Matara's Clinic" : t("hero.mataraClinic")}</h4>
+                <p className="text-xs text-muted-foreground mb-3">{isEn ? "Moscow, Korovinskoye Hwy 9, Bldg 2" : "Москва, Коровинское шоссе д. 9 к. 2"}</p>
                 <div className="space-y-1.5">
-                  <a href="tel:+74953030000" className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                    <Phone className="w-3.5 h-3.5" /> +7 (495) 303-00-00
-                    <span className="text-xs text-muted-foreground font-normal">({t("sticky.reception")})</span>
-                  </a>
-                  <a href="tel:+79263030111" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                    <Phone className="w-3.5 h-3.5" /> +7 (926) 303-01-11
-                    <span className="text-xs text-muted-foreground font-normal">({t("sticky.booking")})</span>
-                  </a>
-                  <a href="tel:+79160303031" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                    <Phone className="w-3.5 h-3.5" /> +7 (916) 030-30-31
-                    <span className="text-xs text-muted-foreground font-normal">({t("sticky.booking")})</span>
-                  </a>
+                  <a href="tel:+74953030000" className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (495) 303-00-00 <span className="text-xs text-muted-foreground font-normal">({t("sticky.reception")})</span></a>
+                  <a href="tel:+79263030111" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (926) 303-01-11 <span className="text-xs text-muted-foreground font-normal">({t("sticky.booking")})</span></a>
+                  <a href="tel:+79160303031" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (916) 030-30-31 <span className="text-xs text-muted-foreground font-normal">({t("sticky.booking")})</span></a>
                 </div>
               </div>
               <div className="p-4 rounded-xl bg-secondary/50 border border-border">
                 <h4 className="font-semibold text-foreground mb-2">{t("hero.aveClinic")}</h4>
-                <p className="text-xs text-muted-foreground mb-3">с. Немчиновка, 3-я Запрудная ул. дом 16</p>
+                <p className="text-xs text-muted-foreground mb-3">{isEn ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}</p>
                 <div className="space-y-1.5">
-                  <a href="tel:+74953748181" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                    <Phone className="w-3.5 h-3.5" /> +7 (495) 374-81-81
-                    <span className="text-xs text-muted-foreground font-normal">({t("sticky.inquiries")})</span>
-                  </a>
-                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                    <Phone className="w-3.5 h-3.5" /> +7 (926) 600-555-0
-                    <span className="text-xs text-muted-foreground font-normal">({t("sticky.whatsApp")})</span>
-                  </a>
-                  <a href="tel:+79778075544" className="flex items-center gap-2 text-sm text-primary hover:underline">
-                    <Phone className="w-3.5 h-3.5" /> +7 (977) 807-55-44
-                    <span className="text-xs text-muted-foreground font-normal">({t("sticky.urgent")})</span>
-                  </a>
+                  <a href="tel:+74953748181" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (495) 374-81-81 <span className="text-xs text-muted-foreground font-normal">({t("sticky.inquiries")})</span></a>
+                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (926) 600-555-0 <span className="text-xs text-muted-foreground font-normal">({t("sticky.whatsApp")})</span></a>
+                  <a href="tel:+79778075544" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (977) 807-55-44 <span className="text-xs text-muted-foreground font-normal">({t("sticky.urgent")})</span></a>
                 </div>
               </div>
             </div>
@@ -120,22 +99,11 @@ const StickyBottomPanel = () => {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>{t("sticky.questionTitle")}</DialogTitle>
-                </DialogHeader>
+                <DialogHeader><DialogTitle>{t("sticky.questionTitle")}</DialogTitle></DialogHeader>
                 <form onSubmit={handleSubmitQuestion} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="q-name">{t("sticky.yourName")}</Label>
-                    <Input id="q-name" placeholder="..." value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="q-email">{t("sticky.emailForReply")}</Label>
-                    <Input id="q-email" type="email" placeholder="example@mail.ru" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="q-text">{t("sticky.yourQuestion")}</Label>
-                    <Textarea id="q-text" placeholder="..." rows={4} value={formData.question} onChange={(e) => setFormData(p => ({ ...p, question: e.target.value }))} />
-                  </div>
+                  <div className="space-y-2"><Label htmlFor="q-name">{t("sticky.yourName")}</Label><Input id="q-name" placeholder="..." value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label htmlFor="q-email">{t("sticky.emailForReply")}</Label><Input id="q-email" type="email" placeholder="example@mail.com" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label htmlFor="q-text">{t("sticky.yourQuestion")}</Label><Textarea id="q-text" placeholder="..." rows={4} value={formData.question} onChange={(e) => setFormData(p => ({ ...p, question: e.target.value }))} /></div>
                   <p className="text-xs text-muted-foreground">{t("sticky.questionHint")}</p>
                   <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isSubmitting}>
                     {isSubmitting ? t("sticky.sendingQuestion") : t("sticky.sendQuestion")}
