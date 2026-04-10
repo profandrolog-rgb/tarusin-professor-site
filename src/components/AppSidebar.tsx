@@ -15,6 +15,7 @@ import {
   Microscope,
   Camera,
   ClipboardList,
+  Heart,
 } from "lucide-react";
 
 import {
