@@ -35,6 +35,7 @@ import Consent from "./pages/Consent";
 import Results from "./pages/Results";
 import PatientPortal from "./pages/PatientPortal";
 import AdminPatientCards from "./pages/AdminPatientCards";
+import AdminConsultations from "./pages/AdminConsultations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="/results" element={<Results />} />
               <Route path="/portal" element={<PatientPortal />} />
               <Route path="/admin/patient-cards" element={<AdminPatientCards />} />
+              <Route path="/admin/consultations" element={<AdminConsultations />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
