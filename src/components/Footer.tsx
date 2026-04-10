@@ -81,7 +81,7 @@ const Footer = () => {
                 { label: "Консультации", href: "#consultations", type: "anchor" },
                 { label: "Методики", href: "/methodologies", type: "link" },
                 { label: "Команда", href: "/team", type: "link" },
-                { label: "Для родителей", href: "/for-parents", type: "link" },
+                { label: "Для родителей и пациентов", href: "/for-parents", type: "link" },
                 { label: "Для врачей", href: "/for-doctors", type: "link" },
                 { label: "СМИ и ТВ", href: "/media", type: "link" },
                 { label: "Видео", href: "/videos", type: "link" },

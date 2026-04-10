@@ -16,8 +16,8 @@ const ForParents = () => {
         onCopy={(e) => e.preventDefault()}
       >
         <PageMeta
-          title="Для родителей — Проф. Тарусин Д.И."
-          description="Полезные материалы о мужском здоровье детей от профессора Тарусина: статьи, видео и подкасты для родителей."
+          title="Для родителей и пациентов — Проф. Тарусин Д.И."
+          description="Полезные материалы о мужском здоровье от профессора Тарусина: статьи, видео и подкасты для родителей и пациентов."
           path="/for-parents"
         />
 
@@ -28,7 +28,7 @@ const ForParents = () => {
               <ArrowLeft className="w-4 h-4" />
               На главную
             </Link>
-            <h1 className="text-3xl md:text-5xl font-bold mb-4">Для родителей</h1>
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">Для родителей и пациентов</h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
               Полезные материалы о мужском здоровье: статьи, видео и подкасты от профессора Тарусина
             </p>
