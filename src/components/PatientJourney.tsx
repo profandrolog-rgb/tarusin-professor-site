@@ -47,7 +47,7 @@ const PatientJourney = () => {
                       <Icon className="w-5 h-5" />
                     </div>
                   </div>
-                  <div className={`flex-1 sm:w-[calc(50%-2.5rem)] ${isLeft ? "sm:pr-10 sm:text-right" : "sm:pl-10"}`}>
+                  <div className={`flex-1 sm:w-[calc(50%-3.5rem)] ${isLeft ? "sm:pr-6 sm:text-right" : "sm:pl-6"}`}>
                     <Card className="p-4 border-border hover:shadow-md transition-shadow">
                       <div className={`flex items-center gap-2 mb-1 ${isLeft ? "sm:justify-end" : ""}`}>
                         <span className="text-xs font-medium text-primary">{t("journey.step", { n: i + 1 })}</span>
@@ -57,7 +57,7 @@ const PatientJourney = () => {
                       <p className="text-xs text-primary font-medium">{step.detail}</p>
                     </Card>
                   </div>
-                  <div className="hidden sm:block sm:w-[calc(50%-2.5rem)]" />
+                  <div className="hidden sm:block sm:w-[calc(50%-3.5rem)]" />
                 </div>
               );
             })}
