@@ -2,8 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Award, Syringe, Stethoscope, Users, Phone } from "lucide-react";
 import professorPhoto from "@/assets/professor-photo.png";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+
+const POSITION_KEY = "hero-photo-position";
 
 const HeroSection = () => {
+  const savedPos = localStorage.getItem(POSITION_KEY);
+  const [objectPosition, setObjectPosition] = useState(savedPos || "center top");
+  const [editing, setEditing] = useState(false);
   const { t } = useTranslation();
 
   const scrollToSection = (href: string) => {
