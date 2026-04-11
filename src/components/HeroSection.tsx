@@ -86,12 +86,11 @@ const HeroSection = () => {
 
           <div className="order-1 lg:order-2 flex justify-center">
             <div className="relative group">
-              <div className="w-72 h-72 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] rounded-full bg-gradient-to-br from-primary to-primary/60 p-1 shadow-2xl">
+              <div className="w-72 md:w-96 lg:w-[28rem] rounded-2xl bg-gradient-to-br from-primary to-primary/60 p-1 shadow-2xl">
                 <img
                   src={professorPhoto}
                   alt={`${t("hero.firstName")} ${t("hero.lastName")}`}
-                  className="w-full h-full rounded-full object-cover border-4 border-background"
-                  style={{ objectPosition }}
+                  className="w-full h-auto rounded-2xl border-4 border-background"
                 />
               </div>
               <button
