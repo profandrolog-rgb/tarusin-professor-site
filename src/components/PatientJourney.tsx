@@ -42,22 +42,24 @@ const PatientJourney = () => {
               const isLeft = i % 2 === 0;
               return (
                 <div key={i} className={`relative flex items-start gap-4 sm:gap-0 ${isLeft ? "sm:flex-row" : "sm:flex-row-reverse"}`}>
-                  <div className="relative z-10 sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                  </div>
-                  <div className={`flex-1 sm:w-[calc(50%-3.5rem)] ${isLeft ? "sm:pr-6 sm:text-right" : "sm:pl-6"}`}>
+                  {/* Hidden center dot for timeline continuity */}
+                  <div className="hidden sm:block sm:absolute sm:left-1/2 sm:-translate-x-1/2 w-3 h-3 rounded-full bg-primary z-10 mt-4" />
+                  <div className={`flex-1 sm:w-[calc(50%-1.5rem)] ${isLeft ? "sm:pr-6" : "sm:pl-6"}`}>
                     <Card className="p-4 border-border hover:shadow-md transition-shadow">
-                      <div className={`flex items-center gap-2 mb-1 ${isLeft ? "sm:justify-end" : ""}`}>
-                        <span className="text-xs font-medium text-primary">{t("journey.step", { n: i + 1 })}</span>
+                      <div className={`flex items-center gap-3 mb-2 ${isLeft ? "sm:flex-row-reverse" : ""}`}>
+                        <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md flex-shrink-0">
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className={`flex-1 ${isLeft ? "sm:text-right" : ""}`}>
+                          <span className="text-xs font-medium text-primary">{t("journey.step", { n: i + 1 })}</span>
+                          <h3 className="font-semibold text-foreground">{step.title}</h3>
+                        </div>
                       </div>
-                      <h3 className="font-semibold text-foreground mb-1">{step.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-2">{step.description}</p>
-                      <p className="text-xs text-primary font-medium">{step.detail}</p>
+                      <p className={`text-sm text-muted-foreground mb-2 ${isLeft ? "sm:text-right" : ""}`}>{step.description}</p>
+                      <p className={`text-xs text-primary font-medium ${isLeft ? "sm:text-right" : ""}`}>{step.detail}</p>
                     </Card>
                   </div>
-                  <div className="hidden sm:block sm:w-[calc(50%-3.5rem)]" />
+                  <div className="hidden sm:block sm:w-[calc(50%-1.5rem)]" />
                 </div>
               );
             })}
