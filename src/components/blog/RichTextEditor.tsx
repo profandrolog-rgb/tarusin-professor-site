@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2 } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,6 +159,29 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       >
         H3
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("bulletList") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        title="Маркированный список"
+      >
+        <List className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("orderedList") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        title="Нумерованный список"
+      >
+        <ListOrdered className="w-4 h-4" />
       </Button>
 
       <div className="w-px h-6 bg-border mx-1" />
