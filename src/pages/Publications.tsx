@@ -134,8 +134,8 @@ const Publications = () => {
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-12">
                 {isEn
-                  ? "Complete list of Professor Tarusin's scientific works, including peer-reviewed journal articles, national guideline chapters, doctoral dissertation, and video presentations"
-                  : "Полный список научных работ профессора Тарусина Д.И., включая статьи в рецензируемых журналах, главы в национальных руководствах, докторскую диссертацию и видеодоклады"}
+                  ? "Complete list of my scientific works, including peer-reviewed journal articles, national guideline chapters, doctoral dissertation, and video presentations"
+                  : "Полный список моих научных работ, включая статьи в рецензируемых журналах, главы в национальных руководствах, докторскую диссертацию и видеодоклады"}
               </p>
 
               {/* Stats */}
