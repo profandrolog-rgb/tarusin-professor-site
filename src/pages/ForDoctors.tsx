@@ -77,7 +77,7 @@ const ForDoctors = () => {
     { title: isEn ? "How to Choose Anesthesia? What Tests to Get?" : "Как выбрать наркоз? Какие анализы сдавать?", views: "35", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=gYpBBg6APUU" },
     { title: isEn ? "Abstinence — Benefit or Harm?" : "Воздержание — польза или вред?", views: "118", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=vN8wyhRk6j0" },
     { title: isEn ? "Why Is the Hand Worse Than a Woman? Clinical Explanation" : "Почему рука хуже женщины? Клиническое объяснение", views: "109", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=VVvR_FhiDSI" },
-    { title: isEn ? "Unboxing! What Makes a Doctor Happy? Lifehack from Professor Tarusin" : "Распаковка! Что обрадует доктора? Лайфхак от профессора Тарусина", views: "42", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=Sv4BxFxm2Ao" },
+    { title: isEn ? "Unboxing! What Makes a Doctor Happy? My Lifehack" : "Распаковка! Что обрадует доктора? Мой лайфхак", views: "42", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=Sv4BxFxm2Ao" },
     { title: isEn ? "How to Teach a Boy to Urinate Standing Up?" : "Как научить мальчика писать стоя?", views: "—", type: isEn ? "Video" : "Видео", url: "https://www.youtube.com/watch?v=yW-S0X0OCVE" },
   ];
 
