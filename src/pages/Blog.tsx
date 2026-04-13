@@ -511,7 +511,7 @@ const Blog = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">{isEn ? "Reflections" : "Размышлизмы"}</h1>
-            <p className="text-muted-foreground">{isEn ? "Professor Tarusin's personal blog" : "Личный блог профессора Тарусина Д.И."}</p>
+            <p className="text-muted-foreground">{isEn ? "My personal blog" : "Мой личный блог"}</p>
           </div>
           {isAdmin && (
             <Button onClick={openCreate} className="gap-2">

@@ -65,7 +65,7 @@ const Masterclasses = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "Master Classes & Presentations" : "Мастер-классы и выступления"}</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            {isEn ? "Educational activities, lectures, and international presentations by Professor Tarusin" : "Образовательная деятельность, лекции и международные выступления профессора Тарусина"}
+            {isEn ? "My educational activities, lectures, and international presentations" : "Моя образовательная деятельность, лекции и международные выступления"}
           </p>
         </div>
       </header>
@@ -141,7 +141,7 @@ const Masterclasses = () => {
           <CardContent className="p-8 md:p-12 text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">{isEn ? "Master Class Invitation" : "Приглашение на мастер-класс"}</h2>
             <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-6">
-              {isEn ? "Professor Tarusin is open to invitations for conferences, master classes, and educational events. To arrange a presentation, please use the contact form." : "Профессор Тарусин открыт к приглашениям на конференции, мастер-классы и образовательные мероприятия. Для организации выступления свяжитесь через форму обратной связи."}
+              {isEn ? "I am open to invitations for conferences, master classes, and educational events. To arrange a presentation, please use the contact form." : "Я открыт к приглашениям на конференции, мастер-классы и образовательные мероприятия. Для организации выступления свяжитесь через форму обратной связи."}
             </p>
             <Link to="/contacts">
               <button className="bg-accent hover:bg-accent/90 text-accent-foreground px-6 py-3 rounded-md font-medium transition-colors">

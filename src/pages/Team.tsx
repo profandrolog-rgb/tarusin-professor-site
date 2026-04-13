@@ -88,7 +88,7 @@ export default function Team() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              {isEn ? "Professor's Team" : "Команда профессора"}
+              {isEn ? "My Team" : "Моя команда"}
             </h1>
             <p className="text-muted-foreground mt-2">
               {isEn ? "Professionals I work with. Absolute trust. Crystal-clear honesty" : "Профессионалы, с которыми я работаю. Абсолютное доверие. Кристальная честность"}

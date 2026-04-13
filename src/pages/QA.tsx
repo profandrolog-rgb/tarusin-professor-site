@@ -57,7 +57,7 @@ const QA = () => {
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />{isEn ? "Back to Home" : "На главную"}</Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "Questions & Answers" : "Вопросы и ответы"}</h1>
-          <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">{isEn ? "Answers from Professor Tarusin D.I. to patient and parent questions" : "Ответы профессора Тарусина Д.И. на вопросы пациентов и их родителей"}</p>
+          <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">{isEn ? "My answers to patient and parent questions" : "Мои ответы на вопросы пациентов и их родителей"}</p>
         </div>
       </header>
 

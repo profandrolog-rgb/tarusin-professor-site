@@ -305,7 +305,7 @@ const ClinicalCases = () => {
           </Link>
           <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "Clinical Cases" : "Клинические случаи"}</h1>
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-            {isEn ? "Clinical case descriptions from the professor's practice" : "Описания клинических случаев из практики профессора"}
+            {isEn ? "Clinical case descriptions from my practice" : "Описания клинических случаев из моей практики"}
           </p>
         </div>
       </header>
