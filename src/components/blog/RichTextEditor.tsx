@@ -82,8 +82,8 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   if (!editor) return null;
 
   return (
-    <div className="border border-input rounded-md overflow-hidden bg-background">
-      <div className="flex items-center gap-1 p-1 border-b border-input bg-muted/30 flex-wrap sticky top-0 z-10">
+    <div className="border border-input rounded-md bg-background relative">
+      <div className="flex items-center gap-1 p-1 border-b border-input bg-muted/30 flex-wrap sticky top-0 z-10 rounded-t-md">
         <Button
           type="button"
           size="icon"
