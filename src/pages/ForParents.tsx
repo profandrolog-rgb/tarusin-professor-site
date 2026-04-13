@@ -29,7 +29,7 @@ const ForParents = () => {
             </Link>
             <h1 className="text-3xl md:text-5xl font-bold mb-4">{isEn ? "For Parents & Patients" : "Для родителей и пациентов"}</h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-              {isEn ? "Useful materials about men's health: articles, videos and podcasts from Professor Tarusin" : "Полезные материалы о мужском здоровье: статьи, видео и подкасты от профессора Тарусина"}
+              {isEn ? "Useful materials about men's health: articles, videos and podcasts" : "Полезные материалы о мужском здоровье: статьи, видео и подкасты"}
             </p>
           </div>
         </header>
@@ -55,7 +55,7 @@ const ForParents = () => {
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{isEn ? "Have Questions?" : "Остались вопросы?"}</h2>
             <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-              {isEn ? "Book a consultation with Professor Tarusin for an individual examination and recommendations" : "Запишитесь на консультацию к профессору Тарусину для индивидуального осмотра и рекомендаций"}
+              {isEn ? "Come to me for a consultation and we'll figure everything out together" : "Приходите ко мне на консультацию, и мы всё решим"}
             </p>
             <Link to="/#contact"><Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">{isEn ? "Book an Appointment" : "Записаться на приём"}</Button></Link>
           </div>
