@@ -6,7 +6,7 @@
     "consultations": "Consultations",
     "methods": "Methods",
     "more": "More",
-    "team": "Professor's Team",
+    "team": "My Team",
     "forParents": "For Parents & Patients",
     "forDoctors": "For Doctors",
     "media": "Media & TV",
@@ -106,7 +106,7 @@
   "pioneers": {
     "badge": "First in Russia",
     "title": "Pioneer of Pediatric Andrology",
-    "subtitle": "Unique achievements of Professor Tarusin that shaped an entire field of medicine in Russia",
+    "subtitle": "My unique achievements that shaped an entire field of medicine in Russia",
     "item1Year": "2003",
     "item1Title": "Establishment of the specialty 'Pediatric Urology-Andrology'",
     "item1Desc": "Together with Professor I.V. Kazanskaya, established and officially approved a new medical specialty for the first time in Russia",
@@ -127,7 +127,7 @@
     "item6Desc": "An original educational project for physicians — systematizing knowledge and sharing experience in pediatric urology-andrology"
   },
   "professorMessage": {
-    "title": "A Message from the Professor",
+    "title": "My Message to You",
     "greeting": "Dear parents and patients,",
     "p1": "Over more than 42 years in medicine, I have seen thousands of families who came to me with anxiety and left with hope. Every child, every patient is a separate story requiring an individual approach, patience, and deep understanding of the problem.",
     "p2": "Pediatric urology-andrology is a specialty I built from scratch in Russia. When Professor Kazanskaya and I created this field in 2003, many colleagues were skeptical. But today, thousands of boys and young men receive qualified care because we didn't give up.",
@@ -138,12 +138,12 @@
   "international": {
     "badge": "International Practice",
     "title": "International Recognition",
-    "subtitle": "Professor Tarusin regularly conducts master classes, consultations, and lectures at international medical centers",
+    "subtitle": "I regularly conduct master classes, consultations, and lectures at international medical centers",
     "countries": "Countries",
     "trainedDoctors": "Trained doctors",
     "presentationsCount": "Presentations",
     "forForeignPatients": "For international patients:",
-    "forForeignPatientsText": "The Professor sees patients from any country. A preliminary online consultation helps plan your visit and reduce your stay in Moscow.",
+    "forForeignPatientsText": "I see patients from any country. A preliminary online consultation helps plan your visit and reduce your stay in Moscow.",
     "kazakhstan": "Kazakhstan",
     "kazakhstanActivity": "Master classes, consultations",
     "uzbekistan": "Uzbekistan",
@@ -323,12 +323,12 @@
   },
   "reviews": {
     "title": "Patient Reviews",
-    "subtitle": "What our patients and their families say about the Professor",
+    "subtitle": "What my patients and their families say",
     "showMore": "Show More Reviews",
     "showLess": "Show Less",
     "allReviews": "All Reviews",
     "colleagueTitle": "Colleague Reviews",
-    "colleagueSubtitle": "Opinions of specialist physicians who have trained with and collaborated with Professor Tarusin",
+    "colleagueSubtitle": "Opinions of specialist physicians who have trained with and collaborated with me",
     "platformsTitle": "Reviews on Platforms",
     "platformsSubtitle": "Read reviews on independent medical platforms",
     "readReviews": "Read reviews",
@@ -338,9 +338,9 @@
   "qa": {
     "badge": "Frequently Asked Questions",
     "title": "Questions & Answers",
-    "subtitle": "Answers from Professor Tarusin D.I. to patient questions",
+    "subtitle": "My answers to patient questions",
     "allQA": "All Questions & Answers",
-    "answeredBy": "— Professor Tarusin D.I."
+    "answeredBy": "— Professor D.I. Tarusin"
   },
   "contact": {
     "title": "Book an Appointment",
@@ -414,7 +414,7 @@
     "navigation": "Navigation",
     "specializations": "Specializations",
     "contactsTitle": "Contacts",
-    "copyright": "© {{year}} Professor Tarusin Dmitry Igorevich. All rights reserved.",
+    "copyright": "© {{year}} Professor D.I. Tarusin. All rights reserved.",
     "privacyPolicy": "Privacy Policy",
     "dataConsent": "Data Processing Consent",
     "desc": "Corresponding Member of RANS, Professor, Doctor of Medical Sciences, Highest Category Physician. Founder of Pediatric Andrology in Russia. Headliner (HL), Opinion Leader (OL). Over 42 years protecting men's health."
@@ -425,7 +425,7 @@
     "askQuestion": "Ask a Question",
     "askShort": "Question",
     "priority": "Priority",
-    "questionTitle": "Ask the Professor a Question",
+    "questionTitle": "Ask Me a Question",
     "yourName": "Your Name *",
     "emailForReply": "Email for Reply *",
     "yourQuestion": "Your Question *",
@@ -444,9 +444,9 @@
     "urgent": "urgent"
   },
   "chatbot": {
-    "title": "Professor's Assistant",
+    "title": "My Assistant",
     "subtitle": "We'll answer your questions",
-    "welcome": "Hello! I'm Professor Tarusin's virtual assistant. Ask a question about pediatric andrology or choose from popular topics:",
+    "welcome": "Hello! I'm the Professor's virtual assistant. Ask a question about pediatric andrology or choose from popular topics:",
     "placeholder": "Ask a question...",
     "disclaimer": "The assistant does not diagnose. For a consultation, please book an appointment.",
     "quickQ1": "At what age should a boy see an andrologist?",
