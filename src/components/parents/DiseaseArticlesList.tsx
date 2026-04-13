@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import DiseaseArticleCard from "./DiseaseArticleCard";
 
 interface DiseaseArticlesListProps {
@@ -10,25 +11,27 @@ interface DiseaseArticlesListProps {
 }
 
 const DiseaseArticlesList = ({ ageGroup }: DiseaseArticlesListProps) => {
+  const { isAdmin } = useAuth();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("disease_articles")
-        .select("*")
-        .eq("age_group", ageGroup)
-        .eq("is_published", true)
-        .order("sort_order", { ascending: true });
-      setArticles(data || []);
-      setLoading(false);
-    };
-    fetchArticles();
+  const fetchArticles = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("disease_articles")
+      .select("*")
+      .eq("age_group", ageGroup)
+      .eq("is_published", true)
+      .order("sort_order", { ascending: true });
+    setArticles(data || []);
+    setLoading(false);
   }, [ageGroup]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
 
   const categories = useMemo(() => {
     const cats = new Set(articles.map((a) => a.category));
@@ -155,7 +158,12 @@ const DiseaseArticlesList = ({ ageGroup }: DiseaseArticlesListProps) => {
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filtered.map((article) => (
-              <DiseaseArticleCard key={article.id} article={article} />
+              <DiseaseArticleCard
+                key={article.id}
+                article={article}
+                isAdmin={isAdmin}
+                onArticleUpdated={fetchArticles}
+              />
             ))}
           </div>
         )}
