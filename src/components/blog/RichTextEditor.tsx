@@ -4,7 +4,7 @@ import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
 import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface RichTextEditorProps {
@@ -17,7 +17,11 @@ interface RichTextEditorProps {
 
 const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images" }: RichTextEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [isToolbarFixed, setIsToolbarFixed] = useState(false);
+  const [toolbarWidth, setToolbarWidth] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -47,6 +51,31 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       },
     },
   });
+
+  // Sticky toolbar logic using scroll listener
+  const handleScroll = useCallback(() => {
+    if (!containerRef.current) return;
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const containerBottom = containerRect.bottom;
+    const toolbarHeight = 42;
+    
+    // Fix toolbar when container top goes above viewport, but container bottom is still visible
+    if (containerRect.top < 0 && containerBottom > toolbarHeight + 50) {
+      if (!isToolbarFixed) {
+        setToolbarWidth(containerRect.width);
+        setIsToolbarFixed(true);
+      }
+    } else {
+      if (isToolbarFixed) {
+        setIsToolbarFixed(false);
+      }
+    }
+  }, [isToolbarFixed]);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [handleScroll]);
 
   useEffect(() => {
     if (editor && content === "") {
@@ -81,79 +110,96 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
 
   if (!editor) return null;
 
+  const toolbarContent = (
+    <>
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("bold") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+      >
+        <Bold className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("italic") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+      >
+        <Italic className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("underline") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+      >
+        <UnderlineIcon className="w-4 h-4" />
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("heading", { level: 2 }) ? "default" : "ghost"}
+        className="h-8 w-8 text-xs font-bold"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+      >
+        H2
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("heading", { level: 3 }) ? "default" : "ghost"}
+        className="h-8 w-8 text-xs font-bold"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+      >
+        H3
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        title="Вставить изображение"
+      >
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+      </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageUpload}
+      />
+    </>
+  );
+
   return (
-    <div className="border border-input rounded-md bg-background relative">
-      <div className="flex items-center gap-1 p-1 border-b border-input bg-muted/30 flex-wrap sticky top-0 z-10 rounded-t-md">
-        <Button
-          type="button"
-          size="icon"
-          variant={editor.isActive("bold") ? "default" : "ghost"}
-          className="h-8 w-8"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          <Bold className="w-4 h-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant={editor.isActive("italic") ? "default" : "ghost"}
-          className="h-8 w-8"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <Italic className="w-4 h-4" />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant={editor.isActive("underline") ? "default" : "ghost"}
-          className="h-8 w-8"
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          <UnderlineIcon className="w-4 h-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-border mx-1" />
-
-        <Button
-          type="button"
-          size="icon"
-          variant={editor.isActive("heading", { level: 2 }) ? "default" : "ghost"}
-          className="h-8 w-8 text-xs font-bold"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          H2
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant={editor.isActive("heading", { level: 3 }) ? "default" : "ghost"}
-          className="h-8 w-8 text-xs font-bold"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          H3
-        </Button>
-
-        <div className="w-px h-6 bg-border mx-1" />
-
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="h-8 w-8"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          title="Вставить изображение"
-        >
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageUpload}
-        />
+    <div ref={containerRef} className="border border-input rounded-md bg-background relative">
+      {/* Spacer when toolbar is fixed */}
+      {isToolbarFixed && <div className="h-[42px]" />}
+      
+      {/* Toolbar */}
+      <div
+        ref={toolbarRef}
+        className={`flex items-center gap-1 p-1 border-b border-input bg-muted/80 backdrop-blur-sm flex-wrap rounded-t-md z-50 ${
+          isToolbarFixed ? "fixed top-0 shadow-md" : ""
+        }`}
+        style={isToolbarFixed ? { width: toolbarWidth } : undefined}
+      >
+        {toolbarContent}
       </div>
+      
       <EditorContent editor={editor} />
     </div>
   );
