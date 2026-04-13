@@ -166,6 +166,29 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       <Button
         type="button"
         size="icon"
+        variant={editor.isActive("bulletList") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        title="Маркированный список"
+      >
+        <List className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("orderedList") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        title="Нумерованный список"
+      >
+        <ListOrdered className="w-4 h-4" />
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      <Button
+        type="button"
+        size="icon"
         variant="ghost"
         className="h-8 w-8"
         onClick={() => fileInputRef.current?.click()}
