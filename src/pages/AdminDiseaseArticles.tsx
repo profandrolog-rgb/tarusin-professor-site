@@ -414,14 +414,15 @@ const AdminDiseaseArticles = () => {
                 <TabsContent value="text" className="space-y-3 mt-4">
                   <div>
                     <Label>Текст статьи / транскрипция</Label>
-                    <Textarea
-                      value={form.article_content}
-                      onChange={(e) => setForm({ ...form, article_content: e.target.value })}
-                      placeholder="Текст статьи о заболевании. Можно использовать HTML-разметку для форматирования."
-                      rows={10}
+                    <RichTextEditor
+                      content={form.article_content}
+                      onChange={(html) => setForm({ ...form, article_content: html })}
+                      placeholder="Текст статьи о заболевании"
+                      storageBucket="disease-media"
+                      storageFolder="article-images"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Поддерживается HTML: &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;em&gt;
+                      Используйте панель инструментов для форматирования и вставки изображений
                     </p>
                   </div>
                 </TabsContent>
