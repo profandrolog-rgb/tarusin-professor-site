@@ -33,6 +33,13 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
   const [loading, setLoading] = useState(false);
   const autoSaveKey = article ? `research_edit_${article.id}` : "research_new";
 
+  const getSafeStoragePath = (folder: string, file: File) => {
+    const rawExt = file.name.split(".").pop()?.toLowerCase() || "bin";
+    const safeExt = rawExt.replace(/[^a-z0-9]/g, "") || "bin";
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${safeExt}`;
+    return `${folder}/${uniqueName}`;
+  };
+
   // Check for saved draft on mount
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [title, setTitle] = useState(article?.title || "");
@@ -96,8 +103,7 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
 
       // Upload cover image
       if (coverFile) {
-        const ext = coverFile.name.split(".").pop();
-        const path = `covers/${Date.now()}.${ext}`;
+        const path = getSafeStoragePath("covers", coverFile);
         const { error: uploadError } = await supabase.storage
           .from("research-attachments")
           .upload(path, coverFile);
@@ -151,18 +157,19 @@ const ResearchPostForm = ({ article, onSave, onCancel }: ResearchPostFormProps) 
           : ["xlsx", "xls", "csv"].includes(ext)
           ? "spreadsheet"
           : "document";
-        const path = `attachments/${articleId}/${Date.now()}-${file.name}`;
+        const path = getSafeStoragePath(`attachments/${articleId}`, file);
         const { error: uploadError } = await supabase.storage
           .from("research-attachments")
           .upload(path, file);
         if (uploadError) throw uploadError;
 
-        await supabase.from("research_article_attachments").insert({
+        const { error: attachmentError } = await supabase.from("research_article_attachments").insert({
           article_id: articleId!,
           file_path: path,
           file_name: file.name,
           file_type: fileType,
         });
+        if (attachmentError) throw attachmentError;
       }
 
       toast({ title: article ? "Статья обновлена" : "Статья создана" });
