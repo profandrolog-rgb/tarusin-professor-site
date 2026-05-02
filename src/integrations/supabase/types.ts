@@ -1814,7 +1814,115 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      blog_comments_public: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string | null
+          is_approved: boolean | null
+          post_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_approved?: boolean | null
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_approved?: boolean | null
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions_public: {
+        Row: {
+          answer_text: string | null
+          answered_at: string | null
+          author_name: string | null
+          created_at: string | null
+          id: string | null
+          is_published: boolean | null
+          question_text: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          answer_text?: string | null
+          answered_at?: string | null
+          author_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_published?: boolean | null
+          question_text?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          answer_text?: string | null
+          answered_at?: string | null
+          author_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_published?: boolean | null
+          question_text?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      research_article_comments_public: {
+        Row: {
+          article_id: string | null
+          author_name: string | null
+          content: string | null
+          created_at: string | null
+          id: string | null
+          is_approved: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          author_name?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_approved?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          author_name?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_approved?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_article_comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "research_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       delete_email: {

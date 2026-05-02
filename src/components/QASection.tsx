@@ -16,14 +16,14 @@ const QASection = () => {
     queryKey: ["published-questions-preview"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("questions")
+        .from("questions_public" as any)
         .select("id, author_name, question_text, answer_text, created_at")
         .eq("is_published", true)
         .not("answer_text", "is", null)
         .order("answered_at", { ascending: false })
         .limit(10);
       if (error) throw error;
-      return data;
+      return data as unknown as Array<{ id: string; author_name: string; question_text: string; answer_text: string | null; created_at: string }>;
     },
   });
 

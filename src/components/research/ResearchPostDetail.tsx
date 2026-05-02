@@ -60,12 +60,12 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
     queryKey: ["research-comments", articleId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("research_article_comments")
+        .from("research_article_comments_public" as any)
         .select("*")
         .eq("article_id", articleId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data;
+      return data as unknown as Array<{ id: string; article_id: string; user_id: string; author_name: string; content: string; is_approved: boolean; created_at: string }>;
     },
   });
 
