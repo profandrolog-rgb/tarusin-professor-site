@@ -7,7 +7,7 @@ interface PageMetaProps {
   image?: string;
 }
 
-const SITE_URL = "https://tarusin-professor-site.lovable.app";
+const SITE_URL = "https://tarusin.pro";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 const PageMeta = ({ title, description, path, image }: PageMetaProps) => {

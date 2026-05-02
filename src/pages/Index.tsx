@@ -23,11 +23,11 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "Person",
-      "@id": "https://tarusin-professor-site.lovable.app/#person",
+      "@id": "https://tarusin.pro/#person",
       "name": "Тарусин Дмитрий Игоревич",
       "jobTitle": "Профессор, доктор медицинских наук",
       "description": "Основатель детской урологии-андрологии в России. Член-корреспондент РАЕН, врач высшей категории.",
-      "url": "https://tarusin-professor-site.lovable.app",
+      "url": "https://tarusin.pro",
       "telephone": ["+74953748181", "+74953030000"],
       "medicalSpecialty": ["Андрология", "Детская урология-андрология", "Микрохирургия", "УЗИ-диагностика"],
       "knowsAbout": ["Варикоцеле", "Крипторхизм", "Гипоспадия", "Фимоз", "Детская андрология"],
