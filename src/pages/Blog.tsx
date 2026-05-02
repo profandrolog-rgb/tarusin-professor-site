@@ -44,7 +44,7 @@ interface BlogComment {
   id: string;
   post_id: string;
   user_id: string;
-  author_email: string;
+  author_email?: string;
   content: string;
   is_approved: boolean;
   created_at: string;
@@ -129,11 +129,11 @@ const Blog = () => {
     queryKey: ["blog-comments"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("blog_comments")
+        .from("blog_comments_public" as any)
         .select("*")
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as BlogComment[];
+      return data as unknown as BlogComment[];
     },
   });
 
@@ -905,7 +905,7 @@ const Blog = () => {
                               className={`p-3 rounded-lg text-sm ${comment.is_approved ? "bg-secondary" : "bg-secondary/50 border border-dashed border-border"}`}
                             >
                               <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium text-foreground">{comment.author_email.replace(/(.{2})(.*)(@.*)/, "$1***$3")}</span>
+                                <span className="font-medium text-foreground">{(comment.author_email || "Пользователь").replace(/(.{2})(.*)(@.*)/, "$1***$3")}</span>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs text-muted-foreground">
                                     {format(new Date(comment.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
