@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = "https://tarusin-professor-site.lovable.app";
+const SITE_URL = "https://tarusin.pro";
 
 const physicianSchema = {
   "@context": "https://schema.org",
