@@ -32,10 +32,23 @@ const Contacts = () => {
     { name: "YouTube", Icon: Youtube, url: "https://www.youtube.com/@tarusindi", handle: "@tarusindi" },
   ];
 
+  const contactSchema = z.object({
+    name: z.string().trim().min(1).max(100),
+    email: z.string().trim().email().max(255),
+    phone: z.string().max(30).optional().or(z.literal("")),
+    age: z.string().max(50).optional().or(z.literal("")),
+    message: z.string().trim().min(1).max(5000),
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = contactSchema.safeParse(formData);
+    if (!parsed.success) {
+      toast({ title: isEn ? "Invalid input" : "Проверьте данные", description: parsed.error.errors.map(e => e.message).join(", "), variant: "destructive" });
+      return;
+    }
     setIsSubmitting(true);
-    const { error } = await supabase.from("appointment_requests").insert({ parent_name: formData.name, contact_email: formData.email, contact_phone: formData.phone || null, child_age: formData.age || (isEn ? "Not specified" : "Не указан"), problem_description: formData.message });
+    const { error } = await supabase.from("appointment_requests").insert({ parent_name: parsed.data.name, contact_email: parsed.data.email, contact_phone: parsed.data.phone || null, child_age: parsed.data.age || (isEn ? "Not specified" : "Не указан"), problem_description: parsed.data.message });
     if (error) { toast({ title: isEn ? "Error" : "Ошибка", description: isEn ? "Could not send request. Please try later." : "Не удалось отправить заявку. Попробуйте позже.", variant: "destructive" }); setIsSubmitting(false); return; }
     toast({ title: isEn ? "Request Sent" : "Заявка отправлена", description: isEn ? "We will contact you shortly" : "Мы свяжемся с вами в ближайшее время" });
     setFormData({ name: "", email: "", phone: "", age: "", message: "" });
