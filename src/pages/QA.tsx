@@ -27,7 +27,7 @@ const QA = () => {
     queryFn: async () => {
       const { data, error } = await supabase.from("questions_public" as any).select("*").eq("is_published", true).not("answer_text", "is", null).order("answered_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as unknown as Array<{ id: string; author_name: string; question_text: string; answer_text: string | null; is_published: boolean; status: string; created_at: string; updated_at: string; answered_at: string | null }>;
     },
   });
 

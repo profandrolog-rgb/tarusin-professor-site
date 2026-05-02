@@ -23,7 +23,7 @@ const QASection = () => {
         .order("answered_at", { ascending: false })
         .limit(10);
       if (error) throw error;
-      return data;
+      return data as unknown as Array<{ id: string; author_name: string; question_text: string; answer_text: string | null; created_at: string }>;
     },
   });
 
