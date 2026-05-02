@@ -905,7 +905,7 @@ const Blog = () => {
                               className={`p-3 rounded-lg text-sm ${comment.is_approved ? "bg-secondary" : "bg-secondary/50 border border-dashed border-border"}`}
                             >
                               <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium text-foreground">{comment.author_email}</span>
+                                <span className="font-medium text-foreground">{comment.author_email.replace(/(.{2})(.*)(@.*)/, "$1***$3")}</span>
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs text-muted-foreground">
                                     {format(new Date(comment.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
