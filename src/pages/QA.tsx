@@ -25,7 +25,7 @@ const QA = () => {
   const { data: questions = [] } = useQuery({
     queryKey: ["published-questions-all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("questions").select("*").eq("is_published", true).not("answer_text", "is", null).order("answered_at", { ascending: false });
+      const { data, error } = await supabase.from("questions_public" as any).select("*").eq("is_published", true).not("answer_text", "is", null).order("answered_at", { ascending: false });
       if (error) throw error;
       return data;
     },
