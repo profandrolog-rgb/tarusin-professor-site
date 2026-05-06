@@ -118,7 +118,7 @@ const UsefulMaterials = () => (
           <Card key={index} className="group overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-video bg-muted relative overflow-hidden">
               <img
-                src={video.thumbnail}
+                src={proxyImage(video.thumbnail)}
                 alt={video.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
