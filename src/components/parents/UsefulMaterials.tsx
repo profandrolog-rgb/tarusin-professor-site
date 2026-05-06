@@ -1,5 +1,6 @@
 import { BookOpen, Video, Headphones, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { proxyImage } from "@/lib/proxyImage";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
@@ -74,7 +75,7 @@ const UsefulMaterials = () => (
             <div className="relative overflow-hidden">
               <AspectRatio ratio={16 / 10}>
                 <img
-                  src={article.preview}
+                  src={proxyImage(article.preview)}
                   alt={article.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
@@ -117,7 +118,7 @@ const UsefulMaterials = () => (
           <Card key={index} className="group overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-video bg-muted relative overflow-hidden">
               <img
-                src={video.thumbnail}
+                src={proxyImage(video.thumbnail)}
                 alt={video.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
