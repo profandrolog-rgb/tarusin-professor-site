@@ -100,7 +100,7 @@ const Media = () => {
             {tvProjects.map((project, index) => (
               <Card key={index} className="group overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-video bg-muted relative overflow-hidden">
-                  <img src={project.thumbnail} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
+                  <img src={proxyImage(project.thumbnail)} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center"><Play className="w-8 h-8 text-accent-foreground" /></div>
                   </div>
