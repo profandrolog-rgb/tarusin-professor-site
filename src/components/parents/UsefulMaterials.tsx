@@ -1,5 +1,6 @@
 import { BookOpen, Video, Headphones, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { proxyImage } from "@/lib/proxyImage";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
