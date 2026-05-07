@@ -18,7 +18,8 @@ import {
   MousePointer,
   Clock,
   BookOpen,
-  Baby
+  Baby,
+  ClipboardCheck
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -121,6 +122,13 @@ const adminSections = [
     icon: Stethoscope,
     href: "/admin/consultations",
     color: "text-sky-500",
+  },
+  {
+    title: "Самодиагностика",
+    description: "Статистика прохождений тестов самодиагностики",
+    icon: ClipboardCheck,
+    href: "/admin/self-check",
+    color: "text-lime-500",
   },
 ];
 

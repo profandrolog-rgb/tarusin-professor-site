@@ -334,6 +334,42 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_responses: {
+        Row: {
+          anonymous_id: string | null
+          answers: Json
+          checklist_slug: string
+          created_at: string
+          duration_sec: number | null
+          id: string
+          result_level: string
+          result_score: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          answers: Json
+          checklist_slug: string
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          result_level: string
+          result_score?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          answers?: Json
+          checklist_slug?: string
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          result_level?: string
+          result_score?: number | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       clinical_case_images: {
         Row: {
           caption: string | null
