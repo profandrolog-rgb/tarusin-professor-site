@@ -37,6 +37,9 @@ import PatientPortal from "./pages/PatientPortal";
 import AdminPatientCards from "./pages/AdminPatientCards";
 import AdminConsultations from "./pages/AdminConsultations";
 import NotFound from "./pages/NotFound";
+import SelfCheck from "./pages/SelfCheck";
+import SelfCheckDetail from "./pages/SelfCheckDetail";
+import AdminSelfCheck from "./pages/AdminSelfCheck";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +81,9 @@ const App = () => (
               <Route path="/portal" element={<PatientPortal />} />
               <Route path="/admin/patient-cards" element={<AdminPatientCards />} />
               <Route path="/admin/consultations" element={<AdminConsultations />} />
+              <Route path="/admin/self-check" element={<AdminSelfCheck />} />
+              <Route path="/self-check" element={<SelfCheck />} />
+              <Route path="/self-check/:slug" element={<SelfCheckDetail />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
