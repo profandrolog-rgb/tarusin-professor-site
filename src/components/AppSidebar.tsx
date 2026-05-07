@@ -54,6 +54,7 @@ const pageNavItems = [
   { title: "Путёвые заметки", url: "/travel-notes", icon: Camera },
   { title: "Мастер-классы", url: "/masterclasses", icon: GraduationCap },
   { title: "Размышлизмы", url: "/blog", icon: BookOpen },
+  { title: "Самодиагностика", url: "/self-check", icon: ClipboardCheck },
   { title: "Отзывы", url: "/reviews", icon: Star },
   { title: "Контакты", url: "/contacts", icon: Phone },
 ];
