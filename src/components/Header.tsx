@@ -37,6 +37,7 @@ const Header = () => {
     { label: t("nav.masterclasses"), href: "/masterclasses" },
     { label: t("nav.blog"), href: "/blog" },
     { label: t("nav.reviews"), href: "/reviews" },
+    { label: t("nav.selfCheck"), href: "/self-check" },
     { label: t("nav.qa"), href: "/qa" },
     { label: t("nav.contacts"), href: "/contacts" },
   ];
