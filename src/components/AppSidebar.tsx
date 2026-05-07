@@ -9,6 +9,7 @@ import {
   Video,
   Clapperboard,
   Star,
+  ClipboardCheck,
   Phone,
   ChevronLeft,
   BookOpen,
