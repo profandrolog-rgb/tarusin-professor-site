@@ -16,6 +16,7 @@ const SelfCheck = () => {
       <PageMeta
         title="Самодиагностика — Профессор Тарусин"
         description="Пройдите бесплатные тесты для предварительной оценки урологических проблем. Результат не заменяет консультацию врача."
+        path="/self-check"
       />
       <Header />
       <main className="min-h-screen bg-background">

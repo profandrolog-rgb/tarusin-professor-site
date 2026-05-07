@@ -17,6 +17,7 @@ const SelfCheckDetail = () => {
       <PageMeta
         title={`${checklist.shortTitle} — Самодиагностика`}
         description={checklist.description}
+        path={`/self-check/${checklist.slug}`}
       />
       <Header />
       <main className="min-h-screen bg-background">
