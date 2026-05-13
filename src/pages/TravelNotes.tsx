@@ -298,7 +298,7 @@ const TravelNotes = () => {
               <div className="text-center mt-4 text-white">
                 <h3 className="text-xl font-semibold">{photos[selectedIndex].title}</h3>
                 {photos[selectedIndex].caption && <p className="text-white/80 mt-2 max-w-2xl">{photos[selectedIndex].caption}</p>}
-                <p className="text-white/50 text-sm mt-2">{selectedIndex + 1} / {photos.length}</p>
+                <p className="text-white/80 text-sm mt-2">{selectedIndex + 1} / {photos.length}</p>
               </div>
             </div>
           </div>
