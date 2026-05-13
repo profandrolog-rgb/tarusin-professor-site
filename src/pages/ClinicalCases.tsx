@@ -298,6 +298,24 @@ const ClinicalCases = () => {
     <AgeConfirmationModal>
     <div className="min-h-screen bg-background">
       <PageMeta title={isEn ? "Clinical Cases — Prof. Tarusin" : "Клинические случаи — Проф. Тарусин Д.И."} description={isEn ? "Clinical case descriptions from Professor Tarusin's practice with illustrations and conclusions." : "Описания клинических случаев из практики профессора Тарусина Д.И. с иллюстрациями и выводами."} path="/clinical-cases" />
+      {cases.length > 0 && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Клинические случаи — Проф. Тарусин Д.И.",
+            url: "https://tarusin.pro/clinical-cases",
+            author: { "@type": "Person", name: "Тарусин Дмитрий Игоревич" },
+            hasPart: cases.slice(0, 30).map((c) => ({
+              "@type": "Article",
+              headline: c.title,
+              datePublished: c.created_at,
+              author: { "@type": "Person", name: "Тарусин Дмитрий Игоревич" },
+              about: c.category,
+            })),
+          }}
+        />
+      )}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to={isAdmin ? "/admin" : "/"} className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
