@@ -59,7 +59,7 @@ const Contacts = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at AVE-CLINIC or Dr. Matara's Clinic in Moscow." : "Запись на приём к профессору Тарусину."} path="/contacts" />
+      <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at AVE-CLINIC or Dr. Matara's Clinic in Moscow. Addresses, phone numbers and directions." : "Запись на приём к профессору Тарусину Д.И. в клиниках AVE-CLINIC и «Доктора Матара» в Москве. Адреса, телефоны и схема проезда."} path="/contacts" />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />{isEn ? "Back to Home" : "На главную"}</Link>
