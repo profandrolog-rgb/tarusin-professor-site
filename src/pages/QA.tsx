@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import PageMeta from "@/components/PageMeta";
+import JsonLd from "@/components/JsonLd";
 
 const QA = () => {
   const [search, setSearch] = useState("");
