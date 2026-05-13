@@ -84,6 +84,10 @@ const HeroSection = () => {
                 <img
                   src={professorPhoto}
                   alt={`${t("hero.firstName")} ${t("hero.lastName")}`}
+                  width={448}
+                  height={560}
+                  fetchPriority="high"
+                  decoding="async"
                   className="w-full h-auto rounded-2xl border-4 border-background"
                 />
               </div>
