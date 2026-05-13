@@ -17,6 +17,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
+import JsonLd from "@/components/JsonLd";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 
 type CaseCategory = "hydrocele" | "cryptorchidism" | "hypospadias" | "varicocele" | "phimosis" | "sexology" | "psychology" | "infertility" | "erectile_dysfunction" | "enuresis" | "pelvic_pain" | "scrotal_pain" | "hernia" | "complications" | "rarities" | "other";
