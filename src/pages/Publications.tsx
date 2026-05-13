@@ -125,6 +125,23 @@ const Publications = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageMeta title={isEn ? "Scientific Publications — Prof. Tarusin" : "Научные публикации — Проф. Тарусин Д.И."} description={isEn ? "Complete list of Professor Tarusin's scientific works: 89 publications, 6 national guidelines chapters, doctoral dissertation." : "Полный список научных работ профессора Тарусина Д.И.: 89 публикаций, 6 глав в национальных руководствах, докторская диссертация."} path="/publications" />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Научные публикации профессора Тарусина Д.И.",
+          url: "https://tarusin.pro/publications",
+          author: { "@type": "Person", name: "Тарусин Дмитрий Игоревич" },
+          hasPart: publications.slice(0, 50).map((p) => ({
+            "@type": "ScholarlyArticle",
+            headline: p.title,
+            author: p.authors,
+            datePublished: p.year,
+            isPartOf: p.source,
+            ...(p.url ? { url: p.url } : {}),
+          })),
+        }}
+      />
       <Header />
       <main className="pt-20 md:pt-24">
         <section className="py-16 md:py-24 bg-gradient-to-br from-secondary/50 to-background">
