@@ -68,7 +68,7 @@ const CertificateLightbox = ({ images, initialIndex, open, onOpenChange }: Certi
 
         <div className="px-4 py-3 text-center">
           <p className="text-white/80 text-sm">{current.title}</p>
-          <p className="text-white/50 text-xs mt-1">{index + 1} / {images.length}</p>
+          <p className="text-white/80 text-xs mt-1">{index + 1} / {images.length}</p>
         </div>
       </DialogContent>
     </Dialog>
