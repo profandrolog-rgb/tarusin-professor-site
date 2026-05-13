@@ -61,6 +61,39 @@ const Contacts = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at AVE-CLINIC or Dr. Matara's Clinic in Moscow. Addresses, phone numbers and directions." : "Запись на приём к профессору Тарусину Д.И. в клиниках AVE-CLINIC и «Доктора Матара» в Москве. Адреса, телефоны и схема проезда."} path="/contacts" />
+      <JsonLd
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "MedicalClinic",
+            name: "AVE-CLINIC",
+            url: "https://tarusin.pro/contacts",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "3-я Запрудная ул., д. 16",
+              addressLocality: "с. Немчиновка",
+              addressRegion: "Московская область",
+              addressCountry: "RU",
+            },
+            geo: { "@type": "GeoCoordinates", latitude: 55.723389, longitude: 37.370515 },
+            medicalSpecialty: ["Urology", "PediatricSurgery"],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "MedicalClinic",
+            name: "Клиника доктора Матара",
+            url: "https://tarusin.pro/contacts",
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: "Коровинское шоссе, д. 9, к. 2",
+              addressLocality: "Москва",
+              addressCountry: "RU",
+            },
+            geo: { "@type": "GeoCoordinates", latitude: 55.893, longitude: 37.5565 },
+            medicalSpecialty: ["Urology", "PediatricSurgery"],
+          },
+        ]}
+      />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />{isEn ? "Back to Home" : "На главную"}</Link>
