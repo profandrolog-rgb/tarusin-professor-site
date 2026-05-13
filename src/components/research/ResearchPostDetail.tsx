@@ -9,8 +9,13 @@ import { ArrowLeft, FileText, Image as ImageIcon, Download, Film, Table2, FileSp
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import SocialBar from "@/components/SocialLinks";
+import PageMeta from "@/components/PageMeta";
 import { ru } from "date-fns/locale";
 import DOMPurify from "dompurify";
+
+const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
 
 interface ResearchPostDetailProps {
   articleId: string;
@@ -91,6 +96,13 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <PageMeta
+        title={`${article.title} — Проф. Тарусин Д.И.`}
+        description={(article.excerpt || stripHtml(article.content || "")).slice(0, 200)}
+        path={`/research/${article.id}`}
+        image={imageUrl || undefined}
+        type="article"
+      />
       <Button variant="ghost" size="sm" onClick={onBack} className="gap-2">
         <ArrowLeft className="w-4 h-4" /> Назад к ленте
       </Button>
@@ -98,6 +110,7 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
       {imageUrl && (
         <div className="rounded-xl overflow-hidden border bg-muted flex items-center justify-center">
           <img src={imageUrl} alt={article.title} className="w-full h-auto object-contain" />
+
         </div>
       )}
 
