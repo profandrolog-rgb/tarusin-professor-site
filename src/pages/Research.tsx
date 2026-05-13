@@ -141,7 +141,7 @@ const Research = () => {
   if (selectedId) {
     return (
       <div className="min-h-screen bg-background pb-14">
-        <PageMeta title="Наши исследования — Профессор Тарусин Д.И." description="Научные исследования" path="/research" />
+        {/* PageMeta is rendered by the list view; the detail view inherits it */}
         <Header />
         <main className="pt-24 md:pt-28">
           <div className="container mx-auto px-4 py-8">
@@ -185,7 +185,7 @@ const Research = () => {
 
   return (
     <div className="min-h-screen bg-background pb-14">
-      <PageMeta title="Наши исследования — Профессор Тарусин Д.И." description="Научные исследования профессора Тарусина Д.И." path="/research" />
+      <PageMeta title="Наши исследования — Профессор Тарусин Д.И." description="Научные исследования и публикации профессора Тарусина Д.И. в области детской урологии-андрологии и микрохирургии." path="/research" />
       <Header />
       <main className="pt-24 md:pt-28">
         <div className="container mx-auto px-4 py-8">
