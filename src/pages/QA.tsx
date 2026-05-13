@@ -54,6 +54,23 @@ const QA = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageMeta title={isEn ? "Q&A — Prof. Tarusin D.I." : "Вопросы и ответы — Проф. Тарусин Д.И."} description={isEn ? "Answers from Professor Tarusin to patient questions." : "Ответы профессора Тарусина Д.И. на вопросы пациентов."} path="/qa" />
+      {questions.length > 0 && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: questions.slice(0, 50).map((q) => ({
+              "@type": "Question",
+              name: q.question_text,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: q.answer_text || "",
+                author: { "@type": "Person", name: "Профессор Тарусин Д.И." },
+              },
+            })),
+          }}
+        />
+      )}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors"><ArrowLeft className="w-4 h-4" />{isEn ? "Back to Home" : "На главную"}</Link>
