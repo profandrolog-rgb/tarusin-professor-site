@@ -141,7 +141,7 @@ const Research = () => {
   if (selectedId) {
     return (
       <div className="min-h-screen bg-background pb-14">
-        <PageMeta title="Наши исследования — Профессор Тарусин Д.И." description="Научные исследования" path="/research" />
+        {/* PageMeta is rendered by the list view; the detail view inherits it */}
         <Header />
         <main className="pt-24 md:pt-28">
           <div className="container mx-auto px-4 py-8">
