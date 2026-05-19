@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Video, Headphones, ChevronDown, ChevronUp, FileText, Pencil, Save, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Video, Headphones, ChevronDown, ChevronUp, FileText, Pencil, Save, X, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import RichTextEditor from "@/components/blog/RichTextEditor";
 
 interface DiseaseArticle {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   video_path: string | null;
