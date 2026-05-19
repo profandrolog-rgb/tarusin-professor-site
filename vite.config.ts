@@ -42,6 +42,7 @@ export default defineConfig(({ mode }) => ({
     dirStyle: "nested",
     script: "async",
     concurrency: 5,
+    mock: true,
     includedRoutes(paths: string[]) {
       return paths.filter((p) => !EXCLUDED_FROM_SSG.has(p));
     },
