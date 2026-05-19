@@ -1,14 +1,33 @@
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { HelmetProvider } from "react-helmet-async";
-import App from "./App.tsx";
+import { ViteReactSSG } from "vite-react-ssg";
+import { routes } from "./App";
 import "./i18n";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <HelmetProvider>
-      <App />
-    </HelmetProvider>
-  </React.StrictMode>
+// Список путей, которые НЕ нужно пре-рендерить (приватные/админ-страницы).
+// vite-react-ssg по умолчанию пытается пререндерить все статические пути из routes;
+// фильтруем по опции includedRoutes.
+const EXCLUDED_FROM_SSG = new Set([
+  "/auth",
+  "/portal",
+  "/admin",
+  "/admin/requests",
+  "/admin/certificates",
+  "/admin/prescriptions",
+  "/admin/questions",
+  "/admin/operations-journal",
+  "/admin/disease-articles",
+  "/admin/patient-cards",
+  "/admin/consultations",
+  "/admin/self-check",
+]);
+
+export const createRoot = ViteReactSSG(
+  { routes },
+  undefined,
+  {
+    rootContainer: "#root",
+    includedRoutes(paths) {
+      return paths.filter((p) => !EXCLUDED_FROM_SSG.has(p));
+    },
+  },
 );

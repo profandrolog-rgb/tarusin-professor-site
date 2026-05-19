@@ -1,10 +1,5 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { MainLayout } from "@/layouts/MainLayout";
-import { AuthProvider } from "@/hooks/useAuth";
+import type { RouteRecord } from "vite-react-ssg";
+import RootLayout from "./RootLayout";
 import Index from "./pages/Index";
 import DiseaseDetailPage from "./pages/DiseaseDetailPage";
 import ForParents from "./pages/ForParents";
@@ -41,61 +36,61 @@ import NotFound from "./pages/NotFound";
 import SelfCheck from "./pages/SelfCheck";
 import SelfCheckDetail from "./pages/SelfCheckDetail";
 import AdminSelfCheck from "./pages/AdminSelfCheck";
+import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 
-const queryClient = new QueryClient();
+// Публичные роуты, которые НЕ требуют динамических данных, попадают в SSG автоматически.
+// Админка перечислена в include: false (ниже) — pre-render их не трогает.
+export const routes: RouteRecord[] = [
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { index: true, Component: Index },
+      { path: "for-parents", Component: ForParents },
+      {
+        path: "for-parents/:slug",
+        Component: DiseaseDetailPage,
+        loader: diseaseLoader as any,
+        getStaticPaths: diseaseStaticPaths,
+      },
+      { path: "for-doctors", Component: ForDoctors },
+      { path: "media", Component: Media },
+      { path: "videos", Component: Videos },
+      { path: "reviews", Component: Reviews },
+      { path: "contacts", Component: Contacts },
+      { path: "publications", Component: Publications },
+      { path: "methodologies", Component: Methodologies },
+      { path: "travel-notes", Component: TravelNotes },
+      { path: "masterclasses", Component: Masterclasses },
+      { path: "clinical-cases", Component: ClinicalCases },
+      { path: "blog", Component: Blog },
+      { path: "video-cases", Component: VideoCasesPage },
+      { path: "team", Component: Team },
+      { path: "qa", Component: QA },
+      { path: "research", Component: Research },
+      { path: "privacy-policy", Component: PrivacyPolicy },
+      { path: "consent", Component: Consent },
+      { path: "results", Component: Results },
+      { path: "self-check", Component: SelfCheck },
+      { path: "self-check/:slug", Component: SelfCheckDetail },
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <BrowserRouter>
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/for-parents" element={<ForParents />} />
-              <Route path="/for-parents/:slug" element={<DiseaseDetailPage />} />
-              <Route path="/for-doctors" element={<ForDoctors />} />
-              <Route path="/media" element={<Media />} />
-              <Route path="/videos" element={<Videos />} />
-              <Route path="/reviews" element={<Reviews />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/publications" element={<Publications />} />
-              <Route path="/methodologies" element={<Methodologies />} />
-              <Route path="/travel-notes" element={<TravelNotes />} />
-              <Route path="/masterclasses" element={<Masterclasses />} />
-              <Route path="/clinical-cases" element={<ClinicalCases />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/video-cases" element={<VideoCasesPage />} />
-              <Route path="/team" element={<Team />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/requests" element={<AdminRequests />} />
-              <Route path="/admin/certificates" element={<AdminCertificates />} />
-              <Route path="/admin/prescriptions" element={<AdminPrescriptions />} />
-              <Route path="/admin/questions" element={<AdminQuestions />} />
-              <Route path="/admin/operations-journal" element={<AdminOperationsJournal />} />
-              <Route path="/admin/disease-articles" element={<AdminDiseaseArticles />} />
-              <Route path="/qa" element={<QA />} />
-              <Route path="/research" element={<Research />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/consent" element={<Consent />} />
-              <Route path="/results" element={<Results />} />
-              <Route path="/portal" element={<PatientPortal />} />
-              <Route path="/admin/patient-cards" element={<AdminPatientCards />} />
-              <Route path="/admin/consultations" element={<AdminConsultations />} />
-              <Route path="/admin/self-check" element={<AdminSelfCheck />} />
-              <Route path="/self-check" element={<SelfCheck />} />
-              <Route path="/self-check/:slug" element={<SelfCheckDetail />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </MainLayout>
-          <Toaster />
-          <Sonner />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+      // --- Приватные / служебные роуты: исключены из SSG ---
+      { path: "auth", Component: Auth, entry: "src/pages/Auth.tsx" },
+      { path: "portal", Component: PatientPortal, entry: "src/pages/PatientPortal.tsx" },
+      { path: "admin", Component: Admin, entry: "src/pages/Admin.tsx" },
+      { path: "admin/requests", Component: AdminRequests },
+      { path: "admin/certificates", Component: AdminCertificates },
+      { path: "admin/prescriptions", Component: AdminPrescriptions },
+      { path: "admin/questions", Component: AdminQuestions },
+      { path: "admin/operations-journal", Component: AdminOperationsJournal },
+      { path: "admin/disease-articles", Component: AdminDiseaseArticles },
+      { path: "admin/patient-cards", Component: AdminPatientCards },
+      { path: "admin/consultations", Component: AdminConsultations },
+      { path: "admin/self-check", Component: AdminSelfCheck },
 
-export default App;
+      { path: "*", Component: NotFound },
+    ],
+  },
+];
+
+export default routes;
