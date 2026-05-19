@@ -170,7 +170,11 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
             </div>
           ) : (
             <>
-              <h3 className="text-lg font-semibold text-foreground mb-2">{article.title}</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                <Link to={`/for-parents/${article.slug}`} className="hover:text-primary transition-colors">
+                  {article.title}
+                </Link>
+              </h3>
               {article.description && (
                 <p className="text-muted-foreground text-sm mb-4">{article.description}</p>
               )}
