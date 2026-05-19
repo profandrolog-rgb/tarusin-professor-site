@@ -18,8 +18,8 @@ const ForParents = () => {
     <AgeConfirmationModal>
       <div className="min-h-screen bg-background select-none" onContextMenu={(e) => e.preventDefault()} onCopy={(e) => e.preventDefault()}>
         <PageMeta
-          title={isEn ? "For Parents & Patients — Prof. Tarusin D.I." : "Для родителей и пациентов — Проф. Тарусин Д.И."}
-          description={isEn ? "Useful materials about men's health from Professor Tarusin: articles, videos and podcasts." : "Полезные материалы о мужском здоровье от профессора Тарусина."}
+          title={isEn ? "For Parents & Patients — Prof. Tarusin D.I." : "Для родителей и пациентов — материалы о мужском здоровье | проф. Тарусин Д.И."}
+          description={isEn ? "Useful materials about men's health from Professor Tarusin: articles, videos and podcasts." : "Полезные материалы о мужском здоровье: статьи о детских и взрослых болезнях, видео, подкасты, памятки от проф. Тарусина."}
           path="/for-parents"
         />
         <header className="bg-primary text-primary-foreground py-12 md:py-20">
