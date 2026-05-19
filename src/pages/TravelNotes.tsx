@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import PageMeta from "@/components/PageMeta";
 
 interface TravelPhoto {
   id: string;
@@ -150,6 +151,11 @@ const TravelNotes = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageMeta
+        title={isEn ? "Travel Notes — Prof. Tarusin D.I." : "Путевые заметки — проф. Тарусин Д.И."}
+        description={isEn ? "Travel notes and photo stories by Prof. Tarusin D.I. from medical conferences, masterclasses, and journeys across Russia and abroad." : "Путевые заметки и фотоистории профессора Тарусина Д.И. с медицинских конференций, мастер-классов и поездок по России и за рубежом."}
+        path="/travel-notes"
+      />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link
