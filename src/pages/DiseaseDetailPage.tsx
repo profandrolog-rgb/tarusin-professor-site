@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useLoaderData, useParams, Link, useNavigate, useRouteError, isRouteErrorResponse } from "react-router-dom";
+import { ChevronRight, ArrowLeft } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -21,81 +20,37 @@ const categoryLabels: Record<string, string> = {
 const stripHtml = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-const DiseaseDetailPage = () => {
-  const { slug } = useParams<{ slug: string }>();
+export function ErrorBoundary() {
+  const error = useRouteError();
   const navigate = useNavigate();
-  const [article, setArticle] = useState<any | null>(null);
-  const [related, setRelated] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const { slug } = useParams();
+  const is404 = isRouteErrorResponse(error) && error.status === 404;
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
+      <PageMeta
+        title={is404 ? "Материал не найден | проф. Тарусин Д.И." : "Ошибка | проф. Тарусин Д.И."}
+        description="Запрошенная страница о заболевании не найдена."
+        path={`/for-parents/${slug ?? ""}`}
+      />
+      <h1 className="text-2xl font-bold text-foreground mb-3">
+        {is404 ? "Материал не найден" : "Не удалось загрузить статью"}
+      </h1>
+      <p className="text-muted-foreground mb-6">
+        {is404 ? "Возможно, страница была удалена или ещё не опубликована." : "Попробуйте обновить страницу позже."}
+      </p>
+      <Button onClick={() => navigate("/for-parents")}>
+        <ArrowLeft className="w-4 h-4 mr-2" /> К каталогу болезней
+      </Button>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (!slug) return;
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      setNotFound(false);
-      const { data } = await supabase
-        .from("disease_articles")
-        .select("*")
-        .eq("slug", slug)
-        .eq("is_published", true)
-        .maybeSingle();
+const DiseaseDetailPage = () => {
+  const { article, related } = useLoaderData() as DiseaseLoaderData;
 
-      if (cancelled) return;
-
-      if (!data) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-      setArticle(data);
-
-      const { data: rel } = await supabase
-        .from("disease_articles")
-        .select("id, slug, title, description, category")
-        .eq("category", data.category)
-        .eq("is_published", true)
-        .neq("id", data.id)
-        .limit(3);
-
-      if (!cancelled) {
-        setRelated(rel || []);
-        setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (notFound || !article) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
-        <PageMeta
-          title="Материал не найден | проф. Тарусин Д.И."
-          description="Запрошенная страница о заболевании не найдена."
-          path={`/for-parents/${slug ?? ""}`}
-        />
-        <h1 className="text-2xl font-bold text-foreground mb-3">Материал не найден</h1>
-        <p className="text-muted-foreground mb-6">Возможно, страница была удалена или ещё не опубликована.</p>
-        <Button onClick={() => navigate("/for-parents")}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> К каталогу болезней
-        </Button>
-      </div>
-    );
-  }
-
-  const rawDesc = article.description || (article.article_content ? stripHtml(article.article_content) : article.title);
+  const rawDesc =
+    article.description ||
+    (article.article_content ? stripHtml(article.article_content) : article.title);
   const metaDesc = rawDesc.length > 160 ? rawDesc.slice(0, 157) + "..." : rawDesc;
 
   return (
