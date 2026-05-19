@@ -1,0 +1,1 @@
+UPDATE public.disease_articles SET slug = 'ginekomastiya' WHERE slug = 'ginekomastiya-u-detey-i-podrostkov';

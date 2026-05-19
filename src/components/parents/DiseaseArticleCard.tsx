@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Video, Headphones, ChevronDown, ChevronUp, FileText, Pencil, Save, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Video, Headphones, ChevronDown, ChevronUp, FileText, Pencil, Save, X, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import RichTextEditor from "@/components/blog/RichTextEditor";
 
 interface DiseaseArticle {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   video_path: string | null;
@@ -168,7 +170,11 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
             </div>
           ) : (
             <>
-              <h3 className="text-lg font-semibold text-foreground mb-2">{article.title}</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                <Link to={`/for-parents/${article.slug}`} className="hover:text-primary transition-colors">
+                  {article.title}
+                </Link>
+              </h3>
               {article.description && (
                 <p className="text-muted-foreground text-sm mb-4">{article.description}</p>
               )}
@@ -211,30 +217,38 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
 
               {/* Article text - collapsible */}
               {activeTab === "text" && hasText && (
-                <Collapsible open={isArticleOpen} onOpenChange={setIsArticleOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="outline" className="w-full mb-2">
-                      {isArticleOpen ? (
-                        <>
-                          <ChevronUp className="w-4 h-4 mr-2" />
-                          Свернуть статью
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="w-4 h-4 mr-2" />
-                          Развернуть статью
-                        </>
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div
-                      className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-                      dangerouslySetInnerHTML={{ __html: article.article_content! }}
-                      onCopy={(e) => e.preventDefault()}
-                    />
-                  </CollapsibleContent>
-                </Collapsible>
+                <>
+                  <Collapsible open={isArticleOpen} onOpenChange={setIsArticleOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" className="w-full mb-2">
+                        {isArticleOpen ? (
+                          <>
+                            <ChevronUp className="w-4 h-4 mr-2" />
+                            Свернуть статью
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-4 h-4 mr-2" />
+                            Развернуть статью
+                          </>
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div
+                        className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
+                        dangerouslySetInnerHTML={{ __html: article.article_content! }}
+                        onCopy={(e) => e.preventDefault()}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                  <Button asChild variant="secondary" className="w-full mt-2">
+                    <Link to={`/for-parents/${article.slug}`}>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Открыть полную страницу
+                    </Link>
+                  </Button>
+                </>
               )}
             </>
           )}

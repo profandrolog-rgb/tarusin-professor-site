@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
+import DiseaseDetailPage from "./pages/DiseaseDetailPage";
 import ForParents from "./pages/ForParents";
 import ForDoctors from "./pages/ForDoctors";
 import Media from "./pages/Media";
@@ -52,6 +53,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/for-parents" element={<ForParents />} />
+              <Route path="/for-parents/:slug" element={<DiseaseDetailPage />} />
               <Route path="/for-doctors" element={<ForDoctors />} />
               <Route path="/media" element={<Media />} />
               <Route path="/videos" element={<Videos />} />
