@@ -3,6 +3,23 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
+// Публичные пути, которые НЕ нужно пре-рендерить (приватные/админ-страницы).
+// Список держим в синхроне с src/App.tsx.
+const EXCLUDED_FROM_SSG = new Set([
+  "/auth",
+  "/portal",
+  "/admin",
+  "/admin/requests",
+  "/admin/certificates",
+  "/admin/prescriptions",
+  "/admin/questions",
+  "/admin/operations-journal",
+  "/admin/disease-articles",
+  "/admin/patient-cards",
+  "/admin/consultations",
+  "/admin/self-check",
+]);
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -16,6 +33,17 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  // @ts-expect-error — поле читается плагином vite-react-ssg
+  ssgOptions: {
+    entry: "src/main.tsx",
+    formatting: "none",
+    dirStyle: "nested",
+    script: "async",
+    concurrency: 5,
+    includedRoutes(paths: string[]) {
+      return paths.filter((p) => !EXCLUDED_FROM_SSG.has(p));
     },
   },
 }));
