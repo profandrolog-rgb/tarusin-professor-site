@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
+import DiseaseDetailPage from "./pages/DiseaseDetailPage";
 import ForParents from "./pages/ForParents";
 import ForDoctors from "./pages/ForDoctors";
 import Media from "./pages/Media";
