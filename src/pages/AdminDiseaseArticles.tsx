@@ -317,6 +317,27 @@ const AdminDiseaseArticles = () => {
                   />
                 </div>
 
+                <div>
+                  <Label>URL-адрес (slug) *</Label>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                    placeholder="varikotsele"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Адрес страницы: /for-parents/<span className="font-mono">{form.slug || "..."}</span>. Автогенерируется из названия, можно отредактировать.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-7 px-2 text-xs"
+                    onClick={() => setForm({ ...form, slug: generateSlug(form.title) })}
+                  >
+                    Сгенерировать заново из названия
+                  </Button>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Возрастная группа</Label>
