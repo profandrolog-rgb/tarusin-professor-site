@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // @ts-expect-error — поле читается плагином vite-react-ssg
+  // Поле читается плагином vite-react-ssg
   ssgOptions: {
     entry: "src/main.tsx",
     formatting: "none",
