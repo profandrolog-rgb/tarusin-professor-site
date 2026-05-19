@@ -237,6 +237,11 @@ const Videos = () => {
       className="min-h-screen bg-background"
       onContextMenu={handleContextMenu}
     >
+      <PageMeta
+        title={isEn ? "Video Library — Prof. Tarusin D.I." : "Видеотека — проф. Тарусин Д.И."}
+        description={isEn ? "Educational video library by Prof. Tarusin D.I. on pediatric urology-andrology: lectures, surgical techniques, and clinical case discussions." : "Видеотека профессора Тарусина Д.И. по детской урологии-андрологии: лекции, хирургические методики и разбор клинических случаев."}
+        path="/videos"
+      />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
