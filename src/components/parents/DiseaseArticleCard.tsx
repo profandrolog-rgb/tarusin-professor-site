@@ -171,7 +171,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
           ) : (
             <>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                <Link to={`/for-parents/${article.slug}`} className="hover:text-primary transition-colors">
+                <Link to={`/for-parents/${article.slug}/`} className="hover:text-primary transition-colors">
                   {article.title}
                 </Link>
               </h3>
@@ -243,7 +243,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
                     </CollapsibleContent>
                   </Collapsible>
                   <Button asChild variant="secondary" className="w-full mt-2">
-                    <Link to={`/for-parents/${article.slug}`}>
+                    <Link to={`/for-parents/${article.slug}/`}>
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Открыть полную страницу
                     </Link>

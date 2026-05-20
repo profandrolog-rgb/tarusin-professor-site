@@ -43,7 +43,7 @@ export async function diseaseStaticPaths(): Promise<string[]> {
       return [];
     }
     const rows = (await res.json()) as { slug: string }[];
-    return rows.filter((r) => r.slug).map((r) => `/for-parents/${r.slug}`);
+    return rows.filter((r) => r.slug).map((r) => `/for-parents/${r.slug}/`);
   } catch (e) {
     console.warn("[SSG] diseaseStaticPaths error:", e);
     return [];

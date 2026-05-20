@@ -158,7 +158,7 @@ const DiseaseDetailPage = () => {
               <h2 className="text-2xl font-bold text-foreground mb-6">Смотрите также</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {related.map((r: any) => (
-                  <Link key={r.id} to={`/for-parents/${r.slug}`} className="block group">
+                  <Link key={r.id} to={`/for-parents/${r.slug}/`} className="block group">
                     <Card className="h-full hover:shadow-lg transition-shadow">
                       <CardContent className="p-5">
                         <div className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
