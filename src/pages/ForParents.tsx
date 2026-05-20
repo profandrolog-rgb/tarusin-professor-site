@@ -47,8 +47,8 @@ const ForParents = () => {
               <TabsTrigger value="publications" className="flex items-center gap-2 py-3 text-xs md:text-base"><FileText className="w-4 h-4 hidden sm:block" />{isEn ? "Publications" : "Публикации"}</TabsTrigger>
             </TabsList>
             <TabsContent value="useful"><UsefulMaterials /></TabsContent>
-            <TabsContent value="children"><DiseaseArticlesList ageGroup="children" /></TabsContent>
-            <TabsContent value="adults"><DiseaseArticlesList ageGroup="adults" /></TabsContent>
+            <TabsContent value="children"><DiseaseArticlesList ageGroup="children" initialArticles={initialArticles} /></TabsContent>
+            <TabsContent value="adults"><DiseaseArticlesList ageGroup="adults" initialArticles={initialArticles} /></TabsContent>
             <TabsContent value="guide"><PatientGuide /></TabsContent>
             <TabsContent value="publications"><PublicationsList /></TabsContent>
           </Tabs>
