@@ -1,10 +1,30 @@
-import { useLoaderData, useParams, Link, useNavigate, useRouteError, isRouteErrorResponse } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
+import { supabase } from "@/integrations/supabase/client";
+
+// NOTE: we intentionally do NOT use useLoaderData here.
+// vite-react-ssg executes the loader at build time to pre-render HTML,
+// but the loader result is not reliably re-hydrated on the client,
+// which caused "Cannot destructure property 'article' of undefined".
+// Instead the page fetches data on the client; the SSG HTML still
+// contains the fully rendered article for SEO / first paint.
+
+// Try to read loader data if vite-react-ssg ever provides it via window.
+let useLoaderDataSafe: () => any = () => undefined;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const rr = require("react-router-dom");
+  if (rr.useLoaderData) useLoaderDataSafe = () => {
+    try { return rr.useLoaderData(); } catch { return undefined; }
+  };
+} catch {
+  /* noop */
+}
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -20,33 +40,93 @@ const categoryLabels: Record<string, string> = {
 const stripHtml = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-  const navigate = useNavigate();
-  const { slug } = useParams();
-  const is404 = isRouteErrorResponse(error) && error.status === 404;
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
-      <PageMeta
-        title={is404 ? "Материал не найден | проф. Тарусин Д.И." : "Ошибка | проф. Тарусин Д.И."}
-        description="Запрошенная страница о заболевании не найдена."
-        path={`/for-parents/${slug ?? ""}`}
-      />
-      <h1 className="text-2xl font-bold text-foreground mb-3">
-        {is404 ? "Материал не найден" : "Не удалось загрузить статью"}
-      </h1>
-      <p className="text-muted-foreground mb-6">
-        {is404 ? "Возможно, страница была удалена или ещё не опубликована." : "Попробуйте обновить страницу позже."}
-      </p>
-      <Button onClick={() => navigate("/for-parents")}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> К каталогу болезней
-      </Button>
-    </div>
-  );
+interface Article {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  article_content: string | null;
+  category: string;
 }
 
 const DiseaseDetailPage = () => {
-  const { article, related } = useLoaderData() as DiseaseLoaderData;
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+
+  const [article, setArticle] = useState<Article | null>(null);
+  const [related, setRelated] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!slug) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
+      setLoading(true);
+      setNotFound(false);
+      const { data: art, error } = await supabase
+        .from("disease_articles")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_published", true)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (error || !art) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      setArticle(art as any);
+
+      const { data: rel } = await supabase
+        .from("disease_articles")
+        .select("id,slug,title,description,category")
+        .eq("category", (art as any).category)
+        .eq("is_published", true)
+        .neq("id", (art as any).id)
+        .limit(3);
+      if (cancelled) return;
+      setRelated((rel as any[]) || []);
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
+        <PageMeta
+          title="Материал не найден | проф. Тарусин Д.И."
+          description="Запрошенная страница о заболевании не найдена."
+          path={`/for-parents/${slug ?? ""}`}
+        />
+        <h1 className="text-2xl font-bold text-foreground mb-3">Материал не найден</h1>
+        <p className="text-muted-foreground mb-6">
+          Возможно, страница была удалена или ещё не опубликована.
+        </p>
+        <Button onClick={() => navigate("/for-parents")}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> К каталогу болезней
+        </Button>
+      </div>
+    );
+  }
+
+  if (loading || !article) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Загрузка...</p>
+      </div>
+    );
+  }
 
   const rawDesc =
     article.description ||
