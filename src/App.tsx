@@ -47,7 +47,7 @@ export const routes: RouteRecord[] = [
     element: <RootLayout />,
     children: [
       { index: true, Component: Index },
-      { path: "for-parents", Component: ForParents },
+      { path: "for-parents", Component: ForParents, loader: parentsLoader as any },
       {
         path: "for-parents/:slug",
         Component: DiseaseDetailPage,
