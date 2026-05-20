@@ -1,10 +1,17 @@
-import { useLoaderData, useParams, Link, useNavigate, useRouteError, isRouteErrorResponse } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate, useLoaderData } from "react-router-dom";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
+
+// vite-react-ssg вызывает loader при сборке, чтобы пре-рендерить HTML (SEO).
+// На клиенте loader-данные не всегда восстанавливаются из HTML, поэтому
+// мы используем их как initial state (на сервере и при гидратации),
+// а на клиенте дополнительно делаем fetch через supabase-клиент.
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -20,33 +27,85 @@ const categoryLabels: Record<string, string> = {
 const stripHtml = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-export function ErrorBoundary() {
-  const error = useRouteError();
-  const navigate = useNavigate();
-  const { slug } = useParams();
-  const is404 = isRouteErrorResponse(error) && error.status === 404;
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
-      <PageMeta
-        title={is404 ? "Материал не найден | проф. Тарусин Д.И." : "Ошибка | проф. Тарусин Д.И."}
-        description="Запрошенная страница о заболевании не найдена."
-        path={`/for-parents/${slug ?? ""}`}
-      />
-      <h1 className="text-2xl font-bold text-foreground mb-3">
-        {is404 ? "Материал не найден" : "Не удалось загрузить статью"}
-      </h1>
-      <p className="text-muted-foreground mb-6">
-        {is404 ? "Возможно, страница была удалена или ещё не опубликована." : "Попробуйте обновить страницу позже."}
-      </p>
-      <Button onClick={() => navigate("/for-parents")}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> К каталогу болезней
-      </Button>
-    </div>
-  );
+function useLoaderDataSafe(): DiseaseLoaderData | undefined {
+  try {
+    return useLoaderData() as DiseaseLoaderData | undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const DiseaseDetailPage = () => {
-  const { article, related } = useLoaderData() as DiseaseLoaderData;
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const loaderData = useLoaderDataSafe();
+
+  const [article, setArticle] = useState<any>(loaderData?.article ?? null);
+  const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !slug) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data: art, error } = await supabase
+        .from("disease_articles")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_published", true)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (error || !art) {
+        if (!article) setNotFound(true);
+        return;
+      }
+      setArticle(art);
+
+      const { data: rel } = await supabase
+        .from("disease_articles")
+        .select("id,slug,title,description,category")
+        .eq("category", (art as any).category)
+        .eq("is_published", true)
+        .neq("id", (art as any).id)
+        .limit(3);
+      if (cancelled) return;
+      setRelated((rel as any[]) || []);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
+        <PageMeta
+          title="Материал не найден | проф. Тарусин Д.И."
+          description="Запрошенная страница о заболевании не найдена."
+          path={`/for-parents/${slug ?? ""}`}
+        />
+        <h1 className="text-2xl font-bold text-foreground mb-3">Материал не найден</h1>
+        <p className="text-muted-foreground mb-6">
+          Возможно, страница была удалена или ещё не опубликована.
+        </p>
+        <Button onClick={() => navigate("/for-parents")}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> К каталогу болезней
+        </Button>
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Загрузка...</p>
+      </div>
+    );
+  }
 
   const rawDesc =
     article.description ||
@@ -98,7 +157,7 @@ const DiseaseDetailPage = () => {
             <section className="mt-16">
               <h2 className="text-2xl font-bold text-foreground mb-6">Смотрите также</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {related.map((r) => (
+                {related.map((r: any) => (
                   <Link key={r.id} to={`/for-parents/${r.slug}`} className="block group">
                     <Card className="h-full hover:shadow-lg transition-shadow">
                       <CardContent className="p-5">
