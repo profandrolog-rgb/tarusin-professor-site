@@ -1,30 +1,17 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLoaderData } from "react-router-dom";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
 
-// NOTE: we intentionally do NOT use useLoaderData here.
-// vite-react-ssg executes the loader at build time to pre-render HTML,
-// but the loader result is not reliably re-hydrated on the client,
-// which caused "Cannot destructure property 'article' of undefined".
-// Instead the page fetches data on the client; the SSG HTML still
-// contains the fully rendered article for SEO / first paint.
-
-// Try to read loader data if vite-react-ssg ever provides it via window.
-let useLoaderDataSafe: () => any = () => undefined;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const rr = require("react-router-dom");
-  if (rr.useLoaderData) useLoaderDataSafe = () => {
-    try { return rr.useLoaderData(); } catch { return undefined; }
-  };
-} catch {
-  /* noop */
-}
+// vite-react-ssg вызывает loader при сборке, чтобы пре-рендерить HTML (SEO).
+// На клиенте loader-данные не всегда восстанавливаются из HTML, поэтому
+// мы используем их как initial state (на сервере и при гидратации),
+// а на клиенте дополнительно делаем fetch через supabase-клиент.
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -40,35 +27,28 @@ const categoryLabels: Record<string, string> = {
 const stripHtml = (html: string) =>
   html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
-interface Article {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  article_content: string | null;
-  category: string;
+function useLoaderDataSafe(): DiseaseLoaderData | undefined {
+  try {
+    return useLoaderData() as DiseaseLoaderData | undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const DiseaseDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const loaderData = useLoaderDataSafe();
 
-  const [article, setArticle] = useState<Article | null>(null);
-  const [related, setRelated] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [article, setArticle] = useState<any>(loaderData?.article ?? null);
+  const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !slug) return;
     let cancelled = false;
-    if (!slug) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
 
     (async () => {
-      setLoading(true);
-      setNotFound(false);
       const { data: art, error } = await supabase
         .from("disease_articles")
         .select("*")
@@ -78,11 +58,10 @@ const DiseaseDetailPage = () => {
 
       if (cancelled) return;
       if (error || !art) {
-        setNotFound(true);
-        setLoading(false);
+        if (!article) setNotFound(true);
         return;
       }
-      setArticle(art as any);
+      setArticle(art);
 
       const { data: rel } = await supabase
         .from("disease_articles")
@@ -93,12 +72,12 @@ const DiseaseDetailPage = () => {
         .limit(3);
       if (cancelled) return;
       setRelated((rel as any[]) || []);
-      setLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   if (notFound) {
@@ -120,7 +99,7 @@ const DiseaseDetailPage = () => {
     );
   }
 
-  if (loading || !article) {
+  if (!article) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Загрузка...</p>
@@ -178,7 +157,7 @@ const DiseaseDetailPage = () => {
             <section className="mt-16">
               <h2 className="text-2xl font-bold text-foreground mb-6">Смотрите также</h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {related.map((r) => (
+                {related.map((r: any) => (
                   <Link key={r.id} to={`/for-parents/${r.slug}`} className="block group">
                     <Card className="h-full hover:shadow-lg transition-shadow">
                       <CardContent className="p-5">
