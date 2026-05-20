@@ -1,5 +1,5 @@
 import { ArrowLeft, BookOpen, Baby, User, FileText, ClipboardList } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLoaderData } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "react-i18next";
@@ -9,10 +9,13 @@ import UsefulMaterials from "@/components/parents/UsefulMaterials";
 import DiseaseArticlesList from "@/components/parents/DiseaseArticlesList";
 import PublicationsList from "@/components/parents/PublicationsList";
 import PatientGuide from "@/components/parents/PatientGuide";
+import type { ParentsLoaderData } from "@/loaders/parentsLoader";
 
 const ForParents = () => {
   const { i18n } = useTranslation();
   const isEn = i18n.language === "en";
+  const loaderData = useLoaderData() as ParentsLoaderData | undefined;
+  const initialArticles = loaderData?.articles || [];
 
   return (
     <AgeConfirmationModal>
