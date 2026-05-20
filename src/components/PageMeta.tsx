@@ -12,7 +12,10 @@ const SITE_URL = "https://tarusin.pro";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
 const PageMeta = ({ title, description, path, image, type = "website" }: PageMetaProps) => {
-  const url = `${SITE_URL}${path}`;
+  // Normalize: trailing slash for non-root paths (better static hosting compatibility)
+  const normalizedPath =
+    path === "/" || path.endsWith("/") ? path : `${path}/`;
+  const url = `${SITE_URL}${normalizedPath}`;
   const ogImage = image || DEFAULT_IMAGE;
 
   return (

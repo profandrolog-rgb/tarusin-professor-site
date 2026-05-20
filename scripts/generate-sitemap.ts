@@ -53,7 +53,7 @@ async function fetchDynamicEntries(): Promise<SitemapEntry[]> {
       for (const d of diseases) {
         if (d.slug) {
           entries.push({
-            path: `/for-parents/${d.slug}`,
+            path: `/for-parents/${d.slug}/`,
             lastmod: d.updated_at?.slice(0, 10),
             changefreq: "monthly",
             priority: "0.6",
