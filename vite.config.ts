@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => ({
   ssgOptions: {
     entry: "src/main.tsx",
     formatting: "none",
-    dirStyle: "nested",
+    dirStyle: "flat",
     script: "async",
     concurrency: 5,
     mock: true,
