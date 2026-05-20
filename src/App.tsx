@@ -37,6 +37,7 @@ import SelfCheck from "./pages/SelfCheck";
 import SelfCheckDetail from "./pages/SelfCheckDetail";
 import AdminSelfCheck from "./pages/AdminSelfCheck";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
+import { parentsLoader } from "./loaders/parentsLoader";
 
 // Публичные роуты, которые НЕ требуют динамических данных, попадают в SSG автоматически.
 // Админка перечислена в include: false (ниже) — pre-render их не трогает.
