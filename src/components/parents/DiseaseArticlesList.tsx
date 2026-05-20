@@ -8,12 +8,14 @@ import DiseaseArticleCard from "./DiseaseArticleCard";
 
 interface DiseaseArticlesListProps {
   ageGroup: "children" | "adults";
+  initialArticles?: any[];
 }
 
-const DiseaseArticlesList = ({ ageGroup }: DiseaseArticlesListProps) => {
+const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListProps) => {
   const { isAdmin } = useAuth();
-  const [articles, setArticles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const seeded = (initialArticles || []).filter((a) => a.age_group === ageGroup);
+  const [articles, setArticles] = useState<any[]>(seeded);
+  const [loading, setLoading] = useState(seeded.length === 0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
