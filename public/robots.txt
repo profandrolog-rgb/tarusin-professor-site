@@ -4,7 +4,7 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
-User-agent: YandexBot
+User-agent: Yandex
 Allow: /
 
 User-agent: Twitterbot
