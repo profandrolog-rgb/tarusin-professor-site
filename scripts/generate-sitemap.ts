@@ -1,5 +1,6 @@
-// Runs before `vite dev` and `vite build` (predev/prebuild hooks); writes public/sitemap.xml.
-import { writeFileSync } from "fs";
+// Runs after `vite-react-ssg build` (postbuild hook); writes dist/sitemap.xml.
+// Also writes public/sitemap.xml so the dev server serves a fresh copy.
+import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@supabase/supabase-js";
 
@@ -88,11 +89,13 @@ function enUrl(p: string) {
   return p === "/" ? `${BASE_URL}/en/` : `${BASE_URL}/en${p}`;
 }
 
+const TODAY = new Date().toISOString().split("T")[0];
+
 function urlBlock(loc: string, e: SitemapEntry, alts: { ru: string; en: string }) {
   return [
     `  <url>`,
     `    <loc>${loc}</loc>`,
-    e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>` : null,
+    `    <lastmod>${e.lastmod || TODAY}</lastmod>`,
     e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
     e.priority ? `    <priority>${e.priority}</priority>` : null,
     `    <xhtml:link rel="alternate" hreflang="ru" href="${alts.ru}"/>`,
@@ -108,7 +111,6 @@ function generateSitemap(entries: SitemapEntry[]) {
   const blocks: string[] = [];
   for (const e of entries) {
     const alts = { ru: ruUrl(e.path), en: enUrl(e.path) };
-    // Каждая страница присутствует в sitemap дважды: RU + EN, с одинаковым набором alternates.
     blocks.push(urlBlock(alts.ru, e, alts));
     blocks.push(urlBlock(alts.en, e, alts));
   }
@@ -123,6 +125,18 @@ function generateSitemap(entries: SitemapEntry[]) {
 (async () => {
   const dynamic = await fetchDynamicEntries();
   const all = [...staticEntries, ...dynamic];
-  writeFileSync(resolve("public/sitemap.xml"), generateSitemap(all));
-  console.log(`sitemap.xml written (${all.length * 2} URLs from ${all.length} pages)`);
+  const xml = generateSitemap(all);
+
+  // Always write to public/ (source of truth, served by dev server).
+  writeFileSync(resolve("public/sitemap.xml"), xml);
+
+  // If dist/ exists (post-build), also write the final artifact.
+  const distDir = resolve("dist");
+  if (existsSync(distDir)) {
+    if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true });
+    writeFileSync(resolve("dist/sitemap.xml"), xml);
+    console.log(`sitemap.xml written to public/ and dist/ (${all.length * 2} URLs)`);
+  } else {
+    console.log(`sitemap.xml written to public/ (${all.length * 2} URLs)`);
+  }
 })();
