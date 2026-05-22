@@ -1,5 +1,6 @@
-// Runs before `vite dev` and `vite build` (predev/prebuild hooks); writes public/sitemap.xml.
-import { writeFileSync } from "fs";
+// Runs after `vite-react-ssg build` (postbuild hook); writes dist/sitemap.xml.
+// Also writes public/sitemap.xml so the dev server serves a fresh copy.
+import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@supabase/supabase-js";
 
