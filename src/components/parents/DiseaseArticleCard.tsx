@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Link } from "react-router-dom";
 import { Video, Headphones, ChevronDown, ChevronUp, FileText, Pencil, Save, X, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
