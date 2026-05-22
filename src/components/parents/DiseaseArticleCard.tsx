@@ -238,7 +238,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
                     <CollapsibleContent>
                       <div
                         className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-                        dangerouslySetInnerHTML={{ __html: article.article_content! }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content!) }}
                         onCopy={(e) => e.preventDefault()}
                       />
                     </CollapsibleContent>
