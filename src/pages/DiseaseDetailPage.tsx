@@ -6,6 +6,7 @@ import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import DOMPurify from "dompurify";
 import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
 
 // vite-react-ssg вызывает loader при сборке, чтобы пре-рендерить HTML (SEO).
