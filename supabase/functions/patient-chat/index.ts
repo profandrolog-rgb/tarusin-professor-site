@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,30 +13,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Require authenticated user (JWT)
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const supabaseAuth = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: claimsData, error: claimsErr } = await supabaseAuth.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsErr || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { messages } = await req.json();
 
-    // Validate messages
+    // Validate messages payload to prevent abuse / oversized AI requests
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Invalid messages" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
