@@ -147,55 +147,49 @@ const AboutSection = () => {
           ))}
         </div>
 
-        <div className="mt-12 md:mt-16">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{t("about.diplomasTitle")}</h3>
-            <p className="text-muted-foreground max-w-xl mx-auto">{t("about.diplomasSubtitle")}</p>
-          </div>
+        {/* Блок «Дипломы и сертификаты» рендерим только при наличии данных,
+            чтобы не показывать пустую секцию (плохо для SEO и UX). */}
+        {certificates.length > 0 && (
+          <div className="mt-12 md:mt-16">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{t("about.diplomasTitle")}</h3>
+              <p className="text-muted-foreground max-w-xl mx-auto">{t("about.diplomasSubtitle")}</p>
+            </div>
 
-          <Card className="mb-8 bg-muted/30 border-dashed">
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">
-                💬 <span className="font-medium text-foreground">{t("about.opinionLabel")}</span> {t("about.opinionText")}
-              </p>
-            </CardContent>
-          </Card>
-
-          {certificates.length === 0 ? (
-            <Card className="bg-muted/30 border-dashed">
-              <CardContent className="p-12 text-center">
-                <p className="text-muted-foreground">{t("about.noCerts")}</p>
+            <Card className="mb-8 bg-muted/30 border-dashed">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">
+                  💬 <span className="font-medium text-foreground">{t("about.opinionLabel")}</span> {t("about.opinionText")}
+                </p>
               </CardContent>
             </Card>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {certificates.map((cert, idx) => (
-                  <Card
-                    key={cert.id}
-                    className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                    onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
-                  >
-                    <CardContent className="p-0">
-                      <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                        <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
-                      </div>
-                      <div className="p-3 text-center">
-                        <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <CertificateLightbox
-                images={certImages}
-                initialIndex={lightboxIndex}
-                open={lightboxOpen}
-                onOpenChange={setLightboxOpen}
-              />
-            </>
-          )}
-        </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {certificates.map((cert, idx) => (
+                <Card
+                  key={cert.id}
+                  className="overflow-hidden border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer group"
+                  onClick={() => { setLightboxIndex(idx); setLightboxOpen(true); }}
+                >
+                  <CardContent className="p-0">
+                    <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
+                      <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                    </div>
+                    <div className="p-3 text-center">
+                      <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <CertificateLightbox
+              images={certImages}
+              initialIndex={lightboxIndex}
+              open={lightboxOpen}
+              onOpenChange={setLightboxOpen}
+            />
+          </div>
+        )}
 
         <Card className="mt-12 bg-accent/10 border-accent/20">
           <CardContent className="p-6 text-center">

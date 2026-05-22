@@ -18,56 +18,71 @@ import DiagnosticChecklist from "@/components/DiagnosticChecklist";
 import ResultsCTA from "@/components/ResultsCTA";
 import PatientJourney from "@/components/PatientJourney";
 import ExitIntentPopup from "@/components/ExitIntentPopup";
+// JSON-LD: Physician + worksFor MedicalClinics + AggregateRating
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "Person",
+      "@type": "Physician",
       "@id": "https://tarusin.pro/#person",
-      "name": "Тарусин Дмитрий Игоревич",
-      "jobTitle": "Профессор, доктор медицинских наук",
-      "description": "Основатель детской урологии-андрологии в России. Член-корреспондент РАЕН, врач высшей категории.",
-      "url": "https://tarusin.pro",
-      "telephone": ["+74953748181", "+74953030000"],
-      "medicalSpecialty": ["Андрология", "Детская урология-андрология", "Микрохирургия", "УЗИ-диагностика"],
-      "knowsAbout": ["Варикоцеле", "Крипторхизм", "Гипоспадия", "Фимоз", "Детская андрология"],
+      "name": "Профессор Тарусин Дмитрий Игоревич",
+      "alternateName": "Tarusin Dmitry Igorevich",
+      "image": "https://tarusin.pro/assets/professor-photo-DpatXHVQ.png",
+      "url": "https://tarusin.pro/",
+      "telephone": "+7-926-600-555-0",
+      "medicalSpecialty": [
+        "PediatricUrology",
+        "Andrology",
+        "PediatricSurgery",
+        "Microsurgery",
+        "Ultrasound",
+        "Sexology"
+      ],
+      "description": "Профессор, доктор медицинских наук, основатель детской урологии-андрологии в России. 42 года клинического опыта.",
+      "knowsLanguage": ["ru", "en"],
+      "memberOf": {
+        "@type": "Organization",
+        "name": "Российская академия естественных наук (РАЕН)"
+      },
+      "alumniOf": {
+        "@type": "Organization",
+        "name": "РМАПО"
+      },
+      "worksFor": [
+        {
+          "@type": "MedicalClinic",
+          "name": "Клиника доктора Матара",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Коровинское шоссе, 9, корп. 2",
+            "addressLocality": "Москва",
+            "addressCountry": "RU"
+          },
+          "telephone": "+7-495-303-00-00"
+        },
+        {
+          "@type": "MedicalClinic",
+          "name": "AVE-CLINIC",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "3-я Запрудная ул., 16",
+            "addressLocality": "Немчиновка",
+            "addressCountry": "RU"
+          },
+          "telephone": "+7-495-374-81-81"
+        }
+      ],
       "sameAs": [
-        "https://t.me/Professor_DI",
         "https://www.instagram.com/androlog_di",
-        "https://www.facebook.com/tarusindi",
-        "https://dzen.ru/boymanblog"
+        "https://t.me/+tMWpYqcllzo3NmYy",
+        "https://vk.com/androlog_di",
+        "https://dzen.ru/androlog_di",
+        "https://www.youtube.com/@androlog_di"
       ]
     },
     {
-      "@type": "MedicalClinic",
-      "name": "AVE-CLINIC",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "3-я Запрудная ул. дом 16",
-        "addressLocality": "с. Немчиновка",
-        "addressCountry": "RU"
-      },
-      "telephone": "+74953748181",
-      "medicalSpecialty": "Андрология"
-    },
-    {
-      "@type": "MedicalClinic",
-      "name": "Клиника доктора Матара",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Коровинское шоссе д. 9 к. 2",
-        "addressLocality": "Москва",
-        "addressCountry": "RU"
-      },
-      "telephone": "+74953030000",
-      "medicalSpecialty": "Андрология"
-    },
-    {
       "@type": "AggregateRating",
-      "itemReviewed": {
-        "@type": "Physician",
-        "name": "Тарусин Дмитрий Игоревич"
-      },
+      "itemReviewed": { "@id": "https://tarusin.pro/#person" },
       "ratingValue": "4.9",
       "bestRating": "5",
       "ratingCount": "85",

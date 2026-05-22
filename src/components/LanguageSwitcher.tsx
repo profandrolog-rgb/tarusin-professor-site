@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Globe } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { stripLangPrefix } from "@/lib/i18nUrls";
 
 const languages = [
   { code: "ru", label: "Русский", flag: "🇷🇺" },
@@ -9,7 +11,30 @@ const languages = [
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const current = languages.find(l => l.code === i18n.language) || languages[0];
+
+  const switchTo = (code: string) => {
+    // Сохраняем ручной выбор для будущих визитов.
+    try {
+      window.localStorage.setItem("i18nextLng", code);
+    } catch {
+      /* ignore */
+    }
+    const bare = stripLangPrefix(location.pathname);
+    const target =
+      code === "en"
+        ? bare === "/"
+          ? "/en/"
+          : `/en${bare}`
+        : bare;
+    if (target !== location.pathname) {
+      navigate(target + location.search + location.hash);
+    } else {
+      i18n.changeLanguage(code);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -23,7 +48,7 @@ const LanguageSwitcher = () => {
         {languages.map(lang => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => i18n.changeLanguage(lang.code)}
+            onClick={() => switchTo(lang.code)}
             className={i18n.language === lang.code ? "bg-secondary" : ""}
           >
             <span className="mr-2">{lang.flag}</span>
