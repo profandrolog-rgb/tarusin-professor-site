@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, AlertTriangle, Sun, Beaker, GripVertical } from "lucide-react";
+import { X, AlertTriangle, Sun, Beaker, GripVertical, Database } from "lucide-react";
 import { FREQUENCY_PRESETS, SOLVENTS, DILUTION_VOLUMES, TreatmentCategory } from "./sections";
 import { TimeOfDayMultiSelect } from "./TimeOfDayMultiSelect";
 import { DayPatternPopover } from "./DayPatternPopover";
 import { GanttStrip } from "./GanttStrip";
+import { MedicationImportDialog } from "./MedicationImportDialog";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
