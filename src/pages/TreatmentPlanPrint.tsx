@@ -317,6 +317,70 @@ export default function TreatmentPlanPrint() {
           </div>
         )}
 
+        {/* Lab control on therapy */}
+        {showLab && (
+          <div style={{ marginTop: "5mm", pageBreakInside: "avoid" }}>
+            <div style={{ fontWeight: "bold", fontSize: "11pt", marginBottom: "1.5mm", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Контроль на фоне терапии
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9.5pt" }}>
+              <thead>
+                <tr>
+                  <th style={{ border: "1px solid #000", padding: "1.2mm 2mm", background: "#f0f0f0", textAlign: "left", width: "38mm" }}>Точка контроля</th>
+                  <th style={{ border: "1px solid #000", padding: "1.2mm 2mm", background: "#f0f0f0", textAlign: "left", width: "16mm" }}>День</th>
+                  <th style={{ border: "1px solid #000", padding: "1.2mm 2mm", background: "#f0f0f0", textAlign: "left" }}>Анализы / исследования</th>
+                </tr>
+              </thead>
+              <tbody>
+                {labControl.map(lc => {
+                  const tests = [
+                    ...(lc.test_ids || []).map(tid => labTestsMap.get(tid)?.short_name || labTestsMap.get(tid)?.name).filter(Boolean) as string[],
+                    ...(lc.custom_tests || []),
+                  ];
+                  return (
+                    <tr key={lc.id}>
+                      <td style={{ border: "1px solid #000", padding: "1.2mm 2mm", verticalAlign: "top" }}>{lc.control_point || "—"}</td>
+                      <td style={{ border: "1px solid #000", padding: "1.2mm 2mm", verticalAlign: "top" }}>{lc.at_day != null ? `${lc.at_day}` : "—"}</td>
+                      <td style={{ border: "1px solid #000", padding: "1.2mm 2mm", verticalAlign: "top" }}>
+                        {tests.length ? tests.join(", ") : "—"}
+                        {lc.notes ? <div style={{ fontSize: "8.5pt", color: "#444", marginTop: "0.5mm", fontStyle: "italic" }}>{lc.notes}</div> : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Cost estimate */}
+        {showCost && costBreakdown && (
+          <div style={{ marginTop: "5mm", pageBreakInside: "avoid" }}>
+            <div style={{ fontWeight: "bold", fontSize: "11pt", marginBottom: "1.5mm", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Ориентировочная стоимость курса
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10pt" }}>
+              <tbody>
+                {Object.entries(costBreakdown.byGroup).map(([k, g]) => (
+                  <tr key={k}>
+                    <td style={{ padding: "0.8mm 2mm", borderBottom: "1px dashed #999" }}>{g.emoji} {g.label}</td>
+                    <td style={{ padding: "0.8mm 2mm", borderBottom: "1px dashed #999", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRub(g.sum)}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td style={{ padding: "1.2mm 2mm", borderTop: "1.5px solid #000", fontWeight: "bold" }}>Итого:</td>
+                  <td style={{ padding: "1.2mm 2mm", borderTop: "1.5px solid #000", fontWeight: "bold", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRub(costBreakdown.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style={{ fontSize: "8.5pt", color: "#444", marginTop: "1.5mm", fontStyle: "italic" }}>
+              Расчёт ориентировочный, ±15–20% в зависимости от аптеки. Стоимость процедур, расходных материалов и услуг клиники в расчёт не включена.
+              {costBreakdown.missing.length > 0 ? ` Цены не заданы для ${costBreakdown.missing.length} позиций — они не учтены.` : ""}
+            </div>
+          </div>
+        )}
+
+
         {/* Signature */}
         <div style={{ marginTop: "12mm", display: "flex", justifyContent: "space-between", fontSize: "10pt" }}>
           <div>
