@@ -224,6 +224,8 @@ export default function TreatmentCatalog() {
           <SheetFooter><Button onClick={save}>Сохранить</Button></SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} onComplete={load}/>
     </div>
   );
 }
