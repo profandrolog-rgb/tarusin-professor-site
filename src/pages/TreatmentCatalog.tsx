@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
 import { CATALOG_KNOWN_COLUMNS, serializeCsv } from "@/lib/treatmentCsv";
+import { formatRub, priceFreshness } from "@/lib/treatment/cost";
 
 interface Row {
   id: string;
@@ -37,17 +38,32 @@ interface Row {
   light_sensitive: boolean;
   glucose_only: boolean;
   is_active: boolean;
+  price_override: number | null;
+  price_currency: string | null;
+  price_updated_at: string | null;
+  price_source_note: string | null;
+  pack_size_num: number | null;
+  units_per_dose_num: number | null;
 }
 
-const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false };
+const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB" };
+
+const FRESHNESS_STYLES: Record<string, { dot: string; label: string }> = {
+  fresh:   { dot: "bg-emerald-500", label: "цена свежая (≤30 дн.)" },
+  stale:   { dot: "bg-amber-500",   label: "цена устарела (30–90 дн.)" },
+  old:     { dot: "bg-red-500",     label: "цена давно не обновлялась (>90 дн.)" },
+  missing: { dot: "bg-muted-foreground/30", label: "цена не задана" },
+};
 
 export default function TreatmentCatalog() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
   const [filter, setFilter] = useState<TreatmentCategory | "all">("all");
   const [q, setQ] = useState("");
+  const [onlyMissingPrice, setOnlyMissingPrice] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
   const [importOpen, setImportOpen] = useState(false);
