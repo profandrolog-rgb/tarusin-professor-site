@@ -35,11 +35,12 @@ interface Props {
   update: (patch: Partial<PlanItem>) => void;
   remove: () => void;
   duplicateInn?: boolean;
+  mode?: "flat" | "scheduled";
 }
 
 const showInfusion = (c: TreatmentCategory) => c === "iv_drip";
 
-export function PlanItemRow({ item, update, remove, duplicateInn }: Props) {
+export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat" }: Props) {
   const outOfRange =
     item.dose !== null &&
     ((item.dose_range_min !== undefined && item.dose_range_min !== null && item.dose < item.dose_range_min) ||
