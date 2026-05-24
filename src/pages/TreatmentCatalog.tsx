@@ -11,9 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
+import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
+import { CATALOG_KNOWN_COLUMNS, serializeCsv } from "@/lib/treatmentCsv";
 
 interface Row {
   id: string;
@@ -48,6 +50,31 @@ export default function TreatmentCatalog() {
   const [q, setQ] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const exportCsv = async () => {
+    const { data, error } = await supabase.from("treatment_catalog").select("*").order("category").order("name");
+    if (error) { toast({ title: "Ошибка экспорта", description: error.message, variant: "destructive" }); return; }
+    const headers = [...CATALOG_KNOWN_COLUMNS];
+    // Append any patient_* keys seen in patient_info
+    const patientKeys = new Set<string>();
+    (data || []).forEach((r: any) => { if (r.patient_info && typeof r.patient_info === "object") Object.keys(r.patient_info).forEach(k => patientKeys.add(k)); });
+    const allHeaders = [...headers, ...Array.from(patientKeys).sort()];
+    const flat = (data || []).map((r: any) => {
+      const out: any = { ...r };
+      if (r.patient_info && typeof r.patient_info === "object") Object.entries(r.patient_info).forEach(([k, v]) => { out[k] = v; });
+      return out;
+    });
+    const csv = serializeCsv(flat, allHeaders, ";");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `treatment_catalog_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `Экспортировано: ${flat.length}` });
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -105,7 +132,11 @@ export default function TreatmentCatalog() {
             <h1 className="text-2xl font-bold">Каталог вмешательств</h1>
             <p className="text-sm text-muted-foreground">{rows.length} позиций · 12 категорий</p>
           </div>
-          <Button onClick={startNew} className="gap-2"><Plus className="w-4 h-4"/>Новая позиция</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2"><Upload className="w-4 h-4"/>Импорт CSV</Button>
+            <Button onClick={exportCsv} variant="outline" className="gap-2"><Download className="w-4 h-4"/>Экспорт CSV</Button>
+            <Button onClick={startNew} className="gap-2"><Plus className="w-4 h-4"/>Новая позиция</Button>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-4 flex-wrap">
@@ -193,6 +224,8 @@ export default function TreatmentCatalog() {
           <SheetFooter><Button onClick={save}>Сохранить</Button></SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <CsvImportDialog open={importOpen} onOpenChange={setImportOpen} onComplete={load}/>
     </div>
   );
 }

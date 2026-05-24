@@ -35,11 +35,12 @@ interface Props {
   update: (patch: Partial<PlanItem>) => void;
   remove: () => void;
   duplicateInn?: boolean;
+  mode?: "flat" | "scheduled";
 }
 
 const showInfusion = (c: TreatmentCategory) => c === "iv_drip";
 
-export function PlanItemRow({ item, update, remove, duplicateInn }: Props) {
+export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat" }: Props) {
   const outOfRange =
     item.dose !== null &&
     ((item.dose_range_min !== undefined && item.dose_range_min !== null && item.dose < item.dose_range_min) ||
@@ -125,6 +126,12 @@ export function PlanItemRow({ item, update, remove, duplicateInn }: Props) {
           <label className="text-[11px] text-muted-foreground">Заметка</label>
           <Input value={item.notes ?? ""} onChange={e=>update({notes: e.target.value})} className="h-8" placeholder="контроль АД, утром, до еды..."/>
         </div>
+        {mode === "scheduled" && (
+          <div className="col-span-2 md:col-span-3">
+            <label className="text-[11px] text-muted-foreground">Дни приёма (1-10, 1,3,5, ежедневно, ч/день, 2 р/нед...)</label>
+            <Input value={item.day_pattern ?? ""} onChange={e=>update({day_pattern: e.target.value})} className="h-8" placeholder="ежедневно"/>
+          </div>
+        )}
       </div>
     </div>
   );
