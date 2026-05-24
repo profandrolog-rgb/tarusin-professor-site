@@ -202,6 +202,8 @@ export default function TreatmentPlanEditor() {
         duration_days: durationDays,
         diagnosis_short: diagnosis || null, clinical_summary: summary || null,
         status: newStatus || status, created_by: user.id,
+        show_cost_in_print: showCostInPrint,
+        lab_control_enabled: labControlEnabled,
       };
       if (courseNumber !== null && !isNew) planPayload.course_number = courseNumber;
       let planId = id;
@@ -213,6 +215,7 @@ export default function TreatmentPlanEditor() {
         const { error } = await supabase.from("treatment_plans").update(planPayload).eq("id", id!);
         if (error) throw error;
         await supabase.from("treatment_plan_items").delete().eq("plan_id", id!);
+        await supabase.from("treatment_plan_lab_control" as any).delete().eq("plan_id", id!);
       }
       if (items.length) {
         const rows = items.map((it, idx) => ({
@@ -224,9 +227,18 @@ export default function TreatmentPlanEditor() {
           day_pattern: it.day_pattern || null, time_of_day: it.time_of_day,
           infusion_rate: it.infusion_rate, route_override: it.route_override,
           notes: it.notes, is_off_label: it.is_off_label,
+          prn_estimated_doses: it.prn_estimated_doses ?? null,
         }));
         const { error: e2 } = await supabase.from("treatment_plan_items").insert(rows);
         if (e2) throw e2;
+      }
+      if (labControlEnabled && labPoints.length) {
+        const lcRows = labPoints.map((p, idx) => ({
+          plan_id: planId!, control_point: p.control_point || null, at_day: p.at_day,
+          test_ids: p.test_ids, custom_tests: p.custom_tests, notes: p.notes, order_index: idx,
+        }));
+        const { error: e3 } = await supabase.from("treatment_plan_lab_control" as any).insert(lcRows);
+        if (e3) throw e3;
       }
       if (newStatus) setStatus(newStatus);
       toast({ title: "Сохранено" });
