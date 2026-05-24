@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
@@ -21,6 +21,8 @@ import { ScheduledSummary } from "@/components/treatment/ScheduledSummary";
 import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHistoryDrawer";
 import { PlanCostBlock } from "@/components/treatment/PlanCostBlock";
 import { LabControlSection, type LabControlPoint } from "@/components/treatment/LabControlSection";
+import { generatePlanDocx } from "@/lib/treatment/docxExport";
+import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
@@ -255,6 +257,82 @@ export default function TreatmentPlanEditor() {
     navigate("/admin/treatment-plans");
   };
 
+  const exportDocx = async () => {
+    if (!patient) { toast({ title: "Выберите пациента", variant: "destructive" }); return; }
+    try {
+      // Fetch catalog price data + lab control rows in parallel
+      const catIds = Array.from(new Set(items.map(i => i.catalog_id).filter(Boolean) as string[]));
+      const [{ data: cat }, { data: lc }] = await Promise.all([
+        catIds.length
+          ? supabase.from("treatment_catalog")
+              .select("id, price_override, pack_size_num, units_per_dose_num, patient_info")
+              .in("id", catIds)
+          : Promise.resolve({ data: [] as any[] }),
+        id
+          ? supabase.from("treatment_plan_lab_control" as any).select("*, lab_tests_catalog(*)" as any).eq("plan_id", id).order("order_index")
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const catalogMap = new Map<string, CostCatalog>();
+      const catalogPatientMap = new Map<string, any>();
+      (cat || []).forEach((c: any) => {
+        catalogMap.set(c.id, c);
+        if (c.patient_info) catalogPatientMap.set(c.id, c.patient_info);
+      });
+      // Resolve test names for labControl block
+      const allTestIds = new Set<string>();
+      (lc || []).forEach((row: any) => (row.test_ids || []).forEach((tid: string) => allTestIds.add(tid)));
+      let testNameMap = new Map<string, string>();
+      if (allTestIds.size) {
+        const { data: lt } = await supabase
+          .from("lab_tests_catalog")
+          .select("id, name, short_name")
+          .in("id", Array.from(allTestIds));
+        (lt || []).forEach((t: any) => testNameMap.set(t.id, t.short_name || t.name));
+      }
+      const labControl = (lc || []).map((row: any) => ({
+        control_point: row.control_point,
+        at_day: row.at_day,
+        tests: [
+          ...((row.test_ids || []).map((tid: string) => testNameMap.get(tid)).filter(Boolean) as string[]),
+          ...(row.custom_tests || []),
+        ],
+        notes: row.notes,
+      }));
+
+      await generatePlanDocx({
+        plan: {
+          id: id || "",
+          issued_at: issuedAt,
+          duration_days: durationDays,
+          diagnosis_short: diagnosis || null,
+          clinical_summary: summary || null,
+          mode,
+          course_number: courseNumber,
+          show_cost_in_print: showCostInPrint,
+          lab_control_enabled: labControlEnabled,
+        },
+        patient: { full_name: patient.full_name, birth_date: patient.birth_date },
+        patientAge,
+        items: items.map(i => ({
+          catalog_id: i.catalog_id, section_category: i.section_category,
+          name_snapshot: i.name_snapshot, inn_snapshot: i.inn_snapshot,
+          dose: i.dose, dose_unit: i.dose_unit,
+          dilution_volume: i.dilution_volume, dilution_solvent: i.dilution_solvent,
+          frequency: i.frequency, duration_days: i.duration_days, time_of_day: i.time_of_day,
+          infusion_rate: i.infusion_rate, route_override: i.route_override,
+          notes: i.notes, is_off_label: i.is_off_label, day_pattern: i.day_pattern,
+          prn_estimated_doses: (i as any).prn_estimated_doses,
+        })),
+        labControl,
+        catalogMap,
+        catalogPatientMap,
+      });
+      toast({ title: "DOCX скачан" });
+    } catch (e: any) {
+      toast({ title: "Ошибка экспорта DOCX", description: e.message, variant: "destructive" });
+    }
+  };
+
   if (loading || busy) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
   }
@@ -298,6 +376,16 @@ export default function TreatmentPlanEditor() {
             {!isNew && (
               <Link to={`/admin/treatment-plans/${id}/print`} target="_blank">
                 <Button variant="outline" className="gap-2"><Printer className="w-4 h-4"/>Печать</Button>
+              </Link>
+            )}
+            {!isNew && (
+              <Button variant="outline" onClick={exportDocx} className="gap-2" disabled={items.length === 0}>
+                <FileDown className="w-4 h-4"/>DOCX
+              </Button>
+            )}
+            {!isNew && (
+              <Link to={`/admin/treatment-plans/${id}/memo`} target="_blank">
+                <Button variant="outline" className="gap-2"><ClipboardList className="w-4 h-4"/>Памятка</Button>
               </Link>
             )}
             <Button onClick={() => save()} disabled={saving} className="gap-2">

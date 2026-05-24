@@ -40,6 +40,7 @@ import AdminSelfCheck from "./pages/AdminSelfCheck";
 import TreatmentPlans from "./pages/TreatmentPlans";
 import TreatmentPlanEditor from "./pages/TreatmentPlanEditor";
 import TreatmentPlanPrint from "./pages/TreatmentPlanPrint";
+import TreatmentPlanMemo from "./pages/TreatmentPlanMemo";
 import TreatmentCatalog from "./pages/TreatmentCatalog";
 import TreatmentTemplates from "./pages/TreatmentTemplates";
 import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
@@ -142,6 +143,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/treatment-plans/new", Component: TreatmentPlanEditor, entry: "src/pages/TreatmentPlanEditor.tsx" },
       { path: "admin/treatment-plans/:id", Component: TreatmentPlanEditor, entry: "src/pages/TreatmentPlanEditor.tsx" },
       { path: "admin/treatment-plans/:id/print", Component: TreatmentPlanPrint, entry: "src/pages/TreatmentPlanPrint.tsx" },
+      { path: "admin/treatment-plans/:id/memo", Component: TreatmentPlanMemo, entry: "src/pages/TreatmentPlanMemo.tsx" },
       { path: "admin/treatment-catalog", Component: TreatmentCatalog, entry: "src/pages/TreatmentCatalog.tsx" },
       { path: "admin/treatment-templates", Component: TreatmentTemplates, entry: "src/pages/TreatmentTemplates.tsx" },
       { path: "admin/treatment-templates/new", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
