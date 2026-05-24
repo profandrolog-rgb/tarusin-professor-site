@@ -132,7 +132,11 @@ export default function TreatmentCatalog() {
             <h1 className="text-2xl font-bold">Каталог вмешательств</h1>
             <p className="text-sm text-muted-foreground">{rows.length} позиций · 12 категорий</p>
           </div>
-          <Button onClick={startNew} className="gap-2"><Plus className="w-4 h-4"/>Новая позиция</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2"><Upload className="w-4 h-4"/>Импорт CSV</Button>
+            <Button onClick={exportCsv} variant="outline" className="gap-2"><Download className="w-4 h-4"/>Экспорт CSV</Button>
+            <Button onClick={startNew} className="gap-2"><Plus className="w-4 h-4"/>Новая позиция</Button>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-4 flex-wrap">
