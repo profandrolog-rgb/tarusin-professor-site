@@ -170,7 +170,7 @@ export default function TreatmentCatalog() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex gap-2 mb-4 flex-wrap items-center">
           <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск..." className="max-w-xs"/>
           <Select value={filter} onValueChange={(v: any)=>setFilter(v)}>
             <SelectTrigger className="max-w-xs"><SelectValue/></SelectTrigger>
@@ -179,6 +179,10 @@ export default function TreatmentCatalog() {
               {SECTIONS.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={onlyMissingPrice} onCheckedChange={setOnlyMissingPrice}/>
+            <Wallet className="w-3.5 h-3.5"/>Только без цены
+          </label>
         </div>
 
         {busy ? (
