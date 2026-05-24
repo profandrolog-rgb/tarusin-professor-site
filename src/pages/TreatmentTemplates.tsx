@@ -28,6 +28,7 @@ export default function TreatmentTemplates() {
   const [busy, setBusy] = useState(true);
   const [q, setQ] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [activeTags, setActiveTags] = useState<string[]>([]);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/treatment-templates" } });
