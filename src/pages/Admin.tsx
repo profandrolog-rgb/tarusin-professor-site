@@ -82,6 +82,13 @@ const adminSections = [
     color: "text-indigo-500",
   },
   {
+    title: "Листы назначений",
+    description: "Комплексная терапия: в/в, в/м, БАД, пептиды, процедуры",
+    icon: ClipboardList,
+    href: "/admin/treatment-plans",
+    color: "text-fuchsia-500",
+  },
+  {
     title: "Вопросы пациентов",
     description: "Ответы на вопросы, публикация Q&A",
     icon: ClipboardList,
