@@ -261,6 +261,59 @@ export default function TreatmentCatalog() {
               <div className="col-span-2"><Label>Скорость инфузии</Label><Input value={draft.infusion_rate ?? ""} onChange={e=>setDraft(d=>({...d, infusion_rate: e.target.value}))}/></div>
             </div>
             <div><Label>Заметка / инструкция</Label><Textarea value={draft.notes ?? ""} onChange={e=>setDraft(d=>({...d, notes: e.target.value}))} rows={2}/></div>
+
+            {/* 💰 Стоимость (Фаза 3A) */}
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <Wallet className="w-4 h-4 text-primary"/>💰 Стоимость
+                {draft.price_updated_at && (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                    <span className={`inline-block w-2 h-2 rounded-full ${FRESHNESS_STYLES[priceFreshness(draft.price_updated_at)].dot}`}/>
+                    обновлено {new Date(draft.price_updated_at).toLocaleDateString("ru-RU")}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Цена за упаковку, ₽</Label>
+                  <Input
+                    type="number" step="any"
+                    value={draft.price_override ?? ""}
+                    onChange={e=>setDraft(d=>({...d, price_override: e.target.value === "" ? null : Number(e.target.value)}))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Единиц в упаковке</Label>
+                  <Input
+                    type="number" step="any"
+                    placeholder="напр. 30 (таб.)"
+                    value={draft.pack_size_num ?? ""}
+                    onChange={e=>setDraft(d=>({...d, pack_size_num: e.target.value === "" ? null : Number(e.target.value)}))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Единиц на приём</Label>
+                  <Input
+                    type="number" step="any"
+                    placeholder="обычно 1"
+                    value={draft.units_per_dose_num ?? ""}
+                    onChange={e=>setDraft(d=>({...d, units_per_dose_num: e.target.value === "" ? null : Number(e.target.value)}))}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <Label className="text-xs">Источник цены (примечание)</Label>
+                  <Input
+                    placeholder="напр. apteka.ru, средняя по Москве"
+                    value={draft.price_source_note ?? ""}
+                    onChange={e=>setDraft(d=>({...d, price_source_note: e.target.value}))}
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Цена используется в расчёте ориентировочной стоимости курса. Поле «единиц на приём» помогает корректно посчитать число упаковок при делении/удвоении доз.
+              </p>
+            </div>
+
             <div className="flex flex-wrap gap-4 pt-2">
               <label className="flex items-center gap-2 text-sm"><Switch checked={draft.is_rx ?? false} onCheckedChange={v=>setDraft(d=>({...d, is_rx: v}))}/>Rx (рецептурное)</label>
               <label className="flex items-center gap-2 text-sm"><Switch checked={draft.is_off_label ?? false} onCheckedChange={v=>setDraft(d=>({...d, is_off_label: v}))}/>Off-label</label>
