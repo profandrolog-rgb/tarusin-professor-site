@@ -109,6 +109,11 @@ export default function TreatmentCatalog() {
   const save = async () => {
     if (!draft.name || !draft.category) { toast({ title: "Название и категория обязательны", variant: "destructive" }); return; }
     const payload: any = { ...draft };
+    // Stamp price_updated_at when price_override is being set/changed
+    if (draft.price_override != null && draft.price_override !== "" as any) {
+      payload.price_updated_at = new Date().toISOString();
+      if (!payload.price_currency) payload.price_currency = "RUB";
+    }
     if (draft.id) {
       const { id, ...rest } = payload;
       const { error } = await supabase.from("treatment_catalog").update(rest).eq("id", id);
@@ -126,8 +131,18 @@ export default function TreatmentCatalog() {
   const startEdit = (r: Row) => { setDraft(r); setEditOpen(true); };
   const startNew = () => { setDraft(empty); setEditOpen(true); };
 
+  // Open editor from ?edit=<id> deep-link (e.g. from cost-block "задать цену →")
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId && rows.length) {
+      const r = rows.find(x => x.id === editId);
+      if (r) { startEdit(r); searchParams.delete("edit"); setSearchParams(searchParams, { replace: true }); }
+    }
+  }, [rows, searchParams, setSearchParams]);
+
   const filtered = rows.filter(r => {
     if (filter !== "all" && r.category !== filter) return false;
+    if (onlyMissingPrice && r.price_override != null) return false;
     if (q && !(r.name.toLowerCase().includes(q.toLowerCase()) || (r.inn || "").toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
   });
