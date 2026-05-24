@@ -1,0 +1,9 @@
+INSERT INTO public.treatment_catalog
+  (category, subcategory, name, default_frequency, default_duration_days, default_route_label, notes, tags, is_rx, is_off_label, is_active, patient_info)
+VALUES
+  ('lifestyle','циркадные ритмы','Дневной свет 30-45 мин','ежедневно',NULL,'образ жизни','Утреннее воздействие дневного света 30-45 минут — поддержка циркадного ритма и тестостерона',ARRAY['lifestyle','циркадные','свет'],false,false,true,
+    jsonb_build_object('patient_friendly_name','Дневной свет утром','patient_purpose','Настройка биоритмов и улучшение сна','patient_instruction_simple','30-45 минут на улице в первой половине дня','patient_visibility','full')),
+  ('lifestyle','сексуальная функция','Половая активность 2-3 р/нед','2-3 раза в неделю',NULL,'образ жизни','Регулярная половая активность 2-3 раза в неделю — поддержка эректильной и эндокринной функции',ARRAY['lifestyle','секс','эрекция'],false,false,true,
+    jsonb_build_object('patient_friendly_name','Регулярная половая активность','patient_purpose','Поддержка мужского здоровья и эрекции','patient_instruction_simple','2-3 раза в неделю','patient_visibility','full')),
+  ('lifestyle','мониторинг','Дневник утренних эрекций','ежедневно',NULL,'самонаблюдение','Ведение дневника утренних эрекций (наличие/качество по 5-балльной шкале) для оценки динамики',ARRAY['lifestyle','мониторинг','дневник'],false,false,true,
+    jsonb_build_object('patient_friendly_name','Дневник утренних эрекций','patient_purpose','Отслеживание динамики восстановления','patient_instruction_simple','Каждое утро отметить наличие и качество эрекции (0-5)','patient_visibility','full'));
