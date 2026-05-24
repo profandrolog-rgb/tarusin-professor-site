@@ -130,21 +130,70 @@ export default function TreatmentPlanPrint() {
   const { id } = useParams<{ id: string }>();
   const [plan, setPlan] = useState<PlanDB | null>(null);
   const [items, setItems] = useState<PlanItemDB[]>([]);
+  const [labControl, setLabControl] = useState<LabControlRow[]>([]);
+  const [labTestsMap, setLabTestsMap] = useState<Map<string, LabTest>>(new Map());
+  const [catalogMap, setCatalogMap] = useState<Map<string, CostCatalog>>(new Map());
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, patient:patients(full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
+      const { data: lc } = await supabase.from("treatment_plan_lab_control" as any)
+        .select("*").eq("plan_id", id!).order("order_index");
+
+      const planItems = (rows as any[]) || [];
+      const lcRows = (lc as any[]) || [];
+
+      // Lab tests catalog (only ids referenced)
+      const allTestIds = new Set<string>();
+      lcRows.forEach(r => (r.test_ids || []).forEach((tid: string) => allTestIds.add(tid)));
+      if (allTestIds.size) {
+        const { data: lt } = await supabase
+          .from("lab_tests_catalog")
+          .select("id, name, short_name")
+          .in("id", Array.from(allTestIds));
+        const m = new Map<string, LabTest>();
+        (lt || []).forEach((t: any) => m.set(t.id, t));
+        setLabTestsMap(m);
+      }
+
+      // Catalog pricing (only for items that have a catalog_id)
+      const catIds = Array.from(new Set(planItems.map(i => i.catalog_id).filter(Boolean) as string[]));
+      if (catIds.length) {
+        const { data: cat } = await supabase
+          .from("treatment_catalog")
+          .select("id, price_override, pack_size_num, units_per_dose_num, patient_info")
+          .in("id", catIds);
+        const m = new Map<string, CostCatalog>();
+        (cat || []).forEach((c: any) => m.set(c.id, c));
+        setCatalogMap(m);
+      }
+
       setPlan(p as any);
-      setItems((rows as any) || []);
+      setItems(planItems);
+      setLabControl(lcRows);
       setBusy(false);
       await supabase.from("treatment_plans").update({ print_count: ((p as any)?.print_count ?? 0) + 1 } as any).eq("id", id!);
     })();
   }, [id]);
+
+  const costBreakdown = useMemo(() => {
+    if (!plan) return null;
+    const input: Array<CostItemInput & { name_snapshot: string }> = items.map(it => ({
+      catalog_id: it.catalog_id,
+      section_category: it.section_category,
+      frequency: it.frequency,
+      day_pattern: it.day_pattern,
+      duration_days: it.duration_days,
+      prn_estimated_doses: it.prn_estimated_doses,
+      name_snapshot: it.name_snapshot,
+    }));
+    return calculatePlanCost(input, catalogMap, plan.duration_days, (plan.mode as any) || "flat");
+  }, [items, catalogMap, plan]);
 
   if (busy || !plan) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
@@ -165,6 +214,8 @@ export default function TreatmentPlanPrint() {
   const showCalendar = plan.mode === "scheduled" && scheduledItems.length > 0;
   const landscape = plan.duration_days > 21;
   const compact = scheduledItems.length > 30;
+  const showCost = !!plan.show_cost_in_print && costBreakdown && costBreakdown.total > 0;
+  const showLab = !!plan.lab_control_enabled && labControl.length > 0;
 
   return (
     <div className="bg-muted/30 min-h-screen py-6">
