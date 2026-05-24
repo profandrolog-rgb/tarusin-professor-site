@@ -107,7 +107,14 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={remove}><X className="w-4 h-4"/></Button>
+        <div className="flex gap-1">
+          {item.section_category === "oral_rx" && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setImportOpen(true)} title="Импорт из справочника">
+              <Database className="w-4 h-4"/>
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={remove}><X className="w-4 h-4"/></Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
