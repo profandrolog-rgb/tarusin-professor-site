@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Loader2, BookMarked, Pencil, Trash2, Archive } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, BookMarked, Pencil, Trash2, Archive, Copy, FilePlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface T {
@@ -44,11 +44,22 @@ export default function TreatmentTemplates() {
   };
   useEffect(() => { load(); }, []);
 
-  const create = async () => {
+  const create = () => navigate("/admin/treatment-templates/new");
+
+  const duplicate = async (r: T) => {
     if (!user) return;
-    const { data, error } = await supabase.from("protocol_templates").insert({ name: "Новый шаблон", created_by: user.id } as any).select("id").single();
-    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
-    navigate(`/admin/treatment-templates/${data.id}`);
+    const { data: tpl, error } = await supabase.from("protocol_templates").insert({
+      name: r.name + " (копия)", description: r.description, target_patient: r.target_patient,
+      mode: r.mode, duration_days: r.duration_days, tags: r.tags, created_by: user.id,
+    } as any).select("id").single();
+    if (error || !tpl) { toast({ title: "Ошибка", description: error?.message, variant: "destructive" }); return; }
+    const { data: src } = await supabase.from("protocol_template_items").select("*").eq("template_id", r.id);
+    if (src && src.length) {
+      const rows = src.map((s: any) => { const { id, created_at, ...rest } = s; return { ...rest, template_id: tpl.id }; });
+      await supabase.from("protocol_template_items").insert(rows as any);
+    }
+    toast({ title: "Шаблон скопирован" });
+    load();
   };
 
   const toggleArchive = async (r: T) => {
@@ -114,8 +125,10 @@ export default function TreatmentTemplates() {
                     {r.target_patient && <div className="text-sm text-muted-foreground mt-1">{r.target_patient}</div>}
                     {r.description && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.description}</div>}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
+                    <Link to={`/admin/treatment-plans/new?templateId=${r.id}`}><Button size="sm" className="gap-1"><FilePlus className="w-3.5 h-3.5"/>Применить к новому листу</Button></Link>
                     <Link to={`/admin/treatment-templates/${r.id}`}><Button size="sm" variant="outline" className="gap-1"><Pencil className="w-3.5 h-3.5"/>Открыть</Button></Link>
+                    <Button size="icon" variant="ghost" onClick={()=>duplicate(r)} title="Дублировать"><Copy className="w-4 h-4"/></Button>
                     <Button size="icon" variant="ghost" onClick={()=>toggleArchive(r)} title="В архив / из архива"><Archive className="w-4 h-4"/></Button>
                     <Button size="icon" variant="ghost" onClick={()=>remove(r)} className="text-destructive"><Trash2 className="w-4 h-4"/></Button>
                   </div>

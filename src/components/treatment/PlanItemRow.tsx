@@ -2,8 +2,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, AlertTriangle, Sun, Beaker } from "lucide-react";
+import { X, AlertTriangle, Sun, Beaker, GripVertical } from "lucide-react";
 import { FREQUENCY_PRESETS, SOLVENTS, DILUTION_VOLUMES, TreatmentCategory } from "./sections";
+import { TimeOfDayMultiSelect } from "./TimeOfDayMultiSelect";
+import { DayPatternPopover } from "./DayPatternPopover";
+import { GanttStrip } from "./GanttStrip";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export interface PlanItem {
   client_id: string;
@@ -36,11 +41,20 @@ interface Props {
   remove: () => void;
   duplicateInn?: boolean;
   mode?: "flat" | "scheduled";
+  courseDuration?: number;
+  sortable?: boolean;
 }
 
 const showInfusion = (c: TreatmentCategory) => c === "iv_drip";
 
-export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat" }: Props) {
+export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat", courseDuration = 10, sortable = false }: Props) {
+  const sort = useSortable({ id: item.client_id, disabled: !sortable });
+  const style = sortable ? {
+    transform: CSS.Transform.toString(sort.transform),
+    transition: sort.transition,
+    opacity: sort.isDragging ? 0.5 : 1,
+  } : undefined;
+
   const outOfRange =
     item.dose !== null &&
     ((item.dose_range_min !== undefined && item.dose_range_min !== null && item.dose < item.dose_range_min) ||
@@ -49,28 +63,45 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat" 
   const incompat = item.glucose_only && item.dilution_solvent && !item.dilution_solvent.toLowerCase().includes("глюк");
 
   return (
-    <div className="border rounded-md p-3 bg-card space-y-2">
+    <div
+      ref={sortable ? sort.setNodeRef : undefined}
+      style={style}
+      className="border rounded-md p-3 bg-card space-y-2"
+    >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium">{item.name_snapshot}</span>
-            {item.inn_snapshot && <span className="text-xs text-muted-foreground">({item.inn_snapshot})</span>}
-            {item.form_snapshot && <span className="text-xs text-muted-foreground">· {item.form_snapshot}</span>}
-            {item.is_off_label && (
-              <Badge variant="outline" className="text-[10px] h-5 gap-1"><AlertTriangle className="w-3 h-3"/>off-label</Badge>
-            )}
-            {item.light_sensitive && (
-              <Badge variant="outline" className="text-[10px] h-5 gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400"><Sun className="w-3 h-3"/>защищать от света</Badge>
-            )}
-            {duplicateInn && (
-              <Badge variant="destructive" className="text-[10px] h-5">дубль по МНН</Badge>
-            )}
-            {incompat && (
-              <Badge variant="destructive" className="text-[10px] h-5 gap-1"><Beaker className="w-3 h-3"/>не смешивать — нужна 5% глюкоза</Badge>
-            )}
-            {outOfRange && (
-              <Badge variant="outline" className="text-[10px] h-5 border-amber-500/50 text-amber-600">вне диапазона дозы</Badge>
-            )}
+        <div className="flex items-start gap-1 flex-1">
+          {sortable && (
+            <button
+              type="button"
+              {...sort.attributes}
+              {...sort.listeners}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-0.5 mt-0.5"
+              aria-label="Перетащить"
+            >
+              <GripVertical className="w-4 h-4" />
+            </button>
+          )}
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium">{item.name_snapshot}</span>
+              {item.inn_snapshot && <span className="text-xs text-muted-foreground">({item.inn_snapshot})</span>}
+              {item.form_snapshot && <span className="text-xs text-muted-foreground">· {item.form_snapshot}</span>}
+              {item.is_off_label && (
+                <Badge variant="outline" className="text-[10px] h-5 gap-1"><AlertTriangle className="w-3 h-3"/>off-label</Badge>
+              )}
+              {item.light_sensitive && (
+                <Badge variant="outline" className="text-[10px] h-5 gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400"><Sun className="w-3 h-3"/>защищать от света</Badge>
+              )}
+              {duplicateInn && (
+                <Badge variant="destructive" className="text-[10px] h-5">дубль по МНН</Badge>
+              )}
+              {incompat && (
+                <Badge variant="destructive" className="text-[10px] h-5 gap-1"><Beaker className="w-3 h-3"/>не смешивать — нужна 5% глюкоза</Badge>
+              )}
+              {outOfRange && (
+                <Badge variant="outline" className="text-[10px] h-5 border-amber-500/50 text-amber-600">вне диапазона дозы</Badge>
+              )}
+            </div>
           </div>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={remove}><X className="w-4 h-4"/></Button>
@@ -122,17 +153,24 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat" 
             <Input value={item.infusion_rate ?? ""} onChange={e=>update({infusion_rate: e.target.value})} className="h-8" placeholder="40–60 кап/мин"/>
           </div>
         )}
+        <div className="col-span-2">
+          <label className="text-[11px] text-muted-foreground">Время приёма</label>
+          <TimeOfDayMultiSelect value={item.time_of_day || []} onChange={(v) => update({ time_of_day: v })}/>
+        </div>
         <div className="col-span-2 md:col-span-3">
           <label className="text-[11px] text-muted-foreground">Заметка</label>
           <Input value={item.notes ?? ""} onChange={e=>update({notes: e.target.value})} className="h-8" placeholder="контроль АД, утром, до еды..."/>
         </div>
-        {mode === "scheduled" && (
-          <div className="col-span-2 md:col-span-3">
-            <label className="text-[11px] text-muted-foreground">Дни приёма (1-10, 1,3,5, ежедневно, ч/день, 2 р/нед...)</label>
-            <Input value={item.day_pattern ?? ""} onChange={e=>update({day_pattern: e.target.value})} className="h-8" placeholder="ежедневно"/>
-          </div>
-        )}
       </div>
+
+      {mode === "scheduled" && (
+        <div className="flex items-center gap-2 pt-1 border-t">
+          <DayPatternPopover value={item.day_pattern} duration={courseDuration} onChange={(v) => update({ day_pattern: v })} />
+          <div className="flex-1 min-w-0">
+            <GanttStrip pattern={item.day_pattern} duration={courseDuration} onChange={(v) => update({ day_pattern: v })} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
