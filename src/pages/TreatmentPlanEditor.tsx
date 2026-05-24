@@ -290,23 +290,28 @@ export default function TreatmentPlanEditor() {
         <Card className="mb-4">
           <CardContent className="p-4 space-y-3">
             <PatientSelect selectedPatient={patient} onSelect={setPatient} />
-            <div className="grid md:grid-cols-4 gap-3">
+            <div className="grid md:grid-cols-5 gap-3">
               <div>
                 <Label>Дата выписки</Label>
                 <Input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)}/>
               </div>
               <div>
-                <Label>Длительность курса (дней)</Label>
+                <Label>№ курса</Label>
+                <Input type="number" min={1} value={courseNumber ?? ""} placeholder="авто"
+                  onChange={e=>setCourseNumber(e.target.value === "" ? null : Number(e.target.value))}/>
+              </div>
+              <div>
+                <Label>Длительность (дней)</Label>
                 <Input type="number" min={1} max={180} value={durationDays} onChange={e=>setDurationDays(Math.max(1, Math.min(180, Number(e.target.value) || 1)))}/>
               </div>
               <div>
-                <Label>Краткий диагноз / коды МКБ-10</Label>
-                <Input value={diagnosis} onChange={e=>setDiagnosis(e.target.value)} placeholder="E29.1; N50.1; F48.0"/>
+                <Label>Диагноз / МКБ-10</Label>
+                <Input value={diagnosis} onChange={e=>setDiagnosis(e.target.value)} placeholder="E29.1; N50.1"/>
               </div>
               <div>
                 <Label>Режим</Label>
                 <Button type="button" variant="outline" className="w-full justify-start gap-2" onClick={toggleMode}>
-                  {mode === "flat" ? <><List className="w-4 h-4"/>Плоский список</> : <><CalendarDays className="w-4 h-4"/>По дням</>}
+                  {mode === "flat" ? <><List className="w-4 h-4"/>Плоский</> : <><CalendarDays className="w-4 h-4"/>По дням</>}
                 </Button>
               </div>
             </div>
@@ -320,7 +325,7 @@ export default function TreatmentPlanEditor() {
         {mode === "scheduled" && (
           <div className="mb-3 space-y-2">
             <ScheduledSummary items={items} durationDays={durationDays}/>
-            <Card><GanttHeader duration={durationDays}/></Card>
+            <Card><GanttHeader duration={durationDays} items={items} onBulkUpdate={bulkUpdate}/></Card>
           </div>
         )}
 
