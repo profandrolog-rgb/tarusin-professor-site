@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { DuplicatePlanDialog } from "@/components/treatment/DuplicatePlanDialog";
 import type { DateRange } from "react-day-picker";
 
 interface PlanRow {
@@ -22,6 +23,7 @@ interface PlanRow {
   duration_days: number;
   status: string;
   mode: string;
+  course_number: number | null;
   patient: { full_name: string } | null;
   items_count?: number;
 }
