@@ -107,8 +107,44 @@ export default function TreatmentPlans() {
           </div>
         </div>
 
-        <div className="mb-4">
-          <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск по пациенту или диагнозу..." className="max-w-md"/>
+        <div className="mb-4 flex gap-2 flex-wrap items-center">
+          <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск по пациенту или диагнозу..." className="max-w-xs"/>
+          <Select value={statusFilter} onValueChange={(v: any)=>setStatusFilter(v)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Статус"/></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все статусы</SelectItem>
+              <SelectItem value="draft">Черновик</SelectItem>
+              <SelectItem value="issued">Выписан</SelectItem>
+              <SelectItem value="archived">Архив</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={modeFilter} onValueChange={(v: any)=>setModeFilter(v)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Режим"/></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Любой режим</SelectItem>
+              <SelectItem value="flat">Плоский</SelectItem>
+              <SelectItem value="scheduled">По дням</SelectItem>
+            </SelectContent>
+          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("gap-2", !dateRange?.from && "text-muted-foreground")}>
+                <CalendarIcon className="w-4 h-4"/>
+                {dateRange?.from ? (
+                  dateRange.to
+                    ? `${format(dateRange.from, "d MMM", { locale: ru })} — ${format(dateRange.to, "d MMM yyyy", { locale: ru })}`
+                    : format(dateRange.from, "d MMM yyyy", { locale: ru })
+                ) : "Период"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} className="p-3 pointer-events-auto" locale={ru}/>
+            </PopoverContent>
+          </Popover>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1"><X className="w-3.5 h-3.5"/>Сбросить</Button>
+          )}
+          <div className="text-sm text-muted-foreground ml-auto">{filtered.length} из {rows.length}</div>
         </div>
 
         {busy ? (
