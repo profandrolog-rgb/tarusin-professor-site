@@ -144,6 +144,11 @@ export default function TreatmentPlanPrint() {
     if (m < 0 || (m === 0 && date.getDate() < birth.getDate())) age!--;
   }
 
+  const scheduledItems = items.filter(i => i.section_category !== "lifestyle" && i.day_pattern);
+  const showCalendar = plan.mode === "scheduled" && scheduledItems.length > 0;
+  const landscape = plan.duration_days > 21;
+  const compact = scheduledItems.length > 30;
+
   return (
     <div className="bg-muted/30 min-h-screen py-6">
       <style>{`
@@ -152,6 +157,9 @@ export default function TreatmentPlanPrint() {
           .no-print { display: none !important; }
           .print-page { box-shadow: none !important; margin: 0 !important; border: none !important; }
           @page { size: A4 portrait; margin: 15mm; }
+          ${landscape ? `.calendar-page { page-break-before: always; }
+          @page calendar { size: A4 landscape; margin: 12mm; }
+          .calendar-page { page: calendar; }` : ".calendar-page { page-break-before: always; }"}
         }
       `}</style>
 
