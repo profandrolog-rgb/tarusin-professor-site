@@ -866,6 +866,48 @@ export type Database = {
           },
         ]
       }
+      lab_tests_catalog: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          price_avg: number | null
+          ref_range_male: string | null
+          short_name: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          price_avg?: number | null
+          ref_range_male?: string | null
+          short_name?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          price_avg?: number | null
+          ref_range_male?: string | null
+          short_name?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       medication_digests: {
         Row: {
           contraindications: string | null
@@ -1739,10 +1781,16 @@ export type Database = {
           name: string
           notes: string | null
           pack_size: string | null
+          pack_size_num: number | null
           patient_info: Json
+          price_currency: string | null
+          price_override: number | null
+          price_source_note: string | null
+          price_updated_at: string | null
           subcategory: string | null
           tags: string[] | null
           time_of_day_default: string[] | null
+          units_per_dose_num: number | null
           updated_at: string
         }
         Insert: {
@@ -1771,10 +1819,16 @@ export type Database = {
           name: string
           notes?: string | null
           pack_size?: string | null
+          pack_size_num?: number | null
           patient_info?: Json
+          price_currency?: string | null
+          price_override?: number | null
+          price_source_note?: string | null
+          price_updated_at?: string | null
           subcategory?: string | null
           tags?: string[] | null
           time_of_day_default?: string[] | null
+          units_per_dose_num?: number | null
           updated_at?: string
         }
         Update: {
@@ -1803,10 +1857,16 @@ export type Database = {
           name?: string
           notes?: string | null
           pack_size?: string | null
+          pack_size_num?: number | null
           patient_info?: Json
+          price_currency?: string | null
+          price_override?: number | null
+          price_source_note?: string | null
+          price_updated_at?: string | null
           subcategory?: string | null
           tags?: string[] | null
           time_of_day_default?: string[] | null
+          units_per_dose_num?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -1831,6 +1891,7 @@ export type Database = {
           notes: string | null
           order_index: number
           plan_id: string
+          prn_estimated_doses: number | null
           route_override: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           time_of_day: string[] | null
@@ -1854,6 +1915,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
           plan_id: string
+          prn_estimated_doses?: number | null
           route_override?: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           time_of_day?: string[] | null
@@ -1877,6 +1939,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
           plan_id?: string
+          prn_estimated_doses?: number | null
           route_override?: string | null
           section_category?: Database["public"]["Enums"]["treatment_category"]
           time_of_day?: string[] | null
@@ -1891,6 +1954,53 @@ export type Database = {
           },
           {
             foreignKeyName: "treatment_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_plan_lab_control: {
+        Row: {
+          at_day: number | null
+          control_point: string | null
+          created_at: string
+          custom_tests: string[] | null
+          id: string
+          notes: string | null
+          order_index: number
+          plan_id: string
+          test_ids: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          at_day?: number | null
+          control_point?: string | null
+          created_at?: string
+          custom_tests?: string[] | null
+          id?: string
+          notes?: string | null
+          order_index?: number
+          plan_id: string
+          test_ids?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          at_day?: number | null
+          control_point?: string | null
+          created_at?: string
+          custom_tests?: string[] | null
+          id?: string
+          notes?: string | null
+          order_index?: number
+          plan_id?: string
+          test_ids?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plan_lab_control_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "treatment_plans"
@@ -1944,10 +2054,15 @@ export type Database = {
           duration_days: number
           id: string
           issued_at: string
+          lab_control_enabled: boolean
           mode: Database["public"]["Enums"]["plan_mode"]
           patient_id: string
           print_count: number
+          show_cost_in_memo: boolean
+          show_cost_in_print: boolean
           status: Database["public"]["Enums"]["plan_status"]
+          total_cost_breakdown: Json | null
+          total_cost_estimate: number | null
           updated_at: string
         }
         Insert: {
@@ -1960,10 +2075,15 @@ export type Database = {
           duration_days?: number
           id?: string
           issued_at?: string
+          lab_control_enabled?: boolean
           mode?: Database["public"]["Enums"]["plan_mode"]
           patient_id: string
           print_count?: number
+          show_cost_in_memo?: boolean
+          show_cost_in_print?: boolean
           status?: Database["public"]["Enums"]["plan_status"]
+          total_cost_breakdown?: Json | null
+          total_cost_estimate?: number | null
           updated_at?: string
         }
         Update: {
@@ -1976,10 +2096,15 @@ export type Database = {
           duration_days?: number
           id?: string
           issued_at?: string
+          lab_control_enabled?: boolean
           mode?: Database["public"]["Enums"]["plan_mode"]
           patient_id?: string
           print_count?: number
+          show_cost_in_memo?: boolean
+          show_cost_in_print?: boolean
           status?: Database["public"]["Enums"]["plan_status"]
+          total_cost_breakdown?: Json | null
+          total_cost_estimate?: number | null
           updated_at?: string
         }
         Relationships: [
