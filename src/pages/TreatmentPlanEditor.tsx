@@ -392,6 +392,22 @@ export default function TreatmentPlanEditor() {
           </div>
         </DndContext>
 
+        <div className="mt-4 space-y-3">
+          <LabControlSection
+            enabled={labControlEnabled}
+            onEnabledChange={setLabControlEnabled}
+            points={labPoints}
+            onChange={setLabPoints}
+          />
+          <PlanCostBlock
+            items={items}
+            durationDays={durationDays}
+            mode={mode}
+            showInPrint={showCostInPrint}
+            onShowInPrintChange={setShowCostInPrint}
+          />
+        </div>
+
         <ApplyTemplateDialog
           open={applyOpen} onOpenChange={setApplyOpen}
           currentItemsCount={items.length} currentMode={mode} currentDuration={durationDays}
