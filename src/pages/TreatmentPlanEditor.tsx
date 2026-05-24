@@ -183,12 +183,13 @@ export default function TreatmentPlanEditor() {
     if (!user) return;
     setSaving(true);
     try {
-      const planPayload = {
+      const planPayload: any = {
         patient_id: patient.id, issued_at: issuedAt, mode,
         duration_days: durationDays,
         diagnosis_short: diagnosis || null, clinical_summary: summary || null,
         status: newStatus || status, created_by: user.id,
       };
+      if (courseNumber !== null && !isNew) planPayload.course_number = courseNumber;
       let planId = id;
       if (isNew) {
         const { data, error } = await supabase.from("treatment_plans").insert(planPayload).select("id").single();
