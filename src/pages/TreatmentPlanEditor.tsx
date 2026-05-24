@@ -19,6 +19,8 @@ import { SaveAsTemplateDialog } from "@/components/treatment/SaveAsTemplateDialo
 import { GanttHeader } from "@/components/treatment/GanttStrip";
 import { ScheduledSummary } from "@/components/treatment/ScheduledSummary";
 import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHistoryDrawer";
+import { PlanCostBlock } from "@/components/treatment/PlanCostBlock";
+import { LabControlSection, type LabControlPoint } from "@/components/treatment/LabControlSection";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
@@ -59,6 +61,9 @@ export default function TreatmentPlanEditor() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [courseNumber, setCourseNumber] = useState<number | null>(null);
   const [patientAge, setPatientAge] = useState<number | null>(null);
+  const [showCostInPrint, setShowCostInPrint] = useState(false);
+  const [labControlEnabled, setLabControlEnabled] = useState(false);
+  const [labPoints, setLabPoints] = useState<LabControlPoint[]>([]);
   const isNew = !id;
 
   const sensors = useSensors(
@@ -95,6 +100,8 @@ export default function TreatmentPlanEditor() {
         setSummary(plan.clinical_summary || "");
         setStatus(plan.status as any);
         setCourseNumber((plan as any).course_number ?? null);
+        setShowCostInPrint(!!(plan as any).show_cost_in_print);
+        setLabControlEnabled(!!(plan as any).lab_control_enabled);
         const { data: rows } = await supabase.from("treatment_plan_items")
           .select("*").eq("plan_id", id!).order("section_category").order("order_index");
         setItems((rows || []).map((r: any): PlanItem => ({
@@ -103,7 +110,14 @@ export default function TreatmentPlanEditor() {
           dose: r.dose, dose_unit: r.dose_unit, dilution_volume: r.dilution_volume, dilution_solvent: r.dilution_solvent,
           frequency: r.frequency, duration_days: r.duration_days, day_pattern: r.day_pattern,
           time_of_day: r.time_of_day || [], infusion_rate: r.infusion_rate, route_override: r.route_override,
-          notes: r.notes, is_off_label: r.is_off_label,
+          notes: r.notes, is_off_label: r.is_off_label, prn_estimated_doses: r.prn_estimated_doses,
+        })));
+        const { data: lc } = await supabase.from("treatment_plan_lab_control" as any)
+          .select("*").eq("plan_id", id!).order("order_index");
+        setLabPoints(((lc as any) || []).map((p: any) => ({
+          client_id: newId(), id: p.id, control_point: p.control_point || "",
+          at_day: p.at_day, test_ids: p.test_ids || [], custom_tests: p.custom_tests || [],
+          notes: p.notes, order_index: p.order_index,
         })));
       }
       setBusy(false);
@@ -188,6 +202,8 @@ export default function TreatmentPlanEditor() {
         duration_days: durationDays,
         diagnosis_short: diagnosis || null, clinical_summary: summary || null,
         status: newStatus || status, created_by: user.id,
+        show_cost_in_print: showCostInPrint,
+        lab_control_enabled: labControlEnabled,
       };
       if (courseNumber !== null && !isNew) planPayload.course_number = courseNumber;
       let planId = id;
@@ -199,6 +215,7 @@ export default function TreatmentPlanEditor() {
         const { error } = await supabase.from("treatment_plans").update(planPayload).eq("id", id!);
         if (error) throw error;
         await supabase.from("treatment_plan_items").delete().eq("plan_id", id!);
+        await supabase.from("treatment_plan_lab_control" as any).delete().eq("plan_id", id!);
       }
       if (items.length) {
         const rows = items.map((it, idx) => ({
@@ -210,9 +227,18 @@ export default function TreatmentPlanEditor() {
           day_pattern: it.day_pattern || null, time_of_day: it.time_of_day,
           infusion_rate: it.infusion_rate, route_override: it.route_override,
           notes: it.notes, is_off_label: it.is_off_label,
+          prn_estimated_doses: it.prn_estimated_doses ?? null,
         }));
         const { error: e2 } = await supabase.from("treatment_plan_items").insert(rows);
         if (e2) throw e2;
+      }
+      if (labControlEnabled && labPoints.length) {
+        const lcRows = labPoints.map((p, idx) => ({
+          plan_id: planId!, control_point: p.control_point || null, at_day: p.at_day,
+          test_ids: p.test_ids, custom_tests: p.custom_tests, notes: p.notes, order_index: idx,
+        }));
+        const { error: e3 } = await supabase.from("treatment_plan_lab_control" as any).insert(lcRows);
+        if (e3) throw e3;
       }
       if (newStatus) setStatus(newStatus);
       toast({ title: "Сохранено" });
@@ -365,6 +391,22 @@ export default function TreatmentPlanEditor() {
             })}
           </div>
         </DndContext>
+
+        <div className="mt-4 space-y-3">
+          <LabControlSection
+            enabled={labControlEnabled}
+            onEnabledChange={setLabControlEnabled}
+            points={labPoints}
+            onChange={setLabPoints}
+          />
+          <PlanCostBlock
+            items={items}
+            durationDays={durationDays}
+            mode={mode}
+            showInPrint={showCostInPrint}
+            onShowInPrintChange={setShowCostInPrint}
+          />
+        </div>
 
         <ApplyTemplateDialog
           open={applyOpen} onOpenChange={setApplyOpen}
