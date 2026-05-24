@@ -182,13 +182,13 @@ export default function TreatmentPlanPrint() {
         </div>
 
         <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15pt", letterSpacing: "2px", marginBottom: "4mm" }}>
-          ЛИСТ НАЗНАЧЕНИЙ
+          ЛИСТ НАЗНАЧЕНИЙ{plan.course_number != null ? ` № ${plan.course_number}` : ""}
         </div>
 
         {/* Header info */}
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10pt", marginBottom: "3mm" }}>
           <div>Дата выписки: <b>{format(date, "d MMMM yyyy 'г.'", { locale: ru })}</b></div>
-          <div>№ {plan.id.slice(0, 8).toUpperCase()}</div>
+          <div>ID: {plan.id.slice(0, 8).toUpperCase()}</div>
         </div>
         <div style={{ fontSize: "10pt", marginBottom: "1mm" }}>
           Ф.И.О. пациента: <b>{plan.patient?.full_name || "—"}</b>
