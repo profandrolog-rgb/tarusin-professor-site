@@ -154,6 +154,20 @@ export default function TreatmentTemplates() {
                       {r.duration_days && <Badge variant="outline">{r.duration_days} дн.</Badge>}
                       {r.is_archived && <Badge variant="secondary">архив</Badge>}
                     </div>
+                    {(r.tags || []).length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-1.5">
+                        {(r.tags || []).map(t => (
+                          <Badge
+                            key={t}
+                            variant={activeTags.includes(t) ? "default" : "secondary"}
+                            className="text-[10px] cursor-pointer"
+                            onClick={(e) => { e.preventDefault(); toggleTag(t); }}
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     {r.target_patient && <div className="text-sm text-muted-foreground mt-1">{r.target_patient}</div>}
                     {r.description && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.description}</div>}
                   </div>
