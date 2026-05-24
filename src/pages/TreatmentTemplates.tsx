@@ -75,9 +75,18 @@ export default function TreatmentTemplates() {
     else load();
   };
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach(r => (r.tags || []).forEach(t => t && set.add(t)));
+    return Array.from(set).sort();
+  }, [rows]);
+
+  const toggleTag = (t: string) => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+
   const filtered = rows.filter(r => {
     if (!showArchived && r.is_archived) return false;
     if (q && !r.name.toLowerCase().includes(q.toLowerCase()) && !(r.target_patient || "").toLowerCase().includes(q.toLowerCase())) return false;
+    if (activeTags.length && !activeTags.every(t => (r.tags || []).includes(t))) return false;
     return true;
   });
 
