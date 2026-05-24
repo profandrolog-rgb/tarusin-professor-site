@@ -1738,6 +1738,8 @@ export type Database = {
           light_sensitive: boolean
           name: string
           notes: string | null
+          pack_size: string | null
+          patient_info: Json
           subcategory: string | null
           tags: string[] | null
           time_of_day_default: string[] | null
@@ -1768,6 +1770,8 @@ export type Database = {
           light_sensitive?: boolean
           name: string
           notes?: string | null
+          pack_size?: string | null
+          patient_info?: Json
           subcategory?: string | null
           tags?: string[] | null
           time_of_day_default?: string[] | null
@@ -1798,6 +1802,8 @@ export type Database = {
           light_sensitive?: boolean
           name?: string
           notes?: string | null
+          pack_size?: string | null
+          patient_info?: Json
           subcategory?: string | null
           tags?: string[] | null
           time_of_day_default?: string[] | null
