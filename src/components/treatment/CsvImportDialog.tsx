@@ -79,14 +79,14 @@ export function CsvImportDialog({ open, onOpenChange, onComplete }: Props) {
           if (exists) {
             if (dup === "skip") { skipped++; continue; }
             if (dup === "update") {
-              const { error } = await supabase.from("treatment_catalog").update(p).eq("id", dupes[0].id);
+              const { error } = await supabase.from("treatment_catalog").update(p as any).eq("id", dupes[0].id);
               if (error) { log.push({ row: r.index, msg: error.message }); }
               else updated++;
               continue;
             }
             // dup === "create" → fall through to insert
           }
-          const { error } = await supabase.from("treatment_catalog").insert(p);
+          const { error } = await supabase.from("treatment_catalog").insert(p as any);
           if (error) log.push({ row: r.index, msg: error.message });
           else created++;
         } catch (e: any) {
