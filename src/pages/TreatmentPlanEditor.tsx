@@ -100,6 +100,8 @@ export default function TreatmentPlanEditor() {
         setSummary(plan.clinical_summary || "");
         setStatus(plan.status as any);
         setCourseNumber((plan as any).course_number ?? null);
+        setShowCostInPrint(!!(plan as any).show_cost_in_print);
+        setLabControlEnabled(!!(plan as any).lab_control_enabled);
         const { data: rows } = await supabase.from("treatment_plan_items")
           .select("*").eq("plan_id", id!).order("section_category").order("order_index");
         setItems((rows || []).map((r: any): PlanItem => ({
@@ -108,7 +110,14 @@ export default function TreatmentPlanEditor() {
           dose: r.dose, dose_unit: r.dose_unit, dilution_volume: r.dilution_volume, dilution_solvent: r.dilution_solvent,
           frequency: r.frequency, duration_days: r.duration_days, day_pattern: r.day_pattern,
           time_of_day: r.time_of_day || [], infusion_rate: r.infusion_rate, route_override: r.route_override,
-          notes: r.notes, is_off_label: r.is_off_label,
+          notes: r.notes, is_off_label: r.is_off_label, prn_estimated_doses: r.prn_estimated_doses,
+        })));
+        const { data: lc } = await supabase.from("treatment_plan_lab_control" as any)
+          .select("*").eq("plan_id", id!).order("order_index");
+        setLabPoints(((lc as any) || []).map((p: any) => ({
+          client_id: newId(), id: p.id, control_point: p.control_point || "",
+          at_day: p.at_day, test_ids: p.test_ids || [], custom_tests: p.custom_tests || [],
+          notes: p.notes, order_index: p.order_index,
         })));
       }
       setBusy(false);
