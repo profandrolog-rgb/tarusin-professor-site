@@ -324,6 +324,5 @@ export default function TreatmentPlanPrint() {
         </div>
       )}
     </div>
-    </div>
   );
 }
