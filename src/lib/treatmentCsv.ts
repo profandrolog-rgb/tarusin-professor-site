@@ -7,11 +7,13 @@ export const CATALOG_KNOWN_COLUMNS = [
   "notes","contraindications","infusion_rate",
   "is_rx","is_off_label","light_sensitive","glucose_only",
   "dose_range_min","dose_range_max","is_active","tags","pack_size",
+  "price_override","price_currency","price_source_note","pack_size_num","units_per_dose_num",
 ] as const;
 
 export const NUMERIC_COLUMNS = new Set([
   "default_dose","default_dilution_volume","default_duration_days",
   "dose_range_min","dose_range_max",
+  "price_override","pack_size_num","units_per_dose_num",
 ]);
 export const BOOL_COLUMNS = new Set([
   "is_rx","is_off_label","light_sensitive","glucose_only","is_active",
