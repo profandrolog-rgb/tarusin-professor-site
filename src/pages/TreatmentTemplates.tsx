@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Loader2, BookMarked, Pencil, Trash2, Archive, Copy, FilePlus } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, BookMarked, Pencil, Trash2, Archive, Copy, FilePlus, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface T {
@@ -28,6 +28,7 @@ export default function TreatmentTemplates() {
   const [busy, setBusy] = useState(true);
   const [q, setQ] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [activeTags, setActiveTags] = useState<string[]>([]);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/treatment-templates" } });
@@ -74,9 +75,18 @@ export default function TreatmentTemplates() {
     else load();
   };
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach(r => (r.tags || []).forEach(t => t && set.add(t)));
+    return Array.from(set).sort();
+  }, [rows]);
+
+  const toggleTag = (t: string) => setActiveTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+
   const filtered = rows.filter(r => {
     if (!showArchived && r.is_archived) return false;
     if (q && !r.name.toLowerCase().includes(q.toLowerCase()) && !(r.target_patient || "").toLowerCase().includes(q.toLowerCase())) return false;
+    if (activeTags.length && !activeTags.every(t => (r.tags || []).includes(t))) return false;
     return true;
   });
 
@@ -94,13 +104,35 @@ export default function TreatmentTemplates() {
           <Button onClick={create} className="gap-2"><Plus className="w-4 h-4"/>Новый шаблон</Button>
         </div>
 
-        <div className="flex gap-2 mb-4 flex-wrap items-center">
+        <div className="flex gap-2 mb-3 flex-wrap items-center">
           <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск..." className="max-w-md"/>
           <label className="text-sm flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={showArchived} onChange={e=>setShowArchived(e.target.checked)}/>
             показать архив
           </label>
+          <div className="text-sm text-muted-foreground ml-auto">{filtered.length} из {rows.length}</div>
         </div>
+
+        {allTags.length > 0 && (
+          <div className="flex gap-1.5 mb-4 flex-wrap items-center">
+            <span className="text-xs text-muted-foreground mr-1">Теги:</span>
+            {allTags.map(t => (
+              <Badge
+                key={t}
+                variant={activeTags.includes(t) ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/10"
+                onClick={() => toggleTag(t)}
+              >
+                {t}
+              </Badge>
+            ))}
+            {activeTags.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setActiveTags([])} className="h-6 gap-1 text-xs">
+                <X className="w-3 h-3"/>сбросить
+              </Button>
+            )}
+          </div>
+        )}
 
         {busy ? (
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary"/></div>
@@ -122,6 +154,20 @@ export default function TreatmentTemplates() {
                       {r.duration_days && <Badge variant="outline">{r.duration_days} дн.</Badge>}
                       {r.is_archived && <Badge variant="secondary">архив</Badge>}
                     </div>
+                    {(r.tags || []).length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-1.5">
+                        {(r.tags || []).map(t => (
+                          <Badge
+                            key={t}
+                            variant={activeTags.includes(t) ? "default" : "secondary"}
+                            className="text-[10px] cursor-pointer"
+                            onClick={(e) => { e.preventDefault(); toggleTag(t); }}
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     {r.target_patient && <div className="text-sm text-muted-foreground mt-1">{r.target_patient}</div>}
                     {r.description && <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.description}</div>}
                   </div>

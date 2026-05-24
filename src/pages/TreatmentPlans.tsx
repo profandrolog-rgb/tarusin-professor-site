@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,9 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import type { DateRange } from "react-day-picker";
 
 interface PlanRow {
   id: string;
@@ -27,6 +32,9 @@ export default function TreatmentPlans() {
   const [rows, setRows] = useState<PlanRow[]>([]);
   const [busy, setBusy] = useState(true);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "archived">("all");
+  const [modeFilter, setModeFilter] = useState<"all" | "flat" | "scheduled">("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -51,12 +59,24 @@ export default function TreatmentPlans() {
     })();
   }, []);
 
-  const filtered = rows.filter(r => {
-    if (!q) return true;
-    const s = q.toLowerCase();
-    return (r.patient?.full_name || "").toLowerCase().includes(s) ||
-           (r.diagnosis_short || "").toLowerCase().includes(s);
-  });
+  const filtered = useMemo(() => rows.filter(r => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (modeFilter !== "all" && r.mode !== modeFilter) return false;
+    if (dateRange?.from) {
+      const d = new Date(r.issued_at);
+      if (d < dateRange.from) return false;
+      if (dateRange.to && d > new Date(dateRange.to.getTime() + 86400000 - 1)) return false;
+    }
+    if (q) {
+      const s = q.toLowerCase();
+      if (!(r.patient?.full_name || "").toLowerCase().includes(s) &&
+          !(r.diagnosis_short || "").toLowerCase().includes(s)) return false;
+    }
+    return true;
+  }), [rows, q, statusFilter, modeFilter, dateRange]);
+
+  const hasFilters = statusFilter !== "all" || modeFilter !== "all" || !!dateRange?.from || !!q;
+  const clearFilters = () => { setStatusFilter("all"); setModeFilter("all"); setDateRange(undefined); setQ(""); };
 
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
@@ -87,8 +107,44 @@ export default function TreatmentPlans() {
           </div>
         </div>
 
-        <div className="mb-4">
-          <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск по пациенту или диагнозу..." className="max-w-md"/>
+        <div className="mb-4 flex gap-2 flex-wrap items-center">
+          <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск по пациенту или диагнозу..." className="max-w-xs"/>
+          <Select value={statusFilter} onValueChange={(v: any)=>setStatusFilter(v)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Статус"/></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все статусы</SelectItem>
+              <SelectItem value="draft">Черновик</SelectItem>
+              <SelectItem value="issued">Выписан</SelectItem>
+              <SelectItem value="archived">Архив</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={modeFilter} onValueChange={(v: any)=>setModeFilter(v)}>
+            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Режим"/></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Любой режим</SelectItem>
+              <SelectItem value="flat">Плоский</SelectItem>
+              <SelectItem value="scheduled">По дням</SelectItem>
+            </SelectContent>
+          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("gap-2", !dateRange?.from && "text-muted-foreground")}>
+                <CalendarIcon className="w-4 h-4"/>
+                {dateRange?.from ? (
+                  dateRange.to
+                    ? `${format(dateRange.from, "d MMM", { locale: ru })} — ${format(dateRange.to, "d MMM yyyy", { locale: ru })}`
+                    : format(dateRange.from, "d MMM yyyy", { locale: ru })
+                ) : "Период"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="range" selected={dateRange} onSelect={setDateRange} numberOfMonths={2} className="p-3 pointer-events-auto" locale={ru}/>
+            </PopoverContent>
+          </Popover>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1"><X className="w-3.5 h-3.5"/>Сбросить</Button>
+          )}
+          <div className="text-sm text-muted-foreground ml-auto">{filtered.length} из {rows.length}</div>
         </div>
 
         {busy ? (
