@@ -35,6 +35,7 @@ export interface PlanItem {
   glucose_only?: boolean;
   dose_range_min?: number | null;
   dose_range_max?: number | null;
+  prn_estimated_doses?: number | null;
 }
 
 interface Props {
