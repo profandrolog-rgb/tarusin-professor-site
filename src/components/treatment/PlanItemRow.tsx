@@ -126,6 +126,12 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat" 
           <label className="text-[11px] text-muted-foreground">Заметка</label>
           <Input value={item.notes ?? ""} onChange={e=>update({notes: e.target.value})} className="h-8" placeholder="контроль АД, утром, до еды..."/>
         </div>
+        {mode === "scheduled" && (
+          <div className="col-span-2 md:col-span-3">
+            <label className="text-[11px] text-muted-foreground">Дни приёма (1-10, 1,3,5, ежедневно, ч/день, 2 р/нед...)</label>
+            <Input value={item.day_pattern ?? ""} onChange={e=>update({day_pattern: e.target.value})} className="h-8" placeholder="ежедневно"/>
+          </div>
+        )}
       </div>
     </div>
   );
