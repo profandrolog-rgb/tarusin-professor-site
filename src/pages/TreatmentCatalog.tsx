@@ -11,9 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
+import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
+import { CATALOG_KNOWN_COLUMNS, serializeCsv } from "@/lib/treatmentCsv";
 
 interface Row {
   id: string;
