@@ -32,6 +32,9 @@ export default function TreatmentPlans() {
   const [rows, setRows] = useState<PlanRow[]>([]);
   const [busy, setBusy] = useState(true);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "archived">("all");
+  const [modeFilter, setModeFilter] = useState<"all" | "flat" | "scheduled">("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -56,12 +59,24 @@ export default function TreatmentPlans() {
     })();
   }, []);
 
-  const filtered = rows.filter(r => {
-    if (!q) return true;
-    const s = q.toLowerCase();
-    return (r.patient?.full_name || "").toLowerCase().includes(s) ||
-           (r.diagnosis_short || "").toLowerCase().includes(s);
-  });
+  const filtered = useMemo(() => rows.filter(r => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (modeFilter !== "all" && r.mode !== modeFilter) return false;
+    if (dateRange?.from) {
+      const d = new Date(r.issued_at);
+      if (d < dateRange.from) return false;
+      if (dateRange.to && d > new Date(dateRange.to.getTime() + 86400000 - 1)) return false;
+    }
+    if (q) {
+      const s = q.toLowerCase();
+      if (!(r.patient?.full_name || "").toLowerCase().includes(s) &&
+          !(r.diagnosis_short || "").toLowerCase().includes(s)) return false;
+    }
+    return true;
+  }), [rows, q, statusFilter, modeFilter, dateRange]);
+
+  const hasFilters = statusFilter !== "all" || modeFilter !== "all" || !!dateRange?.from || !!q;
+  const clearFilters = () => { setStatusFilter("all"); setModeFilter("all"); setDateRange(undefined); setQ(""); };
 
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
