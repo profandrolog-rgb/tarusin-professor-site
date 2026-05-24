@@ -375,6 +375,12 @@ export default function TreatmentPlanEditor() {
           open={saveAsOpen} onOpenChange={setSaveAsOpen}
           items={items} mode={mode} durationDays={durationDays} userId={user.id}
         />
+        {!isNew && id && (
+          <PlanVersionHistoryDrawer
+            open={historyOpen} onOpenChange={setHistoryOpen}
+            planId={id} userId={user.id}
+          />
+        )}
       </div>
     </div>
   );
