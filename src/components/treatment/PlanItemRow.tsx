@@ -181,6 +181,27 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
           </div>
         </div>
       )}
+
+      {item.section_category === "oral_rx" && (
+        <MedicationImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          current={{
+            name: item.name_snapshot,
+            inn: item.inn_snapshot,
+            form: item.form_snapshot,
+            default_dose: item.dose,
+            dose_unit: item.dose_unit,
+          }}
+          onApply={(patch) => update({
+            ...(patch.name !== undefined ? { name_snapshot: patch.name as string } : {}),
+            ...(patch.inn !== undefined ? { inn_snapshot: patch.inn } : {}),
+            ...(patch.form !== undefined ? { form_snapshot: patch.form } : {}),
+            ...(patch.default_dose !== undefined ? { dose: patch.default_dose } : {}),
+            ...(patch.dose_unit !== undefined ? { dose_unit: patch.dose_unit } : {}),
+          })}
+        />
+      )}
     </div>
   );
 }
