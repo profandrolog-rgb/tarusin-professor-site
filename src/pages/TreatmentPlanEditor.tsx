@@ -94,6 +94,7 @@ export default function TreatmentPlanEditor() {
         setDiagnosis(plan.diagnosis_short || "");
         setSummary(plan.clinical_summary || "");
         setStatus(plan.status as any);
+        setCourseNumber((plan as any).course_number ?? null);
         const { data: rows } = await supabase.from("treatment_plan_items")
           .select("*").eq("plan_id", id!).order("section_category").order("order_index");
         setItems((rows || []).map((r: any): PlanItem => ({
@@ -108,6 +109,25 @@ export default function TreatmentPlanEditor() {
       setBusy(false);
     })();
   }, [id, isNew, params]);
+
+  // Compute patient age at issued date
+  useEffect(() => {
+    if (!patient?.birth_date) { setPatientAge(null); return; }
+    const b = new Date(patient.birth_date);
+    const d = new Date(issuedAt);
+    let a = d.getFullYear() - b.getFullYear();
+    const m = d.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && d.getDate() < b.getDate())) a--;
+    setPatientAge(a);
+  }, [patient, issuedAt]);
+
+  // Bulk pattern update for Gantt day-context menu. Filter returns null = no change.
+  const bulkUpdate = (updater: (it: PlanItem) => Partial<PlanItem> | null) => {
+    setItems(prev => prev.map(it => {
+      const p = updater(it);
+      return p ? { ...it, ...p } : it;
+    }));
+  };
 
   const innCounts = useMemo(() => {
     const m = new Map<string, number>();
