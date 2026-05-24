@@ -56,6 +56,9 @@ export default function TreatmentPlanEditor() {
   const [items, setItems] = useState<PlanItem[]>([]);
   const [applyOpen, setApplyOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [courseNumber, setCourseNumber] = useState<number | null>(null);
+  const [patientAge, setPatientAge] = useState<number | null>(null);
   const isNew = !id;
 
   const sensors = useSensors(
