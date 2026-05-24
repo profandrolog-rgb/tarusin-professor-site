@@ -164,6 +164,9 @@ export default function TreatmentPlans() {
                 <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {r.course_number != null && (
+                        <Badge variant="default" className="font-mono">№ {r.course_number}</Badge>
+                      )}
                       <Link to={`/admin/treatment-plans/${r.id}`} className="font-medium text-foreground hover:text-primary">
                         {r.patient?.full_name || "Без пациента"}
                       </Link>
@@ -180,6 +183,9 @@ export default function TreatmentPlans() {
                   </div>
                   <div className="flex gap-2">
                     <Link to={`/admin/treatment-plans/${r.id}`}><Button size="sm" variant="outline">Открыть</Button></Link>
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => setDupTarget(r)} title="Дублировать на другого пациента">
+                      <UserPlus className="w-3.5 h-3.5"/>
+                    </Button>
                     <Link to={`/admin/treatment-plans/${r.id}/print`} target="_blank">
                       <Button size="sm" variant="outline" className="gap-1"><Printer className="w-3.5 h-3.5"/>Печать</Button>
                     </Link>
