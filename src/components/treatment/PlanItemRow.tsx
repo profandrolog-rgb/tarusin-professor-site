@@ -50,6 +50,7 @@ interface Props {
 const showInfusion = (c: TreatmentCategory) => c === "iv_drip";
 
 export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat", courseDuration = 10, sortable = false }: Props) {
+  const [importOpen, setImportOpen] = useState(false);
   const sort = useSortable({ id: item.client_id, disabled: !sortable });
   const style = sortable ? {
     transform: CSS.Transform.toString(sort.transform),
