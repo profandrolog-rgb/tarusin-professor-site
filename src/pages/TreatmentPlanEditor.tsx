@@ -244,10 +244,19 @@ export default function TreatmentPlanEditor() {
         </Link>
 
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h1 className="text-2xl font-bold">
-            {isNew ? "Новый лист назначений" : "Лист назначений"}
-            {!isNew && <Badge variant="outline" className="ml-2 text-xs">{status === "draft" ? "черновик" : status === "issued" ? "выписан" : "архив"}</Badge>}
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+              {isNew
+                ? "Новый лист назначений"
+                : <>Лист назначений {courseNumber != null && <span className="text-primary">№ {courseNumber}</span>}</>}
+              {!isNew && <Badge variant="outline" className="text-xs">{status === "draft" ? "черновик" : status === "issued" ? "выписан" : "архив"}</Badge>}
+            </h1>
+            {!isNew && patient && (
+              <div className="text-sm text-muted-foreground mt-0.5">
+                для {patient.full_name}{patientAge !== null ? `, ${patientAge} г.` : ""}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setApplyOpen(true)} className="gap-2">
               <Download className="w-4 h-4"/>Загрузить из шаблона
@@ -255,6 +264,11 @@ export default function TreatmentPlanEditor() {
             <Button variant="outline" onClick={() => setSaveAsOpen(true)} className="gap-2" disabled={items.length === 0}>
               <BookMarked className="w-4 h-4"/>Сохранить как шаблон
             </Button>
+            {!isNew && status === "issued" && (
+              <Button variant="outline" onClick={() => setHistoryOpen(true)} className="gap-2">
+                <History className="w-4 h-4"/>История
+              </Button>
+            )}
             {!isNew && (
               <Link to={`/admin/treatment-plans/${id}/print`} target="_blank">
                 <Button variant="outline" className="gap-2"><Printer className="w-4 h-4"/>Печать</Button>
