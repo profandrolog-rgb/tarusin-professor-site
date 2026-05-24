@@ -1259,6 +1259,126 @@ export type Database = {
         }
         Relationships: []
       }
+      protocol_template_items: {
+        Row: {
+          catalog_id: string | null
+          created_at: string
+          day_pattern: string | null
+          dilution_solvent: string | null
+          dilution_volume: number | null
+          dose: number | null
+          dose_unit: string | null
+          duration_days: number | null
+          frequency: string | null
+          id: string
+          infusion_rate: string | null
+          name_snapshot: string | null
+          notes: string | null
+          order_index: number
+          route_override: string | null
+          section_category: Database["public"]["Enums"]["treatment_category"]
+          template_id: string
+          time_of_day: string[] | null
+        }
+        Insert: {
+          catalog_id?: string | null
+          created_at?: string
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          id?: string
+          infusion_rate?: string | null
+          name_snapshot?: string | null
+          notes?: string | null
+          order_index?: number
+          route_override?: string | null
+          section_category: Database["public"]["Enums"]["treatment_category"]
+          template_id: string
+          time_of_day?: string[] | null
+        }
+        Update: {
+          catalog_id?: string | null
+          created_at?: string
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          id?: string
+          infusion_rate?: string | null
+          name_snapshot?: string | null
+          notes?: string | null
+          order_index?: number
+          route_override?: string | null
+          section_category?: Database["public"]["Enums"]["treatment_category"]
+          template_id?: string
+          time_of_day?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_template_items_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocol_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "protocol_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocol_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_days: number | null
+          id: string
+          is_archived: boolean
+          mode: Database["public"]["Enums"]["plan_mode"]
+          name: string
+          tags: string[] | null
+          target_patient: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_archived?: boolean
+          mode?: Database["public"]["Enums"]["plan_mode"]
+          name: string
+          tags?: string[] | null
+          target_patient?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_archived?: boolean
+          mode?: Database["public"]["Enums"]["plan_mode"]
+          name?: string
+          tags?: string[] | null
+          target_patient?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           answer_text: string | null
@@ -1591,6 +1711,284 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      treatment_catalog: {
+        Row: {
+          category: Database["public"]["Enums"]["treatment_category"]
+          contraindications: string | null
+          created_at: string
+          created_by: string | null
+          default_dilution_solvent: string | null
+          default_dilution_volume: number | null
+          default_dose: number | null
+          default_duration_days: number | null
+          default_frequency: string | null
+          default_route_label: string | null
+          dose_range_max: number | null
+          dose_range_min: number | null
+          dose_unit: string | null
+          form: string | null
+          glucose_only: boolean
+          id: string
+          infusion_rate: string | null
+          inn: string | null
+          is_active: boolean
+          is_off_label: boolean
+          is_rx: boolean
+          light_sensitive: boolean
+          name: string
+          notes: string | null
+          subcategory: string | null
+          tags: string[] | null
+          time_of_day_default: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["treatment_category"]
+          contraindications?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_dilution_solvent?: string | null
+          default_dilution_volume?: number | null
+          default_dose?: number | null
+          default_duration_days?: number | null
+          default_frequency?: string | null
+          default_route_label?: string | null
+          dose_range_max?: number | null
+          dose_range_min?: number | null
+          dose_unit?: string | null
+          form?: string | null
+          glucose_only?: boolean
+          id?: string
+          infusion_rate?: string | null
+          inn?: string | null
+          is_active?: boolean
+          is_off_label?: boolean
+          is_rx?: boolean
+          light_sensitive?: boolean
+          name: string
+          notes?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          time_of_day_default?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["treatment_category"]
+          contraindications?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_dilution_solvent?: string | null
+          default_dilution_volume?: number | null
+          default_dose?: number | null
+          default_duration_days?: number | null
+          default_frequency?: string | null
+          default_route_label?: string | null
+          dose_range_max?: number | null
+          dose_range_min?: number | null
+          dose_unit?: string | null
+          form?: string | null
+          glucose_only?: boolean
+          id?: string
+          infusion_rate?: string | null
+          inn?: string | null
+          is_active?: boolean
+          is_off_label?: boolean
+          is_rx?: boolean
+          light_sensitive?: boolean
+          name?: string
+          notes?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          time_of_day_default?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      treatment_plan_items: {
+        Row: {
+          catalog_id: string | null
+          created_at: string
+          day_pattern: string | null
+          dilution_solvent: string | null
+          dilution_volume: number | null
+          dose: number | null
+          dose_unit: string | null
+          duration_days: number | null
+          form_snapshot: string | null
+          frequency: string | null
+          id: string
+          infusion_rate: string | null
+          inn_snapshot: string | null
+          is_off_label: boolean
+          name_snapshot: string
+          notes: string | null
+          order_index: number
+          plan_id: string
+          route_override: string | null
+          section_category: Database["public"]["Enums"]["treatment_category"]
+          time_of_day: string[] | null
+        }
+        Insert: {
+          catalog_id?: string | null
+          created_at?: string
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          duration_days?: number | null
+          form_snapshot?: string | null
+          frequency?: string | null
+          id?: string
+          infusion_rate?: string | null
+          inn_snapshot?: string | null
+          is_off_label?: boolean
+          name_snapshot: string
+          notes?: string | null
+          order_index?: number
+          plan_id: string
+          route_override?: string | null
+          section_category: Database["public"]["Enums"]["treatment_category"]
+          time_of_day?: string[] | null
+        }
+        Update: {
+          catalog_id?: string | null
+          created_at?: string
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          duration_days?: number | null
+          form_snapshot?: string | null
+          frequency?: string | null
+          id?: string
+          infusion_rate?: string | null
+          inn_snapshot?: string | null
+          is_off_label?: boolean
+          name_snapshot?: string
+          notes?: string | null
+          order_index?: number
+          plan_id?: string
+          route_override?: string | null
+          section_category?: Database["public"]["Enums"]["treatment_category"]
+          time_of_day?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plan_items_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_plan_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          plan_id: string
+          snapshot: Json
+          version_no: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plan_id: string
+          snapshot: Json
+          version_no: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plan_id?: string
+          snapshot?: Json
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plan_versions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_plans: {
+        Row: {
+          based_on_template: string | null
+          clinical_summary: string | null
+          created_at: string
+          created_by: string
+          diagnosis_short: string | null
+          duration_days: number
+          id: string
+          issued_at: string
+          mode: Database["public"]["Enums"]["plan_mode"]
+          patient_id: string
+          print_count: number
+          status: Database["public"]["Enums"]["plan_status"]
+          updated_at: string
+        }
+        Insert: {
+          based_on_template?: string | null
+          clinical_summary?: string | null
+          created_at?: string
+          created_by: string
+          diagnosis_short?: string | null
+          duration_days?: number
+          id?: string
+          issued_at?: string
+          mode?: Database["public"]["Enums"]["plan_mode"]
+          patient_id: string
+          print_count?: number
+          status?: Database["public"]["Enums"]["plan_status"]
+          updated_at?: string
+        }
+        Update: {
+          based_on_template?: string | null
+          clinical_summary?: string | null
+          created_at?: string
+          created_by?: string
+          diagnosis_short?: string | null
+          duration_days?: number
+          id?: string
+          issued_at?: string
+          mode?: Database["public"]["Enums"]["plan_mode"]
+          patient_id?: string
+          print_count?: number
+          status?: Database["public"]["Enums"]["plan_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plans_based_on_template_fkey"
+            columns: ["based_on_template"]
+            isOneToOne: false
+            referencedRelation: "protocol_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plans_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ultrasound_results: {
         Row: {
@@ -2041,6 +2439,22 @@ export type Database = {
         | "cremor"
         | "gel"
         | "solutio"
+      plan_mode: "flat" | "scheduled"
+      plan_status: "draft" | "issued" | "archived"
+      treatment_category:
+        | "iv_drip"
+        | "iv_bolus"
+        | "im"
+        | "sc"
+        | "oral_rx"
+        | "oral_supplement"
+        | "rectal"
+        | "topical"
+        | "nasal"
+        | "sublingual"
+        | "peptide"
+        | "procedure"
+        | "lifestyle"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -2216,6 +2630,23 @@ export const Constants = {
         "cremor",
         "gel",
         "solutio",
+      ],
+      plan_mode: ["flat", "scheduled"],
+      plan_status: ["draft", "issued", "archived"],
+      treatment_category: [
+        "iv_drip",
+        "iv_bolus",
+        "im",
+        "sc",
+        "oral_rx",
+        "oral_supplement",
+        "rectal",
+        "topical",
+        "nasal",
+        "sublingual",
+        "peptide",
+        "procedure",
+        "lifestyle",
       ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },
