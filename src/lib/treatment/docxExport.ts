@@ -111,7 +111,7 @@ const BORDER = { style: BorderStyle.SINGLE, size: 4, color: "000000" } as const;
 const ALL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
 const CELL_MARGINS = { top: 60, bottom: 60, left: 100, right: 100 };
 
-const p = (text: string, opts: { bold?: boolean; size?: number; align?: AlignmentType; italics?: boolean; spacing?: { before?: number; after?: number } } = {}) =>
+const p = (text: string, opts: { bold?: boolean; size?: number; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; italics?: boolean; spacing?: { before?: number; after?: number } } = {}) =>
   new Paragraph({
     alignment: opts.align,
     spacing: opts.spacing,
