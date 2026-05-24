@@ -118,7 +118,7 @@ export default function TreatmentPlanPrint() {
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, patient:patients(full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
