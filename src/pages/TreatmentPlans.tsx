@@ -1,0 +1,134 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database } from "lucide-react";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
+
+interface PlanRow {
+  id: string;
+  issued_at: string;
+  diagnosis_short: string | null;
+  duration_days: number;
+  status: string;
+  mode: string;
+  patient: { full_name: string } | null;
+  items_count?: number;
+}
+
+export default function TreatmentPlans() {
+  const { user, isAdmin, loading } = useAuth();
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<PlanRow[]>([]);
+  const [busy, setBusy] = useState(true);
+  const [q, setQ] = useState("");
+
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin)) {
+      navigate("/auth", { state: { from: "/admin/treatment-plans" } });
+    }
+  }, [user, isAdmin, loading, navigate]);
+
+  useEffect(() => {
+    (async () => {
+      setBusy(true);
+      const { data } = await supabase
+        .from("treatment_plans")
+        .select("id, issued_at, diagnosis_short, duration_days, status, mode, patient:patients(full_name), items:treatment_plan_items(count)")
+        .order("issued_at", { ascending: false })
+        .limit(200);
+      const mapped = (data || []).map((r: any) => ({
+        ...r,
+        items_count: r.items?.[0]?.count ?? 0,
+      }));
+      setRows(mapped);
+      setBusy(false);
+    })();
+  }, []);
+
+  const filtered = rows.filter(r => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (r.patient?.full_name || "").toLowerCase().includes(s) ||
+           (r.diagnosis_short || "").toLowerCase().includes(s);
+  });
+
+  if (loading || !user) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <Link to="/admin" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4"/>Назад к панели администратора
+        </Link>
+
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Листы назначений</h1>
+            <p className="text-muted-foreground">Комплексная метаболическая, антиоксидантная, гормональная и пептидная терапия</p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Link to="/admin/treatment-catalog">
+              <Button variant="outline" className="gap-2"><Database className="w-4 h-4"/>Каталог</Button>
+            </Link>
+            <Button variant="outline" className="gap-2" disabled><BookMarked className="w-4 h-4"/>Шаблоны (Фаза 2)</Button>
+            <Link to="/admin/treatment-plans/new">
+              <Button className="gap-2"><Plus className="w-4 h-4"/>Новый лист</Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск по пациенту или диагнозу..." className="max-w-md"/>
+        </div>
+
+        {busy ? (
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary"/></div>
+        ) : filtered.length === 0 ? (
+          <Card><CardContent className="py-10 text-center text-muted-foreground">
+            <FileText className="w-10 h-10 mx-auto mb-3 opacity-50"/>
+            Пока нет ни одного листа. Нажмите «Новый лист», чтобы создать первый.
+          </CardContent></Card>
+        ) : (
+          <div className="grid gap-3">
+            {filtered.map(r => (
+              <Card key={r.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link to={`/admin/treatment-plans/${r.id}`} className="font-medium text-foreground hover:text-primary">
+                        {r.patient?.full_name || "Без пациента"}
+                      </Link>
+                      <Badge variant={r.status === "issued" ? "default" : r.status === "archived" ? "secondary" : "outline"}>
+                        {r.status === "draft" ? "черновик" : r.status === "issued" ? "выписан" : "архив"}
+                      </Badge>
+                      <Badge variant="outline">{r.mode === "flat" ? "плоский" : "по дням"}</Badge>
+                      <Badge variant="outline">{r.items_count} позиций</Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {format(new Date(r.issued_at), "d MMMM yyyy", { locale: ru })} · курс {r.duration_days} дн.
+                      {r.diagnosis_short ? ` · ${r.diagnosis_short}` : ""}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link to={`/admin/treatment-plans/${r.id}`}><Button size="sm" variant="outline">Открыть</Button></Link>
+                    <Link to={`/admin/treatment-plans/${r.id}/print`} target="_blank">
+                      <Button size="sm" variant="outline" className="gap-1"><Printer className="w-3.5 h-3.5"/>Печать</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

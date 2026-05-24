@@ -37,6 +37,10 @@ import NotFound from "./pages/NotFound";
 import SelfCheck from "./pages/SelfCheck";
 import SelfCheckDetail from "./pages/SelfCheckDetail";
 import AdminSelfCheck from "./pages/AdminSelfCheck";
+import TreatmentPlans from "./pages/TreatmentPlans";
+import TreatmentPlanEditor from "./pages/TreatmentPlanEditor";
+import TreatmentPlanPrint from "./pages/TreatmentPlanPrint";
+import TreatmentCatalog from "./pages/TreatmentCatalog";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 
@@ -132,6 +136,11 @@ export const routes: RouteRecord[] = [
       { path: "admin/patient-cards", Component: AdminPatientCards, entry: "src/pages/AdminPatientCards.tsx" },
       { path: "admin/consultations", Component: AdminConsultations, entry: "src/pages/AdminConsultations.tsx" },
       { path: "admin/self-check", Component: AdminSelfCheck, entry: "src/pages/AdminSelfCheck.tsx" },
+      { path: "admin/treatment-plans", Component: TreatmentPlans, entry: "src/pages/TreatmentPlans.tsx" },
+      { path: "admin/treatment-plans/new", Component: TreatmentPlanEditor, entry: "src/pages/TreatmentPlanEditor.tsx" },
+      { path: "admin/treatment-plans/:id", Component: TreatmentPlanEditor, entry: "src/pages/TreatmentPlanEditor.tsx" },
+      { path: "admin/treatment-plans/:id/print", Component: TreatmentPlanPrint, entry: "src/pages/TreatmentPlanPrint.tsx" },
+      { path: "admin/treatment-catalog", Component: TreatmentCatalog, entry: "src/pages/TreatmentCatalog.tsx" },
 
       { path: "*", Component: NotFound },
     ],

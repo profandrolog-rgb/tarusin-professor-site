@@ -1,0 +1,298 @@
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Loader2, Save, Printer, Trash2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { PatientSelect } from "@/components/prescriptions/PatientSelect";
+import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
+import { CatalogPicker, CatalogItem } from "@/components/treatment/CatalogPicker";
+import { PlanItemRow, PlanItem } from "@/components/treatment/PlanItemRow";
+
+interface Patient { id: string; full_name: string; birth_date: string; }
+
+const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+
+function fromCatalog(c: CatalogItem, section: TreatmentCategory): PlanItem {
+  return {
+    client_id: newId(),
+    catalog_id: c.id,
+    section_category: section,
+    name_snapshot: c.name,
+    inn_snapshot: c.inn,
+    form_snapshot: c.form,
+    dose: c.default_dose,
+    dose_unit: c.dose_unit,
+    dilution_volume: c.default_dilution_volume,
+    dilution_solvent: c.default_dilution_solvent,
+    frequency: c.default_frequency,
+    duration_days: c.default_duration_days,
+    time_of_day: c.time_of_day_default || [],
+    infusion_rate: c.infusion_rate,
+    notes: c.notes,
+    is_off_label: c.is_off_label,
+    light_sensitive: c.light_sensitive,
+    glucose_only: c.glucose_only,
+    dose_range_min: c.dose_range_min,
+    dose_range_max: c.dose_range_max,
+  };
+}
+
+export default function TreatmentPlanEditor() {
+  const { id } = useParams<{ id: string }>();
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, isAdmin, loading } = useAuth();
+  const [busy, setBusy] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [issuedAt, setIssuedAt] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [durationDays, setDurationDays] = useState<number>(10);
+  const [diagnosis, setDiagnosis] = useState("");
+  const [summary, setSummary] = useState("");
+  const [status, setStatus] = useState<"draft" | "issued" | "archived">("draft");
+  const [items, setItems] = useState<PlanItem[]>([]);
+  const isNew = !id;
+
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin)) {
+      navigate("/auth", { state: { from: id ? `/admin/treatment-plans/${id}` : "/admin/treatment-plans/new" } });
+    }
+  }, [user, isAdmin, loading, navigate, id]);
+
+  useEffect(() => {
+    (async () => {
+      setBusy(true);
+      if (isNew) {
+        const pid = params.get("patientId");
+        if (pid) {
+          const { data } = await supabase.from("patients").select("*").eq("id", pid).maybeSingle();
+          if (data) setPatient(data as any);
+        }
+        setBusy(false);
+        return;
+      }
+      const { data: plan } = await supabase.from("treatment_plans")
+        .select("*, patient:patients(*)").eq("id", id!).maybeSingle();
+      if (plan) {
+        setPatient((plan as any).patient);
+        setIssuedAt(plan.issued_at);
+        setDurationDays(plan.duration_days);
+        setDiagnosis(plan.diagnosis_short || "");
+        setSummary(plan.clinical_summary || "");
+        setStatus(plan.status as any);
+        const { data: rows } = await supabase.from("treatment_plan_items")
+          .select("*").eq("plan_id", id!).order("section_category").order("order_index");
+        setItems((rows || []).map((r: any): PlanItem => ({
+          client_id: newId(),
+          catalog_id: r.catalog_id,
+          section_category: r.section_category,
+          name_snapshot: r.name_snapshot,
+          inn_snapshot: r.inn_snapshot,
+          form_snapshot: r.form_snapshot,
+          dose: r.dose,
+          dose_unit: r.dose_unit,
+          dilution_volume: r.dilution_volume,
+          dilution_solvent: r.dilution_solvent,
+          frequency: r.frequency,
+          duration_days: r.duration_days,
+          day_pattern: r.day_pattern,
+          time_of_day: r.time_of_day || [],
+          infusion_rate: r.infusion_rate,
+          route_override: r.route_override,
+          notes: r.notes,
+          is_off_label: r.is_off_label,
+        })));
+      }
+      setBusy(false);
+    })();
+  }, [id, isNew, params]);
+
+  const innCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    items.forEach(it => { if (it.inn_snapshot) m.set(it.inn_snapshot, (m.get(it.inn_snapshot) || 0) + 1); });
+    return m;
+  }, [items]);
+
+  const addItem = (section: TreatmentCategory, c: CatalogItem) => {
+    setItems(prev => [...prev, fromCatalog(c, section)]);
+  };
+  const updateItem = (cid: string, patch: Partial<PlanItem>) => {
+    setItems(prev => prev.map(i => i.client_id === cid ? { ...i, ...patch } : i));
+  };
+  const removeItem = (cid: string) => {
+    setItems(prev => prev.filter(i => i.client_id !== cid));
+  };
+
+  const save = async (newStatus?: typeof status) => {
+    if (!patient) { toast({ title: "Выберите пациента", variant: "destructive" }); return; }
+    if (!user) return;
+    setSaving(true);
+    try {
+      const planPayload = {
+        patient_id: patient.id,
+        issued_at: issuedAt,
+        mode: "flat" as const,
+        duration_days: durationDays,
+        diagnosis_short: diagnosis || null,
+        clinical_summary: summary || null,
+        status: newStatus || status,
+        created_by: user.id,
+      };
+      let planId = id;
+      if (isNew) {
+        const { data, error } = await supabase.from("treatment_plans").insert(planPayload).select("id").single();
+        if (error) throw error;
+        planId = data.id;
+      } else {
+        const { error } = await supabase.from("treatment_plans").update(planPayload).eq("id", id!);
+        if (error) throw error;
+        await supabase.from("treatment_plan_items").delete().eq("plan_id", id!);
+      }
+      if (items.length) {
+        const rows = items.map((it, idx) => ({
+          plan_id: planId!,
+          catalog_id: it.catalog_id || null,
+          section_category: it.section_category,
+          order_index: idx,
+          name_snapshot: it.name_snapshot,
+          inn_snapshot: it.inn_snapshot,
+          form_snapshot: it.form_snapshot,
+          dose: it.dose,
+          dose_unit: it.dose_unit,
+          dilution_volume: it.dilution_volume,
+          dilution_solvent: it.dilution_solvent,
+          frequency: it.frequency,
+          duration_days: it.duration_days ?? durationDays,
+          day_pattern: it.day_pattern || null,
+          time_of_day: it.time_of_day,
+          infusion_rate: it.infusion_rate,
+          route_override: it.route_override,
+          notes: it.notes,
+          is_off_label: it.is_off_label,
+        }));
+        const { error: e2 } = await supabase.from("treatment_plan_items").insert(rows);
+        if (e2) throw e2;
+      }
+      if (newStatus) setStatus(newStatus);
+      toast({ title: "Сохранено" });
+      if (isNew && planId) navigate(`/admin/treatment-plans/${planId}`, { replace: true });
+    } catch (e: any) {
+      toast({ title: "Ошибка сохранения", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!id || !confirm("Удалить лист назначений?")) return;
+    const { error } = await supabase.from("treatment_plans").delete().eq("id", id);
+    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
+    navigate("/admin/treatment-plans");
+  };
+
+  if (loading || busy) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
+  }
+  if (!user) return null;
+
+  const grouped = SECTIONS.map(s => ({ section: s, list: items.filter(i => i.section_category === s.key) }));
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6 max-w-5xl">
+        <Link to="/admin/treatment-plans" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors">
+          <ArrowLeft className="w-4 h-4"/>К списку листов
+        </Link>
+
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h1 className="text-2xl font-bold">
+            {isNew ? "Новый лист назначений" : "Лист назначений"}
+            {!isNew && <Badge variant="outline" className="ml-2 text-xs">{status === "draft" ? "черновик" : status === "issued" ? "выписан" : "архив"}</Badge>}
+          </h1>
+          <div className="flex gap-2 flex-wrap">
+            {!isNew && (
+              <Link to={`/admin/treatment-plans/${id}/print`} target="_blank">
+                <Button variant="outline" className="gap-2"><Printer className="w-4 h-4"/>Печать</Button>
+              </Link>
+            )}
+            <Button onClick={() => save()} disabled={saving} className="gap-2">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}Сохранить
+            </Button>
+            {!isNew && status === "draft" && (
+              <Button onClick={() => save("issued")} disabled={saving} variant="default">Выписать</Button>
+            )}
+            {!isNew && (
+              <Button onClick={remove} variant="ghost" size="icon" className="text-destructive"><Trash2 className="w-4 h-4"/></Button>
+            )}
+          </div>
+        </div>
+
+        {/* Header form */}
+        <Card className="mb-4">
+          <CardContent className="p-4 space-y-3">
+            <PatientSelect selectedPatient={patient} onSelect={setPatient} />
+            <div className="grid md:grid-cols-3 gap-3">
+              <div>
+                <Label>Дата выписки</Label>
+                <Input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)}/>
+              </div>
+              <div>
+                <Label>Длительность курса (дней)</Label>
+                <Input type="number" min={1} max={180} value={durationDays} onChange={e=>setDurationDays(Number(e.target.value) || 1)}/>
+              </div>
+              <div>
+                <Label>Краткий диагноз / коды МКБ-10</Label>
+                <Input value={diagnosis} onChange={e=>setDiagnosis(e.target.value)} placeholder="E29.1; N50.1; F48.0"/>
+              </div>
+            </div>
+            <div>
+              <Label>Клиническое обоснование</Label>
+              <Textarea value={summary} onChange={e=>setSummary(e.target.value)} rows={3} placeholder="Краткое обоснование курса (печатается курсивом перед назначениями)..."/>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sections */}
+        <div className="space-y-3">
+          {grouped.map(({ section, list }) => {
+            const Icon = section.icon;
+            const empty = list.length === 0;
+            return (
+              <Card key={section.key} className={empty ? "opacity-70" : ""}>
+                <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Icon className={`w-4 h-4 ${empty ? "text-muted-foreground" : "text-primary"}`}/>
+                    {section.label}
+                    {!empty && <Badge variant="secondary" className="text-xs">{list.length}</Badge>}
+                    {section.hint && <span className="text-xs text-muted-foreground font-normal">— {section.hint}</span>}
+                  </CardTitle>
+                  <CatalogPicker section={section.key} allowAllCategories={section.key === "peptide"} onPick={(c) => addItem(section.key, c)}/>
+                </CardHeader>
+                {!empty && (
+                  <CardContent className="pt-0 pb-3 px-4 space-y-2">
+                    {list.map(it => (
+                      <PlanItemRow
+                        key={it.client_id}
+                        item={it}
+                        update={(p) => updateItem(it.client_id, p)}
+                        remove={() => removeItem(it.client_id)}
+                        duplicateInn={!!it.inn_snapshot && (innCounts.get(it.inn_snapshot) || 0) > 1}
+                      />
+                    ))}
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
