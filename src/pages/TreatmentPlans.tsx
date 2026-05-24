@@ -196,6 +196,16 @@ export default function TreatmentPlans() {
           </div>
         )}
       </div>
+
+      {dupTarget && user && (
+        <DuplicatePlanDialog
+          open={!!dupTarget}
+          onOpenChange={(v) => { if (!v) setDupTarget(null); }}
+          sourcePlanId={dupTarget.id}
+          sourcePatientName={dupTarget.patient?.full_name}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
