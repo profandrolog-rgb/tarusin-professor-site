@@ -25,6 +25,7 @@ interface PlanItemDB {
   route_override: string | null;
   notes: string | null;
   is_off_label: boolean;
+  day_pattern: string | null;
 }
 
 interface PlanDB {
@@ -34,6 +35,8 @@ interface PlanDB {
   diagnosis_short: string | null;
   clinical_summary: string | null;
   status: string;
+  mode: string;
+  course_number: number | null;
   patient: { full_name: string; birth_date: string } | null;
 }
 
@@ -80,6 +83,32 @@ function renderLine(it: PlanItemDB, courseDays: number): string {
   return line;
 }
 
+function expandPattern(pattern: string | null | undefined, courseDays: number, itemDays?: number | null): Set<number> {
+  const total = itemDays ?? courseDays;
+  const set = new Set<number>();
+  if (!pattern || pattern.trim() === "") {
+    for (let i = 1; i <= total; i++) set.add(i);
+    return set;
+  }
+  pattern.split(",").map(s => s.trim()).filter(Boolean).forEach(part => {
+    const range = part.match(/^(\d+)-(\d+)$/);
+    if (range) {
+      const a = +range[1], b = +range[2];
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) if (i >= 1 && i <= courseDays) set.add(i);
+      return;
+    }
+    const every = part.match(/^через\s+(\d+)$/i);
+    if (every) {
+      const step = +every[1] + 1;
+      for (let i = 1; i <= courseDays; i += step) set.add(i);
+      return;
+    }
+    const n = Number(part);
+    if (!Number.isNaN(n) && n >= 1 && n <= courseDays) set.add(n);
+  });
+  return set;
+}
+
 export default function TreatmentPlanPrint() {
   const { id } = useParams<{ id: string }>();
   const [plan, setPlan] = useState<PlanDB | null>(null);
@@ -89,7 +118,7 @@ export default function TreatmentPlanPrint() {
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, patient:patients(full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
@@ -115,6 +144,11 @@ export default function TreatmentPlanPrint() {
     if (m < 0 || (m === 0 && date.getDate() < birth.getDate())) age!--;
   }
 
+  const scheduledItems = items.filter(i => i.section_category !== "lifestyle" && i.day_pattern);
+  const showCalendar = plan.mode === "scheduled" && scheduledItems.length > 0;
+  const landscape = plan.duration_days > 21;
+  const compact = scheduledItems.length > 30;
+
   return (
     <div className="bg-muted/30 min-h-screen py-6">
       <style>{`
@@ -123,6 +157,9 @@ export default function TreatmentPlanPrint() {
           .no-print { display: none !important; }
           .print-page { box-shadow: none !important; margin: 0 !important; border: none !important; }
           @page { size: A4 portrait; margin: 15mm; }
+          ${landscape ? `.calendar-page { page-break-before: always; }
+          @page calendar { size: A4 landscape; margin: 12mm; }
+          .calendar-page { page: calendar; }` : ".calendar-page { page-break-before: always; }"}
         }
       `}</style>
 
@@ -145,13 +182,13 @@ export default function TreatmentPlanPrint() {
         </div>
 
         <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15pt", letterSpacing: "2px", marginBottom: "4mm" }}>
-          ЛИСТ НАЗНАЧЕНИЙ
+          ЛИСТ НАЗНАЧЕНИЙ{plan.course_number != null ? ` № ${plan.course_number}` : ""}
         </div>
 
         {/* Header info */}
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10pt", marginBottom: "3mm" }}>
           <div>Дата выписки: <b>{format(date, "d MMMM yyyy 'г.'", { locale: ru })}</b></div>
-          <div>№ {plan.id.slice(0, 8).toUpperCase()}</div>
+          <div>ID: {plan.id.slice(0, 8).toUpperCase()}</div>
         </div>
         <div style={{ fontSize: "10pt", marginBottom: "1mm" }}>
           Ф.И.О. пациента: <b>{plan.patient?.full_name || "—"}</b>
@@ -224,6 +261,68 @@ export default function TreatmentPlanPrint() {
           </div>
         </div>
       </div>
+
+      {showCalendar && (
+        <div
+          className="print-page calendar-page bg-white text-black mx-auto shadow-lg"
+          style={{
+            width: landscape ? "297mm" : "210mm",
+            minHeight: landscape ? "210mm" : "297mm",
+            padding: "12mm",
+            marginTop: "8mm",
+            fontFamily: "Times New Roman, serif",
+            fontSize: compact ? "8pt" : "9pt",
+            lineHeight: 1.2,
+          }}
+        >
+          <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "12pt", marginBottom: "3mm", letterSpacing: "1px" }}>
+            КАЛЕНДАРЬ КУРСА{plan.course_number != null ? ` № ${plan.course_number}` : ""} — {plan.patient?.full_name}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead>
+              <tr>
+                <th style={{ border: "1px solid #000", padding: "1mm 2mm", textAlign: "left", width: compact ? "38mm" : "55mm", background: "#f0f0f0" }}>
+                  Позиция
+                </th>
+                {Array.from({ length: plan.duration_days }, (_, i) => i + 1).map(d => (
+                  <th key={d} style={{ border: "1px solid #000", padding: "1mm 0", textAlign: "center", background: "#f0f0f0", fontSize: compact ? "7pt" : "8pt" }}>
+                    {d}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scheduledItems.map(it => {
+                const days = expandPattern(it.day_pattern, plan.duration_days, it.duration_days);
+                return (
+                  <tr key={it.id}>
+                    <td style={{ border: "1px solid #000", padding: "1mm 2mm", fontSize: compact ? "7.5pt" : "8.5pt" }}>
+                      {it.name_snapshot}
+                      {it.dose != null && (
+                        <span style={{ color: "#555" }}> — {it.dose}{it.dose_unit ? " " + it.dose_unit : ""}</span>
+                      )}
+                    </td>
+                    {Array.from({ length: plan.duration_days }, (_, i) => i + 1).map(d => (
+                      <td
+                        key={d}
+                        style={{
+                          border: "1px solid #ccc",
+                          background: days.has(d) ? "#888" : "transparent",
+                          padding: 0,
+                          height: compact ? "4mm" : "5mm",
+                        }}
+                      />
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ marginTop: "3mm", fontSize: "8pt", color: "#444" }}>
+            Серая заливка — дни приёма согласно паттерну. Всего позиций по расписанию: {scheduledItems.length}.
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { DuplicatePlanDialog } from "@/components/treatment/DuplicatePlanDialog";
 import type { DateRange } from "react-day-picker";
 
 interface PlanRow {
@@ -22,6 +23,7 @@ interface PlanRow {
   duration_days: number;
   status: string;
   mode: string;
+  course_number: number | null;
   patient: { full_name: string } | null;
   items_count?: number;
 }
@@ -35,6 +37,7 @@ export default function TreatmentPlans() {
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "archived">("all");
   const [modeFilter, setModeFilter] = useState<"all" | "flat" | "scheduled">("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dupTarget, setDupTarget] = useState<PlanRow | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -47,7 +50,7 @@ export default function TreatmentPlans() {
       setBusy(true);
       const { data } = await supabase
         .from("treatment_plans")
-        .select("id, issued_at, diagnosis_short, duration_days, status, mode, patient:patients(full_name), items:treatment_plan_items(count)")
+        .select("id, issued_at, diagnosis_short, duration_days, status, mode, course_number, patient:patients(full_name), items:treatment_plan_items(count)")
         .order("issued_at", { ascending: false })
         .limit(200);
       const mapped = (data || []).map((r: any) => ({
@@ -161,6 +164,9 @@ export default function TreatmentPlans() {
                 <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {r.course_number != null && (
+                        <Badge variant="default" className="font-mono">№ {r.course_number}</Badge>
+                      )}
                       <Link to={`/admin/treatment-plans/${r.id}`} className="font-medium text-foreground hover:text-primary">
                         {r.patient?.full_name || "Без пациента"}
                       </Link>
@@ -177,6 +183,9 @@ export default function TreatmentPlans() {
                   </div>
                   <div className="flex gap-2">
                     <Link to={`/admin/treatment-plans/${r.id}`}><Button size="sm" variant="outline">Открыть</Button></Link>
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => setDupTarget(r)} title="Дублировать на другого пациента">
+                      <UserPlus className="w-3.5 h-3.5"/>
+                    </Button>
                     <Link to={`/admin/treatment-plans/${r.id}/print`} target="_blank">
                       <Button size="sm" variant="outline" className="gap-1"><Printer className="w-3.5 h-3.5"/>Печать</Button>
                     </Link>
@@ -187,6 +196,16 @@ export default function TreatmentPlans() {
           </div>
         )}
       </div>
+
+      {dupTarget && user && (
+        <DuplicatePlanDialog
+          open={!!dupTarget}
+          onOpenChange={(v) => { if (!v) setDupTarget(null); }}
+          sourcePlanId={dupTarget.id}
+          sourcePatientName={dupTarget.patient?.full_name}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

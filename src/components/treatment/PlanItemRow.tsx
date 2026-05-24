@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, AlertTriangle, Sun, Beaker, GripVertical } from "lucide-react";
+import { X, AlertTriangle, Sun, Beaker, GripVertical, Database } from "lucide-react";
 import { FREQUENCY_PRESETS, SOLVENTS, DILUTION_VOLUMES, TreatmentCategory } from "./sections";
 import { TimeOfDayMultiSelect } from "./TimeOfDayMultiSelect";
 import { DayPatternPopover } from "./DayPatternPopover";
 import { GanttStrip } from "./GanttStrip";
+import { MedicationImportDialog } from "./MedicationImportDialog";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -48,6 +50,7 @@ interface Props {
 const showInfusion = (c: TreatmentCategory) => c === "iv_drip";
 
 export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat", courseDuration = 10, sortable = false }: Props) {
+  const [importOpen, setImportOpen] = useState(false);
   const sort = useSortable({ id: item.client_id, disabled: !sortable });
   const style = sortable ? {
     transform: CSS.Transform.toString(sort.transform),
@@ -104,7 +107,14 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={remove}><X className="w-4 h-4"/></Button>
+        <div className="flex gap-1">
+          {item.section_category === "oral_rx" && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setImportOpen(true)} title="Импорт из справочника">
+              <Database className="w-4 h-4"/>
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={remove}><X className="w-4 h-4"/></Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
@@ -170,6 +180,27 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
             <GanttStrip pattern={item.day_pattern} duration={courseDuration} onChange={(v) => update({ day_pattern: v })} />
           </div>
         </div>
+      )}
+
+      {item.section_category === "oral_rx" && (
+        <MedicationImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          current={{
+            name: item.name_snapshot,
+            inn: item.inn_snapshot,
+            form: item.form_snapshot,
+            default_dose: item.dose,
+            dose_unit: item.dose_unit,
+          }}
+          onApply={(patch) => update({
+            ...(patch.name !== undefined ? { name_snapshot: patch.name as string } : {}),
+            ...(patch.inn !== undefined ? { inn_snapshot: patch.inn } : {}),
+            ...(patch.form !== undefined ? { form_snapshot: patch.form } : {}),
+            ...(patch.default_dose !== undefined ? { dose: patch.default_dose } : {}),
+            ...(patch.dose_unit !== undefined ? { dose_unit: patch.dose_unit } : {}),
+          })}
+        />
       )}
     </div>
   );
