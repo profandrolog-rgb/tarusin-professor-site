@@ -302,6 +302,16 @@ export default function TreatmentPlanEditor() {
                 <Button variant="outline" className="gap-2"><Printer className="w-4 h-4"/>Печать</Button>
               </Link>
             )}
+            {!isNew && (
+              <Button variant="outline" onClick={exportDocx} className="gap-2" disabled={items.length === 0}>
+                <FileDown className="w-4 h-4"/>DOCX
+              </Button>
+            )}
+            {!isNew && (
+              <Link to={`/admin/treatment-plans/${id}/memo`} target="_blank">
+                <Button variant="outline" className="gap-2"><ClipboardList className="w-4 h-4"/>Памятка</Button>
+              </Link>
+            )}
             <Button onClick={() => save()} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}Сохранить
             </Button>
