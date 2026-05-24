@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,11 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Printer, Loader2 } from "lucide-react";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
+import { calculatePlanCost, formatRub, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
 
 interface PlanItemDB {
   id: string;
+  catalog_id: string | null;
   section_category: TreatmentCategory;
   order_index: number;
   name_snapshot: string;
@@ -26,6 +28,7 @@ interface PlanItemDB {
   notes: string | null;
   is_off_label: boolean;
   day_pattern: string | null;
+  prn_estimated_doses: number | null;
 }
 
 interface PlanDB {
@@ -37,8 +40,22 @@ interface PlanDB {
   status: string;
   mode: string;
   course_number: number | null;
+  show_cost_in_print: boolean | null;
+  lab_control_enabled: boolean | null;
   patient: { full_name: string; birth_date: string } | null;
 }
+
+interface LabControlRow {
+  id: string;
+  control_point: string | null;
+  at_day: number | null;
+  test_ids: string[] | null;
+  custom_tests: string[] | null;
+  notes: string | null;
+  order_index: number;
+}
+
+interface LabTest { id: string; name: string; short_name: string | null; }
 
 const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   iv_drip: "в/в капельно",
@@ -113,21 +130,70 @@ export default function TreatmentPlanPrint() {
   const { id } = useParams<{ id: string }>();
   const [plan, setPlan] = useState<PlanDB | null>(null);
   const [items, setItems] = useState<PlanItemDB[]>([]);
+  const [labControl, setLabControl] = useState<LabControlRow[]>([]);
+  const [labTestsMap, setLabTestsMap] = useState<Map<string, LabTest>>(new Map());
+  const [catalogMap, setCatalogMap] = useState<Map<string, CostCatalog>>(new Map());
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, patient:patients(full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
+      const { data: lc } = await supabase.from("treatment_plan_lab_control" as any)
+        .select("*").eq("plan_id", id!).order("order_index");
+
+      const planItems = (rows as any[]) || [];
+      const lcRows = (lc as any[]) || [];
+
+      // Lab tests catalog (only ids referenced)
+      const allTestIds = new Set<string>();
+      lcRows.forEach(r => (r.test_ids || []).forEach((tid: string) => allTestIds.add(tid)));
+      if (allTestIds.size) {
+        const { data: lt } = await supabase
+          .from("lab_tests_catalog")
+          .select("id, name, short_name")
+          .in("id", Array.from(allTestIds));
+        const m = new Map<string, LabTest>();
+        (lt || []).forEach((t: any) => m.set(t.id, t));
+        setLabTestsMap(m);
+      }
+
+      // Catalog pricing (only for items that have a catalog_id)
+      const catIds = Array.from(new Set(planItems.map(i => i.catalog_id).filter(Boolean) as string[]));
+      if (catIds.length) {
+        const { data: cat } = await supabase
+          .from("treatment_catalog")
+          .select("id, price_override, pack_size_num, units_per_dose_num, patient_info")
+          .in("id", catIds);
+        const m = new Map<string, CostCatalog>();
+        (cat || []).forEach((c: any) => m.set(c.id, c));
+        setCatalogMap(m);
+      }
+
       setPlan(p as any);
-      setItems((rows as any) || []);
+      setItems(planItems);
+      setLabControl(lcRows);
       setBusy(false);
       await supabase.from("treatment_plans").update({ print_count: ((p as any)?.print_count ?? 0) + 1 } as any).eq("id", id!);
     })();
   }, [id]);
+
+  const costBreakdown = useMemo(() => {
+    if (!plan) return null;
+    const input: Array<CostItemInput & { name_snapshot: string }> = items.map(it => ({
+      catalog_id: it.catalog_id,
+      section_category: it.section_category,
+      frequency: it.frequency,
+      day_pattern: it.day_pattern,
+      duration_days: it.duration_days,
+      prn_estimated_doses: it.prn_estimated_doses,
+      name_snapshot: it.name_snapshot,
+    }));
+    return calculatePlanCost(input, catalogMap, plan.duration_days, (plan.mode as any) || "flat");
+  }, [items, catalogMap, plan]);
 
   if (busy || !plan) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
@@ -148,6 +214,8 @@ export default function TreatmentPlanPrint() {
   const showCalendar = plan.mode === "scheduled" && scheduledItems.length > 0;
   const landscape = plan.duration_days > 21;
   const compact = scheduledItems.length > 30;
+  const showCost = !!plan.show_cost_in_print && costBreakdown && costBreakdown.total > 0;
+  const showLab = !!plan.lab_control_enabled && labControl.length > 0;
 
   return (
     <div className="bg-muted/30 min-h-screen py-6">
@@ -248,6 +316,70 @@ export default function TreatmentPlanPrint() {
             </ol>
           </div>
         )}
+
+        {/* Lab control on therapy */}
+        {showLab && (
+          <div style={{ marginTop: "5mm", pageBreakInside: "avoid" }}>
+            <div style={{ fontWeight: "bold", fontSize: "11pt", marginBottom: "1.5mm", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Контроль на фоне терапии
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9.5pt" }}>
+              <thead>
+                <tr>
+                  <th style={{ border: "1px solid #000", padding: "1.2mm 2mm", background: "#f0f0f0", textAlign: "left", width: "38mm" }}>Точка контроля</th>
+                  <th style={{ border: "1px solid #000", padding: "1.2mm 2mm", background: "#f0f0f0", textAlign: "left", width: "16mm" }}>День</th>
+                  <th style={{ border: "1px solid #000", padding: "1.2mm 2mm", background: "#f0f0f0", textAlign: "left" }}>Анализы / исследования</th>
+                </tr>
+              </thead>
+              <tbody>
+                {labControl.map(lc => {
+                  const tests = [
+                    ...(lc.test_ids || []).map(tid => labTestsMap.get(tid)?.short_name || labTestsMap.get(tid)?.name).filter(Boolean) as string[],
+                    ...(lc.custom_tests || []),
+                  ];
+                  return (
+                    <tr key={lc.id}>
+                      <td style={{ border: "1px solid #000", padding: "1.2mm 2mm", verticalAlign: "top" }}>{lc.control_point || "—"}</td>
+                      <td style={{ border: "1px solid #000", padding: "1.2mm 2mm", verticalAlign: "top" }}>{lc.at_day != null ? `${lc.at_day}` : "—"}</td>
+                      <td style={{ border: "1px solid #000", padding: "1.2mm 2mm", verticalAlign: "top" }}>
+                        {tests.length ? tests.join(", ") : "—"}
+                        {lc.notes ? <div style={{ fontSize: "8.5pt", color: "#444", marginTop: "0.5mm", fontStyle: "italic" }}>{lc.notes}</div> : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Cost estimate */}
+        {showCost && costBreakdown && (
+          <div style={{ marginTop: "5mm", pageBreakInside: "avoid" }}>
+            <div style={{ fontWeight: "bold", fontSize: "11pt", marginBottom: "1.5mm", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Ориентировочная стоимость курса
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10pt" }}>
+              <tbody>
+                {Object.entries(costBreakdown.byGroup).map(([k, g]) => (
+                  <tr key={k}>
+                    <td style={{ padding: "0.8mm 2mm", borderBottom: "1px dashed #999" }}>{g.emoji} {g.label}</td>
+                    <td style={{ padding: "0.8mm 2mm", borderBottom: "1px dashed #999", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRub(g.sum)}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td style={{ padding: "1.2mm 2mm", borderTop: "1.5px solid #000", fontWeight: "bold" }}>Итого:</td>
+                  <td style={{ padding: "1.2mm 2mm", borderTop: "1.5px solid #000", fontWeight: "bold", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatRub(costBreakdown.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style={{ fontSize: "8.5pt", color: "#444", marginTop: "1.5mm", fontStyle: "italic" }}>
+              Расчёт ориентировочный, ±15–20% в зависимости от аптеки. Стоимость процедур, расходных материалов и услуг клиники в расчёт не включена.
+              {costBreakdown.missing.length > 0 ? ` Цены не заданы для ${costBreakdown.missing.length} позиций — они не учтены.` : ""}
+            </div>
+          </div>
+        )}
+
 
         {/* Signature */}
         <div style={{ marginTop: "12mm", display: "flex", justifyContent: "space-between", fontSize: "10pt" }}>

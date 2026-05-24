@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
 import { CATALOG_KNOWN_COLUMNS, serializeCsv } from "@/lib/treatmentCsv";
+import { formatRub, priceFreshness } from "@/lib/treatment/cost";
 
 interface Row {
   id: string;
@@ -37,17 +38,32 @@ interface Row {
   light_sensitive: boolean;
   glucose_only: boolean;
   is_active: boolean;
+  price_override: number | null;
+  price_currency: string | null;
+  price_updated_at: string | null;
+  price_source_note: string | null;
+  pack_size_num: number | null;
+  units_per_dose_num: number | null;
 }
 
-const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false };
+const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB" };
+
+const FRESHNESS_STYLES: Record<string, { dot: string; label: string }> = {
+  fresh:   { dot: "bg-emerald-500", label: "цена свежая (≤30 дн.)" },
+  stale:   { dot: "bg-amber-500",   label: "цена устарела (30–90 дн.)" },
+  old:     { dot: "bg-red-500",     label: "цена давно не обновлялась (>90 дн.)" },
+  missing: { dot: "bg-muted-foreground/30", label: "цена не задана" },
+};
 
 export default function TreatmentCatalog() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
   const [filter, setFilter] = useState<TreatmentCategory | "all">("all");
   const [q, setQ] = useState("");
+  const [onlyMissingPrice, setOnlyMissingPrice] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
   const [importOpen, setImportOpen] = useState(false);
@@ -93,6 +109,11 @@ export default function TreatmentCatalog() {
   const save = async () => {
     if (!draft.name || !draft.category) { toast({ title: "Название и категория обязательны", variant: "destructive" }); return; }
     const payload: any = { ...draft };
+    // Stamp price_updated_at when price_override is being set/changed
+    if (draft.price_override != null && draft.price_override !== "" as any) {
+      payload.price_updated_at = new Date().toISOString();
+      if (!payload.price_currency) payload.price_currency = "RUB";
+    }
     if (draft.id) {
       const { id, ...rest } = payload;
       const { error } = await supabase.from("treatment_catalog").update(rest).eq("id", id);
@@ -110,8 +131,18 @@ export default function TreatmentCatalog() {
   const startEdit = (r: Row) => { setDraft(r); setEditOpen(true); };
   const startNew = () => { setDraft(empty); setEditOpen(true); };
 
+  // Open editor from ?edit=<id> deep-link (e.g. from cost-block "задать цену →")
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId && rows.length) {
+      const r = rows.find(x => x.id === editId);
+      if (r) { startEdit(r); searchParams.delete("edit"); setSearchParams(searchParams, { replace: true }); }
+    }
+  }, [rows, searchParams, setSearchParams]);
+
   const filtered = rows.filter(r => {
     if (filter !== "all" && r.category !== filter) return false;
+    if (onlyMissingPrice && r.price_override != null) return false;
     if (q && !(r.name.toLowerCase().includes(q.toLowerCase()) || (r.inn || "").toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
   });
@@ -139,7 +170,7 @@ export default function TreatmentCatalog() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="flex gap-2 mb-4 flex-wrap items-center">
           <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск..." className="max-w-xs"/>
           <Select value={filter} onValueChange={(v: any)=>setFilter(v)}>
             <SelectTrigger className="max-w-xs"><SelectValue/></SelectTrigger>
@@ -148,6 +179,10 @@ export default function TreatmentCatalog() {
               {SECTIONS.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={onlyMissingPrice} onCheckedChange={setOnlyMissingPrice}/>
+            <Wallet className="w-3.5 h-3.5"/>Только без цены
+          </label>
         </div>
 
         {busy ? (
@@ -157,6 +192,8 @@ export default function TreatmentCatalog() {
             {filtered.map(r => {
               const section = SECTIONS.find(s => s.key === r.category);
               const Icon = section?.icon;
+              const fr = priceFreshness(r.price_updated_at);
+              const frInfo = FRESHNESS_STYLES[fr];
               return (
                 <Card key={r.id} className={r.is_active ? "" : "opacity-60"}>
                   <CardContent className="p-3 flex items-center justify-between gap-3 flex-wrap">
@@ -171,6 +208,17 @@ export default function TreatmentCatalog() {
                         {r.light_sensitive && <Sun className="w-3.5 h-3.5 text-amber-500"/>}
                         {r.glucose_only && <Beaker className="w-3.5 h-3.5 text-blue-500"/>}
                         {!r.is_active && <Badge variant="secondary" className="text-[10px]">не активна</Badge>}
+                        {r.price_override != null ? (
+                          <span title={frInfo.label} className="inline-flex items-center gap-1 text-xs">
+                            <span className={`inline-block w-2 h-2 rounded-full ${frInfo.dot}`}/>
+                            {formatRub(r.price_override)}
+                          </span>
+                        ) : (
+                          <span title="цена не задана" className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className={`inline-block w-2 h-2 rounded-full ${frInfo.dot}`}/>
+                            без цены
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {r.form ? `${r.form} · ` : ""}
@@ -213,6 +261,59 @@ export default function TreatmentCatalog() {
               <div className="col-span-2"><Label>Скорость инфузии</Label><Input value={draft.infusion_rate ?? ""} onChange={e=>setDraft(d=>({...d, infusion_rate: e.target.value}))}/></div>
             </div>
             <div><Label>Заметка / инструкция</Label><Textarea value={draft.notes ?? ""} onChange={e=>setDraft(d=>({...d, notes: e.target.value}))} rows={2}/></div>
+
+            {/* 💰 Стоимость (Фаза 3A) */}
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <Wallet className="w-4 h-4 text-primary"/>💰 Стоимость
+                {draft.price_updated_at && (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-normal text-muted-foreground">
+                    <span className={`inline-block w-2 h-2 rounded-full ${FRESHNESS_STYLES[priceFreshness(draft.price_updated_at)].dot}`}/>
+                    обновлено {new Date(draft.price_updated_at).toLocaleDateString("ru-RU")}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Цена за упаковку, ₽</Label>
+                  <Input
+                    type="number" step="any"
+                    value={draft.price_override ?? ""}
+                    onChange={e=>setDraft(d=>({...d, price_override: e.target.value === "" ? null : Number(e.target.value)}))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Единиц в упаковке</Label>
+                  <Input
+                    type="number" step="any"
+                    placeholder="напр. 30 (таб.)"
+                    value={draft.pack_size_num ?? ""}
+                    onChange={e=>setDraft(d=>({...d, pack_size_num: e.target.value === "" ? null : Number(e.target.value)}))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Единиц на приём</Label>
+                  <Input
+                    type="number" step="any"
+                    placeholder="обычно 1"
+                    value={draft.units_per_dose_num ?? ""}
+                    onChange={e=>setDraft(d=>({...d, units_per_dose_num: e.target.value === "" ? null : Number(e.target.value)}))}
+                  />
+                </div>
+                <div className="col-span-3">
+                  <Label className="text-xs">Источник цены (примечание)</Label>
+                  <Input
+                    placeholder="напр. apteka.ru, средняя по Москве"
+                    value={draft.price_source_note ?? ""}
+                    onChange={e=>setDraft(d=>({...d, price_source_note: e.target.value}))}
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Цена используется в расчёте ориентировочной стоимости курса. Поле «единиц на приём» помогает корректно посчитать число упаковок при делении/удвоении доз.
+              </p>
+            </div>
+
             <div className="flex flex-wrap gap-4 pt-2">
               <label className="flex items-center gap-2 text-sm"><Switch checked={draft.is_rx ?? false} onCheckedChange={v=>setDraft(d=>({...d, is_rx: v}))}/>Rx (рецептурное)</label>
               <label className="flex items-center gap-2 text-sm"><Switch checked={draft.is_off_label ?? false} onCheckedChange={v=>setDraft(d=>({...d, is_off_label: v}))}/>Off-label</label>
