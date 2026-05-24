@@ -19,6 +19,8 @@ import { SaveAsTemplateDialog } from "@/components/treatment/SaveAsTemplateDialo
 import { GanttHeader } from "@/components/treatment/GanttStrip";
 import { ScheduledSummary } from "@/components/treatment/ScheduledSummary";
 import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHistoryDrawer";
+import { PlanCostBlock } from "@/components/treatment/PlanCostBlock";
+import { LabControlSection, type LabControlPoint } from "@/components/treatment/LabControlSection";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
