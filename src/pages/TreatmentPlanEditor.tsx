@@ -61,6 +61,9 @@ export default function TreatmentPlanEditor() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [courseNumber, setCourseNumber] = useState<number | null>(null);
   const [patientAge, setPatientAge] = useState<number | null>(null);
+  const [showCostInPrint, setShowCostInPrint] = useState(false);
+  const [labControlEnabled, setLabControlEnabled] = useState(false);
+  const [labPoints, setLabPoints] = useState<LabControlPoint[]>([]);
   const isNew = !id;
 
   const sensors = useSensors(
