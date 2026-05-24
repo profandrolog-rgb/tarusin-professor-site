@@ -50,6 +50,31 @@ export default function TreatmentCatalog() {
   const [q, setQ] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const exportCsv = async () => {
+    const { data, error } = await supabase.from("treatment_catalog").select("*").order("category").order("name");
+    if (error) { toast({ title: "Ошибка экспорта", description: error.message, variant: "destructive" }); return; }
+    const headers = [...CATALOG_KNOWN_COLUMNS];
+    // Append any patient_* keys seen in patient_info
+    const patientKeys = new Set<string>();
+    (data || []).forEach((r: any) => { if (r.patient_info && typeof r.patient_info === "object") Object.keys(r.patient_info).forEach(k => patientKeys.add(k)); });
+    const allHeaders = [...headers, ...Array.from(patientKeys).sort()];
+    const flat = (data || []).map((r: any) => {
+      const out: any = { ...r };
+      if (r.patient_info && typeof r.patient_info === "object") Object.entries(r.patient_info).forEach(([k, v]) => { out[k] = v; });
+      return out;
+    });
+    const csv = serializeCsv(flat, allHeaders, ";");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `treatment_catalog_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `Экспортировано: ${flat.length}` });
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
