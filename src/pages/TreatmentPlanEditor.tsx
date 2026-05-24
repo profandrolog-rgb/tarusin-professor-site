@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
@@ -18,6 +18,7 @@ import { ApplyTemplateDialog } from "@/components/treatment/ApplyTemplateDialog"
 import { SaveAsTemplateDialog } from "@/components/treatment/SaveAsTemplateDialog";
 import { GanttHeader } from "@/components/treatment/GanttStrip";
 import { ScheduledSummary } from "@/components/treatment/ScheduledSummary";
+import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHistoryDrawer";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
@@ -55,6 +56,9 @@ export default function TreatmentPlanEditor() {
   const [items, setItems] = useState<PlanItem[]>([]);
   const [applyOpen, setApplyOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [courseNumber, setCourseNumber] = useState<number | null>(null);
+  const [patientAge, setPatientAge] = useState<number | null>(null);
   const isNew = !id;
 
   const sensors = useSensors(
@@ -90,6 +94,7 @@ export default function TreatmentPlanEditor() {
         setDiagnosis(plan.diagnosis_short || "");
         setSummary(plan.clinical_summary || "");
         setStatus(plan.status as any);
+        setCourseNumber((plan as any).course_number ?? null);
         const { data: rows } = await supabase.from("treatment_plan_items")
           .select("*").eq("plan_id", id!).order("section_category").order("order_index");
         setItems((rows || []).map((r: any): PlanItem => ({
@@ -104,6 +109,25 @@ export default function TreatmentPlanEditor() {
       setBusy(false);
     })();
   }, [id, isNew, params]);
+
+  // Compute patient age at issued date
+  useEffect(() => {
+    if (!patient?.birth_date) { setPatientAge(null); return; }
+    const b = new Date(patient.birth_date);
+    const d = new Date(issuedAt);
+    let a = d.getFullYear() - b.getFullYear();
+    const m = d.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && d.getDate() < b.getDate())) a--;
+    setPatientAge(a);
+  }, [patient, issuedAt]);
+
+  // Bulk pattern update for Gantt day-context menu. Filter returns null = no change.
+  const bulkUpdate = (updater: (it: PlanItem) => Partial<PlanItem> | null) => {
+    setItems(prev => prev.map(it => {
+      const p = updater(it);
+      return p ? { ...it, ...p } : it;
+    }));
+  };
 
   const innCounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -159,12 +183,13 @@ export default function TreatmentPlanEditor() {
     if (!user) return;
     setSaving(true);
     try {
-      const planPayload = {
+      const planPayload: any = {
         patient_id: patient.id, issued_at: issuedAt, mode,
         duration_days: durationDays,
         diagnosis_short: diagnosis || null, clinical_summary: summary || null,
         status: newStatus || status, created_by: user.id,
       };
+      if (courseNumber !== null && !isNew) planPayload.course_number = courseNumber;
       let planId = id;
       if (isNew) {
         const { data, error } = await supabase.from("treatment_plans").insert(planPayload).select("id").single();
@@ -219,10 +244,19 @@ export default function TreatmentPlanEditor() {
         </Link>
 
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h1 className="text-2xl font-bold">
-            {isNew ? "Новый лист назначений" : "Лист назначений"}
-            {!isNew && <Badge variant="outline" className="ml-2 text-xs">{status === "draft" ? "черновик" : status === "issued" ? "выписан" : "архив"}</Badge>}
-          </h1>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+              {isNew
+                ? "Новый лист назначений"
+                : <>Лист назначений {courseNumber != null && <span className="text-primary">№ {courseNumber}</span>}</>}
+              {!isNew && <Badge variant="outline" className="text-xs">{status === "draft" ? "черновик" : status === "issued" ? "выписан" : "архив"}</Badge>}
+            </h1>
+            {!isNew && patient && (
+              <div className="text-sm text-muted-foreground mt-0.5">
+                для {patient.full_name}{patientAge !== null ? `, ${patientAge} г.` : ""}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setApplyOpen(true)} className="gap-2">
               <Download className="w-4 h-4"/>Загрузить из шаблона
@@ -230,6 +264,11 @@ export default function TreatmentPlanEditor() {
             <Button variant="outline" onClick={() => setSaveAsOpen(true)} className="gap-2" disabled={items.length === 0}>
               <BookMarked className="w-4 h-4"/>Сохранить как шаблон
             </Button>
+            {!isNew && status === "issued" && (
+              <Button variant="outline" onClick={() => setHistoryOpen(true)} className="gap-2">
+                <History className="w-4 h-4"/>История
+              </Button>
+            )}
             {!isNew && (
               <Link to={`/admin/treatment-plans/${id}/print`} target="_blank">
                 <Button variant="outline" className="gap-2"><Printer className="w-4 h-4"/>Печать</Button>
@@ -251,23 +290,28 @@ export default function TreatmentPlanEditor() {
         <Card className="mb-4">
           <CardContent className="p-4 space-y-3">
             <PatientSelect selectedPatient={patient} onSelect={setPatient} />
-            <div className="grid md:grid-cols-4 gap-3">
+            <div className="grid md:grid-cols-5 gap-3">
               <div>
                 <Label>Дата выписки</Label>
                 <Input type="date" value={issuedAt} onChange={e=>setIssuedAt(e.target.value)}/>
               </div>
               <div>
-                <Label>Длительность курса (дней)</Label>
+                <Label>№ курса</Label>
+                <Input type="number" min={1} value={courseNumber ?? ""} placeholder="авто"
+                  onChange={e=>setCourseNumber(e.target.value === "" ? null : Number(e.target.value))}/>
+              </div>
+              <div>
+                <Label>Длительность (дней)</Label>
                 <Input type="number" min={1} max={180} value={durationDays} onChange={e=>setDurationDays(Math.max(1, Math.min(180, Number(e.target.value) || 1)))}/>
               </div>
               <div>
-                <Label>Краткий диагноз / коды МКБ-10</Label>
-                <Input value={diagnosis} onChange={e=>setDiagnosis(e.target.value)} placeholder="E29.1; N50.1; F48.0"/>
+                <Label>Диагноз / МКБ-10</Label>
+                <Input value={diagnosis} onChange={e=>setDiagnosis(e.target.value)} placeholder="E29.1; N50.1"/>
               </div>
               <div>
                 <Label>Режим</Label>
                 <Button type="button" variant="outline" className="w-full justify-start gap-2" onClick={toggleMode}>
-                  {mode === "flat" ? <><List className="w-4 h-4"/>Плоский список</> : <><CalendarDays className="w-4 h-4"/>По дням</>}
+                  {mode === "flat" ? <><List className="w-4 h-4"/>Плоский</> : <><CalendarDays className="w-4 h-4"/>По дням</>}
                 </Button>
               </div>
             </div>
@@ -281,7 +325,7 @@ export default function TreatmentPlanEditor() {
         {mode === "scheduled" && (
           <div className="mb-3 space-y-2">
             <ScheduledSummary items={items} durationDays={durationDays}/>
-            <Card><GanttHeader duration={durationDays}/></Card>
+            <Card><GanttHeader duration={durationDays} items={items} onBulkUpdate={bulkUpdate}/></Card>
           </div>
         )}
 

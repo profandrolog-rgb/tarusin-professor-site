@@ -1937,6 +1937,7 @@ export type Database = {
         Row: {
           based_on_template: string | null
           clinical_summary: string | null
+          course_number: number | null
           created_at: string
           created_by: string
           diagnosis_short: string | null
@@ -1952,6 +1953,7 @@ export type Database = {
         Insert: {
           based_on_template?: string | null
           clinical_summary?: string | null
+          course_number?: number | null
           created_at?: string
           created_by: string
           diagnosis_short?: string | null
@@ -1967,6 +1969,7 @@ export type Database = {
         Update: {
           based_on_template?: string | null
           clinical_summary?: string | null
+          course_number?: number | null
           created_at?: string
           created_by?: string
           diagnosis_short?: string | null

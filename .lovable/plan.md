@@ -1,82 +1,59 @@
-## Цель
-Сделать русский язык дефолтным для всего сайта, английский вынести в /en/, настроить hreflang, JSON-LD, sitemap, убрать пустые блоки и дубли навигации.
+## Фаза 2C — cleanup + инфра под Фазу 3
 
-## Объём работ
+### Замечание о схеме БД (важно)
+Проверил БД:
+- В `treatment_plans` **нет** колонки `course_number` — пункт 2.1 требует миграцию (вы писали «уже есть в модели», но фактически нет).
+- `treatment_plan_versions` существует, но колонка называется `snapshot` (не `snapshot_jsonb`) — буду использовать существующее имя.
 
-### 1. i18n: русский по умолчанию
-Файл: `src/i18n/index.ts`
-- Убрать `LanguageDetector` (или ограничить его так, чтобы при отсутствии явного выбора возвращался `ru`).
-- Установить `lng: 'ru'` явно. Detection оставить только для `localStorage` (ручной выбор через переключатель), без `navigator` и `querystring`.
-- `fallbackLng: 'ru'`.
+### Миграции (один файл)
+1. `ALTER TABLE treatment_plans ADD COLUMN course_number int` (nullable, без unique-constraint).
+2. Бэкфилл существующих листов: `course_number = row_number() OVER (PARTITION BY patient_id ORDER BY issued_at, created_at)`.
+3. Триггер `BEFORE INSERT` на `treatment_plans`: если `course_number IS NULL` → `COALESCE(MAX+1, 1)` по `patient_id`.
+4. Триггер `AFTER UPDATE` на `treatment_plans` для записи в `treatment_plan_versions`: пишем версию только когда `OLD.status='issued'` (любое сохранение после выпуска) или при переходе `draft→issued`. `version_no = COALESCE(MAX+1, 1)` per `plan_id`. `snapshot` = `jsonb_build_object('plan', row_to_json(NEW), 'items', (SELECT json_agg(i) FROM treatment_plan_items i WHERE plan_id=NEW.id))`.
 
-### 2. Маршрутизация /en/ префикса
-Файл: `src/App.tsx`
-- Текущие роуты остаются для русской версии (`/`, `/for-parents`, `/team` и т.д.).
-- Добавить параллельное дерево под `/en/*` с теми же компонентами и лоадерами.
-- Создать обёртку `LangBoundary` (новый файл `src/components/LangBoundary.tsx`), которая:
-  - На монтировании синхронно вызывает `i18n.changeLanguage('en')` или `'ru'` по пропу `lang`.
-  - Управляет `document.documentElement.lang` (для SSG — через `react-helmet-async` `<Helmet htmlAttributes>`).
-- Обернуть русские роуты `<LangBoundary lang="ru">`, английские — `<LangBoundary lang="en">`.
+### 1.1 Контекстное меню дня (Gantt header)
+- `GanttHeader` → добавить per-day `⋮` Popover с пунктами: Copy day X to → submenu (1..N), Clear day X, Set all to every day, Shift course by N.
+- Пропсы: список всех items + `onBulkPatternChange(updater)` колбэк из редактора.
+- Парсинг/сериализация через существующий `dayPattern.ts` (`expandDays`, `compactDays`, `shiftDays`).
 
-### 3. Универсальный helper для hreflang + html lang
-Новый файл: `src/lib/i18nUrls.ts`
-- `getAlternates(path: string)` возвращает `{ ru: 'https://tarusin.pro<path>', en: 'https://tarusin.pro/en<path>', xDefault: <ru> }`.
-- `getCurrentLang(pathname)` — определить язык по URL.
+### 1.2 Печать Gantt-календаря
+- В `TreatmentPlanPrint.tsx`: если `plan.mode==='scheduled'` → блок «КАЛЕНДАРЬ КУРСА» (таблица позиции × дни, заливка `#888` для активных дней).
+- Compact mode при > 30 items (6pt / 12px колонки), иначе 8pt.
+- `@page { size: A4 landscape }` инжектится в `<style>`, если `duration_days > 21`.
 
-Обновить `src/components/PageMeta.tsx`:
-- Принимать опциональный `lang` (по умолчанию определяет из текущего pathname).
-- Рендерить три `<link rel="alternate" hreflang="...">` (ru, en, x-default).
-- Рендерить `<html lang="...">` через `<Helmet htmlAttributes={{ lang }}>`.
-- Менять `og:locale` соответственно (`ru_RU` или `en_US`).
-- canonical продолжает указывать на текущий URL (с /en/ для англ).
+### 1.3 Импорт из medications (только oral_rx)
+- Новый компонент `MedicationImportDialog.tsx` в `src/components/treatment/`.
+- В drawer `TreatmentCatalog.tsx` — кнопка видна только если `category==='oral_rx'`.
+- Autocomplete по `medications` (поиск по `latin_name`, `trade_name`).
+- Diff-подтверждение: для каждого поля показать «текущее → новое», галочка применить (по умолчанию off если поле уже заполнено).
 
-### 4. Дублирование навигации
-Источник проблемы: `Header.tsx` рендерит и `t('nav.home')` и т.д. — это нормально, дубли вероятно от того, что pre-rendered HTML содержит RU-меню, а после гидратации показывает EN (или наоборот). После фикса п.1 (русский по умолчанию) и п.2 (синхронная установка языка через LangBoundary до рендера контента) проблема уйдёт. Дополнительной правки не требуется.
+### 1.4 Дублирование на другого пациента
+- Новый компонент `DuplicatePlanDialog.tsx`: PatientPicker (autocomplete по `patients` по `full_name`).
+- В `TreatmentPlans.tsx` — пункт в action menu строки.
+- Логика: insert новый plan (course_number триггер посчитает сам), затем batch-insert items, redirect в `/admin/treatment-plans/:newId`.
 
-### 5. JSON-LD Physician
-Файл: `src/pages/Index.tsx`
-- Заменить текущий jsonLd на тот, что в задании (Physician + worksFor MedicalClinics + sameAs). Сохранить AggregateRating отдельным графом.
+### 1.5 Верификация CSV
+- Прочитаю `TreatmentCatalog.tsx` и `CsvImportDialog.tsx`, добью недостающее по чек-листу (preview 10, strategy Skip/Update/Create, детальный лог ошибок). Если всё на месте — отмечу в финальном сообщении.
 
-### 6. Sitemap с hreflang
-Файл: `scripts/generate-sitemap.ts`
-- Для каждой публичной страницы генерировать `<url>` с `<xhtml:link rel="alternate" hreflang="ru" .../>` и `<xhtml:link rel="alternate" hreflang="en" .../>` и `x-default`.
-- Включить и `/path/` и `/en/path/` как отдельные `<url>` записи (каждая со своим набором alternates).
-- Добавить namespace `xmlns:xhtml="http://www.w3.org/1999/xhtml"`.
+### 2.1 course_number в UI
+- Заголовок `TreatmentPlanEditor`: «Лист назначений № N для …».
+- Печатная форма: «ЛИСТ НАЗНАЧЕНИЙ № N» + номер в имени файла print.
+- Колонка «№» в таблице `TreatmentPlans.tsx`.
+- Editable input в редакторе.
 
-Файл: `public/robots.txt`
-- Убедиться, что есть `Sitemap: https://tarusin.pro/sitemap.xml`.
+### 2.2 История версий (UI)
+- Новый компонент `PlanVersionHistoryDrawer.tsx`: список версий с кратким diff-резюме (сравнение количества items по секциям между соседними версиями).
+- Кнопка «🕓 История» в шапке редактора (только при `status==='issued'`).
+- Read-only viewer выбранной версии (рендер из `snapshot.items` в том же layout, disabled).
+- «Восстановить» → insert new plan (status=draft) + items из snapshot, redirect.
 
-### 7. Пустой блок Certificates
-Найти компонент с заглушкой "Certificates coming soon" / "Дипломы и сертификаты" (вероятно в `AboutSection.tsx` или отдельный) — обернуть условием, чтобы при пустом списке секция не рендерилась вообще.
+### Файлы
+**Создать:** migration sql; `MedicationImportDialog.tsx`, `DuplicatePlanDialog.tsx`, `PlanVersionHistoryDrawer.tsx`, `DayContextMenu.tsx` (для Gantt header), `RestoreVersionConfirm.tsx`.
+**Изменить:** `GanttStrip.tsx` (header принимает items + handlers), `TreatmentPlanEditor.tsx`, `TreatmentPlans.tsx`, `TreatmentPlanPrint.tsx`, `TreatmentCatalog.tsx`, `CsvImportDialog.tsx` (если нужно), `dayPattern.ts` (если нужны новые хелперы).
 
-### 8. SSR/prerender
-- `vite-react-ssg` уже работает. После п.1 и п.2 главная (`/`) будет генериться с русским контентом (т.к. `i18n.init({ lng: 'ru' })` синхронен, а LangBoundary не нужен на корне).
-- Для `/en/*` — LangBoundary вызовет `i18n.changeLanguage('en')` синхронно перед рендером (через конструктор / useState initializer).
-- Перевыпустить sitemap-pre-script.
+### Acceptance
+Соответствует списку в промте. Регрессии не ожидаю — все правки аддитивные.
 
-## Файлы
+---
 
-**Изменить:**
-- `src/i18n/index.ts` — RU по умолчанию
-- `src/App.tsx` — добавить /en/* дерево с LangBoundary
-- `src/components/PageMeta.tsx` — hreflang, html lang, og:locale
-- `src/pages/Index.tsx` — новый JSON-LD Physician
-- `scripts/generate-sitemap.ts` — hreflang в sitemap, RU+EN URL
-- `public/robots.txt` — Sitemap-директива (если ещё нет)
-- Компонент с "Certificates coming soon" (определить по поиску) — скрыть пустой блок
-
-**Создать:**
-- `src/components/LangBoundary.tsx` — синхронная установка языка
-- `src/lib/i18nUrls.ts` — helper для альтернатив
-
-## Что НЕ трогаем
-- title, description, OG-теги (как просил пользователь)
-- `src/integrations/supabase/*`, `.env`, `supabase/config.toml`
-- Текущие переводы (`ru.json`, `en.json`)
-- Логику клиентских компонентов (DiseaseDetailPage, ForParents и т.д.) — они уже используют `t()`.
-
-## Подтверждение после деплоя (за пользователя)
-- `curl -A "Googlebot" https://tarusin.pro/ | grep -i "Тарусин"` — должен быть hit
-- `view-source:tarusin.pro/` — `<html lang="ru">`, три hreflang, JSON-LD Physician
-- `/en/` — `<html lang="en">`, EN-меню, тот же JSON-LD
-- `tarusin.pro/sitemap.xml` — содержит и RU и EN URL с alternates
+Подтвердите план — запускаю миграцию первым шагом, затем UI.
