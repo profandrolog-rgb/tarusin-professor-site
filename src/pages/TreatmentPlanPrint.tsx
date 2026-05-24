@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,11 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Printer, Loader2 } from "lucide-react";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
+import { calculatePlanCost, formatRub, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
 
 interface PlanItemDB {
   id: string;
+  catalog_id: string | null;
   section_category: TreatmentCategory;
   order_index: number;
   name_snapshot: string;
@@ -26,6 +28,7 @@ interface PlanItemDB {
   notes: string | null;
   is_off_label: boolean;
   day_pattern: string | null;
+  prn_estimated_doses: number | null;
 }
 
 interface PlanDB {
@@ -37,8 +40,22 @@ interface PlanDB {
   status: string;
   mode: string;
   course_number: number | null;
+  show_cost_in_print: boolean | null;
+  lab_control_enabled: boolean | null;
   patient: { full_name: string; birth_date: string } | null;
 }
+
+interface LabControlRow {
+  id: string;
+  control_point: string | null;
+  at_day: number | null;
+  test_ids: string[] | null;
+  custom_tests: string[] | null;
+  notes: string | null;
+  order_index: number;
+}
+
+interface LabTest { id: string; name: string; short_name: string | null; }
 
 const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   iv_drip: "в/в капельно",
