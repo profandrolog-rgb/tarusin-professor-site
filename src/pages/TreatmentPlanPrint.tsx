@@ -261,6 +261,69 @@ export default function TreatmentPlanPrint() {
           </div>
         </div>
       </div>
+
+      {showCalendar && (
+        <div
+          className="print-page calendar-page bg-white text-black mx-auto shadow-lg"
+          style={{
+            width: landscape ? "297mm" : "210mm",
+            minHeight: landscape ? "210mm" : "297mm",
+            padding: "12mm",
+            marginTop: "8mm",
+            fontFamily: "Times New Roman, serif",
+            fontSize: compact ? "8pt" : "9pt",
+            lineHeight: 1.2,
+          }}
+        >
+          <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "12pt", marginBottom: "3mm", letterSpacing: "1px" }}>
+            КАЛЕНДАРЬ КУРСА{plan.course_number != null ? ` № ${plan.course_number}` : ""} — {plan.patient?.full_name}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead>
+              <tr>
+                <th style={{ border: "1px solid #000", padding: "1mm 2mm", textAlign: "left", width: compact ? "38mm" : "55mm", background: "#f0f0f0" }}>
+                  Позиция
+                </th>
+                {Array.from({ length: plan.duration_days }, (_, i) => i + 1).map(d => (
+                  <th key={d} style={{ border: "1px solid #000", padding: "1mm 0", textAlign: "center", background: "#f0f0f0", fontSize: compact ? "7pt" : "8pt" }}>
+                    {d}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {scheduledItems.map(it => {
+                const days = expandPattern(it.day_pattern, plan.duration_days, it.duration_days);
+                return (
+                  <tr key={it.id}>
+                    <td style={{ border: "1px solid #000", padding: "1mm 2mm", fontSize: compact ? "7.5pt" : "8.5pt" }}>
+                      {it.name_snapshot}
+                      {it.dose != null && (
+                        <span style={{ color: "#555" }}> — {it.dose}{it.dose_unit ? " " + it.dose_unit : ""}</span>
+                      )}
+                    </td>
+                    {Array.from({ length: plan.duration_days }, (_, i) => i + 1).map(d => (
+                      <td
+                        key={d}
+                        style={{
+                          border: "1px solid #ccc",
+                          background: days.has(d) ? "#888" : "transparent",
+                          padding: 0,
+                          height: compact ? "4mm" : "5mm",
+                        }}
+                      />
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ marginTop: "3mm", fontSize: "8pt", color: "#444" }}>
+            Серая заливка — дни приёма согласно паттерну. Всего позиций по расписанию: {scheduledItems.length}.
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
