@@ -172,6 +172,18 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
           <label className="text-[11px] text-muted-foreground">Заметка</label>
           <Input value={item.notes ?? ""} onChange={e=>update({notes: e.target.value})} className="h-8" placeholder="контроль АД, утром, до еды..."/>
         </div>
+        {(item.frequency || "").toLowerCase().includes("по требованию") && (
+          <div>
+            <label className="text-[11px] text-muted-foreground">Расчётный запас, приёмов</label>
+            <Input
+              type="number" min={1}
+              value={item.prn_estimated_doses ?? ""}
+              placeholder="10"
+              onChange={e=>update({ prn_estimated_doses: e.target.value === "" ? null : Number(e.target.value) })}
+              className="h-8"
+            />
+          </div>
+        )}
       </div>
 
       {mode === "scheduled" && (
