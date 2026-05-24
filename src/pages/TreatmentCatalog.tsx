@@ -192,6 +192,8 @@ export default function TreatmentCatalog() {
             {filtered.map(r => {
               const section = SECTIONS.find(s => s.key === r.category);
               const Icon = section?.icon;
+              const fr = priceFreshness(r.price_updated_at);
+              const frInfo = FRESHNESS_STYLES[fr];
               return (
                 <Card key={r.id} className={r.is_active ? "" : "opacity-60"}>
                   <CardContent className="p-3 flex items-center justify-between gap-3 flex-wrap">
@@ -206,6 +208,17 @@ export default function TreatmentCatalog() {
                         {r.light_sensitive && <Sun className="w-3.5 h-3.5 text-amber-500"/>}
                         {r.glucose_only && <Beaker className="w-3.5 h-3.5 text-blue-500"/>}
                         {!r.is_active && <Badge variant="secondary" className="text-[10px]">не активна</Badge>}
+                        {r.price_override != null ? (
+                          <span title={frInfo.label} className="inline-flex items-center gap-1 text-xs">
+                            <span className={`inline-block w-2 h-2 rounded-full ${frInfo.dot}`}/>
+                            {formatRub(r.price_override)}
+                          </span>
+                        ) : (
+                          <span title="цена не задана" className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className={`inline-block w-2 h-2 rounded-full ${frInfo.dot}`}/>
+                            без цены
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {r.form ? `${r.form} · ` : ""}
