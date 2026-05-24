@@ -50,7 +50,7 @@ export default function TreatmentPlans() {
       setBusy(true);
       const { data } = await supabase
         .from("treatment_plans")
-        .select("id, issued_at, diagnosis_short, duration_days, status, mode, patient:patients(full_name), items:treatment_plan_items(count)")
+        .select("id, issued_at, diagnosis_short, duration_days, status, mode, course_number, patient:patients(full_name), items:treatment_plan_items(count)")
         .order("issued_at", { ascending: false })
         .limit(200);
       const mapped = (data || []).map((r: any) => ({
