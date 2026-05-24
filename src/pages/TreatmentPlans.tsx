@@ -37,6 +37,7 @@ export default function TreatmentPlans() {
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "archived">("all");
   const [modeFilter, setModeFilter] = useState<"all" | "flat" | "scheduled">("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dupTarget, setDupTarget] = useState<PlanRow | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
