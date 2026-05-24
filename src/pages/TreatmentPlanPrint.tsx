@@ -25,6 +25,7 @@ interface PlanItemDB {
   route_override: string | null;
   notes: string | null;
   is_off_label: boolean;
+  day_pattern: string | null;
 }
 
 interface PlanDB {
@@ -34,6 +35,8 @@ interface PlanDB {
   diagnosis_short: string | null;
   clinical_summary: string | null;
   status: string;
+  mode: string;
+  course_number: number | null;
   patient: { full_name: string; birth_date: string } | null;
 }
 
