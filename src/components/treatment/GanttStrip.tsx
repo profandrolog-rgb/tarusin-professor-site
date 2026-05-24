@@ -1,4 +1,6 @@
 import { expandDays, toggleDay } from "@/lib/dayPattern";
+import { DayContextMenu } from "./DayContextMenu";
+import { PlanItem } from "./PlanItemRow";
 
 interface Props {
   pattern: string | null | undefined;
@@ -33,15 +35,22 @@ export function GanttStrip({ pattern, duration, color = "hsl(var(--primary))", o
 /** Sticky header row with day numbers and per-day context menu. */
 interface HeaderProps {
   duration: number;
-  onDayAction?: (action: "clear" | "copyFrom" | "copyTo", day: number) => void;
+  items?: PlanItem[];
+  onBulkUpdate?: (updater: (it: PlanItem) => Partial<PlanItem> | null) => void;
 }
-export function GanttHeader({ duration }: HeaderProps) {
+export function GanttHeader({ duration, items, onBulkUpdate }: HeaderProps) {
+  const showMenu = !!items && !!onBulkUpdate;
   return (
     <div className="sticky top-0 z-10 bg-card border-b py-1 pl-2 overflow-x-auto">
       <div className="flex gap-[2px]">
         {Array.from({ length: duration }, (_, i) => i + 1).map(d => (
-          <div key={d} className="shrink-0 w-4 h-5 text-[9px] text-center text-muted-foreground leading-5 font-mono">
-            {d}
+          <div key={d} className="shrink-0 w-4 h-5 text-[9px] text-center text-muted-foreground leading-5 font-mono relative group">
+            <span>{d}</span>
+            {showMenu && (
+              <div className="absolute -top-0.5 left-1/2 -translate-x-1/2">
+                <DayContextMenu day={d} duration={duration} items={items!} onBulkUpdate={onBulkUpdate!} />
+              </div>
+            )}
           </div>
         ))}
       </div>
