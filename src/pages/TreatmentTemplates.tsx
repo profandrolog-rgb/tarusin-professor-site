@@ -104,13 +104,35 @@ export default function TreatmentTemplates() {
           <Button onClick={create} className="gap-2"><Plus className="w-4 h-4"/>Новый шаблон</Button>
         </div>
 
-        <div className="flex gap-2 mb-4 flex-wrap items-center">
+        <div className="flex gap-2 mb-3 flex-wrap items-center">
           <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск..." className="max-w-md"/>
           <label className="text-sm flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={showArchived} onChange={e=>setShowArchived(e.target.checked)}/>
             показать архив
           </label>
+          <div className="text-sm text-muted-foreground ml-auto">{filtered.length} из {rows.length}</div>
         </div>
+
+        {allTags.length > 0 && (
+          <div className="flex gap-1.5 mb-4 flex-wrap items-center">
+            <span className="text-xs text-muted-foreground mr-1">Теги:</span>
+            {allTags.map(t => (
+              <Badge
+                key={t}
+                variant={activeTags.includes(t) ? "default" : "outline"}
+                className="cursor-pointer hover:bg-primary/10"
+                onClick={() => toggleTag(t)}
+              >
+                {t}
+              </Badge>
+            ))}
+            {activeTags.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setActiveTags([])} className="h-6 gap-1 text-xs">
+                <X className="w-3 h-3"/>сбросить
+              </Button>
+            )}
+          </div>
+        )}
 
         {busy ? (
           <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary"/></div>
