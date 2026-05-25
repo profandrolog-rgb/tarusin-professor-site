@@ -46,6 +46,7 @@ import TreatmentTemplates from "./pages/TreatmentTemplates";
 import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
 import AdminLabTestsCatalog from "./pages/AdminLabTestsCatalog";
 import AdminSystemSettings from "./pages/AdminSystemSettings";
+import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
 import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
@@ -156,6 +157,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/treatment-templates/new", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/treatment-templates/:id", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/system-settings", Component: AdminSystemSettings, entry: "src/pages/AdminSystemSettings.tsx" },
+      { path: "admin/system-backup", Component: AdminSystemBackup, entry: "src/pages/AdminSystemBackup.tsx" },
       { path: "admin/analytics", Component: AdminAnalytics, entry: "src/pages/AdminAnalytics.tsx" },
       { path: "admin/patients/:id", Component: AdminPatientDetail, entry: "src/pages/AdminPatientDetail.tsx" },
       { path: "admin/treatment-plans/compare", Component: TreatmentPlanCompare, entry: "src/pages/TreatmentPlanCompare.tsx" },
