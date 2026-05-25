@@ -759,6 +759,49 @@ export default function TreatmentPlanEditor() {
             planId={id} userId={user.id}
           />
         )}
+
+        <CommandPaletteDialog
+          open={paletteOpen} onOpenChange={setPaletteOpen}
+          activeSection={activeSection}
+          onPick={addFromPalette}
+        />
+
+        <HotkeysHelpDialog open={hotkeysOpen} onOpenChange={setHotkeysOpen}/>
+
+        {/* Export menu (Ctrl/Cmd+E) */}
+        <DropdownMenu open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button className="sr-only" aria-hidden tabIndex={-1}/>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-56">
+            {!isNew && (
+              <DropdownMenuItem onClick={() => window.open(`/admin/treatment-plans/${id}/print`, "_blank")} className="gap-2">
+                <Printer className="w-4 h-4"/>Печать (PDF)
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={exportDocx} disabled={items.length === 0} className="gap-2">
+              <FileDown className="w-4 h-4"/>DOCX
+            </DropdownMenuItem>
+            {!isNew && (
+              <DropdownMenuItem onClick={() => window.open(`/admin/treatment-plans/${id}/memo`, "_blank")} className="gap-2">
+                <ClipboardList className="w-4 h-4"/>Памятка пациенту
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Footer hotkeys hint */}
+        <div className="mt-8 mb-2 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setHotkeysOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title="Горячие клавиши (?)"
+          >
+            <Keyboard className="w-3.5 h-3.5"/>
+            Горячие клавиши · <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[10px]">?</kbd>
+          </button>
+        </div>
       </div>
     </div>
   );
