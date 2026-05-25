@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      acupoint_meridians: {
+        Row: {
+          channel_type: string | null
+          code: string
+          created_at: string
+          id: string
+          name_en: string
+          name_ru: string
+          polarity: string | null
+        }
+        Insert: {
+          channel_type?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          name_en: string
+          name_ru: string
+          polarity?: string | null
+        }
+        Update: {
+          channel_type?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          name_en?: string
+          name_ru?: string
+          polarity?: string | null
+        }
+        Relationships: []
+      }
+      acupoints: {
+        Row: {
+          chinese: string | null
+          contraindications: string | null
+          created_at: string
+          depth_mm: string | null
+          id: string
+          indications: string | null
+          is_caution: boolean
+          location_description: string | null
+          manipulation_default: string | null
+          meridian_id: string | null
+          name_ru: string | null
+          pinyin: string | null
+          svg_marker_x: number | null
+          svg_marker_y: number | null
+          svg_view: string | null
+          who_code: string
+        }
+        Insert: {
+          chinese?: string | null
+          contraindications?: string | null
+          created_at?: string
+          depth_mm?: string | null
+          id?: string
+          indications?: string | null
+          is_caution?: boolean
+          location_description?: string | null
+          manipulation_default?: string | null
+          meridian_id?: string | null
+          name_ru?: string | null
+          pinyin?: string | null
+          svg_marker_x?: number | null
+          svg_marker_y?: number | null
+          svg_view?: string | null
+          who_code: string
+        }
+        Update: {
+          chinese?: string | null
+          contraindications?: string | null
+          created_at?: string
+          depth_mm?: string | null
+          id?: string
+          indications?: string | null
+          is_caution?: boolean
+          location_description?: string | null
+          manipulation_default?: string | null
+          meridian_id?: string | null
+          name_ru?: string | null
+          pinyin?: string | null
+          svg_marker_x?: number | null
+          svg_marker_y?: number | null
+          svg_view?: string | null
+          who_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acupoints_meridian_id_fkey"
+            columns: ["meridian_id"]
+            isOneToOne: false
+            referencedRelation: "acupoint_meridians"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_cache: {
         Row: {
           cache_key: string
