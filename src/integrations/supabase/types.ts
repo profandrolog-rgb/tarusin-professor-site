@@ -2116,11 +2116,14 @@ export type Database = {
           diagnosis_short: string | null
           duration_days: number
           id: string
+          is_public: boolean
           issued_at: string
           lab_control_enabled: boolean
           mode: Database["public"]["Enums"]["plan_mode"]
           patient_id: string
           print_count: number
+          public_hash: string | null
+          public_view_count: number
           show_cost_in_memo: boolean
           show_cost_in_print: boolean
           status: Database["public"]["Enums"]["plan_status"]
@@ -2137,11 +2140,14 @@ export type Database = {
           diagnosis_short?: string | null
           duration_days?: number
           id?: string
+          is_public?: boolean
           issued_at?: string
           lab_control_enabled?: boolean
           mode?: Database["public"]["Enums"]["plan_mode"]
           patient_id: string
           print_count?: number
+          public_hash?: string | null
+          public_view_count?: number
           show_cost_in_memo?: boolean
           show_cost_in_print?: boolean
           status?: Database["public"]["Enums"]["plan_status"]
@@ -2158,11 +2164,14 @@ export type Database = {
           diagnosis_short?: string | null
           duration_days?: number
           id?: string
+          is_public?: boolean
           issued_at?: string
           lab_control_enabled?: boolean
           mode?: Database["public"]["Enums"]["plan_mode"]
           patient_id?: string
           print_count?: number
+          public_hash?: string | null
+          public_view_count?: number
           show_cost_in_memo?: boolean
           show_cost_in_print?: boolean
           status?: Database["public"]["Enums"]["plan_status"]
@@ -2564,12 +2573,18 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_plan_public_hash: { Args: never; Returns: string }
+      get_public_plan: { Args: { _hash: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_public_plan_view: {
+        Args: { _hash: string }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Printer, Loader2 } from "lucide-react";
+import QRCode from "qrcode";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
 
@@ -42,6 +43,8 @@ interface PlanDB {
   course_number: number | null;
   show_cost_in_print: boolean | null;
   lab_control_enabled: boolean | null;
+  is_public: boolean | null;
+  public_hash: string | null;
   patient: { full_name: string; birth_date: string } | null;
 }
 
@@ -133,12 +136,13 @@ export default function TreatmentPlanPrint() {
   const [labControl, setLabControl] = useState<LabControlRow[]>([]);
   const [labTestsMap, setLabTestsMap] = useState<Map<string, LabTest>>(new Map());
   const [catalogMap, setCatalogMap] = useState<Map<string, CostCatalog>>(new Map());
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, is_public, public_hash, patient:patients(full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
@@ -178,6 +182,14 @@ export default function TreatmentPlanPrint() {
       setLabControl(lcRows);
       setBusy(false);
       await supabase.from("treatment_plans").update({ print_count: ((p as any)?.print_count ?? 0) + 1 } as any).eq("id", id!);
+
+      if ((p as any)?.is_public && (p as any)?.public_hash) {
+        try {
+          const url = `${window.location.origin}/p/${(p as any).public_hash}`;
+          const dataUrl = await QRCode.toDataURL(url, { width: 240, margin: 1 });
+          setQrDataUrl(dataUrl);
+        } catch { /* ignore QR errors */ }
+      }
     })();
   }, [id]);
 
@@ -388,16 +400,20 @@ export default function TreatmentPlanPrint() {
 
 
         {/* Signature */}
-        <div style={{ marginTop: "12mm", display: "flex", justifyContent: "space-between", fontSize: "10pt" }}>
+        <div style={{ marginTop: "12mm", display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: "10pt", gap: "8mm" }}>
           <div>
             Врач: ________________________
             <div style={{ marginTop: "1mm" }}>проф., д.м.н. Тарусин Д.И.</div>
+            <div style={{ marginTop: "1mm" }}>М.П.   Дата: {format(date, "dd.MM.yyyy")}</div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            М.П.
-            <div style={{ marginTop: "1mm" }}>Дата: {format(date, "dd.MM.yyyy")}</div>
-          </div>
+          {qrDataUrl && (
+            <div style={{ textAlign: "center" }}>
+              <img src={qrDataUrl} alt="QR-код памятки" style={{ width: "25mm", height: "25mm", display: "block" }} />
+              <div style={{ fontSize: "8pt", marginTop: "1mm", color: "#444", maxWidth: "30mm" }}>Памятка пациента онлайн</div>
+            </div>
+          )}
         </div>
+
       </div>
 
       {showCalendar && (
