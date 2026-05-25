@@ -181,7 +181,10 @@ export default function TreatmentPlanPrint() {
         const m = new Map<string, CostCatalog>();
         (cat || []).forEach((c: any) => m.set(c.id, c));
         setCatalogMap(m);
+        const irt = await fetchIrtForCatalogIds(catIds);
+        setAcupunctureMap(irt);
       }
+
 
       setPlan(p as any);
       setItems(planItems);
