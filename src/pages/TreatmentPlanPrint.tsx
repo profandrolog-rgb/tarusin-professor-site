@@ -182,6 +182,14 @@ export default function TreatmentPlanPrint() {
       setLabControl(lcRows);
       setBusy(false);
       await supabase.from("treatment_plans").update({ print_count: ((p as any)?.print_count ?? 0) + 1 } as any).eq("id", id!);
+
+      if ((p as any)?.is_public && (p as any)?.public_hash) {
+        try {
+          const url = `${window.location.origin}/p/${(p as any).public_hash}`;
+          const dataUrl = await QRCode.toDataURL(url, { width: 240, margin: 1 });
+          setQrDataUrl(dataUrl);
+        } catch { /* ignore QR errors */ }
+      }
     })();
   }, [id]);
 
