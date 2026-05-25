@@ -75,6 +75,45 @@ export default function TreatmentCatalog() {
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
   const [importOpen, setImportOpen] = useState(false);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [batchBusy, setBatchBusy] = useState(false);
+
+  const refreshPrice = async (id: string) => {
+    setRefreshingId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-drug-prices", { body: { catalog_id: id } });
+      if (error) throw error;
+      const r = data?.results?.[0];
+      if (r?.ok) {
+        toast({ title: "Цена обновлена", description: `${formatRub(r.price)} · источников: ${r.sources?.length || 0}` });
+        await load();
+        // Refresh draft if open
+        const fresh = await supabase.from("treatment_catalog").select("*").eq("id", id).single();
+        if (fresh.data && draft.id === id) setDraft(fresh.data as any);
+      } else {
+        toast({ title: "Не удалось получить цену", description: r?.error || "источники не вернули цены", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Ошибка обновления", description: e.message, variant: "destructive" });
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
+  const refreshAllPrices = async () => {
+    setBatchBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-drug-prices", { body: { batch: true, limit: 20 } });
+      if (error) throw error;
+      const ok = (data?.results || []).filter((r: any) => r.ok).length;
+      toast({ title: `Обновлено: ${ok} из ${data?.processed || 0}` });
+      load();
+    } catch (e: any) {
+      toast({ title: "Ошибка batch", description: e.message, variant: "destructive" });
+    } finally {
+      setBatchBusy(false);
+    }
+  };
 
   const exportCsv = async () => {
     const { data, error } = await supabase.from("treatment_catalog").select("*").order("category").order("name");
