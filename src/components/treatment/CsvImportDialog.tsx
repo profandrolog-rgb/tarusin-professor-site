@@ -125,7 +125,7 @@ export function CsvImportDialog({ open, onOpenChange, onComplete }: Props) {
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <Badge variant="outline">{fileName}</Badge>
               <Badge variant="secondary">всего строк: {rows.length}</Badge>
-              <Badge className="bg-green-600 hover:bg-green-600">валидных: {valid.length}</Badge>
+              <Badge className="bg-green-600 hover:bg-green-600 text-white">валидных: {valid.length}</Badge>
               {invalid.length > 0 && <Badge variant="destructive">с ошибками: {invalid.length}</Badge>}
             </div>
 
