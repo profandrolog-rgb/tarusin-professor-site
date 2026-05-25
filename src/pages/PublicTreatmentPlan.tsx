@@ -123,14 +123,16 @@ export default function PublicTreatmentPlan() {
   }, [hash]);
 
   const groups = useMemo(() => {
-    if (!data) return [] as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string }> }>;
-    const byCat: Partial<Record<Section, Array<{ name: string; description: string; isGroup?: boolean }>>> = {};
+    if (!data) return [] as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string; irt?: AcuProtocol }> }>;
+    const acu = data.acupuncture || {};
+    const byCat: Partial<Record<Section, Array<{ name: string; description: string; isGroup?: boolean; irt?: AcuProtocol }>>> = {};
     data.items.forEach(it => {
       const info = it.patient_info || {};
       const name = (info.patient_name?.trim()) || it.name_snapshot;
       const parts = [info.patient_purpose, info.patient_instruction, info.patient_description, info.patient_caution]
         .map(s => (s || "").trim()).filter(Boolean);
       const description = parts.join(" ");
+      const irt = it.catalog_id ? acu[it.catalog_id] : undefined;
       if ((info.patient_visibility || "visible") === "grouped" && info.patient_group_label) {
         const arr = byCat[it.section_category] ??= [];
         const existing = arr.find(x => x.isGroup && x.name === info.patient_group_label);
@@ -139,17 +141,17 @@ export default function PublicTreatmentPlan() {
             existing.description = existing.description ? `${existing.description}; ${description}` : description;
           }
         } else {
-          arr.push({ name: info.patient_group_label, description, isGroup: true });
+          arr.push({ name: info.patient_group_label, description, isGroup: true, irt });
         }
         return;
       }
-      (byCat[it.section_category] ??= []).push({ name, description });
+      (byCat[it.section_category] ??= []).push({ name, description, irt });
     });
     return GROUPS.map(g => {
-      const merged: Array<{ name: string; description: string }> = [];
+      const merged: Array<{ name: string; description: string; irt?: AcuProtocol }> = [];
       g.cats.forEach(c => merged.push(...((byCat[c] || []) as any)));
       return merged.length ? { emoji: g.emoji, label: g.label, items: merged } : null;
-    }).filter(Boolean) as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string }> }>;
+    }).filter(Boolean) as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string; irt?: AcuProtocol }> }>;
   }, [data]);
 
   if (busy) {
