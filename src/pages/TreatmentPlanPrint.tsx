@@ -74,6 +74,8 @@ const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   peptide: "по схеме",
   procedure: "",
   lifestyle: "",
+  homeopathy: "под язык",
+
 };
 
 function renderLine(it: PlanItemDB, courseDays: number): string {
