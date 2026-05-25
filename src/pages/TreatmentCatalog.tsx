@@ -256,12 +256,45 @@ export default function TreatmentCatalog() {
     }
   }, [rows, searchParams, setSearchParams]);
 
+  const qLower = q.trim().toLowerCase();
+  const matchesSubstring = (r: Row) => {
+    if (!qLower) return true;
+    const hay = [r.name, r.inn, r.notes, r.subcategory].filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(qLower);
+  };
+
   const filtered = rows.filter(r => {
     if (filter !== "all" && r.category !== filter) return false;
     if (onlyMissingPrice && effectivePrice(r) != null) return false;
-    if (q && !(r.name.toLowerCase().includes(q.toLowerCase()) || (r.inn || "").toLowerCase().includes(q.toLowerCase()))) return false;
+    if (qLower) {
+      // Prefer FTS match-set if available; otherwise fall back to substring
+      if (matchIds) {
+        if (!matchIds.has(r.id) && !matchesSubstring(r)) return false;
+      } else if (!matchesSubstring(r)) {
+        return false;
+      }
+    }
     return true;
   });
+
+  // Top-5 autocomplete suggestions
+  const suggestions = qLower ? filtered.slice(0, 5) : [];
+
+  // Highlight tokens helper
+  const renderHighlighted = (text: string | null | undefined) => {
+    const s = text || "";
+    if (!qLower) return s;
+    const tokens = qLower.split(/\s+/).filter(t => t.length >= 2);
+    if (!tokens.length) return s;
+    const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    const re = new RegExp(`(${escaped})`, "gi");
+    const parts = s.split(re);
+    return parts.map((p, i) =>
+      re.test(p)
+        ? <mark key={i} className="bg-amber-200/70 dark:bg-amber-500/30 text-inherit rounded px-0.5">{p}</mark>
+        : <span key={i}>{p}</span>
+    );
+  };
 
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
