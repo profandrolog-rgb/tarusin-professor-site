@@ -16,6 +16,7 @@ import {
 import {
   calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput,
 } from "@/lib/treatment/cost";
+import { fetchIrtForCatalogIds, formatIrtPointLine, type IrtCatalogMap } from "@/lib/treatment/acupunctureExpand";
 
 export default function TreatmentPlanMemo() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function TreatmentPlanMemo() {
   const [showCost, setShowCost] = useState(false);
   const [catalogMap, setCatalogMap] = useState<Map<string, CostCatalog>>(new Map());
   const [catalogPatientMap, setCatalogPatientMap] = useState<Map<string, any>>(new Map());
+  const [acuMap, setAcuMap] = useState<IrtCatalogMap>(new Map());
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: `/admin/treatment-plans/${id}/memo` } });
@@ -59,14 +61,35 @@ export default function TreatmentPlanMemo() {
         });
         setCatalogMap(m);
         setCatalogPatientMap(mp);
+        const acu = await fetchIrtForCatalogIds(catIds);
+        setAcuMap(acu);
       }
       setBusy(false);
     })();
   }, [id]);
 
+  // Enrich patient_info descriptions with IRT point lines
+  const enrichedPatientMap = useMemo(() => {
+    if (acuMap.size === 0) return catalogPatientMap;
+    const out = new Map(catalogPatientMap);
+    acuMap.forEach((proto, catId) => {
+      const existing = out.get(catId) || {};
+      const meta = [
+        proto.session_count != null ? `${proto.session_count} сеансов` : null,
+        proto.session_duration_min ? `по ${proto.session_duration_min} мин` : null,
+        proto.frequency,
+      ].filter(Boolean).join(", ");
+      const pointLines = proto.points.map((pt, i) => `${i + 1}) ${formatIrtPointLine(pt)}`).join("; ");
+      const irtText = [meta && `Курс ИРТ: ${meta}.`, pointLines && `Точки: ${pointLines}.`].filter(Boolean).join(" ");
+      const desc = [existing.patient_description, irtText].filter(Boolean).join(" ");
+      out.set(catId, { ...existing, patient_description: desc });
+    });
+    return out;
+  }, [catalogPatientMap, acuMap]);
+
   const groups = useMemo(
-    () => buildMemoGroups(items, catalogPatientMap),
-    [items, catalogPatientMap],
+    () => buildMemoGroups(items, enrichedPatientMap),
+    [items, enrichedPatientMap],
   );
 
   const breakdown = useMemo(() => {
@@ -80,7 +103,7 @@ export default function TreatmentPlanMemo() {
     return calculatePlanCost(input, catalogMap, plan.duration_days, (plan.mode as any) || "flat");
   }, [items, catalogMap, plan]);
 
-  const readiness = useMemo(() => memoReadiness(items, catalogPatientMap), [items, catalogPatientMap]);
+  const readiness = useMemo(() => memoReadiness(items, enrichedPatientMap), [items, enrichedPatientMap]);
 
   const onToggleCost = async (v: boolean) => {
     setShowCost(v);
@@ -95,7 +118,7 @@ export default function TreatmentPlanMemo() {
           plan, patient,
           patientAge: null,
           items,
-          catalogMap, catalogPatientMap,
+          catalogMap, catalogPatientMap: enrichedPatientMap,
         } as any,
         { showCost, costBreakdownTotal: breakdown?.total ?? null },
       );

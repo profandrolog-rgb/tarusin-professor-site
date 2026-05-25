@@ -34,6 +34,25 @@ interface PublicItem {
   } | null;
 }
 
+interface AcuPoint {
+  order_index: number;
+  who_code: string;
+  name_ru: string | null;
+  pinyin: string | null;
+  side: string | null;
+  manipulation: string | null;
+  depth_mm: string | null;
+  retention_min: number | null;
+  notes: string | null;
+}
+interface AcuProtocol {
+  name: string;
+  session_count: number | null;
+  session_duration_min: number | null;
+  frequency: string | null;
+  points: AcuPoint[];
+}
+
 interface PublicPayload {
   plan: {
     id: string;
@@ -56,6 +75,20 @@ interface PublicPayload {
     order_index: number;
   }>;
   test_names: Record<string, string>;
+  acupuncture?: Record<string, AcuProtocol>;
+}
+
+const SIDE_RU: Record<string, string> = { bilateral: "билат.", left: "слева", right: "справа" };
+function formatAcuPoint(pt: AcuPoint): string {
+  const head = `${pt.who_code}${pt.name_ru ? " " + pt.name_ru : pt.pinyin ? " " + pt.pinyin : ""}`;
+  const tail: string[] = [];
+  if (pt.side && SIDE_RU[pt.side]) tail.push(SIDE_RU[pt.side]);
+  if (pt.manipulation) tail.push(pt.manipulation);
+  if (pt.depth_mm) tail.push(`глуб. ${pt.depth_mm} мм`);
+  if (pt.retention_min != null) tail.push(`${pt.retention_min} мин`);
+  let line = tail.length ? `${head} — ${tail.join(", ")}` : head;
+  if (pt.notes) line += `. ${pt.notes}`;
+  return line;
 }
 
 const GROUPS: Array<{ key: string; emoji: string; label: string; cats: Section[] }> = [
@@ -90,14 +123,16 @@ export default function PublicTreatmentPlan() {
   }, [hash]);
 
   const groups = useMemo(() => {
-    if (!data) return [] as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string }> }>;
-    const byCat: Partial<Record<Section, Array<{ name: string; description: string; isGroup?: boolean }>>> = {};
+    if (!data) return [] as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string; irt?: AcuProtocol }> }>;
+    const acu = data.acupuncture || {};
+    const byCat: Partial<Record<Section, Array<{ name: string; description: string; isGroup?: boolean; irt?: AcuProtocol }>>> = {};
     data.items.forEach(it => {
       const info = it.patient_info || {};
       const name = (info.patient_name?.trim()) || it.name_snapshot;
       const parts = [info.patient_purpose, info.patient_instruction, info.patient_description, info.patient_caution]
         .map(s => (s || "").trim()).filter(Boolean);
       const description = parts.join(" ");
+      const irt = it.catalog_id ? acu[it.catalog_id] : undefined;
       if ((info.patient_visibility || "visible") === "grouped" && info.patient_group_label) {
         const arr = byCat[it.section_category] ??= [];
         const existing = arr.find(x => x.isGroup && x.name === info.patient_group_label);
@@ -106,17 +141,17 @@ export default function PublicTreatmentPlan() {
             existing.description = existing.description ? `${existing.description}; ${description}` : description;
           }
         } else {
-          arr.push({ name: info.patient_group_label, description, isGroup: true });
+          arr.push({ name: info.patient_group_label, description, isGroup: true, irt });
         }
         return;
       }
-      (byCat[it.section_category] ??= []).push({ name, description });
+      (byCat[it.section_category] ??= []).push({ name, description, irt });
     });
     return GROUPS.map(g => {
-      const merged: Array<{ name: string; description: string }> = [];
+      const merged: Array<{ name: string; description: string; irt?: AcuProtocol }> = [];
       g.cats.forEach(c => merged.push(...((byCat[c] || []) as any)));
       return merged.length ? { emoji: g.emoji, label: g.label, items: merged } : null;
-    }).filter(Boolean) as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string }> }>;
+    }).filter(Boolean) as Array<{ emoji: string; label: string; items: Array<{ name: string; description: string; irt?: AcuProtocol }> }>;
   }, [data]);
 
   if (busy) {
@@ -192,6 +227,22 @@ export default function PublicTreatmentPlan() {
                   <li key={i} style={{ marginBottom: "2.5mm" }}>
                     <b>{it.name}</b>
                     {it.description ? <span> — {it.description}</span> : null}
+                    {it.irt && (
+                      <div style={{ marginTop: "1.5mm", paddingLeft: "3mm", borderLeft: "2px solid #ddd", fontSize: "10.5pt", color: "#333" }}>
+                        <div style={{ fontStyle: "italic", color: "#555", marginBottom: "1mm" }}>
+                          Курс ИРТ: {it.irt.session_count ?? "—"} сеансов
+                          {it.irt.session_duration_min ? ` по ${it.irt.session_duration_min} мин` : ""}
+                          {it.irt.frequency ? `, ${it.irt.frequency}` : ""}
+                        </div>
+                        {it.irt.points.length > 0 && (
+                          <ol style={{ paddingLeft: "5mm", margin: 0 }}>
+                            {it.irt.points.map((pt, j) => (
+                              <li key={j} style={{ marginBottom: "0.5mm" }}>{formatAcuPoint(pt)}</li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

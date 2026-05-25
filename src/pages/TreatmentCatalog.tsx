@@ -52,6 +52,7 @@ interface Row {
   price_auto_sources: PriceSource[] | null;
   price_source_preference: "auto" | "manual" | null;
   parse_query: string | null;
+  acupuncture_protocol_id: string | null;
 }
 
 const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB", price_source_preference: "auto" };
@@ -82,6 +83,17 @@ export default function TreatmentCatalog() {
   const [importOpen, setImportOpen] = useState(false);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
+  const [acuProtocols, setAcuProtocols] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("acupuncture_protocols")
+        .select("id, name")
+        .order("name");
+      setAcuProtocols(data || []);
+    })();
+  }, []);
 
   const refreshPrice = async (id: string) => {
     setRefreshingId(id);
@@ -606,6 +618,26 @@ export default function TreatmentCatalog() {
                 )}
               </div>
             </div>
+
+            {/* 🪡 ИРТ-протокол (для процедур) */}
+            {draft.category === "procedure" && (
+              <div className="rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+                <div className="font-semibold text-sm">🪡 Протокол иглорефлексотерапии</div>
+                <Select
+                  value={(draft as any).acupuncture_protocol_id || "none"}
+                  onValueChange={(v) => setDraft(d => ({ ...d, acupuncture_protocol_id: v === "none" ? null : v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Не привязан"/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Не привязан —</SelectItem>
+                    {acuProtocols.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  При выборе протокола в листе назначений и памятке автоматически развернётся список точек, манипуляций и параметров сеансов.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-4 pt-2">
               <label className="flex items-center gap-2 text-sm"><Switch checked={draft.is_rx ?? false} onCheckedChange={v=>setDraft(d=>({...d, is_rx: v}))}/>Rx (рецептурное)</label>
