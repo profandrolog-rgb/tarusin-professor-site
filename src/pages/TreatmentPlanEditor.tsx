@@ -376,6 +376,95 @@ export default function TreatmentPlanEditor() {
     }
   };
 
+  // Duplicate active item within its section
+  const duplicateActive = useCallback(() => {
+    const cid = activeItemRef.current;
+    if (!cid) { toast({ title: "Нет активной позиции" }); return; }
+    setItems(prev => {
+      const idx = prev.findIndex(i => i.client_id === cid);
+      if (idx < 0) return prev;
+      const src = prev[idx];
+      const copy: PlanItem = { ...src, client_id: newId() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+    toast({ title: "Позиция продублирована" });
+  }, []);
+
+  // Add from command palette
+  const addFromPalette = useCallback((section: TreatmentCategory, c: CatalogItem) => {
+    setItems(prev => {
+      const it = fromCatalog(c, section);
+      if (mode === "scheduled" && !it.day_pattern) it.day_pattern = `1-${durationDays}`;
+      activeItemRef.current = it.client_id;
+      return [...prev, it];
+    });
+    setActiveSection(section);
+    toast({ title: `Добавлено: ${c.name}` });
+  }, [mode, durationDays]);
+
+  // Track active item via focus
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("[data-item-id]") as HTMLElement | null;
+      if (el) {
+        activeItemRef.current = el.getAttribute("data-item-id");
+        const sec = el.getAttribute("data-item-section") as TreatmentCategory | null;
+        if (sec) setActiveSection(sec);
+      }
+      const secEl = (e.target as HTMLElement | null)?.closest?.("[data-section-key]") as HTMLElement | null;
+      if (secEl) {
+        const sk = secEl.getAttribute("data-section-key") as TreatmentCategory | null;
+        if (sk) setActiveSection(sk);
+      }
+    };
+    document.addEventListener("focusin", onFocus);
+    return () => document.removeEventListener("focusin", onFocus);
+  }, []);
+
+  // Global hotkeys
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement | null;
+      const inField = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+
+      // ? help (when not typing)
+      if (!mod && !inField && (e.key === "?" || (e.shiftKey && e.key === "/"))) {
+        e.preventDefault(); setHotkeysOpen(true); return;
+      }
+      if (!mod) return;
+
+      switch (e.key.toLowerCase()) {
+        case "s":
+          e.preventDefault(); save(); break;
+        case "p":
+          if (!id) return;
+          e.preventDefault();
+          window.open(`/admin/treatment-plans/${id}/print`, "_blank");
+          break;
+        case "k":
+          e.preventDefault(); setPaletteOpen(true); break;
+        case "e":
+          if (isNew) return;
+          e.preventDefault(); setExportMenuOpen(true); break;
+        case "h":
+          if (isNew || status !== "issued") return;
+          e.preventDefault(); setHistoryOpen(true); break;
+        case "d":
+          if (!activeItemRef.current) return;
+          e.preventDefault(); duplicateActive(); break;
+        case "z":
+          if (e.shiftKey) return; // let browser handle redo if any
+          e.preventDefault(); undo(); break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isNew, status, duplicateActive, undo]);
+
   if (loading || busy) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
   }
