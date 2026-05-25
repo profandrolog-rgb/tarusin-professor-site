@@ -14,6 +14,8 @@ import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import {
   calculatePlanCost, formatRub, type CostCatalog, type CostItemInput,
 } from "./cost";
+import { formatIrtPointLine, type IrtCatalogMap } from "./acupunctureExpand";
+
 
 export interface DocxPlanItem {
   id?: string;
@@ -65,7 +67,9 @@ export interface DocxPlanData {
     patient_visibility?: string | null;
     patient_group_label?: string | null;
   }>;
+  acupunctureMap?: IrtCatalogMap;
 }
+
 
 const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   iv_drip: "в/в капельно",
@@ -221,7 +225,8 @@ function costTable(breakdown: ReturnType<typeof calculatePlanCost>): Table {
 // ---------- CLINICAL PLAN DOCX ----------
 
 export async function generatePlanDocx(data: DocxPlanData): Promise<void> {
-  const { plan, patient, patientAge, items, labControl, catalogMap } = data;
+  const { plan, patient, patientAge, items, labControl, catalogMap, acupunctureMap } = data;
+
   const date = new Date(plan.issued_at);
   const landscape = plan.duration_days > 21;
 
@@ -264,8 +269,35 @@ export async function generatePlanDocx(data: DocxPlanData): Promise<void> {
         numbering: { reference: "ol-default", level: 0 },
         children: [new TextRun({ text: lineFor(it, plan.duration_days), font: FONT, size: 22 })],
       }));
+      // IRT protocol expansion
+      const irt = it.catalog_id ? acupunctureMap?.get(it.catalog_id) : undefined;
+      if (irt && irt.points.length) {
+        const meta: string[] = [];
+        if (irt.session_count != null) meta.push(`${irt.session_count} сеансов`);
+        if (irt.session_duration_min != null) meta.push(`${irt.session_duration_min} мин/сеанс`);
+        if (irt.frequency) meta.push(irt.frequency);
+        if (meta.length) {
+          children.push(new Paragraph({
+            indent: { left: 720 },
+            spacing: { before: 40 },
+            children: [new TextRun({ text: `Курс: ${meta.join(" · ")}`, italics: true, font: FONT, size: 20 })],
+          }));
+        }
+        children.push(new Paragraph({
+          indent: { left: 720 },
+          spacing: { before: 40 },
+          children: [new TextRun({ text: `Точки протокола (${irt.points.length}):`, bold: true, font: FONT, size: 20 })],
+        }));
+        irt.points.forEach((pt, idx) => {
+          children.push(new Paragraph({
+            indent: { left: 900, hanging: 200 },
+            children: [new TextRun({ text: `${idx + 1}. ${formatIrtPointLine(pt)}`, font: FONT, size: 20 })],
+          }));
+        });
+      }
     });
   });
+
 
   if (lifestyleItems.length) {
     children.push(sectionHeading("Рекомендации образа жизни"));

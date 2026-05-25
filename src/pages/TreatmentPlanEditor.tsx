@@ -29,6 +29,8 @@ import { PatternExportDialog } from "@/components/treatment/PatternExportDialog"
 import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
 import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
+import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
+
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -328,6 +330,8 @@ export default function TreatmentPlanEditor() {
         catalogMap.set(c.id, c);
         if (c.patient_info) catalogPatientMap.set(c.id, c.patient_info);
       });
+      const acupunctureMap = await fetchIrtForCatalogIds(catIds);
+
       // Resolve test names for labControl block
       const allTestIds = new Set<string>();
       (lc || []).forEach((row: any) => (row.test_ids || []).forEach((tid: string) => allTestIds.add(tid)));
@@ -376,7 +380,9 @@ export default function TreatmentPlanEditor() {
         labControl,
         catalogMap,
         catalogPatientMap,
+        acupunctureMap,
       });
+
       toast({ title: "DOCX скачан" });
     } catch (e: any) {
       toast({ title: "Ошибка экспорта DOCX", description: e.message, variant: "destructive" });
