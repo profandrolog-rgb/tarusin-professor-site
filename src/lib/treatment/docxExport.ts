@@ -225,7 +225,8 @@ function costTable(breakdown: ReturnType<typeof calculatePlanCost>): Table {
 // ---------- CLINICAL PLAN DOCX ----------
 
 export async function generatePlanDocx(data: DocxPlanData): Promise<void> {
-  const { plan, patient, patientAge, items, labControl, catalogMap } = data;
+  const { plan, patient, patientAge, items, labControl, catalogMap, acupunctureMap } = data;
+
   const date = new Date(plan.issued_at);
   const landscape = plan.duration_days > 21;
 
