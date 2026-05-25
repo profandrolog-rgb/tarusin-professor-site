@@ -227,6 +227,22 @@ export default function PublicTreatmentPlan() {
                   <li key={i} style={{ marginBottom: "2.5mm" }}>
                     <b>{it.name}</b>
                     {it.description ? <span> — {it.description}</span> : null}
+                    {it.irt && (
+                      <div style={{ marginTop: "1.5mm", paddingLeft: "3mm", borderLeft: "2px solid #ddd", fontSize: "10.5pt", color: "#333" }}>
+                        <div style={{ fontStyle: "italic", color: "#555", marginBottom: "1mm" }}>
+                          Курс ИРТ: {it.irt.session_count ?? "—"} сеансов
+                          {it.irt.session_duration_min ? ` по ${it.irt.session_duration_min} мин` : ""}
+                          {it.irt.frequency ? `, ${it.irt.frequency}` : ""}
+                        </div>
+                        {it.irt.points.length > 0 && (
+                          <ol style={{ paddingLeft: "5mm", margin: 0 }}>
+                            {it.irt.points.map((pt, j) => (
+                              <li key={j} style={{ marginBottom: "0.5mm" }}>{formatAcuPoint(pt)}</li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
