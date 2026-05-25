@@ -24,7 +24,7 @@ interface PlanRow {
   status: string;
   mode: string;
   course_number: number | null;
-  patient: { full_name: string } | null;
+  patient: { id: string; full_name: string } | null;
   items_count?: number;
 }
 
@@ -50,7 +50,7 @@ export default function TreatmentPlans() {
       setBusy(true);
       const { data } = await supabase
         .from("treatment_plans")
-        .select("id, issued_at, diagnosis_short, duration_days, status, mode, course_number, patient:patients(full_name), items:treatment_plan_items(count)")
+        .select("id, issued_at, diagnosis_short, duration_days, status, mode, course_number, patient:patients(id, full_name), items:treatment_plan_items(count)")
         .order("issued_at", { ascending: false })
         .limit(200);
       const mapped = (data || []).map((r: any) => ({
@@ -170,9 +170,15 @@ export default function TreatmentPlans() {
                       {r.course_number != null && (
                         <Badge variant="default" className="font-mono">№ {r.course_number}</Badge>
                       )}
-                      <Link to={`/admin/treatment-plans/${r.id}`} className="font-medium text-foreground hover:text-primary">
-                        {r.patient?.full_name || "Без пациента"}
-                      </Link>
+                      {r.patient?.id ? (
+                        <Link to={`/admin/patients/${r.patient.id}`} className="font-medium text-foreground hover:text-primary" title="Курсы пациента">
+                          {r.patient.full_name}
+                        </Link>
+                      ) : (
+                        <Link to={`/admin/treatment-plans/${r.id}`} className="font-medium text-foreground hover:text-primary">
+                          Без пациента
+                        </Link>
+                      )}
                       <Badge variant={r.status === "issued" ? "default" : r.status === "archived" ? "secondary" : "outline"}>
                         {r.status === "draft" ? "черновик" : r.status === "issued" ? "выписан" : "архив"}
                       </Badge>
