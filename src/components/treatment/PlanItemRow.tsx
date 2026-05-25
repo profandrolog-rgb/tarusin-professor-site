@@ -187,6 +187,22 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
             />
           </div>
         )}
+        {item.section_category === "homeopathy" && (
+          <div>
+            <label className="text-[11px] text-muted-foreground">Потенция</label>
+            <Input
+              list="potency-presets"
+              value={item.potency ?? ""}
+              placeholder="30C, 200C, 1M..."
+              onChange={e=>update({ potency: e.target.value || null })}
+              className="h-8"
+            />
+            <datalist id="potency-presets">
+              {["6C","12C","30C","200C","1M","10M","50M","CM","6X","12X","30X"].map(p => <option key={p} value={p}/>)}
+            </datalist>
+          </div>
+        )}
+
       </div>
 
       {mode === "scheduled" && (
