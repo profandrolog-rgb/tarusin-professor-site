@@ -1,88 +1,77 @@
-# Фаза 4 — Автопарсинг цен
+# /admin/analytics — дашборд статистики
 
-Firecrawl уже подключён (`FIRECRAWL_API_KEY` в secrets). Используем его для парсинга цен препаратов и лабораторных тестов.
+## 1. БД-миграция
 
-## Шаг 1. Миграция БД
+**Таблица `analytics_cache`:**
+- `cache_key text primary key` — формат `{section}:{md5(filters)}`
+- `payload jsonb not null`
+- `computed_at timestamptz default now()`
+- RLS: только admin SELECT/INSERT/UPDATE/DELETE
+- TTL проверяется в коде: `now() - computed_at < interval '1 hour'`
 
-`treatment_catalog` — добавить:
-- `price_auto numeric` — последняя автоцена (медиана по источникам)
-- `price_auto_updated_at timestamptz`
-- `price_auto_sources jsonb` — `[{source, url, price, fetched_at}]`
-- `price_source_preference text default 'auto'` — `auto` | `manual` (если `manual` — `price_override` приоритетнее)
-- `parse_query text` — переопределение поискового запроса (по умолчанию = name)
+**SECURITY DEFINER RPC-функции** (все принимают `_from date, _to date, _status text, _doctor text`):
 
-`lab_tests_catalog` — добавить:
-- `price_auto numeric`, `price_auto_updated_at timestamptz`, `price_auto_sources jsonb`
-- `kdl_slug text` — slug страницы на kdlmed.ru (если известен)
+| Функция | Возвращает |
+|---|---|
+| `analytics_top_catalog(_from,_to,_status,_doctor,_limit int default 20)` | jsonb: `[{rank,name,section,usage_count,pct_of_plans}]` |
+| `analytics_top_templates(_from,_to,_status,_doctor,_limit int default 10)` | jsonb: `[{rank,name,usage_count,avg_duration_days,avg_cost}]` |
+| `analytics_avg_cost_by_tag(_from,_to,_status,_doctor)` | jsonb: `[{tag,avg_cost,plans_count}]` |
+| `analytics_plans_per_month(_from,_to,_status,_doctor)` | jsonb: `[{month: 'YYYY-MM', count}]` за последние 12 мес |
+| `analytics_duration_histogram(_from,_to,_status,_doctor)` | jsonb: `[{bucket,count}]` корзины 1-5/6-10/11-14/15-21/22-30/30+ |
+| `analytics_section_usage(_from,_to,_status,_doctor)` | jsonb: `[{section,count,pct}]` по 12 категориям |
+| `analytics_doctors_list()` | jsonb: список уникальных `created_by` с email из profiles |
 
-Новая таблица `price_parse_log`:
-- `id`, `entity_type` (`drug`|`lab`), `entity_id uuid`, `status` (`ok`|`partial`|`fail`), `sources_count int`, `error text`, `created_at`
+Все читают `treatment_plans` + `treatment_plan_items` + `treatment_catalog` + `protocol_templates`. Фильтры:
+- период: `issued_at between _from and _to` (для draft — `created_at`)
+- статус: `_status in ('issued','all')`
+- врач: `_doctor::uuid = created_by` или `_doctor='all'`
 
-RLS: admin ALL.
+Стоимость берётся как сумма `qty * price_avg` из items (та же логика, что в `src/lib/treatment/cost.ts`, но в SQL).
 
-## Шаг 2. Edge Function `parse-drug-prices`
+## 2. Frontend
 
-`supabase/functions/parse-drug-prices/index.ts`:
-- Вход: `{ catalog_id: uuid }` или `{ batch: true, limit?: number }` (берёт позиции с самой старой `price_auto_updated_at` или без неё)
-- Источники: `apteka.ru`, `eapteka.ru`, `megapteka.ru`
-- Через Firecrawl `search` — `{name} цена аптека site:apteka.ru` и т.п., с `scrapeOptions.formats=['markdown']`
-- Парсинг цены регексом `/(\d[\d\s]*[.,]?\d*)\s*(?:₽|руб)/` из первого валидного результата каждого источника
-- Сохранение: медиана 3 цен → `price_auto`, массив источников → `price_auto_sources`, `price_auto_updated_at = now()`
-- Лог в `price_parse_log`
-- Admin-only (проверка `has_role`)
+**`src/pages/AdminAnalytics.tsx`** (роут `/admin/analytics` в App.tsx, ссылка с Admin.tsx).
 
-## Шаг 3. Edge Function `parse-lab-prices`
+Layout:
+```
+[ Фильтры: период (Select 30/90/365/all/custom) | статус | врач | Экспорт CSV ]
+[ Раздел 1: ТОП-20 каталога ── таблица ]
+[ Раздел 2: ТОП-10 шаблонов ── таблица ]
+[ Раздел 3: bar — стоимость по тегам ] [ Раздел 6: pie — секции ]
+[ Раздел 4: line — динамика 12 мес ] [ Раздел 5: histogram (bar) ]
+```
 
-Аналогично, но источник — `kdlmed.ru`:
-- Если `kdl_slug` есть — скрейп прямой URL; иначе `search` по названию
-- Парсинг цены из markdown
+**Хук `useAnalyticsSection(section, filters)`** — react-query:
+1. Считает `filters_hash` (sha256 кратко через `btoa(JSON.stringify)`)
+2. Читает `analytics_cache` по ключу
+3. Если свежий (<1ч) — отдаёт `payload`
+4. Иначе вызывает RPC, апсертит в `analytics_cache`, отдаёт
 
-## Шаг 4. Cron — раз в 7 дней
+**Графики:** Recharts (уже в package.json): `BarChart`, `LineChart`, `PieChart` через обёртки из `components/ui/chart.tsx`.
 
-`supabase--insert` (не migration, т.к. содержит anon key) с `cron.schedule` — вызывает `parse-drug-prices?batch=true&limit=20` и `parse-lab-prices?batch=true&limit=20` раз в неделю в 04:00 МСК (= 01:00 UTC, день недели — воскресенье).
+**CSV-экспорт:** объединяет данные всех 6 разделов в один многосекционный CSV (заголовок `=== ТОП-20 каталога ===` и т.д.), `Blob` + `saveAs` через существующий file-saver.
 
-Включить `pg_cron` и `pg_net` через миграцию (шаг 1).
+## 3. Файлы
 
-## Шаг 5. UI каталога препаратов
+**Новые:**
+- `supabase/migrations/...sql` — таблица + 7 RPC
+- `src/pages/AdminAnalytics.tsx`
+- `src/lib/analytics/useAnalyticsSection.ts`
+- `src/lib/analytics/csvExport.ts`
+- `src/components/analytics/FiltersBar.tsx`
+- `src/components/analytics/TopCatalogTable.tsx`
+- `src/components/analytics/TopTemplatesTable.tsx`
+- `src/components/analytics/CostByTagChart.tsx`
+- `src/components/analytics/PlansPerMonthChart.tsx`
+- `src/components/analytics/DurationHistogram.tsx`
+- `src/components/analytics/SectionUsagePie.tsx`
 
-В `TreatmentCatalog.tsx`:
-- В drawer-форме секция «💰 Стоимость»: добавить
-  - радио `price_source_preference`: «Авто (парсинг)» / «Ручная цена»
-  - поле `parse_query` (опционально)
-  - блок «Автоцена»: значение `price_auto`, дата, список источников (свернуто), кнопка «🔄 Обновить сейчас» → вызов edge function
-- В таблице:
-  - Столбец «Цена» показывает эффективную (manual если preference=manual, иначе auto || manual fallback)
-  - Индикатор источника: 🤖 (auto) / ✋ (manual)
-  - Свежесть по `price_auto_updated_at` если auto
-- Кнопка в шапке «🔄 Обновить все цены» → batch вызов (с прогресс-тостом)
-
-## Шаг 6. UI каталога анализов
-
-Новая страница/секция для `lab_tests_catalog` (если ещё нет редактора — добавить простой drawer прямо в `LabControlSection` админки или новый маршрут `/admin/lab-tests-catalog`). Аналогичные поля и кнопка обновления.
-
-## Шаг 7. Использование auto в расчёте
-
-`src/lib/treatment/cost.ts`:
-- Помощник `effectivePrice(catalog)` — возвращает `price_override` если `price_source_preference==='manual'`, иначе `price_auto ?? price_override`
-- `calculateItemCost` использует `effectivePrice` вместо прямого `price_override`
-
-Передавать `price_auto`, `price_auto_updated_at`, `price_source_preference` в `CostCatalog` (расширить тип).
-
-## Шаг 8. Печать и памятка
-
-В `TreatmentPlanPrint`/`TreatmentPlanMemo` — индикация источника цены не нужна, но дисклеймер расширить: «Цены актуальны на {макс_дата_из_позиций}, могут отличаться ±15-20%».
+**Правки:**
+- `src/App.tsx` — добавить роут
+- `src/pages/Admin.tsx` — карточка-ссылка «📊 Аналитика»
 
 ## Acceptance
-
-- [ ] Кнопка «Обновить» на одной позиции возвращает цену из ≥1 источника
-- [ ] Batch обновляет до N позиций без таймаута
-- [ ] Cron создаёт записи в `price_parse_log` раз в 7 дней
-- [ ] Manual override работает (если выбран — игнорирует auto)
-- [ ] Цвет свежести учитывает `price_auto_updated_at`
-- [ ] Регрессия: Фазы 1–3 работают
-
----
-
-Разбиение: **4A** — миграция + edge functions + ручная кнопка обновления (шаги 1-3, 5 кнопки). **4B** — UI каталога анализов, cron, интеграция в расчёт/печать (шаги 4, 6-8).
-
-Подтвердите план — начну с 4A.
+- Все 6 разделов рендерятся с реальными данными за 90 дней по умолчанию
+- Смена фильтров пересчитывает (новый cache-key) и перерисовывает графики
+- Кнопка «Экспорт CSV» скачивает корректный многосекционный CSV
+- Повторное открытие в течение часа берёт данные из `analytics_cache`
