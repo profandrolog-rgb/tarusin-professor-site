@@ -156,6 +156,14 @@ export default function AdminAcupoints() {
               </p>
             </div>
           </div>
+          <div className="flex gap-2">
+            <Link to="/admin/acupoints/atlas">
+              <Button variant="outline" size="sm" className="gap-2"><MapPin className="w-4 h-4"/>Атлас</Button>
+            </Link>
+            <Link to="/admin/acupuncture-protocols">
+              <Button size="sm" className="gap-2"><MapPin className="w-4 h-4"/>Протоколы</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-[280px_1fr] gap-4">
