@@ -27,6 +27,7 @@ import { LabControlSection, type LabControlPoint } from "@/components/treatment/
 import { PublicLinkPopover } from "@/components/treatment/PublicLinkPopover";
 import { PatternExportDialog } from "@/components/treatment/PatternExportDialog";
 import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
+import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -472,12 +473,25 @@ export default function TreatmentPlanEditor() {
 
   const grouped = SECTIONS.map(s => ({ section: s, list: items.filter(i => i.section_category === s.key) }));
 
+  const sectionCounts = grouped.reduce<Record<string, number>>((acc, g) => {
+    acc[g.section.key] = g.list.length;
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="container mx-auto px-4 py-6 max-w-7xl flex gap-6 items-start">
+        <EditorTOC
+          counts={sectionCounts}
+          labControlEnabled={labControlEnabled}
+          isPublic={isPublic}
+          hasPlan={items.length > 0}
+        />
+        <div className="flex-1 min-w-0 max-w-5xl">
         <Link to="/admin/treatment-plans" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4"/>К списку листов
         </Link>
+
 
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
@@ -672,7 +686,7 @@ export default function TreatmentPlanEditor() {
               const Icon = section.icon;
               const empty = list.length === 0;
               return (
-                <Card key={section.key} className={empty ? "opacity-70" : ""} data-section-key={section.key} onClick={() => setActiveSection(section.key)}>
+                <Card key={section.key} className={`scroll-mt-20 ${empty ? "opacity-70" : ""}`} data-section-key={section.key} onClick={() => setActiveSection(section.key)}>
                   <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Icon className={`w-4 h-4 ${empty ? "text-muted-foreground" : "text-primary"}`}/>
@@ -706,21 +720,36 @@ export default function TreatmentPlanEditor() {
         </DndContext>
 
         <div className="mt-4 space-y-3">
-          <LabControlSection
-            enabled={labControlEnabled}
-            onEnabledChange={setLabControlEnabled}
-            points={labPoints}
-            onChange={setLabPoints}
-          />
-          <PlanCostBlock
-            items={items}
-            durationDays={durationDays}
-            mode={mode}
-            showInPrint={showCostInPrint}
-            onShowInPrintChange={setShowCostInPrint}
-            onTotalChange={setCurrentTotalCost}
-          />
+          <div data-section-key="lab-control" className="scroll-mt-20">
+            <LabControlSection
+              enabled={labControlEnabled}
+              onEnabledChange={setLabControlEnabled}
+              points={labPoints}
+              onChange={setLabPoints}
+            />
+          </div>
+          <div data-section-key="cost" className="scroll-mt-20">
+            <PlanCostBlock
+              items={items}
+              durationDays={durationDays}
+              mode={mode}
+              showInPrint={showCostInPrint}
+              onShowInPrintChange={setShowCostInPrint}
+              onTotalChange={setCurrentTotalCost}
+            />
+          </div>
+          {isPublic && id && (
+            <div data-section-key="public" className="scroll-mt-20">
+              <PublicLinkPopover
+                planId={id}
+                publicHash={publicHash}
+                isPublic={isPublic}
+                onChange={(v) => setIsPublic(v.is_public)}
+              />
+            </div>
+          )}
         </div>
+
 
         <PatternExportDialog
           open={patternExportOpen}
@@ -802,7 +831,9 @@ export default function TreatmentPlanEditor() {
             Горячие клавиши · <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[10px]">?</kbd>
           </button>
         </div>
+        </div>
       </div>
     </div>
   );
 }
+
