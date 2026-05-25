@@ -11,12 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet, RefreshCw, Bot, Hand } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
 import { CATALOG_KNOWN_COLUMNS, serializeCsv } from "@/lib/treatmentCsv";
-import { formatRub, priceFreshness } from "@/lib/treatment/cost";
+import { formatRub, priceFreshness, effectivePrice } from "@/lib/treatment/cost";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+interface PriceSource { source: string; url: string; price: number; fetched_at: string }
 
 interface Row {
   id: string;
@@ -44,9 +47,14 @@ interface Row {
   price_source_note: string | null;
   pack_size_num: number | null;
   units_per_dose_num: number | null;
+  price_auto: number | null;
+  price_auto_updated_at: string | null;
+  price_auto_sources: PriceSource[] | null;
+  price_source_preference: "auto" | "manual" | null;
+  parse_query: string | null;
 }
 
-const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB" };
+const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB", price_source_preference: "auto" };
 
 const FRESHNESS_STYLES: Record<string, { dot: string; label: string }> = {
   fresh:   { dot: "bg-emerald-500", label: "цена свежая (≤30 дн.)" },
