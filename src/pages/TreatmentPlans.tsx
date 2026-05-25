@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X, UserPlus, Search, Download, BookOpen } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, FileText, Printer, BookMarked, Database, CalendarIcon, X, UserPlus, Search, Download, BookOpen, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -203,6 +203,9 @@ export default function TreatmentPlans() {
             </Link>
             <Link to="/admin/repertory">
               <Button variant="outline" className="gap-2"><BookOpen className="w-4 h-4"/>Реперториум</Button>
+            </Link>
+            <Link to="/admin/acupoints">
+              <Button variant="outline" className="gap-2"><MapPin className="w-4 h-4"/>Точки ИРТ</Button>
             </Link>
             <Link to="/admin/treatment-templates">
               <Button variant="outline" className="gap-2"><BookMarked className="w-4 h-4"/>Шаблоны</Button>
