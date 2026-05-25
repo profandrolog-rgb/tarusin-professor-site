@@ -156,10 +156,22 @@ export function PlanVersionHistoryDrawer({ open, onOpenChange, planId, userId }:
 
               <ReadOnlySnapshot snap={selected.snapshot}/>
 
-              <Button onClick={restore} disabled={restoring} className="w-full gap-2">
-                {restoring ? <Loader2 className="w-4 h-4 animate-spin"/> : <RotateCcw className="w-4 h-4"/>}
-                Восстановить эту версию (создать новый черновик)
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/admin/treatment-plans/compare?a=version:${selected.id}&b=${planId}`);
+                  }}
+                  className="flex-1 gap-2"
+                >
+                  <GitCompare className="w-4 h-4"/>Сравнить с текущей
+                </Button>
+                <Button onClick={restore} disabled={restoring} className="flex-1 gap-2">
+                  {restoring ? <Loader2 className="w-4 h-4 animate-spin"/> : <RotateCcw className="w-4 h-4"/>}
+                  Восстановить (новый черновик)
+                </Button>
+              </div>
             </div>
           )}
         </div>
