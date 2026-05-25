@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Search, AlertTriangle, Sun, Beaker } from "lucide-react";
 import { TreatmentCategory } from "./sections";
 
@@ -43,7 +46,7 @@ export function CatalogPicker({ section, onPick, allowAllCategories }: Props) {
   const [q, setQ] = useState("");
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [scope, setScope] = useState<"section" | "all">("section");
-  const ref = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!open) return;
@@ -56,56 +59,85 @@ export function CatalogPicker({ section, onPick, allowAllCategories }: Props) {
     })();
   }, [open, q, scope, section]);
 
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
+  const handlePick = (it: CatalogItem) => {
+    onPick(it);
+    setOpen(false);
+    setQ("");
+  };
 
-  return (
-    <div className="relative" ref={ref}>
-      <Button variant="outline" size="sm" onClick={() => setOpen(o => !o)}>
-        + Добавить
-      </Button>
-      {open && (
-        <div className="absolute z-40 mt-1 w-[420px] max-w-[90vw] bg-popover text-popover-foreground border rounded-md shadow-lg">
-          <div className="p-2 border-b flex items-center gap-2">
-            <Search className="w-4 h-4 text-muted-foreground"/>
-            <Input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск по названию или МНН..." className="h-8 border-0 focus-visible:ring-0"/>
-          </div>
-          {allowAllCategories && (
-            <div className="px-2 py-1 border-b flex gap-1 text-xs">
-              <button onClick={()=>setScope("section")} className={`px-2 py-0.5 rounded ${scope==="section"?"bg-primary text-primary-foreground":"hover:bg-muted"}`}>Только эта секция</button>
-              <button onClick={()=>setScope("all")} className={`px-2 py-0.5 rounded ${scope==="all"?"bg-primary text-primary-foreground":"hover:bg-muted"}`}>Все категории</button>
-            </div>
-          )}
-          <div className="max-h-80 overflow-y-auto">
-            {items.length === 0 ? (
-              <div className="p-4 text-sm text-center text-muted-foreground">Ничего не найдено</div>
-            ) : items.map(it => (
-              <button key={it.id}
-                onClick={() => { onPick(it); setOpen(false); setQ(""); }}
-                className="w-full text-left px-3 py-2 hover:bg-muted/60 border-b last:border-b-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-sm">{it.name}</span>
-                  <span className="flex items-center gap-1">
-                    {it.is_off_label && <Badge variant="outline" className="text-[10px] h-4 px-1"><AlertTriangle className="w-2.5 h-2.5 mr-0.5"/>off-label</Badge>}
-                    {it.light_sensitive && <Sun className="w-3 h-3 text-amber-500"/>}
-                    {it.glucose_only && <Beaker className="w-3 h-3 text-blue-500"/>}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {it.inn ? `${it.inn} · ` : ""}{it.form || ""}
-                  {it.default_dose ? ` · ${it.default_dose} ${it.dose_unit || ""}` : ""}
-                  {it.default_frequency ? ` · ${it.default_frequency}` : ""}
-                </div>
-              </button>
-            ))}
-          </div>
+  const body = (
+    <div className="flex flex-col">
+      <div className="p-2 border-b flex items-center gap-2">
+        <Search className="w-4 h-4 text-muted-foreground" />
+        <Input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Поиск по названию или МНН..."
+          className="h-8 border-0 focus-visible:ring-0 bg-transparent"
+        />
+      </div>
+      {allowAllCategories && (
+        <div className="px-2 py-1 border-b flex gap-1 text-xs">
+          <button onClick={() => setScope("section")} className={`px-2 py-0.5 rounded ${scope === "section" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>Только эта секция</button>
+          <button onClick={() => setScope("all")} className={`px-2 py-0.5 rounded ${scope === "all" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>Все категории</button>
         </div>
       )}
+      <div className={isMobile ? "flex-1 overflow-y-auto" : "max-h-80 overflow-y-auto"}>
+        {items.length === 0 ? (
+          <div className="p-4 text-sm text-center text-muted-foreground">Ничего не найдено</div>
+        ) : items.map((it) => (
+          <button key={it.id}
+            onClick={() => handlePick(it)}
+            className="w-full text-left px-3 py-2 hover:bg-muted/60 border-b last:border-b-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium text-sm">{it.name}</span>
+              <span className="flex items-center gap-1">
+                {it.is_off_label && <Badge variant="outline" className="text-[10px] h-4 px-1"><AlertTriangle className="w-2.5 h-2.5 mr-0.5" />off-label</Badge>}
+                {it.light_sensitive && <Sun className="w-3 h-3 text-amber-500" />}
+                {it.glucose_only && <Beaker className="w-3 h-3 text-blue-500" />}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {it.inn ? `${it.inn} · ` : ""}{it.form || ""}
+              {it.default_dose ? ` · ${it.default_dose} ${it.dose_unit || ""}` : ""}
+              {it.default_frequency ? ` · ${it.default_frequency}` : ""}
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>+ Добавить</Button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="bottom" className="h-[85vh] p-0 flex flex-col">
+            <SheetHeader className="p-3 border-b">
+              <SheetTitle className="text-base">Добавить позицию</SheetTitle>
+            </SheetHeader>
+            {body}
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm">+ Добавить</Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className="w-[420px] max-w-[90vw] p-0 bg-popover text-popover-foreground"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        {body}
+      </PopoverContent>
+    </Popover>
   );
 }
