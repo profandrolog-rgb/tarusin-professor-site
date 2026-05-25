@@ -1586,6 +1586,138 @@ export type Database = {
         }
         Relationships: []
       }
+      repertory_chapters: {
+        Row: {
+          created_at: string
+          id: string
+          name_en: string
+          name_ru: string
+          ord: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name_en: string
+          name_ru: string
+          ord: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name_en?: string
+          name_ru?: string
+          ord?: number
+        }
+        Relationships: []
+      }
+      repertory_remedies: {
+        Row: {
+          abbrev: string | null
+          created_at: string
+          id: string
+          name_latin: string
+          name_ru: string | null
+          slug: string
+        }
+        Insert: {
+          abbrev?: string | null
+          created_at?: string
+          id?: string
+          name_latin: string
+          name_ru?: string | null
+          slug: string
+        }
+        Update: {
+          abbrev?: string | null
+          created_at?: string
+          id?: string
+          name_latin?: string
+          name_ru?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
+      repertory_rubric_remedies: {
+        Row: {
+          created_at: string
+          grade: number
+          id: string
+          remedy_id: string
+          rubric_id: string
+        }
+        Insert: {
+          created_at?: string
+          grade: number
+          id?: string
+          remedy_id: string
+          rubric_id: string
+        }
+        Update: {
+          created_at?: string
+          grade?: number
+          id?: string
+          remedy_id?: string
+          rubric_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repertory_rubric_remedies_remedy_id_fkey"
+            columns: ["remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repertory_rubric_remedies_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_rubrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      repertory_rubrics: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          id: string
+          kent_page: number | null
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          id?: string
+          kent_page?: number | null
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          id?: string
+          kent_page?: number | null
+          name?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repertory_rubrics_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repertory_rubrics_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_rubrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_article_attachments: {
         Row: {
           article_id: string
@@ -1910,6 +2042,7 @@ export type Database = {
           pack_size_num: number | null
           parse_query: string | null
           patient_info: Json
+          potency: string | null
           price_auto: number | null
           price_auto_sources: Json | null
           price_auto_updated_at: string | null
@@ -1918,6 +2051,7 @@ export type Database = {
           price_source_note: string | null
           price_source_preference: string
           price_updated_at: string | null
+          remedy_id: string | null
           search_vector: unknown
           subcategory: string | null
           tags: string[] | null
@@ -1954,6 +2088,7 @@ export type Database = {
           pack_size_num?: number | null
           parse_query?: string | null
           patient_info?: Json
+          potency?: string | null
           price_auto?: number | null
           price_auto_sources?: Json | null
           price_auto_updated_at?: string | null
@@ -1962,6 +2097,7 @@ export type Database = {
           price_source_note?: string | null
           price_source_preference?: string
           price_updated_at?: string | null
+          remedy_id?: string | null
           search_vector?: unknown
           subcategory?: string | null
           tags?: string[] | null
@@ -1998,6 +2134,7 @@ export type Database = {
           pack_size_num?: number | null
           parse_query?: string | null
           patient_info?: Json
+          potency?: string | null
           price_auto?: number | null
           price_auto_sources?: Json | null
           price_auto_updated_at?: string | null
@@ -2006,6 +2143,7 @@ export type Database = {
           price_source_note?: string | null
           price_source_preference?: string
           price_updated_at?: string | null
+          remedy_id?: string | null
           search_vector?: unknown
           subcategory?: string | null
           tags?: string[] | null
@@ -2013,7 +2151,15 @@ export type Database = {
           units_per_dose_num?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "treatment_catalog_remedy_id_fkey"
+            columns: ["remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       treatment_plan_items: {
         Row: {
@@ -2865,6 +3011,7 @@ export type Database = {
         | "peptide"
         | "procedure"
         | "lifestyle"
+        | "homeopathy"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -3057,6 +3204,7 @@ export const Constants = {
         "peptide",
         "procedure",
         "lifestyle",
+        "homeopathy",
       ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },
