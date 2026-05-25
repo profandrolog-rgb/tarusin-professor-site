@@ -152,6 +152,13 @@ const adminSections = [
     href: "/admin/analytics",
     color: "text-indigo-500",
   },
+  {
+    title: "📦 Резервное копирование",
+    description: "Бэкап и восстановление данных treatment-plans, история снапшотов",
+    icon: Settings,
+    href: "/admin/system-backup",
+    color: "text-amber-600",
+  },
 ];
 
 const analyticsServices = [
