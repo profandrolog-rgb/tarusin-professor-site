@@ -310,13 +310,36 @@ export default function TreatmentPlanPrint() {
                 {section.label}
               </div>
               <ol style={{ margin: 0, paddingLeft: "8mm" }}>
-                {list.map(it => (
-                  <li key={it.id} style={{ marginBottom: "1.5mm" }}>
-                    {renderLine(it, plan.duration_days)}
-                    {it.is_off_label && <span style={{ fontSize: "8pt", marginLeft: "2mm" }}>(off-label)</span>}
-                  </li>
-                ))}
+                {list.map(it => {
+                  const irt = it.catalog_id ? acupunctureMap.get(it.catalog_id) : undefined;
+                  return (
+                    <li key={it.id} style={{ marginBottom: "1.5mm" }}>
+                      {renderLine(it, plan.duration_days)}
+                      {it.is_off_label && <span style={{ fontSize: "8pt", marginLeft: "2mm" }}>(off-label)</span>}
+                      {irt && irt.points.length > 0 && (
+                        <div style={{ marginTop: "1mm", marginLeft: "2mm", fontSize: "9.5pt", color: "#222" }}>
+                          {(() => {
+                            const meta: string[] = [];
+                            if (irt.session_count != null) meta.push(`${irt.session_count} сеансов`);
+                            if (irt.session_duration_min != null) meta.push(`${irt.session_duration_min} мин/сеанс`);
+                            if (irt.frequency) meta.push(irt.frequency);
+                            return meta.length ? (
+                              <div style={{ fontStyle: "italic", marginBottom: "0.5mm" }}>Курс: {meta.join(" · ")}</div>
+                            ) : null;
+                          })()}
+                          <div style={{ fontWeight: "bold", marginBottom: "0.5mm" }}>Точки протокола ({irt.points.length}):</div>
+                          <ol style={{ margin: 0, paddingLeft: "6mm" }}>
+                            {irt.points.map((pt, idx) => (
+                              <li key={idx} style={{ marginBottom: "0.5mm" }}>{formatIrtPointLine(pt)}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ol>
+
             </div>
           );
         })}
