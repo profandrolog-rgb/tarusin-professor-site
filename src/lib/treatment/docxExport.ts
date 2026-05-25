@@ -6,7 +6,8 @@ import {
   AlignmentType, HeadingLevel, BorderStyle, WidthType, ShadingType,
   LevelFormat, PageOrientation, Header,
 } from "docx";
-import { saveAs } from "file-saver";
+import pkg from "file-saver";
+const { saveAs } = pkg;
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
