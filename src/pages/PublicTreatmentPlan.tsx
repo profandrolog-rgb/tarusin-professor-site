@@ -34,6 +34,25 @@ interface PublicItem {
   } | null;
 }
 
+interface AcuPoint {
+  order_index: number;
+  who_code: string;
+  name_ru: string | null;
+  pinyin: string | null;
+  side: string | null;
+  manipulation: string | null;
+  depth_mm: string | null;
+  retention_min: number | null;
+  notes: string | null;
+}
+interface AcuProtocol {
+  name: string;
+  session_count: number | null;
+  session_duration_min: number | null;
+  frequency: string | null;
+  points: AcuPoint[];
+}
+
 interface PublicPayload {
   plan: {
     id: string;
@@ -56,6 +75,20 @@ interface PublicPayload {
     order_index: number;
   }>;
   test_names: Record<string, string>;
+  acupuncture?: Record<string, AcuProtocol>;
+}
+
+const SIDE_RU: Record<string, string> = { bilateral: "билат.", left: "слева", right: "справа" };
+function formatAcuPoint(pt: AcuPoint): string {
+  const head = `${pt.who_code}${pt.name_ru ? " " + pt.name_ru : pt.pinyin ? " " + pt.pinyin : ""}`;
+  const tail: string[] = [];
+  if (pt.side && SIDE_RU[pt.side]) tail.push(SIDE_RU[pt.side]);
+  if (pt.manipulation) tail.push(pt.manipulation);
+  if (pt.depth_mm) tail.push(`глуб. ${pt.depth_mm} мм`);
+  if (pt.retention_min != null) tail.push(`${pt.retention_min} мин`);
+  let line = tail.length ? `${head} — ${tail.join(", ")}` : head;
+  if (pt.notes) line += `. ${pt.notes}`;
+  return line;
 }
 
 const GROUPS: Array<{ key: string; emoji: string; label: string; cats: Section[] }> = [
