@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-cron-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const FIRECRAWL = "https://api.firecrawl.dev/v2";
@@ -112,7 +112,8 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization");
-    const isCron = req.headers.get("x-cron-token") === SUPABASE_SERVICE_ROLE_KEY;
+    const cronKey = Deno.env.get("CRON_INVOKE_KEY");
+    const isCron = !!cronKey && req.headers.get("x-cron-key") === cronKey;
 
     if (!isCron) {
       if (!authHeader) {
