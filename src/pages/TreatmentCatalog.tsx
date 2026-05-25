@@ -158,6 +158,70 @@ export default function TreatmentCatalog() {
   };
   useEffect(() => { load(); }, []);
 
+  // Load search history from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("treatment_catalog_search_history");
+      if (raw) setHistory(JSON.parse(raw).slice(0, 10));
+    } catch { /* ignore */ }
+  }, []);
+
+  const pushHistory = (term: string) => {
+    const t = term.trim();
+    if (!t) return;
+    setHistory(prev => {
+      const next = [t, ...prev.filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 10);
+      try { localStorage.setItem("treatment_catalog_search_history", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    try { localStorage.removeItem("treatment_catalog_search_history"); } catch { /* ignore */ }
+  };
+
+  // Debounced full-text search → matching ids
+  useEffect(() => {
+    const term = q.trim();
+    if (!term) { setMatchIds(null); setSearching(false); return; }
+    setSearching(true);
+    const handle = setTimeout(async () => {
+      try {
+        // Build a websearch-friendly query: split by space, prefix-match each token
+        const fts = term
+          .split(/\s+/)
+          .filter(Boolean)
+          .map(t => t.replace(/[&|!():*]/g, "") + ":*")
+          .join(" & ");
+        let { data, error } = await supabase
+          .from("treatment_catalog")
+          .select("id")
+          .textSearch("search_vector", fts, { config: "russian" } as any);
+        if (error) {
+          // Fallback to substring search across already-loaded rows (handled by filter)
+          setMatchIds(null);
+        } else {
+          setMatchIds(new Set((data || []).map((r: any) => r.id)));
+        }
+      } catch {
+        setMatchIds(null);
+      } finally {
+        setSearching(false);
+      }
+    }, 180);
+    return () => clearTimeout(handle);
+  }, [q]);
+
+  // Close autocomplete on outside click
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (acRef.current && !acRef.current.contains(e.target as Node)) setAcOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
   const save = async () => {
     if (!draft.name || !draft.category) { toast({ title: "Название и категория обязательны", variant: "destructive" }); return; }
     const payload: any = { ...draft };
