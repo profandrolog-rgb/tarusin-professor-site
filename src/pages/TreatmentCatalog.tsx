@@ -426,8 +426,8 @@ export default function TreatmentCatalog() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {Icon && <Icon className="w-4 h-4 text-primary"/>}
-                        <span className="font-medium">{r.name}</span>
-                        {r.inn && <span className="text-xs text-muted-foreground">({r.inn})</span>}
+                        <span className="font-medium">{renderHighlighted(r.name)}</span>
+                        {r.inn && <span className="text-xs text-muted-foreground">({renderHighlighted(r.inn)})</span>}
                         <Badge variant="outline" className="text-[10px]">{section?.short}</Badge>
                         {r.is_rx && <Badge variant="outline" className="text-[10px]">Rx</Badge>}
                         {r.is_off_label && <Badge variant="outline" className="text-[10px] gap-1"><AlertTriangle className="w-2.5 h-2.5"/>off-label</Badge>}
