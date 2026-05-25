@@ -47,6 +47,9 @@ import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
 import AdminLabTestsCatalog from "./pages/AdminLabTestsCatalog";
 import AdminRepertory from "./pages/AdminRepertory";
 import AdminAcupoints from "./pages/AdminAcupoints";
+import AdminAcupointsAtlas from "./pages/AdminAcupointsAtlas";
+import AdminAcupunctureProtocols from "./pages/AdminAcupunctureProtocols";
+import AdminAcupunctureProtocolEditor from "./pages/AdminAcupunctureProtocolEditor";
 import AdminSystemSettings from "./pages/AdminSystemSettings";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
@@ -157,7 +160,10 @@ export const routes: RouteRecord[] = [
       { path: "admin/lab-tests-catalog", Component: AdminLabTestsCatalog, entry: "src/pages/AdminLabTestsCatalog.tsx" },
       { path: "admin/repertory", Component: AdminRepertory, entry: "src/pages/AdminRepertory.tsx" },
       { path: "admin/acupoints", Component: AdminAcupoints, entry: "src/pages/AdminAcupoints.tsx" },
+      { path: "admin/acupoints/atlas", Component: AdminAcupointsAtlas, entry: "src/pages/AdminAcupointsAtlas.tsx" },
       { path: "admin/acupoints/:who_code", Component: AdminAcupoints, entry: "src/pages/AdminAcupoints.tsx" },
+      { path: "admin/acupuncture-protocols", Component: AdminAcupunctureProtocols, entry: "src/pages/AdminAcupunctureProtocols.tsx" },
+      { path: "admin/acupuncture-protocols/:id", Component: AdminAcupunctureProtocolEditor, entry: "src/pages/AdminAcupunctureProtocolEditor.tsx" },
       { path: "admin/treatment-templates", Component: TreatmentTemplates, entry: "src/pages/TreatmentTemplates.tsx" },
       { path: "admin/treatment-templates/new", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/treatment-templates/:id", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
