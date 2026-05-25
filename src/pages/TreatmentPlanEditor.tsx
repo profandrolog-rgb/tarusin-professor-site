@@ -29,6 +29,8 @@ import { PatternExportDialog } from "@/components/treatment/PatternExportDialog"
 import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
 import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
+import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
+
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
