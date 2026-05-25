@@ -88,8 +88,8 @@ export default function TreatmentPlanMemo() {
   }, [catalogPatientMap, acuMap]);
 
   const groups = useMemo(
-    () => buildMemoGroups(items, catalogPatientMap),
-    [items, catalogPatientMap],
+    () => buildMemoGroups(items, enrichedPatientMap),
+    [items, enrichedPatientMap],
   );
 
   const breakdown = useMemo(() => {
@@ -103,7 +103,7 @@ export default function TreatmentPlanMemo() {
     return calculatePlanCost(input, catalogMap, plan.duration_days, (plan.mode as any) || "flat");
   }, [items, catalogMap, plan]);
 
-  const readiness = useMemo(() => memoReadiness(items, catalogPatientMap), [items, catalogPatientMap]);
+  const readiness = useMemo(() => memoReadiness(items, enrichedPatientMap), [items, enrichedPatientMap]);
 
   const onToggleCost = async (v: boolean) => {
     setShowCost(v);
@@ -118,7 +118,7 @@ export default function TreatmentPlanMemo() {
           plan, patient,
           patientAge: null,
           items,
-          catalogMap, catalogPatientMap,
+          catalogMap, catalogPatientMap: enrichedPatientMap,
         } as any,
         { showCost, costBreakdownTotal: breakdown?.total ?? null },
       );
