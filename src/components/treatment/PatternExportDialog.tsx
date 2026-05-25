@@ -52,6 +52,8 @@ export function PatternExportDialog({
   const groups = useMemo(() => groupBySection(filterItems(input)), [input]);
   const profileLine = useMemo(() => buildProfileLine(profile), [profile]);
 
+  const pdfRef = useRef<HTMLDivElement | null>(null);
+
   const handleExport = async () => {
     setBusy(true);
     try {
@@ -65,7 +67,8 @@ export function PatternExportDialog({
         const blob = await (await fetch(dataUrl)).blob();
         downloadBlob(blob, `pattern-${ts}.png`);
       } else {
-        await exportPdf(input);
+        if (!pdfRef.current) throw new Error("PDF layout not ready");
+        await exportPdfFromHtml(pdfRef.current, `pattern-${ts}.pdf`);
       }
       toast({ title: "Экспортировано", description: `Файл pattern-${ts}.${format === "markdown" ? "md" : format}` });
       onOpenChange(false);
@@ -76,105 +79,9 @@ export function PatternExportDialog({
     }
   };
 
-  const exportPdf = async (inp: typeof input) => {
-    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-    const W = 210, H = 297, M = 18;
-    let y = M;
-    // Header / brand
-    doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-    doc.setTextColor(20, 60, 130);
-    doc.text("МАЦ — Медико-академический центр", M, y);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9);
-    doc.setTextColor(120);
-    doc.text("Терапевтический паттерн", W - M, y, { align: "right" });
-    y += 4;
-    doc.setDrawColor(20, 60, 130); doc.setLineWidth(0.5);
-    doc.line(M, y, W - M, y);
-    y += 7;
-
-    doc.setTextColor(30);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-    doc.text("Клиническая ситуация", M, y); y += 5;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-    const sit = inp.anonLevel === "profile" ? profileLine : "Структурный паттерн без профилирования.";
-    y = writeWrap(doc, sit, M, y, W - 2 * M, 4.5);
-    y += 3;
-
-    if (inp.clinicalSummary.trim()) {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-      doc.text("Клиническое назначение", M, y); y += 5;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      y = writeWrap(doc, inp.clinicalSummary.trim(), M, y, W - 2 * M, 4.5);
-      y += 3;
-    }
-
-    if (inp.include.duration) {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10);
-      doc.text(`Длительность курса: `, M, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(`${inp.durationDays} дн.`, M + 38, y);
-      y += 6;
-    }
-
-    doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-    doc.text("Состав терапии", M, y); y += 5;
-    const grps = groupBySection(filterItems(inp));
-    for (const g of grps) {
-      if (y > H - 35) { doc.addPage(); y = M; }
-      doc.setFont("helvetica", "bold"); doc.setFontSize(10.5);
-      doc.setTextColor(20, 60, 130);
-      doc.text(g.section.label, M, y); y += 4.5;
-      doc.setTextColor(30);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-      for (const it of g.list) {
-        if (y > H - 30) { doc.addPage(); y = M; }
-        const line = formatItemLine(it);
-        y = writeWrap(doc, "• " + line, M + 2, y, W - 2 * M - 2, 4.3);
-        y += 0.5;
-      }
-      y += 2;
-    }
-
-    if (inp.include.lab && inp.lab.length > 0) {
-      if (y > H - 35) { doc.addPage(); y = M; }
-      doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-      doc.text("Лабораторный контроль", M, y); y += 5;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
-      for (const l of inp.lab) {
-        if (y > H - 30) { doc.addPage(); y = M; }
-        const d = l.at_day != null ? ` (день ${l.at_day})` : "";
-        y = writeWrap(doc, "• " + (l.control_point || "—") + d, M + 2, y, W - 2 * M - 2, 4.3);
-      }
-      y += 3;
-    }
-
-    if (inp.include.cost && inp.totalCost != null) {
-      if (y > H - 35) { doc.addPage(); y = M; }
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-      doc.text("Ориентировочная стоимость курса:", M, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(`${new Intl.NumberFormat("ru-RU").format(Math.round(inp.totalCost))} ₽`, M + 73, y);
-      y += 6;
-    }
-
-    // Footer on every page
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setDrawColor(200); doc.line(M, H - 18, W - M, H - 18);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(20, 60, 130);
-      doc.text("МАЦ · Автор: проф. Д.И. Тарусин", M, H - 13);
-      doc.setFont("helvetica", "italic"); doc.setFontSize(7.5); doc.setTextColor(110);
-      const fLines = doc.splitTextToSize(FOOTER_DISCLAIMER, W - 2 * M);
-      doc.text(fLines, M, H - 9);
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(150);
-      doc.text(`${i} / ${pageCount}`, W - M, H - 9, { align: "right" });
-    }
-
-    doc.save(`pattern-${new Date().toISOString().slice(0,10)}.pdf`);
-  };
 
   return (
+
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -314,7 +221,79 @@ export function PatternExportDialog({
               <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4, fontStyle: "italic" }}>{FOOTER_DISCLAIMER}</div>
             </div>
           </div>
+
+          {/* Hidden A4 PDF render target (794 x 1123 px ≈ A4 @ 96dpi) */}
+          <div ref={pdfRef} style={{
+            width: 794, minHeight: 1123, padding: "56px 64px", boxSizing: "border-box",
+            background: "#ffffff", color: "#0d172a",
+            fontFamily: "Inter, 'Helvetica Neue', Arial, sans-serif", fontSize: 13, lineHeight: 1.45,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+              borderBottom: "1.5px solid #143c82", paddingBottom: 8, marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#143c82", letterSpacing: 0.4 }}>
+                МАЦ — Медико-академический центр
+              </div>
+              <div style={{ fontSize: 11, color: "#5b6b85", textTransform: "uppercase", letterSpacing: 1.4 }}>
+                Терапевтический паттерн
+              </div>
+            </div>
+
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginBottom: 4 }}>Клиническая ситуация</div>
+            <div style={{ marginBottom: 14 }}>
+              {anonLevel === "profile" ? profileLine : "Структурный паттерн без профилирования."}
+            </div>
+
+            {summary.trim() && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginBottom: 4 }}>Клиническое назначение</div>
+                <div style={{ marginBottom: 14, whiteSpace: "pre-wrap" }}>{summary.trim()}</div>
+              </>
+            )}
+
+            {incDuration && (
+              <div style={{ marginBottom: 12 }}>
+                <strong>Длительность курса:</strong> {durationDays} дн.
+              </div>
+            )}
+
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginBottom: 6 }}>Состав терапии</div>
+            {groups.map(g => (
+              <div key={g.section.key} style={{ marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, color: "#143c82", marginBottom: 2 }}>{g.section.label}</div>
+                {g.list.map((it, i) => (
+                  <div key={i} style={{ paddingLeft: 12, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 2 }}>•</span>{formatItemLine(it)}
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            {incLab && lab.length > 0 && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginTop: 8, marginBottom: 4 }}>Лабораторный контроль</div>
+                {lab.map((l, i) => (
+                  <div key={i} style={{ paddingLeft: 12, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 2 }}>•</span>
+                    {l.control_point || "—"}{l.at_day != null ? ` (день ${l.at_day})` : ""}
+                  </div>
+                ))}
+              </>
+            )}
+
+            {incCost && totalCost != null && (
+              <div style={{ marginTop: 14, fontSize: 14 }}>
+                <strong>Ориентировочная стоимость курса:</strong>{" "}
+                {new Intl.NumberFormat("ru-RU").format(Math.round(totalCost))} ₽
+              </div>
+            )}
+
+            <div style={{ borderTop: "1px solid #c9d2e1", marginTop: 24, paddingTop: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#143c82" }}>МАЦ · Автор: проф. Д.И. Тарусин</div>
+              <div style={{ fontSize: 10, fontStyle: "italic", color: "#6b7a93", marginTop: 2 }}>{FOOTER_DISCLAIMER}</div>
+            </div>
+          </div>
         </div>
+
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Отмена</Button>
@@ -344,8 +323,29 @@ function compactItem(it: PlanItem): string {
   return bits.join(" · ");
 }
 
-function writeWrap(doc: jsPDF, text: string, x: number, y: number, maxW: number, lh: number): number {
-  const lines = doc.splitTextToSize(text, maxW);
-  doc.text(lines, x, y);
-  return y + lines.length * lh;
+// Render an HTML node to PNG (cyrillic-safe) and place it onto A4 pages of a PDF.
+async function exportPdfFromHtml(node: HTMLElement, filename: string) {
+  const pxWidth = node.offsetWidth || 794;
+  const pxHeight = node.scrollHeight || 1123;
+  const dataUrl = await toPng(node, {
+    pixelRatio: 2, cacheBust: true,
+    width: pxWidth, height: pxHeight,
+    backgroundColor: "#ffffff",
+  });
+  // A4 mm: 210 x 297. Map width => 210mm, then slice the tall image into A4 pages.
+  const mmPerPx = 210 / pxWidth;
+  const fullHeightMm = pxHeight * mmPerPx;
+  const pageMm = 297;
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  let consumedMm = 0;
+  let isFirst = true;
+  while (consumedMm < fullHeightMm - 0.5) {
+    if (!isFirst) doc.addPage();
+    isFirst = false;
+    // Place the full image, shifted up by `consumedMm` so the current slice lands at top.
+    doc.addImage(dataUrl, "PNG", 0, -consumedMm, 210, fullHeightMm, undefined, "FAST");
+    consumedMm += pageMm;
+  }
+  doc.save(filename);
 }
+
