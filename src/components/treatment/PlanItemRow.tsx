@@ -103,7 +103,7 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
                 <Badge variant="destructive" className="text-[10px] h-5 gap-1"><Beaker className="w-3 h-3"/>не смешивать — нужна 5% глюкоза</Badge>
               )}
               {outOfRange && (
-                <Badge variant="outline" className="text-[10px] h-5 border-amber-500/50 text-amber-600">вне диапазона дозы</Badge>
+                <Badge variant="outline" className="text-[10px] h-5 border-amber-500/50 text-amber-600 dark:text-amber-400">вне диапазона дозы</Badge>
               )}
             </div>
           </div>

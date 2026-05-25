@@ -125,7 +125,7 @@ export function CsvImportDialog({ open, onOpenChange, onComplete }: Props) {
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <Badge variant="outline">{fileName}</Badge>
               <Badge variant="secondary">всего строк: {rows.length}</Badge>
-              <Badge className="bg-green-600 hover:bg-green-600">валидных: {valid.length}</Badge>
+              <Badge className="bg-green-600 hover:bg-green-600 text-white">валидных: {valid.length}</Badge>
               {invalid.length > 0 && <Badge variant="destructive">с ошибками: {invalid.length}</Badge>}
             </div>
 
@@ -174,7 +174,7 @@ export function CsvImportDialog({ open, onOpenChange, onComplete }: Props) {
                         <td className="px-2 py-1">{r.payload.name || "—"}</td>
                         <td className="px-2 py-1">{r.payload.inn || "—"}</td>
                         <td className="px-2 py-1">{r.payload.default_dose ?? ""} {r.payload.dose_unit ?? ""}</td>
-                        <td className="px-2 py-1">{r.errors.length ? <span className="text-destructive">{r.errors[0]}</span> : <span className="text-green-600">OK</span>}</td>
+                        <td className="px-2 py-1">{r.errors.length ? <span className="text-destructive">{r.errors[0]}</span> : <span className="text-green-600 dark:text-green-400">OK</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -195,10 +195,10 @@ export function CsvImportDialog({ open, onOpenChange, onComplete }: Props) {
 
         {result && (
           <div className="space-y-3">
-            <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-600"/><span className="font-semibold">Импорт завершён</span></div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400"/><span className="font-semibold">Импорт завершён</span></div>
             <div className="grid grid-cols-4 gap-2 text-sm">
-              <div className="border rounded p-2"><div className="text-xs text-muted-foreground">Создано</div><div className="text-xl font-bold text-green-600">{result.created}</div></div>
-              <div className="border rounded p-2"><div className="text-xs text-muted-foreground">Обновлено</div><div className="text-xl font-bold text-blue-600">{result.updated}</div></div>
+              <div className="border rounded p-2"><div className="text-xs text-muted-foreground">Создано</div><div className="text-xl font-bold text-green-600 dark:text-green-400">{result.created}</div></div>
+              <div className="border rounded p-2"><div className="text-xs text-muted-foreground">Обновлено</div><div className="text-xl font-bold text-blue-600 dark:text-blue-400">{result.updated}</div></div>
               <div className="border rounded p-2"><div className="text-xs text-muted-foreground">Пропущено</div><div className="text-xl font-bold">{result.skipped}</div></div>
               <div className="border rounded p-2"><div className="text-xs text-muted-foreground">Ошибок</div><div className="text-xl font-bold text-destructive">{result.errors.length}</div></div>
             </div>
