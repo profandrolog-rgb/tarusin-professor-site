@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_cache: {
+        Row: {
+          cache_key: string
+          computed_at: string
+          payload: Json
+        }
+        Insert: {
+          cache_key: string
+          computed_at?: string
+          payload: Json
+        }
+        Update: {
+          cache_key?: string
+          computed_at?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       anthropometry_measurements: {
         Row: {
           age_months: number | null
@@ -2565,6 +2583,54 @@ export type Database = {
       }
     }
     Functions: {
+      _analytics_filter_plans: {
+        Args: { _doctor: string; _from: string; _status: string; _to: string }
+        Returns: {
+          based_on_template: string
+          created_by: string
+          duration_days: number
+          id: string
+          ref_date: string
+          total_cost_estimate: number
+        }[]
+      }
+      analytics_avg_cost_by_tag: {
+        Args: { _doctor: string; _from: string; _status: string; _to: string }
+        Returns: Json
+      }
+      analytics_doctors_list: { Args: never; Returns: Json }
+      analytics_duration_histogram: {
+        Args: { _doctor: string; _from: string; _status: string; _to: string }
+        Returns: Json
+      }
+      analytics_plans_per_month: {
+        Args: { _doctor: string; _from: string; _status: string; _to: string }
+        Returns: Json
+      }
+      analytics_section_usage: {
+        Args: { _doctor: string; _from: string; _status: string; _to: string }
+        Returns: Json
+      }
+      analytics_top_catalog: {
+        Args: {
+          _doctor: string
+          _from: string
+          _limit?: number
+          _status: string
+          _to: string
+        }
+        Returns: Json
+      }
+      analytics_top_templates: {
+        Args: {
+          _doctor: string
+          _from: string
+          _limit?: number
+          _status: string
+          _to: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

@@ -145,6 +145,13 @@ const adminSections = [
     href: "/admin/system-settings",
     color: "text-slate-500",
   },
+  {
+    title: "📊 Аналитика",
+    description: "Статистика использования каталога, шаблонов, секций и динамика по месяцам",
+    icon: BarChart3,
+    href: "/admin/analytics",
+    color: "text-indigo-500",
+  },
 ];
 
 const analyticsServices = [
