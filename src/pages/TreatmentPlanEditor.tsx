@@ -77,7 +77,37 @@ export default function TreatmentPlanEditor() {
   const [labPoints, setLabPoints] = useState<LabControlPoint[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [publicHash, setPublicHash] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [hotkeysOpen, setHotkeysOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<TreatmentCategory>("iv_drip");
+  const activeItemRef = useRef<string | null>(null);
   const isNew = !id;
+
+  // Undo stack for items (last 10 snapshots)
+  const undoStackRef = useRef<PlanItem[][]>([]);
+  const prevItemsRef = useRef<PlanItem[]>([]);
+  const skipNextSnapshotRef = useRef(false);
+  useEffect(() => {
+    if (skipNextSnapshotRef.current) {
+      skipNextSnapshotRef.current = false;
+      prevItemsRef.current = items;
+      return;
+    }
+    if (prevItemsRef.current !== items && prevItemsRef.current.length + items.length > 0) {
+      undoStackRef.current.push(prevItemsRef.current);
+      if (undoStackRef.current.length > 10) undoStackRef.current.shift();
+    }
+    prevItemsRef.current = items;
+  }, [items]);
+
+  const undo = useCallback(() => {
+    const snap = undoStackRef.current.pop();
+    if (!snap) { toast({ title: "Нечего отменять" }); return; }
+    skipNextSnapshotRef.current = true;
+    setItems(snap);
+    toast({ title: "Действие отменено" });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
