@@ -11,12 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet, RefreshCw, Bot, Hand } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
 import { CATALOG_KNOWN_COLUMNS, serializeCsv } from "@/lib/treatmentCsv";
-import { formatRub, priceFreshness } from "@/lib/treatment/cost";
+import { formatRub, priceFreshness, effectivePrice } from "@/lib/treatment/cost";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+interface PriceSource { source: string; url: string; price: number; fetched_at: string }
 
 interface Row {
   id: string;
@@ -44,9 +47,14 @@ interface Row {
   price_source_note: string | null;
   pack_size_num: number | null;
   units_per_dose_num: number | null;
+  price_auto: number | null;
+  price_auto_updated_at: string | null;
+  price_auto_sources: PriceSource[] | null;
+  price_source_preference: "auto" | "manual" | null;
+  parse_query: string | null;
 }
 
-const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB" };
+const empty: Partial<Row> = { category: "iv_drip", is_active: true, is_rx: false, is_off_label: false, light_sensitive: false, glucose_only: false, price_currency: "RUB", price_source_preference: "auto" };
 
 const FRESHNESS_STYLES: Record<string, { dot: string; label: string }> = {
   fresh:   { dot: "bg-emerald-500", label: "цена свежая (≤30 дн.)" },
@@ -67,6 +75,45 @@ export default function TreatmentCatalog() {
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
   const [importOpen, setImportOpen] = useState(false);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [batchBusy, setBatchBusy] = useState(false);
+
+  const refreshPrice = async (id: string) => {
+    setRefreshingId(id);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-drug-prices", { body: { catalog_id: id } });
+      if (error) throw error;
+      const r = data?.results?.[0];
+      if (r?.ok) {
+        toast({ title: "Цена обновлена", description: `${formatRub(r.price)} · источников: ${r.sources?.length || 0}` });
+        await load();
+        // Refresh draft if open
+        const fresh = await supabase.from("treatment_catalog").select("*").eq("id", id).single();
+        if (fresh.data && draft.id === id) setDraft(fresh.data as any);
+      } else {
+        toast({ title: "Не удалось получить цену", description: r?.error || "источники не вернули цены", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Ошибка обновления", description: e.message, variant: "destructive" });
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
+  const refreshAllPrices = async () => {
+    setBatchBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-drug-prices", { body: { batch: true, limit: 20 } });
+      if (error) throw error;
+      const ok = (data?.results || []).filter((r: any) => r.ok).length;
+      toast({ title: `Обновлено: ${ok} из ${data?.processed || 0}` });
+      load();
+    } catch (e: any) {
+      toast({ title: "Ошибка batch", description: e.message, variant: "destructive" });
+    } finally {
+      setBatchBusy(false);
+    }
+  };
 
   const exportCsv = async () => {
     const { data, error } = await supabase.from("treatment_catalog").select("*").order("category").order("name");
@@ -142,7 +189,7 @@ export default function TreatmentCatalog() {
 
   const filtered = rows.filter(r => {
     if (filter !== "all" && r.category !== filter) return false;
-    if (onlyMissingPrice && r.price_override != null) return false;
+    if (onlyMissingPrice && effectivePrice(r) != null) return false;
     if (q && !(r.name.toLowerCase().includes(q.toLowerCase()) || (r.inn || "").toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
   });
@@ -164,6 +211,10 @@ export default function TreatmentCatalog() {
             <p className="text-sm text-muted-foreground">{rows.length} позиций · 12 категорий</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button onClick={refreshAllPrices} disabled={batchBusy} variant="outline" className="gap-2">
+              {batchBusy ? <Loader2 className="w-4 h-4 animate-spin"/> : <RefreshCw className="w-4 h-4"/>}
+              Обновить цены (20)
+            </Button>
             <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2"><Upload className="w-4 h-4"/>Импорт CSV</Button>
             <Button onClick={exportCsv} variant="outline" className="gap-2"><Download className="w-4 h-4"/>Экспорт CSV</Button>
             <Button onClick={startNew} className="gap-2"><Plus className="w-4 h-4"/>Новая позиция</Button>
@@ -192,7 +243,11 @@ export default function TreatmentCatalog() {
             {filtered.map(r => {
               const section = SECTIONS.find(s => s.key === r.category);
               const Icon = section?.icon;
-              const fr = priceFreshness(r.price_updated_at);
+              const pref = r.price_source_preference || "auto";
+              const eff = effectivePrice(r);
+              const usingAuto = pref !== "manual" && r.price_auto != null;
+              const freshSrc = usingAuto ? r.price_auto_updated_at : r.price_updated_at;
+              const fr = priceFreshness(freshSrc);
               const frInfo = FRESHNESS_STYLES[fr];
               return (
                 <Card key={r.id} className={r.is_active ? "" : "opacity-60"}>
@@ -208,10 +263,11 @@ export default function TreatmentCatalog() {
                         {r.light_sensitive && <Sun className="w-3.5 h-3.5 text-amber-500"/>}
                         {r.glucose_only && <Beaker className="w-3.5 h-3.5 text-blue-500"/>}
                         {!r.is_active && <Badge variant="secondary" className="text-[10px]">не активна</Badge>}
-                        {r.price_override != null ? (
-                          <span title={frInfo.label} className="inline-flex items-center gap-1 text-xs">
+                        {eff != null ? (
+                          <span title={`${usingAuto ? "Авто" : "Ручная"} · ${frInfo.label}`} className="inline-flex items-center gap-1 text-xs">
                             <span className={`inline-block w-2 h-2 rounded-full ${frInfo.dot}`}/>
-                            {formatRub(r.price_override)}
+                            {usingAuto ? <Bot className="w-3 h-3 text-muted-foreground"/> : <Hand className="w-3 h-3 text-muted-foreground"/>}
+                            {formatRub(eff)}
                           </span>
                         ) : (
                           <span title="цена не задана" className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -312,6 +368,72 @@ export default function TreatmentCatalog() {
               <p className="text-[11px] text-muted-foreground">
                 Цена используется в расчёте ориентировочной стоимости курса. Поле «единиц на приём» помогает корректно посчитать число упаковок при делении/удвоении доз.
               </p>
+
+              {/* Автоцена (Фаза 4) */}
+              <div className="rounded-md border border-border/60 bg-background p-2 space-y-2 mt-2">
+                <div className="flex items-center gap-2 text-xs font-semibold">
+                  <Bot className="w-3.5 h-3.5 text-primary"/>Источник цены
+                </div>
+                <RadioGroup
+                  value={(draft.price_source_preference as any) || "auto"}
+                  onValueChange={(v: any) => setDraft(d => ({ ...d, price_source_preference: v }))}
+                  className="flex gap-4"
+                >
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <RadioGroupItem value="auto" id="src-auto"/>
+                    <span>🤖 Авто (парсинг)</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <RadioGroupItem value="manual" id="src-manual"/>
+                    <span>✋ Ручная цена</span>
+                  </label>
+                </RadioGroup>
+                <div>
+                  <Label className="text-xs">Поисковый запрос (по умолчанию — название)</Label>
+                  <Input
+                    placeholder={draft.name || "напр. Виагра 50 мг 4 таб."}
+                    value={draft.parse_query ?? ""}
+                    onChange={e => setDraft(d => ({ ...d, parse_query: e.target.value || null }))}
+                  />
+                </div>
+                {draft.price_auto != null && (
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Автоцена:</span>
+                      <span>{formatRub(draft.price_auto)}</span>
+                      {draft.price_auto_updated_at && (
+                        <span className="text-muted-foreground">
+                          · {new Date(draft.price_auto_updated_at).toLocaleDateString("ru-RU")}
+                        </span>
+                      )}
+                    </div>
+                    {Array.isArray(draft.price_auto_sources) && draft.price_auto_sources.length > 0 && (
+                      <details className="text-[11px] text-muted-foreground">
+                        <summary className="cursor-pointer">Источники ({draft.price_auto_sources.length})</summary>
+                        <ul className="pl-3 mt-1 space-y-0.5">
+                          {draft.price_auto_sources.map((s, i) => (
+                            <li key={i}>
+                              {s.source}: {formatRub(s.price)}
+                              {s.url && <a href={s.url} target="_blank" rel="noreferrer" className="ml-1 underline">↗</a>}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                )}
+                {draft.id && (
+                  <Button
+                    size="sm" variant="outline" type="button"
+                    onClick={() => refreshPrice(draft.id!)}
+                    disabled={refreshingId === draft.id}
+                    className="gap-1.5 text-xs h-7"
+                  >
+                    {refreshingId === draft.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <RefreshCw className="w-3 h-3"/>}
+                    Обновить автоцену сейчас
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-4 pt-2">
