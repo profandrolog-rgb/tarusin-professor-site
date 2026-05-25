@@ -52,6 +52,7 @@ export interface CostCatalog {
   patient_info?: Record<string, any> | null;
   price_auto?: number | null;
   price_auto_updated_at?: string | null;
+  price_updated_at?: string | null;
   price_source_preference?: "auto" | "manual" | null;
 }
 
@@ -200,3 +201,19 @@ export function priceFreshness(updatedAt: string | null | undefined): "missing" 
   if (ageDays <= 90) return "stale";
   return "old";
 }
+
+/** Return the most recent price-update date across catalog entries (auto or manual). */
+export function latestPriceDate(
+  catalogs: Iterable<{ price_auto_updated_at?: string | null; price_updated_at?: string | null; price_source_preference?: "auto" | "manual" | null }>,
+): string | null {
+  let max = 0;
+  for (const c of catalogs) {
+    const pref = c.price_source_preference || "auto";
+    const candidate = pref === "manual" ? c.price_updated_at : (c.price_auto_updated_at ?? c.price_updated_at);
+    if (!candidate) continue;
+    const t = new Date(candidate).getTime();
+    if (t > max) max = t;
+  }
+  return max ? new Date(max).toISOString() : null;
+}
+

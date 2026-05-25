@@ -33,7 +33,7 @@ export function PlanCostBlock({ items, durationDays, mode, showInPrint, onShowIn
     (async () => {
       const { data } = await supabase
         .from("treatment_catalog")
-        .select("id, price_override, pack_size_num, units_per_dose_num, patient_info, price_auto, price_auto_updated_at, price_source_preference")
+        .select("id, price_override, pack_size_num, units_per_dose_num, patient_info, price_auto, price_auto_updated_at, price_updated_at, price_source_preference")
         .in("id", catalogIds);
       const m = new Map<string, CostCatalog>();
       (data || []).forEach((r: any) => m.set(r.id, r));

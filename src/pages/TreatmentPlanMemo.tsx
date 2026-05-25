@@ -14,7 +14,7 @@ import {
   type DocxPlanItem,
 } from "@/lib/treatment/docxExport";
 import {
-  calculatePlanCost, formatRub, type CostCatalog, type CostItemInput,
+  calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput,
 } from "@/lib/treatment/cost";
 
 export default function TreatmentPlanMemo() {
@@ -49,7 +49,7 @@ export default function TreatmentPlanMemo() {
       if (catIds.length) {
         const { data: cat } = await supabase
           .from("treatment_catalog")
-          .select("id, price_override, pack_size_num, units_per_dose_num, patient_info, price_auto, price_auto_updated_at, price_source_preference")
+          .select("id, price_override, pack_size_num, units_per_dose_num, patient_info, price_auto, price_auto_updated_at, price_updated_at, price_source_preference")
           .in("id", catIds);
         const m = new Map<string, CostCatalog>();
         const mp = new Map<string, any>();
@@ -187,6 +187,10 @@ export default function TreatmentPlanMemo() {
               </h2>
               <p style={{ marginTop: "2mm" }}>
                 {formatRub(breakdown.total)} (±15–20%, без стоимости процедур и услуг клиники).
+                {(() => {
+                  const d = latestPriceDate(catalogMap.values());
+                  return d ? ` Цены актуальны на ${format(new Date(d), "d MMMM yyyy 'г.'", { locale: ru })}.` : "";
+                })()}
               </p>
             </section>
           )}
