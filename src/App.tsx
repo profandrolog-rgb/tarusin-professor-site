@@ -45,6 +45,7 @@ import TreatmentCatalog from "./pages/TreatmentCatalog";
 import TreatmentTemplates from "./pages/TreatmentTemplates";
 import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
 import AdminLabTestsCatalog from "./pages/AdminLabTestsCatalog";
+import AdminSystemSettings from "./pages/AdminSystemSettings";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 
@@ -150,6 +151,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/treatment-templates", Component: TreatmentTemplates, entry: "src/pages/TreatmentTemplates.tsx" },
       { path: "admin/treatment-templates/new", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/treatment-templates/:id", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
+      { path: "admin/system-settings", Component: AdminSystemSettings, entry: "src/pages/AdminSystemSettings.tsx" },
 
       { path: "*", Component: NotFound },
     ],

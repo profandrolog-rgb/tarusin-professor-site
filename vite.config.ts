@@ -18,6 +18,7 @@ const EXCLUDED_FROM_SSG = new Set([
   "/admin/patient-cards",
   "/admin/consultations",
   "/admin/self-check",
+  "/admin/system-settings",
 ]);
 
 // https://vitejs.dev/config/
