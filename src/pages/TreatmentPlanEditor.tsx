@@ -672,12 +672,13 @@ export default function TreatmentPlanEditor() {
               const Icon = section.icon;
               const empty = list.length === 0;
               return (
-                <Card key={section.key} className={empty ? "opacity-70" : ""}>
+                <Card key={section.key} className={empty ? "opacity-70" : ""} data-section-key={section.key} onClick={() => setActiveSection(section.key)}>
                   <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Icon className={`w-4 h-4 ${empty ? "text-muted-foreground" : "text-primary"}`}/>
                       {section.label}
                       {!empty && <Badge variant="secondary" className="text-xs">{list.length}</Badge>}
+                      {activeSection === section.key && <Badge variant="outline" className="text-[10px] h-4 px-1">активна</Badge>}
                       {section.hint && <span className="text-xs text-muted-foreground font-normal">— {section.hint}</span>}
                     </CardTitle>
                     <CatalogPicker section={section.key} allowAllCategories={section.key === "peptide"} onPick={(c) => addItem(section.key, c)}/>
@@ -686,12 +687,14 @@ export default function TreatmentPlanEditor() {
                     <CardContent className="pt-0 pb-3 px-4 space-y-2">
                       <SortableContext items={list.map(i => i.client_id)} strategy={verticalListSortingStrategy}>
                         {list.map(it => (
-                          <PlanItemRow
-                            key={it.client_id} item={it} mode={mode} courseDuration={durationDays} sortable
-                            update={(p) => updateItem(it.client_id, p)}
-                            remove={() => removeItem(it.client_id)}
-                            duplicateInn={!!it.inn_snapshot && (innCounts.get(it.inn_snapshot) || 0) > 1}
-                          />
+                          <div key={it.client_id} data-item-id={it.client_id} data-item-section={section.key}>
+                            <PlanItemRow
+                              item={it} mode={mode} courseDuration={durationDays} sortable
+                              update={(p) => updateItem(it.client_id, p)}
+                              remove={() => removeItem(it.client_id)}
+                              duplicateInn={!!it.inn_snapshot && (innCounts.get(it.inn_snapshot) || 0) > 1}
+                            />
+                          </div>
                         ))}
                       </SortableContext>
                     </CardContent>
