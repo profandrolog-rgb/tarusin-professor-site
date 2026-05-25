@@ -221,7 +221,79 @@ export function PatternExportDialog({
               <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4, fontStyle: "italic" }}>{FOOTER_DISCLAIMER}</div>
             </div>
           </div>
+
+          {/* Hidden A4 PDF render target (794 x 1123 px ≈ A4 @ 96dpi) */}
+          <div ref={pdfRef} style={{
+            width: 794, minHeight: 1123, padding: "56px 64px", boxSizing: "border-box",
+            background: "#ffffff", color: "#0d172a",
+            fontFamily: "Inter, 'Helvetica Neue', Arial, sans-serif", fontSize: 13, lineHeight: 1.45,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+              borderBottom: "1.5px solid #143c82", paddingBottom: 8, marginBottom: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#143c82", letterSpacing: 0.4 }}>
+                МАЦ — Медико-академический центр
+              </div>
+              <div style={{ fontSize: 11, color: "#5b6b85", textTransform: "uppercase", letterSpacing: 1.4 }}>
+                Терапевтический паттерн
+              </div>
+            </div>
+
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginBottom: 4 }}>Клиническая ситуация</div>
+            <div style={{ marginBottom: 14 }}>
+              {anonLevel === "profile" ? profileLine : "Структурный паттерн без профилирования."}
+            </div>
+
+            {summary.trim() && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginBottom: 4 }}>Клиническое назначение</div>
+                <div style={{ marginBottom: 14, whiteSpace: "pre-wrap" }}>{summary.trim()}</div>
+              </>
+            )}
+
+            {incDuration && (
+              <div style={{ marginBottom: 12 }}>
+                <strong>Длительность курса:</strong> {durationDays} дн.
+              </div>
+            )}
+
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginBottom: 6 }}>Состав терапии</div>
+            {groups.map(g => (
+              <div key={g.section.key} style={{ marginBottom: 10 }}>
+                <div style={{ fontWeight: 700, color: "#143c82", marginBottom: 2 }}>{g.section.label}</div>
+                {g.list.map((it, i) => (
+                  <div key={i} style={{ paddingLeft: 12, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 2 }}>•</span>{formatItemLine(it)}
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            {incLab && lab.length > 0 && (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#143c82", marginTop: 8, marginBottom: 4 }}>Лабораторный контроль</div>
+                {lab.map((l, i) => (
+                  <div key={i} style={{ paddingLeft: 12, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 2 }}>•</span>
+                    {l.control_point || "—"}{l.at_day != null ? ` (день ${l.at_day})` : ""}
+                  </div>
+                ))}
+              </>
+            )}
+
+            {incCost && totalCost != null && (
+              <div style={{ marginTop: 14, fontSize: 14 }}>
+                <strong>Ориентировочная стоимость курса:</strong>{" "}
+                {new Intl.NumberFormat("ru-RU").format(Math.round(totalCost))} ₽
+              </div>
+            )}
+
+            <div style={{ borderTop: "1px solid #c9d2e1", marginTop: 24, paddingTop: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#143c82" }}>МАЦ · Автор: проф. Д.И. Тарусин</div>
+              <div style={{ fontSize: 10, fontStyle: "italic", color: "#6b7a93", marginTop: 2 }}>{FOOTER_DISCLAIMER}</div>
+            </div>
+          </div>
         </div>
+
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Отмена</Button>
