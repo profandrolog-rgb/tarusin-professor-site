@@ -68,8 +68,8 @@ export function SaveAsTemplateDialog({ open, onOpenChange, items, mode, duration
           infusion_rate: it.infusion_rate,
           route_override: it.route_override,
           notes: it.notes,
-          remedy_id: (it as any).remedy_id ?? null,
-          potency: (it as any).potency ?? null,
+          repertory_remedy_id: (it as any).repertory_remedy_id ?? null,
+          potency: (it as any).potency ?? null, dosing_schedule: (it as any).dosing_schedule ?? null,
 
         }));
         const { error: e2 } = await supabase.from("protocol_template_items").insert(rows as any);

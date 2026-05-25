@@ -33,8 +33,9 @@ export interface CatalogItem {
   dose_range_min: number | null;
   dose_range_max: number | null;
   tags: string[] | null;
-  remedy_id?: string | null;
+  repertory_remedy_id?: string | null;
   potency?: string | null;
+  dosing_schedule?: string | null;
 }
 
 

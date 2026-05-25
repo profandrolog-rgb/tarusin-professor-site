@@ -47,7 +47,7 @@ function fromCatalog(c: CatalogItem, section: TreatmentCategory): PlanItem {
     time_of_day: c.time_of_day_default || [], infusion_rate: c.infusion_rate,
     notes: c.notes, is_off_label: c.is_off_label, light_sensitive: c.light_sensitive,
     glucose_only: c.glucose_only, dose_range_min: c.dose_range_min, dose_range_max: c.dose_range_max,
-    remedy_id: c.remedy_id ?? null, potency: c.potency ?? null,
+    repertory_remedy_id: c.repertory_remedy_id ?? null, potency: c.potency ?? null, dosing_schedule: c.dosing_schedule ?? null,
   };
 }
 
@@ -159,7 +159,7 @@ export default function TreatmentPlanEditor() {
           frequency: r.frequency, duration_days: r.duration_days, day_pattern: r.day_pattern,
           time_of_day: r.time_of_day || [], infusion_rate: r.infusion_rate, route_override: r.route_override,
           notes: r.notes, is_off_label: r.is_off_label, prn_estimated_doses: r.prn_estimated_doses,
-          remedy_id: r.remedy_id, potency: r.potency,
+          repertory_remedy_id: r.repertory_remedy_id, potency: r.potency, dosing_schedule: r.dosing_schedule,
 
         })));
         const { data: lc } = await supabase.from("treatment_plan_lab_control" as any)
@@ -278,7 +278,7 @@ export default function TreatmentPlanEditor() {
           infusion_rate: it.infusion_rate, route_override: it.route_override,
           notes: it.notes, is_off_label: it.is_off_label,
           prn_estimated_doses: it.prn_estimated_doses ?? null,
-          remedy_id: it.remedy_id ?? null, potency: it.potency ?? null,
+          repertory_remedy_id: it.repertory_remedy_id ?? null, potency: it.potency ?? null, dosing_schedule: it.dosing_schedule ?? null,
 
         }));
         const { error: e2 } = await supabase.from("treatment_plan_items").insert(rows);
