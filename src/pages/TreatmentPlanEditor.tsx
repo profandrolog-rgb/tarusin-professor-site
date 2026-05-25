@@ -63,6 +63,7 @@ export default function TreatmentPlanEditor() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [patternExportOpen, setPatternExportOpen] = useState(false);
   const [courseNumber, setCourseNumber] = useState<number | null>(null);
   const [patientAge, setPatientAge] = useState<number | null>(null);
   const [showCostInPrint, setShowCostInPrint] = useState(false);
