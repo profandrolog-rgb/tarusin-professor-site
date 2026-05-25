@@ -81,6 +81,8 @@ const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   peptide: "по схеме",
   procedure: "",
   lifestyle: "",
+  homeopathy: "под язык",
+
 };
 
 function lineFor(it: DocxPlanItem, courseDays: number): string {
