@@ -1001,6 +1001,57 @@ export type Database = {
         }
         Relationships: []
       }
+      memo_send_log: {
+        Row: {
+          channel: string
+          content_kind: string
+          error: string | null
+          id: string
+          plan_id: string
+          recipient: string | null
+          sent_at: string
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          channel: string
+          content_kind: string
+          error?: string | null
+          id?: string
+          plan_id: string
+          recipient?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          status: string
+        }
+        Update: {
+          channel?: string
+          content_kind?: string
+          error?: string | null
+          id?: string
+          plan_id?: string
+          recipient?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memo_send_log_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memo_send_log_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans_search"
+            referencedColumns: ["plan_id"]
+          },
+        ]
+      }
       operations_journal: {
         Row: {
           assistant_name: string | null
@@ -1193,22 +1244,31 @@ export type Database = {
         Row: {
           birth_date: string
           created_at: string
+          email: string | null
           full_name: string
           id: string
+          phone: string | null
+          telegram_username: string | null
           updated_at: string
         }
         Insert: {
           birth_date: string
           created_at?: string
+          email?: string | null
           full_name: string
           id?: string
+          phone?: string | null
+          telegram_username?: string | null
           updated_at?: string
         }
         Update: {
           birth_date?: string
           created_at?: string
+          email?: string | null
           full_name?: string
           id?: string
+          phone?: string | null
+          telegram_username?: string | null
           updated_at?: string
         }
         Relationships: []
