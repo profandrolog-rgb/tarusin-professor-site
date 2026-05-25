@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Printer, Loader2 } from "lucide-react";
+import QRCode from "qrcode";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
 
@@ -42,6 +43,8 @@ interface PlanDB {
   course_number: number | null;
   show_cost_in_print: boolean | null;
   lab_control_enabled: boolean | null;
+  is_public: boolean | null;
+  public_hash: string | null;
   patient: { full_name: string; birth_date: string } | null;
 }
 
@@ -138,7 +141,7 @@ export default function TreatmentPlanPrint() {
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, is_public, public_hash, patient:patients(full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
