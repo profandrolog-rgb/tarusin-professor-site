@@ -368,6 +368,72 @@ export default function TreatmentCatalog() {
               <p className="text-[11px] text-muted-foreground">
                 Цена используется в расчёте ориентировочной стоимости курса. Поле «единиц на приём» помогает корректно посчитать число упаковок при делении/удвоении доз.
               </p>
+
+              {/* Автоцена (Фаза 4) */}
+              <div className="rounded-md border border-border/60 bg-background p-2 space-y-2 mt-2">
+                <div className="flex items-center gap-2 text-xs font-semibold">
+                  <Bot className="w-3.5 h-3.5 text-primary"/>Источник цены
+                </div>
+                <RadioGroup
+                  value={(draft.price_source_preference as any) || "auto"}
+                  onValueChange={(v: any) => setDraft(d => ({ ...d, price_source_preference: v }))}
+                  className="flex gap-4"
+                >
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <RadioGroupItem value="auto" id="src-auto"/>
+                    <span>🤖 Авто (парсинг)</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <RadioGroupItem value="manual" id="src-manual"/>
+                    <span>✋ Ручная цена</span>
+                  </label>
+                </RadioGroup>
+                <div>
+                  <Label className="text-xs">Поисковый запрос (по умолчанию — название)</Label>
+                  <Input
+                    placeholder={draft.name || "напр. Виагра 50 мг 4 таб."}
+                    value={draft.parse_query ?? ""}
+                    onChange={e => setDraft(d => ({ ...d, parse_query: e.target.value || null }))}
+                  />
+                </div>
+                {draft.price_auto != null && (
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Автоцена:</span>
+                      <span>{formatRub(draft.price_auto)}</span>
+                      {draft.price_auto_updated_at && (
+                        <span className="text-muted-foreground">
+                          · {new Date(draft.price_auto_updated_at).toLocaleDateString("ru-RU")}
+                        </span>
+                      )}
+                    </div>
+                    {Array.isArray(draft.price_auto_sources) && draft.price_auto_sources.length > 0 && (
+                      <details className="text-[11px] text-muted-foreground">
+                        <summary className="cursor-pointer">Источники ({draft.price_auto_sources.length})</summary>
+                        <ul className="pl-3 mt-1 space-y-0.5">
+                          {draft.price_auto_sources.map((s, i) => (
+                            <li key={i}>
+                              {s.source}: {formatRub(s.price)}
+                              {s.url && <a href={s.url} target="_blank" rel="noreferrer" className="ml-1 underline">↗</a>}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                )}
+                {draft.id && (
+                  <Button
+                    size="sm" variant="outline" type="button"
+                    onClick={() => refreshPrice(draft.id!)}
+                    disabled={refreshingId === draft.id}
+                    className="gap-1.5 text-xs h-7"
+                  >
+                    {refreshingId === draft.id ? <Loader2 className="w-3 h-3 animate-spin"/> : <RefreshCw className="w-3 h-3"/>}
+                    Обновить автоцену сейчас
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-4 pt-2">
