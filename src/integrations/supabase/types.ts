@@ -872,8 +872,12 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          kdl_slug: string | null
           name: string
           notes: string | null
+          price_auto: number | null
+          price_auto_sources: Json | null
+          price_auto_updated_at: string | null
           price_avg: number | null
           ref_range_male: string | null
           short_name: string | null
@@ -885,8 +889,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          kdl_slug?: string | null
           name: string
           notes?: string | null
+          price_auto?: number | null
+          price_auto_sources?: Json | null
+          price_auto_updated_at?: string | null
           price_avg?: number | null
           ref_range_male?: string | null
           short_name?: string | null
@@ -898,8 +906,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          kdl_slug?: string | null
           name?: string
           notes?: string | null
+          price_auto?: number | null
+          price_auto_sources?: Json | null
+          price_auto_updated_at?: string | null
           price_avg?: number | null
           ref_range_male?: string | null
           short_name?: string | null
@@ -1273,6 +1285,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      price_parse_log: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string
+          error: string | null
+          id: string
+          price_result: number | null
+          sources_count: number | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: string
+          error?: string | null
+          id?: string
+          price_result?: number | null
+          sources_count?: number | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string
+          error?: string | null
+          id?: string
+          price_result?: number | null
+          sources_count?: number | null
+          status?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1782,10 +1830,15 @@ export type Database = {
           notes: string | null
           pack_size: string | null
           pack_size_num: number | null
+          parse_query: string | null
           patient_info: Json
+          price_auto: number | null
+          price_auto_sources: Json | null
+          price_auto_updated_at: string | null
           price_currency: string | null
           price_override: number | null
           price_source_note: string | null
+          price_source_preference: string
           price_updated_at: string | null
           subcategory: string | null
           tags: string[] | null
@@ -1820,10 +1873,15 @@ export type Database = {
           notes?: string | null
           pack_size?: string | null
           pack_size_num?: number | null
+          parse_query?: string | null
           patient_info?: Json
+          price_auto?: number | null
+          price_auto_sources?: Json | null
+          price_auto_updated_at?: string | null
           price_currency?: string | null
           price_override?: number | null
           price_source_note?: string | null
+          price_source_preference?: string
           price_updated_at?: string | null
           subcategory?: string | null
           tags?: string[] | null
@@ -1858,10 +1916,15 @@ export type Database = {
           notes?: string | null
           pack_size?: string | null
           pack_size_num?: number | null
+          parse_query?: string | null
           patient_info?: Json
+          price_auto?: number | null
+          price_auto_sources?: Json | null
+          price_auto_updated_at?: string | null
           price_currency?: string | null
           price_override?: number | null
           price_source_note?: string | null
+          price_source_preference?: string
           price_updated_at?: string | null
           subcategory?: string | null
           tags?: string[] | null
