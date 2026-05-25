@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList, Share2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
@@ -22,6 +22,7 @@ import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHist
 import { PlanCostBlock } from "@/components/treatment/PlanCostBlock";
 import { LabControlSection, type LabControlPoint } from "@/components/treatment/LabControlSection";
 import { PublicLinkPopover } from "@/components/treatment/PublicLinkPopover";
+import { PatternExportDialog } from "@/components/treatment/PatternExportDialog";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
