@@ -140,8 +140,10 @@ export default function TreatmentPlanPrint() {
   const [labControl, setLabControl] = useState<LabControlRow[]>([]);
   const [labTestsMap, setLabTestsMap] = useState<Map<string, LabTest>>(new Map());
   const [catalogMap, setCatalogMap] = useState<Map<string, CostCatalog>>(new Map());
+  const [acupunctureMap, setAcupunctureMap] = useState<IrtCatalogMap>(new Map());
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
+
 
   useEffect(() => {
     (async () => {
