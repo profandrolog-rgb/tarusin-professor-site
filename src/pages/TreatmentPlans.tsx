@@ -204,6 +204,9 @@ export default function TreatmentPlans() {
             <Link to="/admin/repertory">
               <Button variant="outline" className="gap-2"><BookOpen className="w-4 h-4"/>Реперториум</Button>
             </Link>
+            <Link to="/admin/acupoints">
+              <Button variant="outline" className="gap-2"><MapPin className="w-4 h-4"/>Точки ИРТ</Button>
+            </Link>
             <Link to="/admin/treatment-templates">
               <Button variant="outline" className="gap-2"><BookMarked className="w-4 h-4"/>Шаблоны</Button>
             </Link>
