@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet, RefreshCw, Bot, Hand } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet, RefreshCw, Bot, Hand, Search, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
@@ -71,6 +71,11 @@ export default function TreatmentCatalog() {
   const [busy, setBusy] = useState(true);
   const [filter, setFilter] = useState<TreatmentCategory | "all">("all");
   const [q, setQ] = useState("");
+  const [matchIds, setMatchIds] = useState<Set<string> | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const [acOpen, setAcOpen] = useState(false);
+  const acRef = useRef<HTMLDivElement | null>(null);
   const [onlyMissingPrice, setOnlyMissingPrice] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
@@ -153,6 +158,70 @@ export default function TreatmentCatalog() {
   };
   useEffect(() => { load(); }, []);
 
+  // Load search history from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("treatment_catalog_search_history");
+      if (raw) setHistory(JSON.parse(raw).slice(0, 10));
+    } catch { /* ignore */ }
+  }, []);
+
+  const pushHistory = (term: string) => {
+    const t = term.trim();
+    if (!t) return;
+    setHistory(prev => {
+      const next = [t, ...prev.filter(x => x.toLowerCase() !== t.toLowerCase())].slice(0, 10);
+      try { localStorage.setItem("treatment_catalog_search_history", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    try { localStorage.removeItem("treatment_catalog_search_history"); } catch { /* ignore */ }
+  };
+
+  // Debounced full-text search → matching ids
+  useEffect(() => {
+    const term = q.trim();
+    if (!term) { setMatchIds(null); setSearching(false); return; }
+    setSearching(true);
+    const handle = setTimeout(async () => {
+      try {
+        // Build a websearch-friendly query: split by space, prefix-match each token
+        const fts = term
+          .split(/\s+/)
+          .filter(Boolean)
+          .map(t => t.replace(/[&|!():*]/g, "") + ":*")
+          .join(" & ");
+        let { data, error } = await supabase
+          .from("treatment_catalog")
+          .select("id")
+          .textSearch("search_vector", fts, { config: "russian" } as any);
+        if (error) {
+          // Fallback to substring search across already-loaded rows (handled by filter)
+          setMatchIds(null);
+        } else {
+          setMatchIds(new Set((data || []).map((r: any) => r.id)));
+        }
+      } catch {
+        setMatchIds(null);
+      } finally {
+        setSearching(false);
+      }
+    }, 180);
+    return () => clearTimeout(handle);
+  }, [q]);
+
+  // Close autocomplete on outside click
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (acRef.current && !acRef.current.contains(e.target as Node)) setAcOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
   const save = async () => {
     if (!draft.name || !draft.category) { toast({ title: "Название и категория обязательны", variant: "destructive" }); return; }
     const payload: any = { ...draft };
@@ -187,12 +256,46 @@ export default function TreatmentCatalog() {
     }
   }, [rows, searchParams, setSearchParams]);
 
+  const qLower = q.trim().toLowerCase();
+  const matchesSubstring = (r: Row) => {
+    if (!qLower) return true;
+    const hay = [r.name, r.inn, r.notes, r.subcategory].filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(qLower);
+  };
+
   const filtered = rows.filter(r => {
     if (filter !== "all" && r.category !== filter) return false;
     if (onlyMissingPrice && effectivePrice(r) != null) return false;
-    if (q && !(r.name.toLowerCase().includes(q.toLowerCase()) || (r.inn || "").toLowerCase().includes(q.toLowerCase()))) return false;
+    if (qLower) {
+      // Prefer FTS match-set if available; otherwise fall back to substring
+      if (matchIds) {
+        if (!matchIds.has(r.id) && !matchesSubstring(r)) return false;
+      } else if (!matchesSubstring(r)) {
+        return false;
+      }
+    }
     return true;
   });
+
+  // Top-5 autocomplete suggestions
+  const suggestions = qLower ? filtered.slice(0, 5) : [];
+
+  // Highlight tokens helper
+  const renderHighlighted = (text: string | null | undefined) => {
+    const s = text || "";
+    if (!qLower) return s;
+    const tokens = qLower.split(/\s+/).filter(t => t.length >= 2);
+    if (!tokens.length) return s;
+    const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+    const splitter = new RegExp(`(${escaped})`, "gi");
+    const tester = new RegExp(`^(?:${escaped})$`, "i");
+    const parts = s.split(splitter);
+    return parts.map((p, i) =>
+      tester.test(p)
+        ? <mark key={i} className="bg-amber-200/70 dark:bg-amber-500/30 text-inherit rounded px-0.5">{p}</mark>
+        : <span key={i}>{p}</span>
+    );
+  };
 
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
@@ -221,19 +324,87 @@ export default function TreatmentCatalog() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4 flex-wrap items-center">
-          <Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Поиск..." className="max-w-xs"/>
-          <Select value={filter} onValueChange={(v: any)=>setFilter(v)}>
-            <SelectTrigger className="max-w-xs"><SelectValue/></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все категории</SelectItem>
-              {SECTIONS.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={onlyMissingPrice} onCheckedChange={setOnlyMissingPrice}/>
-            <Wallet className="w-3.5 h-3.5"/>Только без цены
-          </label>
+        <div className="space-y-2 mb-4">
+          <div className="flex gap-2 flex-wrap items-center">
+            <div ref={acRef} className="relative w-full max-w-md">
+              <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"/>
+              <Input
+                value={q}
+                onChange={e => { setQ(e.target.value); setAcOpen(true); }}
+                onFocus={() => setAcOpen(true)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") { pushHistory(q); setAcOpen(false); }
+                  else if (e.key === "Escape") { setAcOpen(false); }
+                }}
+                placeholder="Поиск: название, МНН, заметки, теги…"
+                className="pl-8 pr-8"
+              />
+              {q && (
+                <button
+                  type="button"
+                  onClick={() => { setQ(""); setAcOpen(false); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Очистить"
+                ><X className="w-4 h-4"/></button>
+              )}
+              {searching && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin absolute right-8 top-1/2 -translate-y-1/2 text-muted-foreground"/>
+              )}
+              {acOpen && qLower && suggestions.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-lg overflow-hidden">
+                  {suggestions.map(s => {
+                    const section = SECTIONS.find(x => x.key === s.category);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className="block w-full text-left px-3 py-2 hover:bg-accent text-sm"
+                        onClick={() => { setQ(s.name); pushHistory(s.name); setAcOpen(false); }}
+                      >
+                        <div className="font-medium truncate">{renderHighlighted(s.name)}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {section?.short}{s.inn ? ` · ${s.inn}` : ""}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <Select value={filter} onValueChange={(v: any)=>setFilter(v)}>
+              <SelectTrigger className="max-w-xs"><SelectValue/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все категории</SelectItem>
+                {SECTIONS.map(s => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={onlyMissingPrice} onCheckedChange={setOnlyMissingPrice}/>
+              <Wallet className="w-3.5 h-3.5"/>Только без цены
+            </label>
+            {qLower && (
+              <span className="text-xs text-muted-foreground">Найдено: {filtered.length}</span>
+            )}
+          </div>
+          {history.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap items-center text-xs">
+              <span className="text-muted-foreground">Недавние:</span>
+              {history.map(h => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => { setQ(h); setAcOpen(false); }}
+                  className="px-2 py-0.5 rounded-full border border-border bg-muted/40 hover:bg-accent transition-colors"
+                >{h}</button>
+              ))}
+              <button
+                type="button"
+                onClick={clearHistory}
+                className="text-muted-foreground hover:text-foreground ml-1"
+                title="Очистить историю"
+              ><X className="w-3 h-3"/></button>
+            </div>
+          )}
         </div>
 
         {busy ? (
@@ -255,8 +426,8 @@ export default function TreatmentCatalog() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {Icon && <Icon className="w-4 h-4 text-primary"/>}
-                        <span className="font-medium">{r.name}</span>
-                        {r.inn && <span className="text-xs text-muted-foreground">({r.inn})</span>}
+                        <span className="font-medium">{renderHighlighted(r.name)}</span>
+                        {r.inn && <span className="text-xs text-muted-foreground">({renderHighlighted(r.inn)})</span>}
                         <Badge variant="outline" className="text-[10px]">{section?.short}</Badge>
                         {r.is_rx && <Badge variant="outline" className="text-[10px]">Rx</Badge>}
                         {r.is_off_label && <Badge variant="outline" className="text-[10px] gap-1"><AlertTriangle className="w-2.5 h-2.5"/>off-label</Badge>}

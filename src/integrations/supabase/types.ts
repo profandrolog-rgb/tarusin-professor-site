@@ -1918,6 +1918,7 @@ export type Database = {
           price_source_note: string | null
           price_source_preference: string
           price_updated_at: string | null
+          search_vector: unknown
           subcategory: string | null
           tags: string[] | null
           time_of_day_default: string[] | null
@@ -1961,6 +1962,7 @@ export type Database = {
           price_source_note?: string | null
           price_source_preference?: string
           price_updated_at?: string | null
+          search_vector?: unknown
           subcategory?: string | null
           tags?: string[] | null
           time_of_day_default?: string[] | null
@@ -2004,6 +2006,7 @@ export type Database = {
           price_source_note?: string | null
           price_source_preference?: string
           price_updated_at?: string | null
+          search_vector?: unknown
           subcategory?: string | null
           tags?: string[] | null
           time_of_day_default?: string[] | null
