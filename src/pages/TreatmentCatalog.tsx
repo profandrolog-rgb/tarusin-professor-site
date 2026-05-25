@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet, RefreshCw, Bot, Hand } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Sun, Beaker, AlertTriangle, Upload, Download, Wallet, RefreshCw, Bot, Hand, Search, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { CsvImportDialog } from "@/components/treatment/CsvImportDialog";
