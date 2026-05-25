@@ -90,7 +90,9 @@ export default function TreatmentTemplateEditor() {
           notes: r.notes, is_off_label: !!c?.is_off_label,
           light_sensitive: !!c?.light_sensitive, glucose_only: !!c?.glucose_only,
           dose_range_min: c?.dose_range_min ?? null, dose_range_max: c?.dose_range_max ?? null,
+          remedy_id: r.remedy_id ?? c?.remedy_id ?? null, potency: r.potency ?? c?.potency ?? null,
         };
+
       }));
       setBusy(false);
     })();
