@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Printer, Loader2 } from "lucide-react";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
-import { calculatePlanCost, formatRub, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
+import { calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
 
 interface PlanItemDB {
   id: string;
@@ -374,7 +374,13 @@ export default function TreatmentPlanPrint() {
               </tbody>
             </table>
             <div style={{ fontSize: "8.5pt", color: "#444", marginTop: "1.5mm", fontStyle: "italic" }}>
-              Расчёт ориентировочный, ±15–20% в зависимости от аптеки. Стоимость процедур, расходных материалов и услуг клиники в расчёт не включена.
+              {(() => {
+                const d = latestPriceDate(costCatalogMap.values());
+                return d
+                  ? `Цены актуальны на ${format(new Date(d), "d MMMM yyyy 'г.'", { locale: ru })}, могут отличаться ±15–20% в зависимости от аптеки. `
+                  : "Расчёт ориентировочный, ±15–20% в зависимости от аптеки. ";
+              })()}
+              Стоимость процедур, расходных материалов и услуг клиники в расчёт не включена.
               {costBreakdown.missing.length > 0 ? ` Цены не заданы для ${costBreakdown.missing.length} позиций — они не учтены.` : ""}
             </div>
           </div>
