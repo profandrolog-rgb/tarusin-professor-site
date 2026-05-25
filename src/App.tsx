@@ -45,6 +45,7 @@ import TreatmentCatalog from "./pages/TreatmentCatalog";
 import TreatmentTemplates from "./pages/TreatmentTemplates";
 import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
 import AdminLabTestsCatalog from "./pages/AdminLabTestsCatalog";
+import AdminRepertory from "./pages/AdminRepertory";
 import AdminSystemSettings from "./pages/AdminSystemSettings";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
