@@ -686,7 +686,7 @@ export default function TreatmentPlanEditor() {
               const Icon = section.icon;
               const empty = list.length === 0;
               return (
-                <Card key={section.key} className={empty ? "opacity-70" : ""} data-section-key={section.key} onClick={() => setActiveSection(section.key)}>
+                <Card key={section.key} className={`scroll-mt-20 ${empty ? "opacity-70" : ""}`} data-section-key={section.key} onClick={() => setActiveSection(section.key)}>
                   <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Icon className={`w-4 h-4 ${empty ? "text-muted-foreground" : "text-primary"}`}/>
