@@ -21,6 +21,7 @@ import { ScheduledSummary } from "@/components/treatment/ScheduledSummary";
 import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHistoryDrawer";
 import { PlanCostBlock } from "@/components/treatment/PlanCostBlock";
 import { LabControlSection, type LabControlPoint } from "@/components/treatment/LabControlSection";
+import { PublicLinkPopover } from "@/components/treatment/PublicLinkPopover";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -66,6 +67,8 @@ export default function TreatmentPlanEditor() {
   const [showCostInPrint, setShowCostInPrint] = useState(false);
   const [labControlEnabled, setLabControlEnabled] = useState(false);
   const [labPoints, setLabPoints] = useState<LabControlPoint[]>([]);
+  const [isPublic, setIsPublic] = useState(false);
+  const [publicHash, setPublicHash] = useState<string | null>(null);
   const isNew = !id;
 
   const sensors = useSensors(
@@ -104,6 +107,8 @@ export default function TreatmentPlanEditor() {
         setCourseNumber((plan as any).course_number ?? null);
         setShowCostInPrint(!!(plan as any).show_cost_in_print);
         setLabControlEnabled(!!(plan as any).lab_control_enabled);
+        setIsPublic(!!(plan as any).is_public);
+        setPublicHash((plan as any).public_hash || null);
         const { data: rows } = await supabase.from("treatment_plan_items")
           .select("*").eq("plan_id", id!).order("section_category").order("order_index");
         setItems((rows || []).map((r: any): PlanItem => ({
