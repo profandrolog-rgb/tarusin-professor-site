@@ -157,6 +157,8 @@ export default function TreatmentPlanEditor() {
           frequency: r.frequency, duration_days: r.duration_days, day_pattern: r.day_pattern,
           time_of_day: r.time_of_day || [], infusion_rate: r.infusion_rate, route_override: r.route_override,
           notes: r.notes, is_off_label: r.is_off_label, prn_estimated_doses: r.prn_estimated_doses,
+          remedy_id: r.remedy_id, potency: r.potency,
+
         })));
         const { data: lc } = await supabase.from("treatment_plan_lab_control" as any)
           .select("*").eq("plan_id", id!).order("order_index");
