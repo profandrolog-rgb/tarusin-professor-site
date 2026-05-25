@@ -534,6 +534,17 @@ export default function TreatmentPlanEditor() {
           profile={{ sex: patient?.sex, age: patientAge, diagnosisShort: diagnosis }}
         />
 
+        {!isNew && id && (
+          <SendMemoDialog
+            open={sendMemoOpen}
+            onOpenChange={setSendMemoOpen}
+            planId={id}
+            publicHash={publicHash}
+            durationDays={durationDays}
+            patient={patient ? { full_name: patient.full_name, email: (patient as any).email, telegram_username: (patient as any).telegram_username } : null}
+          />
+        )}
+
         <ApplyTemplateDialog
           open={applyOpen} onOpenChange={setApplyOpen}
           currentItemsCount={items.length} currentMode={mode} currentDuration={durationDays}
