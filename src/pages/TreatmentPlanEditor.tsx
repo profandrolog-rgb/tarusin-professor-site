@@ -380,7 +380,9 @@ export default function TreatmentPlanEditor() {
         labControl,
         catalogMap,
         catalogPatientMap,
+        acupunctureMap,
       });
+
       toast({ title: "DOCX скачан" });
     } catch (e: any) {
       toast({ title: "Ошибка экспорта DOCX", description: e.message, variant: "destructive" });
