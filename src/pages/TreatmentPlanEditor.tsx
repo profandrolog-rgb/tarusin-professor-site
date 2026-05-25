@@ -27,6 +27,7 @@ import { LabControlSection, type LabControlPoint } from "@/components/treatment/
 import { PublicLinkPopover } from "@/components/treatment/PublicLinkPopover";
 import { PatternExportDialog } from "@/components/treatment/PatternExportDialog";
 import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
+import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -472,12 +473,25 @@ export default function TreatmentPlanEditor() {
 
   const grouped = SECTIONS.map(s => ({ section: s, list: items.filter(i => i.section_category === s.key) }));
 
+  const sectionCounts = grouped.reduce<Record<string, number>>((acc, g) => {
+    acc[g.section.key] = g.list.length;
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="container mx-auto px-4 py-6 max-w-7xl flex gap-6 items-start">
+        <EditorTOC
+          counts={sectionCounts}
+          labControlEnabled={labControlEnabled}
+          isPublic={isPublic}
+          hasPlan={items.length > 0}
+        />
+        <div className="flex-1 min-w-0 max-w-5xl">
         <Link to="/admin/treatment-plans" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4"/>К списку листов
         </Link>
+
 
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
