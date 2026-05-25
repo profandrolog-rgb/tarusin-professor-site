@@ -29,7 +29,9 @@ function fromCatalog(c: CatalogItem, section: TreatmentCategory, mode: "flat" | 
     time_of_day: c.time_of_day_default || [], infusion_rate: c.infusion_rate,
     notes: c.notes, is_off_label: c.is_off_label, light_sensitive: c.light_sensitive,
     glucose_only: c.glucose_only, dose_range_min: c.dose_range_min, dose_range_max: c.dose_range_max,
+    remedy_id: c.remedy_id ?? null, potency: c.potency ?? null,
   };
+
   if (mode === "scheduled" && duration) it.day_pattern = `1-${duration}`;
   return it;
 }
@@ -88,7 +90,9 @@ export default function TreatmentTemplateEditor() {
           notes: r.notes, is_off_label: !!c?.is_off_label,
           light_sensitive: !!c?.light_sensitive, glucose_only: !!c?.glucose_only,
           dose_range_min: c?.dose_range_min ?? null, dose_range_max: c?.dose_range_max ?? null,
+          remedy_id: r.remedy_id ?? c?.remedy_id ?? null, potency: r.potency ?? c?.potency ?? null,
         };
+
       }));
       setBusy(false);
     })();
@@ -145,6 +149,8 @@ export default function TreatmentTemplateEditor() {
           frequency: it.frequency, duration_days: it.duration_days, day_pattern: it.day_pattern || null,
           time_of_day: it.time_of_day, infusion_rate: it.infusion_rate, route_override: it.route_override,
           notes: it.notes,
+          remedy_id: it.remedy_id ?? null, potency: it.potency ?? null,
+
         }));
         const { error } = await supabase.from("protocol_template_items").insert(rows as any);
         if (error) throw error;

@@ -1443,6 +1443,8 @@ export type Database = {
           name_snapshot: string | null
           notes: string | null
           order_index: number
+          potency: string | null
+          remedy_id: string | null
           route_override: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           template_id: string
@@ -1463,6 +1465,8 @@ export type Database = {
           name_snapshot?: string | null
           notes?: string | null
           order_index?: number
+          potency?: string | null
+          remedy_id?: string | null
           route_override?: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           template_id: string
@@ -1483,6 +1487,8 @@ export type Database = {
           name_snapshot?: string | null
           notes?: string | null
           order_index?: number
+          potency?: string | null
+          remedy_id?: string | null
           route_override?: string | null
           section_category?: Database["public"]["Enums"]["treatment_category"]
           template_id?: string
@@ -1494,6 +1500,13 @@ export type Database = {
             columns: ["catalog_id"]
             isOneToOne: false
             referencedRelation: "treatment_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocol_template_items_remedy_id_fkey"
+            columns: ["remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
             referencedColumns: ["id"]
           },
           {
@@ -2181,7 +2194,9 @@ export type Database = {
           notes: string | null
           order_index: number
           plan_id: string
+          potency: string | null
           prn_estimated_doses: number | null
+          remedy_id: string | null
           route_override: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           time_of_day: string[] | null
@@ -2205,7 +2220,9 @@ export type Database = {
           notes?: string | null
           order_index?: number
           plan_id: string
+          potency?: string | null
           prn_estimated_doses?: number | null
+          remedy_id?: string | null
           route_override?: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           time_of_day?: string[] | null
@@ -2229,7 +2246,9 @@ export type Database = {
           notes?: string | null
           order_index?: number
           plan_id?: string
+          potency?: string | null
           prn_estimated_doses?: number | null
+          remedy_id?: string | null
           route_override?: string | null
           section_category?: Database["public"]["Enums"]["treatment_category"]
           time_of_day?: string[] | null
@@ -2255,6 +2274,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "treatment_plans_search"
             referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "treatment_plan_items_remedy_id_fkey"
+            columns: ["remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
           },
         ]
       }

@@ -114,7 +114,10 @@ export function ApplyTemplateDialog({ open, onOpenChange, currentItemsCount, cur
           glucose_only: !!c?.glucose_only,
           dose_range_min: c?.dose_range_min ?? null,
           dose_range_max: c?.dose_range_max ?? null,
+          remedy_id: (r as any).remedy_id ?? c?.remedy_id ?? null,
+          potency: (r as any).potency ?? c?.potency ?? null,
         };
+
       });
 
       // Handle flat→scheduled coercion of day_pattern
