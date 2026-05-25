@@ -174,7 +174,7 @@ export function CsvImportDialog({ open, onOpenChange, onComplete }: Props) {
                         <td className="px-2 py-1">{r.payload.name || "—"}</td>
                         <td className="px-2 py-1">{r.payload.inn || "—"}</td>
                         <td className="px-2 py-1">{r.payload.default_dose ?? ""} {r.payload.dose_unit ?? ""}</td>
-                        <td className="px-2 py-1">{r.errors.length ? <span className="text-destructive">{r.errors[0]}</span> : <span className="text-green-600">OK</span>}</td>
+                        <td className="px-2 py-1">{r.errors.length ? <span className="text-destructive">{r.errors[0]}</span> : <span className="text-green-600 dark:text-green-400">OK</span>}</td>
                       </tr>
                     ))}
                   </tbody>
