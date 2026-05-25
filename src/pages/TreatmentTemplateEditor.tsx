@@ -149,6 +149,8 @@ export default function TreatmentTemplateEditor() {
           frequency: it.frequency, duration_days: it.duration_days, day_pattern: it.day_pattern || null,
           time_of_day: it.time_of_day, infusion_rate: it.infusion_rate, route_override: it.route_override,
           notes: it.notes,
+          remedy_id: it.remedy_id ?? null, potency: it.potency ?? null,
+
         }));
         const { error } = await supabase.from("protocol_template_items").insert(rows as any);
         if (error) throw error;
