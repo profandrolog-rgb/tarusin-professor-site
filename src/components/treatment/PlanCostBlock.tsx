@@ -17,9 +17,10 @@ interface Props {
   mode: "flat" | "scheduled";
   showInPrint: boolean;
   onShowInPrintChange: (v: boolean) => void;
+  onTotalChange?: (total: number) => void;
 }
 
-export function PlanCostBlock({ items, durationDays, mode, showInPrint, onShowInPrintChange }: Props) {
+export function PlanCostBlock({ items, durationDays, mode, showInPrint, onShowInPrintChange, onTotalChange }: Props) {
   const [open, setOpen] = useState(true);
   const [showMissing, setShowMissing] = useState(false);
   const [catalogMap, setCatalogMap] = useState<Map<string, CostCatalog>>(new Map());
@@ -53,6 +54,8 @@ export function PlanCostBlock({ items, durationDays, mode, showInPrint, onShowIn
     }));
     return calculatePlanCost(input, catalogMap, durationDays, mode);
   }, [items, catalogMap, durationDays, mode]);
+
+  useEffect(() => { onTotalChange?.(breakdown.total); }, [breakdown.total, onTotalChange]);
 
   return (
     <Card className="mt-4">

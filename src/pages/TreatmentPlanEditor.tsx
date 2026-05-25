@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList, Share2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
@@ -22,12 +22,13 @@ import { PlanVersionHistoryDrawer } from "@/components/treatment/PlanVersionHist
 import { PlanCostBlock } from "@/components/treatment/PlanCostBlock";
 import { LabControlSection, type LabControlPoint } from "@/components/treatment/LabControlSection";
 import { PublicLinkPopover } from "@/components/treatment/PublicLinkPopover";
+import { PatternExportDialog } from "@/components/treatment/PatternExportDialog";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
-interface Patient { id: string; full_name: string; birth_date: string; }
+interface Patient { id: string; full_name: string; birth_date: string; sex?: string | null; }
 
 const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
 
@@ -62,6 +63,8 @@ export default function TreatmentPlanEditor() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [patternExportOpen, setPatternExportOpen] = useState(false);
+  const [currentTotalCost, setCurrentTotalCost] = useState<number>(0);
   const [courseNumber, setCourseNumber] = useState<number | null>(null);
   const [patientAge, setPatientAge] = useState<number | null>(null);
   const [showCostInPrint, setShowCostInPrint] = useState(false);
@@ -393,6 +396,9 @@ export default function TreatmentPlanEditor() {
                 <Button variant="outline" className="gap-2"><ClipboardList className="w-4 h-4"/>Памятка</Button>
               </Link>
             )}
+            <Button variant="outline" onClick={() => setPatternExportOpen(true)} className="gap-2" disabled={items.length === 0}>
+              <Share2 className="w-4 h-4"/>Экспорт паттерна
+            </Button>
             {!isNew && id && (
               <PublicLinkPopover
                 planId={id}
@@ -506,8 +512,20 @@ export default function TreatmentPlanEditor() {
             mode={mode}
             showInPrint={showCostInPrint}
             onShowInPrintChange={setShowCostInPrint}
+            onTotalChange={setCurrentTotalCost}
           />
         </div>
+
+        <PatternExportDialog
+          open={patternExportOpen}
+          onOpenChange={setPatternExportOpen}
+          items={items}
+          durationDays={durationDays}
+          totalCost={currentTotalCost}
+          lab={labControlEnabled ? labPoints.map(p => ({ control_point: p.control_point, at_day: p.at_day })) : []}
+          clinicalSummary={summary}
+          profile={{ sex: patient?.sex, age: patientAge, diagnosisShort: diagnosis }}
+        />
 
         <ApplyTemplateDialog
           open={applyOpen} onOpenChange={setApplyOpen}
