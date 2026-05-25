@@ -38,6 +38,7 @@ export interface PlanItem {
   prn_estimated_doses?: number | null;
   repertory_remedy_id?: string | null;
   potency?: string | null;
+  dosing_schedule?: string | null;
 }
 
 
