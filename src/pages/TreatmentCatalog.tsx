@@ -287,10 +287,11 @@ export default function TreatmentCatalog() {
     const tokens = qLower.split(/\s+/).filter(t => t.length >= 2);
     if (!tokens.length) return s;
     const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-    const re = new RegExp(`(${escaped})`, "gi");
-    const parts = s.split(re);
+    const splitter = new RegExp(`(${escaped})`, "gi");
+    const tester = new RegExp(`^(?:${escaped})$`, "i");
+    const parts = s.split(splitter);
     return parts.map((p, i) =>
-      re.test(p)
+      tester.test(p)
         ? <mark key={i} className="bg-amber-200/70 dark:bg-amber-500/30 text-inherit rounded px-0.5">{p}</mark>
         : <span key={i}>{p}</span>
     );
