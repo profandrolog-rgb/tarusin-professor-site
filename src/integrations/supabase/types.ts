@@ -2040,6 +2040,13 @@ export type Database = {
             referencedRelation: "treatment_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "treatment_plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans_search"
+            referencedColumns: ["plan_id"]
+          },
         ]
       }
       treatment_plan_lab_control: {
@@ -2087,6 +2094,13 @@ export type Database = {
             referencedRelation: "treatment_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "treatment_plan_lab_control_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans_search"
+            referencedColumns: ["plan_id"]
+          },
         ]
       }
       treatment_plan_versions: {
@@ -2121,6 +2135,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "treatment_plans"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plan_versions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_plans_search"
+            referencedColumns: ["plan_id"]
           },
         ]
       }
@@ -2581,6 +2602,38 @@ export type Database = {
           },
         ]
       }
+      treatment_plans_search: {
+        Row: {
+          clinical_summary: string | null
+          course_number: number | null
+          diagnosis_short: string | null
+          duration_days: number | null
+          issued_at: string | null
+          item_inns: string[] | null
+          item_names: string[] | null
+          mode: string | null
+          patient_age_years: number | null
+          patient_birth_date: string | null
+          patient_full_name: string | null
+          patient_id: string | null
+          plan_id: string | null
+          search_text: string | null
+          search_vec: unknown
+          status: string | null
+          template_name: string | null
+          template_tags: string[] | null
+          total_cost_estimate: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plans_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _analytics_filter_plans: {
@@ -2669,6 +2722,22 @@ export type Database = {
           read_ct: number
         }[]
       }
+      refresh_treatment_plans_search: { Args: never; Returns: undefined }
+      search_treatment_plans: {
+        Args: {
+          _age_max?: number
+          _age_min?: number
+          _cost_max?: number
+          _cost_min?: number
+          _from?: string
+          _limit?: number
+          _q?: string
+          _to?: string
+        }
+        Returns: Json
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "user" | "editor" | "surgeon"
