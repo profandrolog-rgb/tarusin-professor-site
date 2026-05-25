@@ -103,7 +103,7 @@ export function calculateItemCost(
   };
   if (excluded) return base;
 
-  const unitPrice = catalog ? readNum(catalog.price_override) : null;
+  const unitPrice = catalog ? effectivePrice(catalog) : null;
   const packSize = (catalog ? readNum(catalog.pack_size_num) : null)
     ?? (catalog?.patient_info ? readNum(catalog.patient_info.pack_size_num ?? catalog.patient_info.units_per_pack) : null)
     ?? 1;
