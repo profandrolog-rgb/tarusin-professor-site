@@ -372,7 +372,9 @@ export default function TreatmentPlanEditor() {
               </div>
             )}
           </div>
-          <div className="flex gap-2 flex-wrap">
+
+          {/* Desktop toolbar */}
+          <div className="hidden lg:flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setApplyOpen(true)} className="gap-2">
               <Download className="w-4 h-4"/>Загрузить из шаблона
             </Button>
@@ -423,6 +425,78 @@ export default function TreatmentPlanEditor() {
             )}
             {!isNew && (
               <Button onClick={remove} variant="ghost" size="icon" className="text-destructive"><Trash2 className="w-4 h-4"/></Button>
+            )}
+          </div>
+
+          {/* Mobile/tablet toolbar: primary actions + dropdown */}
+          <div className="flex lg:hidden gap-2 flex-wrap items-center">
+            <Button onClick={() => save()} disabled={saving} className="gap-2 min-h-[44px]">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}Сохранить
+            </Button>
+            {!isNew && status === "draft" && (
+              <Button onClick={() => save("issued")} disabled={saving} variant="default" className="min-h-[44px]">Выписать</Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] h-11 w-11" aria-label="Меню">
+                  <MoreHorizontal className="w-5 h-5"/>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem onClick={() => setApplyOpen(true)} className="gap-2 py-3">
+                  <Download className="w-4 h-4"/>Загрузить из шаблона
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSaveAsOpen(true)} disabled={items.length === 0} className="gap-2 py-3">
+                  <BookMarked className="w-4 h-4"/>Сохранить как шаблон
+                </DropdownMenuItem>
+                {!isNew && status === "issued" && (
+                  <DropdownMenuItem onClick={() => setHistoryOpen(true)} className="gap-2 py-3">
+                    <History className="w-4 h-4"/>История версий
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator/>
+                {!isNew && (
+                  <DropdownMenuItem onClick={() => window.open(`/admin/treatment-plans/${id}/print`, "_blank")} className="gap-2 py-3">
+                    <Printer className="w-4 h-4"/>Печать
+                  </DropdownMenuItem>
+                )}
+                {!isNew && (
+                  <DropdownMenuItem onClick={exportDocx} disabled={items.length === 0} className="gap-2 py-3">
+                    <FileDown className="w-4 h-4"/>DOCX
+                  </DropdownMenuItem>
+                )}
+                {!isNew && (
+                  <DropdownMenuItem onClick={() => window.open(`/admin/treatment-plans/${id}/memo`, "_blank")} className="gap-2 py-3">
+                    <ClipboardList className="w-4 h-4"/>Памятка
+                  </DropdownMenuItem>
+                )}
+                {!isNew && id && patient && (
+                  <DropdownMenuItem onClick={() => setSendMemoOpen(true)} className="gap-2 py-3">
+                    <Send className="w-4 h-4"/>Отправить пациенту
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setPatternExportOpen(true)} disabled={items.length === 0} className="gap-2 py-3">
+                  <Share2 className="w-4 h-4"/>Экспорт паттерна
+                </DropdownMenuItem>
+                {!isNew && (
+                  <>
+                    <DropdownMenuSeparator/>
+                    <DropdownMenuItem onClick={remove} className="gap-2 py-3 text-destructive focus:text-destructive">
+                      <Trash2 className="w-4 h-4"/>Удалить лист
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {!isNew && id && (
+              <div className="w-full">
+                <PublicLinkPopover
+                  planId={id}
+                  publicHash={publicHash}
+                  isPublic={isPublic}
+                  onChange={(v) => setIsPublic(v.is_public)}
+                />
+              </div>
             )}
           </div>
         </div>
