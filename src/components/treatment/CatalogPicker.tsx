@@ -35,6 +35,7 @@ export interface CatalogItem {
   tags: string[] | null;
   repertory_remedy_id?: string | null;
   potency?: string | null;
+  dosing_schedule?: string | null;
 }
 
 

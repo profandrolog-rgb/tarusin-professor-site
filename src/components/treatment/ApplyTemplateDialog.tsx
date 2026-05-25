@@ -115,7 +115,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, currentItemsCount, cur
           dose_range_min: c?.dose_range_min ?? null,
           dose_range_max: c?.dose_range_max ?? null,
           repertory_remedy_id: (r as any).repertory_remedy_id ?? c?.repertory_remedy_id ?? null,
-          potency: (r as any).potency ?? c?.potency ?? null,
+          potency: (r as any).potency ?? c?.potency ?? null, dosing_schedule: (r as any).dosing_schedule ?? c?.dosing_schedule ?? null,
         };
 
       });
