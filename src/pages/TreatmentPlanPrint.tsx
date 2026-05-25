@@ -375,7 +375,7 @@ export default function TreatmentPlanPrint() {
             </table>
             <div style={{ fontSize: "8.5pt", color: "#444", marginTop: "1.5mm", fontStyle: "italic" }}>
               {(() => {
-                const d = latestPriceDate(costCatalogMap.values());
+                const d = latestPriceDate(catalogMap.values());
                 return d
                   ? `Цены актуальны на ${format(new Date(d), "d MMMM yyyy 'г.'", { locale: ru })}, могут отличаться ±15–20% в зависимости от аптеки. `
                   : "Расчёт ориентировочный, ±15–20% в зависимости от аптеки. ";
