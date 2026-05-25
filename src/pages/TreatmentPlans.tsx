@@ -201,6 +201,9 @@ export default function TreatmentPlans() {
             <Link to="/admin/lab-tests-catalog">
               <Button variant="outline" className="gap-2"><Database className="w-4 h-4"/>Анализы</Button>
             </Link>
+            <Link to="/admin/repertory">
+              <Button variant="outline" className="gap-2"><BookOpen className="w-4 h-4"/>Реперториум</Button>
+            </Link>
             <Link to="/admin/treatment-templates">
               <Button variant="outline" className="gap-2"><BookMarked className="w-4 h-4"/>Шаблоны</Button>
             </Link>
