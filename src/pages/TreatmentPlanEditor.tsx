@@ -832,7 +832,6 @@ export default function TreatmentPlanEditor() {
           </button>
         </div>
         </div>
-        </div>
       </div>
     </div>
   );
