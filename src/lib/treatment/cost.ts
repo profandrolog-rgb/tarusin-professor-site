@@ -52,6 +52,7 @@ export interface CostCatalog {
   patient_info?: Record<string, any> | null;
   price_auto?: number | null;
   price_auto_updated_at?: string | null;
+  price_updated_at?: string | null;
   price_source_preference?: "auto" | "manual" | null;
 }
 
