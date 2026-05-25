@@ -71,6 +71,11 @@ export default function TreatmentCatalog() {
   const [busy, setBusy] = useState(true);
   const [filter, setFilter] = useState<TreatmentCategory | "all">("all");
   const [q, setQ] = useState("");
+  const [matchIds, setMatchIds] = useState<Set<string> | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [history, setHistory] = useState<string[]>([]);
+  const [acOpen, setAcOpen] = useState(false);
+  const acRef = useRef<HTMLDivElement | null>(null);
   const [onlyMissingPrice, setOnlyMissingPrice] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState<Partial<Row>>(empty);
