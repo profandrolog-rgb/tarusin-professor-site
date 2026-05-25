@@ -522,7 +522,7 @@ export default function TreatmentPlanEditor() {
           items={items}
           durationDays={durationDays}
           totalCost={currentTotalCost}
-          lab={labControlEnabled ? labPoints.map(p => ({ control_point: (p as any).control_point ?? (p as any).label ?? null, at_day: (p as any).at_day ?? null })) : []}
+          lab={labControlEnabled ? labPoints.map(p => ({ control_point: p.control_point, at_day: p.at_day })) : []}
           clinicalSummary={summary}
           profile={{ sex: patient?.sex, age: patientAge, diagnosisShort: diagnosis }}
         />
