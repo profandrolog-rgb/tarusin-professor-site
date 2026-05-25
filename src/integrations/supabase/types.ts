@@ -109,6 +109,108 @@ export type Database = {
           },
         ]
       }
+      acupuncture_protocol_points: {
+        Row: {
+          acupoint_id: string
+          created_at: string
+          depth_mm: string | null
+          id: string
+          manipulation: string | null
+          notes: string | null
+          order_index: number
+          protocol_id: string
+          retention_min: number | null
+          side: string | null
+        }
+        Insert: {
+          acupoint_id: string
+          created_at?: string
+          depth_mm?: string | null
+          id?: string
+          manipulation?: string | null
+          notes?: string | null
+          order_index?: number
+          protocol_id: string
+          retention_min?: number | null
+          side?: string | null
+        }
+        Update: {
+          acupoint_id?: string
+          created_at?: string
+          depth_mm?: string | null
+          id?: string
+          manipulation?: string | null
+          notes?: string | null
+          order_index?: number
+          protocol_id?: string
+          retention_min?: number | null
+          side?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acupuncture_protocol_points_acupoint_id_fkey"
+            columns: ["acupoint_id"]
+            isOneToOne: false
+            referencedRelation: "acupoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acupuncture_protocol_points_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "acupuncture_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acupuncture_protocols: {
+        Row: {
+          contraindications: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: string | null
+          id: string
+          indications: string | null
+          is_archived: boolean
+          name: string
+          session_count: number | null
+          session_duration_min: number | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          contraindications?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          indications?: string | null
+          is_archived?: boolean
+          name: string
+          session_count?: number | null
+          session_duration_min?: number | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          contraindications?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          indications?: string | null
+          is_archived?: boolean
+          name?: string
+          session_count?: number | null
+          session_duration_min?: number | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics_cache: {
         Row: {
           cache_key: string
@@ -2132,6 +2234,7 @@ export type Database = {
       }
       treatment_catalog: {
         Row: {
+          acupuncture_protocol_id: string | null
           category: Database["public"]["Enums"]["treatment_category"]
           contraindications: string | null
           created_at: string
@@ -2178,6 +2281,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acupuncture_protocol_id?: string | null
           category: Database["public"]["Enums"]["treatment_category"]
           contraindications?: string | null
           created_at?: string
@@ -2224,6 +2328,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acupuncture_protocol_id?: string | null
           category?: Database["public"]["Enums"]["treatment_category"]
           contraindications?: string | null
           created_at?: string
@@ -2270,6 +2375,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "treatment_catalog_acupuncture_protocol_id_fkey"
+            columns: ["acupuncture_protocol_id"]
+            isOneToOne: false
+            referencedRelation: "acupuncture_protocols"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "treatment_catalog_remedy_id_fkey"
             columns: ["remedy_id"]
