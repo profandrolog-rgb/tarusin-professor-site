@@ -47,8 +47,10 @@ function fromCatalog(c: CatalogItem, section: TreatmentCategory): PlanItem {
     time_of_day: c.time_of_day_default || [], infusion_rate: c.infusion_rate,
     notes: c.notes, is_off_label: c.is_off_label, light_sensitive: c.light_sensitive,
     glucose_only: c.glucose_only, dose_range_min: c.dose_range_min, dose_range_max: c.dose_range_max,
+    remedy_id: c.remedy_id ?? null, potency: c.potency ?? null,
   };
 }
+
 
 export default function TreatmentPlanEditor() {
   const { id } = useParams<{ id: string }>();
