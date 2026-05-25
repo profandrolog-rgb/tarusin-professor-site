@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList, Share2, Send, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList, Share2, Send, MoreHorizontal, Keyboard } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { CommandPaletteDialog } from "@/components/treatment/CommandPaletteDialog";
+import { HotkeysHelpDialog } from "@/components/treatment/HotkeysHelpDialog";
 import { toast } from "@/hooks/use-toast";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
@@ -75,7 +77,37 @@ export default function TreatmentPlanEditor() {
   const [labPoints, setLabPoints] = useState<LabControlPoint[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [publicHash, setPublicHash] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [hotkeysOpen, setHotkeysOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<TreatmentCategory>("iv_drip");
+  const activeItemRef = useRef<string | null>(null);
   const isNew = !id;
+
+  // Undo stack for items (last 10 snapshots)
+  const undoStackRef = useRef<PlanItem[][]>([]);
+  const prevItemsRef = useRef<PlanItem[]>([]);
+  const skipNextSnapshotRef = useRef(false);
+  useEffect(() => {
+    if (skipNextSnapshotRef.current) {
+      skipNextSnapshotRef.current = false;
+      prevItemsRef.current = items;
+      return;
+    }
+    if (prevItemsRef.current !== items && prevItemsRef.current.length + items.length > 0) {
+      undoStackRef.current.push(prevItemsRef.current);
+      if (undoStackRef.current.length > 10) undoStackRef.current.shift();
+    }
+    prevItemsRef.current = items;
+  }, [items]);
+
+  const undo = useCallback(() => {
+    const snap = undoStackRef.current.pop();
+    if (!snap) { toast({ title: "Нечего отменять" }); return; }
+    skipNextSnapshotRef.current = true;
+    setItems(snap);
+    toast({ title: "Действие отменено" });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -344,6 +376,95 @@ export default function TreatmentPlanEditor() {
     }
   };
 
+  // Duplicate active item within its section
+  const duplicateActive = useCallback(() => {
+    const cid = activeItemRef.current;
+    if (!cid) { toast({ title: "Нет активной позиции" }); return; }
+    setItems(prev => {
+      const idx = prev.findIndex(i => i.client_id === cid);
+      if (idx < 0) return prev;
+      const src = prev[idx];
+      const copy: PlanItem = { ...src, client_id: newId() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+    toast({ title: "Позиция продублирована" });
+  }, []);
+
+  // Add from command palette
+  const addFromPalette = useCallback((section: TreatmentCategory, c: CatalogItem) => {
+    setItems(prev => {
+      const it = fromCatalog(c, section);
+      if (mode === "scheduled" && !it.day_pattern) it.day_pattern = `1-${durationDays}`;
+      activeItemRef.current = it.client_id;
+      return [...prev, it];
+    });
+    setActiveSection(section);
+    toast({ title: `Добавлено: ${c.name}` });
+  }, [mode, durationDays]);
+
+  // Track active item via focus
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("[data-item-id]") as HTMLElement | null;
+      if (el) {
+        activeItemRef.current = el.getAttribute("data-item-id");
+        const sec = el.getAttribute("data-item-section") as TreatmentCategory | null;
+        if (sec) setActiveSection(sec);
+      }
+      const secEl = (e.target as HTMLElement | null)?.closest?.("[data-section-key]") as HTMLElement | null;
+      if (secEl) {
+        const sk = secEl.getAttribute("data-section-key") as TreatmentCategory | null;
+        if (sk) setActiveSection(sk);
+      }
+    };
+    document.addEventListener("focusin", onFocus);
+    return () => document.removeEventListener("focusin", onFocus);
+  }, []);
+
+  // Global hotkeys
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement | null;
+      const inField = !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+
+      // ? help (when not typing)
+      if (!mod && !inField && (e.key === "?" || (e.shiftKey && e.key === "/"))) {
+        e.preventDefault(); setHotkeysOpen(true); return;
+      }
+      if (!mod) return;
+
+      switch (e.key.toLowerCase()) {
+        case "s":
+          e.preventDefault(); save(); break;
+        case "p":
+          if (!id) return;
+          e.preventDefault();
+          window.open(`/admin/treatment-plans/${id}/print`, "_blank");
+          break;
+        case "k":
+          e.preventDefault(); setPaletteOpen(true); break;
+        case "e":
+          if (isNew) return;
+          e.preventDefault(); setExportMenuOpen(true); break;
+        case "h":
+          if (isNew || status !== "issued") return;
+          e.preventDefault(); setHistoryOpen(true); break;
+        case "d":
+          if (!activeItemRef.current) return;
+          e.preventDefault(); duplicateActive(); break;
+        case "z":
+          if (e.shiftKey) return; // let browser handle redo if any
+          e.preventDefault(); undo(); break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isNew, status, duplicateActive, undo]);
+
   if (loading || busy) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
   }
@@ -551,12 +672,13 @@ export default function TreatmentPlanEditor() {
               const Icon = section.icon;
               const empty = list.length === 0;
               return (
-                <Card key={section.key} className={empty ? "opacity-70" : ""}>
+                <Card key={section.key} className={empty ? "opacity-70" : ""} data-section-key={section.key} onClick={() => setActiveSection(section.key)}>
                   <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Icon className={`w-4 h-4 ${empty ? "text-muted-foreground" : "text-primary"}`}/>
                       {section.label}
                       {!empty && <Badge variant="secondary" className="text-xs">{list.length}</Badge>}
+                      {activeSection === section.key && <Badge variant="outline" className="text-[10px] h-4 px-1">активна</Badge>}
                       {section.hint && <span className="text-xs text-muted-foreground font-normal">— {section.hint}</span>}
                     </CardTitle>
                     <CatalogPicker section={section.key} allowAllCategories={section.key === "peptide"} onPick={(c) => addItem(section.key, c)}/>
@@ -565,12 +687,14 @@ export default function TreatmentPlanEditor() {
                     <CardContent className="pt-0 pb-3 px-4 space-y-2">
                       <SortableContext items={list.map(i => i.client_id)} strategy={verticalListSortingStrategy}>
                         {list.map(it => (
-                          <PlanItemRow
-                            key={it.client_id} item={it} mode={mode} courseDuration={durationDays} sortable
-                            update={(p) => updateItem(it.client_id, p)}
-                            remove={() => removeItem(it.client_id)}
-                            duplicateInn={!!it.inn_snapshot && (innCounts.get(it.inn_snapshot) || 0) > 1}
-                          />
+                          <div key={it.client_id} data-item-id={it.client_id} data-item-section={section.key}>
+                            <PlanItemRow
+                              item={it} mode={mode} courseDuration={durationDays} sortable
+                              update={(p) => updateItem(it.client_id, p)}
+                              remove={() => removeItem(it.client_id)}
+                              duplicateInn={!!it.inn_snapshot && (innCounts.get(it.inn_snapshot) || 0) > 1}
+                            />
+                          </div>
                         ))}
                       </SortableContext>
                     </CardContent>
@@ -635,6 +759,49 @@ export default function TreatmentPlanEditor() {
             planId={id} userId={user.id}
           />
         )}
+
+        <CommandPaletteDialog
+          open={paletteOpen} onOpenChange={setPaletteOpen}
+          activeSection={activeSection}
+          onPick={addFromPalette}
+        />
+
+        <HotkeysHelpDialog open={hotkeysOpen} onOpenChange={setHotkeysOpen}/>
+
+        {/* Export menu (Ctrl/Cmd+E) */}
+        <DropdownMenu open={exportMenuOpen} onOpenChange={setExportMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <button className="sr-only" aria-hidden tabIndex={-1}/>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-56">
+            {!isNew && (
+              <DropdownMenuItem onClick={() => window.open(`/admin/treatment-plans/${id}/print`, "_blank")} className="gap-2">
+                <Printer className="w-4 h-4"/>Печать (PDF)
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={exportDocx} disabled={items.length === 0} className="gap-2">
+              <FileDown className="w-4 h-4"/>DOCX
+            </DropdownMenuItem>
+            {!isNew && (
+              <DropdownMenuItem onClick={() => window.open(`/admin/treatment-plans/${id}/memo`, "_blank")} className="gap-2">
+                <ClipboardList className="w-4 h-4"/>Памятка пациенту
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Footer hotkeys hint */}
+        <div className="mt-8 mb-2 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setHotkeysOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title="Горячие клавиши (?)"
+          >
+            <Keyboard className="w-3.5 h-3.5"/>
+            Горячие клавиши · <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[10px]">?</kbd>
+          </button>
+        </div>
       </div>
     </div>
   );
