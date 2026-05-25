@@ -400,16 +400,20 @@ export default function TreatmentPlanPrint() {
 
 
         {/* Signature */}
-        <div style={{ marginTop: "12mm", display: "flex", justifyContent: "space-between", fontSize: "10pt" }}>
+        <div style={{ marginTop: "12mm", display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: "10pt", gap: "8mm" }}>
           <div>
             Врач: ________________________
             <div style={{ marginTop: "1mm" }}>проф., д.м.н. Тарусин Д.И.</div>
+            <div style={{ marginTop: "1mm" }}>М.П.   Дата: {format(date, "dd.MM.yyyy")}</div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            М.П.
-            <div style={{ marginTop: "1mm" }}>Дата: {format(date, "dd.MM.yyyy")}</div>
-          </div>
+          {qrDataUrl && (
+            <div style={{ textAlign: "center" }}>
+              <img src={qrDataUrl} alt="QR-код памятки" style={{ width: "25mm", height: "25mm", display: "block" }} />
+              <div style={{ fontSize: "8pt", marginTop: "1mm", color: "#444", maxWidth: "30mm" }}>Памятка пациента онлайн</div>
+            </div>
+          )}
         </div>
+
       </div>
 
       {showCalendar && (
