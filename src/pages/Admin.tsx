@@ -19,7 +19,8 @@ import {
   Clock,
   BookOpen,
   Baby,
-  ClipboardCheck
+  ClipboardCheck,
+  Settings
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,6 +137,13 @@ const adminSections = [
     icon: ClipboardCheck,
     href: "/admin/self-check",
     color: "text-lime-500",
+  },
+  {
+    title: "Системные настройки",
+    description: "Статус cron-задач, авто-парсинг цен, лог запусков",
+    icon: Settings,
+    href: "/admin/system-settings",
+    color: "text-slate-500",
   },
 ];
 
