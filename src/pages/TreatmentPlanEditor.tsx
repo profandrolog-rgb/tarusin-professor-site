@@ -720,21 +720,36 @@ export default function TreatmentPlanEditor() {
         </DndContext>
 
         <div className="mt-4 space-y-3">
-          <LabControlSection
-            enabled={labControlEnabled}
-            onEnabledChange={setLabControlEnabled}
-            points={labPoints}
-            onChange={setLabPoints}
-          />
-          <PlanCostBlock
-            items={items}
-            durationDays={durationDays}
-            mode={mode}
-            showInPrint={showCostInPrint}
-            onShowInPrintChange={setShowCostInPrint}
-            onTotalChange={setCurrentTotalCost}
-          />
+          <div data-section-key="lab-control" className="scroll-mt-20">
+            <LabControlSection
+              enabled={labControlEnabled}
+              onEnabledChange={setLabControlEnabled}
+              points={labPoints}
+              onChange={setLabPoints}
+            />
+          </div>
+          <div data-section-key="cost" className="scroll-mt-20">
+            <PlanCostBlock
+              items={items}
+              durationDays={durationDays}
+              mode={mode}
+              showInPrint={showCostInPrint}
+              onShowInPrintChange={setShowCostInPrint}
+              onTotalChange={setCurrentTotalCost}
+            />
+          </div>
+          {isPublic && id && (
+            <div data-section-key="public" className="scroll-mt-20">
+              <PublicLinkPopover
+                planId={id}
+                publicHash={publicHash}
+                isPublic={isPublic}
+                onChange={(v) => setIsPublic(v.is_public)}
+              />
+            </div>
+          )}
         </div>
+
 
         <PatternExportDialog
           open={patternExportOpen}
@@ -816,7 +831,10 @@ export default function TreatmentPlanEditor() {
             Горячие клавиши · <kbd className="px-1 py-0.5 rounded border bg-muted font-mono text-[10px]">?</kbd>
           </button>
         </div>
+        </div>
+        </div>
       </div>
     </div>
   );
 }
+
