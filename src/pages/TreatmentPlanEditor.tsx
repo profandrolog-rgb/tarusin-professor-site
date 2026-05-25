@@ -330,6 +330,8 @@ export default function TreatmentPlanEditor() {
         catalogMap.set(c.id, c);
         if (c.patient_info) catalogPatientMap.set(c.id, c.patient_info);
       });
+      const acupunctureMap = await fetchIrtForCatalogIds(catIds);
+
       // Resolve test names for labControl block
       const allTestIds = new Set<string>();
       (lc || []).forEach((row: any) => (row.test_ids || []).forEach((tid: string) => allTestIds.add(tid)));
