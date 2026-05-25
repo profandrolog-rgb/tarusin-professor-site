@@ -64,6 +64,7 @@ export default function TreatmentPlanEditor() {
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [patternExportOpen, setPatternExportOpen] = useState(false);
+  const [currentTotalCost, setCurrentTotalCost] = useState<number>(0);
   const [courseNumber, setCourseNumber] = useState<number | null>(null);
   const [patientAge, setPatientAge] = useState<number | null>(null);
   const [showCostInPrint, setShowCostInPrint] = useState(false);
@@ -395,6 +396,9 @@ export default function TreatmentPlanEditor() {
                 <Button variant="outline" className="gap-2"><ClipboardList className="w-4 h-4"/>Памятка</Button>
               </Link>
             )}
+            <Button variant="outline" onClick={() => setPatternExportOpen(true)} className="gap-2" disabled={items.length === 0}>
+              <Share2 className="w-4 h-4"/>Экспорт паттерна
+            </Button>
             {!isNew && id && (
               <PublicLinkPopover
                 planId={id}
@@ -508,8 +512,20 @@ export default function TreatmentPlanEditor() {
             mode={mode}
             showInPrint={showCostInPrint}
             onShowInPrintChange={setShowCostInPrint}
+            onTotalChange={setCurrentTotalCost}
           />
         </div>
+
+        <PatternExportDialog
+          open={patternExportOpen}
+          onOpenChange={setPatternExportOpen}
+          items={items}
+          durationDays={durationDays}
+          totalCost={currentTotalCost}
+          lab={labControlEnabled ? labPoints.map(p => ({ control_point: (p as any).control_point ?? (p as any).label ?? null, at_day: (p as any).at_day ?? null })) : []}
+          clinicalSummary={summary}
+          profile={{ sex: patient?.sex, age: patientAge, diagnosisShort: diagnosis }}
+        />
 
         <ApplyTemplateDialog
           open={applyOpen} onOpenChange={setApplyOpen}
