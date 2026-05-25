@@ -323,8 +323,29 @@ function compactItem(it: PlanItem): string {
   return bits.join(" · ");
 }
 
-function writeWrap(doc: jsPDF, text: string, x: number, y: number, maxW: number, lh: number): number {
-  const lines = doc.splitTextToSize(text, maxW);
-  doc.text(lines, x, y);
-  return y + lines.length * lh;
+// Render an HTML node to PNG (cyrillic-safe) and place it onto A4 pages of a PDF.
+async function exportPdfFromHtml(node: HTMLElement, filename: string) {
+  const pxWidth = node.offsetWidth || 794;
+  const pxHeight = node.scrollHeight || 1123;
+  const dataUrl = await toPng(node, {
+    pixelRatio: 2, cacheBust: true,
+    width: pxWidth, height: pxHeight,
+    backgroundColor: "#ffffff",
+  });
+  // A4 mm: 210 x 297. Map width => 210mm, then slice the tall image into A4 pages.
+  const mmPerPx = 210 / pxWidth;
+  const fullHeightMm = pxHeight * mmPerPx;
+  const pageMm = 297;
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  let consumedMm = 0;
+  let isFirst = true;
+  while (consumedMm < fullHeightMm - 0.5) {
+    if (!isFirst) doc.addPage();
+    isFirst = false;
+    // Place the full image, shifted up by `consumedMm` so the current slice lands at top.
+    doc.addImage(dataUrl, "PNG", 0, -consumedMm, 210, fullHeightMm, undefined, "FAST");
+    consumedMm += pageMm;
+  }
+  doc.save(filename);
 }
+
