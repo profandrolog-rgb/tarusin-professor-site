@@ -31,6 +31,8 @@ export const SECTIONS: SectionDef[] = [
   { key: "peptide",         label: "Пептидная терапия",        short: "пептиды",     icon: Atom,       hint: "путь введения любой" },
   { key: "procedure",       label: "Процедуры",                short: "процедуры",   icon: Zap },
   { key: "lifestyle",       label: "Образ жизни",              short: "lifestyle",   icon: HeartPulse },
+  { key: "homeopathy",      label: "Гомеопатия",               short: "гомеопатия",  icon: Sparkles,   hint: "препарат из реперториума Кента + потенция" },
+
 ];
 
 export const SECTION_MAP: Record<TreatmentCategory, SectionDef> =
