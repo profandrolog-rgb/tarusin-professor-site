@@ -44,6 +44,7 @@ import TreatmentPlanMemo from "./pages/TreatmentPlanMemo";
 import TreatmentCatalog from "./pages/TreatmentCatalog";
 import TreatmentTemplates from "./pages/TreatmentTemplates";
 import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
+import AdminLabTestsCatalog from "./pages/AdminLabTestsCatalog";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 
@@ -145,6 +146,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/treatment-plans/:id/print", Component: TreatmentPlanPrint, entry: "src/pages/TreatmentPlanPrint.tsx" },
       { path: "admin/treatment-plans/:id/memo", Component: TreatmentPlanMemo, entry: "src/pages/TreatmentPlanMemo.tsx" },
       { path: "admin/treatment-catalog", Component: TreatmentCatalog, entry: "src/pages/TreatmentCatalog.tsx" },
+      { path: "admin/lab-tests-catalog", Component: AdminLabTestsCatalog, entry: "src/pages/AdminLabTestsCatalog.tsx" },
       { path: "admin/treatment-templates", Component: TreatmentTemplates, entry: "src/pages/TreatmentTemplates.tsx" },
       { path: "admin/treatment-templates/new", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/treatment-templates/:id", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
