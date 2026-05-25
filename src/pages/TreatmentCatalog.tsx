@@ -189,7 +189,7 @@ export default function TreatmentCatalog() {
 
   const filtered = rows.filter(r => {
     if (filter !== "all" && r.category !== filter) return false;
-    if (onlyMissingPrice && r.price_override != null) return false;
+    if (onlyMissingPrice && effectivePrice(r) != null) return false;
     if (q && !(r.name.toLowerCase().includes(q.toLowerCase()) || (r.inn || "").toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
   });
