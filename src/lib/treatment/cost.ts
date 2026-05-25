@@ -50,6 +50,17 @@ export interface CostCatalog {
   pack_size_num: number | null;
   units_per_dose_num: number | null;
   patient_info?: Record<string, any> | null;
+  price_auto?: number | null;
+  price_auto_updated_at?: string | null;
+  price_source_preference?: "auto" | "manual" | null;
+}
+
+/** Returns the effective unit price respecting source preference. */
+export function effectivePrice(catalog: { price_override?: number | null; price_auto?: number | null; price_source_preference?: "auto" | "manual" | null } | null | undefined): number | null {
+  if (!catalog) return null;
+  const pref = catalog.price_source_preference || "auto";
+  if (pref === "manual") return catalog.price_override ?? null;
+  return catalog.price_auto ?? catalog.price_override ?? null;
 }
 
 export interface CostItemInput {
