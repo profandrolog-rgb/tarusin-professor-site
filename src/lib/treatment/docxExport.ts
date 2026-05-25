@@ -14,6 +14,8 @@ import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import {
   calculatePlanCost, formatRub, type CostCatalog, type CostItemInput,
 } from "./cost";
+import { formatIrtPointLine, type IrtCatalogMap } from "./acupunctureExpand";
+
 
 export interface DocxPlanItem {
   id?: string;
