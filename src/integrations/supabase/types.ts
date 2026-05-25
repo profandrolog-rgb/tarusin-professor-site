@@ -1436,6 +1436,7 @@ export type Database = {
           dilution_volume: number | null
           dose: number | null
           dose_unit: string | null
+          dosing_schedule: string | null
           duration_days: number | null
           frequency: string | null
           id: string
@@ -1444,7 +1445,7 @@ export type Database = {
           notes: string | null
           order_index: number
           potency: string | null
-          remedy_id: string | null
+          repertory_remedy_id: string | null
           route_override: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           template_id: string
@@ -1458,6 +1459,7 @@ export type Database = {
           dilution_volume?: number | null
           dose?: number | null
           dose_unit?: string | null
+          dosing_schedule?: string | null
           duration_days?: number | null
           frequency?: string | null
           id?: string
@@ -1466,7 +1468,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
           potency?: string | null
-          remedy_id?: string | null
+          repertory_remedy_id?: string | null
           route_override?: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           template_id: string
@@ -1480,6 +1482,7 @@ export type Database = {
           dilution_volume?: number | null
           dose?: number | null
           dose_unit?: string | null
+          dosing_schedule?: string | null
           duration_days?: number | null
           frequency?: string | null
           id?: string
@@ -1488,7 +1491,7 @@ export type Database = {
           notes?: string | null
           order_index?: number
           potency?: string | null
-          remedy_id?: string | null
+          repertory_remedy_id?: string | null
           route_override?: string | null
           section_category?: Database["public"]["Enums"]["treatment_category"]
           template_id?: string
@@ -1504,7 +1507,14 @@ export type Database = {
           },
           {
             foreignKeyName: "protocol_template_items_remedy_id_fkey"
-            columns: ["remedy_id"]
+            columns: ["repertory_remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocol_template_items_repertory_remedy_id_fkey"
+            columns: ["repertory_remedy_id"]
             isOneToOne: false
             referencedRelation: "repertory_remedies"
             referencedColumns: ["id"]
@@ -2183,6 +2193,7 @@ export type Database = {
           dilution_volume: number | null
           dose: number | null
           dose_unit: string | null
+          dosing_schedule: string | null
           duration_days: number | null
           form_snapshot: string | null
           frequency: string | null
@@ -2196,7 +2207,7 @@ export type Database = {
           plan_id: string
           potency: string | null
           prn_estimated_doses: number | null
-          remedy_id: string | null
+          repertory_remedy_id: string | null
           route_override: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           time_of_day: string[] | null
@@ -2209,6 +2220,7 @@ export type Database = {
           dilution_volume?: number | null
           dose?: number | null
           dose_unit?: string | null
+          dosing_schedule?: string | null
           duration_days?: number | null
           form_snapshot?: string | null
           frequency?: string | null
@@ -2222,7 +2234,7 @@ export type Database = {
           plan_id: string
           potency?: string | null
           prn_estimated_doses?: number | null
-          remedy_id?: string | null
+          repertory_remedy_id?: string | null
           route_override?: string | null
           section_category: Database["public"]["Enums"]["treatment_category"]
           time_of_day?: string[] | null
@@ -2235,6 +2247,7 @@ export type Database = {
           dilution_volume?: number | null
           dose?: number | null
           dose_unit?: string | null
+          dosing_schedule?: string | null
           duration_days?: number | null
           form_snapshot?: string | null
           frequency?: string | null
@@ -2248,7 +2261,7 @@ export type Database = {
           plan_id?: string
           potency?: string | null
           prn_estimated_doses?: number | null
-          remedy_id?: string | null
+          repertory_remedy_id?: string | null
           route_override?: string | null
           section_category?: Database["public"]["Enums"]["treatment_category"]
           time_of_day?: string[] | null
@@ -2277,7 +2290,14 @@ export type Database = {
           },
           {
             foreignKeyName: "treatment_plan_items_remedy_id_fkey"
-            columns: ["remedy_id"]
+            columns: ["repertory_remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_plan_items_repertory_remedy_id_fkey"
+            columns: ["repertory_remedy_id"]
             isOneToOne: false
             referencedRelation: "repertory_remedies"
             referencedColumns: ["id"]
