@@ -6,7 +6,8 @@ import {
 
 export type TreatmentCategory =
   | "iv_drip" | "iv_bolus" | "im" | "sc" | "oral_rx" | "oral_supplement"
-  | "rectal" | "topical" | "nasal" | "sublingual" | "peptide" | "procedure" | "lifestyle";
+  | "rectal" | "topical" | "nasal" | "sublingual" | "peptide" | "procedure" | "lifestyle" | "homeopathy";
+
 
 export interface SectionDef {
   key: TreatmentCategory;
