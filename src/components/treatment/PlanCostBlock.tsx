@@ -66,7 +66,7 @@ export function PlanCostBlock({ items, durationDays, mode, showInPrint, onShowIn
             💰 Ориентировочная стоимость курса
             <Badge variant="secondary" className="ml-1">{formatRub(breakdown.total)}</Badge>
             {breakdown.missing.length > 0 && (
-              <Badge variant="outline" className="gap-1 border-amber-500/50 text-amber-600">
+              <Badge variant="outline" className="gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="w-3 h-3"/>{breakdown.missing.length} без цены
               </Badge>
             )}
