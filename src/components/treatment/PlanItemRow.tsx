@@ -36,7 +36,7 @@ export interface PlanItem {
   dose_range_min?: number | null;
   dose_range_max?: number | null;
   prn_estimated_doses?: number | null;
-  remedy_id?: string | null;
+  repertory_remedy_id?: string | null;
   potency?: string | null;
 }
 

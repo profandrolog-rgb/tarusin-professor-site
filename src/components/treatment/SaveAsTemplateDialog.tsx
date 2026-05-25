@@ -68,7 +68,7 @@ export function SaveAsTemplateDialog({ open, onOpenChange, items, mode, duration
           infusion_rate: it.infusion_rate,
           route_override: it.route_override,
           notes: it.notes,
-          remedy_id: (it as any).remedy_id ?? null,
+          repertory_remedy_id: (it as any).repertory_remedy_id ?? null,
           potency: (it as any).potency ?? null,
 
         }));
