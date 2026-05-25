@@ -67,7 +67,9 @@ export interface DocxPlanData {
     patient_visibility?: string | null;
     patient_group_label?: string | null;
   }>;
+  acupunctureMap?: IrtCatalogMap;
 }
+
 
 const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   iv_drip: "в/в капельно",
