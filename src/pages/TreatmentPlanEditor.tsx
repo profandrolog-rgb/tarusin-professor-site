@@ -393,6 +393,14 @@ export default function TreatmentPlanEditor() {
                 <Button variant="outline" className="gap-2"><ClipboardList className="w-4 h-4"/>Памятка</Button>
               </Link>
             )}
+            {!isNew && id && (
+              <PublicLinkPopover
+                planId={id}
+                publicHash={publicHash}
+                isPublic={isPublic}
+                onChange={(v) => setIsPublic(v.is_public)}
+              />
+            )}
             <Button onClick={() => save()} disabled={saving} className="gap-2">
               {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}Сохранить
             </Button>
