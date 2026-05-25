@@ -276,6 +276,8 @@ export default function TreatmentPlanEditor() {
           infusion_rate: it.infusion_rate, route_override: it.route_override,
           notes: it.notes, is_off_label: it.is_off_label,
           prn_estimated_doses: it.prn_estimated_doses ?? null,
+          remedy_id: it.remedy_id ?? null, potency: it.potency ?? null,
+
         }));
         const { error: e2 } = await supabase.from("treatment_plan_items").insert(rows);
         if (e2) throw e2;
