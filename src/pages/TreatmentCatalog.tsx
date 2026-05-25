@@ -211,6 +211,10 @@ export default function TreatmentCatalog() {
             <p className="text-sm text-muted-foreground">{rows.length} позиций · 12 категорий</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button onClick={refreshAllPrices} disabled={batchBusy} variant="outline" className="gap-2">
+              {batchBusy ? <Loader2 className="w-4 h-4 animate-spin"/> : <RefreshCw className="w-4 h-4"/>}
+              Обновить цены (20)
+            </Button>
             <Button onClick={() => setImportOpen(true)} variant="outline" className="gap-2"><Upload className="w-4 h-4"/>Импорт CSV</Button>
             <Button onClick={exportCsv} variant="outline" className="gap-2"><Download className="w-4 h-4"/>Экспорт CSV</Button>
             <Button onClick={startNew} className="gap-2"><Plus className="w-4 h-4"/>Новая позиция</Button>
