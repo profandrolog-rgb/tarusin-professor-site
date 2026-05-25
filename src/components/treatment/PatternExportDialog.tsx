@@ -52,6 +52,8 @@ export function PatternExportDialog({
   const groups = useMemo(() => groupBySection(filterItems(input)), [input]);
   const profileLine = useMemo(() => buildProfileLine(profile), [profile]);
 
+  const pdfRef = useRef<HTMLDivElement | null>(null);
+
   const handleExport = async () => {
     setBusy(true);
     try {
@@ -65,7 +67,8 @@ export function PatternExportDialog({
         const blob = await (await fetch(dataUrl)).blob();
         downloadBlob(blob, `pattern-${ts}.png`);
       } else {
-        await exportPdf(input);
+        if (!pdfRef.current) throw new Error("PDF layout not ready");
+        await exportPdfFromHtml(pdfRef.current, `pattern-${ts}.pdf`);
       }
       toast({ title: "Экспортировано", description: `Файл pattern-${ts}.${format === "markdown" ? "md" : format}` });
       onOpenChange(false);
@@ -75,6 +78,7 @@ export function PatternExportDialog({
       setBusy(false);
     }
   };
+
 
   const exportPdf = async (inp: typeof input) => {
     const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
