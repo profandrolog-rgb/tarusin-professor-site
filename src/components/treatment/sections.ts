@@ -1,7 +1,8 @@
 import {
   Droplet, Syringe, Pill, Leaf, CircleDot, Hand, Wind, ArrowDown,
-  Atom, Zap, HeartPulse, Activity,
+  Atom, Zap, HeartPulse, Activity, Sparkles,
 } from "lucide-react";
+
 
 export type TreatmentCategory =
   | "iv_drip" | "iv_bolus" | "im" | "sc" | "oral_rx" | "oral_supplement"
