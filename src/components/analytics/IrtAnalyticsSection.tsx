@@ -11,20 +11,6 @@ import type { AnalyticsFilters } from "@/lib/analytics/useAnalyticsSection";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4", "#ef4444"];
 
-function useIrt<T = any>(rpc: string, filters: AnalyticsFilters) {
-  return useQuery({
-    queryKey: ["irt-analytics", rpc, filters],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc(rpc as any, {
-        _from: filters.from, _to: filters.to, _status: filters.status, _doctor: filters.doctor,
-      });
-      if (error) throw error;
-      return (data ?? []) as T[];
-    },
-    staleTime: 60 * 60 * 1000,
-  });
-}
-
 function Section({ title, children, loading }: { title: string; children: React.ReactNode; loading?: boolean }) {
   return (
     <Card>
@@ -37,12 +23,26 @@ function Section({ title, children, loading }: { title: string; children: React.
 }
 
 export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFilters }) {
-  const protocols = useIrt<any>("analytics_irt_top_protocols", filters);
-  const points = useIrt<any>("analytics_irt_top_points", filters);
-  const meridians = useIrt<any>("analytics_irt_meridian_distribution", filters);
-  const modality = useIrt<any>("analytics_irt_modality_usage", filters);
-  const perMonth = useIrt<any>("analytics_irt_plans_per_month", filters);
-  const nosology = useIrt<any>("analytics_irt_nosology_distribution", filters);
+  const dash = useQuery({
+    queryKey: ["irt-dashboard", filters],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("analytics_irt_dashboard" as any, {
+        _from: filters.from, _to: filters.to, _status: filters.status, _doctor: filters.doctor,
+      });
+      if (error) throw error;
+      return (data ?? {}) as any;
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+  const loading = dash.isLoading;
+  const d = (dash.data ?? {}) as any;
+  const protocols = { isLoading: loading, data: (d.protocols ?? []) as any[] };
+  const points = { isLoading: loading, data: (d.points ?? []) as any[] };
+  const meridians = { isLoading: loading, data: (d.meridians ?? []) as any[] };
+  const modality = { isLoading: loading, data: (d.modality ?? []) as any[] };
+  const perMonth = { isLoading: loading, data: (d.per_month ?? []) as any[] };
+  const nosology = { isLoading: loading, data: (d.nosology ?? []) as any[] };
+  const cacheStatus = d._cache as string | undefined;
 
   return (
     <div className="space-y-4">
