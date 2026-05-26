@@ -144,6 +144,21 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
             </ResponsiveContainer>
           )}
         </Section>
+        <Section title="Распределение по нозологиям (теги протоколов)" loading={nosology.isLoading}>
+          {(nosology.data?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={nosology.data} layout="vertical" margin={{ left: 80 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="tag" width={120} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="usage_count" fill="#8b5cf6" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Section>
       </div>
     </div>
   );
