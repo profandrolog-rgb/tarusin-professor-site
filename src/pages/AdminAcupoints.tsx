@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { ArrowLeft, Loader2, Search, AlertTriangle, MapPin, X } from "lucide-react";
+import { ArrowLeft, Loader2, Search, AlertTriangle, MapPin, X, Upload } from "lucide-react";
+import { AcupointsCsvImportDialog } from "@/components/treatment/AcupointsCsvImportDialog";
 
 interface Meridian {
   id: string;
