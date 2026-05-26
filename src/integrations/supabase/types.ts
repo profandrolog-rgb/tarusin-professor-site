@@ -114,8 +114,12 @@ export type Database = {
           acupoint_id: string
           created_at: string
           depth_mm: string | null
+          ea_duration_min: number | null
+          ea_freq_hz: number | null
+          ea_pair_with: string | null
           id: string
           manipulation: string | null
+          moxa: boolean
           notes: string | null
           order_index: number
           protocol_id: string
@@ -126,8 +130,12 @@ export type Database = {
           acupoint_id: string
           created_at?: string
           depth_mm?: string | null
+          ea_duration_min?: number | null
+          ea_freq_hz?: number | null
+          ea_pair_with?: string | null
           id?: string
           manipulation?: string | null
+          moxa?: boolean
           notes?: string | null
           order_index?: number
           protocol_id: string
@@ -138,8 +146,12 @@ export type Database = {
           acupoint_id?: string
           created_at?: string
           depth_mm?: string | null
+          ea_duration_min?: number | null
+          ea_freq_hz?: number | null
+          ea_pair_with?: string | null
           id?: string
           manipulation?: string | null
+          moxa?: boolean
           notes?: string | null
           order_index?: number
           protocol_id?: string
@@ -150,6 +162,13 @@ export type Database = {
           {
             foreignKeyName: "acupuncture_protocol_points_acupoint_id_fkey"
             columns: ["acupoint_id"]
+            isOneToOne: false
+            referencedRelation: "acupoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acupuncture_protocol_points_ea_pair_with_fkey"
+            columns: ["ea_pair_with"]
             isOneToOne: false
             referencedRelation: "acupoints"
             referencedColumns: ["id"]
@@ -173,9 +192,11 @@ export type Database = {
           id: string
           indications: string | null
           is_archived: boolean
+          is_template: boolean
           name: string
           session_count: number | null
           session_duration_min: number | null
+          slug: string | null
           tags: string[] | null
           updated_at: string
         }
@@ -188,9 +209,11 @@ export type Database = {
           id?: string
           indications?: string | null
           is_archived?: boolean
+          is_template?: boolean
           name: string
           session_count?: number | null
           session_duration_min?: number | null
+          slug?: string | null
           tags?: string[] | null
           updated_at?: string
         }
@@ -203,9 +226,11 @@ export type Database = {
           id?: string
           indications?: string | null
           is_archived?: boolean
+          is_template?: boolean
           name?: string
           session_count?: number | null
           session_duration_min?: number | null
+          slug?: string | null
           tags?: string[] | null
           updated_at?: string
         }
