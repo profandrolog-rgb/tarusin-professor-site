@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { ArrowLeft, Loader2, Search, AlertTriangle, MapPin, X } from "lucide-react";
+import { ArrowLeft, Loader2, Search, AlertTriangle, MapPin, X, Upload } from "lucide-react";
+import { AcupointsCsvImportDialog } from "@/components/treatment/AcupointsCsvImportDialog";
 
 interface Meridian {
   id: string;
@@ -54,6 +55,12 @@ export default function AdminAcupoints() {
   const [selectedMeridian, setSelectedMeridian] = useState<string | null>(null);
   const [onlyCaution, setOnlyCaution] = useState(false);
   const [openPoint, setOpenPoint] = useState<Acupoint | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const reloadPoints = async () => {
+    const { data } = await supabase.from("acupoints").select("*").order("who_code");
+    setPoints((data as any) || []);
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -157,6 +164,9 @@ export default function AdminAcupoints() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportOpen(true)}>
+              <Upload className="w-4 h-4"/>Импорт CSV
+            </Button>
             <Link to="/admin/acupoints/atlas">
               <Button variant="outline" size="sm" className="gap-2"><MapPin className="w-4 h-4"/>Атлас</Button>
             </Link>
@@ -165,6 +175,7 @@ export default function AdminAcupoints() {
             </Link>
           </div>
         </div>
+        <AcupointsCsvImportDialog open={importOpen} onOpenChange={setImportOpen} onComplete={reloadPoints} />
 
         <div className="grid md:grid-cols-[280px_1fr] gap-4">
           {/* Sidebar: meridians */}
