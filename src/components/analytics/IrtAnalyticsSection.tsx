@@ -91,6 +91,33 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
         </Button>
       </div>
 
+      {compare && (
+        <Section title="Сравнение с предыдущим периодом" loading={loading}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {([
+              ["Планов с ИРТ", "plans"],
+              ["Точек назначено", "points"],
+              ["Уникальных протоколов", "protocols"],
+            ] as const).map(([label, key]) => {
+              const cur = Number(compare.current?.[key] ?? 0);
+              const prev = Number(compare.previous?.[key] ?? 0);
+              return (
+                <div key={key} className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold font-mono">{cur}</span>
+                    {renderDelta(cur, prev)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    Пред. период: <span className="font-mono">{prev}</span> ({compare.previous?.from} — {compare.previous?.to})
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
+
       <Section title="ТОП-10 протоколов ИРТ" loading={protocols.isLoading}>
         {(protocols.data?.length ?? 0) === 0 ? (
           <p className="text-sm text-muted-foreground">Нет данных за выбранный период</p>
