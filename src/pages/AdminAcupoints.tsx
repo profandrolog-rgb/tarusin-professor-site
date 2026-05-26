@@ -171,12 +171,20 @@ export default function AdminAcupoints() {
     });
   }, [points, q, selectedMeridian, onlyCaution]);
 
-  const protocolsForPoint = useMemo(() => {
-    if (!openPoint) return [];
-    const code = openPoint.who_code;
-    const re = new RegExp(`\\b${code.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}\\b`, "i");
-    return protocols.filter((pr) => pr.notes && re.test(pr.notes));
-  }, [openPoint, protocols]);
+  const usageBuiltin = useMemo(() => usage.filter((u) => u.is_template), [usage]);
+  const usageCustom = useMemo(() => usage.filter((u) => !u.is_template), [usage]);
+
+  const formatParams = (u: ProtocolUsageRow): string => {
+    const parts: string[] = [];
+    if (u.ea_freq_hz != null && u.ea_duration_min != null) {
+      parts.push(`ЭАП ${u.ea_freq_hz} Гц × ${u.ea_duration_min} мин`);
+    } else if (u.ea_freq_hz != null) {
+      parts.push(`ЭАП ${u.ea_freq_hz} Гц`);
+    }
+    if (u.ea_pair_who_code) parts.push(`↔ ${u.ea_pair_who_code}`);
+    if (u.moxa) parts.push("🔥 мокса");
+    return parts.join(" · ");
+  };
 
   if (loading || busy) {
     return (
