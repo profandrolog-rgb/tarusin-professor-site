@@ -42,6 +42,7 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
   const meridians = useIrt<any>("analytics_irt_meridian_distribution", filters);
   const modality = useIrt<any>("analytics_irt_modality_usage", filters);
   const perMonth = useIrt<any>("analytics_irt_plans_per_month", filters);
+  const nosology = useIrt<any>("analytics_irt_nosology_distribution", filters);
 
   return (
     <div className="space-y-4">
