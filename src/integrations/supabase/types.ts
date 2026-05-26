@@ -3143,6 +3143,10 @@ export type Database = {
         Args: { _doctor: string; _from: string; _status: string; _to: string }
         Returns: Json
       }
+      analytics_irt_compare_periods: {
+        Args: { _doctor?: string; _from: string; _status?: string; _to: string }
+        Returns: Json
+      }
       analytics_irt_dashboard: {
         Args: {
           _doctor?: string
@@ -3163,6 +3167,19 @@ export type Database = {
         Returns: {
           meridian_code: string
           meridian_name: string
+          points_count: number
+        }[]
+      }
+      analytics_irt_meridian_trends: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          meridian_code: string
+          month: string
           points_count: number
         }[]
       }
@@ -3188,6 +3205,13 @@ export type Database = {
         Returns: {
           tag: string
           usage_count: number
+        }[]
+      }
+      analytics_irt_plans_last_12m: {
+        Args: { _doctor?: string; _status?: string }
+        Returns: {
+          month: string
+          plans_count: number
         }[]
       }
       analytics_irt_plans_per_month: {
