@@ -55,6 +55,12 @@ export default function AdminAcupoints() {
   const [selectedMeridian, setSelectedMeridian] = useState<string | null>(null);
   const [onlyCaution, setOnlyCaution] = useState(false);
   const [openPoint, setOpenPoint] = useState<Acupoint | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+
+  const reloadPoints = async () => {
+    const { data } = await supabase.from("acupoints").select("*").order("who_code");
+    setPoints((data as any) || []);
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
