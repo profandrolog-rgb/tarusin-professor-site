@@ -123,10 +123,10 @@ export function AcupointsCsvImportDialog({ open, onOpenChange, onComplete }: Pro
           const exists = existing.has(p.who_code);
           if (exists) {
             if (dup === "skip") { skipped++; continue; }
-            const { error } = await supabase.from("acupoints").update(p).eq("who_code", p.who_code);
+            const { error } = await supabase.from("acupoints").update(p as any).eq("who_code", p.who_code);
             if (error) log.push({ row: r.index, msg: error.message }); else updated++;
           } else {
-            const { error } = await supabase.from("acupoints").insert(p);
+            const { error } = await supabase.from("acupoints").insert(p as any);
             if (error) log.push({ row: r.index, msg: error.message }); else created++;
           }
         } catch (e: any) {
