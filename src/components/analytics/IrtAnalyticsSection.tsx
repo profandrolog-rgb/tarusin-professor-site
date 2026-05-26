@@ -25,6 +25,7 @@ function Section({ title, children, loading }: { title: string; children: React.
 }
 
 export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFilters }) {
+  const qc = useQueryClient();
   const dash = useQuery({
     queryKey: ["irt-dashboard", filters],
     queryFn: async () => {
@@ -46,12 +47,23 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
   const nosology = { isLoading: loading, data: (d.nosology ?? []) as any[] };
   const cacheStatus = d._cache as string | undefined;
 
+  const handleRefresh = async () => {
+    const { error } = await supabase.from("analytics_cache").delete().like("cache_key", "irt_dashboard:%");
+    if (error) { toast.error("Не удалось сбросить кэш"); return; }
+    await qc.invalidateQueries({ queryKey: ["irt-dashboard"] });
+    toast.success("Кэш ИРТ-аналитики сброшен");
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <h2 className="text-xl font-semibold">🪡 Аналитика ИРТ</h2>
         <Badge variant="outline">иглорефлексотерапия</Badge>
         {cacheStatus && <Badge variant={cacheStatus === "hit" ? "default" : "secondary"} className="text-[10px]">cache: {cacheStatus}</Badge>}
+        <Button size="sm" variant="ghost" className="ml-auto gap-1 h-7" onClick={handleRefresh} disabled={dash.isFetching}>
+          <RefreshCw className={`w-3.5 h-3.5 ${dash.isFetching ? "animate-spin" : ""}`} />
+          Пересчитать
+        </Button>
       </div>
 
       <Section title="ТОП-10 протоколов ИРТ" loading={protocols.isLoading}>
