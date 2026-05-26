@@ -45,7 +45,32 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
   const modality = { isLoading: loading, data: (d.modality ?? []) as any[] };
   const perMonth = { isLoading: loading, data: (d.per_month ?? []) as any[] };
   const nosology = { isLoading: loading, data: (d.nosology ?? []) as any[] };
+  const last12 = { isLoading: loading, data: (d.last_12m ?? []) as any[] };
+  const meridianTrendsRaw = (d.meridian_trends ?? []) as any[];
+  const compare = (d.compare ?? null) as null | { current: any; previous: any };
   const cacheStatus = d._cache as string | undefined;
+
+  const meridianTrendData = (() => {
+    const map = new Map<string, any>();
+    const codes = new Set<string>();
+    for (const row of meridianTrendsRaw) {
+      codes.add(row.meridian_code);
+      if (!map.has(row.month)) map.set(row.month, { month: row.month });
+      map.get(row.month)[row.meridian_code] = Number(row.points_count) || 0;
+    }
+    const data = Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
+    const totals = Array.from(codes).map(c => ({ c, sum: data.reduce((s, r) => s + (r[c] || 0), 0) }));
+    const top = totals.sort((a, b) => b.sum - a.sum).slice(0, 6).map(x => x.c);
+    return { data, codes: top };
+  })();
+
+  const renderDelta = (cur: number, prev: number) => {
+    const diff = cur - prev;
+    const pct = prev > 0 ? Math.round((diff / prev) * 100) : (cur > 0 ? 100 : 0);
+    const sign = diff > 0 ? "+" : "";
+    const cls = diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-muted-foreground";
+    return <span className={`text-xs ${cls}`}>{sign}{diff} ({sign}{pct}%)</span>;
+  };
 
   const handleRefresh = async () => {
     const { error } = await supabase.from("analytics_cache").delete().like("cache_key", "irt_dashboard:%");
