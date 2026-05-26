@@ -176,6 +176,30 @@ function ItemCard({
         </div>
       )}
       {item.notes && <div className="text-xs text-muted-foreground italic">{hl("notes", item.notes)}</div>}
+      {item._irt && (
+        <div className={`mt-1 rounded-sm px-1.5 py-1 text-[11px] ${isChanged("irt") ? "bg-amber-100 dark:bg-amber-800/40" : "bg-muted/50"}`}>
+          <div className="font-semibold text-muted-foreground">
+            ИРТ: {item._irt.name || "—"}
+            {item._irt.session_count != null && <> · {item._irt.session_count} сеан.</>}
+            {item._irt.session_duration_min != null && <> · {item._irt.session_duration_min} мин</>}
+            {item._irt.frequency && <> · {item._irt.frequency}</>}
+          </div>
+          {item._irt.points && item._irt.points.length > 0 && (
+            <ol className="list-decimal ml-4 mt-0.5 space-y-0.5">
+              {item._irt.points.map((p, i) => (
+                <li key={i}>
+                  <span className="font-mono">{p.who_code}</span>
+                  {p.name_ru && <> {p.name_ru}</>}
+                  {p.side && p.side !== "bilateral" && <> · {p.side === "left" ? "слева" : "справа"}</>}
+                  {p.manipulation && <> · {p.manipulation}</>}
+                  {p.depth_mm && <> · {p.depth_mm} мм</>}
+                  {p.retention_min != null && <> · {p.retention_min} мин</>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
     </div>
   );
 }
