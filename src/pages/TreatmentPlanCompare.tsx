@@ -99,6 +99,23 @@ async function loadPlan(idOrVersionRef: string): Promise<LoadedPlan | null> {
     .select("control_point, at_day")
     .eq("plan_id", idOrVersionRef)
     .order("at_day", { ascending: true });
+
+  // Attach live IRT expansion per catalog_id
+  const catIds = Array.from(new Set(((items as any[]) || []).map(i => i.catalog_id).filter(Boolean)));
+  const irtMap = await fetchIrtForCatalogIds(catIds as string[]);
+  const enriched = ((items as any[]) || []).map(i => {
+    const v = i.catalog_id ? irtMap.get(i.catalog_id) : null;
+    if (!v) return i;
+    return { ...i, _irt: {
+      protocol_id: v.protocol_id,
+      name: v.name,
+      session_count: v.session_count,
+      session_duration_min: v.session_duration_min,
+      frequency: v.frequency,
+      points: v.points,
+    } as IrtSnap };
+  });
+
   return {
     id: idOrVersionRef,
     label: `Лист №${(plan as any).course_number ?? "—"} · ${(plan as any).issued_at ? format(new Date((plan as any).issued_at), "d MMM yyyy", { locale: ru }) : ""}`,
@@ -110,7 +127,7 @@ async function loadPlan(idOrVersionRef: string): Promise<LoadedPlan | null> {
     duration_days: (plan as any).duration_days,
     status: (plan as any).status,
     total_cost_estimate: (plan as any).total_cost_estimate,
-    items: (items || []) as DiffItem[],
+    items: enriched as DiffItem[],
     lab: (lab || []) as any,
   };
 }
