@@ -10,7 +10,8 @@ import { ArrowLeft, GitCompare, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { SECTIONS, SECTION_MAP, type TreatmentCategory } from "@/components/treatment/sections";
-import { buildDiff, summarize, type DiffEntry, type DiffItem, itemKey } from "@/lib/treatment/diff";
+import { buildDiff, summarize, type DiffEntry, type DiffItem, type IrtSnap, itemKey } from "@/lib/treatment/diff";
+import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
 
 interface LoadedPlan {
   id: string;
