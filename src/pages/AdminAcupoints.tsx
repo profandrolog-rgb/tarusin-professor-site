@@ -164,6 +164,9 @@ export default function AdminAcupoints() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportOpen(true)}>
+              <Upload className="w-4 h-4"/>Импорт CSV
+            </Button>
             <Link to="/admin/acupoints/atlas">
               <Button variant="outline" size="sm" className="gap-2"><MapPin className="w-4 h-4"/>Атлас</Button>
             </Link>
@@ -172,6 +175,7 @@ export default function AdminAcupoints() {
             </Link>
           </div>
         </div>
+        <AcupointsCsvImportDialog open={importOpen} onOpenChange={setImportOpen} onComplete={reloadPoints} />
 
         <div className="grid md:grid-cols-[280px_1fr] gap-4">
           {/* Sidebar: meridians */}
