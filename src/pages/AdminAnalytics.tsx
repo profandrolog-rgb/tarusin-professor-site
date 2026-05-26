@@ -12,6 +12,7 @@ import CostByTagChart from "@/components/analytics/CostByTagChart";
 import PlansPerMonthChart from "@/components/analytics/PlansPerMonthChart";
 import DurationHistogram from "@/components/analytics/DurationHistogram";
 import SectionUsagePie from "@/components/analytics/SectionUsagePie";
+import IrtAnalyticsSection from "@/components/analytics/IrtAnalyticsSection";
 import { downloadAnalyticsCsv } from "@/lib/analytics/csvExport";
 import type { AnalyticsFilters } from "@/lib/analytics/useAnalyticsSection";
 import { toast } from "sonner";
@@ -104,6 +105,8 @@ export default function AdminAnalytics() {
           <PlansPerMonthChart filters={filters} />
           <DurationHistogram filters={filters} />
         </div>
+
+        <IrtAnalyticsSection filters={filters} />
       </div>
     </div>
   );

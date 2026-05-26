@@ -3143,6 +3143,73 @@ export type Database = {
         Args: { _doctor: string; _from: string; _status: string; _to: string }
         Returns: Json
       }
+      analytics_irt_meridian_distribution: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          meridian_code: string
+          meridian_name: string
+          points_count: number
+        }[]
+      }
+      analytics_irt_modality_usage: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          count: number
+          modality: string
+        }[]
+      }
+      analytics_irt_plans_per_month: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          month: string
+          plans_count: number
+        }[]
+      }
+      analytics_irt_top_points: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          acupoint_id: string
+          meridian_code: string
+          name_ru: string
+          usage_count: number
+          who_code: string
+        }[]
+      }
+      analytics_irt_top_protocols: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          is_template: boolean
+          name: string
+          plans_count: number
+          protocol_id: string
+          usage_count: number
+        }[]
+      }
       analytics_plans_per_month: {
         Args: { _doctor: string; _from: string; _status: string; _to: string }
         Returns: Json
