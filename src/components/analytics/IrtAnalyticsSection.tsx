@@ -45,7 +45,32 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
   const modality = { isLoading: loading, data: (d.modality ?? []) as any[] };
   const perMonth = { isLoading: loading, data: (d.per_month ?? []) as any[] };
   const nosology = { isLoading: loading, data: (d.nosology ?? []) as any[] };
+  const last12 = { isLoading: loading, data: (d.last_12m ?? []) as any[] };
+  const meridianTrendsRaw = (d.meridian_trends ?? []) as any[];
+  const compare = (d.compare ?? null) as null | { current: any; previous: any };
   const cacheStatus = d._cache as string | undefined;
+
+  const meridianTrendData = (() => {
+    const map = new Map<string, any>();
+    const codes = new Set<string>();
+    for (const row of meridianTrendsRaw) {
+      codes.add(row.meridian_code);
+      if (!map.has(row.month)) map.set(row.month, { month: row.month });
+      map.get(row.month)[row.meridian_code] = Number(row.points_count) || 0;
+    }
+    const data = Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
+    const totals = Array.from(codes).map(c => ({ c, sum: data.reduce((s, r) => s + (r[c] || 0), 0) }));
+    const top = totals.sort((a, b) => b.sum - a.sum).slice(0, 6).map(x => x.c);
+    return { data, codes: top };
+  })();
+
+  const renderDelta = (cur: number, prev: number) => {
+    const diff = cur - prev;
+    const pct = prev > 0 ? Math.round((diff / prev) * 100) : (cur > 0 ? 100 : 0);
+    const sign = diff > 0 ? "+" : "";
+    const cls = diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-muted-foreground";
+    return <span className={`text-xs ${cls}`}>{sign}{diff} ({sign}{pct}%)</span>;
+  };
 
   const handleRefresh = async () => {
     const { error } = await supabase.from("analytics_cache").delete().like("cache_key", "irt_dashboard:%");
@@ -65,6 +90,33 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
           Пересчитать
         </Button>
       </div>
+
+      {compare && (
+        <Section title="Сравнение с предыдущим периодом" loading={loading}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {([
+              ["Планов с ИРТ", "plans"],
+              ["Точек назначено", "points"],
+              ["Уникальных протоколов", "protocols"],
+            ] as const).map(([label, key]) => {
+              const cur = Number(compare.current?.[key] ?? 0);
+              const prev = Number(compare.previous?.[key] ?? 0);
+              return (
+                <div key={key} className="rounded-lg border p-3">
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-semibold font-mono">{cur}</span>
+                    {renderDelta(cur, prev)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1">
+                    Пред. период: <span className="font-mono">{prev}</span> ({compare.previous?.from} — {compare.previous?.to})
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
 
       <Section title="ТОП-10 протоколов ИРТ" loading={protocols.isLoading}>
         {(protocols.data?.length ?? 0) === 0 ? (
@@ -155,6 +207,42 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" dataKey="plans_count" stroke="hsl(var(--primary))" strokeWidth={2} name="Планов с ИРТ" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Section>
+
+        <Section title="Фиксированный 12-месячный тренд ИРТ" loading={loading}>
+          {(last12.data?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={last12.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="plans_count" stroke="hsl(var(--accent))" strokeWidth={2} name="Планов с ИРТ (12 мес.)" dot />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Section>
+
+        <Section title="Тренды по меридианам (ТОП-6)" loading={loading}>
+          {meridianTrendData.data.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={meridianTrendData.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                {meridianTrendData.codes.map((c, i) => (
+                  <Line key={c} type="monotone" dataKey={c} stroke={COLORS[i % COLORS.length]} strokeWidth={2} name={c} dot={false} />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           )}
