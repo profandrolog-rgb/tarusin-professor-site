@@ -49,6 +49,7 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
       <div className="flex items-center gap-2">
         <h2 className="text-xl font-semibold">🪡 Аналитика ИРТ</h2>
         <Badge variant="outline">иглорефлексотерапия</Badge>
+        {cacheStatus && <Badge variant={cacheStatus === "hit" ? "default" : "secondary"} className="text-[10px]">cache: {cacheStatus}</Badge>}
       </div>
 
       <Section title="ТОП-10 протоколов ИРТ" loading={protocols.isLoading}>
