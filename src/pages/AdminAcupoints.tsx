@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { ArrowLeft, Loader2, Search, AlertTriangle, MapPin, X, Upload } from "lucide-react";
+import { ArrowLeft, Loader2, Search, AlertTriangle, MapPin, X, Upload, Plus, ExternalLink, Flame, Zap } from "lucide-react";
 import { AcupointsCsvImportDialog } from "@/components/treatment/AcupointsCsvImportDialog";
+import AddPointToProtocolDialog from "@/components/treatment/AddPointToProtocolDialog";
 
 interface Meridian {
   id: string;
@@ -36,11 +37,15 @@ interface Acupoint {
   manipulation_default: string | null;
 }
 
-interface CatalogProtocol {
-  id: string;
-  name: string;
-  subcategory: string | null;
-  notes: string | null;
+interface ProtocolUsageRow {
+  protocol_id: string;
+  protocol_name: string;
+  is_template: boolean;
+  point_manipulation: string | null;
+  ea_freq_hz: number | null;
+  ea_duration_min: number | null;
+  moxa: boolean;
+  ea_pair_who_code: string | null;
 }
 
 export default function AdminAcupoints() {
@@ -50,12 +55,14 @@ export default function AdminAcupoints() {
   const [busy, setBusy] = useState(true);
   const [meridians, setMeridians] = useState<Meridian[]>([]);
   const [points, setPoints] = useState<Acupoint[]>([]);
-  const [protocols, setProtocols] = useState<CatalogProtocol[]>([]);
   const [q, setQ] = useState("");
   const [selectedMeridian, setSelectedMeridian] = useState<string | null>(null);
   const [onlyCaution, setOnlyCaution] = useState(false);
   const [openPoint, setOpenPoint] = useState<Acupoint | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [usage, setUsage] = useState<ProtocolUsageRow[]>([]);
+  const [usageBusy, setUsageBusy] = useState(false);
+  const [addToProtoOpen, setAddToProtoOpen] = useState(false);
 
   const reloadPoints = async () => {
     const { data } = await supabase.from("acupoints").select("*").order("who_code");
@@ -71,21 +78,56 @@ export default function AdminAcupoints() {
   useEffect(() => {
     (async () => {
       setBusy(true);
-      const [m, p, c] = await Promise.all([
+      const [m, p] = await Promise.all([
         supabase.from("acupoint_meridians").select("*").order("code"),
         supabase.from("acupoints").select("*").order("who_code"),
-        supabase
-          .from("treatment_catalog")
-          .select("id,name,subcategory,notes")
-          .eq("category", "procedure")
-          .ilike("subcategory", "ИРТ%"),
       ]);
       setMeridians((m.data as any) || []);
       setPoints((p.data as any) || []);
-      setProtocols((c.data as any) || []);
       setBusy(false);
     })();
   }, []);
+
+  // Load protocol usage for currently open point via real JOIN (no regex)
+  const loadUsageForPoint = async (acupointId: string) => {
+    setUsageBusy(true);
+    setUsage([]);
+    try {
+      const { data, error } = await supabase
+        .from("acupuncture_protocol_points")
+        .select(`
+          manipulation, ea_freq_hz, ea_duration_min, moxa, ea_pair_with,
+          protocol:acupuncture_protocols!inner(id, name, is_template, is_archived),
+          pair:acupoints!acupuncture_protocol_points_ea_pair_with_fkey(who_code)
+        `)
+        .eq("acupoint_id", acupointId);
+      if (error) throw error;
+      const rows: ProtocolUsageRow[] = ((data as any[]) || [])
+        .filter((r) => !r.protocol?.is_archived)
+        .map((r) => ({
+          protocol_id: r.protocol.id,
+          protocol_name: r.protocol.name,
+          is_template: !!r.protocol.is_template,
+          point_manipulation: r.manipulation,
+          ea_freq_hz: r.ea_freq_hz,
+          ea_duration_min: r.ea_duration_min,
+          moxa: !!r.moxa,
+          ea_pair_who_code: r.pair?.who_code || null,
+        }))
+        .sort((a, b) => {
+          if (a.is_template !== b.is_template) return a.is_template ? -1 : 1;
+          return a.protocol_name.localeCompare(b.protocol_name, "ru");
+        });
+      setUsage(rows);
+    } finally {
+      setUsageBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (openPoint) loadUsageForPoint(openPoint.id);
+    else setUsage([]);
+  }, [openPoint]);
 
   // Open point by URL param
   useEffect(() => {
