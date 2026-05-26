@@ -3143,6 +3143,16 @@ export type Database = {
         Args: { _doctor: string; _from: string; _status: string; _to: string }
         Returns: Json
       }
+      analytics_irt_dashboard: {
+        Args: {
+          _doctor?: string
+          _from: string
+          _status?: string
+          _to: string
+          _ttl_minutes?: number
+        }
+        Returns: Json
+      }
       analytics_irt_meridian_distribution: {
         Args: {
           _doctor?: string
