@@ -49,13 +49,20 @@ export default function AdminAnalytics() {
       return (data ?? []) as any[];
     };
     try {
-      const [topCatalog, topTemplates, costByTag, plansPerMonth, duration, sectionUsage] = await Promise.all([
+      const [topCatalog, topTemplates, costByTag, plansPerMonth, duration, sectionUsage,
+        irtProtocols, irtPoints, irtMeridians, irtModality, irtPerMonth, irtNosology] = await Promise.all([
         callRpc("analytics_top_catalog"),
         callRpc("analytics_top_templates"),
         callRpc("analytics_avg_cost_by_tag"),
         callRpc("analytics_plans_per_month"),
         callRpc("analytics_duration_histogram"),
         callRpc("analytics_section_usage"),
+        callRpc("analytics_irt_top_protocols"),
+        callRpc("analytics_irt_top_points"),
+        callRpc("analytics_irt_meridian_distribution"),
+        callRpc("analytics_irt_modality_usage"),
+        callRpc("analytics_irt_plans_per_month"),
+        callRpc("analytics_irt_nosology_distribution"),
       ]);
       downloadAnalyticsCsv(`analytics_${new Date().toISOString().slice(0,10)}.csv`, [
         { title: "ТОП-20 позиций каталога", rows: topCatalog },
@@ -64,6 +71,12 @@ export default function AdminAnalytics() {
         { title: "Динамика по месяцам", rows: plansPerMonth },
         { title: "Распределение длительности", rows: duration },
         { title: "Использование секций", rows: sectionUsage },
+        { title: "ИРТ: ТОП-10 протоколов", rows: irtProtocols },
+        { title: "ИРТ: ТОП-15 точек", rows: irtPoints },
+        { title: "ИРТ: распределение по меридианам", rows: irtMeridians },
+        { title: "ИРТ: ЭАП / Мокса / Классика", rows: irtModality },
+        { title: "ИРТ: динамика по месяцам", rows: irtPerMonth },
+        { title: "ИРТ: распределение по нозологиям", rows: irtNosology },
       ]);
       toast.success("CSV выгружен");
     } catch (e: any) {

@@ -42,6 +42,7 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
   const meridians = useIrt<any>("analytics_irt_meridian_distribution", filters);
   const modality = useIrt<any>("analytics_irt_modality_usage", filters);
   const perMonth = useIrt<any>("analytics_irt_plans_per_month", filters);
+  const nosology = useIrt<any>("analytics_irt_nosology_distribution", filters);
 
   return (
     <div className="space-y-4">
@@ -140,6 +141,21 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
                 <Legend />
                 <Line type="monotone" dataKey="plans_count" stroke="hsl(var(--primary))" strokeWidth={2} name="Планов с ИРТ" />
               </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Section>
+        <Section title="Распределение по нозологиям (теги протоколов)" loading={nosology.isLoading}>
+          {(nosology.data?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={nosology.data} layout="vertical" margin={{ left: 80 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="tag" width={120} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="usage_count" fill="#8b5cf6" />
+              </BarChart>
             </ResponsiveContainer>
           )}
         </Section>

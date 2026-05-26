@@ -3168,6 +3168,18 @@ export type Database = {
           modality: string
         }[]
       }
+      analytics_irt_nosology_distribution: {
+        Args: {
+          _doctor?: string
+          _from?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          tag: string
+          usage_count: number
+        }[]
+      }
       analytics_irt_plans_per_month: {
         Args: {
           _doctor?: string
