@@ -441,33 +441,84 @@ export default function AdminAcupoints() {
                 )}
 
                 <div>
-                  <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">
-                    Упоминается в ИРТ-протоколах ({protocolsForPoint.length})
-                  </div>
-                  {protocolsForPoint.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">
-                      Не упоминается в текущих протоколах каталога
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-semibold uppercase text-muted-foreground">
+                      Упоминается в протоколах ({usage.length})
                     </div>
+                    <Button size="sm" variant="outline" className="h-7 gap-1" onClick={() => setAddToProtoOpen(true)}>
+                      <Plus className="w-3 h-3" />Добавить в протокол
+                    </Button>
+                  </div>
+
+                  {usageBusy ? (
+                    <div className="py-4 flex justify-center"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+                  ) : usage.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">Точка пока не входит ни в один протокол</div>
                   ) : (
-                    <ul className="space-y-1 text-sm">
-                      {protocolsForPoint.map((pr) => (
-                        <li key={pr.id}>
-                          <Link
-                            to={`/admin/treatment-catalog?id=${pr.id}`}
-                            className="text-primary hover:underline"
-                          >
-                            {pr.name}
-                          </Link>
-                          {pr.subcategory && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              · {pr.subcategory}
-                            </span>
-                          )}
-                        </li>
+                    <div className="space-y-3">
+                      {[
+                        { label: "Встроенные", rows: usageBuiltin },
+                        { label: "Пользовательские", rows: usageCustom },
+                      ].filter((g) => g.rows.length > 0).map((g) => (
+                        <div key={g.label}>
+                          <div className="text-[11px] font-semibold uppercase text-muted-foreground mb-1">
+                            {g.label} ({g.rows.length})
+                          </div>
+                          <div className="rounded-md border overflow-hidden">
+                            <table className="w-full text-xs">
+                              <thead className="bg-muted/50">
+                                <tr>
+                                  <th className="text-left p-2 font-semibold">Протокол</th>
+                                  <th className="text-left p-2 font-semibold">Манипуляция</th>
+                                  <th className="text-left p-2 font-semibold">Параметры</th>
+                                  <th className="p-2 w-10"></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {g.rows.map((r, i) => {
+                                  const params = formatParams(r);
+                                  return (
+                                    <tr key={r.protocol_id + i} className="border-t">
+                                      <td className="p-2">{r.protocol_name}</td>
+                                      <td className="p-2 text-muted-foreground">{r.point_manipulation || "—"}</td>
+                                      <td className="p-2 text-muted-foreground">
+                                        {params ? (
+                                          <span className="inline-flex items-center gap-1">
+                                            {(r.ea_freq_hz != null) && <Zap className="w-3 h-3 text-amber-500" />}
+                                            {r.moxa && <Flame className="w-3 h-3 text-orange-500" />}
+                                            {params}
+                                          </span>
+                                        ) : "—"}
+                                      </td>
+                                      <td className="p-2 text-right">
+                                        <Link to={`/admin/acupuncture-protocols/${r.protocol_id}#point-${openPoint!.id}`}>
+                                          <Button size="sm" variant="ghost" className="h-7 px-2">
+                                            <ExternalLink className="w-3 h-3" />
+                                          </Button>
+                                        </Link>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
+
+                {openPoint && (
+                  <AddPointToProtocolDialog
+                    open={addToProtoOpen}
+                    onOpenChange={setAddToProtoOpen}
+                    pointId={openPoint.id}
+                    pointWhoCode={openPoint.who_code}
+                    defaultManipulation={openPoint.manipulation_default}
+                    onAdded={() => loadUsageForPoint(openPoint.id)}
+                  />
+                )}
               </div>
             </>
           )}
