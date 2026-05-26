@@ -105,6 +105,8 @@ export default function AdminAnalytics() {
           <PlansPerMonthChart filters={filters} />
           <DurationHistogram filters={filters} />
         </div>
+
+        <IrtAnalyticsSection filters={filters} />
       </div>
     </div>
   );
