@@ -10,7 +10,8 @@ import { ArrowLeft, GitCompare, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { SECTIONS, SECTION_MAP, type TreatmentCategory } from "@/components/treatment/sections";
-import { buildDiff, summarize, type DiffEntry, type DiffItem, itemKey } from "@/lib/treatment/diff";
+import { buildDiff, summarize, type DiffEntry, type DiffItem, type IrtSnap, itemKey } from "@/lib/treatment/diff";
+import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
 
 interface LoadedPlan {
   id: string;
@@ -37,6 +38,7 @@ const FIELD_LABEL: Record<string, string> = {
   dilution_solvent: "растворитель",
   notes: "примечания",
   time_of_day: "время суток",
+  irt: "точки ИРТ",
 };
 
 function fmtMoney(n: number | null | undefined): string {
@@ -97,6 +99,23 @@ async function loadPlan(idOrVersionRef: string): Promise<LoadedPlan | null> {
     .select("control_point, at_day")
     .eq("plan_id", idOrVersionRef)
     .order("at_day", { ascending: true });
+
+  // Attach live IRT expansion per catalog_id
+  const catIds = Array.from(new Set(((items as any[]) || []).map(i => i.catalog_id).filter(Boolean)));
+  const irtMap = await fetchIrtForCatalogIds(catIds as string[]);
+  const enriched = ((items as any[]) || []).map(i => {
+    const v = i.catalog_id ? irtMap.get(i.catalog_id) : null;
+    if (!v) return i;
+    return { ...i, _irt: {
+      protocol_id: v.protocol_id,
+      name: v.name,
+      session_count: v.session_count,
+      session_duration_min: v.session_duration_min,
+      frequency: v.frequency,
+      points: v.points,
+    } as IrtSnap };
+  });
+
   return {
     id: idOrVersionRef,
     label: `Лист №${(plan as any).course_number ?? "—"} · ${(plan as any).issued_at ? format(new Date((plan as any).issued_at), "d MMM yyyy", { locale: ru }) : ""}`,
@@ -108,7 +127,7 @@ async function loadPlan(idOrVersionRef: string): Promise<LoadedPlan | null> {
     duration_days: (plan as any).duration_days,
     status: (plan as any).status,
     total_cost_estimate: (plan as any).total_cost_estimate,
-    items: (items || []) as DiffItem[],
+    items: enriched as DiffItem[],
     lab: (lab || []) as any,
   };
 }
@@ -157,6 +176,30 @@ function ItemCard({
         </div>
       )}
       {item.notes && <div className="text-xs text-muted-foreground italic">{hl("notes", item.notes)}</div>}
+      {item._irt && (
+        <div className={`mt-1 rounded-sm px-1.5 py-1 text-[11px] ${isChanged("irt") ? "bg-amber-100 dark:bg-amber-800/40" : "bg-muted/50"}`}>
+          <div className="font-semibold text-muted-foreground">
+            ИРТ: {item._irt.name || "—"}
+            {item._irt.session_count != null && <> · {item._irt.session_count} сеан.</>}
+            {item._irt.session_duration_min != null && <> · {item._irt.session_duration_min} мин</>}
+            {item._irt.frequency && <> · {item._irt.frequency}</>}
+          </div>
+          {item._irt.points && item._irt.points.length > 0 && (
+            <ol className="list-decimal ml-4 mt-0.5 space-y-0.5">
+              {item._irt.points.map((p, i) => (
+                <li key={i}>
+                  <span className="font-mono">{p.who_code}</span>
+                  {p.name_ru && <> {p.name_ru}</>}
+                  {p.side && p.side !== "bilateral" && <> · {p.side === "left" ? "слева" : "справа"}</>}
+                  {p.manipulation && <> · {p.manipulation}</>}
+                  {p.depth_mm && <> · {p.depth_mm} мм</>}
+                  {p.retention_min != null && <> · {p.retention_min} мин</>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
     </div>
   );
 }

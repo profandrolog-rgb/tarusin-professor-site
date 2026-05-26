@@ -1,5 +1,26 @@
 import type { TreatmentCategory } from "@/components/treatment/sections";
 
+export interface IrtPointSnap {
+  order_index: number;
+  who_code: string;
+  name_ru?: string | null;
+  pinyin?: string | null;
+  side?: string | null;
+  manipulation?: string | null;
+  depth_mm?: string | null;
+  retention_min?: number | null;
+  notes?: string | null;
+}
+
+export interface IrtSnap {
+  protocol_id?: string;
+  name?: string;
+  session_count?: number | null;
+  session_duration_min?: number | null;
+  frequency?: string | null;
+  points: IrtPointSnap[];
+}
+
 export interface DiffItem {
   catalog_id?: string | null;
   name_snapshot: string;
@@ -16,6 +37,7 @@ export interface DiffItem {
   dilution_solvent?: string | null;
   notes?: string | null;
   is_off_label?: boolean;
+  _irt?: IrtSnap | null;
   [k: string]: any;
 }
 
@@ -45,6 +67,17 @@ function normTOD(arr?: string[] | null): string {
   return [...(arr || [])].sort().join(",");
 }
 
+function irtSig(s?: IrtSnap | null): string {
+  if (!s) return "";
+  const head = `${s.name || ""}|${s.session_count ?? ""}|${s.session_duration_min ?? ""}|${s.frequency ?? ""}`;
+  const pts = (s.points || [])
+    .slice()
+    .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+    .map(p => `${p.order_index}:${p.who_code}|${p.side || ""}|${p.manipulation || ""}|${p.depth_mm || ""}|${p.retention_min ?? ""}|${p.notes || ""}`)
+    .join("§");
+  return `${head}::${pts}`;
+}
+
 export function diffItems(a?: DiffItem, b?: DiffItem): string[] {
   if (!a || !b) return [];
   const fields: string[] = [];
@@ -54,6 +87,7 @@ export function diffItems(a?: DiffItem, b?: DiffItem): string[] {
     if (String(av) !== String(bv)) fields.push(f as string);
   }
   if (normTOD(a.time_of_day) !== normTOD(b.time_of_day)) fields.push("time_of_day");
+  if (irtSig(a._irt) !== irtSig(b._irt)) fields.push("irt");
   return fields;
 }
 
