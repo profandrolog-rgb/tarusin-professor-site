@@ -211,6 +211,42 @@ export default function IrtAnalyticsSection({ filters }: { filters: AnalyticsFil
             </ResponsiveContainer>
           )}
         </Section>
+
+        <Section title="Фиксированный 12-месячный тренд ИРТ" loading={loading}>
+          {(last12.data?.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={last12.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="plans_count" stroke="hsl(var(--accent))" strokeWidth={2} name="Планов с ИРТ (12 мес.)" dot />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Section>
+
+        <Section title="Тренды по меридианам (ТОП-6)" loading={loading}>
+          {meridianTrendData.data.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={meridianTrendData.data}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                {meridianTrendData.codes.map((c, i) => (
+                  <Line key={c} type="monotone" dataKey={c} stroke={COLORS[i % COLORS.length]} strokeWidth={2} name={c} dot={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Section>
         <Section title="Распределение по нозологиям (теги протоколов)" loading={nosology.isLoading}>
           {(nosology.data?.length ?? 0) === 0 ? (
             <p className="text-sm text-muted-foreground">Нет данных</p>
