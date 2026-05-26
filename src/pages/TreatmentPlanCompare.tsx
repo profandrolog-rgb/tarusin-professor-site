@@ -38,6 +38,7 @@ const FIELD_LABEL: Record<string, string> = {
   dilution_solvent: "растворитель",
   notes: "примечания",
   time_of_day: "время суток",
+  irt: "точки ИРТ",
 };
 
 function fmtMoney(n: number | null | undefined): string {
