@@ -4,10 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Search } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -26,7 +23,9 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
   const [showDropdown, setShowDropdown] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newBirthDate, setNewBirthDate] = useState<Date>();
+  const [newBirthDay, setNewBirthDay] = useState("");
+  const [newBirthMonth, setNewBirthMonth] = useState("");
+  const [newBirthYear, setNewBirthYear] = useState("");
 
   useEffect(() => {
     if (search.length >= 2) {
@@ -47,17 +46,29 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
   }, [search]);
 
   const handleCreatePatient = async () => {
-    if (!newName || !newBirthDate) return;
-    const { data, error } = await supabase
+    const day = parseInt(newBirthDay, 10);
+    const month = parseInt(newBirthMonth, 10);
+    const year = parseInt(newBirthYear, 10);
+    const currentYear = new Date().getFullYear();
+    const valid =
+      newName &&
+      day >= 1 && day <= 31 &&
+      month >= 1 && month <= 12 &&
+      year >= 1920 && year <= currentYear;
+    if (!valid) return;
+    const birthDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const { data } = await supabase
       .from("patients")
-      .insert({ full_name: newName, birth_date: format(newBirthDate, "yyyy-MM-dd") })
+      .insert({ full_name: newName, birth_date: birthDate })
       .select()
       .single();
     if (data) {
       onSelect(data);
       setIsCreating(false);
       setNewName("");
-      setNewBirthDate(undefined);
+      setNewBirthDay("");
+      setNewBirthMonth("");
+      setNewBirthYear("");
       setSearch("");
     }
   };
@@ -81,6 +92,15 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
   }
 
   if (isCreating) {
+    const day = parseInt(newBirthDay, 10);
+    const month = parseInt(newBirthMonth, 10);
+    const year = parseInt(newBirthYear, 10);
+    const currentYear = new Date().getFullYear();
+    const birthValid =
+      day >= 1 && day <= 31 &&
+      month >= 1 && month <= 12 &&
+      year >= 1920 && year <= currentYear;
+
     return (
       <div className="border rounded-lg p-4 space-y-4">
         <h4 className="font-medium">Новый пациент</h4>
@@ -90,28 +110,37 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
         </div>
         <div className="space-y-2">
           <Label>Дата рождения</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("w-full justify-start text-left", !newBirthDate && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {newBirthDate ? format(newBirthDate, "dd.MM.yyyy") : "Выберите дату"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={newBirthDate}
-                onSelect={setNewBirthDate}
-                captionLayout="dropdown-buttons"
-                fromYear={1920}
-                toYear={new Date().getFullYear()}
-                className="p-3 pointer-events-auto"
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="flex gap-2 items-center">
+            <Input
+              inputMode="numeric"
+              maxLength={2}
+              value={newBirthDay}
+              onChange={(e) => setNewBirthDay(e.target.value.replace(/\D/g, ""))}
+              placeholder="ДД"
+              className="w-20 text-center"
+            />
+            <span className="text-muted-foreground">.</span>
+            <Input
+              inputMode="numeric"
+              maxLength={2}
+              value={newBirthMonth}
+              onChange={(e) => setNewBirthMonth(e.target.value.replace(/\D/g, ""))}
+              placeholder="ММ"
+              className="w-20 text-center"
+            />
+            <span className="text-muted-foreground">.</span>
+            <Input
+              inputMode="numeric"
+              maxLength={4}
+              value={newBirthYear}
+              onChange={(e) => setNewBirthYear(e.target.value.replace(/\D/g, ""))}
+              placeholder="ГГГГ"
+              className="w-28 text-center"
+            />
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleCreatePatient} disabled={!newName || !newBirthDate}>Создать</Button>
+          <Button onClick={handleCreatePatient} disabled={!newName || !birthValid}>Создать</Button>
           <Button variant="outline" onClick={() => setIsCreating(false)}>Отмена</Button>
         </div>
       </div>
