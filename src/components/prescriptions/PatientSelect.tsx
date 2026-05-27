@@ -4,10 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Search } from "lucide-react";
 
 interface Patient {
   id: string;
