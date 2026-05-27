@@ -23,7 +23,9 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
   const [showDropdown, setShowDropdown] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newBirthDate, setNewBirthDate] = useState<Date>();
+  const [newBirthDay, setNewBirthDay] = useState("");
+  const [newBirthMonth, setNewBirthMonth] = useState("");
+  const [newBirthYear, setNewBirthYear] = useState("");
 
   useEffect(() => {
     if (search.length >= 2) {
