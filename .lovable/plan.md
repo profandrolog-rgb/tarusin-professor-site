@@ -1,77 +1,50 @@
-# /admin/analytics — дашборд статистики
+# Система протоколов пациентов — план интеграции
 
-## 1. БД-миграция
+В проекте уже есть `patients`, `patient_cards`, `prescriptions`, `operations_journal`, `consultation_rounds`. Не создаём дубликат «новой системы», а добавляем **модуль визитов с 9 типами протоколов** поверх существующих таблиц.
 
-**Таблица `analytics_cache`:**
-- `cache_key text primary key` — формат `{section}:{md5(filters)}`
-- `payload jsonb not null`
-- `computed_at timestamptz default now()`
-- RLS: только admin SELECT/INSERT/UPDATE/DELETE
-- TTL проверяется в коде: `now() - computed_at < interval '1 hour'`
+## Решения по архитектуре
 
-**SECURITY DEFINER RPC-функции** (все принимают `_from date, _to date, _status text, _doctor text`):
+- Используем существующую таблицу `patients`. Добавим в неё недостающие поля из ТЗ: `history_number` (уникальный, auto-increment), `last_name`, `first_name`, `patronymic`, `parent_name`. Старое поле `full_name` оставляем (заполняем триггером из частей ФИО для совместимости).
+- Создаём **одну новую таблицу** `patient_visits` с `protocol_type` + `protocol_data JSONB` — это покрывает все 9 типов без 9 отдельных таблиц.
+- Создаём справочник `icd10_codes` (минимальный, с автодополнением по Q53, N45, N43, N40, N35, I86.1, Q54).
+- Доступ: только `admin` и `surgeon` (как в `operations_journal`). RLS PERMISSIVE.
+- Маршруты в админке: `/admin/visits`, `/admin/visits/new`, `/admin/visits/:id`, `/admin/visits/:id/print`. Список пациентов — переиспользуем `/admin/patient-cards` (расширим карточку историей визитов).
+- PDF/печать: `window.print()` + print-CSS (как сделано для рецептов). Шапка/подпись профессора — как в `PrescriptionPrint`.
+- Шаблоны умных дефолтов (соматический статус, локальный статус, послеоп-блоки) храним в TS-константах, не в БД.
 
-| Функция | Возвращает |
-|---|---|
-| `analytics_top_catalog(_from,_to,_status,_doctor,_limit int default 20)` | jsonb: `[{rank,name,section,usage_count,pct_of_plans}]` |
-| `analytics_top_templates(_from,_to,_status,_doctor,_limit int default 10)` | jsonb: `[{rank,name,usage_count,avg_duration_days,avg_cost}]` |
-| `analytics_avg_cost_by_tag(_from,_to,_status,_doctor)` | jsonb: `[{tag,avg_cost,plans_count}]` |
-| `analytics_plans_per_month(_from,_to,_status,_doctor)` | jsonb: `[{month: 'YYYY-MM', count}]` за последние 12 мес |
-| `analytics_duration_histogram(_from,_to,_status,_doctor)` | jsonb: `[{bucket,count}]` корзины 1-5/6-10/11-14/15-21/22-30/30+ |
-| `analytics_section_usage(_from,_to,_status,_doctor)` | jsonb: `[{section,count,pct}]` по 12 категориям |
-| `analytics_doctors_list()` | jsonb: список уникальных `created_by` с email из profiles |
+## Этапы (предлагаю реализовать по одному, с подтверждением после каждого)
 
-Все читают `treatment_plans` + `treatment_plan_items` + `treatment_catalog` + `protocol_templates`. Фильтры:
-- период: `issued_at between _from and _to` (для draft — `created_at`)
-- статус: `_status in ('issued','all')`
-- врач: `_doctor::uuid = created_by` или `_doctor='all'`
+**Этап 1 — Фундамент (этот PR):**
+1. Миграция: расширить `patients` (части ФИО, `history_number`, `parent_name`), создать `patient_visits`, `icd10_codes` + GRANTs + RLS (admin/surgeon).
+2. Сидинг МКБ-10 (15-20 кодов из ТЗ).
+3. Маршруты-каркасы и пункт «Журнал визитов» в `Admin.tsx` и `AppSidebar`.
+4. Страница `/admin/visits` — список визитов с фильтрами по пациенту/типу/дате.
+5. Страница `/admin/visits/new` — селектор пациента (тот же `PatientSelect`) + сетка из 9 карточек типов протоколов (без самих форм).
 
-Стоимость берётся как сумма `qty * price_avg` из items (та же логика, что в `src/lib/treatment/cost.ts`, но в SQL).
+**Этап 2 — Базовые протоколы (3 простейших):**
+- `ultrashort`, `postop_day3`, `postop_day7` — короткие формы, общие компоненты `PatientHeader`, `Recommendations`, `Diagnosis`, `PostOpStatus`. Печатная версия + сохранение.
 
-## 2. Frontend
+**Этап 3 — Соматика + локальный статус:**
+- Компоненты `SomaticStatus`, `LocalStatusAndrology`, `SexualFormula`. Протоколы `primary_short`, `repeat_with_labs`.
 
-**`src/pages/AdminAnalytics.tsx`** (роут `/admin/analytics` в App.tsx, ссылка с Admin.tsx).
+**Этап 4 — УЗИ-блоки:**
+- `UZI_Reproductive`, `UZI_Urinary`. Протоколы `uzi_reproductive`, `uzi_urinary`, `dynamic_with_uzi`, `repeat_with_uzi`.
 
-Layout:
-```
-[ Фильтры: период (Select 30/90/365/all/custom) | статус | врач | Экспорт CSV ]
-[ Раздел 1: ТОП-20 каталога ── таблица ]
-[ Раздел 2: ТОП-10 шаблонов ── таблица ]
-[ Раздел 3: bar — стоимость по тегам ] [ Раздел 6: pie — секции ]
-[ Раздел 4: line — динамика 12 мес ] [ Раздел 5: histogram (bar) ]
-```
+**Этап 5 — Доводка:**
+- Авто-сохранение черновиков (localStorage, 30 сек), `LabResults` с автодополнением, дашборд-виджеты на `/admin`, autocomplete МКБ-10.
 
-**Хук `useAnalyticsSection(section, filters)`** — react-query:
-1. Считает `filters_hash` (sha256 кратко через `btoa(JSON.stringify)`)
-2. Читает `analytics_cache` по ключу
-3. Если свежий (<1ч) — отдаёт `payload`
-4. Иначе вызывает RPC, апсертит в `analytics_cache`, отдаёт
+## Что сделаем прямо сейчас
 
-**Графики:** Recharts (уже в package.json): `BarChart`, `LineChart`, `PieChart` через обёртки из `components/ui/chart.tsx`.
+Только **Этап 1**. После твоего «ок» по каркасу пойдём по этапам 2-5 по очереди — иначе один ответ выйдет на тысячи строк и риск ошибок резко вырастёт.
 
-**CSV-экспорт:** объединяет данные всех 6 разделов в один многосекционный CSV (заголовок `=== ТОП-20 каталога ===` и т.д.), `Blob` + `saveAs` через существующий file-saver.
+## Технические детали
 
-## 3. Файлы
+- Таблица `patient_visits`: `id`, `patient_id` (FK→patients), `visit_date date default current_date`, `protocol_type text`, `protocol_data jsonb default '{}'`, `diagnosis text`, `icd_code text`, `next_visit_date date`, `created_by uuid`, timestamps. Индексы по `patient_id`, `visit_date desc`, `protocol_type`.
+- `history_number` в `patients`: `text unique`, генерация — RPC `next_history_number()` (max+1, формат «000001»). Существующим записям проставим номера в той же миграции.
+- ENUM `protocol_type` НЕ делаем — оставляем `text` + CHECK по списку, чтобы можно было гибко добавлять.
+- Sidebar: пункт «Журнал визитов» виден ролям `admin` и `surgeon`.
 
-**Новые:**
-- `supabase/migrations/...sql` — таблица + 7 RPC
-- `src/pages/AdminAnalytics.tsx`
-- `src/lib/analytics/useAnalyticsSection.ts`
-- `src/lib/analytics/csvExport.ts`
-- `src/components/analytics/FiltersBar.tsx`
-- `src/components/analytics/TopCatalogTable.tsx`
-- `src/components/analytics/TopTemplatesTable.tsx`
-- `src/components/analytics/CostByTagChart.tsx`
-- `src/components/analytics/PlansPerMonthChart.tsx`
-- `src/components/analytics/DurationHistogram.tsx`
-- `src/components/analytics/SectionUsagePie.tsx`
-
-**Правки:**
-- `src/App.tsx` — добавить роут
-- `src/pages/Admin.tsx` — карточка-ссылка «📊 Аналитика»
-
-## Acceptance
-- Все 6 разделов рендерятся с реальными данными за 90 дней по умолчанию
-- Смена фильтров пересчитывает (новый cache-key) и перерисовывает графики
-- Кнопка «Экспорт CSV» скачивает корректный многосекционный CSV
-- Повторное открытие в течение часа берёт данные из `analytics_cache`
+## Что НЕ делаем
+- Не дублируем `patients`/`visits` отдельной схемой из ТЗ — переиспользуем существующие.
+- Не меняем дизайн-систему на тёмную «medical» из ТЗ — оставляем текущие токены проекта (правило памяти).
+- Аутентификация уже есть, шаг «no auth for MVP» из ТЗ игнорируем.

@@ -1047,6 +1047,27 @@ export type Database = {
         }
         Relationships: []
       }
+      icd10_codes: {
+        Row: {
+          category: string | null
+          code: string
+          created_at: string
+          name_ru: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          created_at?: string
+          name_ru: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          created_at?: string
+          name_ru?: string
+        }
+        Relationships: []
+      }
       lab_results: {
         Row: {
           created_at: string
@@ -1462,13 +1483,68 @@ export type Database = {
           },
         ]
       }
+      patient_visits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          diagnosis: string | null
+          icd_code: string | null
+          id: string
+          next_visit_date: string | null
+          patient_id: string
+          protocol_data: Json
+          protocol_type: string
+          updated_at: string
+          visit_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string | null
+          icd_code?: string | null
+          id?: string
+          next_visit_date?: string | null
+          patient_id: string
+          protocol_data?: Json
+          protocol_type: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string | null
+          icd_code?: string | null
+          id?: string
+          next_visit_date?: string | null
+          patient_id?: string
+          protocol_data?: Json
+          protocol_type?: string
+          updated_at?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_visits_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           birth_date: string
           created_at: string
           email: string | null
+          first_name: string | null
           full_name: string
+          history_number: string | null
           id: string
+          last_name: string | null
+          parent_name: string | null
+          patronymic: string | null
           phone: string | null
           telegram_username: string | null
           updated_at: string
@@ -1477,8 +1553,13 @@ export type Database = {
           birth_date: string
           created_at?: string
           email?: string | null
+          first_name?: string | null
           full_name: string
+          history_number?: string | null
           id?: string
+          last_name?: string | null
+          parent_name?: string | null
+          patronymic?: string | null
           phone?: string | null
           telegram_username?: string | null
           updated_at?: string
@@ -1487,8 +1568,13 @@ export type Database = {
           birth_date?: string
           created_at?: string
           email?: string | null
+          first_name?: string | null
           full_name?: string
+          history_number?: string | null
           id?: string
+          last_name?: string | null
+          parent_name?: string | null
+          patronymic?: string | null
           phone?: string | null
           telegram_username?: string | null
           updated_at?: string
@@ -3314,6 +3400,7 @@ export type Database = {
         }
         Returns: number
       }
+      next_history_number: { Args: never; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

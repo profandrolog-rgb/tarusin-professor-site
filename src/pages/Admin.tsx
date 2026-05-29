@@ -118,6 +118,13 @@ const adminSections = [
     color: "text-rose-500",
   },
   {
+    title: "Журнал визитов и протоколы",
+    description: "9 типов клинических протоколов: первичный осмотр, динамика, УЗИ, послеоп",
+    icon: ClipboardList,
+    href: "/admin/visits",
+    color: "text-cyan-600",
+  },
+  {
     title: "Карточки пациентов",
     description: "Портал пациентов: карточки, документы, чат",
     icon: Users,

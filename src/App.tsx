@@ -24,6 +24,9 @@ import AdminCertificates from "./pages/AdminCertificates";
 import AdminPrescriptions from "./pages/AdminPrescriptions";
 import AdminQuestions from "./pages/AdminQuestions";
 import AdminOperationsJournal from "./pages/AdminOperationsJournal";
+import AdminPatientVisits from "./pages/AdminPatientVisits";
+import AdminPatientVisitNew from "./pages/AdminPatientVisitNew";
+import AdminPatientVisitDetail from "./pages/AdminPatientVisitDetail";
 import AdminDiseaseArticles from "./pages/AdminDiseaseArticles";
 import QA from "./pages/QA";
 import Research from "./pages/Research";
@@ -147,6 +150,9 @@ export const routes: RouteRecord[] = [
       { path: "admin/prescriptions", Component: AdminPrescriptions, entry: "src/pages/AdminPrescriptions.tsx" },
       { path: "admin/questions", Component: AdminQuestions, entry: "src/pages/AdminQuestions.tsx" },
       { path: "admin/operations-journal", Component: AdminOperationsJournal, entry: "src/pages/AdminOperationsJournal.tsx" },
+      { path: "admin/visits", Component: AdminPatientVisits, entry: "src/pages/AdminPatientVisits.tsx" },
+      { path: "admin/visits/new", Component: AdminPatientVisitNew, entry: "src/pages/AdminPatientVisitNew.tsx" },
+      { path: "admin/visits/:id", Component: AdminPatientVisitDetail, entry: "src/pages/AdminPatientVisitDetail.tsx" },
       { path: "admin/disease-articles", Component: AdminDiseaseArticles, entry: "src/pages/AdminDiseaseArticles.tsx" },
       { path: "admin/patient-cards", Component: AdminPatientCards, entry: "src/pages/AdminPatientCards.tsx" },
       { path: "admin/consultations", Component: AdminConsultations, entry: "src/pages/AdminConsultations.tsx" },
