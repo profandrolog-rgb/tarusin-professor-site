@@ -117,6 +117,86 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
         </>
       )}
 
+      {visit.protocol_type === "primary_short" && (
+        <>
+          <Row label="Жалобы" value={data.complaints} />
+          <Row label="Анамнез" value={data.anamnesis} />
+          {data.somatic && (
+            <>
+              <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Соматический статус</div>
+              {(data.somatic.height_cm || data.somatic.weight_kg || data.somatic.bp || data.somatic.pulse) && (
+                <Row
+                  label="Антропометрия / витальные"
+                  value={[
+                    data.somatic.height_cm ? `рост ${data.somatic.height_cm} см` : null,
+                    data.somatic.weight_kg ? `вес ${data.somatic.weight_kg} кг` : null,
+                    data.somatic.bp ? `АД ${data.somatic.bp}` : null,
+                    data.somatic.pulse ? `пульс ${data.somatic.pulse}` : null,
+                  ].filter(Boolean).join(", ")}
+                />
+              )}
+              <Row label="Общее состояние" value={data.somatic.general} />
+              <Row label="Кожные покровы" value={data.somatic.skin} />
+              <Row label="Лимфоузлы" value={data.somatic.lymph_nodes} />
+              <Row label="Органы дыхания" value={data.somatic.respiratory} />
+              <Row label="ССС" value={data.somatic.cardiovascular} />
+              <Row label="Живот" value={data.somatic.abdomen} />
+            </>
+          )}
+          {data.sexual_formula && (
+            <Row
+              label="Половая формула"
+              value={`P${data.sexual_formula.P ?? 0} Ax${data.sexual_formula.Ax ?? 0} F${data.sexual_formula.F ?? 0} L${data.sexual_formula.L ?? 0} G${data.sexual_formula.G ?? 0}${data.sexual_formula.formula_note ? ` — ${data.sexual_formula.formula_note}` : ""}`}
+            />
+          )}
+          {data.local_status && (
+            <>
+              <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Локальный статус</div>
+              <Row label="Наружные половые органы" value={data.local_status.external_genitalia} />
+              <Row label="Половой член" value={data.local_status.penis} />
+              <Row label="Мошонка" value={data.local_status.scrotum} />
+              <Row
+                label="Правое яичко"
+                value={[data.local_status.right_testis, data.local_status.right_testis_volume ? `объём ${data.local_status.right_testis_volume} мл` : null].filter(Boolean).join(", ")}
+              />
+              <Row
+                label="Левое яичко"
+                value={[data.local_status.left_testis, data.local_status.left_testis_volume ? `объём ${data.local_status.left_testis_volume} мл` : null].filter(Boolean).join(", ")}
+              />
+              <Row label="Придатки" value={data.local_status.epididymis} />
+              <Row label="Семенные канатики" value={data.local_status.spermatic_cord} />
+              <Row label="Паховые кольца" value={data.local_status.inguinal_rings} />
+              <Row label="Дополнительно" value={data.local_status.notes} />
+            </>
+          )}
+          <Row label="План обследования" value={data.exam_plan} />
+        </>
+      )}
+
+      {visit.protocol_type === "repeat_with_labs" && (
+        <>
+          <Row label="Жалобы / динамика" value={data.complaints} />
+          <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Лабораторные данные</div>
+          <Row label="ОАК" value={data.cbc} />
+          <Row label="ОАМ" value={data.urinalysis} />
+          <Row label="Биохимия" value={data.biochem} />
+          <Row label="Гормоны" value={data.hormones} />
+          <Row label="Другие исследования" value={data.other_labs} />
+          {data.local_status && (
+            <>
+              <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Локальный статус</div>
+              <Row label="Наружные половые органы" value={data.local_status.external_genitalia} />
+              <Row label="Половой член" value={data.local_status.penis} />
+              <Row label="Мошонка" value={data.local_status.scrotum} />
+              <Row label="Правое яичко" value={data.local_status.right_testis} />
+              <Row label="Левое яичко" value={data.local_status.left_testis} />
+            </>
+          )}
+          <Row label="Заключение" value={data.conclusion} />
+        </>
+      )}
+
+
       {(visit.diagnosis || visit.icd_code) && (
         <>
           <div style={{ borderTop: "1px solid #000", margin: "3mm 0" }} />
