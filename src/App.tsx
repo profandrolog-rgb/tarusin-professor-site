@@ -27,6 +27,7 @@ import AdminOperationsJournal from "./pages/AdminOperationsJournal";
 import AdminPatientVisits from "./pages/AdminPatientVisits";
 import AdminPatientVisitNew from "./pages/AdminPatientVisitNew";
 import AdminPatientVisitDetail from "./pages/AdminPatientVisitDetail";
+import AdminPatientVisitPrint from "./pages/AdminPatientVisitPrint";
 import AdminDiseaseArticles from "./pages/AdminDiseaseArticles";
 import QA from "./pages/QA";
 import Research from "./pages/Research";
@@ -153,6 +154,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/visits", Component: AdminPatientVisits, entry: "src/pages/AdminPatientVisits.tsx" },
       { path: "admin/visits/new", Component: AdminPatientVisitNew, entry: "src/pages/AdminPatientVisitNew.tsx" },
       { path: "admin/visits/:id", Component: AdminPatientVisitDetail, entry: "src/pages/AdminPatientVisitDetail.tsx" },
+      { path: "admin/visits/:id/print", Component: AdminPatientVisitPrint, entry: "src/pages/AdminPatientVisitPrint.tsx" },
       { path: "admin/disease-articles", Component: AdminDiseaseArticles, entry: "src/pages/AdminDiseaseArticles.tsx" },
       { path: "admin/patient-cards", Component: AdminPatientCards, entry: "src/pages/AdminPatientCards.tsx" },
       { path: "admin/consultations", Component: AdminConsultations, entry: "src/pages/AdminConsultations.tsx" },

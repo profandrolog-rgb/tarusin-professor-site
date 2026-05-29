@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast";
 import { PatientSelect } from "@/components/prescriptions/PatientSelect";
 import { PROTOCOL_TYPES, ProtocolType } from "@/lib/visits/protocolTypes";
+import { DEFAULT_PROTOCOL_DATA } from "@/lib/visits/protocolSchemas";
 
 interface Patient {
   id: string;
@@ -46,6 +47,7 @@ export default function AdminPatientVisitNew() {
       .insert({
         patient_id: patient.id,
         protocol_type: type,
+        protocol_data: (DEFAULT_PROTOCOL_DATA[type] as any) || {},
         created_by: user?.id,
       })
       .select()
