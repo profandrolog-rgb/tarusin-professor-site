@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { ProtocolForm } from "@/components/visits/ProtocolForm";
+import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 interface Visit {
   id: string;
