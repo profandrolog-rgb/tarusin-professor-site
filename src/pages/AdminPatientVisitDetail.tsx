@@ -50,7 +50,11 @@ export default function AdminPatientVisitDetail() {
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
-        setVisit(data as any);
+        if (data) {
+          const v = data as any;
+          v.protocol_data = normalizeImportedProtocolData(v.protocol_type, v.protocol_data);
+          setVisit(v);
+        }
         setLoading(false);
       });
   }, [id]);
