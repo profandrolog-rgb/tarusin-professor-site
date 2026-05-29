@@ -2,6 +2,8 @@ import { ProtocolType } from "./protocolTypes";
 import { DEFAULT_SOMATIC, SomaticStatusData } from "@/components/visits/sections/SomaticStatus";
 import { DEFAULT_LOCAL_STATUS, LocalStatusData } from "@/components/visits/sections/LocalStatusAndrology";
 import { DEFAULT_SEXUAL_FORMULA, SexualFormulaData } from "@/components/visits/sections/SexualFormula";
+import { DEFAULT_UZI_REPRODUCTIVE, UziReproductiveData } from "@/components/visits/sections/UziReproductive";
+import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/sections/UziUrinary";
 
 export interface UltrashortData {
   complaints?: string;
@@ -54,12 +56,44 @@ export interface RepeatWithLabsData {
   recommendations?: string;
 }
 
+export interface UziReproductiveOnlyData {
+  indications?: string;
+  uzi?: UziReproductiveData;
+  recommendations?: string;
+}
+
+export interface UziUrinaryOnlyData {
+  indications?: string;
+  uzi?: UziUrinaryData;
+  recommendations?: string;
+}
+
+export interface DynamicWithUziData {
+  complaints?: string;
+  local_status?: LocalStatusData;
+  uzi?: UziReproductiveData;
+  conclusion?: string;
+  recommendations?: string;
+}
+
+export interface RepeatWithUziData {
+  complaints?: string;
+  local_status?: LocalStatusData;
+  uzi?: UziReproductiveData;
+  conclusion?: string;
+  recommendations?: string;
+}
+
 export type AnyProtocolData =
   | UltrashortData
   | PostOpDay3Data
   | PostOpDay7Data
   | PrimaryShortData
   | RepeatWithLabsData
+  | UziReproductiveOnlyData
+  | UziUrinaryOnlyData
+  | DynamicWithUziData
+  | RepeatWithUziData
   | Record<string, any>;
 
 export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData>> = {
@@ -99,4 +133,28 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     conclusion: "Данных за патологию не выявлено.",
     recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
   } as RepeatWithLabsData,
+  uzi_reproductive: {
+    indications: "Скрининговое обследование.",
+    uzi: DEFAULT_UZI_REPRODUCTIVE,
+    recommendations: "Контрольное УЗИ через 6–12 месяцев.",
+  } as UziReproductiveOnlyData,
+  uzi_urinary: {
+    indications: "Скрининговое обследование.",
+    uzi: DEFAULT_UZI_URINARY,
+    recommendations: "Контрольное УЗИ через 6–12 месяцев.",
+  } as UziUrinaryOnlyData,
+  dynamic_with_uzi: {
+    complaints: "Жалоб нет.",
+    local_status: DEFAULT_LOCAL_STATUS,
+    uzi: DEFAULT_UZI_REPRODUCTIVE,
+    conclusion: "Без отрицательной динамики.",
+    recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
+  } as DynamicWithUziData,
+  repeat_with_uzi: {
+    complaints: "Жалоб нет.",
+    local_status: DEFAULT_LOCAL_STATUS,
+    uzi: DEFAULT_UZI_REPRODUCTIVE,
+    conclusion: "Без отрицательной динамики.",
+    recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
+  } as RepeatWithUziData,
 };

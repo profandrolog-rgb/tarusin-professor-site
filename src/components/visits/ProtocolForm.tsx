@@ -4,6 +4,7 @@ import { PostOpDay3Form } from "./forms/PostOpDay3Form";
 import { PostOpDay7Form } from "./forms/PostOpDay7Form";
 import { PrimaryShortForm } from "./forms/PrimaryShortForm";
 import { RepeatWithLabsForm } from "./forms/RepeatWithLabsForm";
+import { UziReproductiveForm, UziUrinaryForm, DynamicWithUziForm, RepeatWithUziForm } from "./forms/UziForms";
 
 interface Props {
   type: ProtocolType;
@@ -24,6 +25,14 @@ export function ProtocolForm({ type, data, onChange }: Props) {
       return <PrimaryShortForm data={data || {}} onChange={patch} />;
     case "repeat_with_labs":
       return <RepeatWithLabsForm data={data || {}} onChange={patch} />;
+    case "uzi_reproductive":
+      return <UziReproductiveForm data={data || {}} onChange={patch} />;
+    case "uzi_urinary":
+      return <UziUrinaryForm data={data || {}} onChange={patch} />;
+    case "dynamic_with_uzi":
+      return <DynamicWithUziForm data={data || {}} onChange={patch} />;
+    case "repeat_with_uzi":
+      return <RepeatWithUziForm data={data || {}} onChange={patch} />;
     default:
       return (
         <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-md">
