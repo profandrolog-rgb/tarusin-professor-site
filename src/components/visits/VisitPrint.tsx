@@ -196,6 +196,40 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
         </>
       )}
 
+      {(visit.protocol_type === "uzi_reproductive" || visit.protocol_type === "dynamic_with_uzi" || visit.protocol_type === "repeat_with_uzi") && data.uzi && (
+        <>
+          {visit.protocol_type !== "uzi_reproductive" && data.complaints && <Row label="Жалобы" value={data.complaints} />}
+          {data.indications && <Row label="Показания" value={data.indications} />}
+          <div style={{ marginTop: "2mm", fontWeight: "bold" }}>УЗИ органов мошонки</div>
+          <Row label="Аппарат" value={data.uzi.device} />
+          <Row label="Правое яичко" value={[data.uzi.right_testis_size, data.uzi.right_testis_volume ? `V ${data.uzi.right_testis_volume} мл` : null, data.uzi.right_testis_structure].filter(Boolean).join("; ")} />
+          <Row label="Правый придаток" value={data.uzi.right_epididymis} />
+          <Row label="Левое яичко" value={[data.uzi.left_testis_size, data.uzi.left_testis_volume ? `V ${data.uzi.left_testis_volume} мл` : null, data.uzi.left_testis_structure].filter(Boolean).join("; ")} />
+          <Row label="Левый придаток" value={data.uzi.left_epididymis} />
+          <Row label="Сосуды" value={data.uzi.vessels} />
+          <Row label="ЦДК" value={data.uzi.doppler} />
+          <Row label="Свободная жидкость" value={data.uzi.free_fluid} />
+          <Row label="Заключение УЗИ" value={data.uzi.conclusion} />
+          {data.conclusion && visit.protocol_type !== "uzi_reproductive" && <Row label="Заключение" value={data.conclusion} />}
+        </>
+      )}
+
+      {visit.protocol_type === "uzi_urinary" && data.uzi && (
+        <>
+          {data.indications && <Row label="Показания" value={data.indications} />}
+          <div style={{ marginTop: "2mm", fontWeight: "bold" }}>УЗИ органов мочевыделительной системы</div>
+          <Row label="Аппарат" value={data.uzi.device} />
+          <Row label="Правая почка" value={[data.uzi.right_kidney_size, data.uzi.right_kidney_parenchyma, data.uzi.right_kidney_pelvis, data.uzi.right_kidney_structure].filter(Boolean).join("; ")} />
+          <Row label="Левая почка" value={[data.uzi.left_kidney_size, data.uzi.left_kidney_parenchyma, data.uzi.left_kidney_pelvis, data.uzi.left_kidney_structure].filter(Boolean).join("; ")} />
+          <Row label="Мочеточники" value={data.uzi.ureters} />
+          <Row label="Мочевой пузырь" value={[data.uzi.bladder_volume ? `V ${data.uzi.bladder_volume} мл` : null, data.uzi.bladder_walls, data.uzi.bladder_contents].filter(Boolean).join("; ")} />
+          <Row label="Остаточная моча" value={data.uzi.residual_urine} />
+          <Row label="Заключение УЗИ" value={data.uzi.conclusion} />
+        </>
+      )}
+
+
+
 
       {(visit.diagnosis || visit.icd_code) && (
         <>
