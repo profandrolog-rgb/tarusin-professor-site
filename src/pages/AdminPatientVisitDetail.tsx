@@ -71,7 +71,28 @@ export default function AdminPatientVisitDetail() {
       .eq("id", visit.id);
     setSaving(false);
     if (error) toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
-    else toast({ title: "Сохранено" });
+    else { clearDraft(); toast({ title: "Сохранено" }); }
+  };
+
+  // Autosave draft (visit metadata + protocol data) every 3 minutes
+  const { loadDraft, clearDraft, hasDraft } = useAutoSave({
+    key: id ? `visit_${id}` : "visit_new",
+    data: visit ? {
+      visit_date: visit.visit_date,
+      diagnosis: visit.diagnosis,
+      icd_code: visit.icd_code,
+      next_visit_date: visit.next_visit_date,
+      protocol_data: visit.protocol_data,
+    } : {},
+    enabled: !!visit,
+  });
+
+  const restoreDraft = () => {
+    const draft = loadDraft();
+    if (draft) {
+      setVisit((v) => (v ? { ...v, ...draft } : v));
+      toast({ title: "Черновик восстановлен" });
+    }
   };
 
   const handleDelete = async () => {
@@ -133,7 +154,10 @@ export default function AdminPatientVisitDetail() {
             </div>
             <div className="space-y-1">
               <Label>Код МКБ-10</Label>
-              <Input value={visit.icd_code || ""} onChange={(e) => update({ icd_code: e.target.value })} placeholder="например, N43.3" />
+              <IcdAutocomplete
+                value={visit.icd_code || ""}
+                onChange={(code, name) => update({ icd_code: code, diagnosis: visit.diagnosis || name || null })}
+              />
             </div>
             <div className="space-y-1 md:col-span-2">
               <Label>Диагноз</Label>
