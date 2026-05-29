@@ -118,7 +118,12 @@ export default function AdminPatientVisitDetail() {
             </Button>
             <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {hasDraft() && (
+              <Button variant="outline" size="sm" onClick={restoreDraft}>
+                <RotateCcw className="h-4 w-4 mr-1" /> Восстановить черновик
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link to={`/admin/visits/${visit.id}/print`}><Printer className="h-4 w-4 mr-1" /> Печать</Link>
             </Button>
