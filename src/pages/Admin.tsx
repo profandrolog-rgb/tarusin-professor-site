@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RecentVisitsWidget } from "@/components/visits/RecentVisitsWidget";
 
 const adminSections = [
   {
@@ -307,6 +308,11 @@ const Admin = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Recent visits widget */}
+        <div className="mb-8">
+          <RecentVisitsWidget />
         </div>
 
         {/* Content Management */}

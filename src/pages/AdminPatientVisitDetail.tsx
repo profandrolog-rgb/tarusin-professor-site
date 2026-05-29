@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { ProtocolForm } from "@/components/visits/ProtocolForm";
+import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 interface Visit {
   id: string;
@@ -69,7 +71,28 @@ export default function AdminPatientVisitDetail() {
       .eq("id", visit.id);
     setSaving(false);
     if (error) toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
-    else toast({ title: "Сохранено" });
+    else { clearDraft(); toast({ title: "Сохранено" }); }
+  };
+
+  // Autosave draft (visit metadata + protocol data) every 3 minutes
+  const { loadDraft, clearDraft, hasDraft } = useAutoSave({
+    key: id ? `visit_${id}` : "visit_new",
+    data: visit ? {
+      visit_date: visit.visit_date,
+      diagnosis: visit.diagnosis,
+      icd_code: visit.icd_code,
+      next_visit_date: visit.next_visit_date,
+      protocol_data: visit.protocol_data,
+    } : {},
+    enabled: !!visit,
+  });
+
+  const restoreDraft = () => {
+    const draft = loadDraft();
+    if (draft) {
+      setVisit((v) => (v ? { ...v, ...draft } : v));
+      toast({ title: "Черновик восстановлен" });
+    }
   };
 
   const handleDelete = async () => {
@@ -95,7 +118,12 @@ export default function AdminPatientVisitDetail() {
             </Button>
             <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {hasDraft() && (
+              <Button variant="outline" size="sm" onClick={restoreDraft}>
+                <RotateCcw className="h-4 w-4 mr-1" /> Восстановить черновик
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link to={`/admin/visits/${visit.id}/print`}><Printer className="h-4 w-4 mr-1" /> Печать</Link>
             </Button>
@@ -131,7 +159,10 @@ export default function AdminPatientVisitDetail() {
             </div>
             <div className="space-y-1">
               <Label>Код МКБ-10</Label>
-              <Input value={visit.icd_code || ""} onChange={(e) => update({ icd_code: e.target.value })} placeholder="например, N43.3" />
+              <IcdAutocomplete
+                value={visit.icd_code || ""}
+                onChange={(code, name) => update({ icd_code: code, diagnosis: visit.diagnosis || name || null })}
+              />
             </div>
             <div className="space-y-1 md:col-span-2">
               <Label>Диагноз</Label>
