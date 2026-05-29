@@ -14,6 +14,7 @@ import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { ProtocolForm } from "@/components/visits/ProtocolForm";
 import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { normalizeImportedProtocolData } from "@/lib/visits/normalizeProtocolData";
 
 interface Visit {
   id: string;
