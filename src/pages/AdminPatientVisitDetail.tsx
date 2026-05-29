@@ -14,6 +14,7 @@ import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { ProtocolForm } from "@/components/visits/ProtocolForm";
 import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { normalizeImportedProtocolData } from "@/lib/visits/normalizeProtocolData";
 
 interface Visit {
   id: string;
@@ -49,7 +50,11 @@ export default function AdminPatientVisitDetail() {
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
-        setVisit(data as any);
+        if (data) {
+          const v = data as any;
+          v.protocol_data = normalizeImportedProtocolData(v.protocol_type, v.protocol_data);
+          setVisit(v);
+        }
         setLoading(false);
       });
   }, [id]);
