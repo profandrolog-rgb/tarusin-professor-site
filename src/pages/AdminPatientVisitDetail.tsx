@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { ProtocolForm } from "@/components/visits/ProtocolForm";
 
 interface Visit {
   id: string;
@@ -95,6 +96,9 @@ export default function AdminPatientVisitDetail() {
             <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link to={`/admin/visits/${visit.id}/print`}><Printer className="h-4 w-4 mr-1" /> Печать</Link>
+            </Button>
             <Button variant="outline" onClick={handleDelete} className="text-destructive">
               <Trash2 className="h-4 w-4 mr-1" /> Удалить
             </Button>
@@ -141,11 +145,11 @@ export default function AdminPatientVisitDetail() {
             <CardTitle className="text-base">Содержание протокола</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-md">
-              Форма для типа «{def?.title}» будет реализована на следующем этапе.
-              <br />
-              Сейчас доступны метаданные визита и диагноз — этого достаточно для ведения журнала.
-            </div>
+            <ProtocolForm
+              type={visit.protocol_type}
+              data={visit.protocol_data}
+              onChange={(d) => update({ protocol_data: d })}
+            />
           </CardContent>
         </Card>
       </div>
