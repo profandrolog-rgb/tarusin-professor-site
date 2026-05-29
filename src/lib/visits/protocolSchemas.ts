@@ -1,4 +1,7 @@
 import { ProtocolType } from "./protocolTypes";
+import { DEFAULT_SOMATIC, SomaticStatusData } from "@/components/visits/sections/SomaticStatus";
+import { DEFAULT_LOCAL_STATUS, LocalStatusData } from "@/components/visits/sections/LocalStatusAndrology";
+import { DEFAULT_SEXUAL_FORMULA, SexualFormulaData } from "@/components/visits/sections/SexualFormula";
 
 export interface UltrashortData {
   complaints?: string;
@@ -29,7 +32,35 @@ export interface PostOpDay7Data {
   recommendations?: string;
 }
 
-export type AnyProtocolData = UltrashortData | PostOpDay3Data | PostOpDay7Data | Record<string, any>;
+export interface PrimaryShortData {
+  complaints?: string;
+  anamnesis?: string;
+  somatic?: SomaticStatusData;
+  sexual_formula?: SexualFormulaData;
+  local_status?: LocalStatusData;
+  exam_plan?: string;
+  recommendations?: string;
+}
+
+export interface RepeatWithLabsData {
+  complaints?: string;
+  cbc?: string;
+  urinalysis?: string;
+  biochem?: string;
+  hormones?: string;
+  other_labs?: string;
+  local_status?: LocalStatusData;
+  conclusion?: string;
+  recommendations?: string;
+}
+
+export type AnyProtocolData =
+  | UltrashortData
+  | PostOpDay3Data
+  | PostOpDay7Data
+  | PrimaryShortData
+  | RepeatWithLabsData
+  | Record<string, any>;
 
 export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData>> = {
   ultrashort: {
@@ -53,4 +84,19 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     recommendations:
       "Ограничение физических нагрузок 1 месяц. Контрольный осмотр через 1 месяц. При появлении жалоб — обращение к лечащему врачу.",
   },
+  primary_short: {
+    complaints: "",
+    anamnesis: "Со слов родителей: рос и развивался по возрасту. Хронические заболевания отрицают. Аллергоанамнез не отягощён. Травмы, операции — нет.",
+    somatic: DEFAULT_SOMATIC,
+    sexual_formula: DEFAULT_SEXUAL_FORMULA,
+    local_status: DEFAULT_LOCAL_STATUS,
+    exam_plan: "ОАК, ОАМ, УЗИ органов мошонки и почек.",
+    recommendations: "Контрольный осмотр через 6 месяцев.",
+  } as PrimaryShortData,
+  repeat_with_labs: {
+    complaints: "Жалоб нет.",
+    local_status: DEFAULT_LOCAL_STATUS,
+    conclusion: "Данных за патологию не выявлено.",
+    recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
+  } as RepeatWithLabsData,
 };
