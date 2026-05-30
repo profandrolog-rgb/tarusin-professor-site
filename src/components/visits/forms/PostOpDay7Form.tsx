@@ -45,7 +45,7 @@ export function PostOpDay7Form({ data, onChange }: Props) {
         <Label htmlFor="sutures_removed" className="cursor-pointer">Швы сняты</Label>
       </div>
       <div className="space-y-1">
-        <Label>Жалобы</Label>
+        <SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
         <Textarea rows={2} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">

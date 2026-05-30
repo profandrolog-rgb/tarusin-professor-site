@@ -110,8 +110,14 @@ export function normalizeImportedProtocolData(
   data: any,
 ): any {
   if (!data || typeof data !== "object") return data || {};
+  // Защита от повторной нормализации: после первого прохода ставим флаг,
+  // чтобы ручная очистка поля в форме не перезаписывалась при следующей
+  // загрузке тем же значением из fields.
+  if (data._normalized) return data;
   const fields = data.fields;
-  if (!fields || typeof fields !== "object") return data;
+  if (!fields || typeof fields !== "object") {
+    return { ...data, _normalized: true };
+  }
 
   const derived: Record<string, any> = {};
   for (const [structKey, ruKeys] of Object.entries(FIELD_ALIASES)) {
@@ -126,5 +132,5 @@ export function normalizeImportedProtocolData(
     if (rec) derived.recommendations = rec;
   }
 
-  return { ...data, ...derived };
+  return { ...data, ...derived, _normalized: true };
 }

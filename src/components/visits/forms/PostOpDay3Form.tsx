@@ -46,7 +46,7 @@ export function PostOpDay3Form({ data, onChange }: Props) {
         <Textarea rows={2} value={data.dressing || ""} onChange={(e) => onChange({ dressing: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Жалобы</Label>
+        <SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
         <Textarea rows={2} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
