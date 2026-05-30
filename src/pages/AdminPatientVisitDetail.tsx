@@ -71,8 +71,13 @@ export default function AdminPatientVisitDetail() {
           // Если нормализатор реально добавил поля — сразу сохраняем в БД,
           // чтобы список визитов, печать и повторные открытия видели
           // заполненный протокол без ручного "Сохранить".
-          const wasNormalized = isProtocolRecord(original) && original._normalized === true;
-          if (!wasNormalized && normalized && normalized._normalized === true) {
+          const prevVersion = isProtocolRecord(original)
+            ? (original._normalized_version as number | undefined)
+            : undefined;
+          const newVersion = isProtocolRecord(normalized)
+            ? (normalized._normalized_version as number | undefined)
+            : undefined;
+          if (newVersion === NORMALIZATION_VERSION && prevVersion !== NORMALIZATION_VERSION) {
             supabase
               .from("patient_visits")
               .update({ protocol_data: normalized })
