@@ -72,10 +72,7 @@ export function SmartFieldLabel({
   const tpl = resolveTemplate(ctx.templates, ctx.protocolType, fieldKey, ctx.operationName);
 
   const apply = () => {
-    if (!tpl) {
-      toast({ title: "Шаблон не найден", description: "Для этого поля шаблона нет.", variant: "destructive" });
-      return;
-    }
+    if (!tpl) return; // ⚡ не рендерится без шаблона, ветка для безопасности
     ctx.onChange({ [field]: tpl.template_text });
   };
   const reset = () => ctx.onChange({ [field]: "" });

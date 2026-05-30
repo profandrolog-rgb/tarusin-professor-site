@@ -12,7 +12,7 @@ export function UltrashortForm({ data, onChange }: Props) {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Label>Жалобы</Label>
+        <SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
