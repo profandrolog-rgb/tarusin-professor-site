@@ -100,31 +100,39 @@ export function resolveTemplate(
  * Used by SmartFieldLabel and "fill all" button.
  */
 export function getFieldKeyMap(protocolType: ProtocolType | string): Record<string, string> {
+  // Базовый минимум: каждый протокол поддерживает recommendations + complaints,
+  // если они есть в схеме формы. Маппинг ниже строго соответствует полям
+  // соответствующего <ProtocolType>Form. Поля без рендеринга в формах
+  // (sport_limit, neuro_status, psych_status, uzi_express) сюда не включаются.
   switch (protocolType) {
     case "ultrashort":
-      return { conclusion: "conclusion", recommendations: "recommendations" };
-    case "postop_day3":
       return {
-        general_status: "general_status",
-        wound_status: "wound_status",
-        local_status: "wound_status", // op-specific local_status maps to wound_status field
+        complaints: "complaints",
+        conclusion: "conclusion",
         recommendations: "recommendations",
       };
+    case "postop_day3":
     case "postop_day7":
     case "postop_day10":
       return {
         general_status: "general_status",
         wound_status: "wound_status",
-        local_status: "wound_status",
+        complaints: "complaints",
         recommendations: "recommendations",
       };
     case "primary_short":
-      return { recommendations: "recommendations" };
+      return {
+        complaints: "complaints",
+        recommendations: "recommendations",
+      };
     case "repeat_with_labs":
-      return { conclusion: "conclusion", recommendations: "recommendations" };
     case "dynamic_with_uzi":
     case "repeat_with_uzi":
-      return { conclusion: "conclusion", recommendations: "recommendations" };
+      return {
+        complaints: "complaints",
+        conclusion: "conclusion",
+        recommendations: "recommendations",
+      };
     case "uzi_reproductive":
     case "uzi_urinary":
       return { recommendations: "recommendations" };

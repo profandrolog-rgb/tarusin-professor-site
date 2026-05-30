@@ -154,12 +154,12 @@ export function FillStandardButton({ overwrite = false }: { overwrite?: boolean 
 export function OperationTemplateBanner() {
   const ctx = useCtx();
   const [dismissed, setDismissed] = useState<string>("");
-  if (!ctx) return null;
-  const match = detectOperationMatch(ctx.templates, ctx.protocolType, ctx.operationName);
-  // Reset dismissal when operation name changes
+  // Reset dismissal when operation name changes — hook ДОЛЖЕН быть до early-return.
   useEffect(() => {
     setDismissed("");
-  }, [ctx.operationName]);
+  }, [ctx?.operationName]);
+  if (!ctx) return null;
+  const match = detectOperationMatch(ctx.templates, ctx.protocolType, ctx.operationName);
   if (!match.matched || dismissed === ctx.operationName) return null;
 
   const apply = () => {
