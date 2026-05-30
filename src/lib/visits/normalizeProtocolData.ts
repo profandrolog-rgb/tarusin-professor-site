@@ -119,16 +119,16 @@ const RECOMMENDATIONS_SOURCES = [
 // Заполняем только если соответствующее поле в секции пустое.
 const NESTED_ALIASES: Record<string, Dict> = {
   local_status: {
-    // В ODT-импорте локальный статус идёт единым блоком — кладём
-    // полный текст в "Наружные половые органы", чтобы он был виден
-    // в форме как основной текст, а не прятался в "Дополнительно".
+    right: ["Справа", "Правая сторона"],
+    left: ["Слева", "Левая сторона"],
+    penis: ["Половой член"],
+    perineum: ["Промежность"],
     external_genitalia: [
       "Локальный статус на момент осмотра",
       "Локальный статус",
       "Состояние раны",
       "Наружные половые органы",
     ],
-    penis: ["Половой член"],
     scrotum: ["Мошонка"],
     right_testis: ["Правое яичко"],
     left_testis: ["Левое яичко"],
@@ -178,7 +178,7 @@ function isEmpty(v: any): boolean {
 // Версия нормализатора. Увеличиваем при добавлении новых алиасов,
 // чтобы ранее импортированные визиты (с _normalized: true) были
 // повторно прогнаны через свежий маппинг и подхватили новые поля.
-export const NORMALIZATION_VERSION = 3;
+export const NORMALIZATION_VERSION = 4;
 
 export function normalizeImportedProtocolData(
   _type: ProtocolType,

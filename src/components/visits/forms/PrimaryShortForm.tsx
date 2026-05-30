@@ -42,15 +42,63 @@ export function PrimaryShortForm({ data, onChange }: Props) {
       </Card>
 
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            <Label>Локальный статус (полный текст)</Label>
-            <Textarea
-              rows={8}
-              value={data.local_status?.external_genitalia || ""}
-              onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), external_genitalia: e.target.value } })}
-            />
+        <CardContent className="space-y-4">
+          <div className="overflow-hidden rounded-md border">
+            <table className="w-full table-fixed border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="w-1/2 border-b border-r p-2 text-left font-medium">Справа</th>
+                  <th className="w-1/2 border-b p-2 text-left font-medium">Слева</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border-r p-0 align-top">
+                    <Textarea
+                      rows={8}
+                      className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      value={data.local_status?.right || ""}
+                      onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value } })}
+                    />
+                  </td>
+                  <td className="p-0 align-top">
+                    <Textarea
+                      rows={8}
+                      className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      value={data.local_status?.left || ""}
+                      onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left: e.target.value } })}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1"><Label>Половой член</Label>
+              <Textarea
+                rows={3}
+                value={data.local_status?.penis || ""}
+                onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), penis: e.target.value } })}
+              />
+            </div>
+            <div className="space-y-1"><Label>Промежность</Label>
+              <Textarea
+                rows={3}
+                value={data.local_status?.perineum || ""}
+                onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), perineum: e.target.value } })}
+              />
+            </div>
+          </div>
+          {data.local_status?.external_genitalia ? (
+            <div className="space-y-1">
+              <Label>Локальный статус (старый импорт, единый текст)</Label>
+              <Textarea
+                rows={6}
+                value={data.local_status?.external_genitalia || ""}
+                onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), external_genitalia: e.target.value } })}
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
