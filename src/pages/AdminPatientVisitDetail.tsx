@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,18 +22,28 @@ interface Visit {
   patient_id: string;
   visit_date: string;
   protocol_type: ProtocolType;
-  protocol_data: any;
+  protocol_data: Json;
   diagnosis: string | null;
   icd_code: string | null;
   next_visit_date: string | null;
   patient: { id: string; full_name: string; history_number: string | null; birth_date: string } | null;
 }
 
+const getProtocolFields = (data: Json): unknown => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  return (data as { fields?: unknown }).fields ?? null;
+};
+
+const isProtocolRecord = (data: Json): data is { [key: string]: Json } => {
+  return !!data && typeof data === "object" && !Array.isArray(data);
+};
+
 export default function AdminPatientVisitDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, isSurgeon } = useAuth();
   const [visit, setVisit] = useState<Visit | null>(null);
+  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<Json>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -51,15 +62,16 @@ export default function AdminPatientVisitDetail() {
       .then(({ data, error }) => {
         if (error) toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
         if (data) {
-          const v = data as any;
+          const v = data as Visit;
           const original = v.protocol_data;
+          setRawProtocolDataFromDb(original);
           const normalized = normalizeImportedProtocolData(v.protocol_type, original);
           v.protocol_data = normalized;
           setVisit(v);
           // Если нормализатор реально добавил поля — сразу сохраняем в БД,
           // чтобы список визитов, печать и повторные открытия видели
           // заполненный протокол без ручного "Сохранить".
-          const wasNormalized = original && original._normalized === true;
+          const wasNormalized = isProtocolRecord(original) && original._normalized === true;
           if (!wasNormalized && normalized && normalized._normalized === true) {
             supabase
               .from("patient_visits")
@@ -128,6 +140,7 @@ export default function AdminPatientVisitDetail() {
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
 
   const def = PROTOCOL_TYPE_MAP[visit.protocol_type];
+  const debugNormalizedData = normalizeImportedProtocolData(visit.protocol_type, rawProtocolDataFromDb);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -202,6 +215,26 @@ export default function AdminPatientVisitDetail() {
               data={visit.protocol_data}
               onChange={(d) => update({ protocol_data: d })}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="border-dashed bg-muted/40">
+          <CardHeader>
+            <CardTitle className="text-sm">Отладка импорта протокола</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-xs">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">1. Сырой JSON из protocol_data.fields</Label>
+              <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
+                {JSON.stringify(getProtocolFields(rawProtocolDataFromDb), null, 2)}
+              </pre>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">2. Результат после normalizeImportedProtocolData</Label>
+              <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
+                {JSON.stringify(debugNormalizedData ?? null, null, 2)}
+              </pre>
+            </div>
           </CardContent>
         </Card>
       </div>
