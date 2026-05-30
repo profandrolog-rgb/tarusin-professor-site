@@ -82,7 +82,8 @@ const FIELD_ALIASES: Dict = {
   psych_status: ["Психологический статус"],
   // Половая формула как свободный текст (структурное представление
   // остаётся в data.sexual_formula, но текст не теряем)
-  sexual_formula_text: ["Половая формула"],
+  sexual_formula_text: ["Половая формула", "Половая конституция"],
+
   indications: [
     "Показания",
   ],
