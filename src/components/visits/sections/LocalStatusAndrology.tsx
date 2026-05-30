@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 export interface LocalStatusData {
   external_genitalia?: string;
   penis?: string;
+  perineum?: string;
+  right?: string;
+  left?: string;
   scrotum?: string;
   right_testis?: string;
   left_testis?: string;
