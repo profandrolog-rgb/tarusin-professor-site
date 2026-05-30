@@ -3,7 +3,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
-import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SmartFieldLabel } from "../SmartTemplates";
 
@@ -42,8 +41,17 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         </CardContent>
       </Card>
 
-      <Card><CardHeader><CardTitle className="text-sm">Локальный статус (андрологический)</CardTitle></CardHeader>
-        <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
+      <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            <Label>Локальный статус (полный текст)</Label>
+            <Textarea
+              rows={8}
+              value={data.local_status?.external_genitalia || ""}
+              onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), external_genitalia: e.target.value } })}
+            />
+          </div>
+        </CardContent>
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
