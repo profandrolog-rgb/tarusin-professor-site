@@ -21,7 +21,7 @@ interface Visit {
   patient_id: string;
   visit_date: string;
   protocol_type: ProtocolType;
-  protocol_data: any;
+  protocol_data: Record<string, unknown> | null;
   diagnosis: string | null;
   icd_code: string | null;
   next_visit_date: string | null;
@@ -33,7 +33,7 @@ export default function AdminPatientVisitDetail() {
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, isSurgeon } = useAuth();
   const [visit, setVisit] = useState<Visit | null>(null);
-  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<any>(null);
+  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -52,7 +52,7 @@ export default function AdminPatientVisitDetail() {
       .then(({ data, error }) => {
         if (error) toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
         if (data) {
-          const v = data as any;
+          const v = data as Visit;
           const original = v.protocol_data;
           setRawProtocolDataFromDb(original);
           const normalized = normalizeImportedProtocolData(v.protocol_type, original);
