@@ -126,6 +126,13 @@ const adminSections = [
     color: "text-cyan-600",
   },
   {
+    title: "Шаблоны текстов протоколов",
+    description: "Универсальные и операционные шаблоны для полей форм визитов",
+    icon: ClipboardList,
+    href: "/admin/visit-templates",
+    color: "text-teal-600",
+  },
+  {
     title: "Карточки пациентов",
     description: "Портал пациентов: карточки, документы, чат",
     icon: Users,
