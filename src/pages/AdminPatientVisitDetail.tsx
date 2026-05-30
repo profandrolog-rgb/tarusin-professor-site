@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,19 +22,24 @@ interface Visit {
   patient_id: string;
   visit_date: string;
   protocol_type: ProtocolType;
-  protocol_data: Record<string, unknown> | null;
+  protocol_data: Json;
   diagnosis: string | null;
   icd_code: string | null;
   next_visit_date: string | null;
   patient: { id: string; full_name: string; history_number: string | null; birth_date: string } | null;
 }
 
+const getProtocolFields = (data: Json): unknown => {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  return (data as { fields?: unknown }).fields ?? null;
+};
+
 export default function AdminPatientVisitDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, isSurgeon } = useAuth();
   const [visit, setVisit] = useState<Visit | null>(null);
-  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<Record<string, unknown> | null>(null);
+  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<Json>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -216,7 +222,7 @@ export default function AdminPatientVisitDetail() {
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">1. Сырой JSON из protocol_data.fields</Label>
               <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
-                {JSON.stringify(rawProtocolDataFromDb?.fields ?? null, null, 2)}
+                {JSON.stringify(getProtocolFields(rawProtocolDataFromDb), null, 2)}
               </pre>
             </div>
             <div className="space-y-2">
