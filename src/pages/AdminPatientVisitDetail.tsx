@@ -52,12 +52,28 @@ export default function AdminPatientVisitDetail() {
         if (error) toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
         if (data) {
           const v = data as any;
-          v.protocol_data = normalizeImportedProtocolData(v.protocol_type, v.protocol_data);
+          const original = v.protocol_data;
+          const normalized = normalizeImportedProtocolData(v.protocol_type, original);
+          v.protocol_data = normalized;
           setVisit(v);
+          // Если нормализатор реально добавил поля — сразу сохраняем в БД,
+          // чтобы список визитов, печать и повторные открытия видели
+          // заполненный протокол без ручного "Сохранить".
+          const wasNormalized = original && original._normalized === true;
+          if (!wasNormalized && normalized && normalized._normalized === true) {
+            supabase
+              .from("patient_visits")
+              .update({ protocol_data: normalized })
+              .eq("id", v.id)
+              .then(({ error: upErr }) => {
+                if (upErr) console.warn("[normalize] auto-persist failed:", upErr.message);
+              });
+          }
         }
         setLoading(false);
       });
   }, [id]);
+
 
   const update = (patch: Partial<Visit>) => setVisit((v) => (v ? { ...v, ...patch } : v));
 
