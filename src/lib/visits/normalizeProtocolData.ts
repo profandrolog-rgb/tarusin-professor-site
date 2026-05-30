@@ -175,18 +175,21 @@ function isEmpty(v: any): boolean {
   return v === undefined || v === null || v === "";
 }
 
+// Версия нормализатора. Увеличиваем при добавлении новых алиасов,
+// чтобы ранее импортированные визиты (с _normalized: true) были
+// повторно прогнаны через свежий маппинг и подхватили новые поля.
+export const NORMALIZATION_VERSION = 3;
+
 export function normalizeImportedProtocolData(
   _type: ProtocolType,
   data: any,
 ): any {
   if (!data || typeof data !== "object") return data || {};
-  // Защита от повторной нормализации: после первого прохода ставим флаг,
-  // чтобы ручная очистка поля в форме не перезаписывалась при следующей
-  // загрузке тем же значением из fields.
-  if (data._normalized) return data;
+  // Если уже нормализовано текущей версией — ничего не делаем.
+  if (data._normalized && data._normalized_version === NORMALIZATION_VERSION) return data;
   const fields = data.fields;
   if (!fields || typeof fields !== "object") {
-    return { ...data, _normalized: true };
+    return { ...data, _normalized: true, _normalized_version: NORMALIZATION_VERSION };
   }
 
   // 1. Плоские поля верхнего уровня
@@ -218,5 +221,12 @@ export function normalizeImportedProtocolData(
     }
   }
 
-  return { ...data, ...derived, ...nestedPatch, _normalized: true };
+  return {
+    ...data,
+    ...derived,
+    ...nestedPatch,
+    _normalized: true,
+    _normalized_version: NORMALIZATION_VERSION,
+  };
 }
+
