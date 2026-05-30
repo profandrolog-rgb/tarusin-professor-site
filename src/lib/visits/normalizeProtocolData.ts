@@ -119,7 +119,15 @@ const RECOMMENDATIONS_SOURCES = [
 // Заполняем только если соответствующее поле в секции пустое.
 const NESTED_ALIASES: Record<string, Dict> = {
   local_status: {
-    external_genitalia: ["Наружные половые органы"],
+    // В ODT-импорте локальный статус идёт единым блоком — кладём
+    // полный текст в "Наружные половые органы", чтобы он был виден
+    // в форме как основной текст, а не прятался в "Дополнительно".
+    external_genitalia: [
+      "Локальный статус на момент осмотра",
+      "Локальный статус",
+      "Состояние раны",
+      "Наружные половые органы",
+    ],
     penis: ["Половой член"],
     scrotum: ["Мошонка"],
     right_testis: ["Правое яичко"],
@@ -127,12 +135,6 @@ const NESTED_ALIASES: Record<string, Dict> = {
     epididymis: ["Придатки", "Придатки яичек"],
     spermatic_cord: ["Семенные канатики"],
     inguinal_rings: ["Паховые кольца", "Наружные паховые кольца"],
-    // Свободный текст локального статуса целиком — в "Дополнительно"
-    notes: [
-      "Локальный статус на момент осмотра",
-      "Локальный статус",
-      "Состояние раны",
-    ],
   },
   somatic: {
     general: [
@@ -143,6 +145,7 @@ const NESTED_ALIASES: Record<string, Dict> = {
     lymph_nodes: ["Лимфатические узлы", "Периферические лимфатические узлы"],
   },
 };
+
 
 
 function pickFirst(fields: Record<string, any>, keys: string[]): string | undefined {
@@ -172,18 +175,21 @@ function isEmpty(v: any): boolean {
   return v === undefined || v === null || v === "";
 }
 
+// Версия нормализатора. Увеличиваем при добавлении новых алиасов,
+// чтобы ранее импортированные визиты (с _normalized: true) были
+// повторно прогнаны через свежий маппинг и подхватили новые поля.
+export const NORMALIZATION_VERSION = 3;
+
 export function normalizeImportedProtocolData(
   _type: ProtocolType,
   data: any,
 ): any {
   if (!data || typeof data !== "object") return data || {};
-  // Защита от повторной нормализации: после первого прохода ставим флаг,
-  // чтобы ручная очистка поля в форме не перезаписывалась при следующей
-  // загрузке тем же значением из fields.
-  if (data._normalized) return data;
+  // Если уже нормализовано текущей версией — ничего не делаем.
+  if (data._normalized && data._normalized_version === NORMALIZATION_VERSION) return data;
   const fields = data.fields;
   if (!fields || typeof fields !== "object") {
-    return { ...data, _normalized: true };
+    return { ...data, _normalized: true, _normalized_version: NORMALIZATION_VERSION };
   }
 
   // 1. Плоские поля верхнего уровня
@@ -215,5 +221,12 @@ export function normalizeImportedProtocolData(
     }
   }
 
-  return { ...data, ...derived, ...nestedPatch, _normalized: true };
+  return {
+    ...data,
+    ...derived,
+    ...nestedPatch,
+    _normalized: true,
+    _normalized_version: NORMALIZATION_VERSION,
+  };
 }
+
