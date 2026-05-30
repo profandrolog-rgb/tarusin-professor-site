@@ -68,9 +68,6 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         </div>
       </div>
 
-          <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
-        </div>
-      </div>
     </div>
   );
 }
