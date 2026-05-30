@@ -34,6 +34,10 @@ const getProtocolFields = (data: Json): unknown => {
   return (data as { fields?: unknown }).fields ?? null;
 };
 
+const isProtocolRecord = (data: Json): data is { [key: string]: Json } => {
+  return !!data && typeof data === "object" && !Array.isArray(data);
+};
+
 export default function AdminPatientVisitDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -67,7 +71,7 @@ export default function AdminPatientVisitDetail() {
           // Если нормализатор реально добавил поля — сразу сохраняем в БД,
           // чтобы список визитов, печать и повторные открытия видели
           // заполненный протокол без ручного "Сохранить".
-          const wasNormalized = original && original._normalized === true;
+          const wasNormalized = isProtocolRecord(original) && original._normalized === true;
           if (!wasNormalized && normalized && normalized._normalized === true) {
             supabase
               .from("patient_visits")
