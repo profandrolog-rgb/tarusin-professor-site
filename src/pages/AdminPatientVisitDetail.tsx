@@ -33,6 +33,7 @@ export default function AdminPatientVisitDetail() {
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, isSurgeon } = useAuth();
   const [visit, setVisit] = useState<Visit | null>(null);
+  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -53,6 +54,7 @@ export default function AdminPatientVisitDetail() {
         if (data) {
           const v = data as any;
           const original = v.protocol_data;
+          setRawProtocolDataFromDb(original);
           const normalized = normalizeImportedProtocolData(v.protocol_type, original);
           v.protocol_data = normalized;
           setVisit(v);
@@ -128,6 +130,7 @@ export default function AdminPatientVisitDetail() {
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
 
   const def = PROTOCOL_TYPE_MAP[visit.protocol_type];
+  const debugNormalizedData = normalizeImportedProtocolData(visit.protocol_type, rawProtocolDataFromDb);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -202,6 +205,26 @@ export default function AdminPatientVisitDetail() {
               data={visit.protocol_data}
               onChange={(d) => update({ protocol_data: d })}
             />
+          </CardContent>
+        </Card>
+
+        <Card className="border-dashed bg-muted/40">
+          <CardHeader>
+            <CardTitle className="text-sm">Отладка импорта протокола</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-xs">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">1. Сырой JSON из protocol_data.fields</Label>
+              <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
+                {JSON.stringify(rawProtocolDataFromDb?.fields ?? null, null, 2)}
+              </pre>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">2. Результат после normalizeImportedProtocolData</Label>
+              <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
+                {JSON.stringify(debugNormalizedData ?? null, null, 2)}
+              </pre>
+            </div>
           </CardContent>
         </Card>
       </div>
