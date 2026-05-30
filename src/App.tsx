@@ -55,6 +55,7 @@ import AdminAcupointsAtlas from "./pages/AdminAcupointsAtlas";
 import AdminAcupunctureProtocols from "./pages/AdminAcupunctureProtocols";
 import AdminAcupunctureProtocolEditor from "./pages/AdminAcupunctureProtocolEditor";
 import AdminSystemSettings from "./pages/AdminSystemSettings";
+import AdminVisitTemplates from "./pages/AdminVisitTemplates";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
@@ -155,6 +156,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/visits/new", Component: AdminPatientVisitNew, entry: "src/pages/AdminPatientVisitNew.tsx" },
       { path: "admin/visits/:id", Component: AdminPatientVisitDetail, entry: "src/pages/AdminPatientVisitDetail.tsx" },
       { path: "admin/visits/:id/print", Component: AdminPatientVisitPrint, entry: "src/pages/AdminPatientVisitPrint.tsx" },
+      { path: "admin/visit-templates", Component: AdminVisitTemplates, entry: "src/pages/AdminVisitTemplates.tsx" },
       { path: "admin/disease-articles", Component: AdminDiseaseArticles, entry: "src/pages/AdminDiseaseArticles.tsx" },
       { path: "admin/patient-cards", Component: AdminPatientCards, entry: "src/pages/AdminPatientCards.tsx" },
       { path: "admin/consultations", Component: AdminConsultations, entry: "src/pages/AdminConsultations.tsx" },
