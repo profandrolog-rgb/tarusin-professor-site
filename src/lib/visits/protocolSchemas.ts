@@ -39,7 +39,12 @@ export interface PrimaryShortData {
   anamnesis?: string;
   somatic?: SomaticStatusData;
   sexual_formula?: SexualFormulaData;
+  sexual_formula_text?: string;
   local_status?: LocalStatusData;
+  ortho_status?: string;
+  neuro_status?: string;
+  psych_status?: string;
+  diagnosis?: string;
   exam_plan?: string;
   recommendations?: string;
 }
