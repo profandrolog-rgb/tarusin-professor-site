@@ -40,11 +40,14 @@ export interface PrimaryShortData {
   somatic?: SomaticStatusData;
   sexual_formula?: SexualFormulaData;
   sexual_formula_text?: string;
+  sexual_constitution?: string;
   local_status?: LocalStatusData;
   ortho_status?: string;
   neuro_status?: string;
   psych_status?: string;
+  working_diagnosis?: string;
   diagnosis?: string;
+  conclusion?: string;
   exam_plan?: string;
   recommendations?: string;
 }
