@@ -13,15 +13,16 @@ export interface VisitTextTemplate {
   sort_order: number;
 }
 
-export function useVisitTextTemplates(protocolType?: string | null) {
+export function useVisitTextTemplates(_protocolType?: string | null) {
+  // Запрос одинаков для всех protocolType (фильтрация делается на клиенте
+  // в rankTemplates), поэтому единый ключ кэша — без дублей.
   return useQuery({
-    queryKey: ["visit_text_templates", protocolType || "all"],
+    queryKey: ["visit_text_templates"],
     queryFn: async (): Promise<VisitTextTemplate[]> => {
-      const q = supabase
+      const { data, error } = await supabase
         .from("visit_text_templates" as any)
         .select("*")
         .order("sort_order", { ascending: true });
-      const { data, error } = await q;
       if (error) throw error;
       return (data as any) || [];
     },

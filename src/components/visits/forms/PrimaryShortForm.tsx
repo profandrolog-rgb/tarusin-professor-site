@@ -16,7 +16,7 @@ export function PrimaryShortForm({ data, onChange }: Props) {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>Жалобы</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
           <Textarea rows={4} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
         </div>
         <div className="space-y-1"><Label>Анамнез</Label>
