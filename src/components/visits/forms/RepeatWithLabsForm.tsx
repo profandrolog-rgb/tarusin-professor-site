@@ -3,6 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RepeatWithLabsData } from "@/lib/visits/protocolSchemas";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
+import { SmartFieldLabel } from "../SmartTemplates";
 
 interface Props {
   data: RepeatWithLabsData;
@@ -41,10 +42,10 @@ export function RepeatWithLabsForm({ data, onChange }: Props) {
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>Заключение по обследованию</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="conclusion">Заключение по обследованию</SmartFieldLabel>
           <Textarea rows={4} value={data.conclusion || ""} onChange={(e) => onChange({ conclusion: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Рекомендации</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>
           <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
         </div>
       </div>
