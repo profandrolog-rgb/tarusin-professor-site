@@ -3064,6 +3064,45 @@ export type Database = {
         }
         Relationships: []
       }
+      visit_text_templates: {
+        Row: {
+          created_at: string
+          day_range: string
+          field_key: string
+          id: string
+          label: string
+          operation_keywords: string[] | null
+          protocol_type: string | null
+          sort_order: number
+          template_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_range?: string
+          field_key: string
+          id?: string
+          label: string
+          operation_keywords?: string[] | null
+          protocol_type?: string | null
+          sort_order?: number
+          template_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_range?: string
+          field_key?: string
+          id?: string
+          label?: string
+          operation_keywords?: string[] | null
+          protocol_type?: string | null
+          sort_order?: number
+          template_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       blog_comments_public: {
