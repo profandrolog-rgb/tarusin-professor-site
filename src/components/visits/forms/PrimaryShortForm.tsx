@@ -3,7 +3,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
-import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SmartFieldLabel } from "../SmartTemplates";
 
