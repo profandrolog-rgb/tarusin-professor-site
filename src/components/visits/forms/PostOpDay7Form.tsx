@@ -3,6 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PostOpDay7Data } from "@/lib/visits/protocolSchemas";
+import { SmartFieldLabel } from "../SmartTemplates";
+
 
 interface Props {
   data: PostOpDay7Data;
@@ -23,11 +25,11 @@ export function PostOpDay7Form({ data, onChange }: Props) {
         </div>
       </div>
       <div className="space-y-1">
-        <Label>Общее состояние</Label>
+        <SmartFieldLabel fieldKey="general_status">Общее состояние</SmartFieldLabel>
         <Textarea rows={2} value={data.general_status || ""} onChange={(e) => onChange({ general_status: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Состояние раны</Label>
+        <SmartFieldLabel fieldKey="wound_status">Состояние раны</SmartFieldLabel>
         <Textarea rows={3} value={data.wound_status || ""} onChange={(e) => onChange({ wound_status: e.target.value })} />
       </div>
       <div className="space-y-1">
@@ -47,7 +49,7 @@ export function PostOpDay7Form({ data, onChange }: Props) {
         <Textarea rows={2} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Рекомендации</Label>
+        <SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>
         <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
       </div>
     </div>

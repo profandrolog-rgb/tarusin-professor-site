@@ -5,6 +5,7 @@ import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { SexualFormulaSection } from "../sections/SexualFormula";
+import { SmartFieldLabel } from "../SmartTemplates";
 
 interface Props {
   data: PrimaryShortData;
@@ -39,7 +40,7 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         <div className="space-y-1"><Label>План обследования</Label>
           <Textarea rows={4} value={data.exam_plan || ""} onChange={(e) => onChange({ exam_plan: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Рекомендации</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>
           <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
         </div>
       </div>

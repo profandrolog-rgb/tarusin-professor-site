@@ -1,6 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { UltrashortData } from "@/lib/visits/protocolSchemas";
+import { SmartFieldLabel } from "../SmartTemplates";
 
 interface Props {
   data: UltrashortData;
@@ -15,11 +16,11 @@ export function UltrashortForm({ data, onChange }: Props) {
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Заключение / краткое резюме консультации</Label>
+        <SmartFieldLabel fieldKey="conclusion">Заключение / краткое резюме консультации</SmartFieldLabel>
         <Textarea rows={4} value={data.conclusion || ""} onChange={(e) => onChange({ conclusion: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Рекомендации</Label>
+        <SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>
         <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
       </div>
     </div>
