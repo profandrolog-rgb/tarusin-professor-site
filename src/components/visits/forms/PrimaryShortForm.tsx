@@ -136,10 +136,10 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         <div className="space-y-1"><Label>Ортопедический статус</Label>
           <Textarea rows={2} value={data.ortho_status || ""} onChange={(e) => onChange({ ortho_status: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Неврологический статус</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="neuro_status">Неврологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Психологический статус</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="psych_status">Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
         </div>
         <div className="space-y-1"><Label>Рабочая формулировка диагноза</Label>
