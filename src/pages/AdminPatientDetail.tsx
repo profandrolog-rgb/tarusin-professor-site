@@ -47,7 +47,7 @@ export default function AdminPatientDetail() {
     (async () => {
       setBusy(true);
       const [{ data: p }, { data: pl }, { data: itemsAgg }] = await Promise.all([
-        supabase.from("patients").select("id, full_name, birth_date").eq("id", id).maybeSingle(),
+        supabase.from("patients").select("id, full_name, birth_date, phone, history_number").eq("id", id).maybeSingle(),
         supabase.from("treatment_plans")
           .select("id, course_number, issued_at, duration_days, status, mode, diagnosis_short, based_on_template, total_cost_estimate, template:protocol_templates(name), items:treatment_plan_items(count)")
           .eq("patient_id", id)
