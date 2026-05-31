@@ -12,6 +12,14 @@ interface Props {
 }
 
 export function PrimaryShortForm({ data, onChange }: Props) {
+  const importedFields = ((data as any).fields || {}) as Record<string, string>;
+  const hasSplitLocalStatus = !!(data.local_status?.right || data.local_status?.left);
+  const fallbackLocalStatus =
+    (data.local_status?.external_genitalia as string) ||
+    importedFields["Локальный статус на момент осмотра"] ||
+    importedFields["Локальный статус"] ||
+    "";
+
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-4">
@@ -43,10 +51,7 @@ export function PrimaryShortForm({ data, onChange }: Props) {
 
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          {(() => {
-            const hasSplit = !!(data.local_status?.right || data.local_status?.left);
-            if (hasSplit) {
-              return (
+          {hasSplitLocalStatus ? (
                 <div className="overflow-hidden rounded-md border">
                   <table className="w-full table-fixed border-collapse text-sm">
                     <thead>
@@ -93,20 +98,11 @@ export function PrimaryShortForm({ data, onChange }: Props) {
                     </tbody>
                   </table>
                 </div>
-              );
-            }
-            // Fallback: единый текст из импортированного ODT
-            const importedFields = ((data as any).fields || {}) as Record<string, string>;
-            const fallback =
-              (data.local_status?.external_genitalia as string) ||
-              importedFields["Локальный статус на момент осмотра"] ||
-              importedFields["Локальный статус"] ||
-              "";
-            return (
+          ) : fallbackLocalStatus ? (
               <div className="space-y-1">
                 <SmartFieldLabel
                   fieldKey="local_status"
-                  value={fallback}
+                  value={fallbackLocalStatus}
                   onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v, external_genitalia: undefined } })}
                 >
                   Локальный статус
@@ -114,13 +110,13 @@ export function PrimaryShortForm({ data, onChange }: Props) {
                 <Textarea
                   rows={8}
                   className="min-h-[180px]"
-                  value={fallback}
+                  value={fallbackLocalStatus}
                   onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value, external_genitalia: undefined } })}
                 />
               </div>
-            );
-          })()}
-          <div className="grid md:grid-cols-2 gap-4">
+          ) : null}
+          {(data.local_status?.penis || data.local_status?.perineum) ? <div className="grid md:grid-cols-2 gap-4">
+            {data.local_status?.penis ? (
             <div className="space-y-1">
               <SmartFieldLabel
                 fieldKey="local_status_penis"
@@ -135,6 +131,8 @@ export function PrimaryShortForm({ data, onChange }: Props) {
                 onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), penis: e.target.value } })}
               />
             </div>
+            ) : null}
+            {data.local_status?.perineum ? (
             <div className="space-y-1">
               <SmartFieldLabel
                 fieldKey="local_status_perineum"
@@ -149,17 +147,8 @@ export function PrimaryShortForm({ data, onChange }: Props) {
                 onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), perineum: e.target.value } })}
               />
             </div>
-          </div>
-          {data.local_status?.external_genitalia ? (
-            <div className="space-y-1">
-              <Label>Локальный статус (старый импорт, единый текст)</Label>
-              <Textarea
-                rows={6}
-                value={data.local_status?.external_genitalia || ""}
-                onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), external_genitalia: e.target.value } })}
-              />
-            </div>
-          ) : null}
+            ) : null}
+          </div> : null}
         </CardContent>
       </Card>
 
