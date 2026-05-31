@@ -18,7 +18,7 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
           <Textarea rows={4} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Анамнез</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis">Анамнез</SmartFieldLabel>
           <Textarea rows={4} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
         </div>
       </div>
@@ -47,8 +47,24 @@ export function PrimaryShortForm({ data, onChange }: Props) {
             <table className="w-full table-fixed border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="w-1/2 border-b border-r p-2 text-left font-medium">Справа</th>
-                  <th className="w-1/2 border-b p-2 text-left font-medium">Слева</th>
+                  <th className="w-1/2 border-b border-r p-2 text-left font-medium">
+                    <SmartFieldLabel
+                      fieldKey="local_status_right"
+                      value={data.local_status?.right || ""}
+                      onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v } })}
+                    >
+                      Справа
+                    </SmartFieldLabel>
+                  </th>
+                  <th className="w-1/2 border-b p-2 text-left font-medium">
+                    <SmartFieldLabel
+                      fieldKey="local_status_left"
+                      value={data.local_status?.left || ""}
+                      onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), left: v } })}
+                    >
+                      Слева
+                    </SmartFieldLabel>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -74,14 +90,28 @@ export function PrimaryShortForm({ data, onChange }: Props) {
             </table>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-1"><Label>Половой член</Label>
+            <div className="space-y-1">
+              <SmartFieldLabel
+                fieldKey="local_status_penis"
+                value={data.local_status?.penis || ""}
+                onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), penis: v } })}
+              >
+                Половой член
+              </SmartFieldLabel>
               <Textarea
                 rows={3}
                 value={data.local_status?.penis || ""}
                 onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), penis: e.target.value } })}
               />
             </div>
-            <div className="space-y-1"><Label>Промежность</Label>
+            <div className="space-y-1">
+              <SmartFieldLabel
+                fieldKey="local_status_perineum"
+                value={data.local_status?.perineum || ""}
+                onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), perineum: v } })}
+              >
+                Промежность
+              </SmartFieldLabel>
               <Textarea
                 rows={3}
                 value={data.local_status?.perineum || ""}
@@ -106,10 +136,10 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         <div className="space-y-1"><Label>Ортопедический статус</Label>
           <Textarea rows={2} value={data.ortho_status || ""} onChange={(e) => onChange({ ortho_status: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Неврологический статус</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="neuro_status">Неврологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value })} />
         </div>
-        <div className="space-y-1"><Label>Психологический статус</Label>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="psych_status">Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
         </div>
         <div className="space-y-1"><Label>Рабочая формулировка диагноза</Label>

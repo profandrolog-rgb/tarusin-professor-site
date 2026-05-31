@@ -57,25 +57,40 @@ export function SmartFieldLabel({
   fieldKey,
   formField,
   htmlFor,
+  value,
+  onSet,
 }: {
   children: ReactNode;
   fieldKey: string;
+  /** Top-level form field name. Ignored if `onSet` is provided. */
   formField?: string;
   htmlFor?: string;
+  /** Optional explicit current value (for nested fields where ctx doesn't know the value). */
+  value?: string;
+  /** Optional explicit setter (for nested fields). Receives the new string. */
+  onSet?: (next: string) => void;
 }) {
   const ctx = useCtx();
-  if (!ctx) {
-    return <Label htmlFor={htmlFor}>{children}</Label>;
-  }
   const field = formField || fieldKey;
-  const currentVal = (ctx.data?.[field] as string) || "";
-  const tpl = resolveTemplate(ctx.templates, ctx.protocolType, fieldKey, ctx.operationName);
+  const currentVal =
+    value !== undefined
+      ? value
+      : ctx
+      ? ((ctx.data?.[field] as string) || "")
+      : "";
+  const tpl = ctx
+    ? resolveTemplate(ctx.templates, ctx.protocolType, fieldKey, ctx.operationName)
+    : null;
 
   const apply = () => {
-    if (!tpl) return; // ⚡ не рендерится без шаблона, ветка для безопасности
-    ctx.onChange({ [field]: tpl.template_text });
+    if (!tpl) return;
+    if (onSet) onSet(tpl.template_text);
+    else if (ctx) ctx.onChange({ [field]: tpl.template_text });
   };
-  const reset = () => ctx.onChange({ [field]: "" });
+  const reset = () => {
+    if (onSet) onSet("");
+    else if (ctx) ctx.onChange({ [field]: "" });
+  };
 
   return (
     <div className="flex items-center justify-between gap-2">
