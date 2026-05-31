@@ -96,10 +96,11 @@ export function PrimaryShortForm({ data, onChange }: Props) {
               );
             }
             // Fallback: единый текст из импортированного ODT
+            const importedFields = ((data as any).fields || {}) as Record<string, string>;
             const fallback =
               (data.local_status?.external_genitalia as string) ||
-              (data.fields?.["Локальный статус на момент осмотра"] as string) ||
-              (data.fields?.["Локальный статус"] as string) ||
+              importedFields["Локальный статус на момент осмотра"] ||
+              importedFields["Локальный статус"] ||
               "";
             return (
               <div className="space-y-1">
