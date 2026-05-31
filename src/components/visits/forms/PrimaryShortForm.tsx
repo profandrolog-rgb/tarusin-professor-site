@@ -43,52 +43,83 @@ export function PrimaryShortForm({ data, onChange }: Props) {
 
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="overflow-hidden rounded-md border">
-            <table className="w-full table-fixed border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="w-1/2 border-b border-r p-2 text-left font-medium">
-                    <SmartFieldLabel
-                      fieldKey="local_status_right"
-                      value={data.local_status?.right || ""}
-                      onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v } })}
-                    >
-                      Справа
-                    </SmartFieldLabel>
-                  </th>
-                  <th className="w-1/2 border-b p-2 text-left font-medium">
-                    <SmartFieldLabel
-                      fieldKey="local_status_left"
-                      value={data.local_status?.left || ""}
-                      onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), left: v } })}
-                    >
-                      Слева
-                    </SmartFieldLabel>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border-r p-0 align-top">
-                    <Textarea
-                      rows={8}
-                      className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                      value={data.local_status?.right || ""}
-                      onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value } })}
-                    />
-                  </td>
-                  <td className="p-0 align-top">
-                    <Textarea
-                      rows={8}
-                      className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                      value={data.local_status?.left || ""}
-                      onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left: e.target.value } })}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {(() => {
+            const hasSplit = !!(data.local_status?.right || data.local_status?.left);
+            if (hasSplit) {
+              return (
+                <div className="overflow-hidden rounded-md border">
+                  <table className="w-full table-fixed border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="w-1/2 border-b border-r p-2 text-left font-medium">
+                          <SmartFieldLabel
+                            fieldKey="local_status_right"
+                            value={data.local_status?.right || ""}
+                            onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v } })}
+                          >
+                            Справа
+                          </SmartFieldLabel>
+                        </th>
+                        <th className="w-1/2 border-b p-2 text-left font-medium">
+                          <SmartFieldLabel
+                            fieldKey="local_status_left"
+                            value={data.local_status?.left || ""}
+                            onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), left: v } })}
+                          >
+                            Слева
+                          </SmartFieldLabel>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border-r p-0 align-top">
+                          <Textarea
+                            rows={8}
+                            className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                            value={data.local_status?.right || ""}
+                            onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value } })}
+                          />
+                        </td>
+                        <td className="p-0 align-top">
+                          <Textarea
+                            rows={8}
+                            className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                            value={data.local_status?.left || ""}
+                            onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left: e.target.value } })}
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            }
+            // Fallback: единый текст из импортированного ODT
+            const importedFields = ((data as any).fields || {}) as Record<string, string>;
+            const fallback =
+              (data.local_status?.external_genitalia as string) ||
+              importedFields["Локальный статус на момент осмотра"] ||
+              importedFields["Локальный статус"] ||
+              "";
+            return (
+              <div className="space-y-1">
+                <SmartFieldLabel
+                  fieldKey="local_status"
+                  value={fallback}
+                  onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v, external_genitalia: undefined } })}
+                >
+                  Локальный статус
+                </SmartFieldLabel>
+                <Textarea
+                  rows={8}
+                  className="min-h-[180px]"
+                  value={fallback}
+                  onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value, external_genitalia: undefined } })}
+                />
+              </div>
+            );
+          })()}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <SmartFieldLabel

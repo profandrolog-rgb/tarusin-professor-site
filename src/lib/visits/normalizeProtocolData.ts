@@ -168,7 +168,7 @@ function pickJoined(fields: Record<string, any>, keys: string[]): string | undef
       seen.add(s);
     }
   }
-  return parts.length ? parts.join("\n") : undefined;
+  return parts.length ? parts.join("\n\n") : undefined;
 }
 
 function isEmpty(v: any): boolean {
@@ -178,7 +178,7 @@ function isEmpty(v: any): boolean {
 // Версия нормализатора. Увеличиваем при добавлении новых алиасов,
 // чтобы ранее импортированные визиты (с _normalized: true) были
 // повторно прогнаны через свежий маппинг и подхватили новые поля.
-export const NORMALIZATION_VERSION = 5;
+export const NORMALIZATION_VERSION = 6;
 
 export function normalizeImportedProtocolData(
   _type: ProtocolType,
