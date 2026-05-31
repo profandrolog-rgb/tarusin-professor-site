@@ -39,24 +39,25 @@ export const DEFAULT_LOCAL_STATUS: LocalStatusData = {
 export function LocalStatusAndrologySection({ data, onChange }: Props) {
   return (
     <div className="space-y-4">
-      <div className="space-y-1"><Label>Наружные половые органы</Label><Textarea rows={2} value={data.external_genitalia || ""} onChange={(e) => onChange({ external_genitalia: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Половой член</Label><Textarea rows={3} value={data.penis || ""} onChange={(e) => onChange({ penis: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Мошонка</Label><Textarea rows={2} value={data.scrotum || ""} onChange={(e) => onChange({ scrotum: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status" value={data.external_genitalia || ""} onSet={(v) => onChange({ external_genitalia: v })}>Наружные половые органы</SmartFieldLabel><Textarea rows={2} value={data.external_genitalia || ""} onChange={(e) => onChange({ external_genitalia: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_penis" value={data.penis || ""} onSet={(v) => onChange({ penis: v })}>Половой член</SmartFieldLabel><Textarea rows={3} value={data.penis || ""} onChange={(e) => onChange({ penis: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_scrotum" value={data.scrotum || ""} onSet={(v) => onChange({ scrotum: v })}>Мошонка</SmartFieldLabel><Textarea rows={2} value={data.scrotum || ""} onChange={(e) => onChange({ scrotum: e.target.value })} /></div>
       <div className="grid md:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label>Правое яичко</Label>
+          <SmartFieldLabel fieldKey="local_status_right_testis" value={data.right_testis || ""} onSet={(v) => onChange({ right_testis: v })}>Правое яичко</SmartFieldLabel>
           <Textarea rows={2} value={data.right_testis || ""} onChange={(e) => onChange({ right_testis: e.target.value })} />
           <Input placeholder="Объём, мл" value={data.right_testis_volume || ""} onChange={(e) => onChange({ right_testis_volume: e.target.value })} />
         </div>
         <div className="space-y-1">
-          <Label>Левое яичко</Label>
+          <SmartFieldLabel fieldKey="local_status_left_testis" value={data.left_testis || ""} onSet={(v) => onChange({ left_testis: v })}>Левое яичко</SmartFieldLabel>
           <Textarea rows={2} value={data.left_testis || ""} onChange={(e) => onChange({ left_testis: e.target.value })} />
           <Input placeholder="Объём, мл" value={data.left_testis_volume || ""} onChange={(e) => onChange({ left_testis_volume: e.target.value })} />
         </div>
       </div>
-      <div className="space-y-1"><Label>Придатки</Label><Textarea rows={2} value={data.epididymis || ""} onChange={(e) => onChange({ epididymis: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Семенные канатики</Label><Textarea rows={2} value={data.spermatic_cord || ""} onChange={(e) => onChange({ spermatic_cord: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Паховые кольца</Label><Textarea rows={2} value={data.inguinal_rings || ""} onChange={(e) => onChange({ inguinal_rings: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_epididymis" value={data.epididymis || ""} onSet={(v) => onChange({ epididymis: v })}>Придатки</SmartFieldLabel><Textarea rows={2} value={data.epididymis || ""} onChange={(e) => onChange({ epididymis: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_spermatic_cord" value={data.spermatic_cord || ""} onSet={(v) => onChange({ spermatic_cord: v })}>Семенные канатики</SmartFieldLabel><Textarea rows={2} value={data.spermatic_cord || ""} onChange={(e) => onChange({ spermatic_cord: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_inguinal_rings" value={data.inguinal_rings || ""} onSet={(v) => onChange({ inguinal_rings: v })}>Паховые кольца</SmartFieldLabel><Textarea rows={2} value={data.inguinal_rings || ""} onChange={(e) => onChange({ inguinal_rings: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_perineum" value={data.perineum || ""} onSet={(v) => onChange({ perineum: v })}>Промежность</SmartFieldLabel><Textarea rows={2} value={data.perineum || ""} onChange={(e) => onChange({ perineum: e.target.value })} /></div>
       <div className="space-y-1"><Label>Дополнительно</Label><Textarea rows={2} value={data.notes || ""} onChange={(e) => onChange({ notes: e.target.value })} /></div>
     </div>
   );
