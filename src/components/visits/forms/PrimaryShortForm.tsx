@@ -180,10 +180,11 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>План обследования</Label>
+      <div className="grid md:grid-cols-2 gap-3">
+        <CollapsibleField hasValue={!!data.exam_plan} label="План обследования">
+          <Label>План обследования</Label>
           <Textarea rows={4} value={data.exam_plan || ""} onChange={(e) => onChange({ exam_plan: e.target.value })} />
-        </div>
+        </CollapsibleField>
         <div className="space-y-1"><SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>
           <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
         </div>
