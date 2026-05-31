@@ -82,6 +82,9 @@ export interface UziUrinaryOnlyData {
 
 export interface DynamicWithUziData {
   complaints?: string;
+  anamnesis?: string;
+  dynamics?: string;
+  lab_results?: string;
   local_status?: LocalStatusData;
   uzi?: UziReproductiveData;
   conclusion?: string;
