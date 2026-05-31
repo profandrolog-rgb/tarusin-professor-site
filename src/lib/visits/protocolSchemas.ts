@@ -7,6 +7,7 @@ import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/section
 
 export interface UltrashortData {
   complaints?: string;
+  local_status?: string;
   recommendations?: string;
   conclusion?: string;
 }
