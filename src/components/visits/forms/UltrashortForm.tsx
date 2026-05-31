@@ -16,6 +16,10 @@ export function UltrashortForm({ data, onChange }: Props) {
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
+        <Label>Локальный статус</Label>
+        <Textarea rows={3} value={data.local_status || ""} onChange={(e) => onChange({ local_status: e.target.value })} />
+      </div>
+      <div className="space-y-1">
         <SmartFieldLabel fieldKey="conclusion">Заключение / краткое резюме консультации</SmartFieldLabel>
         <Textarea rows={4} value={data.conclusion || ""} onChange={(e) => onChange({ conclusion: e.target.value })} />
       </div>
