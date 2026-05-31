@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _visit_pd_staging: {
+        Row: {
+          id: string
+          protocol_data: Json
+        }
+        Insert: {
+          id: string
+          protocol_data: Json
+        }
+        Update: {
+          id?: string
+          protocol_data?: Json
+        }
+        Relationships: []
+      }
       acupoint_meridians: {
         Row: {
           channel_type: string | null
