@@ -248,12 +248,12 @@ export function normalizeImportedProtocolData(
 
     if (isEmpty(patchedLs.penis) || isEmpty(patchedLs.perineum)) {
       for (const key of Object.keys(fields)) {
-        const normalizedKey = key.trim();
-        if (isEmpty(patchedLs.penis) && normalizedKey.startsWith("Половой член")) {
-          patchedLs.penis = key;
+        const k = key.trim();
+        if (isEmpty(patchedLs.penis) && k.includes("Половой член") && k.length > 20) {
+          patchedLs.penis = k;
         }
-        if (isEmpty(patchedLs.perineum) && normalizedKey.startsWith("Область промежности")) {
-          patchedLs.perineum = key;
+        if (isEmpty(patchedLs.perineum) && k.includes("промежности") && k.length > 20) {
+          patchedLs.perineum = k;
         }
       }
     }
