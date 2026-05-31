@@ -14,7 +14,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
 
-interface Patient { id: string; full_name: string; birth_date: string }
+interface Patient { id: string; full_name: string; birth_date: string; phone: string | null; history_number: string | null }
 interface Plan {
   id: string; course_number: number | null; issued_at: string;
   duration_days: number; status: "draft"|"issued"|"archived"; mode: string;
