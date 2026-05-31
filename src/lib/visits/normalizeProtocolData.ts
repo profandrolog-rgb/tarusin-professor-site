@@ -240,8 +240,8 @@ export function normalizeImportedProtocolData(
         if (idx > -1) {
           patchedLs.right = raw.slice(0, idx).replace(/^Справа\s*/i, "").trim();
           patchedLs.left = raw.slice(idx).replace(/^Слева\s*/i, "").trim();
-        } else {
-          patchedLs.right = raw.replace(/^Справа\s*/i, "").trim();
+        } else if (isEmpty(patchedLs.external_genitalia)) {
+          patchedLs.external_genitalia = raw.trim();
         }
       }
     }
