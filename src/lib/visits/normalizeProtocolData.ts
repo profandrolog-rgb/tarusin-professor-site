@@ -288,19 +288,33 @@ export function normalizeImportedProtocolData(
     if (changed) nestedPatch.somatic = patchedSomatic;
   }
 
-  // 2d. Для послеоп-визитов wound_status тянем из локального статуса.
+  // 2d. Для послеоп-визитов wound_status собираем из всех источников
+  // описания зоны вмешательства: локальный статус, УЗИ-экспресс, местное лечение,
+  // ключи-плейсхолдеры "Половой член..." / "Область промежности...".
   const typeStr = String(_type);
   if (isEmpty(data.wound_status) && isEmpty(derived.wound_status) && typeStr.startsWith("postop_")) {
     const ls = (nestedPatch.local_status || data.local_status || {}) as any;
-    const ws =
-      (typeof fields["Локальный статус на момент осмотра"] === "string" && fields["Локальный статус на момент осмотра"]) ||
-      (typeof fields["Локальный статус"] === "string" && fields["Локальный статус"]) ||
-      (typeof fields["Состояние раны"] === "string" && fields["Состояние раны"]) ||
-      ls.notes ||
-      ls.external_genitalia ||
-      "";
-    if (ws && typeof ws === "string" && ws.trim()) {
-      derived.wound_status = ws.trim();
+    const parts: string[] = [];
+    const seen = new Set<string>();
+    const push = (s: any) => {
+      if (typeof s !== "string") return;
+      const t = s.trim();
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      parts.push(t);
+    };
+    push(fields["Локальный статус на момент осмотра"]);
+    push(fields["Локальный статус"]);
+    push(fields["Состояние раны"]);
+    push(fields["Экспресс – УЗИ – исследование"]);
+    push(fields["УЗИ – исследование мягких тканей"]);
+    push(fields["Местное лечение"]);
+    push(ls.notes);
+    push(ls.external_genitalia);
+    push(ls.penis);
+    push(ls.perineum);
+    if (parts.length) {
+      derived.wound_status = parts.join("\n\n");
     }
   }
 
