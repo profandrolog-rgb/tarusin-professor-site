@@ -59,6 +59,10 @@ import AdminVisitTemplates from "./pages/AdminVisitTemplates";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
+import AdminPatients from "./pages/AdminPatients";
+import AdminPatientForm from "./pages/AdminPatientForm";
+const AdminPatientNew = () => <AdminPatientForm mode="create" />;
+const AdminPatientEdit = () => <AdminPatientForm mode="edit" />;
 import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
 import PublicTreatmentPlan from "./pages/PublicTreatmentPlan";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
@@ -180,6 +184,9 @@ export const routes: RouteRecord[] = [
       { path: "admin/system-settings", Component: AdminSystemSettings, entry: "src/pages/AdminSystemSettings.tsx" },
       { path: "admin/system-backup", Component: AdminSystemBackup, entry: "src/pages/AdminSystemBackup.tsx" },
       { path: "admin/analytics", Component: AdminAnalytics, entry: "src/pages/AdminAnalytics.tsx" },
+      { path: "admin/patients", Component: AdminPatients, entry: "src/pages/AdminPatients.tsx" },
+      { path: "admin/patients/new", Component: AdminPatientNew, entry: "src/pages/AdminPatientForm.tsx" },
+      { path: "admin/patients/:id/edit", Component: AdminPatientEdit, entry: "src/pages/AdminPatientForm.tsx" },
       { path: "admin/patients/:id", Component: AdminPatientDetail, entry: "src/pages/AdminPatientDetail.tsx" },
       { path: "admin/treatment-plans/compare", Component: TreatmentPlanCompare, entry: "src/pages/TreatmentPlanCompare.tsx" },
       { path: "p/:hash", Component: PublicTreatmentPlan, entry: "src/pages/PublicTreatmentPlan.tsx" },

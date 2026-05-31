@@ -38,8 +38,17 @@ export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; o
 export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void }) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы / динамика</SmartFieldLabel>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
+      </div>
+      <div className="space-y-1"><Label>Анамнез</Label>
+        <Textarea rows={3} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
+      </div>
+      <div className="space-y-1"><Label>Динамика</Label>
+        <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
+      </div>
+      <div className="space-y-1"><Label>Лабораторные данные</Label>
+        <Textarea rows={3} value={data.lab_results || ""} onChange={(e) => onChange({ lab_results: e.target.value })} />
       </div>
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>

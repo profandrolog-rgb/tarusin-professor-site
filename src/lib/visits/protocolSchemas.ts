@@ -7,6 +7,7 @@ import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/section
 
 export interface UltrashortData {
   complaints?: string;
+  local_status?: string;
   recommendations?: string;
   conclusion?: string;
 }
@@ -20,6 +21,7 @@ export interface PostOpDay3Data {
   pain?: string;
   temperature?: string;
   complaints?: string;
+  uzi_express?: string;
   recommendations?: string;
 }
 
@@ -31,6 +33,7 @@ export interface PostOpDay7Data {
   sutures_removed?: boolean;
   healing?: string;
   complaints?: string;
+  uzi_express?: string;
   recommendations?: string;
 }
 
@@ -54,6 +57,7 @@ export interface PrimaryShortData {
 
 export interface RepeatWithLabsData {
   complaints?: string;
+  dynamics?: string;
   cbc?: string;
   urinalysis?: string;
   biochem?: string;
@@ -78,6 +82,9 @@ export interface UziUrinaryOnlyData {
 
 export interface DynamicWithUziData {
   complaints?: string;
+  anamnesis?: string;
+  dynamics?: string;
+  lab_results?: string;
   local_status?: LocalStatusData;
   uzi?: UziReproductiveData;
   conclusion?: string;

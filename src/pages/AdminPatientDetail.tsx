@@ -14,7 +14,7 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
 
-interface Patient { id: string; full_name: string; birth_date: string }
+interface Patient { id: string; full_name: string; birth_date: string; phone: string | null; history_number: string | null }
 interface Plan {
   id: string; course_number: number | null; issued_at: string;
   duration_days: number; status: "draft"|"issued"|"archived"; mode: string;
@@ -47,7 +47,7 @@ export default function AdminPatientDetail() {
     (async () => {
       setBusy(true);
       const [{ data: p }, { data: pl }, { data: itemsAgg }] = await Promise.all([
-        supabase.from("patients").select("id, full_name, birth_date").eq("id", id).maybeSingle(),
+        supabase.from("patients").select("id, full_name, birth_date, phone, history_number").eq("id", id).maybeSingle(),
         supabase.from("treatment_plans")
           .select("id, course_number, issued_at, duration_days, status, mode, diagnosis_short, based_on_template, total_cost_estimate, template:protocol_templates(name), items:treatment_plan_items(count)")
           .eq("patient_id", id)
@@ -128,12 +128,19 @@ export default function AdminPatientDetail() {
           <div>
             <h1 className="text-3xl font-bold mb-1">📋 Курсы лечения: {patient.full_name}</h1>
             <p className="text-muted-foreground text-sm">
-              ДР: {format(parseISO(patient.birth_date), "d MMMM yyyy", { locale: ru })}
+              ДР: {patient.birth_date ? format(parseISO(patient.birth_date), "d MMMM yyyy", { locale: ru }) : "—"}
+              {" · "}Телефон: {patient.phone || "—"}
+              {" · "}№ ИБ: {patient.history_number || "—"}
             </p>
           </div>
-          <Link to={`/admin/treatment-plans/new?patientId=${patient.id}`}>
-            <Button className="gap-2"><Plus className="w-4 h-4"/>Новый лист назначений</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={`/admin/patients/${patient.id}/edit`}>
+              <Button variant="outline" className="gap-2">Редактировать</Button>
+            </Link>
+            <Link to={`/admin/treatment-plans/new?patientId=${patient.id}`}>
+              <Button className="gap-2"><Plus className="w-4 h-4"/>Новый лист назначений</Button>
+            </Link>
+          </div>
         </div>
 
         {/* Summary stats */}
