@@ -145,7 +145,6 @@ export default function AdminPatientVisitDetail() {
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
 
   const def = PROTOCOL_TYPE_MAP[visit.protocol_type];
-  const debugNormalizedData = normalizeImportedProtocolData(visit.protocol_type, rawProtocolDataFromDb);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
