@@ -221,6 +221,48 @@ export function normalizeImportedProtocolData(
     }
   }
 
+  // 2b. Спец-разбор local_status: единый текст "Справа...Слева..." и
+  // ключи-плейсхолдеры "Половой член..." / "Область промежности...".
+  {
+    const currentLs = (data.local_status && typeof data.local_status === "object")
+      ? data.local_status
+      : {};
+    const patchedLs: Record<string, any> = { ...currentLs, ...(nestedPatch.local_status || {}) };
+
+    if (isEmpty(patchedLs.right) && isEmpty(patchedLs.left)) {
+      const raw = (
+        fields["Локальный статус на момент осмотра"] ||
+        fields["Локальный статус"] ||
+        ""
+      );
+      if (typeof raw === "string" && raw.trim()) {
+        const idx = raw.indexOf("Слева");
+        if (idx > -1) {
+          patchedLs.right = raw.slice(0, idx).replace(/^Справа\s*/i, "").trim();
+          patchedLs.left = raw.slice(idx).replace(/^Слева\s*/i, "").trim();
+        } else {
+          patchedLs.right = raw.replace(/^Справа\s*/i, "").trim();
+        }
+      }
+    }
+
+    if (isEmpty(patchedLs.penis) || isEmpty(patchedLs.perineum)) {
+      for (const key of Object.keys(fields)) {
+        if (isEmpty(patchedLs.penis) && key.startsWith("Половой член")) {
+          patchedLs.penis = key;
+        }
+        if (isEmpty(patchedLs.perineum) && key.startsWith("Область промежности")) {
+          patchedLs.perineum = key;
+        }
+      }
+    }
+
+    const changed = Object.keys(patchedLs).some(
+      (k) => (currentLs as any)[k] !== patchedLs[k],
+    );
+    if (changed) nestedPatch.local_status = patchedLs;
+  }
+
   return {
     ...data,
     ...derived,
