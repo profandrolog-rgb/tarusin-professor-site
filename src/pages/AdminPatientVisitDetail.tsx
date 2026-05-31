@@ -222,25 +222,6 @@ export default function AdminPatientVisitDetail() {
           </CardContent>
         </Card>
 
-        <Card className="border-dashed bg-muted/40">
-          <CardHeader>
-            <CardTitle className="text-sm">Отладка импорта протокола</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-xs">
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">1. Сырой JSON из protocol_data.fields</Label>
-              <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
-                {JSON.stringify(getProtocolFields(rawProtocolDataFromDb), null, 2)}
-              </pre>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">2. Результат после normalizeImportedProtocolData</Label>
-              <pre className="max-h-80 overflow-auto rounded-md border bg-background p-3 text-foreground whitespace-pre-wrap break-words">
-                {JSON.stringify(debugNormalizedData ?? null, null, 2)}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
