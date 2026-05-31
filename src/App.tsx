@@ -59,6 +59,8 @@ import AdminVisitTemplates from "./pages/AdminVisitTemplates";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
+import AdminPatients from "./pages/AdminPatients";
+import AdminPatientForm from "./pages/AdminPatientForm";
 import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
 import PublicTreatmentPlan from "./pages/PublicTreatmentPlan";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
