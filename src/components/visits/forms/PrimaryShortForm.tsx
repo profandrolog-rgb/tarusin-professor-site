@@ -5,6 +5,7 @@ import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { CollapsibleField } from "../CollapsibleField";
 
 interface Props {
   data: PrimaryShortData;
@@ -152,19 +153,23 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         </CardContent>
       </Card>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>Ортопедический статус</Label>
+      <div className="grid md:grid-cols-2 gap-3">
+        <CollapsibleField hasValue={!!data.ortho_status} label="Ортопедический статус">
+          <Label>Ортопедический статус</Label>
           <Textarea rows={2} value={data.ortho_status || ""} onChange={(e) => onChange({ ortho_status: e.target.value })} />
-        </div>
-        <div className="space-y-1"><SmartFieldLabel fieldKey="neuro_status">Неврологический статус</SmartFieldLabel>
+        </CollapsibleField>
+        <CollapsibleField hasValue={!!data.neuro_status} label="Неврологический статус">
+          <SmartFieldLabel fieldKey="neuro_status">Неврологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value })} />
-        </div>
-        <div className="space-y-1"><SmartFieldLabel fieldKey="psych_status">Психологический статус</SmartFieldLabel>
+        </CollapsibleField>
+        <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
+          <SmartFieldLabel fieldKey="psych_status">Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
-        </div>
-        <div className="space-y-1"><Label>Рабочая формулировка диагноза</Label>
+        </CollapsibleField>
+        <CollapsibleField hasValue={!!data.working_diagnosis} label="Рабочая формулировка диагноза">
+          <Label>Рабочая формулировка диагноза</Label>
           <Textarea rows={2} value={data.working_diagnosis || ""} onChange={(e) => onChange({ working_diagnosis: e.target.value })} />
-        </div>
+        </CollapsibleField>
       </div>
 
       <div className="space-y-1"><SmartFieldLabel fieldKey="conclusion">Заключение / Диагноз</SmartFieldLabel>
@@ -175,10 +180,11 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-1"><Label>План обследования</Label>
+      <div className="grid md:grid-cols-2 gap-3">
+        <CollapsibleField hasValue={!!data.exam_plan} label="План обследования">
+          <Label>План обследования</Label>
           <Textarea rows={4} value={data.exam_plan || ""} onChange={(e) => onChange({ exam_plan: e.target.value })} />
-        </div>
+        </CollapsibleField>
         <div className="space-y-1"><SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>
           <Textarea rows={4} value={data.recommendations || ""} onChange={(e) => onChange({ recommendations: e.target.value })} />
         </div>

@@ -178,7 +178,7 @@ function isEmpty(v: any): boolean {
 // Версия нормализатора. Увеличиваем при добавлении новых алиасов,
 // чтобы ранее импортированные визиты (с _normalized: true) были
 // повторно прогнаны через свежий маппинг и подхватили новые поля.
-export const NORMALIZATION_VERSION = 7;
+export const NORMALIZATION_VERSION = 8;
 
 export function normalizeImportedProtocolData(
   _type: ProtocolType,
@@ -248,12 +248,12 @@ export function normalizeImportedProtocolData(
 
     if (isEmpty(patchedLs.penis) || isEmpty(patchedLs.perineum)) {
       for (const key of Object.keys(fields)) {
-        const normalizedKey = key.trim();
-        if (isEmpty(patchedLs.penis) && normalizedKey.startsWith("Половой член")) {
-          patchedLs.penis = key;
+        const k = key.trim();
+        if (isEmpty(patchedLs.penis) && k.includes("Половой член") && k.length > 20) {
+          patchedLs.penis = k;
         }
-        if (isEmpty(patchedLs.perineum) && normalizedKey.startsWith("Область промежности")) {
-          patchedLs.perineum = key;
+        if (isEmpty(patchedLs.perineum) && k.includes("промежности") && k.length > 20) {
+          patchedLs.perineum = k;
         }
       }
     }
@@ -274,8 +274,9 @@ export function normalizeImportedProtocolData(
 
     if (isEmpty(patchedSomatic.full_text)) {
       for (const key of Object.keys(fields)) {
-        if (key.trim().startsWith("Общее состояние удовлетворительное")) {
-          patchedSomatic.full_text = key;
+        const k = key.trim();
+        if (k.startsWith("Общее состояние удовлетворительное") && k.length > 50) {
+          patchedSomatic.full_text = k;
           break;
         }
       }
