@@ -21,6 +21,7 @@ export interface PostOpDay3Data {
   pain?: string;
   temperature?: string;
   complaints?: string;
+  uzi_express?: string;
   recommendations?: string;
 }
 
@@ -32,6 +33,7 @@ export interface PostOpDay7Data {
   sutures_removed?: boolean;
   healing?: string;
   complaints?: string;
+  uzi_express?: string;
   recommendations?: string;
 }
 
