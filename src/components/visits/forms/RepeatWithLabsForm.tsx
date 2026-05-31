@@ -13,8 +13,11 @@ interface Props {
 export function RepeatWithLabsForm({ data, onChange }: Props) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы / динамика</SmartFieldLabel>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
+      </div>
+      <div className="space-y-1"><Label>Динамика</Label>
+        <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
       </div>
 
       <Card><CardHeader><CardTitle className="text-sm">Лабораторные данные</CardTitle></CardHeader>
