@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS public._visit_pd_staging (id uuid PRIMARY KEY, protocol_data jsonb NOT NULL);
+GRANT INSERT, SELECT, DELETE, TRUNCATE ON public._visit_pd_staging TO anon, authenticated, service_role;
