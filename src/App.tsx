@@ -61,6 +61,8 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
 import AdminPatients from "./pages/AdminPatients";
 import AdminPatientForm from "./pages/AdminPatientForm";
+const AdminPatientNew = () => <AdminPatientForm mode="create" />;
+const AdminPatientEdit = () => <AdminPatientForm mode="edit" />;
 import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
 import PublicTreatmentPlan from "./pages/PublicTreatmentPlan";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
