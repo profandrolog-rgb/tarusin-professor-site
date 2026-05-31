@@ -288,6 +288,22 @@ export function normalizeImportedProtocolData(
     if (changed) nestedPatch.somatic = patchedSomatic;
   }
 
+  // 2d. Для послеоп-визитов wound_status тянем из локального статуса.
+  if (isEmpty(data.wound_status) && isEmpty(derived.wound_status) &&
+      (_type === "postop_day3" || _type === "postop_day7" || _type === "postop_day10")) {
+    const ls = (nestedPatch.local_status || data.local_status || {}) as any;
+    const ws =
+      (typeof fields["Локальный статус на момент осмотра"] === "string" && fields["Локальный статус на момент осмотра"]) ||
+      (typeof fields["Локальный статус"] === "string" && fields["Локальный статус"]) ||
+      (typeof fields["Состояние раны"] === "string" && fields["Состояние раны"]) ||
+      ls.notes ||
+      ls.external_genitalia ||
+      "";
+    if (ws && typeof ws === "string" && ws.trim()) {
+      derived.wound_status = ws.trim();
+    }
+  }
+
   return {
     ...data,
     ...derived,
