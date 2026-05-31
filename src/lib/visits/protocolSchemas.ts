@@ -57,6 +57,7 @@ export interface PrimaryShortData {
 
 export interface RepeatWithLabsData {
   complaints?: string;
+  dynamics?: string;
   cbc?: string;
   urinalysis?: string;
   biochem?: string;
