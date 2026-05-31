@@ -178,7 +178,7 @@ function isEmpty(v: any): boolean {
 // Версия нормализатора. Увеличиваем при добавлении новых алиасов,
 // чтобы ранее импортированные визиты (с _normalized: true) были
 // повторно прогнаны через свежий маппинг и подхватили новые поля.
-export const NORMALIZATION_VERSION = 6;
+export const NORMALIZATION_VERSION = 7;
 
 export function normalizeImportedProtocolData(
   _type: ProtocolType,
@@ -248,10 +248,11 @@ export function normalizeImportedProtocolData(
 
     if (isEmpty(patchedLs.penis) || isEmpty(patchedLs.perineum)) {
       for (const key of Object.keys(fields)) {
-        if (isEmpty(patchedLs.penis) && key.startsWith("Половой член")) {
+        const normalizedKey = key.trim();
+        if (isEmpty(patchedLs.penis) && normalizedKey.startsWith("Половой член")) {
           patchedLs.penis = key;
         }
-        if (isEmpty(patchedLs.perineum) && key.startsWith("Область промежности")) {
+        if (isEmpty(patchedLs.perineum) && normalizedKey.startsWith("Область промежности")) {
           patchedLs.perineum = key;
         }
       }
@@ -261,6 +262,29 @@ export function normalizeImportedProtocolData(
       (k) => (currentLs as any)[k] !== patchedLs[k],
     );
     if (changed) nestedPatch.local_status = patchedLs;
+  }
+
+  // 2c. Спец-разбор somatic: полный соматический статус иногда приходит
+  // как русский ключ с пустым значением, а не как значение поля.
+  {
+    const currentSomatic = (data.somatic && typeof data.somatic === "object")
+      ? data.somatic
+      : {};
+    const patchedSomatic: Record<string, any> = { ...currentSomatic, ...(nestedPatch.somatic || {}) };
+
+    if (isEmpty(patchedSomatic.full_text)) {
+      for (const key of Object.keys(fields)) {
+        if (key.trim().startsWith("Общее состояние удовлетворительное")) {
+          patchedSomatic.full_text = key;
+          break;
+        }
+      }
+    }
+
+    const changed = Object.keys(patchedSomatic).some(
+      (k) => (currentSomatic as any)[k] !== patchedSomatic[k],
+    );
+    if (changed) nestedPatch.somatic = patchedSomatic;
   }
 
   return {
