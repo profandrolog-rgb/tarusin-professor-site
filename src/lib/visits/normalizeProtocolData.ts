@@ -274,8 +274,9 @@ export function normalizeImportedProtocolData(
 
     if (isEmpty(patchedSomatic.full_text)) {
       for (const key of Object.keys(fields)) {
-        if (key.trim().startsWith("Общее состояние удовлетворительное")) {
-          patchedSomatic.full_text = key;
+        const k = key.trim();
+        if (k.startsWith("Общее состояние удовлетворительное") && k.length > 50) {
+          patchedSomatic.full_text = k;
           break;
         }
       }
