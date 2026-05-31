@@ -128,12 +128,19 @@ export default function AdminPatientDetail() {
           <div>
             <h1 className="text-3xl font-bold mb-1">📋 Курсы лечения: {patient.full_name}</h1>
             <p className="text-muted-foreground text-sm">
-              ДР: {format(parseISO(patient.birth_date), "d MMMM yyyy", { locale: ru })}
+              ДР: {patient.birth_date ? format(parseISO(patient.birth_date), "d MMMM yyyy", { locale: ru }) : "—"}
+              {" · "}Телефон: {patient.phone || "—"}
+              {" · "}№ ИБ: {patient.history_number || "—"}
             </p>
           </div>
-          <Link to={`/admin/treatment-plans/new?patientId=${patient.id}`}>
-            <Button className="gap-2"><Plus className="w-4 h-4"/>Новый лист назначений</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={`/admin/patients/${patient.id}/edit`}>
+              <Button variant="outline" className="gap-2">Редактировать</Button>
+            </Link>
+            <Link to={`/admin/treatment-plans/new?patientId=${patient.id}`}>
+              <Button className="gap-2"><Plus className="w-4 h-4"/>Новый лист назначений</Button>
+            </Link>
+          </div>
         </div>
 
         {/* Summary stats */}
