@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { SmartFieldLabel } from "../SmartTemplates";
 
 export interface SomaticStatusData {
+  full_text?: string;
   general?: string;
   skin?: string;
   lymph_nodes?: string;
@@ -39,6 +40,12 @@ export function SomaticStatusSection({ data, onChange }: Props) {
         <div className="space-y-1"><Label>АД</Label><Input value={data.bp || ""} onChange={(e) => onChange({ bp: e.target.value })} placeholder="120/80" /></div>
         <div className="space-y-1"><Label>Пульс</Label><Input value={data.pulse || ""} onChange={(e) => onChange({ pulse: e.target.value })} /></div>
       </div>
+      {data.full_text ? (
+        <div className="space-y-1">
+          <SmartFieldLabel fieldKey="somatic_full_text" value={data.full_text || ""} onSet={(v) => onChange({ full_text: v })}>Полный соматический статус</SmartFieldLabel>
+          <Textarea rows={5} value={data.full_text || ""} onChange={(e) => onChange({ full_text: e.target.value })} />
+        </div>
+      ) : null}
       <div className="space-y-1"><SmartFieldLabel fieldKey="general_status" value={data.general || ""} onSet={(v) => onChange({ general: v })}>Общее состояние</SmartFieldLabel><Textarea rows={2} value={data.general || ""} onChange={(e) => onChange({ general: e.target.value })} /></div>
       <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_skin" value={data.skin || ""} onSet={(v) => onChange({ skin: v })}>Кожные покровы</SmartFieldLabel><Textarea rows={2} value={data.skin || ""} onChange={(e) => onChange({ skin: e.target.value })} /></div>
       <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_lymph_nodes" value={data.lymph_nodes || ""} onSet={(v) => onChange({ lymph_nodes: v })}>Лимфатические узлы</SmartFieldLabel><Textarea rows={2} value={data.lymph_nodes || ""} onChange={(e) => onChange({ lymph_nodes: e.target.value })} /></div>
