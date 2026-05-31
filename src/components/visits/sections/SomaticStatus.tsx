@@ -39,12 +39,12 @@ export function SomaticStatusSection({ data, onChange }: Props) {
         <div className="space-y-1"><Label>АД</Label><Input value={data.bp || ""} onChange={(e) => onChange({ bp: e.target.value })} placeholder="120/80" /></div>
         <div className="space-y-1"><Label>Пульс</Label><Input value={data.pulse || ""} onChange={(e) => onChange({ pulse: e.target.value })} /></div>
       </div>
-      <div className="space-y-1"><Label>Общее состояние</Label><Textarea rows={2} value={data.general || ""} onChange={(e) => onChange({ general: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Кожные покровы</Label><Textarea rows={2} value={data.skin || ""} onChange={(e) => onChange({ skin: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Лимфатические узлы</Label><Textarea rows={2} value={data.lymph_nodes || ""} onChange={(e) => onChange({ lymph_nodes: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Органы дыхания</Label><Textarea rows={2} value={data.respiratory || ""} onChange={(e) => onChange({ respiratory: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Сердечно-сосудистая система</Label><Textarea rows={2} value={data.cardiovascular || ""} onChange={(e) => onChange({ cardiovascular: e.target.value })} /></div>
-      <div className="space-y-1"><Label>Живот</Label><Textarea rows={2} value={data.abdomen || ""} onChange={(e) => onChange({ abdomen: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="general_status" value={data.general || ""} onSet={(v) => onChange({ general: v })}>Общее состояние</SmartFieldLabel><Textarea rows={2} value={data.general || ""} onChange={(e) => onChange({ general: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_skin" value={data.skin || ""} onSet={(v) => onChange({ skin: v })}>Кожные покровы</SmartFieldLabel><Textarea rows={2} value={data.skin || ""} onChange={(e) => onChange({ skin: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_lymph_nodes" value={data.lymph_nodes || ""} onSet={(v) => onChange({ lymph_nodes: v })}>Лимфатические узлы</SmartFieldLabel><Textarea rows={2} value={data.lymph_nodes || ""} onChange={(e) => onChange({ lymph_nodes: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_respiratory" value={data.respiratory || ""} onSet={(v) => onChange({ respiratory: v })}>Органы дыхания</SmartFieldLabel><Textarea rows={2} value={data.respiratory || ""} onChange={(e) => onChange({ respiratory: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_cardiovascular" value={data.cardiovascular || ""} onSet={(v) => onChange({ cardiovascular: v })}>Сердечно-сосудистая система</SmartFieldLabel><Textarea rows={2} value={data.cardiovascular || ""} onChange={(e) => onChange({ cardiovascular: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="somatic_abdomen" value={data.abdomen || ""} onSet={(v) => onChange({ abdomen: v })}>Живот</SmartFieldLabel><Textarea rows={2} value={data.abdomen || ""} onChange={(e) => onChange({ abdomen: e.target.value })} /></div>
     </div>
   );
 }
