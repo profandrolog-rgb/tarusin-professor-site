@@ -290,7 +290,7 @@ export function normalizeImportedProtocolData(
 
   // 2d. Для послеоп-визитов wound_status тянем из локального статуса.
   if (isEmpty(data.wound_status) && isEmpty(derived.wound_status) &&
-      (_type === "postop_day3" || _type === "postop_day7" || _type === "postop_day10")) {
+      (_type === "postop_day3" || _type === "postop_day7")) {
     const ls = (nestedPatch.local_status || data.local_status || {}) as any;
     const ws =
       (typeof fields["Локальный статус на момент осмотра"] === "string" && fields["Локальный статус на момент осмотра"]) ||
