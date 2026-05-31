@@ -168,7 +168,7 @@ function pickJoined(fields: Record<string, any>, keys: string[]): string | undef
       seen.add(s);
     }
   }
-  return parts.length ? parts.join("\n") : undefined;
+  return parts.length ? parts.join("\n\n") : undefined;
 }
 
 function isEmpty(v: any): boolean {
