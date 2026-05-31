@@ -5,6 +5,7 @@ import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { CollapsibleField } from "../CollapsibleField";
 
 interface Props {
   data: PrimaryShortData;
