@@ -39,9 +39,9 @@ const FIELD_ALIASES: Dict = {
     "Соматический статус на момент осмотра",
     "Общее состояние",
   ],
-  // wound_status намеренно НЕ заполняем из импорта:
-  // полный текст "Локального статуса" уходит в local_status.notes,
-  // чтобы не было дубля в форме первичного осмотра.
+  wound_status: [
+    "Состояние раны",
+  ],
   healing: [
     "Заживление",
   ],
@@ -178,7 +178,7 @@ function isEmpty(v: any): boolean {
 // Версия нормализатора. Увеличиваем при добавлении новых алиасов,
 // чтобы ранее импортированные визиты (с _normalized: true) были
 // повторно прогнаны через свежий маппинг и подхватили новые поля.
-export const NORMALIZATION_VERSION = 8;
+export const NORMALIZATION_VERSION = 9;
 
 export function normalizeImportedProtocolData(
   _type: ProtocolType,
@@ -286,6 +286,36 @@ export function normalizeImportedProtocolData(
       (k) => (currentSomatic as any)[k] !== patchedSomatic[k],
     );
     if (changed) nestedPatch.somatic = patchedSomatic;
+  }
+
+  // 2d. Для послеоп-визитов wound_status собираем из всех источников
+  // описания зоны вмешательства: локальный статус, УЗИ-экспресс, местное лечение,
+  // ключи-плейсхолдеры "Половой член..." / "Область промежности...".
+  const typeStr = String(_type);
+  if (isEmpty(data.wound_status) && isEmpty(derived.wound_status) && typeStr.startsWith("postop_")) {
+    const ls = (nestedPatch.local_status || data.local_status || {}) as any;
+    const parts: string[] = [];
+    const seen = new Set<string>();
+    const push = (s: any) => {
+      if (typeof s !== "string") return;
+      const t = s.trim();
+      if (!t || seen.has(t)) return;
+      seen.add(t);
+      parts.push(t);
+    };
+    push(fields["Локальный статус на момент осмотра"]);
+    push(fields["Локальный статус"]);
+    push(fields["Состояние раны"]);
+    push(fields["Экспресс – УЗИ – исследование"]);
+    push(fields["УЗИ – исследование мягких тканей"]);
+    push(fields["Местное лечение"]);
+    push(ls.notes);
+    push(ls.external_genitalia);
+    push(ls.penis);
+    push(ls.perineum);
+    if (parts.length) {
+      derived.wound_status = parts.join("\n\n");
+    }
   }
 
   return {
