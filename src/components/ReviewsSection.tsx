@@ -756,6 +756,37 @@ const reviews: Review[] = [
     textEn: "We've known Dmitry Igorevich since 2004, when we first came with a cryptorchidism diagnosis. He gave a brilliant consultation. We fully trusted the doctor, who is not only an excellent specialist but a pleasant person with humor, inspiring confidence in the outcome. In 2021, varicocele was diagnosed. Another brilliantly performed surgery. Verdict: 'completely healthy.' We express endless gratitude to Professor Tarusin!",
     source: "DocDoc",
   },
+  // Doctu reviews
+  {
+    name: "Пациент",
+    nameEn: "Patient",
+    date: "21 апреля 2023",
+    dateEn: "April 21, 2023",
+    rating: 5,
+    text: "Мы были поражены врачом Тарусиным Дмитрием Игоревичем! Он тщательно изучил мою историю болезни, вник во все детали и назначил дополнительные обследования. После приёма мы почувствовали, что у нас есть шанс вылечить наше заболевание. Этот врач как посланник от Бога! Большое спасибо!",
+    textEn: "We were astonished by Dr. Tarusin Dmitry Igorevich! He carefully studied my medical history, went into every detail and ordered additional examinations. After the appointment we felt that we finally had a chance to cure our condition. This doctor is like a messenger from God! Thank you so much!",
+    source: "Докту",
+  },
+  {
+    name: "Пациент",
+    nameEn: "Patient",
+    date: "14 декабря 2021",
+    dateEn: "December 14, 2021",
+    rating: 5,
+    text: "СПАСИБО! СПАСИБО! и ещё раз СПАСИБО! Две операции в 2015 и 2016 году и не проходящая проблема. Полное отсутствие перспектив. И вот удача — Дмитрий Игоревич Тарусин. В результате: правильно поставленный диагноз, уникальный индивидуальный подход к ребёнку, блестящая операция и… счастливое будущее ребёнка! Низкий поклон!",
+    textEn: "THANK YOU! THANK YOU! And THANK YOU again! Two surgeries in 2015 and 2016 and the problem still wouldn't go away. Total lack of perspective. And then a stroke of luck — Dmitry Igorevich Tarusin. The result: a correctly established diagnosis, a unique individual approach to the child, a brilliant surgery and… a happy future for the child! A low bow to you!",
+    source: "Докту",
+  },
+  {
+    name: "Дмитрий Сачков",
+    nameEn: "Dmitry Sachkov",
+    date: "27 января 2017",
+    dateEn: "January 27, 2017",
+    rating: 5,
+    text: "Дмитрий Игоревич — чудесный человек и замечательный врач! Помог моему сыну без операции.",
+    textEn: "Dmitry Igorevich is a wonderful person and an excellent doctor! He helped my son without surgery.",
+    source: "Докту",
+  },
   // Dr. Matara's clinic reviews
   {
     name: "Кристина",
@@ -941,6 +972,9 @@ const ReviewsSection = () => {
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.open("https://docdoc.ru/doctor/Tarusin_Dmitriy#reviews", "_blank")}>
               {isEn ? "Read on DocDoc" : "Читать на DocDoc"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.open("https://doctu.ru/msk/doctor/tarusin-d-i#feedback", "_blank")}>
+              {isEn ? "Read on Doctu" : "Читать на Докту"}
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.open("https://www.matar-clinic.ru/reviews/", "_blank")}>
               {isEn ? "Dr. Matara's Clinic" : "Клиника доктора Матара"}
