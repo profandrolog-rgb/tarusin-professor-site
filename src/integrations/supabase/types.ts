@@ -832,6 +832,48 @@ export type Database = {
           },
         ]
       }
+      diagnosis_recommendations: {
+        Row: {
+          category: string
+          created_at: string
+          diagnosis_group: string
+          icd_code: string | null
+          id: string
+          is_base: boolean
+          item_text: string
+          keywords: string[]
+          sort_order: number
+          subtype: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          diagnosis_group: string
+          icd_code?: string | null
+          id?: string
+          is_base?: boolean
+          item_text: string
+          keywords?: string[]
+          sort_order?: number
+          subtype: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          diagnosis_group?: string
+          icd_code?: string | null
+          id?: string
+          is_base?: boolean
+          item_text?: string
+          keywords?: string[]
+          sort_order?: number
+          subtype?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       disease_articles: {
         Row: {
           age_group: string
@@ -1913,6 +1955,42 @@ export type Database = {
           is_published?: boolean
           question_text?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_specialists: {
+        Row: {
+          contact_note: string
+          created_at: string
+          doctor_name: string
+          id: string
+          is_active: boolean
+          phone: string
+          sort_order: number
+          specialty: string
+          updated_at: string
+        }
+        Insert: {
+          contact_note?: string
+          created_at?: string
+          doctor_name: string
+          id?: string
+          is_active?: boolean
+          phone?: string
+          sort_order?: number
+          specialty: string
+          updated_at?: string
+        }
+        Update: {
+          contact_note?: string
+          created_at?: string
+          doctor_name?: string
+          id?: string
+          is_active?: boolean
+          phone?: string
+          sort_order?: number
+          specialty?: string
           updated_at?: string
         }
         Relationships: []
