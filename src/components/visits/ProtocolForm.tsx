@@ -11,6 +11,7 @@ import {
   FillStandardButton,
   OperationTemplateBanner,
 } from "./SmartTemplates";
+import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
 
 interface Props {
   type: ProtocolType;
