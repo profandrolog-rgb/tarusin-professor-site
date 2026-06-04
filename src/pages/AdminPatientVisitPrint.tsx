@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { VisitPrint } from "@/components/visits/VisitPrint";
+import { ProtocolPrintLayout } from "@/components/visits/ProtocolPrintLayout";
 
 export default function AdminPatientVisitPrint() {
   const { id } = useParams<{ id: string }>();
@@ -28,15 +28,6 @@ export default function AdminPatientVisitPrint() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-8">
-      <style>{`
-        @media print {
-          body { background: #fff !important; }
-          .no-print { display: none !important; }
-          .visit-print-area { border: none !important; box-shadow: none !important; margin: 0 !important; }
-          @page { size: A4; margin: 10mm; }
-        }
-      `}</style>
-
       <div className="no-print max-w-5xl mx-auto flex justify-between mb-4">
         <Button variant="ghost" size="sm" asChild>
           <Link to={`/admin/visits/${id}`}><ArrowLeft className="h-4 w-4 mr-1" /> Назад</Link>
@@ -45,7 +36,7 @@ export default function AdminPatientVisitPrint() {
       </div>
 
       <div className="max-w-5xl mx-auto bg-white shadow-md">
-        <VisitPrint visit={visit} />
+        <ProtocolPrintLayout visit={visit} />
       </div>
     </div>
   );
