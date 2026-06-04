@@ -55,7 +55,13 @@ export function ProtocolForm({ type, data, onChange }: Props) {
           <div className="text-xs text-muted-foreground">
             ⚡ — вставить стандартный текст в поле. Все шаблоны редактируемы.
           </div>
-          <FillStandardButton />
+          <div className="flex items-center gap-2 flex-wrap">
+            <DiagnosisRecommendationsPicker
+              value={(data?.recommendations as string) || ""}
+              onApply={(next) => patch({ recommendations: next })}
+            />
+            <FillStandardButton />
+          </div>
         </div>
         <OperationTemplateBanner />
         {renderForm()}
