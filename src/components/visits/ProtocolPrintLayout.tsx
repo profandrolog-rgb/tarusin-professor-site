@@ -367,14 +367,21 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         }
         .ppl-page-break { page-break-after: always; }
 
+        /* Avoid breaking inside critical blocks (applies on screen + print) */
+        .ppl-table tr,
+        .ppl-footer,
+        .ppl-consent { break-inside: avoid; page-break-inside: avoid; }
+
         @media print {
           .no-print { display: none !important; }
           body { margin: 0; background: #fff !important; }
           /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
           @page { size: A4; margin: 12mm 15mm 15mm 20mm; }
           .print-page { padding: 0; box-shadow: none; min-height: auto; width: auto; margin: 0; }
-          .ppl-section, .ppl-subsection { page-break-after: avoid; }
-          .ppl-table tr { page-break-inside: avoid; }
+          .ppl-section, .ppl-subsection { page-break-after: avoid; break-after: avoid; }
+          .ppl-table tr { page-break-inside: avoid; break-inside: avoid; }
+          .ppl-footer, .ppl-consent { page-break-inside: avoid; break-inside: avoid; break-before: avoid; }
+          p, td, li { orphans: 3; widows: 3; }
         }
       `}</style>
 
