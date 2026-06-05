@@ -6,6 +6,7 @@ import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SexualConstitutionSection } from "../sections/SexualConstitution";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
+import { NeuroStatusSection } from "../sections/NeuroStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
 import { Button } from "@/components/ui/button";
