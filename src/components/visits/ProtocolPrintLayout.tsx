@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { formatSexualConstitution } from "./sections/SexualConstitution";
 
 interface VisitForPrint {
   visit_date: string;
