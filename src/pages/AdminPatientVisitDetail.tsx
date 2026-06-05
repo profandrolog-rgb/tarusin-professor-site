@@ -392,11 +392,35 @@ export default function AdminPatientVisitDetail() {
             className="max-w-[100vw] w-screen h-screen p-0 gap-0 rounded-none border-0 sm:rounded-none [&>button]:hidden"
           >
             <style>{`
+              .preview-container {
+                background: #e0e0e0;
+                padding: 20px 0;
+                overflow-y: auto;
+                height: 100%;
+              }
+              .preview-wrapper {
+                transform: scale(0.85);
+                transform-origin: top center;
+                width: 117.65%;
+                margin-left: -8.82%;
+              }
+              @media (max-width: 1280px) {
+                .preview-wrapper { transform: scale(0.75); width: 133.33%; margin-left: -16.66%; }
+              }
+              @media (max-width: 1024px) {
+                .preview-wrapper { transform: scale(0.55); width: 181.82%; margin-left: -40.91%; }
+              }
+              .preview-container .print-page {
+                margin: 0 auto 20px auto;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              }
               @media print {
                 body > *:not(.modal-print-root) { display: none !important; }
                 .modal-print-root { position: absolute; inset: 0; box-shadow: none !important; }
                 .modal-print-root .preview-toolbar { display: none !important; }
-                .modal-print-root .preview-body { overflow: visible !important; height: auto !important; padding: 0 !important; background: #fff !important; }
+                .modal-print-root .preview-container { overflow: visible !important; height: auto !important; padding: 0 !important; background: #fff !important; }
+                .modal-print-root .preview-wrapper { transform: none !important; width: auto !important; margin: 0 !important; }
+                .modal-print-root .preview-container .print-page { box-shadow: none !important; margin: 0 !important; }
               }
             `}</style>
             <div className="modal-print-root flex flex-col h-full bg-muted/30">
@@ -411,8 +435,8 @@ export default function AdminPatientVisitDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="preview-body flex-1 overflow-auto p-4">
-                <div className="max-w-5xl mx-auto bg-white shadow-md">
+              <div className="preview-container flex-1">
+                <div className="preview-wrapper">
                   <ProtocolPrintLayout visit={visit as any} />
                 </div>
               </div>
