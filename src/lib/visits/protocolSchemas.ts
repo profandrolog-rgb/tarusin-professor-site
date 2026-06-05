@@ -87,6 +87,7 @@ export interface DynamicWithUziData {
   dynamics?: string;
   lab_results?: string;
   local_status?: LocalStatusData;
+  ortho_status?: string;
   uzi?: UziReproductiveData;
   conclusion?: string;
   recommendations?: string;
@@ -95,6 +96,7 @@ export interface DynamicWithUziData {
 export interface RepeatWithUziData {
   complaints?: string;
   local_status?: LocalStatusData;
+  ortho_status?: string;
   uzi?: UziReproductiveData;
   conclusion?: string;
   recommendations?: string;

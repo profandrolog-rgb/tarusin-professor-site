@@ -5,6 +5,7 @@ import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SexualConstitutionSection } from "../sections/SexualConstitution";
+import { OrthoStatusSection } from "../sections/OrthoStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
 import { Button } from "@/components/ui/button";
@@ -238,14 +239,13 @@ export function PrimaryShortForm({ data, onChange }: Props) {
 
 
       <div className="grid md:grid-cols-2 gap-3">
-        <CollapsibleField hasValue={!!data.ortho_status} label="Ортопедический статус">
-          <SmartFieldLabel value={data.ortho_status || ""} onSet={(v) => onChange({ ortho_status: v })}>Ортопедический статус</SmartFieldLabel>
-          <Textarea rows={2} value={data.ortho_status || ""} onChange={(e) => onChange({ ortho_status: e.target.value })} />
-        </CollapsibleField>
         <CollapsibleField hasValue={!!data.neuro_status} label="Неврологический статус">
           <SmartFieldLabel fieldKey="neuro_status" value={data.neuro_status || ""} onSet={(v) => onChange({ neuro_status: v })}>Неврологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value })} />
         </CollapsibleField>
+        <div className="md:col-span-2">
+          <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+        </div>
         <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
           <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
