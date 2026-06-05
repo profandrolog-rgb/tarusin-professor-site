@@ -1,4 +1,4 @@
-import { Label } from "@/components/ui/label";
+// Label rendered via SmartFieldLabel
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrimaryShortData } from "@/lib/visits/protocolSchemas";

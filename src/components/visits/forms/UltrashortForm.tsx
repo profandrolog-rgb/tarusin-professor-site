@@ -1,4 +1,4 @@
-import { Label } from "@/components/ui/label";
+// no plain Label needed; SmartFieldLabel renders the label
 import { Textarea } from "@/components/ui/textarea";
 import { UltrashortData } from "@/lib/visits/protocolSchemas";
 import { SmartFieldLabel } from "../SmartTemplates";
