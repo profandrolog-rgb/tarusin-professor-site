@@ -4,6 +4,7 @@ import { DEFAULT_LOCAL_STATUS, LocalStatusData } from "@/components/visits/secti
 import { DEFAULT_SEXUAL_FORMULA, SexualFormulaData } from "@/components/visits/sections/SexualFormula";
 import { DEFAULT_UZI_REPRODUCTIVE, UziReproductiveData } from "@/components/visits/sections/UziReproductive";
 import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/sections/UziUrinary";
+import { SexualConstitutionData } from "@/components/visits/sections/SexualConstitution";
 
 export interface UltrashortData {
   complaints?: string;
@@ -43,7 +44,7 @@ export interface PrimaryShortData {
   somatic?: SomaticStatusData;
   sexual_formula?: SexualFormulaData;
   sexual_formula_text?: string;
-  sexual_constitution?: string;
+  sexual_constitution?: string | SexualConstitutionData;
   local_status?: LocalStatusData;
   ortho_status?: string;
   neuro_status?: string;

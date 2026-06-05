@@ -10,6 +10,8 @@ export interface LocalStatusData {
   right?: string;
   left?: string;
   scrotum?: string;
+  scrotum_right?: string;
+  scrotum_left?: string;
   right_testis?: string;
   left_testis?: string;
   right_testis_volume?: string;

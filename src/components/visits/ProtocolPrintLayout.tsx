@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { formatSexualConstitution } from "./sections/SexualConstitution";
 
 interface VisitForPrint {
   visit_date: string;
@@ -186,22 +187,38 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
         />
       );
     }
+    if (d.sexual_formula_text) {
+      rows.push(<Field key="sft" label="Половая формула (текст)" value={d.sexual_formula_text} />);
+    }
+    {
+      const sc = formatSexualConstitution(d.sexual_constitution);
+      if (sc) rows.push(<Field key="sc" label="Половая конституция" value={sc} />);
+    }
     if (d.local_status) {
       const ls = d.local_status;
       rows.push(
         <Section key="ls" title="Локальный статус">
           <Field label="Наружные половые органы" value={ls.external_genitalia} />
+          {(ls.scrotum_right || ls.scrotum_left) ? (
+            <SideField label="Органы мошонки" right={ls.scrotum_right} left={ls.scrotum_left} />
+          ) : null}
+          {(ls.right || ls.left) ? (
+            <SideField label="Локальный статус" right={ls.right} left={ls.left} />
+          ) : null}
           <Field label="Половой член" value={ls.penis} />
-          <Field label="Мошонка" value={ls.scrotum} />
-          <SideField
-            label="Яичко"
-            right={[ls.right_testis, ls.right_testis_volume ? `объём ${ls.right_testis_volume} мл` : null]
-              .filter(Boolean)
-              .join(", ")}
-            left={[ls.left_testis, ls.left_testis_volume ? `объём ${ls.left_testis_volume} мл` : null]
-              .filter(Boolean)
-              .join(", ")}
-          />
+          <Field label="Промежность" value={ls.perineum} />
+          {ls.scrotum ? <Field label="Мошонка" value={ls.scrotum} /> : null}
+          {(ls.right_testis || ls.left_testis) ? (
+            <SideField
+              label="Яичко"
+              right={[ls.right_testis, ls.right_testis_volume ? `объём ${ls.right_testis_volume} мл` : null]
+                .filter(Boolean)
+                .join(", ")}
+              left={[ls.left_testis, ls.left_testis_volume ? `объём ${ls.left_testis_volume} мл` : null]
+                .filter(Boolean)
+                .join(", ")}
+            />
+          ) : null}
           <Field label="Придатки" value={ls.epididymis} />
           <Field label="Семенные канатики" value={ls.spermatic_cord} />
           <Field label="Паховые кольца" value={ls.inguinal_rings} />
@@ -209,6 +226,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
         </Section>
       );
     }
+
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ" />);
