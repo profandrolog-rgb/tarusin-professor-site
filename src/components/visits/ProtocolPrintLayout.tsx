@@ -69,6 +69,55 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const UZI_LABELS: Record<string, string> = {
+  device: "Аппарат", indications: "Показания", conclusion: "Заключение УЗИ",
+  vessels: "Сосуды", doppler: "ЦДК", free_fluid: "Свободная жидкость",
+  ureters: "Мочеточники", residual_urine: "Остаточная моча",
+  bladder_volume: "Объём мочевого пузыря, мл",
+  bladder_walls: "Стенки мочевого пузыря", bladder_contents: "Содержимое мочевого пузыря",
+  right_testis_size: "Правое яичко (размеры)", left_testis_size: "Левое яичко (размеры)",
+  right_testis_volume: "Правое яичко, V мл", left_testis_volume: "Левое яичко, V мл",
+  right_testis_structure: "Правое яичко (структура)", left_testis_structure: "Левое яичко (структура)",
+  right_epididymis: "Правый придаток", left_epididymis: "Левый придаток",
+  right_kidney_size: "Правая почка (размеры)", left_kidney_size: "Левая почка (размеры)",
+  right_kidney_parenchyma: "Правая почка (паренхима)", left_kidney_parenchyma: "Левая почка (паренхима)",
+  right_kidney_pelvis: "Правая почка (лоханка)", left_kidney_pelvis: "Левая почка (лоханка)",
+  right_kidney_structure: "Правая почка (структура)", left_kidney_structure: "Левая почка (структура)",
+  testes: "Яички", epididymis: "Придатки", kidneys: "Почки",
+  bladder: "Мочевой пузырь", prostate: "Предстательная железа", scrotum: "Мошонка",
+  size: "Размеры", volume: "Объём, мл", structure: "Структура",
+  parenchyma: "Паренхима", pelvis: "Лоханка",
+};
+const humanize = (k: string) => UZI_LABELS[k] || k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const isPlainObject = (v: any): v is Record<string, any> => v !== null && typeof v === "object" && !Array.isArray(v);
+const hasRightLeft = (v: any) => isPlainObject(v) && ("right" in v || "left" in v);
+const renderScalar = (v: any): string => {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "boolean") return v ? "Да" : "Нет";
+  return String(v);
+};
+
+function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }) {
+  const rows: React.ReactNode[] = [];
+  const walk = (obj: Record<string, any>, prefix = "") => {
+    Object.entries(obj).forEach(([k, v]) => {
+      if (v === null || v === undefined || v === "") return;
+      const rk = `${prefix}${k}`;
+      if (hasRightLeft(v)) {
+        rows.push(<SideField key={rk} label={humanize(k)} right={renderScalar(v.right)} left={renderScalar(v.left)} />);
+      } else if (isPlainObject(v)) {
+        rows.push(<tr key={`${rk}-h`}><td colSpan={2} className="ppl-subsection">{humanize(k)}</td></tr>);
+        walk(v, `${rk}.`);
+      } else {
+        rows.push(<Field key={rk} label={humanize(k)} value={renderScalar(v)} />);
+      }
+    });
+  };
+  walk(uzi);
+  if (rows.length === 0) return null;
+  return <Section title={title}>{rows}</Section>;
+}
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
