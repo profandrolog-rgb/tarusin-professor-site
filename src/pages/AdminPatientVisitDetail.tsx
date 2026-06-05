@@ -17,6 +17,7 @@ import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { normalizeImportedProtocolData, NORMALIZATION_VERSION } from "@/lib/visits/normalizeProtocolData";
 import { ProtocolPrintLayout } from "@/components/visits/ProtocolPrintLayout";
+import { AssignmentsPanel, normalizeAssignments, AssignmentsData } from "@/components/visits/AssignmentsPanel";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -421,6 +422,15 @@ export default function AdminPatientVisitDetail() {
               />
             </CardContent>
           </Card>
+
+          <AssignmentsPanel
+            value={isProtocolRecord(visit.protocol_data) ? normalizeAssignments((visit.protocol_data as any).assignments) : undefined}
+            onChange={(next: AssignmentsData) => {
+              const base = isProtocolRecord(visit.protocol_data) ? { ...(visit.protocol_data as any) } : {};
+              base.assignments = next;
+              update({ protocol_data: base as Json });
+            }}
+          />
         </div>
 
         {/* Fullscreen preview dialog */}
