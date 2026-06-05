@@ -229,6 +229,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
 
     if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
     if (d.neuro_status) rows.push(<Field key="neuro" label="Неврологический статус" value={d.neuro_status} />);
+    if (d.neuro_status_full) rows.push(<Field key="neurof" label="Неврологический статус (расш.)" value={d.neuro_status_full} />);
     if (d.psych_status) rows.push(<Field key="psych" label="Психологический статус" value={d.psych_status} />);
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
     if (d.uzi && isPlainObject(d.uzi)) {
