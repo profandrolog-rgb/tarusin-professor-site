@@ -49,15 +49,112 @@ export function PrimaryShortForm({ data, onChange }: Props) {
             <div className="space-y-1"><SmartFieldLabel value={data.sexual_formula_text || ""} onSet={(v) => onChange({ sexual_formula_text: v })}>Половая формула (текст)</SmartFieldLabel>
               <Textarea rows={2} value={data.sexual_formula_text || ""} onChange={(e) => onChange({ sexual_formula_text: e.target.value })} />
             </div>
-            <div className="space-y-1"><SmartFieldLabel value={data.sexual_constitution || ""} onSet={(v) => onChange({ sexual_constitution: v })}>Половая конституция</SmartFieldLabel>
-              <Textarea rows={2} value={data.sexual_constitution || ""} onChange={(e) => onChange({ sexual_constitution: e.target.value })} />
-            </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card><CardHeader><CardTitle className="text-sm">Половая конституция</CardTitle></CardHeader>
+        <CardContent>
+          <SexualConstitutionSection
+            value={data.sexual_constitution}
+            onChange={(v) => onChange({ sexual_constitution: v })}
+          />
         </CardContent>
       </Card>
 
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent className="space-y-4">
+          {/* 1. Наружные половые органы */}
+          <div className="space-y-1">
+            <SmartFieldLabel
+              fieldKey="local_status"
+              value={data.local_status?.external_genitalia || ""}
+              onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), external_genitalia: v } })}
+            >
+              Наружные половые органы
+            </SmartFieldLabel>
+            <Textarea
+              rows={2}
+              value={data.local_status?.external_genitalia || ""}
+              onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), external_genitalia: e.target.value } })}
+            />
+          </div>
+
+          {/* 2. Органы мошонки — Справа | Слева */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Органы мошонки</div>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs gap-1"
+                  onClick={() =>
+                    onChange({
+                      local_status: {
+                        ...(data.local_status || {}),
+                        scrotum_right: SCROTUM_DEFAULT,
+                        scrotum_left: SCROTUM_DEFAULT,
+                      },
+                    })
+                  }
+                >
+                  <Zap className="h-3 w-3" /> Шаблон обе
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs gap-1"
+                  disabled={!data.local_status?.scrotum_right && !data.local_status?.scrotum_left}
+                  onClick={() =>
+                    onChange({
+                      local_status: {
+                        ...(data.local_status || {}),
+                        scrotum_right: "",
+                        scrotum_left: "",
+                      },
+                    })
+                  }
+                >
+                  <RotateCcw className="h-3 w-3" /> Сброс
+                </Button>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-md border">
+              <table className="w-full table-fixed border-collapse text-sm">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="w-1/2 border-b border-r p-2 text-left font-medium">Справа</th>
+                    <th className="w-1/2 border-b p-2 text-left font-medium">Слева</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border-r p-0 align-top">
+                      <Textarea
+                        rows={6}
+                        className="min-h-[140px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                        value={data.local_status?.scrotum_right || ""}
+                        onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), scrotum_right: e.target.value } })}
+                      />
+                    </td>
+                    <td className="p-0 align-top">
+                      <Textarea
+                        rows={6}
+                        className="min-h-[140px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                        value={data.local_status?.scrotum_left || ""}
+                        onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), scrotum_left: e.target.value } })}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 3. Общий локальный статус — Справа | Слева */}
           {hasSplitLocalStatus ? (
                 <div className="overflow-hidden rounded-md border">
                   <table className="w-full table-fixed border-collapse text-sm">
