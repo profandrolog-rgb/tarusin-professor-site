@@ -243,56 +243,15 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   if ((t === "uzi_reproductive" || t === "dynamic_with_uzi" || t === "repeat_with_uzi") && d.uzi) {
     if (t !== "uzi_reproductive") rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    const u = d.uzi;
-    rows.push(
-      <Section key="uzi" title="УЗИ органов мошонки">
-        <Field label="Аппарат" value={u.device} />
-        <SideField
-          label="Яичко"
-          right={[u.right_testis_size, u.right_testis_volume ? `V ${u.right_testis_volume} мл` : null, u.right_testis_structure]
-            .filter(Boolean)
-            .join("; ")}
-          left={[u.left_testis_size, u.left_testis_volume ? `V ${u.left_testis_volume} мл` : null, u.left_testis_structure]
-            .filter(Boolean)
-            .join("; ")}
-        />
-        <SideField label="Придаток" right={u.right_epididymis} left={u.left_epididymis} />
-        <Field label="Сосуды" value={u.vessels} />
-        <Field label="ЦДК" value={u.doppler} />
-        <Field label="Свободная жидкость" value={u.free_fluid} />
-        <Field label="Заключение УЗИ" value={u.conclusion} />
-      </Section>
-    );
+    rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мошонки" />);
     if (t !== "uzi_reproductive") rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
 
   if (t === "uzi_urinary" && d.uzi) {
-    const u = d.uzi;
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    rows.push(
-      <Section key="uzi" title="УЗИ органов мочевыделительной системы">
-        <Field label="Аппарат" value={u.device} />
-        <SideField
-          label="Почка"
-          right={[u.right_kidney_size, u.right_kidney_parenchyma, u.right_kidney_pelvis, u.right_kidney_structure]
-            .filter(Boolean)
-            .join("; ")}
-          left={[u.left_kidney_size, u.left_kidney_parenchyma, u.left_kidney_pelvis, u.left_kidney_structure]
-            .filter(Boolean)
-            .join("; ")}
-        />
-        <Field label="Мочеточники" value={u.ureters} />
-        <Field
-          label="Мочевой пузырь"
-          value={[u.bladder_volume ? `V ${u.bladder_volume} мл` : null, u.bladder_walls, u.bladder_contents]
-            .filter(Boolean)
-            .join("; ")}
-        />
-        <Field label="Остаточная моча" value={u.residual_urine} />
-        <Field label="Заключение УЗИ" value={u.conclusion} />
-      </Section>
-    );
+    rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мочевыделительной системы" />);
   }
+
 
   // Fallback for generic protocols — render any string fields under d.fields
   if (rows.length === 0 && d.fields && typeof d.fields === "object") {
