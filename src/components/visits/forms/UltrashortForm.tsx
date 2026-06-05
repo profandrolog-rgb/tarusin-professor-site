@@ -1,4 +1,4 @@
-import { Label } from "@/components/ui/label";
+// no plain Label needed; SmartFieldLabel renders the label
 import { Textarea } from "@/components/ui/textarea";
 import { UltrashortData } from "@/lib/visits/protocolSchemas";
 import { SmartFieldLabel } from "../SmartTemplates";
@@ -16,7 +16,7 @@ export function UltrashortForm({ data, onChange }: Props) {
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Локальный статус</Label>
+        <SmartFieldLabel value={data.local_status || ""} onSet={(v) => onChange({ local_status: v })}>Локальный статус</SmartFieldLabel>
         <Textarea rows={3} value={data.local_status || ""} onChange={(e) => onChange({ local_status: e.target.value })} />
       </div>
       <div className="space-y-1">

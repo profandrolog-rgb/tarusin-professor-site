@@ -1,4 +1,4 @@
-import { Label } from "@/components/ui/label";
+// Label rendered via SmartFieldLabel
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
@@ -40,10 +40,10 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         <CardContent className="space-y-3">
           <SexualFormulaSection data={data.sexual_formula || {}} onChange={(p) => onChange({ sexual_formula: { ...(data.sexual_formula || {}), ...p } })} />
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-1"><Label>Половая формула (текст)</Label>
+            <div className="space-y-1"><SmartFieldLabel value={data.sexual_formula_text || ""} onSet={(v) => onChange({ sexual_formula_text: v })}>Половая формула (текст)</SmartFieldLabel>
               <Textarea rows={2} value={data.sexual_formula_text || ""} onChange={(e) => onChange({ sexual_formula_text: e.target.value })} />
             </div>
-            <div className="space-y-1"><Label>Половая конституция</Label>
+            <div className="space-y-1"><SmartFieldLabel value={data.sexual_constitution || ""} onSet={(v) => onChange({ sexual_constitution: v })}>Половая конституция</SmartFieldLabel>
               <Textarea rows={2} value={data.sexual_constitution || ""} onChange={(e) => onChange({ sexual_constitution: e.target.value })} />
             </div>
           </div>
@@ -155,19 +155,19 @@ export function PrimaryShortForm({ data, onChange }: Props) {
 
       <div className="grid md:grid-cols-2 gap-3">
         <CollapsibleField hasValue={!!data.ortho_status} label="Ортопедический статус">
-          <Label>Ортопедический статус</Label>
+          <SmartFieldLabel value={data.ortho_status || ""} onSet={(v) => onChange({ ortho_status: v })}>Ортопедический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.ortho_status || ""} onChange={(e) => onChange({ ortho_status: e.target.value })} />
         </CollapsibleField>
         <CollapsibleField hasValue={!!data.neuro_status} label="Неврологический статус">
-          <SmartFieldLabel fieldKey="neuro_status">Неврологический статус</SmartFieldLabel>
+          <SmartFieldLabel fieldKey="neuro_status" value={data.neuro_status || ""} onSet={(v) => onChange({ neuro_status: v })}>Неврологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value })} />
         </CollapsibleField>
         <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
-          <SmartFieldLabel fieldKey="psych_status">Психологический статус</SmartFieldLabel>
+          <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
         </CollapsibleField>
         <CollapsibleField hasValue={!!data.working_diagnosis} label="Рабочая формулировка диагноза">
-          <Label>Рабочая формулировка диагноза</Label>
+          <SmartFieldLabel value={data.working_diagnosis || ""} onSet={(v) => onChange({ working_diagnosis: v })}>Рабочая формулировка диагноза</SmartFieldLabel>
           <Textarea rows={2} value={data.working_diagnosis || ""} onChange={(e) => onChange({ working_diagnosis: e.target.value })} />
         </CollapsibleField>
       </div>
@@ -182,7 +182,7 @@ export function PrimaryShortForm({ data, onChange }: Props) {
 
       <div className="grid md:grid-cols-2 gap-3">
         <CollapsibleField hasValue={!!data.exam_plan} label="План обследования">
-          <Label>План обследования</Label>
+          <SmartFieldLabel value={data.exam_plan || ""} onSet={(v) => onChange({ exam_plan: v })}>План обследования</SmartFieldLabel>
           <Textarea rows={4} value={data.exam_plan || ""} onChange={(e) => onChange({ exam_plan: e.target.value })} />
         </CollapsibleField>
         <div className="space-y-1"><SmartFieldLabel fieldKey="recommendations">Рекомендации</SmartFieldLabel>

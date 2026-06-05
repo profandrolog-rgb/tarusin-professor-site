@@ -48,9 +48,11 @@ function useCtx() {
 }
 
 /**
- * Renders a label with a ⚡ / ↺ button beside it.
- * fieldKey = template key (e.g. "general_status")
- * formField = name of the field on `data` to update (defaults to fieldKey).
+ * Label with ↺ Reset and ⚡ Template buttons.
+ * - fieldKey optional: when provided and a template exists, shows the ⚡ button.
+ * - Reset button is always present; disabled when current value is empty.
+ * - For nested fields, pass explicit `value` and `onSet`. Otherwise the
+ *   component reads/writes `data[formField || fieldKey]` from context.
  */
 export function SmartFieldLabel({
   children,
@@ -61,13 +63,10 @@ export function SmartFieldLabel({
   onSet,
 }: {
   children: ReactNode;
-  fieldKey: string;
-  /** Top-level form field name. Ignored if `onSet` is provided. */
+  fieldKey?: string;
   formField?: string;
   htmlFor?: string;
-  /** Optional explicit current value (for nested fields where ctx doesn't know the value). */
   value?: string;
-  /** Optional explicit setter (for nested fields). Receives the new string. */
   onSet?: (next: string) => void;
 }) {
   const ctx = useCtx();
@@ -75,40 +74,42 @@ export function SmartFieldLabel({
   const currentVal =
     value !== undefined
       ? value
-      : ctx
+      : ctx && field
       ? ((ctx.data?.[field] as string) || "")
       : "";
-  const tpl = ctx
-    ? resolveTemplate(ctx.templates, ctx.protocolType, fieldKey, ctx.operationName)
-    : null;
+  const tpl =
+    ctx && fieldKey
+      ? resolveTemplate(ctx.templates, ctx.protocolType, fieldKey, ctx.operationName)
+      : null;
 
   const apply = () => {
     if (!tpl) return;
     if (onSet) onSet(tpl.template_text);
-    else if (ctx) ctx.onChange({ [field]: tpl.template_text });
+    else if (ctx && field) ctx.onChange({ [field]: tpl.template_text });
   };
   const reset = () => {
     if (onSet) onSet("");
-    else if (ctx) ctx.onChange({ [field]: "" });
+    else if (ctx && field) ctx.onChange({ [field]: "" });
   };
+
+  const hasVal = !!(currentVal && currentVal.length);
 
   return (
     <div className="flex items-center justify-between gap-2">
       <Label htmlFor={htmlFor}>{children}</Label>
-      {tpl && (
-        <div className="flex items-center gap-1">
-          {currentVal ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
-              onClick={reset}
-              title="Очистить поле"
-            >
-              <RotateCcw className="h-3 w-3 mr-1" /> сброс
-            </Button>
-          ) : null}
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-xs"
+          onClick={reset}
+          disabled={!hasVal}
+          title="Очистить поле"
+        >
+          <RotateCcw className="h-3 w-3 mr-1" /> сброс
+        </Button>
+        {tpl && (
           <Button
             type="button"
             size="sm"
@@ -117,10 +118,10 @@ export function SmartFieldLabel({
             onClick={apply}
             title={tpl.label}
           >
-            <Zap className="h-3 w-3 mr-1" /> {currentVal ? "перезаписать" : "шаблон"}
+            <Zap className="h-3 w-3 mr-1" /> {hasVal ? "перезаписать" : "шаблон"}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -166,7 +167,6 @@ export function FillStandardButton({ overwrite = false }: { overwrite?: boolean 
 export function OperationTemplateBanner() {
   const ctx = useCtx();
   const [dismissed, setDismissed] = useState<string>("");
-  // Reset dismissal when operation name changes — hook ДОЛЖЕН быть до early-return.
   useEffect(() => {
     setDismissed("");
   }, [ctx?.operationName]);

@@ -25,11 +25,11 @@ export function PostOpDay3Form({ data, onChange }: Props) {
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1">
-          <Label>Температура</Label>
+          <SmartFieldLabel value={data.temperature || ""} onSet={(v) => onChange({ temperature: v })}>Температура</SmartFieldLabel>
           <Input value={data.temperature || ""} onChange={(e) => onChange({ temperature: e.target.value })} />
         </div>
         <div className="space-y-1">
-          <Label>Болевой синдром</Label>
+          <SmartFieldLabel value={data.pain || ""} onSet={(v) => onChange({ pain: v })}>Болевой синдром</SmartFieldLabel>
           <Input value={data.pain || ""} onChange={(e) => onChange({ pain: e.target.value })} />
         </div>
       </div>
@@ -42,7 +42,7 @@ export function PostOpDay3Form({ data, onChange }: Props) {
         <Textarea rows={3} value={data.wound_status || ""} onChange={(e) => onChange({ wound_status: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Перевязка</Label>
+        <SmartFieldLabel value={data.dressing || ""} onSet={(v) => onChange({ dressing: v })}>Перевязка</SmartFieldLabel>
         <Textarea rows={2} value={data.dressing || ""} onChange={(e) => onChange({ dressing: e.target.value })} />
       </div>
       <div className="space-y-1">
@@ -50,7 +50,7 @@ export function PostOpDay3Form({ data, onChange }: Props) {
         <Textarea rows={2} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>УЗИ экспресс</Label>
+        <SmartFieldLabel fieldKey="uzi_express" value={data.uzi_express || ""} onSet={(v) => onChange({ uzi_express: v })}>УЗИ экспресс</SmartFieldLabel>
         <Textarea rows={3} value={data.uzi_express || ""} onChange={(e) => onChange({ uzi_express: e.target.value })} />
       </div>
       <div className="space-y-1">

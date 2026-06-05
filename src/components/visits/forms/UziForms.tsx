@@ -1,4 +1,3 @@
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UziReproductiveOnlyData, UziUrinaryOnlyData, DynamicWithUziData, RepeatWithUziData } from "@/lib/visits/protocolSchemas";
@@ -10,7 +9,7 @@ import { SmartFieldLabel } from "../SmartTemplates";
 export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void }) {
   return (
     <div className="space-y-4">
-      <div className="space-y-1"><Label>Показания к исследованию</Label>
+      <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
       <UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} />
@@ -24,7 +23,7 @@ export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveO
 export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; onChange: (p: Partial<UziUrinaryOnlyData>) => void }) {
   return (
     <div className="space-y-4">
-      <div className="space-y-1"><Label>Показания к исследованию</Label>
+      <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
       <UziUrinarySection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} />
@@ -41,13 +40,13 @@ export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziDat
       <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
         <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
-      <div className="space-y-1"><Label>Анамнез</Label>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis" value={data.anamnesis || ""} onSet={(v) => onChange({ anamnesis: v })}>Анамнез</SmartFieldLabel>
         <Textarea rows={3} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
       </div>
-      <div className="space-y-1"><Label>Динамика</Label>
+      <div className="space-y-1"><SmartFieldLabel value={data.dynamics || ""} onSet={(v) => onChange({ dynamics: v })}>Динамика</SmartFieldLabel>
         <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
       </div>
-      <div className="space-y-1"><Label>Лабораторные данные</Label>
+      <div className="space-y-1"><SmartFieldLabel value={data.lab_results || ""} onSet={(v) => onChange({ lab_results: v })}>Лабораторные данные</SmartFieldLabel>
         <Textarea rows={3} value={data.lab_results || ""} onChange={(e) => onChange({ lab_results: e.target.value })} />
       </div>
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
