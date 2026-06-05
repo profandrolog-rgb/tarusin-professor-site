@@ -53,6 +53,7 @@ export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziDat
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
+      <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
         <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
       </Card>
@@ -77,6 +78,7 @@ export function RepeatWithUziForm({ data, onChange }: { data: RepeatWithUziData;
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
+      <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
         <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
       </Card>
