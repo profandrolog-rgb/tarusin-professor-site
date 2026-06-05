@@ -4,15 +4,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AgeCombobox } from "@/components/visits/AgeCombobox";
 
 export interface SexualConstitutionData {
-  start?: number | null;
-  pub?: number | null;
+  start?: number | string | null;
+  pub?: number | string | null;
   er?: "+" | "++" | "+++" | "";
   mast?: "+" | "-" | "";
   ej?: "+" | "-" | "";
-  ejage?: number | "нет" | null;
+  ejage?: number | string | null;
   mast_fr?: number | null;
   sx?: "+" | "-" | "";
-  sxage?: number | "нет" | null;
+  sxage?: number | string | null;
   part?: number | null;
   prev?: number | null;
   score?: number;
