@@ -4,8 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
+import { SexualConstitutionSection } from "../sections/SexualConstitution";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
+import { Button } from "@/components/ui/button";
+import { Zap, RotateCcw } from "lucide-react";
+
+const SCROTUM_DEFAULT =
+  "Яичко в мошонке, положение правильное, размеры по возрасту, тургор достаточный, эластичность обычная, пальпация безболезненная. Придаток яичка: положение правильное, форма типичная, подвижность обычная, пальпация безболезненная, гидатиды не пальпируются, кист головки придатка нет.";
 
 interface Props {
   data: PrimaryShortData;
