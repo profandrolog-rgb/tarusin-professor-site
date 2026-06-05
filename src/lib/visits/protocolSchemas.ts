@@ -4,6 +4,7 @@ import { DEFAULT_LOCAL_STATUS, LocalStatusData } from "@/components/visits/secti
 import { DEFAULT_SEXUAL_FORMULA, SexualFormulaData } from "@/components/visits/sections/SexualFormula";
 import { DEFAULT_UZI_REPRODUCTIVE, UziReproductiveData } from "@/components/visits/sections/UziReproductive";
 import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/sections/UziUrinary";
+import { SexualConstitutionData } from "@/components/visits/sections/SexualConstitution";
 
 export interface UltrashortData {
   complaints?: string;
