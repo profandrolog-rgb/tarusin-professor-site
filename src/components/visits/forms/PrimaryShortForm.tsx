@@ -250,14 +250,6 @@ export function PrimaryShortForm({ data, onChange }: Props) {
           <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
         </CollapsibleField>
-        <CollapsibleField hasValue={!!data.neuro_status} label="Неврологический статус">
-          <SmartFieldLabel fieldKey="neuro_status" value={data.neuro_status || ""} onSet={(v) => onChange({ neuro_status: v })}>Неврологический статус</SmartFieldLabel>
-          <Textarea rows={2} value={data.neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value })} />
-        </CollapsibleField>
-        <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
-          <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
-          <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
-        </CollapsibleField>
         <CollapsibleField hasValue={!!data.working_diagnosis} label="Рабочая формулировка диагноза">
           <SmartFieldLabel value={data.working_diagnosis || ""} onSet={(v) => onChange({ working_diagnosis: v })}>Рабочая формулировка диагноза</SmartFieldLabel>
           <Textarea rows={2} value={data.working_diagnosis || ""} onChange={(e) => onChange({ working_diagnosis: e.target.value })} />
