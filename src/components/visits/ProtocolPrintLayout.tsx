@@ -296,6 +296,30 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       </Section>
     );
   }
+
+  // Assignments (universal — across any protocol type)
+  const a = d.assignments;
+  if (a && typeof a === "object") {
+    const renderList = (key: string, title: string, items: any) => {
+      if (!Array.isArray(items) || items.length === 0) return null;
+      return (
+        <Section key={key} title={title}>
+          <tr>
+            <td colSpan={2} className="ppl-value" style={{ paddingTop: "1mm" }}>
+              <ol style={{ margin: 0, paddingLeft: "6mm" }}>
+                {items.map((t: string, i: number) => (
+                  <li key={i} style={{ marginBottom: "1mm" }}>{t}</li>
+                ))}
+              </ol>
+            </td>
+          </tr>
+        </Section>
+      );
+    };
+    rows.push(renderList("a-exam", "Обследование", a.examinations));
+    rows.push(renderList("a-treat", "Лечение и режим", a.treatments));
+    rows.push(renderList("a-ref", "Консультации", a.referrals));
+  }
   if (visit.next_visit_date) {
     rows.push(
       <Field

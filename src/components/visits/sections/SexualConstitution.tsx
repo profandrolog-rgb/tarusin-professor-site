@@ -1,17 +1,18 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AgeCombobox } from "@/components/visits/AgeCombobox";
 
 export interface SexualConstitutionData {
-  start?: number | null;
-  pub?: number | null;
+  start?: number | string | null;
+  pub?: number | string | null;
   er?: "+" | "++" | "+++" | "";
   mast?: "+" | "-" | "";
   ej?: "+" | "-" | "";
-  ejage?: number | "нет" | null;
+  ejage?: number | string | null;
   mast_fr?: number | null;
   sx?: "+" | "-" | "";
-  sxage?: number | "нет" | null;
+  sxage?: number | string | null;
   part?: number | null;
   prev?: number | null;
   score?: number;
@@ -127,11 +128,11 @@ export function SexualConstitutionSection({ value, onChange }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Start <span className="text-muted-foreground font-normal">(начало)</span></Label>
-          <Sel value={d.start ?? ""} onChange={(v) => patch({ start: v })} options={ageOptions} disabled={disabled} />
+          <AgeCombobox value={d.start ?? null} onChange={(v) => patch({ start: v as any })} disabled={disabled} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Pub <span className="text-muted-foreground font-normal">(пубархе)</span></Label>
-          <Sel value={d.pub ?? ""} onChange={(v) => patch({ pub: v })} options={ageOptions} disabled={disabled} />
+          <AgeCombobox value={d.pub ?? null} onChange={(v) => patch({ pub: v as any })} disabled={disabled} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Er <span className="text-muted-foreground font-normal">(эрекции)</span></Label>
@@ -162,7 +163,7 @@ export function SexualConstitutionSection({ value, onChange }: Props) {
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Ejage <span className="text-muted-foreground font-normal">(возраст эякуляций)</span></Label>
-          <Sel value={d.ejage ?? ""} onChange={(v) => patch({ ejage: v })} options={ageWithNone} disabled={disabled} />
+          <AgeCombobox value={d.ejage ?? null} onChange={(v) => patch({ ejage: v as any })} allowNone disabled={disabled} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">MastFR <span className="text-muted-foreground font-normal">(частота, /нед)</span></Label>
@@ -186,7 +187,7 @@ export function SexualConstitutionSection({ value, onChange }: Props) {
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Sxage <span className="text-muted-foreground font-normal">(возраст начала)</span></Label>
-          <Sel value={d.sxage ?? ""} onChange={(v) => patch({ sxage: v })} options={ageWithNone} disabled={disabled} />
+          <AgeCombobox value={d.sxage ?? null} onChange={(v) => patch({ sxage: v as any })} allowNone disabled={disabled} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Part <span className="text-muted-foreground font-normal">(партнёры, число)</span></Label>
