@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -200,6 +200,33 @@ export default function AdminPatientVisitDetail() {
     else navigate("/admin/visits");
   };
 
+  const handleDuplicate = async () => {
+    if (!visit) return;
+    const proceed = () => true;
+    if (isDirty && !window.confirm("Есть несохранённые изменения. Дублировать без сохранения?")) return;
+    const today = format(new Date(), "yyyy-MM-dd");
+    const { data, error } = await supabase
+      .from("patient_visits")
+      .insert({
+        patient_id: visit.patient_id,
+        visit_date: today,
+        protocol_type: visit.protocol_type,
+        protocol_data: visit.protocol_data,
+        diagnosis: visit.diagnosis,
+        icd_code: visit.icd_code,
+        next_visit_date: null,
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      toast({ title: "Не удалось дублировать", description: error?.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Протокол продублирован", description: "Измените динамические поля." });
+    navigate(`/admin/visits/${data.id}`);
+    void proceed;
+  };
+
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
 
@@ -275,6 +302,16 @@ export default function AdminPatientVisitDetail() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Создать новый протокол для этого пациента</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={handleDuplicate}>
+                  <Copy className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Дублировать</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
             </Tooltip>
 
             {/* Right group */}
