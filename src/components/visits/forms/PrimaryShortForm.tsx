@@ -5,6 +5,7 @@ import { PrimaryShortData } from "@/lib/visits/protocolSchemas";
 import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SexualConstitutionSection } from "../sections/SexualConstitution";
+import { OrthoStatusSection } from "../sections/OrthoStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
 import { Button } from "@/components/ui/button";
