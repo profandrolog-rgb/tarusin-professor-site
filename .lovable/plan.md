@@ -1,50 +1,72 @@
-# Система протоколов пациентов — план интеграции
+## План
 
-В проекте уже есть `patients`, `patient_cards`, `prescriptions`, `operations_journal`, `consultation_rounds`. Не создаём дубликат «новой системы», а добавляем **модуль визитов с 9 типами протоколов** поверх существующих таблиц.
+Доработать страницу визита (`AdminPatientVisitDetail.tsx`): объединить кнопки в sticky-панель, добавить навигацию между протоколами, dirty-tracking, fullscreen-предпросмотр и горячую клавишу Ctrl+S.
 
-## Решения по архитектуре
+### 1. Sticky-панель действий
 
-- Используем существующую таблицу `patients`. Добавим в неё недостающие поля из ТЗ: `history_number` (уникальный, auto-increment), `last_name`, `first_name`, `patronymic`, `parent_name`. Старое поле `full_name` оставляем (заполняем триггером из частей ФИО для совместимости).
-- Создаём **одну новую таблицу** `patient_visits` с `protocol_type` + `protocol_data JSONB` — это покрывает все 9 типов без 9 отдельных таблиц.
-- Создаём справочник `icd10_codes` (минимальный, с автодополнением по Q53, N45, N43, N40, N35, I86.1, Q54).
-- Доступ: только `admin` и `surgeon` (как в `operations_journal`). RLS PERMISSIVE.
-- Маршруты в админке: `/admin/visits`, `/admin/visits/new`, `/admin/visits/:id`, `/admin/visits/:id/print`. Список пациентов — переиспользуем `/admin/patient-cards` (расширим карточку историей визитов).
-- PDF/печать: `window.print()` + print-CSS (как сделано для рецептов). Шапка/подпись профессора — как в `PrescriptionPrint`.
-- Шаблоны умных дефолтов (соматический статус, локальный статус, послеоп-блоки) храним в TS-константах, не в БД.
+Заменить существующий блок шапки в `AdminPatientVisitDetail.tsx` на новый компонент `VisitActionBar`:
 
-## Этапы (предлагаю реализовать по одному, с подтверждением после каждого)
+```
+[← К журналу] [Открыть протокол ▾] [+ Новый протокол] | [Сохранить ●] [Предпросмотр 👁]
+```
 
-**Этап 1 — Фундамент (этот PR):**
-1. Миграция: расширить `patients` (части ФИО, `history_number`, `parent_name`), создать `patient_visits`, `icd10_codes` + GRANTs + RLS (admin/surgeon).
-2. Сидинг МКБ-10 (15-20 кодов из ТЗ).
-3. Маршруты-каркасы и пункт «Журнал визитов» в `Admin.tsx` и `AppSidebar`.
-4. Страница `/admin/visits` — список визитов с фильтрами по пациенту/типу/дате.
-5. Страница `/admin/visits/new` — селектор пациента (тот же `PatientSelect`) + сетка из 9 карточек типов протоколов (без самих форм).
+- `position: sticky; top: 0; z-index: 50`, белый фон, тень снизу, высота 48px
+- На экранах < md показываются только иконки (текст в `title`/Tooltip)
+- Разделитель между группами через `flex` + `ml-auto` для правой группы
 
-**Этап 2 — Базовые протоколы (3 простейших):**
-- `ultrashort`, `postop_day3`, `postop_day7` — короткие формы, общие компоненты `PatientHeader`, `Recommendations`, `Diagnosis`, `PostOpStatus`. Печатная версия + сохранение.
+### 2. Dropdown "Открыть протокол"
 
-**Этап 3 — Соматика + локальный статус:**
-- Компоненты `SomaticStatus`, `LocalStatusAndrology`, `SexualFormula`. Протоколы `primary_short`, `repeat_with_labs`.
+Использовать `DropdownMenu` из `@/components/ui/dropdown-menu`. При открытии — запрос:
 
-**Этап 4 — УЗИ-блоки:**
-- `UZI_Reproductive`, `UZI_Urinary`. Протоколы `uzi_reproductive`, `uzi_urinary`, `dynamic_with_uzi`, `repeat_with_uzi`.
+```ts
+supabase.from("patient_visits")
+  .select("id, visit_date, protocol_type, diagnosis")
+  .eq("patient_id", visit.patient_id)
+  .neq("id", visit.id)
+  .order("visit_date", { ascending: false })
+```
 
-**Этап 5 — Доводка:**
-- Авто-сохранение черновиков (localStorage, 30 сек), `LabResults` с автодополнением, дашборд-виджеты на `/admin`, autocomplete МКБ-10.
+Каждый пункт: `"15.05.2026 — Первичный осмотр — Варикоцеле слева"` (title из `PROTOCOL_TYPE_MAP`). Если пусто — disabled пункт «Нет других протоколов».
 
-## Что сделаем прямо сейчас
+### 3. Кнопка "+ Новый протокол"
 
-Только **Этап 1**. После твоего «ок» по каркасу пойдём по этапам 2-5 по очереди — иначе один ответ выйдет на тысячи строк и риск ошибок резко вырастёт.
+Просто `<Link to={`/admin/visits/new?patient_id=${visit.patient_id}`}>` — переиспользует существующую страницу `AdminPatientVisitNew`, которая уже принимает `patient_id` из query.
 
-## Технические детали
+### 4. Dirty-tracking
 
-- Таблица `patient_visits`: `id`, `patient_id` (FK→patients), `visit_date date default current_date`, `protocol_type text`, `protocol_data jsonb default '{}'`, `diagnosis text`, `icd_code text`, `next_visit_date date`, `created_by uuid`, timestamps. Индексы по `patient_id`, `visit_date desc`, `protocol_type`.
-- `history_number` в `patients`: `text unique`, генерация — RPC `next_history_number()` (max+1, формат «000001»). Существующим записям проставим номера в той же миграции.
-- ENUM `protocol_type` НЕ делаем — оставляем `text` + CHECK по списку, чтобы можно было гибко добавлять.
-- Sidebar: пункт «Журнал визитов» виден ролям `admin` и `surgeon`.
+В `AdminPatientVisitDetail` уже есть `useAutoSave`. Добавить отдельный `isDirty` стейт через сравнение `visit` с baseline-снимком:
 
-## Что НЕ делаем
-- Не дублируем `patients`/`visits` отдельной схемой из ТЗ — переиспользуем существующие.
-- Не меняем дизайн-систему на тёмную «medical» из ТЗ — оставляем текущие токены проекта (правило памяти).
-- Аутентификация уже есть, шаг «no auth for MVP» из ТЗ игнорируем.
+```ts
+const [baseline, setBaseline] = useState<string>("");
+useEffect(() => { if (visit && !baseline) setBaseline(JSON.stringify(serialize(visit))); }, [visit]);
+const isDirty = useMemo(() => baseline && JSON.stringify(serialize(visit)) !== baseline, [visit, baseline]);
+```
+
+После успешного `handleSave` — обновлять baseline.
+
+UI:
+- Кнопка «Сохранить»: при `isDirty` — `variant="default"` + жёлтая точка `●`; иначе `variant="outline"` + disabled. Tooltip соответствующий.
+- Под панелью жёлтая полоска `bg-yellow-50 border-yellow-300 text-yellow-900`: «⚠ Есть несохранённые изменения — не забудьте сохранить» (только при `isDirty`).
+
+### 5. Confirm при уходе
+
+- Перехват клика на «К журналу» и на пункты dropdown'а: если `isDirty` → `window.confirm("Есть несохранённые изменения. Уйти без сохранения?")`.
+- `beforeunload` listener на закрытие вкладки.
+
+### 6. Hotkey Ctrl+S / Cmd+S
+
+`useEffect` с listener'ом `keydown`: при `(e.ctrlKey||e.metaKey) && e.key === 's'` → `preventDefault()` + `handleSave()`.
+
+### 7. Fullscreen предпросмотр
+
+Новый компонент-обёртка прямо в файле: `Dialog` из `@/components/ui/dialog` с `DialogContent className="max-w-[100vw] w-screen h-screen p-0"`. Внутри:
+
+- Шапка модала: `[🖨 Печать] [✕ Закрыть]` справа сверху, sticky
+- Body: `<ProtocolPrintLayout visit={visit} />` (компонент уже существует) — берёт **текущее состояние формы из `visit`**, включая несохранённые
+- Печать: `window.print()`. Чтобы печаталось только содержимое модала, добавить класс `print-only-modal` и в существующих CSS `@media print` скрыть всё кроме `.print-only-modal *`. Проще: переиспользовать существующий механизм через временное окно — но требование явное «не новая вкладка», поэтому использовать `@media print { body * { visibility: hidden } .modal-print-root, .modal-print-root * { visibility: visible } .modal-print-root { position: absolute; inset: 0 } }`.
+
+### Технические детали
+
+- Файлы: правка `src/pages/AdminPatientVisitDetail.tsx` (всё уместится без выноса в отдельные файлы; компоненты `VisitActionBar` и `PreviewDialog` — локальные внутри файла или рядом).
+- Существующие импорты `Tooltip`, `DropdownMenu`, `Dialog` есть в `src/components/ui`.
+- Не трогать `ProtocolPrintLayout`, `ProtocolForm`, схемы и БД.

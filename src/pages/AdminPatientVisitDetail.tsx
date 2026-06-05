@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -16,6 +16,12 @@ import { ProtocolForm } from "@/components/visits/ProtocolForm";
 import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { normalizeImportedProtocolData, NORMALIZATION_VERSION } from "@/lib/visits/normalizeProtocolData";
+import { ProtocolPrintLayout } from "@/components/visits/ProtocolPrintLayout";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface Visit {
   id: string;
@@ -29,23 +35,35 @@ interface Visit {
   patient: { id: string; full_name: string; history_number: string | null; birth_date: string } | null;
 }
 
-const getProtocolFields = (data: Json): unknown => {
-  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
-  return (data as { fields?: unknown }).fields ?? null;
-};
+interface SiblingVisit {
+  id: string;
+  visit_date: string;
+  protocol_type: ProtocolType;
+  diagnosis: string | null;
+}
 
 const isProtocolRecord = (data: Json): data is { [key: string]: Json } => {
   return !!data && typeof data === "object" && !Array.isArray(data);
 };
+
+const serializeVisit = (v: Visit) => JSON.stringify({
+  visit_date: v.visit_date,
+  diagnosis: v.diagnosis,
+  icd_code: v.icd_code,
+  next_visit_date: v.next_visit_date,
+  protocol_data: v.protocol_data,
+});
 
 export default function AdminPatientVisitDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, isSurgeon } = useAuth();
   const [visit, setVisit] = useState<Visit | null>(null);
-  const [rawProtocolDataFromDb, setRawProtocolDataFromDb] = useState<Json>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [baseline, setBaseline] = useState<string>("");
+  const [siblings, setSiblings] = useState<SiblingVisit[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -54,6 +72,8 @@ export default function AdminPatientVisitDetail() {
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
+    setBaseline("");
     supabase
       .from("patient_visits")
       .select("*, patient:patients(id, full_name, history_number, birth_date)")
@@ -64,33 +84,41 @@ export default function AdminPatientVisitDetail() {
         if (data) {
           const v = data as Visit;
           const original = v.protocol_data;
-          setRawProtocolDataFromDb(original);
           const normalized = normalizeImportedProtocolData(v.protocol_type, original);
           v.protocol_data = normalized;
           setVisit(v);
-          // Если нормализатор реально добавил поля — сразу сохраняем в БД,
-          // чтобы список визитов, печать и повторные открытия видели
-          // заполненный протокол без ручного "Сохранить".
+          setBaseline(serializeVisit(v));
           const prevVersion = isProtocolRecord(original)
-            ? (original._normalized_version as number | undefined)
-            : undefined;
+            ? (original._normalized_version as number | undefined) : undefined;
           const newVersion = isProtocolRecord(normalized)
-            ? (normalized._normalized_version as number | undefined)
-            : undefined;
+            ? (normalized._normalized_version as number | undefined) : undefined;
           if (newVersion === NORMALIZATION_VERSION && prevVersion !== NORMALIZATION_VERSION) {
-            supabase
-              .from("patient_visits")
-              .update({ protocol_data: normalized })
-              .eq("id", v.id)
-              .then(({ error: upErr }) => {
-                if (upErr) console.warn("[normalize] auto-persist failed:", upErr.message);
-              });
+            supabase.from("patient_visits").update({ protocol_data: normalized }).eq("id", v.id)
+              .then(({ error: upErr }) => { if (upErr) console.warn("[normalize] auto-persist failed:", upErr.message); });
           }
         }
         setLoading(false);
       });
   }, [id]);
 
+  // Load siblings for "Открыть протокол" dropdown
+  useEffect(() => {
+    if (!visit?.patient_id) return;
+    supabase.from("patient_visits")
+      .select("id, visit_date, protocol_type, diagnosis")
+      .eq("patient_id", visit.patient_id)
+      .neq("id", visit.id)
+      .order("visit_date", { ascending: false })
+      .limit(50)
+      .then(({ data }) => setSiblings((data || []) as SiblingVisit[]));
+  }, [visit?.patient_id, visit?.id]);
+
+  const isDirty = useMemo(() => {
+    if (!visit || !baseline) return false;
+    return serializeVisit(visit) !== baseline;
+  }, [visit, baseline]);
+  const isDirtyRef = useRef(isDirty);
+  useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
 
   const update = (patch: Partial<Visit>) => setVisit((v) => (v ? { ...v, ...patch } : v));
 
@@ -109,10 +137,41 @@ export default function AdminPatientVisitDetail() {
       .eq("id", visit.id);
     setSaving(false);
     if (error) toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
-    else { clearDraft(); toast({ title: "Сохранено" }); }
+    else {
+      clearDraft();
+      setBaseline(serializeVisit(visit));
+      toast({ title: "Сохранено" });
+    }
+  };
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => { handleSaveRef.current = handleSave; });
+
+  // Ctrl+S / Cmd+S
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+        e.preventDefault();
+        if (isDirtyRef.current) handleSaveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // beforeunload guard
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
+  const confirmIfDirty = (cb: () => void) => {
+    if (isDirty && !window.confirm("Есть несохранённые изменения. Уйти без сохранения?")) return;
+    cb();
   };
 
-  // Autosave draft (visit metadata + protocol data) every 3 minutes
   const { loadDraft, clearDraft, hasDraft } = useAutoSave({
     key: id ? `visit_${id}` : "visit_new",
     data: visit ? {
@@ -147,82 +206,220 @@ export default function AdminPatientVisitDetail() {
   const def = PROTOCOL_TYPE_MAP[visit.protocol_type];
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/admin/visits"><ArrowLeft className="h-4 w-4 mr-1" /> К журналу</Link>
-            </Button>
-            <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
+    <TooltipProvider delayDuration={200}>
+      <div className="min-h-screen bg-background">
+        {/* STICKY ACTION BAR */}
+        <div className="sticky top-0 z-50 bg-background border-b shadow-sm">
+          <div className="max-w-5xl mx-auto flex items-center gap-2 px-4 h-12">
+            {/* Left group */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => confirmIfDirty(() => navigate("/admin/visits"))}
+                >
+                  <ArrowLeft className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">К журналу</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>К журналу визитов</TooltipContent>
+            </Tooltip>
+
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <span className="hidden md:inline">Открыть протокол</span>
+                      <span className="md:hidden">Протокол</span>
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Другие протоколы пациента</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="start" className="max-h-[60vh] overflow-y-auto w-80">
+                {siblings.length === 0 ? (
+                  <DropdownMenuItem disabled>Нет других протоколов</DropdownMenuItem>
+                ) : (
+                  siblings.map((s) => {
+                    const title = PROTOCOL_TYPE_MAP[s.protocol_type]?.title || s.protocol_type;
+                    const dx = s.diagnosis ? ` — ${s.diagnosis.slice(0, 40)}${s.diagnosis.length > 40 ? "…" : ""}` : "";
+                    return (
+                      <DropdownMenuItem
+                        key={s.id}
+                        onSelect={() => confirmIfDirty(() => navigate(`/admin/visits/${s.id}`))}
+                      >
+                        <span className="text-xs">
+                          <strong>{format(new Date(s.visit_date), "dd.MM.yyyy")}</strong> — {title}{dx}
+                        </span>
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/admin/visits/new?patient_id=${visit.patient_id}`} onClick={(e) => {
+                    if (isDirty && !window.confirm("Есть несохранённые изменения. Уйти без сохранения?")) {
+                      e.preventDefault();
+                    }
+                  }}>
+                    <Plus className="h-4 w-4 md:mr-1" />
+                    <span className="hidden md:inline">Новый протокол</span>
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Создать новый протокол для этого пациента</TooltipContent>
+            </Tooltip>
+
+            {/* Right group */}
+            <div className="ml-auto flex items-center gap-2">
+              {hasDraft() && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={restoreDraft}>
+                      <RotateCcw className="h-4 w-4 md:mr-1" />
+                      <span className="hidden md:inline">Черновик</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Восстановить автосохранённый черновик</TooltipContent>
+                </Tooltip>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+                    <Eye className="h-4 w-4 md:mr-1" />
+                    <span className="hidden md:inline">Предпросмотр</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Полный предпросмотр бланка</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Удалить визит</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving || !isDirty}
+                    className={isDirty ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                  >
+                    {saving ? <Loader2 className="h-4 w-4 md:mr-1 animate-spin" /> : <Save className="h-4 w-4 md:mr-1" />}
+                    <span className="hidden md:inline">Сохранить</span>
+                    {isDirty && <span className="ml-1 inline-block w-2 h-2 rounded-full bg-yellow-300" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isDirty ? "Есть несохранённые изменения (Ctrl+S)" : "Всё сохранено"}
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {hasDraft() && (
-              <Button variant="outline" size="sm" onClick={restoreDraft}>
-                <RotateCcw className="h-4 w-4 mr-1" /> Восстановить черновик
-              </Button>
-            )}
-            <Button variant="outline" asChild>
-              <Link to={`/admin/visits/${visit.id}/print`}><Printer className="h-4 w-4 mr-1" /> Печать</Link>
-            </Button>
-            <Button variant="outline" onClick={handleDelete} className="text-destructive">
-              <Trash2 className="h-4 w-4 mr-1" /> Удалить
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-              Сохранить
-            </Button>
-          </div>
+
+          {isDirty && (
+            <div className="bg-yellow-50 border-t border-b border-yellow-300 text-yellow-900 text-xs px-4 py-1.5 text-center">
+              ⚠ Есть несохранённые изменения — не забудьте сохранить (Ctrl+S)
+            </div>
+          )}
         </div>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Пациент</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-1">
-            <div><span className="text-muted-foreground">ФИО:</span> {visit.patient?.full_name}</div>
-            <div><span className="text-muted-foreground">№ ИБ:</span> <span className="font-mono">{visit.patient?.history_number || "—"}</span></div>
-            <div><span className="text-muted-foreground">Дата рождения:</span> {visit.patient?.birth_date ? format(new Date(visit.patient.birth_date), "dd.MM.yyyy") : "—"}</div>
-          </CardContent>
-        </Card>
+        <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8">
+          <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Метаданные визита</CardTitle></CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>Дата визита</Label>
-              <Input type="date" value={visit.visit_date} onChange={(e) => update({ visit_date: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <Label>Контрольный осмотр</Label>
-              <Input type="date" value={visit.next_visit_date || ""} onChange={(e) => update({ next_visit_date: e.target.value || null })} />
-            </div>
-            <div className="space-y-1">
-              <Label>Код МКБ-10</Label>
-              <IcdAutocomplete
-                value={visit.icd_code || ""}
-                onChange={(code, name) => update({ icd_code: code, diagnosis: visit.diagnosis || name || null })}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Пациент</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-1">
+              <div><span className="text-muted-foreground">ФИО:</span> {visit.patient?.full_name}</div>
+              <div><span className="text-muted-foreground">№ ИБ:</span> <span className="font-mono">{visit.patient?.history_number || "—"}</span></div>
+              <div><span className="text-muted-foreground">Дата рождения:</span> {visit.patient?.birth_date ? format(new Date(visit.patient.birth_date), "dd.MM.yyyy") : "—"}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Метаданные визита</CardTitle></CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Дата визита</Label>
+                <Input type="date" value={visit.visit_date} onChange={(e) => update({ visit_date: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Контрольный осмотр</Label>
+                <Input type="date" value={visit.next_visit_date || ""} onChange={(e) => update({ next_visit_date: e.target.value || null })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Код МКБ-10</Label>
+                <IcdAutocomplete
+                  value={visit.icd_code || ""}
+                  onChange={(code, name) => update({ icd_code: code, diagnosis: visit.diagnosis || name || null })}
+                />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <Label>Диагноз</Label>
+                <Textarea value={visit.diagnosis || ""} onChange={(e) => update({ diagnosis: e.target.value })} rows={3} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Содержание протокола</CardTitle></CardHeader>
+            <CardContent>
+              <ProtocolForm
+                type={visit.protocol_type}
+                data={visit.protocol_data}
+                onChange={(d) => update({ protocol_data: d })}
               />
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <Label>Диагноз</Label>
-              <Textarea value={visit.diagnosis || ""} onChange={(e) => update({ diagnosis: e.target.value })} rows={3} />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Содержание протокола</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProtocolForm
-              type={visit.protocol_type}
-              data={visit.protocol_data}
-              onChange={(d) => update({ protocol_data: d })}
-            />
-          </CardContent>
-        </Card>
-
+        {/* Fullscreen preview dialog */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent
+            className="max-w-[100vw] w-screen h-screen p-0 gap-0 rounded-none border-0 sm:rounded-none [&>button]:hidden"
+          >
+            <style>{`
+              @media print {
+                body > *:not(.modal-print-root) { display: none !important; }
+                .modal-print-root { position: absolute; inset: 0; box-shadow: none !important; }
+                .modal-print-root .preview-toolbar { display: none !important; }
+                .modal-print-root .preview-body { overflow: visible !important; height: auto !important; padding: 0 !important; background: #fff !important; }
+              }
+            `}</style>
+            <div className="modal-print-root flex flex-col h-full bg-muted/30">
+              <div className="preview-toolbar flex items-center justify-between border-b bg-background px-4 h-12 shrink-0">
+                <div className="text-sm font-medium">Предпросмотр протокола</div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => window.print()}>
+                    <Printer className="h-4 w-4 mr-1" /> Печать
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setPreviewOpen(false)}>
+                    <X className="h-4 w-4 mr-1" /> Закрыть
+                  </Button>
+                </div>
+              </div>
+              <div className="preview-body flex-1 overflow-auto p-4">
+                <div className="max-w-5xl mx-auto bg-white shadow-md">
+                  <ProtocolPrintLayout visit={visit as any} />
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
