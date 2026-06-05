@@ -210,6 +210,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       );
     }
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
+    if (d.uzi && isPlainObject(d.uzi)) {
+      rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ" />);
+    }
   }
 
   if (t === "repeat_with_labs") {
