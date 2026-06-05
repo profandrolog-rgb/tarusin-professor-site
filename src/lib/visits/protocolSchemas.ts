@@ -48,6 +48,7 @@ export interface PrimaryShortData {
   local_status?: LocalStatusData;
   ortho_status?: string;
   neuro_status?: string;
+  neuro_status_full?: string;
   psych_status?: string;
   working_diagnosis?: string;
   diagnosis?: string;

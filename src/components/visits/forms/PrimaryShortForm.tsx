@@ -6,6 +6,7 @@ import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SexualConstitutionSection } from "../sections/SexualConstitution";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
+import { NeuroStatusSection } from "../sections/NeuroStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
 import { Button } from "@/components/ui/button";
@@ -245,6 +246,9 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         </CollapsibleField>
         <div className="md:col-span-2">
           <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+        </div>
+        <div className="md:col-span-2">
+          <NeuroStatusSection value={data.neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v })} />
         </div>
         <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
           <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
