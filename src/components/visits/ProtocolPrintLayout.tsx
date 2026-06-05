@@ -69,6 +69,55 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const UZI_LABELS: Record<string, string> = {
+  device: "Аппарат", indications: "Показания", conclusion: "Заключение УЗИ",
+  vessels: "Сосуды", doppler: "ЦДК", free_fluid: "Свободная жидкость",
+  ureters: "Мочеточники", residual_urine: "Остаточная моча",
+  bladder_volume: "Объём мочевого пузыря, мл",
+  bladder_walls: "Стенки мочевого пузыря", bladder_contents: "Содержимое мочевого пузыря",
+  right_testis_size: "Правое яичко (размеры)", left_testis_size: "Левое яичко (размеры)",
+  right_testis_volume: "Правое яичко, V мл", left_testis_volume: "Левое яичко, V мл",
+  right_testis_structure: "Правое яичко (структура)", left_testis_structure: "Левое яичко (структура)",
+  right_epididymis: "Правый придаток", left_epididymis: "Левый придаток",
+  right_kidney_size: "Правая почка (размеры)", left_kidney_size: "Левая почка (размеры)",
+  right_kidney_parenchyma: "Правая почка (паренхима)", left_kidney_parenchyma: "Левая почка (паренхима)",
+  right_kidney_pelvis: "Правая почка (лоханка)", left_kidney_pelvis: "Левая почка (лоханка)",
+  right_kidney_structure: "Правая почка (структура)", left_kidney_structure: "Левая почка (структура)",
+  testes: "Яички", epididymis: "Придатки", kidneys: "Почки",
+  bladder: "Мочевой пузырь", prostate: "Предстательная железа", scrotum: "Мошонка",
+  size: "Размеры", volume: "Объём, мл", structure: "Структура",
+  parenchyma: "Паренхима", pelvis: "Лоханка",
+};
+const humanize = (k: string) => UZI_LABELS[k] || k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const isPlainObject = (v: any): v is Record<string, any> => v !== null && typeof v === "object" && !Array.isArray(v);
+const hasRightLeft = (v: any) => isPlainObject(v) && ("right" in v || "left" in v);
+const renderScalar = (v: any): string => {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "boolean") return v ? "Да" : "Нет";
+  return String(v);
+};
+
+function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }) {
+  const rows: React.ReactNode[] = [];
+  const walk = (obj: Record<string, any>, prefix = "") => {
+    Object.entries(obj).forEach(([k, v]) => {
+      if (v === null || v === undefined || v === "") return;
+      const rk = `${prefix}${k}`;
+      if (hasRightLeft(v)) {
+        rows.push(<SideField key={rk} label={humanize(k)} right={renderScalar(v.right)} left={renderScalar(v.left)} />);
+      } else if (isPlainObject(v)) {
+        rows.push(<tr key={`${rk}-h`}><td colSpan={2} className="ppl-subsection">{humanize(k)}</td></tr>);
+        walk(v, `${rk}.`);
+      } else {
+        rows.push(<Field key={rk} label={humanize(k)} value={renderScalar(v)} />);
+      }
+    });
+  };
+  walk(uzi);
+  if (rows.length === 0) return null;
+  return <Section title={title}>{rows}</Section>;
+}
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
@@ -161,6 +210,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       );
     }
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
+    if (d.uzi && isPlainObject(d.uzi)) {
+      rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ" />);
+    }
   }
 
   if (t === "repeat_with_labs") {
@@ -191,56 +243,15 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   if ((t === "uzi_reproductive" || t === "dynamic_with_uzi" || t === "repeat_with_uzi") && d.uzi) {
     if (t !== "uzi_reproductive") rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    const u = d.uzi;
-    rows.push(
-      <Section key="uzi" title="УЗИ органов мошонки">
-        <Field label="Аппарат" value={u.device} />
-        <SideField
-          label="Яичко"
-          right={[u.right_testis_size, u.right_testis_volume ? `V ${u.right_testis_volume} мл` : null, u.right_testis_structure]
-            .filter(Boolean)
-            .join("; ")}
-          left={[u.left_testis_size, u.left_testis_volume ? `V ${u.left_testis_volume} мл` : null, u.left_testis_structure]
-            .filter(Boolean)
-            .join("; ")}
-        />
-        <SideField label="Придаток" right={u.right_epididymis} left={u.left_epididymis} />
-        <Field label="Сосуды" value={u.vessels} />
-        <Field label="ЦДК" value={u.doppler} />
-        <Field label="Свободная жидкость" value={u.free_fluid} />
-        <Field label="Заключение УЗИ" value={u.conclusion} />
-      </Section>
-    );
+    rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мошонки" />);
     if (t !== "uzi_reproductive") rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
 
   if (t === "uzi_urinary" && d.uzi) {
-    const u = d.uzi;
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    rows.push(
-      <Section key="uzi" title="УЗИ органов мочевыделительной системы">
-        <Field label="Аппарат" value={u.device} />
-        <SideField
-          label="Почка"
-          right={[u.right_kidney_size, u.right_kidney_parenchyma, u.right_kidney_pelvis, u.right_kidney_structure]
-            .filter(Boolean)
-            .join("; ")}
-          left={[u.left_kidney_size, u.left_kidney_parenchyma, u.left_kidney_pelvis, u.left_kidney_structure]
-            .filter(Boolean)
-            .join("; ")}
-        />
-        <Field label="Мочеточники" value={u.ureters} />
-        <Field
-          label="Мочевой пузырь"
-          value={[u.bladder_volume ? `V ${u.bladder_volume} мл` : null, u.bladder_walls, u.bladder_contents]
-            .filter(Boolean)
-            .join("; ")}
-        />
-        <Field label="Остаточная моча" value={u.residual_urine} />
-        <Field label="Заключение УЗИ" value={u.conclusion} />
-      </Section>
-    );
+    rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мочевыделительной системы" />);
   }
+
 
   // Fallback for generic protocols — render any string fields under d.fields
   if (rows.length === 0 && d.fields && typeof d.fields === "object") {
@@ -336,6 +347,10 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           padding: 3mm 0 1mm; font-weight: 700; font-size: 10pt;
           border-bottom: 0.5pt solid #000;
         }
+        .ppl-subsection {
+          padding: 2mm 0 1mm; font-weight: 700; font-size: 9.5pt;
+          background: #f0f0f0; color: #000;
+        }
         .ppl-side { width: 100%; border-collapse: collapse; }
         .ppl-side-cell { width: 50%; vertical-align: top; padding-right: 4mm; }
         .ppl-footer { margin-top: 10mm; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; gap: 6mm; }
@@ -355,10 +370,14 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         @media print {
           .no-print { display: none !important; }
           body { margin: 0; background: #fff !important; }
-          .print-page { padding: 10mm 15mm 15mm 20mm; box-shadow: none; }
-          @page { size: A4; margin: 0; }
+          /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
+          @page { size: A4; margin: 12mm 15mm 15mm 20mm; }
+          .print-page { padding: 0; box-shadow: none; min-height: auto; width: auto; margin: 0; }
+          .ppl-section, .ppl-subsection { page-break-after: avoid; }
+          .ppl-table tr { page-break-inside: avoid; }
         }
       `}</style>
+
 
       <div className="print-page">
         {/* HEADER */}
