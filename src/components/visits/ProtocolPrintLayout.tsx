@@ -347,6 +347,10 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           padding: 3mm 0 1mm; font-weight: 700; font-size: 10pt;
           border-bottom: 0.5pt solid #000;
         }
+        .ppl-subsection {
+          padding: 2mm 0 1mm; font-weight: 700; font-size: 9.5pt;
+          background: #f0f0f0; color: #000;
+        }
         .ppl-side { width: 100%; border-collapse: collapse; }
         .ppl-side-cell { width: 50%; vertical-align: top; padding-right: 4mm; }
         .ppl-footer { margin-top: 10mm; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; gap: 6mm; }
@@ -366,10 +370,14 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         @media print {
           .no-print { display: none !important; }
           body { margin: 0; background: #fff !important; }
-          .print-page { padding: 10mm 15mm 15mm 20mm; box-shadow: none; }
-          @page { size: A4; margin: 0; }
+          /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
+          @page { size: A4; margin: 12mm 15mm 15mm 20mm; }
+          .print-page { padding: 0; box-shadow: none; min-height: auto; width: auto; margin: 0; }
+          .ppl-section, .ppl-subsection { page-break-after: avoid; }
+          .ppl-table tr { page-break-inside: avoid; }
         }
       `}</style>
+
 
       <div className="print-page">
         {/* HEADER */}
