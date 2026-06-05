@@ -227,6 +227,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       );
     }
 
+    if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
+    if (d.neuro_status) rows.push(<Field key="neuro" label="Неврологический статус" value={d.neuro_status} />);
+    if (d.psych_status) rows.push(<Field key="psych" label="Психологический статус" value={d.psych_status} />);
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ" />);
@@ -262,6 +265,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     if (t !== "uzi_reproductive") rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мошонки" />);
+    if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
     if (t !== "uzi_reproductive") rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
 
