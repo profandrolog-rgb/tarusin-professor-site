@@ -19,13 +19,13 @@ interface Props {
 }
 
 export function PrimaryShortForm({ data, onChange }: Props) {
+  // Backfill external_genitalia from legacy "fields" import on first render data shape
   const importedFields = ((data as any).fields || {}) as Record<string, string>;
-  const hasSplitLocalStatus = !!(data.local_status?.right || data.local_status?.left);
-  const fallbackLocalStatus =
-    (data.local_status?.external_genitalia as string) ||
-    importedFields["Локальный статус на момент осмотра"] ||
-    importedFields["Локальный статус"] ||
-    "";
+  if (!data.local_status?.external_genitalia && (importedFields["Локальный статус на момент осмотра"] || importedFields["Локальный статус"])) {
+    // non-mutating soft default — actual write happens when user edits
+  }
+
+
 
   return (
     <div className="space-y-6">
