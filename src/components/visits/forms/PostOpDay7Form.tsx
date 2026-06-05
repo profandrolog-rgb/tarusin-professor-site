@@ -33,7 +33,7 @@ export function PostOpDay7Form({ data, onChange }: Props) {
         <Textarea rows={3} value={data.wound_status || ""} onChange={(e) => onChange({ wound_status: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>Заживление</Label>
+        <SmartFieldLabel value={data.healing || ""} onSet={(v) => onChange({ healing: v })}>Заживление</SmartFieldLabel>
         <Input value={data.healing || ""} onChange={(e) => onChange({ healing: e.target.value })} />
       </div>
       <div className="flex items-center gap-2">
@@ -49,7 +49,7 @@ export function PostOpDay7Form({ data, onChange }: Props) {
         <Textarea rows={2} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
       </div>
       <div className="space-y-1">
-        <Label>УЗИ экспресс</Label>
+        <SmartFieldLabel fieldKey="uzi_express" value={data.uzi_express || ""} onSet={(v) => onChange({ uzi_express: v })}>УЗИ экспресс</SmartFieldLabel>
         <Textarea rows={3} value={data.uzi_express || ""} onChange={(e) => onChange({ uzi_express: e.target.value })} />
       </div>
       <div className="space-y-1">
