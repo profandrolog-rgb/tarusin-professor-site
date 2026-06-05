@@ -155,72 +155,55 @@ export function PrimaryShortForm({ data, onChange }: Props) {
           </div>
 
           {/* 3. Общий локальный статус — Справа | Слева */}
-          {hasSplitLocalStatus ? (
-                <div className="overflow-hidden rounded-md border">
-                  <table className="w-full table-fixed border-collapse text-sm">
-                    <thead>
-                      <tr className="bg-muted/50">
-                        <th className="w-1/2 border-b border-r p-2 text-left font-medium">
-                          <SmartFieldLabel
-                            fieldKey="local_status_right"
-                            value={data.local_status?.right || ""}
-                            onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v } })}
-                          >
-                            Справа
-                          </SmartFieldLabel>
-                        </th>
-                        <th className="w-1/2 border-b p-2 text-left font-medium">
-                          <SmartFieldLabel
-                            fieldKey="local_status_left"
-                            value={data.local_status?.left || ""}
-                            onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), left: v } })}
-                          >
-                            Слева
-                          </SmartFieldLabel>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border-r p-0 align-top">
-                          <Textarea
-                            rows={8}
-                            className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                            value={data.local_status?.right || ""}
-                            onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value } })}
-                          />
-                        </td>
-                        <td className="p-0 align-top">
-                          <Textarea
-                            rows={8}
-                            className="min-h-[180px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                            value={data.local_status?.left || ""}
-                            onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left: e.target.value } })}
-                          />
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-          ) : fallbackLocalStatus ? (
-              <div className="space-y-1">
-                <SmartFieldLabel
-                  fieldKey="local_status"
-                  value={fallbackLocalStatus}
-                  onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v, external_genitalia: undefined } })}
-                >
-                  Локальный статус
-                </SmartFieldLabel>
-                <Textarea
-                  rows={8}
-                  className="min-h-[180px]"
-                  value={fallbackLocalStatus}
-                  onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value, external_genitalia: undefined } })}
-                />
-              </div>
-          ) : null}
-          {(data.local_status?.penis || data.local_status?.perineum) ? <div className="grid md:grid-cols-2 gap-4">
-            {data.local_status?.penis ? (
+          <div className="overflow-hidden rounded-md border">
+            <table className="w-full table-fixed border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="w-1/2 border-b border-r p-2 text-left font-medium">
+                    <SmartFieldLabel
+                      fieldKey="local_status_right"
+                      value={data.local_status?.right || ""}
+                      onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right: v } })}
+                    >
+                      Справа
+                    </SmartFieldLabel>
+                  </th>
+                  <th className="w-1/2 border-b p-2 text-left font-medium">
+                    <SmartFieldLabel
+                      fieldKey="local_status_left"
+                      value={data.local_status?.left || ""}
+                      onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), left: v } })}
+                    >
+                      Слева
+                    </SmartFieldLabel>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border-r p-0 align-top">
+                    <Textarea
+                      rows={6}
+                      className="min-h-[140px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      value={data.local_status?.right || ""}
+                      onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right: e.target.value } })}
+                    />
+                  </td>
+                  <td className="p-0 align-top">
+                    <Textarea
+                      rows={6}
+                      className="min-h-[140px] resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      value={data.local_status?.left || ""}
+                      onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left: e.target.value } })}
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 4. Половой член / 5. Промежность */}
+          <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <SmartFieldLabel
                 fieldKey="local_status_penis"
@@ -235,8 +218,6 @@ export function PrimaryShortForm({ data, onChange }: Props) {
                 onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), penis: e.target.value } })}
               />
             </div>
-            ) : null}
-            {data.local_status?.perineum ? (
             <div className="space-y-1">
               <SmartFieldLabel
                 fieldKey="local_status_perineum"
@@ -251,10 +232,10 @@ export function PrimaryShortForm({ data, onChange }: Props) {
                 onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), perineum: e.target.value } })}
               />
             </div>
-            ) : null}
-          </div> : null}
+          </div>
         </CardContent>
       </Card>
+
 
       <div className="grid md:grid-cols-2 gap-3">
         <CollapsibleField hasValue={!!data.ortho_status} label="Ортопедический статус">
