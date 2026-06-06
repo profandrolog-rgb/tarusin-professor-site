@@ -446,7 +446,16 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           .no-print { display: none !important; }
           body { margin: 0; background: #fff !important; }
           /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
-          @page { size: A4; margin: 12mm 15mm 15mm 20mm; }
+          @page {
+            size: A4;
+            margin: 12mm 15mm 15mm 20mm;
+            @bottom-right {
+              content: "Страница " counter(page) " из " counter(pages);
+              font-family: Arial, sans-serif;
+              font-size: 8pt;
+              color: #555;
+            }
+          }
           .print-page { padding: 0; box-shadow: none; min-height: auto; width: auto; margin: 0; }
           .ppl-section, .ppl-subsection { page-break-after: avoid; break-after: avoid; }
           .ppl-table tr { page-break-inside: avoid; break-inside: avoid; }
