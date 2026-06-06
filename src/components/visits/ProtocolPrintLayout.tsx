@@ -288,7 +288,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мошонки" />);
     if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
+    if (t !== "uzi_reproductive") pushPsychBlocks(rows, d);
     if (t !== "uzi_reproductive") rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
+
   }
 
   if (t === "uzi_urinary" && d.uzi) {
