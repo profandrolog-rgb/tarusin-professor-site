@@ -56,6 +56,50 @@ const AdminSystemSettings = () => {
   const [recent, setRecent] = useState<ParseLogRow[]>([]);
   const [running, setRunning] = useState<"drug" | "lab" | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [lastExportAt, setLastExportAt] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{ patients: number | null; visits: number | null }>({ patients: null, visits: null });
+
+  useEffect(() => {
+    setLastExportAt(localStorage.getItem(LAST_EXPORT_KEY));
+  }, []);
+
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    (async () => {
+      const [{ count: pCount }, { count: vCount }] = await Promise.all([
+        supabase.from("patients").select("*", { count: "exact", head: true }),
+        supabase.from("patient_visits").select("*", { count: "exact", head: true }),
+      ]);
+      setCounts({ patients: pCount ?? 0, visits: vCount ?? 0 });
+    })();
+  }, [user, isAdmin]);
+
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      const date = new Date().toISOString().split("T")[0];
+
+      const { data: patients, error: pErr } = await supabase.from("patients").select("*");
+      if (pErr) throw pErr;
+      downloadCsv(`patients_${date}.csv`, toCsv(patients || []));
+
+      await new Promise((r) => setTimeout(r, 500));
+
+      const { data: visits, error: vErr } = await supabase.from("patient_visits").select("*");
+      if (vErr) throw vErr;
+      downloadCsv(`visits_${date}.csv`, toCsv(visits || []));
+
+      const now = new Date().toISOString();
+      localStorage.setItem(LAST_EXPORT_KEY, now);
+      setLastExportAt(now);
+      toast.success("✅ Экспорт завершён. Сохраните файлы в надёжное место.");
+    } catch (e: any) {
+      toast.error(`Ошибка экспорта: ${e?.message || "не удалось выгрузить данные"}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/system-settings" } });
