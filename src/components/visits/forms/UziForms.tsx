@@ -56,6 +56,8 @@ export function DynamicWithUziForm({ data, onChange, birthDate }: { data: Dynami
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
       <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+      <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
+
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
         <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
       </Card>
