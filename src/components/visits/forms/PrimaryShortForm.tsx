@@ -253,6 +253,10 @@ export function PrimaryShortForm({ data, onChange, birthDate }: Props) {
         <div className="md:col-span-2">
           <NeuroStatusSection value={data.neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v })} />
         </div>
+        <div className="md:col-span-2">
+          <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
+        </div>
+
         <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
           <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />
