@@ -378,7 +378,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         .print-page {
           width: 210mm;
           min-height: 297mm;
-          padding: 10mm 15mm 15mm 20mm;
+          padding: 10mm 18mm 15mm 22mm;
           font-family: Arial, sans-serif;
           font-size: 9.5pt;
           color: #000;
@@ -406,12 +406,12 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         .ppl-title .main { font-weight: 700; font-size: 14pt; text-transform: uppercase; margin-top: 1mm; }
         .ppl-table { width: 100%; border-collapse: collapse; margin-top: 2mm; }
         .ppl-table .ppl-label {
-          width: 52mm; vertical-align: top; padding: 1.5mm 3mm 1.5mm 0;
-          font-weight: 700; border-bottom: 0.3pt solid #ccc;
+          width: 48mm; vertical-align: top; padding: 3mm 4mm 3mm 0;
+          font-weight: 700; border-bottom: 0.3pt solid #ccc; line-height: 1.5;
         }
         .ppl-table .ppl-value {
-          vertical-align: top; padding: 1.5mm 0; white-space: pre-wrap;
-          border-bottom: 0.3pt solid #ccc;
+          vertical-align: top; padding: 3mm 4mm; white-space: pre-wrap;
+          word-break: break-word; border-bottom: 0.3pt solid #ccc; line-height: 1.5;
         }
         .ppl-section {
           padding: 3mm 0 1mm; font-weight: 700; font-size: 10pt;
@@ -448,7 +448,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
           @page {
             size: A4;
-            margin: 12mm 15mm 15mm 20mm;
+            margin: 10mm 18mm 15mm 22mm;
             @bottom-right {
               content: "Страница " counter(page) " из " counter(pages);
               font-family: Arial, sans-serif;
