@@ -5,6 +5,9 @@ import { DEFAULT_SEXUAL_FORMULA, SexualFormulaData } from "@/components/visits/s
 import { DEFAULT_UZI_REPRODUCTIVE, UziReproductiveData } from "@/components/visits/sections/UziReproductive";
 import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/sections/UziUrinary";
 import { SexualConstitutionData } from "@/components/visits/sections/SexualConstitution";
+import { PsychStatusData } from "@/components/visits/sections/PsychStatus";
+
+
 
 export interface UltrashortData {
   complaints?: string;
