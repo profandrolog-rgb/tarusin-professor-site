@@ -37,7 +37,7 @@ export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; o
   );
 }
 
-export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void }) {
+export function DynamicWithUziForm({ data, onChange, birthDate }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void; birthDate?: string | null }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
