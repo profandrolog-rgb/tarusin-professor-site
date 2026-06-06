@@ -86,7 +86,7 @@ export interface UziUrinaryOnlyData {
   recommendations?: string;
 }
 
-export interface DynamicWithUziData {
+export interface DynamicWithUziData extends PsychStatusData {
   complaints?: string;
   anamnesis?: string;
   dynamics?: string;
@@ -98,7 +98,7 @@ export interface DynamicWithUziData {
   recommendations?: string;
 }
 
-export interface RepeatWithUziData {
+export interface RepeatWithUziData extends PsychStatusData {
   complaints?: string;
   local_status?: LocalStatusData;
   ortho_status?: string;
@@ -106,6 +106,7 @@ export interface RepeatWithUziData {
   conclusion?: string;
   recommendations?: string;
 }
+
 
 export type AnyProtocolData =
   | UltrashortData
