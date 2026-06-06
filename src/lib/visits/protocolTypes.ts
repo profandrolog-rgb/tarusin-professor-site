@@ -16,17 +16,62 @@ export interface ProtocolDef {
   description: string;
 }
 
+/**
+ * Единые человеко-читаемые названия типов протоколов.
+ * Используются везде: печатный бланк, dropdown, журнал, карточка пациента.
+ */
+export const PROTOCOL_LABELS: Record<string, string> = {
+  primary_short: "Первичная консультация",
+  dynamic_with_uzi: "Динамический осмотр с ультразвуковым исследованием",
+  repeat_with_uzi: "Повторный осмотр с ультразвуковым исследованием",
+  repeat_with_labs: "Повторный осмотр с анализами",
+  postop_day3: "Контрольный осмотр на 3 сутки после операции",
+  postop_day7: "Контрольный осмотр на 7 сутки после операции",
+  postop_day10: "Контрольный осмотр на 10 сутки после операции",
+  uzi_reproductive: "Комплексное ультразвуковое исследование органов репродуктивной системы",
+  uzi_urinary: "Ультразвуковое исследование органов мочевыделительной системы",
+  ultrashort: "Краткий осмотр",
+  online_consult: "ONLINE консультация",
+  dynamic: "Динамический осмотр",
+  unknown: "Осмотр",
+};
+
+export const getProtocolLabel = (key: string | null | undefined): string =>
+  (key && PROTOCOL_LABELS[key]) || PROTOCOL_LABELS.unknown;
+
+/** Короткие подписи для бейджей/фильтров — где длинное название не помещается. */
+const PROTOCOL_SHORT: Record<string, string> = {
+  primary_short: "Первичная",
+  dynamic_with_uzi: "Динамический + УЗИ",
+  repeat_with_uzi: "Повторный + УЗИ",
+  repeat_with_labs: "Повторный + анализы",
+  postop_day3: "П/о 3 сут",
+  postop_day7: "П/о 7 сут",
+  postop_day10: "П/о 10 сут",
+  uzi_reproductive: "УЗИ репродуктивной",
+  uzi_urinary: "УЗИ мочевыделительной",
+  ultrashort: "Краткий",
+  online_consult: "ONLINE",
+  dynamic: "Динамический",
+  unknown: "Осмотр",
+};
+
 export const PROTOCOL_TYPES: ProtocolDef[] = [
-  { key: "ultrashort", title: "Ультракороткий", short: "Консультация", description: "Краткая консультация без полного осмотра" },
-  { key: "primary_short", title: "Первичный осмотр", short: "Короткий", description: "Первичный приём: жалобы, анамнез, локальный статус" },
-  { key: "dynamic_with_uzi", title: "Динамический + УЗИ", short: "Контроль", description: "Динамический осмотр с УЗИ репродуктивной системы" },
-  { key: "repeat_with_labs", title: "Повторный с анализами", short: "Лаборатория", description: "Повторный приём с оценкой анализов" },
-  { key: "uzi_reproductive", title: "УЗИ репродуктивной", short: "УЗИ репр.", description: "Только УЗИ репродуктивной системы" },
-  { key: "uzi_urinary", title: "УЗИ мочевыделительной", short: "УЗИ мочев.", description: "УЗИ почек, мочеточников, мочевого пузыря" },
-  { key: "postop_day3", title: "Послеоп. 3 сутки", short: "Контроль 3 сут", description: "Послеоперационный контроль на 3-и сутки" },
-  { key: "postop_day7", title: "Послеоп. 7 сутки", short: "Контроль 7 сут", description: "Послеоперационный контроль на 7-е сутки" },
-  { key: "repeat_with_uzi", title: "Повторный с УЗИ", short: "Повторный", description: "Повторный приём с УЗИ репродуктивной системы" },
-];
+  "ultrashort",
+  "primary_short",
+  "dynamic_with_uzi",
+  "repeat_with_labs",
+  "uzi_reproductive",
+  "uzi_urinary",
+  "postop_day3",
+  "postop_day7",
+  "repeat_with_uzi",
+].map((key) => ({
+  key: key as ProtocolType,
+  title: PROTOCOL_LABELS[key],
+  short: PROTOCOL_SHORT[key] || PROTOCOL_LABELS[key],
+  description: PROTOCOL_LABELS[key],
+}));
 
 export const PROTOCOL_TYPE_MAP: Record<ProtocolType, ProtocolDef> = Object.fromEntries(
   PROTOCOL_TYPES.map((p) => [p.key, p])
