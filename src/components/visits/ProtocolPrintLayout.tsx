@@ -401,9 +401,9 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         .ppl-swash { display: block; width: 120mm; height: auto; margin: 2mm auto; }
         .ppl-patient { font-size: 10pt; line-height: 1.7; }
         .ppl-patient-row { display: flex; justify-content: space-between; gap: 6mm; }
-        .ppl-title { text-align: center; margin: 5mm 0 3mm; }
-        .ppl-title .sub { font-size: 9pt; color: #555; }
-        .ppl-title .main { font-weight: 700; font-size: 14pt; text-transform: uppercase; margin-top: 1mm; }
+       .ppl-title { text-align: center; margin: 8mm 0 6mm; }
+       .ppl-title .sub { font-size: 9pt; color: #555; }
+       .ppl-title .main { font-weight: 700; font-size: 18pt; line-height: 1.25; margin-top: 2mm; letter-spacing: 0.2pt; }
         .ppl-table { width: 100%; border-collapse: collapse; margin-top: 2mm; }
         .ppl-table .ppl-label {
           width: 48mm; vertical-align: top; padding: 3mm 4mm 3mm 0;
@@ -511,7 +511,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
 
         {/* TITLE */}
         <div className="ppl-title">
-          <div className="sub">Протокол медицинского осмотра — {def?.short || visit.protocol_type}</div>
+          <div className="sub">Протокол медицинского осмотра</div>
           <div className="main">{def?.title || visit.protocol_type}</div>
         </div>
 
