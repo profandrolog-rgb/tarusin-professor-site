@@ -378,7 +378,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         .print-page {
           width: 210mm;
           min-height: 297mm;
-          padding: 10mm 15mm 15mm 20mm;
+          padding: 10mm 18mm 15mm 22mm;
           font-family: Arial, sans-serif;
           font-size: 9.5pt;
           color: #000;
