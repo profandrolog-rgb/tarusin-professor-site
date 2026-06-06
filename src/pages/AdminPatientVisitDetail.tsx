@@ -477,7 +477,19 @@ export default function AdminPatientVisitDetail() {
               <div className="preview-toolbar flex items-center justify-between border-b bg-background px-4 h-12 shrink-0">
                 <div className="text-sm font-medium">Предпросмотр протокола</div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={() => window.print()}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const src = document.getElementById("protocol-print-content");
+                      if (!src) return;
+                      const w = window.open("", "_blank");
+                      if (!w) return;
+                      w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Протокол — Тарусин Д.И.</title><style>@page{size:A4;margin:10mm 15mm 15mm 20mm}html,body{margin:0;padding:0;background:#fff}</style></head><body>${src.innerHTML}</body></html>`);
+                      w.document.close();
+                      w.focus();
+                      setTimeout(() => { w.print(); w.close(); }, 500);
+                    }}
+                  >
                     <Printer className="h-4 w-4 mr-1" /> Печать
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setPreviewOpen(false)}>
@@ -486,7 +498,7 @@ export default function AdminPatientVisitDetail() {
                 </div>
               </div>
               <div className="preview-container flex-1 min-h-0">
-                <div className="preview-wrapper">
+                <div id="protocol-print-content" className="preview-wrapper">
                   <ProtocolPrintLayout visit={visit as any} />
                 </div>
               </div>
