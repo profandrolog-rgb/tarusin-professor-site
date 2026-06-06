@@ -119,10 +119,29 @@ function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }
   return <Section title={title}>{rows}</Section>;
 }
 
+function pushPsychBlocks(rows: React.ReactNode[], d: any) {
+  if (d.psych_status_full) rows.push(<Field key="psyf" label="Психиатрический статус" value={d.psych_status_full} />);
+  const projs: [string, string][] = [
+    ["proj_person", "Рисунок человека"],
+    ["proj_htp", "Дом–Дерево–Человек"],
+    ["proj_family", "Рисунок семьи"],
+    ["proj_animal", "Несуществующее животное"],
+    ["proj_free", "Свободный рисунок"],
+  ];
+  const projRows = projs.filter(([k]) => d[k]).map(([k, label]) => (
+    <Field key={`pr-${k}`} label={label} value={d[k]} />
+  ));
+  if (projRows.length > 0) {
+    rows.push(<Section key="proj" title="Проективное тестирование">{projRows}</Section>);
+  }
+  if (d.psych_conclusion) rows.push(<Field key="psyc" label="Итоговые характеристики" value={d.psych_conclusion} />);
+}
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
   const rows: React.ReactNode[] = [];
+
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
