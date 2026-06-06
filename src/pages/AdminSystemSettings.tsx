@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle, Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,34 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+
+const LAST_EXPORT_KEY = "admin:last_db_export_at";
+
+function toCsv(rows: any[]): string {
+  if (!rows || rows.length === 0) return "";
+  const headers = Object.keys(rows[0]);
+  const esc = (v: any) => {
+    if (v === null || v === undefined) return "";
+    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    if (/[",\n;\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+  const lines = [headers.join(",")];
+  for (const r of rows) lines.push(headers.map((h) => esc(r[h])).join(","));
+  return lines.join("\n");
+}
+
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 type ParseLogRow = {
   id: string;
@@ -28,6 +56,50 @@ const AdminSystemSettings = () => {
   const [recent, setRecent] = useState<ParseLogRow[]>([]);
   const [running, setRunning] = useState<"drug" | "lab" | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [lastExportAt, setLastExportAt] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{ patients: number | null; visits: number | null }>({ patients: null, visits: null });
+
+  useEffect(() => {
+    setLastExportAt(localStorage.getItem(LAST_EXPORT_KEY));
+  }, []);
+
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    (async () => {
+      const [{ count: pCount }, { count: vCount }] = await Promise.all([
+        supabase.from("patients").select("*", { count: "exact", head: true }),
+        supabase.from("patient_visits").select("*", { count: "exact", head: true }),
+      ]);
+      setCounts({ patients: pCount ?? 0, visits: vCount ?? 0 });
+    })();
+  }, [user, isAdmin]);
+
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      const date = new Date().toISOString().split("T")[0];
+
+      const { data: patients, error: pErr } = await supabase.from("patients").select("*");
+      if (pErr) throw pErr;
+      downloadCsv(`patients_${date}.csv`, toCsv(patients || []));
+
+      await new Promise((r) => setTimeout(r, 500));
+
+      const { data: visits, error: vErr } = await supabase.from("patient_visits").select("*");
+      if (vErr) throw vErr;
+      downloadCsv(`visits_${date}.csv`, toCsv(visits || []));
+
+      const now = new Date().toISOString();
+      localStorage.setItem(LAST_EXPORT_KEY, now);
+      setLastExportAt(now);
+      toast.success("✅ Экспорт завершён. Сохраните файлы в надёжное место.");
+    } catch (e: any) {
+      toast.error(`Ошибка экспорта: ${e?.message || "не удалось выгрузить данные"}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/system-settings" } });
@@ -98,6 +170,29 @@ const AdminSystemSettings = () => {
 
         <h1 className="text-3xl font-bold text-foreground mb-2">Системные настройки</h1>
         <p className="text-muted-foreground mb-8">Состояние фоновых задач и интеграций</p>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Экспорт базы данных</CardTitle>
+            <CardDescription>Резервная выгрузка пациентов и визитов в CSV. Рекомендуется делать еженедельно.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              {counts.patients !== null && counts.visits !== null
+                ? <>В базе: <span className="font-medium text-foreground">{counts.patients}</span> пациентов / <span className="font-medium text-foreground">{counts.visits}</span> визитов</>
+                : "Загрузка статистики..."}
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Последний экспорт: </span>
+              <span className="font-medium">{lastExportAt ? format(new Date(lastExportAt), "d MMMM yyyy, HH:mm", { locale: ru }) : "никогда"}</span>
+            </div>
+            <Button onClick={exportData} disabled={exporting} className="gap-2">
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              📥 Экспорт базы данных
+            </Button>
+          </CardContent>
+        </Card>
+
 
         <Card className="mb-6">
           <CardHeader>
