@@ -438,14 +438,15 @@ export default function AdminPatientVisitDetail() {
         {/* Fullscreen preview dialog */}
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
           <DialogContent
-            className="max-w-[100vw] w-screen h-screen p-0 gap-0 rounded-none border-0 sm:rounded-none [&>button]:hidden"
+            className="max-w-none w-screen h-screen p-0 gap-0 rounded-none border-0 sm:rounded-none overflow-hidden flex flex-col [&>button]:hidden"
           >
             <style>{`
               .preview-container {
                 background: #e0e0e0;
                 padding: 20px 0;
                 overflow-y: auto;
-                height: 100%;
+                -webkit-overflow-scrolling: touch;
+                min-height: 0;
               }
               .preview-wrapper {
                 transform: scale(0.85);
@@ -472,7 +473,7 @@ export default function AdminPatientVisitDetail() {
                 .modal-print-root .preview-container .print-page { box-shadow: none !important; margin: 0 !important; }
               }
             `}</style>
-            <div className="modal-print-root flex flex-col h-full bg-muted/30">
+            <div className="modal-print-root flex flex-col h-full min-h-0 bg-muted/30">
               <div className="preview-toolbar flex items-center justify-between border-b bg-background px-4 h-12 shrink-0">
                 <div className="text-sm font-medium">Предпросмотр протокола</div>
                 <div className="flex items-center gap-2">
@@ -484,7 +485,7 @@ export default function AdminPatientVisitDetail() {
                   </Button>
                 </div>
               </div>
-              <div className="preview-container flex-1">
+              <div className="preview-container flex-1 min-h-0">
                 <div className="preview-wrapper">
                   <ProtocolPrintLayout visit={visit as any} />
                 </div>
