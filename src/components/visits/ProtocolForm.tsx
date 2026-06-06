@@ -17,9 +17,10 @@ interface Props {
   type: ProtocolType;
   data: any;
   onChange: (data: any) => void;
+  birthDate?: string | null;
 }
 
-export function ProtocolForm({ type, data, onChange }: Props) {
+export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
 
   const renderForm = () => {
@@ -31,7 +32,7 @@ export function ProtocolForm({ type, data, onChange }: Props) {
       case "postop_day7":
         return <PostOpDay7Form data={data || {}} onChange={patch} />;
       case "primary_short":
-        return <PrimaryShortForm data={data || {}} onChange={patch} />;
+        return <PrimaryShortForm data={data || {}} onChange={patch} birthDate={birthDate} />;
       case "repeat_with_labs":
         return <RepeatWithLabsForm data={data || {}} onChange={patch} />;
       case "uzi_reproductive":
@@ -39,9 +40,10 @@ export function ProtocolForm({ type, data, onChange }: Props) {
       case "uzi_urinary":
         return <UziUrinaryForm data={data || {}} onChange={patch} />;
       case "dynamic_with_uzi":
-        return <DynamicWithUziForm data={data || {}} onChange={patch} />;
+        return <DynamicWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
       case "repeat_with_uzi":
-        return <RepeatWithUziForm data={data || {}} onChange={patch} />;
+        return <RepeatWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
+
       default:
         // unknown / dynamic / postop_day10 / online_consult и любые будущие типы
         return <GenericFieldsForm data={data || {}} onChange={patch} />;

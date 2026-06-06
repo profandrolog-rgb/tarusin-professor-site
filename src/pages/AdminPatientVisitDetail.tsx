@@ -419,7 +419,9 @@ export default function AdminPatientVisitDetail() {
                 type={visit.protocol_type}
                 data={visit.protocol_data}
                 onChange={(d) => update({ protocol_data: d })}
+                birthDate={visit.patient?.birth_date}
               />
+
             </CardContent>
           </Card>
 

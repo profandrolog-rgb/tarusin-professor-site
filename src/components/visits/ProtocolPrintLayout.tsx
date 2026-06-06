@@ -119,10 +119,29 @@ function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }
   return <Section title={title}>{rows}</Section>;
 }
 
+function pushPsychBlocks(rows: React.ReactNode[], d: any) {
+  if (d.psych_status_full) rows.push(<Field key="psyf" label="Психиатрический статус" value={d.psych_status_full} />);
+  const projs: [string, string][] = [
+    ["proj_person", "Рисунок человека"],
+    ["proj_htp", "Дом–Дерево–Человек"],
+    ["proj_family", "Рисунок семьи"],
+    ["proj_animal", "Несуществующее животное"],
+    ["proj_free", "Свободный рисунок"],
+  ];
+  const projRows = projs.filter(([k]) => d[k]).map(([k, label]) => (
+    <Field key={`pr-${k}`} label={label} value={d[k]} />
+  ));
+  if (projRows.length > 0) {
+    rows.push(<Section key="proj" title="Проективное тестирование">{projRows}</Section>);
+  }
+  if (d.psych_conclusion) rows.push(<Field key="psyc" label="Итоговые характеристики" value={d.psych_conclusion} />);
+}
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
   const rows: React.ReactNode[] = [];
+
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
@@ -231,10 +250,12 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     if (d.neuro_status) rows.push(<Field key="neuro" label="Неврологический статус" value={d.neuro_status} />);
     if (d.neuro_status_full) rows.push(<Field key="neurof" label="Неврологический статус (расш.)" value={d.neuro_status_full} />);
     if (d.psych_status) rows.push(<Field key="psych" label="Психологический статус" value={d.psych_status} />);
+    pushPsychBlocks(rows, d);
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ" />);
     }
+
   }
 
   if (t === "repeat_with_labs") {
@@ -267,7 +288,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мошонки" />);
     if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
+    if (t !== "uzi_reproductive") pushPsychBlocks(rows, d);
     if (t !== "uzi_reproductive") rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
+
   }
 
   if (t === "uzi_urinary" && d.uzi) {

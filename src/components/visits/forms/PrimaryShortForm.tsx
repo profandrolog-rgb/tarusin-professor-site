@@ -7,6 +7,7 @@ import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SexualConstitutionSection } from "../sections/SexualConstitution";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
 import { NeuroStatusSection } from "../sections/NeuroStatus";
+import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,11 @@ const SCROTUM_DEFAULT =
 interface Props {
   data: PrimaryShortData;
   onChange: (patch: Partial<PrimaryShortData>) => void;
+  birthDate?: string | null;
 }
 
-export function PrimaryShortForm({ data, onChange }: Props) {
+export function PrimaryShortForm({ data, onChange, birthDate }: Props) {
+
   // Backfill external_genitalia from legacy "fields" import on first render data shape
   const importedFields = ((data as any).fields || {}) as Record<string, string>;
   if (!data.local_status?.external_genitalia && (importedFields["Локальный статус на момент осмотра"] || importedFields["Локальный статус"])) {
@@ -250,6 +253,10 @@ export function PrimaryShortForm({ data, onChange }: Props) {
         <div className="md:col-span-2">
           <NeuroStatusSection value={data.neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v })} />
         </div>
+        <div className="md:col-span-2">
+          <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
+        </div>
+
         <CollapsibleField hasValue={!!data.psych_status} label="Психологический статус">
           <SmartFieldLabel fieldKey="psych_status" value={data.psych_status || ""} onSet={(v) => onChange({ psych_status: v })}>Психологический статус</SmartFieldLabel>
           <Textarea rows={2} value={data.psych_status || ""} onChange={(e) => onChange({ psych_status: e.target.value })} />

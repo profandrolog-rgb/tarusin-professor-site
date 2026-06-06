@@ -5,7 +5,9 @@ import { UziReproductiveSection } from "../sections/UziReproductive";
 import { UziUrinarySection } from "../sections/UziUrinary";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
+import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
+
 
 export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void }) {
   return (
@@ -35,7 +37,7 @@ export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; o
   );
 }
 
-export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void }) {
+export function DynamicWithUziForm({ data, onChange, birthDate }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void; birthDate?: string | null }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
@@ -54,6 +56,8 @@ export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziDat
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
       <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+      <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
+
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
         <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
       </Card>
@@ -69,7 +73,7 @@ export function DynamicWithUziForm({ data, onChange }: { data: DynamicWithUziDat
   );
 }
 
-export function RepeatWithUziForm({ data, onChange }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void }) {
+export function RepeatWithUziForm({ data, onChange, birthDate }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void; birthDate?: string | null }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
@@ -79,6 +83,8 @@ export function RepeatWithUziForm({ data, onChange }: { data: RepeatWithUziData;
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
       <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+      <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
+
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
         <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
       </Card>

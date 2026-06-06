@@ -5,6 +5,9 @@ import { DEFAULT_SEXUAL_FORMULA, SexualFormulaData } from "@/components/visits/s
 import { DEFAULT_UZI_REPRODUCTIVE, UziReproductiveData } from "@/components/visits/sections/UziReproductive";
 import { DEFAULT_UZI_URINARY, UziUrinaryData } from "@/components/visits/sections/UziUrinary";
 import { SexualConstitutionData } from "@/components/visits/sections/SexualConstitution";
+import { PsychStatusData } from "@/components/visits/sections/PsychStatus";
+
+
 
 export interface UltrashortData {
   complaints?: string;
@@ -38,8 +41,9 @@ export interface PostOpDay7Data {
   recommendations?: string;
 }
 
-export interface PrimaryShortData {
+export interface PrimaryShortData extends PsychStatusData {
   complaints?: string;
+
   anamnesis?: string;
   somatic?: SomaticStatusData;
   sexual_formula?: SexualFormulaData;
@@ -82,7 +86,7 @@ export interface UziUrinaryOnlyData {
   recommendations?: string;
 }
 
-export interface DynamicWithUziData {
+export interface DynamicWithUziData extends PsychStatusData {
   complaints?: string;
   anamnesis?: string;
   dynamics?: string;
@@ -94,7 +98,7 @@ export interface DynamicWithUziData {
   recommendations?: string;
 }
 
-export interface RepeatWithUziData {
+export interface RepeatWithUziData extends PsychStatusData {
   complaints?: string;
   local_status?: LocalStatusData;
   ortho_status?: string;
@@ -102,6 +106,7 @@ export interface RepeatWithUziData {
   conclusion?: string;
   recommendations?: string;
 }
+
 
 export type AnyProtocolData =
   | UltrashortData
