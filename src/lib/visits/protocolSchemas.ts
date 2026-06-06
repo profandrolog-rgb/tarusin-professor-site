@@ -40,8 +40,8 @@ export interface PostOpDay7Data {
   uzi_express?: string;
   recommendations?: string;
 }
+export interface PrimaryShortData extends PsychStatusData {
 
-export interface PrimaryShortData {
   complaints?: string;
   anamnesis?: string;
   somatic?: SomaticStatusData;
