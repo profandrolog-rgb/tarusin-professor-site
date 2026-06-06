@@ -511,7 +511,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
 
         {/* TITLE */}
         <div className="ppl-title">
-          <div className="sub">Протокол медицинского осмотра — {def?.short || visit.protocol_type}</div>
+          <div className="sub">Протокол медицинского осмотра</div>
           <div className="main">{def?.title || visit.protocol_type}</div>
         </div>
 
