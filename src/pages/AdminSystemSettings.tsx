@@ -173,6 +173,29 @@ const AdminSystemSettings = () => {
 
         <Card className="mb-6">
           <CardHeader>
+            <CardTitle>Экспорт базы данных</CardTitle>
+            <CardDescription>Резервная выгрузка пациентов и визитов в CSV. Рекомендуется делать еженедельно.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              {counts.patients !== null && counts.visits !== null
+                ? <>В базе: <span className="font-medium text-foreground">{counts.patients}</span> пациентов / <span className="font-medium text-foreground">{counts.visits}</span> визитов</>
+                : "Загрузка статистики..."}
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Последний экспорт: </span>
+              <span className="font-medium">{lastExportAt ? format(new Date(lastExportAt), "d MMMM yyyy, HH:mm", { locale: ru }) : "никогда"}</span>
+            </div>
+            <Button onClick={exportData} disabled={exporting} className="gap-2">
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              📥 Экспорт базы данных
+            </Button>
+          </CardContent>
+        </Card>
+
+
+        <Card className="mb-6">
+          <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Авто-парсинг цен на препараты</span>
               <StatusBadge ok={isHealthyDrug} />
