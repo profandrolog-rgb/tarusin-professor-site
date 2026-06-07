@@ -77,6 +77,7 @@ const ROUTE_LABELS: Record<TreatmentCategory, string> = {
   procedure: "",
   lifestyle: "",
   homeopathy: "под язык",
+  physiotherapy: "процедура",
 
 };
 

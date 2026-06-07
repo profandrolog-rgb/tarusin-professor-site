@@ -3607,6 +3607,7 @@ export type Database = {
         | "procedure"
         | "lifestyle"
         | "homeopathy"
+        | "physiotherapy"
       user_type: "medical_specialist" | "patient" | "researcher"
     }
     CompositeTypes: {
@@ -3800,6 +3801,7 @@ export const Constants = {
         "procedure",
         "lifestyle",
         "homeopathy",
+        "physiotherapy",
       ],
       user_type: ["medical_specialist", "patient", "researcher"],
     },

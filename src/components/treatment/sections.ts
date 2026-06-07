@@ -1,12 +1,12 @@
 import {
   Droplet, Syringe, Pill, Leaf, CircleDot, Hand, Wind, ArrowDown,
-  Atom, Zap, HeartPulse, Activity, Sparkles,
+  Atom, Zap, HeartPulse, Activity, Sparkles, Waves,
 } from "lucide-react";
 
 
 export type TreatmentCategory =
   | "iv_drip" | "iv_bolus" | "im" | "sc" | "oral_rx" | "oral_supplement"
-  | "rectal" | "topical" | "nasal" | "sublingual" | "peptide" | "procedure" | "lifestyle" | "homeopathy";
+  | "rectal" | "topical" | "nasal" | "sublingual" | "peptide" | "procedure" | "lifestyle" | "homeopathy" | "physiotherapy";
 
 
 export interface SectionDef {
@@ -32,6 +32,8 @@ export const SECTIONS: SectionDef[] = [
   { key: "procedure",       label: "Процедуры",                short: "процедуры",   icon: Zap },
   { key: "lifestyle",       label: "Образ жизни",              short: "lifestyle",   icon: HeartPulse },
   { key: "homeopathy",      label: "Гомеопатия",               short: "гомеопатия",  icon: Sparkles,   hint: "препарат из реперториума Кента + потенция" },
+  { key: "physiotherapy",   label: "Физиотерапия",             short: "физио",       icon: Waves,      hint: "процедура и число сеансов на курс" },
+
 
 ];
 
