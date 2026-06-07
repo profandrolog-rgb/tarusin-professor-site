@@ -98,12 +98,67 @@ const renderScalar = (v: any): string => {
   return String(v);
 };
 
+const ARTERIAL_LABELS: Record<string, string> = {
+  vmax: "Vmax (см/с)", vmin: "Vmin (см/с)", vmed: "Vmed/T (см/с)",
+  ri: "RI", pi: "PI", acc: "Acc (см/с²)",
+};
+const VENOUS_LABELS: Record<string, string> = {
+  v_dir: "V dir (см/с)", v_red: "V red (см/с)", v_rev: "V rev / Вальсальва (см/с)",
+  t_ref: "T ref (сек)", acc_ref: "Acc ref (см/с²)",
+};
+
+function pushArterialFlow(rows: React.ReactNode[], af: any, keyPrefix: string) {
+  if (!isPlainObject(af)) return;
+  const r = af.right || {};
+  const l = af.left || {};
+  const params = Object.keys(ARTERIAL_LABELS).filter((k) => r[k] || l[k]);
+  if (params.length === 0) return;
+  rows.push(
+    <tr key={`${keyPrefix}-h`}>
+      <td colSpan={2} className="ppl-subsection">Артериальный кровоток</td>
+    </tr>
+  );
+  params.forEach((k) => {
+    rows.push(
+      <SideField key={`${keyPrefix}-${k}`} label={ARTERIAL_LABELS[k]} right={r[k]} left={l[k]} />
+    );
+  });
+}
+
+function pushVenousFlow(rows: React.ReactNode[], vf: any, keyPrefix: string) {
+  if (!isPlainObject(vf)) return;
+  const params = Object.keys(VENOUS_LABELS).filter((k) => vf[k]);
+  const hasDiam = vf.diameter_right || vf.diameter_left;
+  if (params.length === 0 && !hasDiam) return;
+  rows.push(
+    <tr key={`${keyPrefix}-h`}>
+      <td colSpan={2} className="ppl-subsection">Венозный кровоток</td>
+    </tr>
+  );
+  params.forEach((k) => {
+    rows.push(<Field key={`${keyPrefix}-${k}`} label={VENOUS_LABELS[k]} value={vf[k]} />);
+  });
+  if (hasDiam) {
+    rows.push(
+      <SideField key={`${keyPrefix}-diam`} label="Диаметр вен (мм)" right={vf.diameter_right} left={vf.diameter_left} />
+    );
+  }
+}
+
 function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }) {
   const rows: React.ReactNode[] = [];
   const walk = (obj: Record<string, any>, prefix = "") => {
     Object.entries(obj).forEach(([k, v]) => {
       if (v === null || v === undefined || v === "") return;
       const rk = `${prefix}${k}`;
+      if (k === "arterial_flow") {
+        pushArterialFlow(rows, v, rk);
+        return;
+      }
+      if (k === "venous_flow") {
+        pushVenousFlow(rows, v, rk);
+        return;
+      }
       if (hasRightLeft(v)) {
         rows.push(<SideField key={rk} label={humanize(k)} right={renderScalar(v.right)} left={renderScalar(v.left)} />);
       } else if (isPlainObject(v)) {
