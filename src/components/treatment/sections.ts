@@ -1,12 +1,12 @@
 import {
   Droplet, Syringe, Pill, Leaf, CircleDot, Hand, Wind, ArrowDown,
-  Atom, Zap, HeartPulse, Activity, Sparkles,
+  Atom, Zap, HeartPulse, Activity, Sparkles, Waves,
 } from "lucide-react";
 
 
 export type TreatmentCategory =
   | "iv_drip" | "iv_bolus" | "im" | "sc" | "oral_rx" | "oral_supplement"
-  | "rectal" | "topical" | "nasal" | "sublingual" | "peptide" | "procedure" | "lifestyle" | "homeopathy";
+  | "rectal" | "topical" | "nasal" | "sublingual" | "peptide" | "procedure" | "lifestyle" | "homeopathy" | "physiotherapy";
 
 
 export interface SectionDef {
