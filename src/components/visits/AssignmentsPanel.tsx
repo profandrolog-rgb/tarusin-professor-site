@@ -14,7 +14,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Phone, ClipboardList } from "lucide-react";
+import { Plus, X, Phone, ClipboardList, Salad } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 
 function AutoTextarea({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
@@ -50,12 +51,14 @@ export interface AssignmentsData {
   examinations: string[];
   treatments: string[];
   referrals: string[];
+  diet: string[];
 }
 
 export const EMPTY_ASSIGNMENTS: AssignmentsData = {
   examinations: [],
   treatments: [],
   referrals: [],
+  diet: [],
 };
 
 interface DR {
@@ -95,6 +98,7 @@ export function normalizeAssignments(raw: any): AssignmentsData {
     examinations: Array.isArray(raw.examinations) ? raw.examinations.filter(Boolean) : [],
     treatments: Array.isArray(raw.treatments) ? raw.treatments.filter(Boolean) : [],
     referrals: Array.isArray(raw.referrals) ? raw.referrals.filter(Boolean) : [],
+    diet: Array.isArray(raw.diet) ? raw.diet.filter(Boolean) : [],
   };
 }
 
@@ -366,6 +370,194 @@ function ReferralsPicker({ onAdd }: { onAdd: (texts: string[]) => void }) {
   );
 }
 
+interface DietRow {
+  id: string;
+  diet_type: string;
+  diet_label: string;
+  category: string;
+  item_text: string;
+  is_recommended: boolean;
+  sort_order: number | null;
+}
+
+const CATEGORY_META: Record<string, { icon: string; label: string; order: number }> = {
+  "рекомендуется": { icon: "✅", label: "Рекомендуется", order: 1 },
+  "ограничить":    { icon: "⚠️", label: "Ограничить", order: 2 },
+  "исключить":     { icon: "❌", label: "Исключить", order: 3 },
+  "режим":         { icon: "📋", label: "Режим", order: 4 },
+};
+
+function DietPicker({ onAdd }: { onAdd: (texts: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [selectedDiets, setSelectedDiets] = useState<Set<string>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["diet_recommendations", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("diet_recommendations" as any)
+        .select("id, diet_type, diet_label, category, item_text, is_recommended, sort_order")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data as any) as DietRow[];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const dietsList = useMemo(() => {
+    const map = new Map<string, string>();
+    rows.forEach((r) => map.set(r.diet_type, r.diet_label));
+    return Array.from(map.entries()).map(([type, label]) => ({ type, label }));
+  }, [rows]);
+
+  const toggleDiet = (t: string) => {
+    setSelectedDiets((prev) => {
+      const n = new Set(prev);
+      if (n.has(t)) n.delete(t); else n.add(t);
+      return n;
+    });
+  };
+
+  const toggleItem = (id: string) => {
+    setSelectedItems((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  // Grouped by diet → category
+  const grouped = useMemo(() => {
+    const visible = rows.filter((r) => selectedDiets.has(r.diet_type));
+    const byDiet = new Map<string, { label: string; cats: Map<string, DietRow[]> }>();
+    visible.forEach((r) => {
+      if (!byDiet.has(r.diet_type)) byDiet.set(r.diet_type, { label: r.diet_label, cats: new Map() });
+      const entry = byDiet.get(r.diet_type)!;
+      if (!entry.cats.has(r.category)) entry.cats.set(r.category, []);
+      entry.cats.get(r.category)!.push(r);
+    });
+    return Array.from(byDiet.entries()).map(([type, e]) => ({
+      type,
+      label: e.label,
+      categories: Array.from(e.cats.entries())
+        .sort((a, b) => (CATEGORY_META[a[0]]?.order ?? 99) - (CATEGORY_META[b[0]]?.order ?? 99))
+        .map(([cat, items]) => ({ cat, items })),
+    }));
+  }, [rows, selectedDiets]);
+
+  const apply = () => {
+    if (selectedItems.size === 0) {
+      toast({ title: "Ничего не выбрано" });
+      return;
+    }
+    const out: string[] = [];
+    grouped.forEach((d) => {
+      const dietItems: string[] = [];
+      d.categories.forEach(({ cat, items }) => {
+        items.forEach((it) => {
+          if (selectedItems.has(it.id)) {
+            const prefix = cat === "рекомендуется" ? "✓ " :
+                           cat === "ограничить" ? "⚠ Ограничить: " :
+                           cat === "исключить" ? "✗ Исключить: " : "• ";
+            dietItems.push(`${prefix}${it.item_text}`);
+          }
+        });
+      });
+      if (dietItems.length > 0) {
+        out.push(`Диета — ${d.label}:`);
+        out.push(...dietItems);
+      }
+    });
+    onAdd(out);
+    setSelectedItems(new Set());
+    setSelectedDiets(new Set());
+    setOpen(false);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          <Salad className="h-4 w-4 mr-1" />
+          Выбрать диету
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col">
+        <SheetHeader>
+          <SheetTitle>Диетические рекомендации</SheetTitle>
+        </SheetHeader>
+
+        <div className="py-3">
+          <p className="text-xs text-muted-foreground mb-2">Выберите одну или несколько диет:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {dietsList.map((d) => (
+              <Badge
+                key={d.type}
+                variant={selectedDiets.has(d.type) ? "default" : "outline"}
+                className="cursor-pointer text-xs py-1"
+                onClick={() => toggleDiet(d.type)}
+              >
+                {d.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <ScrollArea className="flex-1 pr-3 -mr-3">
+          {grouped.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              Выберите диету выше, чтобы увидеть пункты
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {grouped.map((d) => (
+                <div key={d.type} className="space-y-2">
+                  <h4 className="text-sm font-semibold border-b pb-1">{d.label}</h4>
+                  {d.categories.map(({ cat, items }) => (
+                    <div key={cat} className="space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {CATEGORY_META[cat]?.icon} {CATEGORY_META[cat]?.label ?? cat}
+                      </div>
+                      {items.map((it) => (
+                        <label
+                          key={it.id}
+                          className="flex gap-2 items-start text-sm cursor-pointer rounded px-2 py-1 hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            checked={selectedItems.has(it.id)}
+                            onCheckedChange={() => toggleItem(it.id)}
+                            className="mt-0.5"
+                          />
+                          <span className="leading-snug flex-1">{it.item_text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+
+        <SheetFooter className="pt-3 border-t">
+          <div className="flex items-center justify-between w-full gap-2">
+            <span className="text-xs text-muted-foreground">Выбрано: {selectedItems.size}</span>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+                Отмена
+              </Button>
+              <Button type="button" size="sm" onClick={apply} disabled={selectedItems.size === 0}>
+                Вставить выбранное
+              </Button>
+            </div>
+          </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 interface ListEditorProps {
   items: string[];
   onChange: (next: string[]) => void;
@@ -430,7 +622,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
   const data = normalizeAssignments(value);
   const patch = (p: Partial<AssignmentsData>) => onChange({ ...data, ...p });
 
-  const totalCount = data.examinations.length + data.treatments.length + data.referrals.length;
+  const totalCount = data.examinations.length + data.treatments.length + data.referrals.length + data.diet.length;
 
   return (
     <Card>
@@ -447,10 +639,11 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="exam">
-          <TabsList className="mb-3">
+          <TabsList className="mb-3 flex-wrap h-auto">
             <TabsTrigger value="exam">Обследование {data.examinations.length > 0 && `(${data.examinations.length})`}</TabsTrigger>
             <TabsTrigger value="treat">Медикаменты и лечение {data.treatments.length > 0 && `(${data.treatments.length})`}</TabsTrigger>
             <TabsTrigger value="ref">Консультации {data.referrals.length > 0 && `(${data.referrals.length})`}</TabsTrigger>
+            <TabsTrigger value="diet">🥗 Диета {data.diet.length > 0 && `(${data.diet.length})`}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="exam">
@@ -489,6 +682,15 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
               onChange={(next) => patch({ referrals: next })}
               addPlaceholder="Добавить консультацию вручную…"
               picker={<ReferralsPicker onAdd={(texts) => patch({ referrals: [...data.referrals, ...texts] })} />}
+            />
+          </TabsContent>
+
+          <TabsContent value="diet">
+            <ListEditor
+              items={data.diet}
+              onChange={(next) => patch({ diet: next })}
+              addPlaceholder="Добавить свой пункт диеты…"
+              picker={<DietPicker onAdd={(texts) => patch({ diet: [...data.diet, ...texts] })} />}
             />
           </TabsContent>
         </Tabs>
