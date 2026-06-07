@@ -689,16 +689,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         </div>
 
         {/* CONSENT */}
-        <div className="ppl-consent">
-          <h4>Информированное добровольное согласие на медицинское вмешательство</h4>
-          <div style={{ textAlign: "justify" }}>{CONSENT_TEXT}</div>
-          <div className="sig-row">
-            <span>
-              Пациент / законный представитель: ____________________ / {visit.patient?.full_name || "________________"}
-            </span>
-            <span>Дата: ____________</span>
-          </div>
-        </div>
+        <ConsentBlock patient={visit.patient} />
       </div>
     </>
   );
