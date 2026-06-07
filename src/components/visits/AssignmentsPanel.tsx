@@ -622,7 +622,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
   const data = normalizeAssignments(value);
   const patch = (p: Partial<AssignmentsData>) => onChange({ ...data, ...p });
 
-  const totalCount = data.examinations.length + data.treatments.length + data.referrals.length;
+  const totalCount = data.examinations.length + data.treatments.length + data.referrals.length + data.diet.length;
 
   return (
     <Card>
@@ -639,10 +639,11 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="exam">
-          <TabsList className="mb-3">
+          <TabsList className="mb-3 flex-wrap h-auto">
             <TabsTrigger value="exam">Обследование {data.examinations.length > 0 && `(${data.examinations.length})`}</TabsTrigger>
             <TabsTrigger value="treat">Медикаменты и лечение {data.treatments.length > 0 && `(${data.treatments.length})`}</TabsTrigger>
             <TabsTrigger value="ref">Консультации {data.referrals.length > 0 && `(${data.referrals.length})`}</TabsTrigger>
+            <TabsTrigger value="diet">🥗 Диета {data.diet.length > 0 && `(${data.diet.length})`}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="exam">
@@ -681,6 +682,15 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
               onChange={(next) => patch({ referrals: next })}
               addPlaceholder="Добавить консультацию вручную…"
               picker={<ReferralsPicker onAdd={(texts) => patch({ referrals: [...data.referrals, ...texts] })} />}
+            />
+          </TabsContent>
+
+          <TabsContent value="diet">
+            <ListEditor
+              items={data.diet}
+              onChange={(next) => patch({ diet: next })}
+              addPlaceholder="Добавить свой пункт диеты…"
+              picker={<DietPicker onAdd={(texts) => patch({ diet: [...data.diet, ...texts] })} />}
             />
           </TabsContent>
         </Tabs>
