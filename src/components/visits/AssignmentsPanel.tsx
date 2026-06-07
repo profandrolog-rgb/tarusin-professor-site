@@ -66,6 +66,21 @@ interface DR {
   item_text: string;
 }
 
+interface Med {
+  id: string;
+  latin_name: string;
+  trade_name: string | null;
+  dosage_form: string | null;
+  dosage: string | null;
+}
+
+function formatMedication(m: Med): string {
+  const head = m.trade_name?.trim() || m.latin_name;
+  const extras = [m.dosage_form, m.dosage].filter(Boolean).join(" ");
+  return extras ? `${head} — ${extras}` : head;
+}
+
+
 interface RS {
   id: string;
   specialty: string;
