@@ -66,6 +66,21 @@ interface DR {
   item_text: string;
 }
 
+interface Med {
+  id: string;
+  latin_name: string;
+  trade_name: string | null;
+  dosage_form: string | null;
+  dosage: string | null;
+}
+
+function formatMedication(m: Med): string {
+  const head = m.trade_name?.trim() || m.latin_name;
+  const extras = [m.dosage_form, m.dosage].filter(Boolean).join(" ");
+  return extras ? `${head} — ${extras}` : head;
+}
+
+
 interface RS {
   id: string;
   specialty: string;
@@ -115,13 +130,51 @@ function ItemPicker({ title, categories, onAdd }: PickerProps) {
     staleTime: 10 * 60 * 1000,
   });
 
-  const filtered = useMemo(() => {
+  const includesMeds = categories.includes("медикамент");
+
+  const { data: meds = [] } = useQuery({
+    queryKey: ["medications", "all-alpha"],
+    enabled: includesMeds,
+    queryFn: async () => {
+      const all: Med[] = [];
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("medications")
+          .select("id, latin_name, trade_name, dosage_form, dosage")
+          .order("trade_name", { ascending: true, nullsFirst: false })
+          .order("latin_name", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...(data as Med[]));
+        if (data.length < pageSize) break;
+      }
+      return all;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  type PickItem = { id: string; text: string; meta?: string };
+
+  const filtered = useMemo<PickItem[]>(() => {
     const ql = q.trim().toLowerCase();
-    return items
+    const dr: PickItem[] = items
       .filter((i) => categories.includes(i.category))
       .filter((i) => (group === "all" ? true : i.diagnosis_group === group))
-      .filter((i) => (ql ? i.item_text.toLowerCase().includes(ql) : true));
-  }, [items, categories, q, group]);
+      .map((i) => ({ id: `dr:${i.id}`, text: i.item_text, meta: `${i.diagnosis_group} / ${i.subtype}` }));
+
+    // When "Все диагнозы" — append the entire medications catalog (alphabetic)
+    const medItems: PickItem[] =
+      includesMeds && group === "all"
+        ? meds.map((m) => ({ id: `med:${m.id}`, text: formatMedication(m), meta: "Справочник препаратов" }))
+        : [];
+
+    const merged = [...dr, ...medItems];
+    // Alphabetic sort (RU-aware)
+    merged.sort((a, b) => a.text.localeCompare(b.text, "ru"));
+    return ql ? merged.filter((i) => i.text.toLowerCase().includes(ql)) : merged;
+  }, [items, meds, categories, q, group, includesMeds]);
 
   const groups = useMemo(
     () =>
@@ -145,7 +198,7 @@ function ItemPicker({ title, categories, onAdd }: PickerProps) {
       toast({ title: "Ничего не выбрано" });
       return;
     }
-    const texts = items.filter((i) => selected.has(i.id)).map((i) => i.item_text);
+    const texts = filtered.filter((i) => selected.has(i.id)).map((i) => i.text);
     onAdd(texts);
     setSelected(new Set());
     setOpen(false);
@@ -191,16 +244,17 @@ function ItemPicker({ title, categories, onAdd }: PickerProps) {
                     className="mt-0.5"
                   />
                   <span className="leading-snug flex-1">
-                    {it.item_text}
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {it.diagnosis_group} / {it.subtype}
-                    </span>
+                    {it.text}
+                    {it.meta && (
+                      <span className="text-xs text-muted-foreground ml-2">{it.meta}</span>
+                    )}
                   </span>
                 </label>
               ))}
             </div>
           )}
         </ScrollArea>
+
         <SheetFooter className="pt-3 border-t">
           <div className="flex items-center justify-between w-full gap-2">
             <span className="text-xs text-muted-foreground">Выбрано: {selected.size}</span>
