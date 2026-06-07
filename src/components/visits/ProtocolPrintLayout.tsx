@@ -88,6 +88,17 @@ const UZI_LABELS: Record<string, string> = {
   bladder: "Мочевой пузырь", prostate: "Предстательная железа", scrotum: "Мошонка",
   size: "Размеры", volume: "Объём, мл", structure: "Структура",
   parenchyma: "Паренхима", pelvis: "Лоханка",
+  penis_exam: "Исследование полового члена",
+  right_cavernous_diameter: "Ø правого кавернозного тела, мм",
+  left_cavernous_diameter: "Ø левого кавернозного тела, мм",
+  spongious_diameter: "Ø спонгиозного тела, мм",
+  tunica: "Белочная оболочка и фасции",
+  dorsal_bundle: "Дорзальный пучок",
+  dorsal_artery_vmax: "Дорзальная артерия, Vmax (см/с)",
+  cavernous_arteries: "Кавернозные артерии",
+  right_cavernous_artery: "Правая кавернозная артерия",
+  left_cavernous_artery: "Левая кавернозная артерия",
+  urethra: "Уретра",
 };
 const humanize = (k: string) => UZI_LABELS[k] || k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const isPlainObject = (v: any): v is Record<string, any> => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -104,30 +115,46 @@ const ARTERIAL_LABELS: Record<string, string> = {
 };
 const VENOUS_LABELS: Record<string, string> = {
   v_dir: "V dir (см/с)", v_red: "V red (см/с)", v_rev: "V rev / Вальсальва (см/с)",
-  t_ref: "T ref (сек)", acc_ref: "Acc ref (см/с²)",
+  t_ref: "T ref (сек)", acc_ref: "Acc ref (см/с²)", diameter: "Диаметр вен (мм)",
 };
 
-function pushArterialFlow(rows: React.ReactNode[], af: any, keyPrefix: string) {
-  if (!isPlainObject(af)) return;
-  const r = af.right || {};
-  const l = af.left || {};
-  const params = Object.keys(ARTERIAL_LABELS).filter((k) => r[k] || l[k]);
+function pushSideFlow(
+  rows: React.ReactNode[],
+  data: any,
+  keyPrefix: string,
+  title: string,
+  labels: Record<string, string>,
+) {
+  if (!isPlainObject(data)) return;
+  const r = data.right || {};
+  const l = data.left || {};
+  const params = Object.keys(labels).filter((k) => r[k] || l[k]);
   if (params.length === 0) return;
   rows.push(
     <tr key={`${keyPrefix}-h`}>
-      <td colSpan={2} className="ppl-subsection">Артериальный кровоток</td>
+      <td colSpan={2} className="ppl-subsection">{title}</td>
     </tr>
   );
   params.forEach((k) => {
     rows.push(
-      <SideField key={`${keyPrefix}-${k}`} label={ARTERIAL_LABELS[k]} right={r[k]} left={l[k]} />
+      <SideField key={`${keyPrefix}-${k}`} label={labels[k]} right={r[k]} left={l[k]} />
     );
   });
 }
 
+function pushArterialFlow(rows: React.ReactNode[], af: any, keyPrefix: string) {
+  pushSideFlow(rows, af, keyPrefix, "Артериальный кровоток", ARTERIAL_LABELS);
+}
+
+// Поддерживает и новую (right/left), и старую (плоскую) схему венозного кровотока
 function pushVenousFlow(rows: React.ReactNode[], vf: any, keyPrefix: string) {
   if (!isPlainObject(vf)) return;
-  const params = Object.keys(VENOUS_LABELS).filter((k) => vf[k]);
+  if (hasRightLeft(vf)) {
+    pushSideFlow(rows, vf, keyPrefix, "Венозный кровоток", VENOUS_LABELS);
+    return;
+  }
+  // legacy plain shape
+  const params = Object.keys(VENOUS_LABELS).filter((k) => k !== "diameter" && vf[k]);
   const hasDiam = vf.diameter_right || vf.diameter_left;
   if (params.length === 0 && !hasDiam) return;
   rows.push(
@@ -145,10 +172,69 @@ function pushVenousFlow(rows: React.ReactNode[], vf: any, keyPrefix: string) {
   }
 }
 
+function pushPenisExam(rows: React.ReactNode[], pe: any, keyPrefix: string) {
+  if (!isPlainObject(pe)) return;
+  const order: (keyof import("./sections/UziReproductive").PenisExamData)[] = [
+    "structure",
+    "right_cavernous_diameter",
+    "left_cavernous_diameter",
+    "spongious_diameter",
+    "tunica",
+    "dorsal_bundle",
+    "dorsal_artery_vmax",
+    "cavernous_arteries",
+    "right_cavernous_artery",
+    "left_cavernous_artery",
+    "urethra",
+    "conclusion",
+  ];
+  const visible = order.filter((k) => pe[k] !== undefined && pe[k] !== null && pe[k] !== "");
+  if (visible.length === 0) return;
+  rows.push(
+    <tr key={`${keyPrefix}-h`}>
+      <td colSpan={2} className="ppl-subsection">Исследование полового члена</td>
+    </tr>
+  );
+  visible.forEach((k) => {
+    rows.push(<Field key={`${keyPrefix}-${k}`} label={humanize(k as string)} value={renderScalar(pe[k])} />);
+  });
+}
+
+// Желаемый порядок секций при выводе УЗИ репродуктивной системы
+const UZI_FIELD_ORDER = [
+  "device",
+  "indications",
+  "right_testis_size", "right_testis_volume", "right_testis_structure",
+  "left_testis_size", "left_testis_volume", "left_testis_structure",
+  "right_epididymis", "left_epididymis",
+  "arterial_flow",
+  "venous_flow",
+  "prostate",
+  "perineum",
+  "penis_exam",
+  "vessels",
+  "doppler",
+  "free_fluid",
+  "conclusion",
+];
+
+function orderedEntries(obj: Record<string, any>): [string, any][] {
+  const keys = Object.keys(obj);
+  const idx = (k: string) => {
+    const i = UZI_FIELD_ORDER.indexOf(k);
+    return i === -1 ? UZI_FIELD_ORDER.length : i;
+  };
+  return keys
+    .slice()
+    .sort((a, b) => idx(a) - idx(b))
+    .map((k) => [k, obj[k]] as [string, any]);
+}
+
 function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }) {
   const rows: React.ReactNode[] = [];
-  const walk = (obj: Record<string, any>, prefix = "") => {
-    Object.entries(obj).forEach(([k, v]) => {
+  const walk = (obj: Record<string, any>, prefix = "", ordered = false) => {
+    const entries = ordered ? orderedEntries(obj) : Object.entries(obj);
+    entries.forEach(([k, v]) => {
       if (v === null || v === undefined || v === "") return;
       const rk = `${prefix}${k}`;
       if (k === "arterial_flow") {
@@ -157,6 +243,10 @@ function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }
       }
       if (k === "venous_flow") {
         pushVenousFlow(rows, v, rk);
+        return;
+      }
+      if (k === "penis_exam") {
+        pushPenisExam(rows, v, rk);
         return;
       }
       if (hasRightLeft(v)) {
@@ -169,10 +259,11 @@ function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }
       }
     });
   };
-  walk(uzi);
+  walk(uzi, "", true);
   if (rows.length === 0) return null;
   return <Section title={title}>{rows}</Section>;
 }
+
 
 function pushPsychBlocks(rows: React.ReactNode[], d: any) {
   if (d.psych_status_full) rows.push(<Field key="psyf" label="Психиатрический статус" value={d.psych_status_full} />);
