@@ -484,10 +484,38 @@ export default function AdminPatientVisitDetail() {
                       if (!src) return;
                       const w = window.open("", "_blank");
                       if (!w) return;
-                      w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Протокол — Тарусин Д.И.</title><style>html,body{margin:0!important;padding:0!important;background:#fff}</style></head><body>${src.innerHTML}</body></html>`);
+                      const headCss = `
+                        html,body{margin:0!important;padding:0!important;background:#fff}
+                        @page { size: A4; margin: 15mm 15mm 18mm 15mm; }
+                        @media print {
+                          html,body{margin:0!important;padding:0!important;background:#fff!important}
+                          .print-page{padding:0!important;margin:0!important;width:100%!important;max-width:100%!important;min-height:0!important;box-shadow:none!important;box-sizing:border-box!important}
+                        }
+                      `;
+                      w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Протокол — Тарусин Д.И.</title><base href="${window.location.origin}/"><style>${headCss}</style></head><body>${src.innerHTML}</body></html>`);
                       w.document.close();
                       w.focus();
-                      setTimeout(() => { w.print(); w.close(); }, 500);
+                      const doPrint = async () => {
+                        try {
+                          const imgs = Array.from(w.document.images || []);
+                          await Promise.all(imgs.map((img) => {
+                            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+                            return new Promise<void>((resolve) => {
+                              img.addEventListener("load", () => resolve(), { once: true });
+                              img.addEventListener("error", () => resolve(), { once: true });
+                            });
+                          }));
+                          if ((w.document as any).fonts?.ready) {
+                            try { await (w.document as any).fonts.ready; } catch {}
+                          }
+                          w.focus();
+                          w.print();
+                        } finally {
+                          setTimeout(() => { try { w.close(); } catch {} }, 300);
+                        }
+                      };
+                      if (w.document.readyState === "complete") doPrint();
+                      else w.addEventListener("load", () => doPrint(), { once: true });
                     }}
                   >
                     <Printer className="h-4 w-4 mr-1" /> Печать
