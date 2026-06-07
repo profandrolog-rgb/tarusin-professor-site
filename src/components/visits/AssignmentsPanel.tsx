@@ -51,12 +51,14 @@ export interface AssignmentsData {
   examinations: string[];
   treatments: string[];
   referrals: string[];
+  diet: string[];
 }
 
 export const EMPTY_ASSIGNMENTS: AssignmentsData = {
   examinations: [],
   treatments: [],
   referrals: [],
+  diet: [],
 };
 
 interface DR {
