@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -15,6 +16,35 @@ import {
 } from "@/components/ui/select";
 import { Plus, X, Phone, ClipboardList } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+function AutoTextarea({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [value]);
+  return (
+    <div className="flex items-start gap-2 group">
+      <Textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={1}
+        className="flex-1 text-sm leading-snug min-h-0 py-1.5 resize-none overflow-hidden"
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="opacity-60 hover:opacity-100 text-destructive shrink-0 mt-1.5"
+        title="Удалить"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 export interface AssignmentsData {
   examinations: string[];
@@ -309,18 +339,12 @@ function ListEditor({ items, onChange, addPlaceholder, picker }: ListEditorProps
       {items.length > 0 && (
         <ol className="space-y-1.5 list-decimal pl-5">
           {items.map((t, i) => (
-            <li key={`${i}-${t}`} className="text-sm leading-snug group">
-              <div className="flex items-start gap-2">
-                <span className="flex-1 whitespace-pre-wrap">{t}</span>
-                <button
-                  type="button"
-                  onClick={() => removeAt(i)}
-                  className="opacity-60 hover:opacity-100 text-destructive shrink-0"
-                  title="Удалить"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+            <li key={i} className="text-sm leading-snug">
+              <AutoTextarea
+                value={t}
+                onChange={(v) => onChange(items.map((x, j) => (j === i ? v : x)))}
+                onRemove={() => removeAt(i)}
+              />
             </li>
           ))}
         </ol>
