@@ -137,11 +137,104 @@ function pushPsychBlocks(rows: React.ReactNode[], d: any) {
   if (d.psych_conclusion) rows.push(<Field key="psyc" label="Итоговые характеристики" value={d.psych_conclusion} />);
 }
 
+function pushSomatic(rows: React.ReactNode[], d: any) {
+  if (!d.somatic) return;
+  const anth = [
+    d.somatic.height_cm ? `рост ${d.somatic.height_cm} см` : null,
+    d.somatic.weight_kg ? `вес ${d.somatic.weight_kg} кг` : null,
+    d.somatic.bp ? `АД ${d.somatic.bp}` : null,
+    d.somatic.pulse ? `пульс ${d.somatic.pulse}` : null,
+  ].filter(Boolean).join(", ");
+  rows.push(
+    <Section key="som" title="Соматический статус">
+      <Field label="Антропометрия / витальные" value={anth} />
+      <Field label="Общее состояние" value={d.somatic.general} />
+      <Field label="Кожные покровы" value={d.somatic.skin} />
+      <Field label="Лимфоузлы" value={d.somatic.lymph_nodes} />
+      <Field label="Органы дыхания" value={d.somatic.respiratory} />
+      <Field label="ССС" value={d.somatic.cardiovascular} />
+      <Field label="Живот" value={d.somatic.abdomen} />
+    </Section>
+  );
+}
+
+function pushSexual(rows: React.ReactNode[], d: any) {
+  if (d.sexual_formula) {
+    const f = d.sexual_formula;
+    rows.push(
+      <Field key="sf" label="Половая формула"
+        value={`P${f.P ?? 0} Ax${f.Ax ?? 0} F${f.F ?? 0} L${f.L ?? 0} G${f.G ?? 0}${f.formula_note ? ` — ${f.formula_note}` : ""}`}
+      />
+    );
+  }
+  if (d.sexual_formula_text) rows.push(<Field key="sft" label="Половая формула (текст)" value={d.sexual_formula_text} />);
+  const sc = formatSexualConstitution(d.sexual_constitution);
+  if (sc) rows.push(<Field key="sc" label="Половая конституция" value={sc} />);
+}
+
+function pushLocalStatus(rows: React.ReactNode[], d: any) {
+  if (!d.local_status) return;
+  const ls = d.local_status;
+  rows.push(
+    <Section key="ls" title="Локальный статус">
+      <Field label="Наружные половые органы" value={ls.external_genitalia} />
+      {(ls.scrotum_right || ls.scrotum_left) ? (
+        <SideField label="Органы мошонки" right={ls.scrotum_right} left={ls.scrotum_left} />
+      ) : null}
+      {(ls.right || ls.left) ? (
+        <SideField label="Локальный статус" right={ls.right} left={ls.left} />
+      ) : null}
+      <Field label="Половой член" value={ls.penis} />
+      <Field label="Промежность" value={ls.perineum} />
+      {ls.scrotum ? <Field label="Мошонка" value={ls.scrotum} /> : null}
+      {(ls.right_testis || ls.left_testis) ? (
+        <SideField label="Яичко"
+          right={[ls.right_testis, ls.right_testis_volume ? `объём ${ls.right_testis_volume} мл` : null].filter(Boolean).join(", ")}
+          left={[ls.left_testis, ls.left_testis_volume ? `объём ${ls.left_testis_volume} мл` : null].filter(Boolean).join(", ")}
+        />
+      ) : null}
+      <Field label="Придатки" value={ls.epididymis} />
+      <Field label="Семенные канатики" value={ls.spermatic_cord} />
+      <Field label="Паховые кольца" value={ls.inguinal_rings} />
+      <Field label="Дополнительно" value={ls.notes} />
+    </Section>
+  );
+}
+
+function pushClinical(rows: React.ReactNode[], d: any) {
+  if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
+  if (d.neuro_status) rows.push(<Field key="neuro" label="Неврологический статус" value={d.neuro_status} />);
+  if (d.neuro_status_full) rows.push(<Field key="neurof" label="Неврологический статус (расш.)" value={d.neuro_status_full} />);
+  if (d.psych_status) rows.push(<Field key="psych" label="Психологический статус" value={d.psych_status} />);
+  pushPsychBlocks(rows, d);
+}
+
+const KNOWN_KEYS = new Set([
+  "complaints","anamnesis","conclusion","indications","exam_plan","recommendations",
+  "somatic","sexual_formula","sexual_formula_text","sexual_constitution","local_status",
+  "ortho_status","neuro_status","neuro_status_full","psych_status","psych_status_full","psych_conclusion",
+  "proj_person","proj_htp","proj_family","proj_animal","proj_free",
+  "uzi","assignments","fields",
+  "cbc","urinalysis","biochem","hormones","other_labs",
+  "operation_name","operation_date","temperature","general_status","wound_status","dressing","pain","healing","sutures_removed",
+  "_normalized_version","_normalized_at",
+]);
+
+function pushUnknownScalars(rows: React.ReactNode[], d: any) {
+  if (!isPlainObject(d)) return;
+  Object.entries(d).forEach(([k, v]) => {
+    if (KNOWN_KEYS.has(k)) return;
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+      if (v === "" || v === null || v === undefined) return;
+      rows.push(<Field key={`x-${k}`} label={humanize(k)} value={renderScalar(v)} />);
+    }
+  });
+}
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
   const rows: React.ReactNode[] = [];
-
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
@@ -150,13 +243,8 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
 
   if (t === "postop_day3" || t === "postop_day7") {
     rows.push(<Field key="op" label="Операция" value={d.operation_name} />);
-    rows.push(
-      <Field
-        key="opd"
-        label="Дата операции"
-        value={d.operation_date ? format(new Date(d.operation_date), "dd.MM.yyyy") : null}
-      />
-    );
+    rows.push(<Field key="opd" label="Дата операции"
+      value={d.operation_date ? format(new Date(d.operation_date), "dd.MM.yyyy") : null} />);
     if (t === "postop_day3") rows.push(<Field key="t" label="Температура" value={d.temperature} />);
     rows.push(<Field key="gs" label="Общее состояние" value={d.general_status} />);
     rows.push(<Field key="ws" label="Состояние раны" value={d.wound_status} />);
@@ -173,89 +261,14 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   if (t === "primary_short") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
-    if (d.somatic) {
-      const anth = [
-        d.somatic.height_cm ? `рост ${d.somatic.height_cm} см` : null,
-        d.somatic.weight_kg ? `вес ${d.somatic.weight_kg} кг` : null,
-        d.somatic.bp ? `АД ${d.somatic.bp}` : null,
-        d.somatic.pulse ? `пульс ${d.somatic.pulse}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      rows.push(
-        <Section key="som" title="Соматический статус">
-          <Field label="Антропометрия / витальные" value={anth} />
-          <Field label="Общее состояние" value={d.somatic.general} />
-          <Field label="Кожные покровы" value={d.somatic.skin} />
-          <Field label="Лимфоузлы" value={d.somatic.lymph_nodes} />
-          <Field label="Органы дыхания" value={d.somatic.respiratory} />
-          <Field label="ССС" value={d.somatic.cardiovascular} />
-          <Field label="Живот" value={d.somatic.abdomen} />
-        </Section>
-      );
-    }
-    if (d.sexual_formula) {
-      const f = d.sexual_formula;
-      rows.push(
-        <Field
-          key="sf"
-          label="Половая формула"
-          value={`P${f.P ?? 0} Ax${f.Ax ?? 0} F${f.F ?? 0} L${f.L ?? 0} G${f.G ?? 0}${
-            f.formula_note ? ` — ${f.formula_note}` : ""
-          }`}
-        />
-      );
-    }
-    if (d.sexual_formula_text) {
-      rows.push(<Field key="sft" label="Половая формула (текст)" value={d.sexual_formula_text} />);
-    }
-    {
-      const sc = formatSexualConstitution(d.sexual_constitution);
-      if (sc) rows.push(<Field key="sc" label="Половая конституция" value={sc} />);
-    }
-    if (d.local_status) {
-      const ls = d.local_status;
-      rows.push(
-        <Section key="ls" title="Локальный статус">
-          <Field label="Наружные половые органы" value={ls.external_genitalia} />
-          {(ls.scrotum_right || ls.scrotum_left) ? (
-            <SideField label="Органы мошонки" right={ls.scrotum_right} left={ls.scrotum_left} />
-          ) : null}
-          {(ls.right || ls.left) ? (
-            <SideField label="Локальный статус" right={ls.right} left={ls.left} />
-          ) : null}
-          <Field label="Половой член" value={ls.penis} />
-          <Field label="Промежность" value={ls.perineum} />
-          {ls.scrotum ? <Field label="Мошонка" value={ls.scrotum} /> : null}
-          {(ls.right_testis || ls.left_testis) ? (
-            <SideField
-              label="Яичко"
-              right={[ls.right_testis, ls.right_testis_volume ? `объём ${ls.right_testis_volume} мл` : null]
-                .filter(Boolean)
-                .join(", ")}
-              left={[ls.left_testis, ls.left_testis_volume ? `объём ${ls.left_testis_volume} мл` : null]
-                .filter(Boolean)
-                .join(", ")}
-            />
-          ) : null}
-          <Field label="Придатки" value={ls.epididymis} />
-          <Field label="Семенные канатики" value={ls.spermatic_cord} />
-          <Field label="Паховые кольца" value={ls.inguinal_rings} />
-          <Field label="Дополнительно" value={ls.notes} />
-        </Section>
-      );
-    }
-
-    if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
-    if (d.neuro_status) rows.push(<Field key="neuro" label="Неврологический статус" value={d.neuro_status} />);
-    if (d.neuro_status_full) rows.push(<Field key="neurof" label="Неврологический статус (расш.)" value={d.neuro_status_full} />);
-    if (d.psych_status) rows.push(<Field key="psych" label="Психологический статус" value={d.psych_status} />);
-    pushPsychBlocks(rows, d);
+    pushSomatic(rows, d);
+    pushSexual(rows, d);
+    pushLocalStatus(rows, d);
+    pushClinical(rows, d);
     rows.push(<Field key="ep" label="План обследования" value={d.exam_plan} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ" />);
     }
-
   }
 
   if (t === "repeat_with_labs") {
@@ -269,35 +282,36 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
         <Field label="Другие исследования" value={d.other_labs} />
       </Section>
     );
-    if (d.local_status) {
-      const ls = d.local_status;
-      rows.push(
-        <Section key="ls" title="Локальный статус">
-          <Field label="Наружные половые органы" value={ls.external_genitalia} />
-          <Field label="Половой член" value={ls.penis} />
-          <Field label="Мошонка" value={ls.scrotum} />
-          <SideField label="Яичко" right={ls.right_testis} left={ls.left_testis} />
-        </Section>
-      );
+    pushLocalStatus(rows, d);
+    rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
+  }
+
+  if (t === "uzi_reproductive" || t === "dynamic_with_uzi" || t === "repeat_with_uzi") {
+    if (t !== "uzi_reproductive") {
+      rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+      rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    }
+    rows.push(<Field key="i" label="Показания" value={d.indications} />);
+    if (d.uzi && isPlainObject(d.uzi)) {
+      rows.push(<UziRenderer key="uzi" uzi={d.uzi}
+        title={t === "uzi_reproductive" ? "УЗИ органов репродуктивной системы" : "УЗИ органов мошонки"} />);
+    }
+    if (t !== "uzi_reproductive") {
+      pushSomatic(rows, d);
+      pushSexual(rows, d);
+      pushLocalStatus(rows, d);
+      pushClinical(rows, d);
     }
     rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
 
-  if ((t === "uzi_reproductive" || t === "dynamic_with_uzi" || t === "repeat_with_uzi") && d.uzi) {
-    if (t !== "uzi_reproductive") rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+  if (t === "uzi_urinary") {
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мошонки" />);
-    if (d.ortho_status) rows.push(<Field key="ortho" label="Ортопедический статус" value={d.ortho_status} />);
-    if (t !== "uzi_reproductive") pushPsychBlocks(rows, d);
-    if (t !== "uzi_reproductive") rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
-
+    if (d.uzi && isPlainObject(d.uzi)) {
+      rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мочевыделительной системы" />);
+    }
+    rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
-
-  if (t === "uzi_urinary" && d.uzi) {
-    rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мочевыделительной системы" />);
-  }
-
 
   // Fallback for generic protocols — render any string fields under d.fields
   if (rows.length === 0 && d.fields && typeof d.fields === "object") {
@@ -307,6 +321,10 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       }
     });
   }
+
+  // Catch-all: render any extra scalar fields in protocol_data not yet output
+  pushUnknownScalars(rows, d);
+
 
   // Diagnosis & recommendations
   if (visit.diagnosis || visit.icd_code) {
