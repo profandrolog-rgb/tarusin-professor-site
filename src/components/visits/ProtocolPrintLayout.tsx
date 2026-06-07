@@ -462,11 +462,10 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
 
         @media print {
           .no-print { display: none !important; }
-          body { margin: 0; background: #fff !important; }
-          /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
+          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
           @page {
             size: A4;
-            margin: 15mm 18mm 15mm 22mm;
+            margin: 15mm 15mm 18mm 15mm;
             @bottom-right {
               content: "Страница " counter(page) " из " counter(pages);
               font-family: Arial, sans-serif;
@@ -474,12 +473,22 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
               color: #555;
             }
           }
-          .print-page { padding: 0; box-shadow: none; min-height: auto; width: auto; margin: 0; }
+          .print-page {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 0 !important;
+            box-shadow: none !important;
+            box-sizing: border-box !important;
+          }
           .ppl-section, .ppl-subsection { page-break-after: avoid; break-after: avoid; }
+          .ppl-table { width: 100% !important; table-layout: fixed; }
           .ppl-table tr { page-break-inside: avoid; break-inside: avoid; }
           .ppl-footer, .ppl-consent { page-break-inside: avoid; break-inside: avoid; break-before: avoid; }
-          p, td, li { orphans: 3; widows: 3; }
+          p, td, li { orphans: 3; widows: 3; word-wrap: break-word; overflow-wrap: break-word; }
         }
+
       `}</style>
 
 

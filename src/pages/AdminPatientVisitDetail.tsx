@@ -484,7 +484,7 @@ export default function AdminPatientVisitDetail() {
                       if (!src) return;
                       const w = window.open("", "_blank");
                       if (!w) return;
-                      w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Протокол — Тарусин Д.И.</title><style>@page{size:A4;margin:15mm 18mm 15mm 22mm}html,body{margin:0;padding:0;background:#fff}.print-page{padding:0 !important;width:auto !important;min-height:auto !important;margin:0 !important;box-shadow:none !important}</style></head><body>${src.innerHTML}</body></html>`);
+                      w.document.write(`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Протокол — Тарусин Д.И.</title><style>html,body{margin:0!important;padding:0!important;background:#fff}</style></head><body>${src.innerHTML}</body></html>`);
                       w.document.close();
                       w.focus();
                       setTimeout(() => { w.print(); w.close(); }, 500);
