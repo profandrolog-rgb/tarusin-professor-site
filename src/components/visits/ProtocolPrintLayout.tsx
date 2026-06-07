@@ -466,7 +466,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           /* @page margins ensure every page (including 2+) has top/bottom/side spacing */
           @page {
             size: A4;
-            margin: 10mm 18mm 15mm 22mm;
+            margin: 15mm 18mm 15mm 22mm;
             @bottom-right {
               content: "Страница " counter(page) " из " counter(pages);
               font-family: Arial, sans-serif;
