@@ -14,7 +14,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Phone, ClipboardList } from "lucide-react";
+import { Plus, X, Phone, ClipboardList, Salad } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 
 function AutoTextarea({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
