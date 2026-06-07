@@ -1,0 +1,1 @@
+ALTER TYPE public.treatment_category ADD VALUE IF NOT EXISTS 'physiotherapy';
