@@ -98,6 +98,7 @@ export function normalizeAssignments(raw: any): AssignmentsData {
     examinations: Array.isArray(raw.examinations) ? raw.examinations.filter(Boolean) : [],
     treatments: Array.isArray(raw.treatments) ? raw.treatments.filter(Boolean) : [],
     referrals: Array.isArray(raw.referrals) ? raw.referrals.filter(Boolean) : [],
+    diet: Array.isArray(raw.diet) ? raw.diet.filter(Boolean) : [],
   };
 }
 
