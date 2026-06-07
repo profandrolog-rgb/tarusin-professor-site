@@ -339,18 +339,12 @@ function ListEditor({ items, onChange, addPlaceholder, picker }: ListEditorProps
       {items.length > 0 && (
         <ol className="space-y-1.5 list-decimal pl-5">
           {items.map((t, i) => (
-            <li key={`${i}-${t}`} className="text-sm leading-snug group">
-              <div className="flex items-start gap-2">
-                <span className="flex-1 whitespace-pre-wrap">{t}</span>
-                <button
-                  type="button"
-                  onClick={() => removeAt(i)}
-                  className="opacity-60 hover:opacity-100 text-destructive shrink-0"
-                  title="Удалить"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+            <li key={i} className="text-sm leading-snug">
+              <AutoTextarea
+                value={t}
+                onChange={(v) => onChange(items.map((x, j) => (j === i ? v : x)))}
+                onRemove={() => removeAt(i)}
+              />
             </li>
           ))}
         </ol>
