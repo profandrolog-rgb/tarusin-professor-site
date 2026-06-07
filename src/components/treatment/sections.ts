@@ -32,6 +32,8 @@ export const SECTIONS: SectionDef[] = [
   { key: "procedure",       label: "Процедуры",                short: "процедуры",   icon: Zap },
   { key: "lifestyle",       label: "Образ жизни",              short: "lifestyle",   icon: HeartPulse },
   { key: "homeopathy",      label: "Гомеопатия",               short: "гомеопатия",  icon: Sparkles,   hint: "препарат из реперториума Кента + потенция" },
+  { key: "physiotherapy",   label: "Физиотерапия",             short: "физио",       icon: Waves,      hint: "процедура и число сеансов на курс" },
+
 
 ];
 
