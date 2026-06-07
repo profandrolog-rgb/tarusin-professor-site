@@ -874,6 +874,42 @@ export type Database = {
         }
         Relationships: []
       }
+      diet_recommendations: {
+        Row: {
+          category: string
+          created_at: string
+          diet_label: string
+          diet_type: string
+          id: string
+          is_recommended: boolean
+          item_text: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          diet_label: string
+          diet_type: string
+          id?: string
+          is_recommended?: boolean
+          item_text: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          diet_label?: string
+          diet_type?: string
+          id?: string
+          is_recommended?: boolean
+          item_text?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       disease_articles: {
         Row: {
           age_group: string
