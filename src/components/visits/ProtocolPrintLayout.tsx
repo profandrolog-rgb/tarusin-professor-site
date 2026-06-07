@@ -438,7 +438,83 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   );
 }
 
-const CONSENT_TEXT = `Я, нижеподписавшийся, в соответствии со статьями 20, 22 Федерального закона от 21.11.2011 № 323-ФЗ «Об основах охраны здоровья граждан в Российской Федерации», добровольно даю информированное согласие на медицинское вмешательство (осмотр, обследование, диагностические и лечебные процедуры) в объёме, необходимом для оказания мне (моему ребёнку) медицинской помощи в ООО «Профессиональный медицинский центр». Я ознакомлен(а) с целями, методами оказания медицинской помощи, возможным риском, вариантами медицинского вмешательства, его последствиями и предполагаемыми результатами. Мне разъяснены права, предусмотренные действующим законодательством. Согласие на обработку персональных и медицинских данных в рамках Федерального закона № 152-ФЗ «О персональных данных» дано добровольно.`;
+const CONSENT_INTRO = `даю своё добровольное информированное согласие на проведение медицинского осмотра, сбора анамнеза, необходимых диагностических и лечебных манипуляций в ООО «Профессиональный медицинский центр». Мне разъяснены цели, методы, возможные риски и альтернативные методы. Согласие даю добровольно, без принуждения.`;
+
+const Blank = ({ w = "60mm" }: { w?: string }) => (
+  <span style={{ display: "inline-block", borderBottom: "0.5pt solid #000", minWidth: w, height: "4mm", verticalAlign: "bottom" }} />
+);
+
+function ConsentBlock({ patient }: { patient: VisitForPrint["patient"] }) {
+  const fio = patient?.full_name || "";
+  const dob = patient?.birth_date ? format(new Date(patient.birth_date), "dd.MM.yyyy") : "";
+  const age = patient?.birth_date ? calcAge(patient.birth_date, new Date()) : null;
+
+  const SigRow = ({ who }: { who: string }) => (
+    <div className="sig-row">
+      <span>{who}: <Blank w="55mm" /> <span style={{ fontSize: "8pt", color: "#555" }}>(подпись)</span></span>
+      <span>Дата: <Blank w="35mm" /></span>
+    </div>
+  );
+
+  const Under15 = (
+    <>
+      <p style={{ margin: "0 0 2mm" }}>
+        Я, законный представитель пациента <Blank w="80mm" />
+        <span style={{ display: "block", fontSize: "8pt", color: "#555", marginLeft: "55mm" }}>(ФИО законного представителя)</span>
+      </p>
+      <p style={{ margin: "0 0 2mm" }}>
+        являющийся(аяся) <Blank w="70mm" />
+        <span style={{ display: "block", fontSize: "8pt", color: "#555", marginLeft: "30mm" }}>(мать / отец / опекун / попечитель)</span>
+      </p>
+      <p style={{ margin: "0 0 2mm" }}>
+        пациента <strong>{fio || <Blank w="80mm" />}</strong>, дата рождения: <strong>{dob || <Blank w="30mm" />}</strong>,
+      </p>
+      <p style={{ margin: "0 0 3mm", textAlign: "justify" }}>{CONSENT_INTRO}</p>
+      <SigRow who="Законный представитель" />
+    </>
+  );
+
+  const Between15and18 = (
+    <>
+      <p style={{ margin: "0 0 2mm" }}>
+        Я, пациент <strong>{fio || <Blank w="80mm" />}</strong>, дата рождения: <strong>{dob || <Blank w="30mm" />}</strong>,
+      </p>
+      <p style={{ margin: "0 0 3mm", textAlign: "justify" }}>{CONSENT_INTRO}</p>
+      <SigRow who="Пациент" />
+      <p style={{ margin: "4mm 0 2mm" }}>
+        Я, законный представитель пациента <Blank w="75mm" />
+        <span style={{ display: "block", fontSize: "8pt", color: "#555", marginLeft: "55mm" }}>(ФИО законного представителя)</span>
+      </p>
+      <p style={{ margin: "0 0 3mm" }}>своё согласие подтверждаю.</p>
+      <SigRow who="Законный представитель" />
+    </>
+  );
+
+  const Adult = (
+    <>
+      <p style={{ margin: "0 0 2mm" }}>
+        Я, <strong>{fio || <Blank w="80mm" />}</strong>, дата рождения: <strong>{dob || <Blank w="30mm" />}</strong>,
+      </p>
+      <p style={{ margin: "0 0 3mm", textAlign: "justify" }}>{CONSENT_INTRO}</p>
+      <SigRow who="Пациент" />
+    </>
+  );
+
+  let body: React.ReactNode = Adult;
+  if (age !== null) {
+    if (age < 15) body = Under15;
+    else if (age < 18) body = Between15and18;
+  }
+
+  return (
+    <div className="ppl-consent">
+      <h4>Информированное добровольное согласие на медицинское вмешательство</h4>
+      {body}
+    </div>
+  );
+}
+
+const CONSENT_TEXT = "";
 
 export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
   const def = PROTOCOL_TYPE_MAP[visit.protocol_type];
