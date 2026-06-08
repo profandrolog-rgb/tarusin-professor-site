@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import RichTextEditor from "@/components/blog/RichTextEditor";
+import ArticleMarkdownEditor from "@/components/parents/ArticleMarkdownEditor";
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -434,16 +434,13 @@ const AdminDiseaseArticles = () => {
 
                 <TabsContent value="text" className="space-y-3 mt-4">
                   <div>
-                    <Label>Текст статьи / транскрипция</Label>
-                    <RichTextEditor
-                      content={form.article_content}
-                      onChange={(html) => setForm({ ...form, article_content: html })}
-                      placeholder="Текст статьи о заболевании"
-                      storageBucket="disease-media"
-                      storageFolder="article-images"
+                    <Label>Текст статьи (markdown)</Label>
+                    <ArticleMarkdownEditor
+                      value={form.article_content}
+                      onChange={(v) => setForm({ ...form, article_content: v })}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Используйте панель инструментов для форматирования и вставки изображений
+                      Загрузите .docx, отформатируйте AI, добавьте маркеры галерей. Фото можно вставить позже на странице статьи.
                     </p>
                   </div>
                 </TabsContent>
