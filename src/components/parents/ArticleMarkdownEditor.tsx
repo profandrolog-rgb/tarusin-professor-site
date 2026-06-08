@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState, useEffect, useCallback } from "react";
 import mammoth from "mammoth";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -43,7 +43,11 @@ interface Props {
   onChange: (v: string) => void;
 }
 
-const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
+export interface ArticleMarkdownEditorHandle {
+  getMarkdown: () => string;
+}
+
+const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange }, ref) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [formatting, setFormatting] = useState(false);
@@ -78,6 +82,10 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
       onChange(md);
     },
   });
+
+  useImperativeHandle(ref, () => ({
+    getMarkdown: () => (editor ? htmlToMarkdown(editor.getHTML()) : value),
+  }), [editor, value]);
 
   // External value changes (e.g., format, .docx import, initial load) → reload editor content.
   useEffect(() => {
@@ -357,7 +365,9 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
       </Dialog>
     </div>
   );
-};
+});
+
+ArticleMarkdownEditor.displayName = "ArticleMarkdownEditor";
 
 interface ToolbarProps {
   editor: Editor | null;
