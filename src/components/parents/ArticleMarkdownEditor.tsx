@@ -166,7 +166,7 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2 items-center border rounded-md p-2 bg-muted/30">
+      <div className="sticky top-0 z-30 flex flex-wrap gap-2 items-center border rounded-md p-2 bg-background shadow-sm">
         <Button
           type="button"
           variant="outline"
@@ -386,7 +386,7 @@ const TBtn = ({
 const FormattingToolbar = ({ editor, onLink }: ToolbarProps) => {
   if (!editor) return null;
   return (
-    <div className="flex flex-wrap gap-0.5 items-center border-b px-2 py-1.5 bg-muted/20 sticky top-0 z-10">
+    <div className="flex flex-wrap gap-0.5 items-center border-b px-2 py-1.5 bg-muted/40 sticky top-[60px] z-20 backdrop-blur-sm">
       <TBtn
         title="H1"
         active={editor.isActive("heading", { level: 1 })}
