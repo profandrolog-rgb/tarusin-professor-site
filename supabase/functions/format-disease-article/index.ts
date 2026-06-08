@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    const apiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'AI service not configured' }), {
         status: 500,
@@ -139,24 +139,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: text }],
+        model: 'google/gemini-2.5-pro',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: text },
+        ],
       }),
     });
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
-      console.error('Anthropic error', aiResp.status, errText);
+      console.error('AI gateway error', aiResp.status, errText);
+      if (aiResp.status === 429) {
+        return new Response(JSON.stringify({ error: 'Слишком много запросов, попробуйте позже' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (aiResp.status === 402) {
+        return new Response(JSON.stringify({ error: 'Закончились кредиты AI. Пополните баланс в Settings → Workspace → Usage' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(JSON.stringify({ error: 'AI request failed' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -164,7 +176,7 @@ Deno.serve(async (req) => {
     }
 
     const data = await aiResp.json();
-    const raw = (data?.content?.[0]?.text || '').trim();
+    const raw = (data?.choices?.[0]?.message?.content || '').trim();
     const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
 
     return new Response(JSON.stringify({ formatted }), {
