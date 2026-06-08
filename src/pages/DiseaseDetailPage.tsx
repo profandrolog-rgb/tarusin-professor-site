@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import DOMPurify from "dompurify";
 import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
+import { useAuth } from "@/hooks/useAuth";
+import MarkdownArticle from "@/components/parents/MarkdownArticle";
+
+const isMarkdownContent = (s: string) => {
+  const trimmed = s.trim();
+  if (trimmed.includes("[[GALLERY:")) return true;
+  // HTML обычно начинается с тега
+  return !/^<[a-zA-Z!]/.test(trimmed);
+};
 
 // vite-react-ssg вызывает loader при сборке, чтобы пре-рендерить HTML (SEO).
 // На клиенте loader-данные не всегда восстанавливаются из HTML, поэтому
@@ -40,6 +49,8 @@ const DiseaseDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const loaderData = useLoaderDataSafe();
+
+  const { isAdmin } = useAuth();
 
   const [article, setArticle] = useState<any>(loaderData?.article ?? null);
   const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
@@ -145,11 +156,21 @@ const DiseaseDetailPage = () => {
 
         <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl">
           {article.article_content ? (
-            <div
-              className="prose prose-base max-w-none text-foreground [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content) }}
-              onCopy={(e) => e.preventDefault()}
-            />
+            isMarkdownContent(article.article_content) ? (
+              <MarkdownArticle
+                content={article.article_content}
+                articleId={article.id}
+                articleSlug={article.slug}
+                isAdmin={!!isAdmin}
+                onContentChange={(c) => setArticle({ ...article, article_content: c })}
+              />
+            ) : (
+              <div
+                className="prose prose-base max-w-none text-foreground [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content) }}
+                onCopy={(e) => e.preventDefault()}
+              />
+            )
           ) : (
             <p className="text-muted-foreground">Полный текст статьи скоро появится.</p>
           )}
