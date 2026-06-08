@@ -1,72 +1,72 @@
-## План
+## Цель
+Заменить textarea в `ArticleMarkdownEditor` на визуальный WYSIWYG-редактор на TipTap. Markdown из БД должен рендериться как форматированный текст (заголовки, жирный, списки), а маркеры `[[GALLERY: caption="..."]]` — как серые блоки-плейсхолдеры с подписью. При сохранении контент конвертируется обратно в markdown.
 
-Доработать страницу визита (`AdminPatientVisitDetail.tsx`): объединить кнопки в sticky-панель, добавить навигацию между протоколами, dirty-tracking, fullscreen-предпросмотр и горячую клавишу Ctrl+S.
+## Что делаем
 
-### 1. Sticky-панель действий
+### 1. Зависимости
+Установить парсеры markdown ↔ HTML:
+- `marked` — markdown → HTML (при загрузке)
+- `turndown` — HTML → markdown (при сохранении)
+- `turndown-plugin-gfm` — поддержка таблиц/strikethrough
 
-Заменить существующий блок шапки в `AdminPatientVisitDetail.tsx` на новый компонент `VisitActionBar`:
+TipTap уже есть в проекте (`@tiptap/react`, `@tiptap/starter-kit` используются в `RichTextEditor.tsx` и блог-редакторе).
 
+### 2. Новый компонент `ArticleWysiwygEditor.tsx`
+Заменяет внутренности `ArticleMarkdownEditor` (панель инструментов + textarea). Сохраняем тот же интерфейс `{ value, onChange }`, где `value` — markdown-строка.
+
+Архитектура:
+- При монтировании / смене `value` извне: `marked(value)` → HTML → `editor.commands.setContent(html)`. Защита от циклов через флаг "внутреннее обновление".
+- При изменениях в редакторе: HTML → `turndown(html)` → `onChange(markdown)`.
+- Конвертация маркеров галерей в обе стороны (см. ниже).
+
+### 3. Кастомный TipTap-узел `GalleryPlaceholder`
+- Тип: `Node`, `group: 'block'`, `atom: true`, `selectable: true`.
+- Атрибут: `caption: string`.
+- `renderHTML`: `<div data-gallery-placeholder data-caption="...">…</div>`.
+- `parseHTML`: матч по `div[data-gallery-placeholder]`.
+- NodeView (React): серый прямоугольник `border-2 border-dashed bg-muted` с иконкой `ImagePlus`, текстом «Галерея: {caption}» и кнопкой-карандашом для редактирования подписи через тот же диалог.
+
+### 4. Преобразование маркеров
+**Markdown → HTML (загрузка):** перед `marked()` заменяем регулярку `\[\[GALLERY:\s*caption="([^"]*)"\]\]` на `<div data-gallery-placeholder data-caption="$1"></div>`. TipTap парсит это в узел `GalleryPlaceholder`.
+
+**HTML → Markdown (сохранение):** регистрируем правило в `turndown`:
 ```
-[← К журналу] [Открыть протокол ▾] [+ Новый протокол] | [Сохранить ●] [Предпросмотр 👁]
-```
-
-- `position: sticky; top: 0; z-index: 50`, белый фон, тень снизу, высота 48px
-- На экранах < md показываются только иконки (текст в `title`/Tooltip)
-- Разделитель между группами через `flex` + `ml-auto` для правой группы
-
-### 2. Dropdown "Открыть протокол"
-
-Использовать `DropdownMenu` из `@/components/ui/dropdown-menu`. При открытии — запрос:
-
-```ts
-supabase.from("patient_visits")
-  .select("id, visit_date, protocol_type, diagnosis")
-  .eq("patient_id", visit.patient_id)
-  .neq("id", visit.id)
-  .order("visit_date", { ascending: false })
-```
-
-Каждый пункт: `"15.05.2026 — Первичный осмотр — Варикоцеле слева"` (title из `PROTOCOL_TYPE_MAP`). Если пусто — disabled пункт «Нет других протоколов».
-
-### 3. Кнопка "+ Новый протокол"
-
-Просто `<Link to={`/admin/visits/new?patient_id=${visit.patient_id}`}>` — переиспользует существующую страницу `AdminPatientVisitNew`, которая уже принимает `patient_id` из query.
-
-### 4. Dirty-tracking
-
-В `AdminPatientVisitDetail` уже есть `useAutoSave`. Добавить отдельный `isDirty` стейт через сравнение `visit` с baseline-снимком:
-
-```ts
-const [baseline, setBaseline] = useState<string>("");
-useEffect(() => { if (visit && !baseline) setBaseline(JSON.stringify(serialize(visit))); }, [visit]);
-const isDirty = useMemo(() => baseline && JSON.stringify(serialize(visit)) !== baseline, [visit, baseline]);
+turndownService.addRule('galleryPlaceholder', {
+  filter: (node) => node.getAttribute?.('data-gallery-placeholder') !== null,
+  replacement: (_, node) => `\n\n[[GALLERY: caption="${node.getAttribute('data-caption')}"]]\n\n`
+})
 ```
 
-После успешного `handleSave` — обновлять baseline.
+### 5. Панель инструментов
+Сохраняем все существующие кнопки:
+- **Загрузить .docx** — без изменений (mammoth → текст → `onChange`).
+- **Форматировать** (✨) — без изменений (вызывает edge-функцию, заменяет `value`).
+- **Галерея** (📷) — открывает текущий диалог, при подтверждении вместо вставки строки делает `editor.chain().focus().insertContent({ type: 'galleryPlaceholder', attrs: { caption } }).run()`.
 
-UI:
-- Кнопка «Сохранить»: при `isDirty` — `variant="default"` + жёлтая точка `●`; иначе `variant="outline"` + disabled. Tooltip соответствующий.
-- Под панелью жёлтая полоска `bg-yellow-50 border-yellow-300 text-yellow-900`: «⚠ Есть несохранённые изменения — не забудьте сохранить» (только при `isDirty`).
+Добавляем базовые WYSIWYG-кнопки (H1/H2/H3, Bold, Italic, маркированный/нумерованный список, цитата, ссылка) — стиль как в `RichTextEditor.tsx`.
 
-### 5. Confirm при уходе
+Переключатель «Редактор / Предпросмотр» оставляем — в режиме предпросмотра показываем `MarkdownArticle` с актуальным `value` (markdown).
 
-- Перехват клика на «К журналу» и на пункты dropdown'а: если `isDirty` → `window.confirm("Есть несохранённые изменения. Уйти без сохранения?")`.
-- `beforeunload` listener на закрытие вкладки.
+### 6. Файлы
+- **Новый**: `src/components/parents/ArticleWysiwygEditor.tsx` — главный компонент.
+- **Новый**: `src/components/parents/tiptap/GalleryPlaceholderNode.tsx` — Node + NodeView.
+- **Новый**: `src/lib/markdown/galleryMarkers.ts` — `markdownToHtml(md)` / `htmlToMarkdown(html)` с правилами для галерей.
+- **Изменён**: `src/components/parents/ArticleMarkdownEditor.tsx` — оборачивает новый компонент (или прямая замена, экспорт остаётся прежним, чтобы не трогать места использования).
 
-### 6. Hotkey Ctrl+S / Cmd+S
+### 7. Совместимость
+- Внешний API (`value: string` markdown, `onChange(v: string)`) не меняется → `AdminDiseaseArticles` и предпросмотр `MarkdownArticle` работают без изменений.
+- БД-формат остаётся markdown с маркерами `[[GALLERY:...]]` — старые статьи и публичная страница `/for-parents/:slug` работают как раньше.
 
-`useEffect` с listener'ом `keydown`: при `(e.ctrlKey||e.metaKey) && e.key === 's'` → `preventDefault()` + `handleSave()`.
+## Технические детали
 
-### 7. Fullscreen предпросмотр
+- `marked` настройка: `{ gfm: true, breaks: false }`.
+- `turndown` настройка: `{ headingStyle: 'atx', bulletListMarker: '-', codeBlockStyle: 'fenced' }` + плагин gfm.
+- TipTap extensions: `StarterKit`, `Link`, `Image` (на будущее), `GalleryPlaceholder`.
+- Защита от лупа: при `onUpdate` сравнивать новый markdown с последним пропом `value`; обновлять контент редактора при изменении `value` только если он отличается от текущего сериализованного.
+- Стили серого блока: `rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/40 p-6 my-4 flex items-center gap-3 text-muted-foreground`.
 
-Новый компонент-обёртка прямо в файле: `Dialog` из `@/components/ui/dialog` с `DialogContent className="max-w-[100vw] w-screen h-screen p-0"`. Внутри:
-
-- Шапка модала: `[🖨 Печать] [✕ Закрыть]` справа сверху, sticky
-- Body: `<ProtocolPrintLayout visit={visit} />` (компонент уже существует) — берёт **текущее состояние формы из `visit`**, включая несохранённые
-- Печать: `window.print()`. Чтобы печаталось только содержимое модала, добавить класс `print-only-modal` и в существующих CSS `@media print` скрыть всё кроме `.print-only-modal *`. Проще: переиспользовать существующий механизм через временное окно — но требование явное «не новая вкладка», поэтому использовать `@media print { body * { visibility: hidden } .modal-print-root, .modal-print-root * { visibility: visible } .modal-print-root { position: absolute; inset: 0 } }`.
-
-### Технические детали
-
-- Файлы: правка `src/pages/AdminPatientVisitDetail.tsx` (всё уместится без выноса в отдельные файлы; компоненты `VisitActionBar` и `PreviewDialog` — локальные внутри файла или рядом).
-- Существующие импорты `Tooltip`, `DropdownMenu`, `Dialog` есть в `src/components/ui`.
-- Не трогать `ProtocolPrintLayout`, `ProtocolForm`, схемы и БД.
+## Что НЕ делаем
+- Не меняем `MarkdownArticle` (публичный рендер) — он по-прежнему получает markdown.
+- Не меняем edge-функцию `format-disease-article`.
+- Не меняем схему БД.
+- Загрузку реальных фото в галерею оставляем на существующий механизм страницы статьи (как раньше).
