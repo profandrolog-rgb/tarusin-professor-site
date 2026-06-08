@@ -33,7 +33,7 @@ interface Props {
 
 const ARTICLE_IMAGES_FOLDER = "article-images";
 
-type ImgType = "surgery" | "ultrasound" | "patient" | "infographic" | "anatomy" | "default";
+type ImgType = "surgery" | "ultrasound" | "patient" | "urology" | "urology-closeup" | "infographic" | "anatomy" | "default";
 
 interface TypeRule {
   ratio: number | null; // width / height, null = no crop
@@ -42,29 +42,34 @@ interface TypeRule {
 }
 
 const TYPE_RULES: Record<ImgType, TypeRule> = {
-  surgery:     { ratio: 4 / 3, crop: "center", maxW: 1600 },
-  anatomy:     { ratio: 4 / 3, crop: "center", maxW: 1600 },
-  ultrasound:  { ratio: 1,     crop: "center", maxW: 1200 },
-  patient:     { ratio: 3 / 4, crop: "top",    maxW: 1000 },
-  infographic: { ratio: null,  crop: "center", maxW: 1800 },
-  default:     { ratio: 4 / 3, crop: "center", maxW: 1600 },
+  surgery:           { ratio: 4 / 3, crop: "center", maxW: 1600 },
+  anatomy:           { ratio: 4 / 3, crop: "center", maxW: 1600 },
+  ultrasound:        { ratio: 1,     crop: "center", maxW: 1200 },
+  patient:           { ratio: 3 / 4, crop: "top",    maxW: 1000 },
+  urology:           { ratio: 3 / 4, crop: "center", maxW: 1000 },
+  "urology-closeup": { ratio: 1,     crop: "center", maxW: 1200 },
+  infographic:       { ratio: null,  crop: "center", maxW: 1800 },
+  default:           { ratio: 4 / 3, crop: "center", maxW: 1600 },
 };
 
 const TYPE_LABEL: Record<ImgType, string> = {
   surgery: "Операция (4:3)",
   ultrasound: "УЗИ (1:1)",
   patient: "Пациент (3:4, от верха)",
+  urology: "Урология (3:4, центр)",
+  "urology-closeup": "Урология крупный план (1:1, центр)",
   infographic: "Инфографика (без кадра)",
   anatomy: "Анатомия (4:3)",
   default: "По умолчанию (4:3)",
 };
 
-const TYPE_OPTIONS: ImgType[] = ["surgery", "ultrasound", "patient", "infographic", "anatomy", "default"];
+const TYPE_OPTIONS: ImgType[] = ["surgery", "ultrasound", "patient", "urology", "urology-closeup", "infographic", "anatomy", "default"];
 
 function detectType(caption: string): ImgType {
   const c = caption.toLowerCase();
   if (/операци|хирург|разрез|этап|интраопер/.test(c)) return "surgery";
   if (/узи|эхограм|ультразвук|допплер/.test(c)) return "ultrasound";
+  if (/мошонк|яичк|половой|препуци|головк|фимоз|крипторхизм|гидроцеле|варикоцеле/.test(c)) return "urology";
   if (/пациент|клиническ|внешн|вид|фото|симптом/.test(c)) return "patient";
   if (/схем|алгоритм|инфографик|классификац|таблиц/.test(c)) return "infographic";
   if (/анатоми|строени/.test(c)) return "anatomy";
