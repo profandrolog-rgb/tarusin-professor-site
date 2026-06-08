@@ -474,7 +474,7 @@ const PlaceholderGallery = ({
               type="button"
               size="sm"
               onClick={handleUpload}
-              disabled={uploading || reprocessingIdx !== null}
+              disabled={uploading || reprocessingId !== null}
               className="gap-1.5"
             >
               {uploading ? (
