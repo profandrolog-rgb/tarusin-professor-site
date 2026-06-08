@@ -54,8 +54,24 @@ const ImageGallery = ({ caption, files }: Props) => {
     marginTop: 6,
   };
 
+  const watermarkStyle: React.CSSProperties = {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    fontSize: 13,
+    fontWeight: 600,
+    color: "rgba(255, 255, 255, 0.7)",
+    textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+    pointerEvents: "none",
+    userSelect: "none",
+    letterSpacing: 0.2,
+  };
+
+  const noContextMenu = (e: React.MouseEvent) => e.preventDefault();
+  const noDragStart = (e: React.DragEvent) => e.preventDefault();
+
   return (
-    <figure className="my-8 not-prose">
+    <figure className="my-8 not-prose select-none" style={{ userSelect: "none" }}>
       {caption && (
         <h4 className="text-base md:text-lg font-semibold mb-3" style={{ color: "#1B4F8A" }}>
           {caption}
@@ -66,7 +82,7 @@ const ImageGallery = ({ caption, files }: Props) => {
           <button
             type="button"
             onClick={() => setLightboxIdx(0)}
-            className="block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
+            className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
             style={{ aspectRatio: "4 / 3" }}
           >
             <img
@@ -74,7 +90,11 @@ const ImageGallery = ({ caption, files }: Props) => {
               alt={items[0].caption || caption || "Фото 1"}
               loading="lazy"
               className="w-full h-full object-cover"
+              draggable={false}
+              onDragStart={noDragStart}
+              onContextMenu={noContextMenu}
             />
+            <span style={watermarkStyle}>tarusin.pro</span>
           </button>
           {items[0].caption && (
             <figcaption style={photoCaptionStyle}>{items[0].caption}</figcaption>
@@ -90,7 +110,7 @@ const ImageGallery = ({ caption, files }: Props) => {
               <button
                 type="button"
                 onClick={() => setLightboxIdx(i)}
-                className="block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
+                className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
                 style={{ aspectRatio: "4 / 3" }}
               >
                 <img
@@ -98,7 +118,11 @@ const ImageGallery = ({ caption, files }: Props) => {
                   alt={it.caption || caption || `Фото ${i + 1}`}
                   loading="lazy"
                   className="w-full h-full object-cover"
+                  draggable={false}
+                  onDragStart={noDragStart}
+                  onContextMenu={noContextMenu}
                 />
+                <span style={watermarkStyle}>tarusin.pro</span>
               </button>
               {it.caption && (
                 <figcaption style={photoCaptionStyle}>{it.caption}</figcaption>
@@ -111,8 +135,10 @@ const ImageGallery = ({ caption, files }: Props) => {
 
       {lightboxIdx !== null && (
         <div
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 select-none"
+          style={{ userSelect: "none" }}
           onClick={() => setLightboxIdx(null)}
+          onContextMenu={noContextMenu}
         >
           <button
             type="button"
@@ -151,12 +177,20 @@ const ImageGallery = ({ caption, files }: Props) => {
               <ChevronRight className="w-8 h-8" />
             </button>
           )}
-          <img
-            src={publicUrl(items[lightboxIdx].filename)}
-            alt={items[lightboxIdx].caption || caption || `Фото ${lightboxIdx + 1}`}
-            className="max-w-full max-h-full object-contain"
+          <div
+            className="relative max-w-full max-h-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
-          />
+          >
+            <img
+              src={publicUrl(items[lightboxIdx].filename)}
+              alt={items[lightboxIdx].caption || caption || `Фото ${lightboxIdx + 1}`}
+              className="max-w-full max-h-[90vh] object-contain"
+              draggable={false}
+              onDragStart={noDragStart}
+              onContextMenu={noContextMenu}
+            />
+            <span style={watermarkStyle}>tarusin.pro</span>
+          </div>
           {items[lightboxIdx].caption && (
             <div
               className="absolute bottom-0 left-0 right-0 px-6 py-4 text-center pointer-events-none"
