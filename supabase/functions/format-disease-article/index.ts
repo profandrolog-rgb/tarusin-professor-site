@@ -32,43 +32,20 @@ const SYSTEM_PROMPT = `Ты — редактор медицинского сай
 
 5. РАЗДЕЛИТЕЛИ
 После каждого крупного раздела (## заголовок) ставь: ---
-Это создаёт визуальный отступ и место для галереи иллюстраций.
 
 6. МАРКЕРЫ ГАЛЕРЕЙ
-После каждого --- ставь маркер галереи с описанием что здесь должно быть изображено:
+После каждого --- ставь маркер галереи с описанием:
 [[GALLERY: caption="описание что здесь нужно проиллюстрировать"]]
 
-Типы иллюстраций и примеры подписей:
-- После раздела «Что это такое» → [[GALLERY: caption="Анатомия: схема строения органа"]]
-- После раздела «Причины / Этиология» → [[GALLERY: caption="Классификация: физиологическая vs патологическая форма"]]
-- После раздела «Симптомы» → [[GALLERY: caption="Клиническая картина: внешние проявления"]]
-- После раздела «Диагностика» → [[GALLERY: caption="Диагностика: УЗИ-картина / диагностический алгоритм"]]
-- После раздела «Операция / Хирургическое лечение» → [[GALLERY: caption="Операция: этапы хирургического вмешательства"]]
-
 7. ТАБЛИЦЫ
-Если в тексте есть сравнение двух состояний — оформляй как markdown-таблицу:
-| Признак | Вариант 1 | Вариант 2 |
-|---------|-----------|-----------|
+Если в тексте есть сравнение — оформляй как markdown-таблицу.
 
 8. ОСОБЫЕ УКАЗАНИЯ
 - Сохраняй авторские истории и личные примеры из практики
 - Не удаляй юмор и живой язык автора
-- Если текст дублирует информацию — оставь один лучший вариант
 - Числа и проценты всегда жирным: **62%**, **4–6 часов**
-- Латинские термины после русского названия в скобках: серповидноклеточная анемия (sickle cell anemia)
+- Латинские термины после русского названия в скобках
 - В конце не добавляй призыв «запишитесь на приём»
-
-СТРУКТУРА СТАТЬИ (стандартный порядок, пропускай разделы которых нет в тексте, ничего не придумывай):
-1. ## Что такое [нозология]
-2. ## Как часто встречается
-3. ## Почему это происходит: причины и механизм
-4. ## Как это выглядит: симптомы
-5. ## Диагностика
-6. ## Лечение
-   ### Консервативное лечение
-   ### Хирургическое лечение
-7. ## Прогноз и наблюдение
-8. ## Часто задаваемые вопросы
 
 Начало ответа: сразу с markdown без предисловий. Конец ответа: строка ===КОНЕЦ===`;
 
@@ -101,7 +78,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check admin role
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
@@ -131,52 +107,42 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('LOVABLE_API_KEY');
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'AI service not configured' }), {
+      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-pro',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: text },
-        ],
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: text }],
       }),
     });
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
-      console.error('AI gateway error', aiResp.status, errText);
-      if (aiResp.status === 429) {
-        return new Response(JSON.stringify({ error: 'Слишком много запросов, попробуйте позже' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (aiResp.status === 402) {
-        return new Response(JSON.stringify({ error: 'Закончились кредиты AI. Пополните баланс в Settings → Workspace → Usage' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ error: 'AI request failed' }), {
+      console.error('Anthropic error', aiResp.status, errText);
+      return new Response(JSON.stringify({
+        error: `Anthropic ${aiResp.status}: ${errText}`,
+      }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await aiResp.json();
-    const raw = (data?.choices?.[0]?.message?.content || '').trim();
+    const raw = (data?.content?.[0]?.text || '').trim();
     const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
 
     return new Response(JSON.stringify({ formatted }), {
@@ -184,7 +150,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error('format-disease-article error:', e);
-    return new Response(JSON.stringify({ error: 'Internal error' }), {
+    return new Response(JSON.stringify({ error: String((e as any)?.message || e) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
