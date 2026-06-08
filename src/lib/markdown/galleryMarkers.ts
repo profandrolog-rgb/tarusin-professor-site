@@ -34,6 +34,24 @@ turndownService.addRule("galleryPlaceholder", {
     return `\n\n[[GALLERY: caption="${caption.replace(/"/g, "'")}"]]\n\n`;
   },
 });
+// Some content slips in as a plain <p>[[GALLERY: caption="..."]]</p> paragraph
+// (e.g. when the editor was bypassed, or when content came from external paste).
+// Turndown would otherwise escape brackets/quotes ("\[\[GALLERY: caption=\"..\"\]\]")
+// which prevents our renderer from picking it up.
+turndownService.addRule("galleryTextMarker", {
+  filter: (node) => {
+    if (node.nodeType !== 1) return false;
+    const el = node as HTMLElement;
+    if (el.tagName !== "P") return false;
+    const text = (el.textContent || "").trim();
+    return /^\[\[GALLERY:\s*caption\s*=\s*["“”][^"“”]*["“”]\s*(?:\|[^\]]*)?\]\]$/.test(text);
+  },
+  replacement: (_content, node) => {
+    const text = ((node as HTMLElement).textContent || "").trim();
+    return `\n\n${text}\n\n`;
+  },
+});
+
 
 export function htmlToMarkdown(html: string): string {
   if (!html) return "";
