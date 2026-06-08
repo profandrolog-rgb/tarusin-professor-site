@@ -125,17 +125,17 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
                   />
                 ),
                 h1: ({ children }) => (
-                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px" }}>
+                  <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
                     {children}
                   </h2>
                 ),
                 h2: ({ children }) => (
-                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px" }}>
+                  <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#1A1A1A", marginTop: "28px", marginBottom: "12px" }}>
+                  <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#1A1A1A", marginTop: "28px", marginBottom: "12px", lineHeight: 1.35 }}>
                     {children}
                   </h3>
                 ),
