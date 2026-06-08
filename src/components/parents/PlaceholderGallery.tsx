@@ -477,12 +477,12 @@ const PlaceholderGallery = ({
       for (let i = 0; i < previews.length; i++) {
         const p = previews[i];
         if (typeCounters[p.type] === undefined) {
-          const { data: existing } = await supabase.storage
+          const { data: existingInStorage } = await supabase.storage
             .from("disease-media")
             .list(ARTICLE_IMAGES_FOLDER, { limit: 1000, search: articleSlug });
           const prefix = `${articleSlug}-${p.type}-`;
           typeCounters[p.type] =
-            (existing || []).filter((f) => f.name.startsWith(prefix)).length + 1;
+            (existingInStorage || []).filter((f) => f.name.startsWith(prefix)).length + 1;
         }
         const idx = typeCounters[p.type]++;
         const filename = `${articleSlug}-${p.type}-${idx}.jpg`;
