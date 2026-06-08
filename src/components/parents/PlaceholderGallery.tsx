@@ -249,6 +249,7 @@ const PlaceholderGallery = ({
   onContentChange,
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [processing, setProcessing] = useState(false);
   const [progressText, setProgressText] = useState("");
   const [previews, setPreviews] = useState<Processed[]>([]);
@@ -275,9 +276,11 @@ const PlaceholderGallery = ({
     setPreviews([]);
   };
 
-  const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    clearPreviews();
+  const processFilesToItems = async (
+    files: File[],
+    opts: { keepExisting: boolean },
+  ): Promise<Processed[]> => {
+    if (files.length === 0) return [];
     setProcessing(true);
     const results: Processed[] = [];
     try {
@@ -298,12 +301,46 @@ const PlaceholderGallery = ({
           toast.error(`Ошибка обработки ${f.name}: ${e?.message || e}`);
         }
       }
-      setPreviews(results);
+      if (opts.keepExisting) {
+        setPreviews((prev) => [...prev, ...results]);
+      } else {
+        setPreviews(results);
+      }
+      return results;
     } finally {
       setProcessing(false);
       setProgressText("");
       if (inputRef.current) inputRef.current.value = "";
     }
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    clearPreviews();
+    await processFilesToItems(Array.from(files), { keepExisting: false });
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (uploading) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind === "file" && it.type.startsWith("image/")) {
+        const f = it.getAsFile();
+        if (f) {
+          const ext = (f.type.split("/")[1] || "png").split("+")[0];
+          const named = f.name && f.name !== "image.png"
+            ? f
+            : new File([f], `pasted-${Date.now()}.${ext}`, { type: f.type });
+          imageFiles.push(named);
+        }
+      }
+    }
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+    await processFilesToItems(imageFiles, { keepExisting: true });
   };
 
   const changeType = async (id: string, newType: ImgType) => {
@@ -406,7 +443,10 @@ const PlaceholderGallery = ({
 
   return (
     <div
-      className="my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose"
+      ref={containerRef}
+      tabIndex={0}
+      onPaste={handlePaste}
+      className="my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
       style={{ borderColor: "#E2EBF5", minHeight: 200 }}
     >
       <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
@@ -524,24 +564,29 @@ const PlaceholderGallery = ({
       )}
 
       {previews.length === 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={processing}
-          className="gap-2"
-        >
-          {processing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Обработка...
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4" /> Добавить фотографии
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col items-center gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={processing}
+            className="gap-2"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Обработка...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" /> Добавить фотографии
+              </>
+            )}
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            или вставьте скриншот (Ctrl+V)
+          </p>
+        </div>
       )}
 
       <input
