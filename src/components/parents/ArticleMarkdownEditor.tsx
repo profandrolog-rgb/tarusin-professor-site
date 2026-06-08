@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Sparkles, ImagePlus, Loader2 } from "lucide-react";
+import { Upload, Sparkles, ImagePlus, Loader2, Eye, Pencil } from "lucide-react";
+import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +22,7 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
   const [formatting, setFormatting] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
 
   const handleDocx = async (file: File | null) => {
     if (!file) return;
@@ -131,16 +133,58 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
           Галерея
         </Button>
 
-        <span className="text-xs text-muted-foreground ml-auto">Markdown · {value.length} симв.</span>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Markdown · {value.length} симв.</span>
+          <div className="flex rounded-md border overflow-hidden">
+            <Button
+              type="button"
+              variant={mode === "edit" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setMode("edit")}
+              className="gap-1 rounded-none h-8"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Редактор
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "preview" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setMode("preview")}
+              className="gap-1 rounded-none h-8"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Предпросмотр
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Сырой текст или markdown статьи..."
-        className="min-h-[420px] font-mono text-sm leading-relaxed"
-      />
+      {mode === "edit" ? (
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Сырой текст или markdown статьи..."
+          className="min-h-[420px] font-mono text-sm leading-relaxed"
+        />
+      ) : (
+        <div className="min-h-[420px] border rounded-md p-6 bg-background overflow-auto">
+          {value.trim() ? (
+            <MarkdownArticle
+              content={value}
+              articleId="preview"
+              articleSlug="preview"
+              isAdmin={false}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-12">
+              Нет содержимого для предпросмотра
+            </p>
+          )}
+        </div>
+      )}
+
 
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
         <DialogContent>
