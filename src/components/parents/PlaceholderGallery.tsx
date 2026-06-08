@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,6 +32,17 @@ const TYPE_RULES: Record<ImgType, TypeRule> = {
   default:     { ratio: 4 / 3, crop: "center", maxW: 1600 },
 };
 
+const TYPE_LABEL: Record<ImgType, string> = {
+  surgery: "Операция (4:3)",
+  ultrasound: "УЗИ (1:1)",
+  patient: "Пациент (3:4, от верха)",
+  infographic: "Инфографика (без кадра)",
+  anatomy: "Анатомия (4:3)",
+  default: "По умолчанию (4:3)",
+};
+
+const TYPE_OPTIONS: ImgType[] = ["surgery", "ultrasound", "patient", "infographic", "anatomy", "default"];
+
 function detectType(caption: string): ImgType {
   const c = caption.toLowerCase();
   if (/операци|хирург|разрез|этап|интраопер/.test(c)) return "surgery";
@@ -42,9 +53,9 @@ function detectType(caption: string): ImgType {
   return "default";
 }
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
@@ -58,24 +69,21 @@ function loadImage(file: File): Promise<HTMLImageElement> {
   });
 }
 
-async function processImage(file: File, type: ImgType): Promise<Blob> {
+async function processImage(source: Blob, type: ImgType): Promise<Blob> {
   const rule = TYPE_RULES[type];
-  const img = await loadImage(file);
+  const img = await loadImageFromBlob(source);
   const srcW = img.naturalWidth;
   const srcH = img.naturalHeight;
 
-  // Определяем crop-область из исходника
   let sx = 0, sy = 0, sw = srcW, sh = srcH;
   if (rule.ratio !== null) {
     const srcRatio = srcW / srcH;
     if (srcRatio > rule.ratio) {
-      // источник шире — режем по бокам
       sw = Math.round(srcH * rule.ratio);
       sx = Math.round((srcW - sw) / 2);
       sh = srcH;
       sy = 0;
     } else if (srcRatio < rule.ratio) {
-      // источник уже — режем по высоте
       sh = Math.round(srcW / rule.ratio);
       sw = srcW;
       sx = 0;
@@ -83,7 +91,6 @@ async function processImage(file: File, type: ImgType): Promise<Blob> {
     }
   }
 
-  // Масштабируем под maxW
   let dw = sw;
   let dh = sh;
   if (dw > rule.maxW) {
@@ -111,6 +118,7 @@ async function processImage(file: File, type: ImgType): Promise<Blob> {
 }
 
 interface Processed {
+  originalFile: File;
   blob: Blob;
   previewUrl: string;
   originalName: string;
@@ -130,6 +138,7 @@ const PlaceholderGallery = ({
   const [progressText, setProgressText] = useState("");
   const [previews, setPreviews] = useState<Processed[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [reprocessingIdx, setReprocessingIdx] = useState<number | null>(null);
 
   const detectedType = detectType(caption);
 
@@ -150,6 +159,7 @@ const PlaceholderGallery = ({
         try {
           const blob = await processImage(f, detectedType);
           results.push({
+            originalFile: f,
             blob,
             previewUrl: URL.createObjectURL(blob),
             originalName: f.name,
@@ -167,22 +177,56 @@ const PlaceholderGallery = ({
     }
   };
 
+  const changeType = async (idx: number, newType: ImgType) => {
+    const p = previews[idx];
+    if (!p) return;
+    setReprocessingIdx(idx);
+    try {
+      const blob = await processImage(p.originalFile, newType);
+      const previewUrl = URL.createObjectURL(blob);
+      setPreviews((prev) => {
+        const copy = [...prev];
+        URL.revokeObjectURL(copy[idx].previewUrl);
+        copy[idx] = { ...copy[idx], blob, previewUrl, type: newType };
+        return copy;
+      });
+    } catch (e: any) {
+      toast.error("Не удалось перекадрировать: " + (e?.message || e));
+    } finally {
+      setReprocessingIdx(null);
+    }
+  };
+
+  const reprocessAll = async (newType: ImgType) => {
+    setProcessing(true);
+    try {
+      for (let i = 0; i < previews.length; i++) {
+        await changeType(i, newType);
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (previews.length === 0) return;
     setUploading(true);
     try {
-      // Найдём следующий порядковый номер для slug + типа
-      const { data: existing } = await supabase.storage
-        .from("disease-media")
-        .list(ARTICLE_IMAGES_FOLDER, { limit: 1000, search: articleSlug });
-      const prefix = `${articleSlug}-${detectedType}-`;
-      const startIdx =
-        (existing || []).filter((f) => f.name.startsWith(prefix)).length + 1;
-
-      const uploaded: string[] = [];
+      const uploaded: { filename: string }[] = [];
+      // Подсчёт индексов по каждому типу отдельно
+      const typeCounters: Record<string, number> = {};
       for (let i = 0; i < previews.length; i++) {
         const p = previews[i];
-        const filename = `${articleSlug}-${p.type}-${startIdx + i}.jpg`;
+        if (typeCounters[p.type] === undefined) {
+          const { data: existing } = await supabase.storage
+            .from("disease-media")
+            .list(ARTICLE_IMAGES_FOLDER, { limit: 1000, search: articleSlug });
+          const prefix = `${articleSlug}-${p.type}-`;
+          typeCounters[p.type] =
+            (existing || []).filter((f) => f.name.startsWith(prefix)).length + 1;
+        }
+        const idx = typeCounters[p.type]++;
+        const filename = `${articleSlug}-${p.type}-${idx}.jpg`;
         const path = `${ARTICLE_IMAGES_FOLDER}/${filename}`;
         const { error } = await supabase.storage
           .from("disease-media")
@@ -192,12 +236,12 @@ const PlaceholderGallery = ({
           toast.error(`Не удалось загрузить ${p.originalName}: ${error.message}`);
           continue;
         }
-        uploaded.push(filename);
+        uploaded.push({ filename });
       }
 
       if (uploaded.length === 0) return;
 
-      const newMarker = `[[GALLERY: caption="${caption}" | ${uploaded.join(" | ")}]]`;
+      const newMarker = `[[GALLERY: caption="${caption}" | ${uploaded.map((u) => u.filename).join(" | ")}]]`;
       const newContent = fullContent.replace(marker, newMarker);
 
       const { error: updErr } = await supabase
@@ -225,16 +269,7 @@ const PlaceholderGallery = ({
       <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
       {caption && <p className="text-muted-foreground mb-2 max-w-xl">{caption}</p>}
       <p className="text-xs text-muted-foreground mb-4">
-        Тип: <span className="font-medium">{detectedType}</span> ·{" "}
-        {TYPE_RULES[detectedType].ratio === null
-          ? "без кадрирования"
-          : `соотношение ${
-              detectedType === "ultrasound"
-                ? "1:1"
-                : detectedType === "patient"
-                ? "3:4 (от верха)"
-                : "4:3"
-            }`}
+        Авто-тип: <span className="font-medium">{detectedType}</span>
       </p>
 
       {processing && (
@@ -248,26 +283,71 @@ const PlaceholderGallery = ({
 
       {previews.length > 0 && (
         <div className="w-full mb-4">
-          <div className="flex flex-wrap gap-2 justify-center mb-3">
+          <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
+            <span className="text-xs text-muted-foreground">Применить ко всем:</span>
+            {TYPE_OPTIONS.map((t) => (
+              <Button
+                key={t}
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                disabled={processing || uploading}
+                onClick={() => reprocessAll(t)}
+              >
+                {t}
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-3 justify-center mb-3">
             {previews.map((p, i) => (
-              <div key={i} className="relative">
-                <img
-                  src={p.previewUrl}
-                  alt={p.originalName}
-                  className="w-24 h-24 object-cover rounded border"
-                />
-                <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1">
-                  {p.originalName}
-                </span>
+              <div key={i} className="flex flex-col items-center gap-1.5 w-32">
+                <div className="relative">
+                  <img
+                    src={p.previewUrl}
+                    alt={p.originalName}
+                    className="w-32 h-32 object-cover rounded border bg-white"
+                  />
+                  {reprocessingIdx === i && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
+                      <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    </div>
+                  )}
+                  <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1 rounded-b">
+                    {p.originalName}
+                  </span>
+                </div>
+                <select
+                  className="text-xs border rounded px-1 py-0.5 bg-background w-full"
+                  value={p.type}
+                  disabled={reprocessingIdx === i || uploading}
+                  onChange={(e) => changeType(i, e.target.value as ImgType)}
+                  title={TYPE_LABEL[p.type]}
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => changeType(i, p.type)}
+                  disabled={reprocessingIdx === i || uploading}
+                  className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5"
+                  title="Повторно применить кадрирование"
+                >
+                  <RefreshCw className="w-3 h-3" /> перекадрировать
+                </button>
               </div>
             ))}
           </div>
+
           <div className="flex gap-2 justify-center">
             <Button
               type="button"
               size="sm"
               onClick={handleUpload}
-              disabled={uploading}
+              disabled={uploading || reprocessingIdx !== null}
               className="gap-1.5"
             >
               {uploading ? (
