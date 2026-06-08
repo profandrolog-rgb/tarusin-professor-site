@@ -443,7 +443,10 @@ const PlaceholderGallery = ({
 
   return (
     <div
-      className="my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose"
+      ref={containerRef}
+      tabIndex={0}
+      onPaste={handlePaste}
+      className="my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
       style={{ borderColor: "#E2EBF5", minHeight: 200 }}
     >
       <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
