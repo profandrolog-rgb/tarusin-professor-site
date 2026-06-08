@@ -12,10 +12,24 @@ interface Props {
   onContentChange?: (newContent: string) => void;
 }
 
-const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*"([^"]*)"\s*((?:\|[^\]]*)?)\]\]/g;
+const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*(["'])(.*?)\1\s*((?:\|[^\]]*)?)\]\]|<div\b(?=[^>]*\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)([^>]*)>\s*<\/div>/gi;
 
 const HR_HTML =
   '<hr style="border:none;border-top:2px solid #E2EBF5;margin:32px 0;" />';
+const HR_STYLE = "border:none;border-top:2px solid #E2EBF5;margin:32px 0;";
+const H2_STYLE = "font-size:26px;font-weight:700;color:#1B4F8A;margin-top:40px;margin-bottom:16px;line-height:1.3;";
+const H3_STYLE = "font-size:20px;font-weight:600;color:#333;margin-top:28px;margin-bottom:12px;line-height:1.35;";
+
+function readHtmlAttr(attrs: string, name: string): string {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i");
+  const m = attrs.match(re);
+  return (m?.[1] || m?.[2] || m?.[3] || "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+}
+
+function withInlineStyle(attrs: string, style: string): string {
+  return `${attrs.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi, "")} style="${style}"`;
+}
 
 /**
  * Convert various editor encodings of a horizontal rule into a real <hr>.
@@ -37,6 +51,13 @@ function normalizeHr(html: string): string {
   out = out.replace(/(<h[1-6][^>]*>)([\s\S]*?)<br\s*\/?>\s*-{3,}\s*(<\/h[1-6]>)/gi, "$1$2$3" + HR_HTML);
 
   return out;
+}
+
+function applyArticleStyles(html: string): string {
+  return html
+    .replace(/<hr\b[^>]*\/?\s*>/gi, `<hr style="${HR_STYLE}" />`)
+    .replace(/<h2\b([^>]*)>/gi, (_m, attrs: string) => `<h2${withInlineStyle(attrs, H2_STYLE)}>`)
+    .replace(/<h3\b([^>]*)>/gi, (_m, attrs: string) => `<h3${withInlineStyle(attrs, H3_STYLE)}>`);
 }
 
 /** Remove the first heading / bold paragraph if it duplicates the article title. */
@@ -90,11 +111,13 @@ function splitOnGalleryMarkers(html: string): Segment[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     if (m.index > last) segments.push({ type: "html", html: html.slice(last, m.index) });
-    const files = (m[2] || "")
+    const isTextMarker = !!m[2];
+    const caption = isTextMarker ? m[2] || "" : readHtmlAttr(m[4] || "", "data-caption");
+    const files = (isTextMarker ? m[3] || "" : readHtmlAttr(m[4] || "", "data-files"))
       .split("|")
       .map((s) => s.trim())
       .filter(Boolean);
-    segments.push({ type: "gallery", marker: m[0], caption: m[1] || "", files });
+    segments.push({ type: "gallery", marker: m[0], caption, files });
     last = m.index + m[0].length;
   }
   if (last < html.length) segments.push({ type: "html", html: html.slice(last) });
@@ -113,7 +136,7 @@ const ARTICLE_CLASS =
 
 const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onContentChange }: Props) => {
   const segments = useMemo(() => {
-    const normalized = normalizeHr(stripDuplicateTitle(content, title));
+    const normalized = applyArticleStyles(normalizeHr(stripDuplicateTitle(content, title)));
     return splitOnGalleryMarkers(normalized);
   }, [content, title]);
 
