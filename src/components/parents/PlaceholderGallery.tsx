@@ -519,11 +519,68 @@ const PlaceholderGallery = ({
       ref={containerRef}
       tabIndex={0}
       onPaste={handlePaste}
-      className="my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-      style={{ borderColor: "#E2EBF5", minHeight: 200 }}
+      className={
+        hasExisting
+          ? "mt-2 mb-8 rounded-lg border border-dashed flex flex-col items-center text-center px-4 py-4 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 bg-slate-50/50"
+          : "my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+      }
+      style={{ borderColor: "#E2EBF5", minHeight: hasExisting ? undefined : 200 }}
     >
-      <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
-      {caption && <p className="text-muted-foreground mb-2 max-w-xl">{caption}</p>}
+      {hasExisting ? (
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
+          Управление галереей (admin)
+        </p>
+      ) : (
+        <>
+          <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
+          {caption && <p className="text-muted-foreground mb-2 max-w-xl">{caption}</p>}
+        </>
+      )}
+
+      {hasExisting && (
+        <div className="w-full mb-4">
+          <div className="flex flex-wrap gap-2 justify-center">
+            {existing.map((it) => (
+              <div
+                key={it.filename}
+                className="relative w-24 h-24 rounded border bg-white overflow-hidden group"
+                title={it.caption || it.filename}
+              >
+                <img
+                  src={
+                    supabase.storage
+                      .from("disease-media")
+                      .getPublicUrl(`${ARTICLE_IMAGES_FOLDER}/${it.filename}`).data.publicUrl
+                  }
+                  alt={it.caption || it.filename}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  onClick={() => deleteExisting(it.filename)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Удалить фото"
+                  aria-label="Удалить фото"
+                >
+                  {deletingFile === it.filename ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                {it.caption && (
+                  <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1">
+                    {it.caption}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-4 flex-wrap justify-center">
         <label className="text-xs text-muted-foreground">Формат фото:</label>
         <select
