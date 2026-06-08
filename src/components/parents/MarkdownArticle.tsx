@@ -62,8 +62,26 @@ interface Props {
 }
 
 // Ensure `---` on its own line is parsed as a thematic break (<hr>) and not a setext heading.
+// Also normalises emphasised / escaped variants produced by TipTap:
+//   ***\---***   **---**   ***---***   \-\-\-
 function normalizeHorizontalRules(md: string): string {
-  return md.replace(/([^\n])\n(-{3,})\s*\n/g, "$1\n\n$2\n\n").replace(/\n(-{3,})\s*\n([^\n])/g, "\n\n$1\n\n$2");
+  let out = md;
+  // Strip emphasis wrappers around standalone dashes (with optional backslash-escapes).
+  out = out.replace(
+    /^[ \t]*[*_~]{1,3}\s*(?:\\?-){3,}\s*[*_~]{1,3}[ \t]*$/gm,
+    "---"
+  );
+  // Standalone backslash-escaped dashes line: \-\-\-
+  out = out.replace(/^[ \t]*(?:\\-){3,}[ \t]*$/gm, "---");
+  // Standalone plain dashes possibly inside emphasis on same line as text — leave alone.
+  // Strip emphasis wrappers around gallery markers: ***[[GALLERY:...]]***
+  out = out.replace(
+    /[*_~]{1,3}\s*(\[\[GALLERY:[^\]]*\]\])\s*[*_~]{1,3}/g,
+    "$1"
+  );
+  return out
+    .replace(/([^\n])\n(-{3,})\s*\n/g, "$1\n\n$2\n\n")
+    .replace(/\n(-{3,})\s*\n([^\n])/g, "\n\n$1\n\n$2");
 }
 
 function stripDuplicateTitle(md: string, title?: string): string {
