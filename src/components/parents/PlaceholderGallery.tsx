@@ -436,47 +436,38 @@ const PlaceholderGallery = ({
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-3 justify-center mb-3">
-            {previews.map((p, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5 w-32">
-                <div className="relative">
-                  <img
-                    src={p.previewUrl}
-                    alt={p.originalName}
-                    className="w-32 h-32 object-cover rounded border bg-white"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={previews.map((p) => p.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-3 justify-center mb-2">
+                {previews.map((p, i) => (
+                  <SortableThumb
+                    key={p.id}
+                    item={p}
+                    index={i}
+                    total={previews.length}
+                    isReprocessing={reprocessingId === p.id}
+                    disabled={uploading}
+                    onChangeType={changeType}
+                    onReprocess={(id) => {
+                      const cur = previews.find((x) => x.id === id);
+                      if (cur) changeType(id, cur.type);
+                    }}
                   />
-                  {reprocessingIdx === i && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                    </div>
-                  )}
-                  <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1 rounded-b">
-                    {p.originalName}
-                  </span>
-                </div>
-                <select
-                  className="text-xs border rounded px-1 py-0.5 bg-background w-full"
-                  value={p.type}
-                  disabled={reprocessingIdx === i || uploading}
-                  onChange={(e) => changeType(i, e.target.value as ImgType)}
-                  title={TYPE_LABEL[p.type]}
-                >
-                  {TYPE_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{TYPE_LABEL[t]}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => changeType(i, p.type)}
-                  disabled={reprocessingIdx === i || uploading}
-                  className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5"
-                  title="Повторно применить кадрирование"
-                >
-                  <RefreshCw className="w-3 h-3" /> перекадрировать
-                </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
+          <p className="text-xs text-muted-foreground mb-3">
+            Перетащите фото чтобы изменить порядок
+          </p>
+
 
           <div className="flex gap-2 justify-center">
             <Button
