@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import DOMPurify from "dompurify";
 import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
+import { useAuth } from "@/hooks/useAuth";
+import MarkdownArticle from "@/components/parents/MarkdownArticle";
+
+const isMarkdownContent = (s: string) => {
+  const trimmed = s.trim();
+  if (trimmed.includes("[[GALLERY:")) return true;
+  // HTML обычно начинается с тега
+  return !/^<[a-zA-Z!]/.test(trimmed);
+};
 
 // vite-react-ssg вызывает loader при сборке, чтобы пре-рендерить HTML (SEO).
 // На клиенте loader-данные не всегда восстанавливаются из HTML, поэтому
