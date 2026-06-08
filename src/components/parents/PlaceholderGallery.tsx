@@ -249,6 +249,7 @@ const PlaceholderGallery = ({
   onContentChange,
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [processing, setProcessing] = useState(false);
   const [progressText, setProgressText] = useState("");
   const [previews, setPreviews] = useState<Processed[]>([]);
