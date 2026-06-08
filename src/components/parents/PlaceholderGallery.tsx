@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
