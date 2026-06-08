@@ -307,6 +307,7 @@ const PlaceholderGallery = ({
             previewUrl: URL.createObjectURL(blob),
             originalName: f.name,
             type: detectedType,
+            caption: "",
           });
         } catch (e: any) {
           toast.error(`Ошибка обработки ${f.name}: ${e?.message || e}`);
