@@ -167,6 +167,7 @@ const SortableThumb = ({
   isReprocessing,
   disabled,
   onChangeType,
+  onChangeCaption,
   onReprocess,
 }: SortableThumbProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
