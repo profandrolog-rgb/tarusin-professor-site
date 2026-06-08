@@ -181,7 +181,22 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
             />
           );
         }
-        return <ImageGallery key={i} caption={g.caption} files={g.files} />;
+        return (
+          <div key={i}>
+            <ImageGallery caption={g.caption} files={g.files} />
+            {isAdmin && (
+              <PlaceholderGallery
+                articleId={articleId}
+                articleSlug={articleSlug}
+                caption={g.caption}
+                marker={g.marker}
+                fullContent={content}
+                existingFiles={g.files}
+                onContentChange={onContentChange}
+              />
+            )}
+          </div>
+        );
       })}
     </div>
   );

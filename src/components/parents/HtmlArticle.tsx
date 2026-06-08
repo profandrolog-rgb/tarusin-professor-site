@@ -175,7 +175,22 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
             />
           );
         }
-        return <ImageGallery key={i} caption={seg.caption || ""} files={seg.files || []} />;
+        return (
+          <div key={i}>
+            <ImageGallery caption={seg.caption || ""} files={seg.files || []} />
+            {isAdmin && (
+              <PlaceholderGallery
+                articleId={articleId}
+                articleSlug={articleSlug}
+                caption={seg.caption || ""}
+                marker={seg.marker || ""}
+                fullContent={content}
+                existingFiles={seg.files || []}
+                onContentChange={onContentChange}
+              />
+            )}
+          </div>
+        );
       })}
     </div>
   );

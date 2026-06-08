@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -28,6 +28,7 @@ interface Props {
   caption: string;
   marker: string;
   fullContent: string;
+  existingFiles?: string[];
   onContentChange?: (newContent: string) => void;
 }
 
@@ -251,12 +252,25 @@ const SortableThumb = ({
 };
 
 
+interface ExistingItem {
+  filename: string;
+  caption: string;
+}
+
+function parseExistingEntry(raw: string): ExistingItem {
+  const s = raw.trim();
+  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
+  if (m) return { filename: m[1], caption: m[2].trim() };
+  return { filename: s, caption: "" };
+}
+
 const PlaceholderGallery = ({
   articleId,
   articleSlug,
   caption,
   marker,
   fullContent,
+  existingFiles,
   onContentChange,
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -267,6 +281,59 @@ const PlaceholderGallery = ({
   const [uploading, setUploading] = useState(false);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
+  const [deletingFile, setDeletingFile] = useState<string | null>(null);
+
+  const existing = useMemo<ExistingItem[]>(
+    () => (existingFiles ?? []).map(parseExistingEntry),
+    [existingFiles],
+  );
+  const hasExisting = existing.length > 0;
+
+  const formatEntry = (e: ExistingItem) => {
+    const safe = (e.caption || "").replace(/"/g, "”").replace(/\|/g, "／");
+    return safe ? `${e.filename} "${safe}"` : e.filename;
+  };
+
+  const buildMarker = (entries: ExistingItem[]) => {
+    const parts = entries.map(formatEntry);
+    return `[[GALLERY: caption="${caption}"${
+      parts.length ? ` | ${parts.join(" | ")}` : ""
+    }]]`;
+  };
+
+  const persistEntries = async (entries: ExistingItem[]): Promise<boolean> => {
+    const newMarker = buildMarker(entries);
+    const newContent = fullContent.replace(marker, newMarker);
+    const { error } = await supabase
+      .from("disease_articles")
+      .update({ article_content: newContent })
+      .eq("id", articleId);
+    if (error) {
+      toast.error("Не удалось сохранить галерею: " + error.message);
+      return false;
+    }
+    onContentChange?.(newContent);
+    return true;
+  };
+
+  const deleteExisting = async (filename: string) => {
+    if (deletingFile) return;
+    if (!confirm("Удалить это фото из галереи?")) return;
+    setDeletingFile(filename);
+    try {
+      // best-effort удаление файла из storage
+      await supabase.storage
+        .from("disease-media")
+        .remove([`${ARTICLE_IMAGES_FOLDER}/${filename}`]);
+      const next = existing.filter((e) => e.filename !== filename);
+      const ok = await persistEntries(next);
+      if (ok) toast.success("Фото удалено");
+    } finally {
+      setDeletingFile(null);
+    }
+  };
+
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -410,12 +477,12 @@ const PlaceholderGallery = ({
       for (let i = 0; i < previews.length; i++) {
         const p = previews[i];
         if (typeCounters[p.type] === undefined) {
-          const { data: existing } = await supabase.storage
+          const { data: existingInStorage } = await supabase.storage
             .from("disease-media")
             .list(ARTICLE_IMAGES_FOLDER, { limit: 1000, search: articleSlug });
           const prefix = `${articleSlug}-${p.type}-`;
           typeCounters[p.type] =
-            (existing || []).filter((f) => f.name.startsWith(prefix)).length + 1;
+            (existingInStorage || []).filter((f) => f.name.startsWith(prefix)).length + 1;
         }
         const idx = typeCounters[p.type]++;
         const filename = `${articleSlug}-${p.type}-${idx}.jpg`;
@@ -433,23 +500,13 @@ const PlaceholderGallery = ({
 
       if (uploaded.length === 0) return;
 
-      const entries = uploaded.map((u) => {
-        const safe = u.caption.replace(/"/g, "”").replace(/\|/g, "／");
-        return safe ? `${u.filename} "${safe}"` : u.filename;
-      });
-      const newMarker = `[[GALLERY: caption="${caption}" | ${entries.join(" | ")}]]`;
-      const newContent = fullContent.replace(marker, newMarker);
-
-      const { error: updErr } = await supabase
-        .from("disease_articles")
-        .update({ article_content: newContent })
-        .eq("id", articleId);
-
-      if (updErr) {
-        toast.error("Не удалось сохранить галерею: " + updErr.message);
-      } else {
+      const allEntries: ExistingItem[] = [
+        ...existing,
+        ...uploaded.map((u) => ({ filename: u.filename, caption: u.caption })),
+      ];
+      const ok = await persistEntries(allEntries);
+      if (ok) {
         toast.success(`Загружено фото: ${uploaded.length}`);
-        onContentChange?.(newContent);
         clearPreviews();
       }
     } finally {
@@ -462,11 +519,68 @@ const PlaceholderGallery = ({
       ref={containerRef}
       tabIndex={0}
       onPaste={handlePaste}
-      className="my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-      style={{ borderColor: "#E2EBF5", minHeight: 200 }}
+      className={
+        hasExisting
+          ? "mt-2 mb-8 rounded-lg border border-dashed flex flex-col items-center text-center px-4 py-4 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 bg-slate-50/50"
+          : "my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+      }
+      style={{ borderColor: "#E2EBF5", minHeight: hasExisting ? undefined : 200 }}
     >
-      <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
-      {caption && <p className="text-muted-foreground mb-2 max-w-xl">{caption}</p>}
+      {hasExisting ? (
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
+          Управление галереей (admin)
+        </p>
+      ) : (
+        <>
+          <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
+          {caption && <p className="text-muted-foreground mb-2 max-w-xl">{caption}</p>}
+        </>
+      )}
+
+      {hasExisting && (
+        <div className="w-full mb-4">
+          <div className="flex flex-wrap gap-2 justify-center">
+            {existing.map((it) => (
+              <div
+                key={it.filename}
+                className="relative w-24 h-24 rounded border bg-white overflow-hidden group"
+                title={it.caption || it.filename}
+              >
+                <img
+                  src={
+                    supabase.storage
+                      .from("disease-media")
+                      .getPublicUrl(`${ARTICLE_IMAGES_FOLDER}/${it.filename}`).data.publicUrl
+                  }
+                  alt={it.caption || it.filename}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  onClick={() => deleteExisting(it.filename)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Удалить фото"
+                  aria-label="Удалить фото"
+                >
+                  {deletingFile === it.filename ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                {it.caption && (
+                  <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1">
+                    {it.caption}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-4 flex-wrap justify-center">
         <label className="text-xs text-muted-foreground">Формат фото:</label>
         <select
@@ -600,7 +714,8 @@ const PlaceholderGallery = ({
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4" /> Добавить фотографии
+                <Plus className="w-4 h-4" />{" "}
+                {hasExisting ? "Добавить ещё фото" : "Добавить фотографии"}
               </>
             )}
           </Button>
