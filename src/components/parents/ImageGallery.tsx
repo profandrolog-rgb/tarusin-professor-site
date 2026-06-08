@@ -29,14 +29,8 @@ const ImageGallery = ({ caption, files }: Props) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [lightboxIdx, files.length]);
 
-  const gridClass =
-    files.length === 1
-      ? "grid grid-cols-1 max-w-[700px] mx-auto"
-      : files.length === 2
-      ? "grid grid-cols-1 sm:grid-cols-2 gap-3"
-      : files.length === 3
-      ? "grid grid-cols-1 sm:grid-cols-3 gap-3"
-      : "grid grid-cols-1 sm:grid-cols-3 gap-3";
+  const isSingle = files.length === 1;
+  const isDouble = files.length === 2;
 
   return (
     <figure className="my-8 not-prose">
@@ -45,24 +39,43 @@ const ImageGallery = ({ caption, files }: Props) => {
           {caption}
         </h4>
       )}
-      <div className={gridClass}>
-        {files.map((f, i) => (
+      {isSingle ? (
+        <div className="max-w-[700px] mx-auto">
           <button
-            key={f + i}
             type="button"
-            onClick={() => setLightboxIdx(i)}
-            className="block overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
+            onClick={() => setLightboxIdx(0)}
+            className="block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
             style={{ aspectRatio: "4 / 3" }}
           >
             <img
-              src={publicUrl(f)}
-              alt={caption || `Фото ${i + 1}`}
+              src={publicUrl(files[0])}
+              alt={caption || "Фото 1"}
               loading="lazy"
               className="w-full h-full object-cover"
             />
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap justify-center gap-3">
+          {files.map((f, i) => (
+            <button
+              key={f + i}
+              type="button"
+              onClick={() => setLightboxIdx(i)}
+              className="block overflow-hidden rounded-lg border border-border hover:opacity-95 transition basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]"
+              style={{ aspectRatio: "4 / 3" }}
+            >
+              <img
+                src={publicUrl(f)}
+                alt={caption || `Фото ${i + 1}`}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
 
       {lightboxIdx !== null && (
         <div
