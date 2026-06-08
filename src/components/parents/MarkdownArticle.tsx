@@ -60,11 +60,18 @@ interface Props {
   onContentChange?: (newContent: string) => void;
 }
 
+// Ensure `---` on its own line is parsed as a thematic break (<hr>) and not a setext heading.
+// Markdown requires a blank line before/after `---` for it to become <hr>.
+function normalizeHorizontalRules(md: string): string {
+  // Add blank lines around standalone --- (3+ dashes)
+  return md.replace(/([^\n])\n(-{3,})\s*\n/g, "$1\n\n$2\n\n").replace(/\n(-{3,})\s*\n([^\n])/g, "\n\n$1\n\n$2");
+}
+
 const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, onContentChange }: Props) => {
-  const segments = useMemo(() => parseArticleContent(content), [content]);
+  const segments = useMemo(() => parseArticleContent(normalizeHorizontalRules(content)), [content]);
 
   return (
-    <div className="article-markdown prose prose-base max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-4 [&_p]:leading-relaxed [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-7 [&_h3]:mb-3 [&_hr]:my-8 [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-[#E2EBF5]">
+    <div className="article-markdown prose prose-base max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-7 [&_p]:leading-[1.85] [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-14 [&_h2]:mb-5 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-10 [&_h3]:mb-4 [&_ul]:my-5 [&_ol]:my-5 [&_li]:my-2 [&_hr]:my-10 [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-[#E2EBF5]">
       {segments.map((seg, i) => {
         if (seg.type === "md") {
           return (
