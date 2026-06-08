@@ -404,7 +404,7 @@ const PlaceholderGallery = ({
     if (previews.length === 0) return;
     setUploading(true);
     try {
-      const uploaded: { filename: string }[] = [];
+      const uploaded: { filename: string; caption: string }[] = [];
       // Подсчёт индексов по каждому типу отдельно
       const typeCounters: Record<string, number> = {};
       for (let i = 0; i < previews.length; i++) {
