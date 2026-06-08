@@ -922,6 +922,119 @@ const PlaceholderGallery = ({
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
+
+      {cropQueue.length > 0 && (() => {
+        const cur = cropQueue[cropIndex];
+        const ratio = TYPE_RULES[cur.type].ratio;
+        const isLast = cropIndex === cropQueue.length - 1;
+        return (
+          <div
+            className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-background rounded-lg shadow-xl max-w-3xl w-full max-h-[92vh] flex flex-col">
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <div className="text-sm font-medium">
+                  Кадрирование — Фото {cropIndex + 1} из {cropQueue.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeCropFlow}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Закрыть"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 px-4 py-2 border-b flex-wrap">
+                <span className="text-xs text-muted-foreground">Формат:</span>
+                <select
+                  className="text-xs border rounded px-2 py-1 bg-background"
+                  value={cur.type}
+                  onChange={(e) => changeCropType(e.target.value as ImgType)}
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+                  ))}
+                </select>
+                {cur.applied && (
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> применено
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-4">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percent) => setCrop(percent)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={ratio ?? undefined}
+                  keepSelection
+                >
+                  <img
+                    src={cur.previewUrl}
+                    alt={cur.file.name}
+                    onLoad={onCropImageLoad}
+                    style={{ maxHeight: "60vh", maxWidth: "100%" }}
+                  />
+                </ReactCrop>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 px-4 py-3 border-t flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={goCropPrev}
+                    disabled={cropIndex === 0}
+                    className="gap-1"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Назад
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {cropIndex + 1} / {cropQueue.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={resetCurrentCrop}
+                    className="gap-1"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Сбросить
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={applyCurrentCrop}
+                    className="gap-1"
+                  >
+                    <Check className="w-4 h-4" /> Применить
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={goCropNext}
+                    className="gap-1"
+                  >
+                    {isLast ? (
+                      <>Готово <Check className="w-4 h-4" /></>
+                    ) : (
+                      <>Далее <ChevronRight className="w-4 h-4" /></>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
