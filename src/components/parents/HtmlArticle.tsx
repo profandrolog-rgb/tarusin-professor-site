@@ -12,7 +12,7 @@ interface Props {
   onContentChange?: (newContent: string) => void;
 }
 
-const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*(["'])(.*?)\1\s*((?:\|[^\]]*)?)\]\]|<div\b(?=[^>]*\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)([^>]*)>\s*<\/div>/gi;
+const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*(["'])(.*?)\1\s*((?:\|[^\]]*)?)\]\]|<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>\s*<\/div>/gi;
 
 const HR_HTML =
   '<hr style="border:none;border-top:2px solid #E2EBF5;margin:32px 0;" />';

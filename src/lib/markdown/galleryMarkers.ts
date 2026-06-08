@@ -26,7 +26,7 @@ function readHtmlAttr(attrs: string, name: string): string {
 
 function galleryDivsToMarkers(html: string): string {
   return html.replace(
-    /<div\b(?=[^>]*\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)([^>]*)>[\s\S]*?<\/div>/gi,
+    /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi,
     (_m, attrs: string) => {
       const caption = readHtmlAttr(attrs, "data-caption").replace(/"/g, "'");
       const files = readHtmlAttr(attrs, "data-files")
@@ -50,7 +50,8 @@ turndownService.addRule("galleryPlaceholder", {
   filter: (node) =>
     node.nodeType === 1 &&
     (node as HTMLElement).getAttribute &&
-    (node as HTMLElement).getAttribute("data-gallery-placeholder") !== null,
+    ((node as HTMLElement).getAttribute("data-gallery-placeholder") !== null ||
+      (node as HTMLElement).getAttribute("data-type") === "galleryPlaceholder"),
   replacement: (_content, node) => {
     const caption = (node as HTMLElement).getAttribute("data-caption") || "";
     return `\n\n[[GALLERY: caption="${caption.replace(/"/g, "'")}"]]\n\n`;

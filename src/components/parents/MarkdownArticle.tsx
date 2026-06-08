@@ -16,7 +16,7 @@ interface Segment {
   gallery?: ParsedGallery;
 }
 
-const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["“”]([^"“”]*)["“”]\s*((?:\|[^\]]*)?)\]\]/g;
+const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*(["'“”])([^"'“”]*)\1\s*((?:\|[^\]]*)?)\]\]/g;
 
 function parseGalleryFiles(rest: string): string[] {
   if (!rest) return [];
@@ -40,8 +40,8 @@ export function parseArticleContent(content: string): Segment[] {
       content: m[0],
       gallery: {
         marker: m[0],
-        caption: m[1] || "",
-        files: parseGalleryFiles(m[2] || ""),
+        caption: m[2] || "",
+        files: parseGalleryFiles(m[3] || ""),
       },
     });
     lastIndex = m.index + m[0].length;
