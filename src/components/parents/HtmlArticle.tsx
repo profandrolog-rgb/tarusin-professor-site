@@ -50,6 +50,15 @@ function stripDuplicateTitle(html: string, title?: string): string {
       .trim()
       .toLowerCase();
   const target = norm(title);
+  const duplicatesTitle = (s: string) => {
+    const value = norm(s);
+    return (
+      value === target ||
+      value.startsWith(`${target}:`) ||
+      value.startsWith(`${target} —`) ||
+      value.startsWith(`${target} -`)
+    );
+  };
 
   const patterns = [
     /^\s*<h1\b[^>]*>([\s\S]*?)<\/h1>/i,
@@ -59,7 +68,7 @@ function stripDuplicateTitle(html: string, title?: string): string {
   ];
   for (const re of patterns) {
     const m = html.match(re);
-    if (m && norm(m[1]) === target) {
+    if (m && duplicatesTitle(m[1])) {
       return html.replace(re, "");
     }
   }
