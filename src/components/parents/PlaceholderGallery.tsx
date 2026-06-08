@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState, useEffect } from "react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -21,6 +21,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 interface Props {
   articleId: string;
