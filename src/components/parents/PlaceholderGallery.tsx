@@ -714,7 +714,8 @@ const PlaceholderGallery = ({
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4" /> Добавить фотографии
+                <Plus className="w-4 h-4" />{" "}
+                {hasExisting ? "Добавить ещё фото" : "Добавить фотографии"}
               </>
             )}
           </Button>
