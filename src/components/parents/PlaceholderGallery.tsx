@@ -406,9 +406,27 @@ const PlaceholderGallery = ({
     >
       <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
       {caption && <p className="text-muted-foreground mb-2 max-w-xl">{caption}</p>}
-      <p className="text-xs text-muted-foreground mb-4">
-        Авто-тип: <span className="font-medium">{detectedType}</span>
-      </p>
+      <div className="flex items-center gap-2 mb-4 flex-wrap justify-center">
+        <label className="text-xs text-muted-foreground">Формат фото:</label>
+        <select
+          className="text-xs border rounded px-2 py-1 bg-background"
+          value={overrideType}
+          disabled={processing || uploading}
+          onChange={(e) => {
+            const v = e.target.value as ImgType | "auto";
+            setOverrideType(v);
+            if (previews.length > 0) {
+              const t: ImgType = v === "auto" ? autoType : v;
+              reprocessAll(t);
+            }
+          }}
+        >
+          <option value="auto">Авто ({TYPE_LABEL[autoType]})</option>
+          {TYPE_OPTIONS.map((t) => (
+            <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+          ))}
+        </select>
+      </div>
 
       {processing && (
         <div className="w-full max-w-md mb-4">
