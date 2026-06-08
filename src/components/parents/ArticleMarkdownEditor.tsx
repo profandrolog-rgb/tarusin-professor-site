@@ -23,6 +23,7 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
 
   const handleDocx = async (file: File | null) => {
     if (!file) return;
@@ -169,21 +170,73 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
           className="min-h-[420px] font-mono text-sm leading-relaxed"
         />
       ) : (
-        <div className="min-h-[420px] border rounded-md p-6 bg-background overflow-auto">
-          {value.trim() ? (
-            <MarkdownArticle
-              content={value}
-              articleId="preview"
-              articleSlug="preview"
-              isAdmin={false}
-            />
-          ) : (
+        <div className="border rounded-md bg-muted/30 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b bg-background">
+            <span className="text-xs text-muted-foreground">Контекст:</span>
+            <div className="flex rounded-md border overflow-hidden">
+              <Button
+                type="button"
+                variant={previewCtx === "parents" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setPreviewCtx("parents")}
+                className="rounded-none h-7 text-xs"
+              >
+                /for-parents/
+              </Button>
+              <Button
+                type="button"
+                variant={previewCtx === "doctors" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setPreviewCtx("doctors")}
+                className="rounded-none h-7 text-xs"
+              >
+                /for-doctors/
+              </Button>
+            </div>
+          </div>
+
+          {!value.trim() ? (
             <p className="text-sm text-muted-foreground text-center py-12">
               Нет содержимого для предпросмотра
             </p>
+          ) : previewCtx === "parents" ? (
+            <div className="bg-background">
+              <div className="bg-primary text-primary-foreground py-6 px-6">
+                <div className="text-xs text-primary-foreground/70 mb-2">
+                  Главная › Для родителей › Статья
+                </div>
+                <div className="text-2xl font-bold">Заголовок статьи</div>
+              </div>
+              <div className="max-w-4xl mx-auto px-6 py-8">
+                <MarkdownArticle
+                  content={value}
+                  articleId="preview"
+                  articleSlug="preview"
+                  isAdmin={false}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="bg-background">
+              <div className="bg-slate-800 text-white py-5 px-6 border-b">
+                <div className="text-xs text-slate-300 mb-1.5">
+                  Главная › Для врачей › Материал
+                </div>
+                <div className="text-xl font-semibold">Заголовок материала</div>
+              </div>
+              <div className="max-w-3xl mx-auto px-6 py-8 text-[0.95rem]">
+                <MarkdownArticle
+                  content={value}
+                  articleId="preview"
+                  articleSlug="preview"
+                  isAdmin={false}
+                />
+              </div>
+            </div>
           )}
         </div>
       )}
+
 
 
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
