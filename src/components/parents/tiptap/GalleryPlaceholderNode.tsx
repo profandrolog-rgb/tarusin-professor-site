@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
-import { ImagePlus, Pencil, Trash2 } from "lucide-react";
+import { Image as ImageIcon, Pencil } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,54 +21,44 @@ declare module "@tiptap/core" {
   }
 }
 
-const GalleryView = ({ node, updateAttributes, deleteNode, editor }: NodeViewProps) => {
+const GalleryView = ({ node, updateAttributes, editor }: NodeViewProps) => {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string>(node.attrs.caption || "");
   const editable = editor.isEditable;
+  const caption = node.attrs.caption || "Без подписи";
 
   return (
     <NodeViewWrapper
       as="div"
-      className="my-4 rounded-lg border-2 border-dashed border-muted-foreground/40 bg-muted/40 p-5 flex items-center gap-3 text-muted-foreground"
+      contentEditable={false}
+      className="my-4 flex items-center gap-3 px-4 bg-slate-50 select-none"
+      style={{
+        height: 80,
+        border: "2px dashed #E2EBF5",
+        borderRadius: 8,
+      }}
       data-gallery-placeholder=""
       data-caption={node.attrs.caption || ""}
     >
-      <ImagePlus className="w-6 h-6 shrink-0 text-primary/70" />
+      <ImageIcon className="w-6 h-6 shrink-0 text-slate-500" />
       <div className="flex-1 min-w-0">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground/80">Галерея</div>
-        <div className="text-sm font-medium text-foreground truncate">
-          {node.attrs.caption || "Без подписи"}
-        </div>
-        <div className="text-xs text-muted-foreground/70 mt-0.5">
-          Фото добавляются на странице статьи
-        </div>
+        <div className="text-[11px] uppercase tracking-wider text-slate-500">Галерея</div>
+        <div className="text-sm font-bold text-slate-800 truncate">{caption}</div>
       </div>
       {editable && (
-        <div className="flex gap-1 shrink-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => {
-              setDraft(node.attrs.caption || "");
-              setOpen(true);
-            }}
-            title="Редактировать подпись"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            onClick={() => deleteNode()}
-            title="Удалить блок"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5 shrink-0 bg-white"
+          onClick={() => {
+            setDraft(node.attrs.caption || "");
+            setOpen(true);
+          }}
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Изменить подпись
+        </Button>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
