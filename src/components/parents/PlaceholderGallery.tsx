@@ -248,9 +248,20 @@ const PlaceholderGallery = ({
   const [progressText, setProgressText] = useState("");
   const [previews, setPreviews] = useState<Processed[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [reprocessingIdx, setReprocessingIdx] = useState<number | null>(null);
+  const [reprocessingId, setReprocessingId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const detectedType = detectType(caption);
+
+  const makeId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   const clearPreviews = () => {
     previews.forEach((p) => URL.revokeObjectURL(p.previewUrl));
@@ -269,6 +280,7 @@ const PlaceholderGallery = ({
         try {
           const blob = await processImage(f, detectedType);
           results.push({
+            id: makeId(),
             originalFile: f,
             blob,
             previewUrl: URL.createObjectURL(blob),
@@ -287,36 +299,50 @@ const PlaceholderGallery = ({
     }
   };
 
-  const changeType = async (idx: number, newType: ImgType) => {
-    const p = previews[idx];
-    if (!p) return;
-    setReprocessingIdx(idx);
+  const changeType = async (id: string, newType: ImgType) => {
+    const current = previews.find((p) => p.id === id);
+    if (!current) return;
+    setReprocessingId(id);
     try {
-      const blob = await processImage(p.originalFile, newType);
+      const blob = await processImage(current.originalFile, newType);
       const previewUrl = URL.createObjectURL(blob);
-      setPreviews((prev) => {
-        const copy = [...prev];
-        URL.revokeObjectURL(copy[idx].previewUrl);
-        copy[idx] = { ...copy[idx], blob, previewUrl, type: newType };
-        return copy;
-      });
+      setPreviews((prev) =>
+        prev.map((p) => {
+          if (p.id !== id) return p;
+          URL.revokeObjectURL(p.previewUrl);
+          return { ...p, blob, previewUrl, type: newType };
+        }),
+      );
     } catch (e: any) {
       toast.error("Не удалось перекадрировать: " + (e?.message || e));
     } finally {
-      setReprocessingIdx(null);
+      setReprocessingId(null);
     }
   };
 
   const reprocessAll = async (newType: ImgType) => {
     setProcessing(true);
     try {
-      for (let i = 0; i < previews.length; i++) {
-        await changeType(i, newType);
+      const ids = previews.map((p) => p.id);
+      for (const id of ids) {
+        await changeType(id, newType);
       }
     } finally {
       setProcessing(false);
     }
   };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setPreviews((prev) => {
+      const oldIndex = prev.findIndex((p) => p.id === active.id);
+      const newIndex = prev.findIndex((p) => p.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
 
   const handleUpload = async () => {
     if (previews.length === 0) return;
