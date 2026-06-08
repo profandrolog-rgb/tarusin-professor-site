@@ -34,7 +34,7 @@ function galleryDivsToMarkers(html: string): string {
         .map((s) => s.trim())
         .filter(Boolean)
         .join("|");
-      return `\n\n[[GALLERY: caption="${caption}"]${files ? `|${files}` : ""}]]\n\n`;
+      return `\n\n<p>[[GALLERY: caption="${caption}"${files ? `|${files}` : ""}]]</p>\n\n`;
     }
   );
 }
