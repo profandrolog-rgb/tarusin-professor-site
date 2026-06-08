@@ -64,11 +64,25 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, onContentCh
   const segments = useMemo(() => parseArticleContent(content), [content]);
 
   return (
-    <div className="prose prose-base max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border">
+    <div className="article-markdown prose prose-base max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-4 [&_p]:leading-relaxed [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-7 [&_h3]:mb-3 [&_hr]:my-8 [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-[#E2EBF5]">
       {segments.map((seg, i) => {
         if (seg.type === "md") {
           return (
-            <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              key={i}
+              remarkPlugins={[remarkGfm]}
+              components={{
+                hr: () => (
+                  <hr
+                    style={{
+                      border: "none",
+                      borderTop: "1px solid #E2EBF5",
+                      margin: "32px 0",
+                    }}
+                  />
+                ),
+              }}
+            >
               {seg.content}
             </ReactMarkdown>
           );
