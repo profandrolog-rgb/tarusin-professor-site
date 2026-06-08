@@ -28,6 +28,7 @@ interface Props {
   caption: string;
   marker: string;
   fullContent: string;
+  existingFiles?: string[];
   onContentChange?: (newContent: string) => void;
 }
 
