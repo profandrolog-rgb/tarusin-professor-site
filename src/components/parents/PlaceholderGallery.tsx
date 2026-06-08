@@ -249,6 +249,7 @@ const PlaceholderGallery = ({
   const [previews, setPreviews] = useState<Processed[]>([]);
   const [uploading, setUploading] = useState(false);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
+  const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -256,7 +257,8 @@ const PlaceholderGallery = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const detectedType = detectType(caption);
+  const autoType = detectType(caption);
+  const detectedType: ImgType = overrideType === "auto" ? autoType : overrideType;
 
   const makeId = () =>
     typeof crypto !== "undefined" && "randomUUID" in crypto
