@@ -167,10 +167,13 @@ const DiseaseDetailPage = () => {
                 onContentChange={(c) => setArticle({ ...article, article_content: c })}
               />
             ) : (
-              <div
-                className="prose prose-base max-w-none text-foreground [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content) }}
-                onCopy={(e) => e.preventDefault()}
+              <HtmlArticle
+                content={article.article_content}
+                articleId={article.id}
+                articleSlug={article.slug}
+                isAdmin={!!isAdmin}
+                title={article.title}
+                onContentChange={(c) => setArticle({ ...article, article_content: c })}
               />
             )
           ) : (
