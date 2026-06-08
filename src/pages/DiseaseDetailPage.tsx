@@ -50,6 +50,8 @@ const DiseaseDetailPage = () => {
   const navigate = useNavigate();
   const loaderData = useLoaderDataSafe();
 
+  const { isAdmin } = useAuth();
+
   const [article, setArticle] = useState<any>(loaderData?.article ?? null);
   const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
   const [notFound, setNotFound] = useState(false);
