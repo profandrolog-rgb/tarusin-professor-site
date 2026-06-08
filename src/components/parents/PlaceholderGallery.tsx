@@ -147,6 +147,7 @@ interface Processed {
   previewUrl: string;
   originalName: string;
   type: ImgType;
+  caption: string;
 }
 
 interface SortableThumbProps {
@@ -156,6 +157,7 @@ interface SortableThumbProps {
   isReprocessing: boolean;
   disabled: boolean;
   onChangeType: (id: string, t: ImgType) => void;
+  onChangeCaption: (id: string, caption: string) => void;
   onReprocess: (id: string) => void;
 }
 
