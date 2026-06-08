@@ -455,10 +455,23 @@ const PlaceholderGallery = ({
     }
   };
 
+  const startCropFlow = (files: File[]) => {
+    const items: CropQueueItem[] = files.map((f) => ({
+      id: makeId(),
+      file: f,
+      previewUrl: URL.createObjectURL(f),
+      type: detectedType,
+    }));
+    setCropQueue(items);
+    setCropIndex(0);
+    setCrop(undefined);
+    setCompletedCrop(null);
+  };
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    clearPreviews();
-    await processFilesToItems(Array.from(files), { keepExisting: false });
+    startCropFlow(Array.from(files));
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -481,7 +494,121 @@ const PlaceholderGallery = ({
     }
     if (imageFiles.length === 0) return;
     e.preventDefault();
-    await processFilesToItems(imageFiles, { keepExisting: true });
+    startCropFlow(imageFiles);
+  };
+
+  const closeCropFlow = () => {
+    cropQueue.forEach((q) => URL.revokeObjectURL(q.previewUrl));
+    setCropQueue([]);
+    setCropIndex(0);
+    setCrop(undefined);
+    setCompletedCrop(null);
+    cropImgRef.current = null;
+  };
+
+  const onCropImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const imgEl = e.currentTarget;
+    cropImgRef.current = imgEl;
+    const ratio = TYPE_RULES[cropQueue[cropIndex]?.type ?? "default"].ratio;
+    const c = buildDefaultCrop(imgEl.width, imgEl.height, ratio);
+    setCrop(c);
+    const pixel: PixelCrop = {
+      unit: "px",
+      x: (imgEl.width * (c.x as number)) / 100,
+      y: (imgEl.height * (c.y as number)) / 100,
+      width: (imgEl.width * (c.width as number)) / 100,
+      height: (imgEl.height * (c.height as number)) / 100,
+    };
+    setCompletedCrop(pixel);
+  };
+
+  const resetCurrentCrop = () => {
+    const imgEl = cropImgRef.current;
+    if (!imgEl) return;
+    const ratio = TYPE_RULES[cropQueue[cropIndex].type].ratio;
+    const c = buildDefaultCrop(imgEl.width, imgEl.height, ratio);
+    setCrop(c);
+    setCompletedCrop({
+      unit: "px",
+      x: (imgEl.width * (c.x as number)) / 100,
+      y: (imgEl.height * (c.y as number)) / 100,
+      width: (imgEl.width * (c.width as number)) / 100,
+      height: (imgEl.height * (c.height as number)) / 100,
+    });
+  };
+
+  const applyCurrentCrop = async (): Promise<Blob | null> => {
+    const imgEl = cropImgRef.current;
+    const cur = cropQueue[cropIndex];
+    if (!imgEl || !completedCrop || !cur) return null;
+    try {
+      const maxW = TYPE_RULES[cur.type].maxW;
+      const blob = await cropToBlob(imgEl, completedCrop, maxW);
+      setCropQueue((prev) =>
+        prev.map((q, i) => (i === cropIndex ? { ...q, applied: blob } : q)),
+      );
+      return blob;
+    } catch (e: any) {
+      toast.error("Не удалось обрезать: " + (e?.message || e));
+      return null;
+    }
+  };
+
+  const goCropPrev = () => {
+    if (cropIndex > 0) {
+      setCropIndex((i) => i - 1);
+      setCrop(undefined);
+      setCompletedCrop(null);
+    }
+  };
+
+  const goCropNext = async () => {
+    const cur = cropQueue[cropIndex];
+    if (!cur) return;
+    let blob = cur.applied;
+    if (!blob) {
+      const b = await applyCurrentCrop();
+      if (!b) return;
+      blob = b;
+    }
+    if (cropIndex < cropQueue.length - 1) {
+      setCropIndex((i) => i + 1);
+      setCrop(undefined);
+      setCompletedCrop(null);
+    } else {
+      const updated = cropQueue.map((q, i) =>
+        i === cropIndex ? { ...q, applied: blob } : q,
+      );
+      const files: File[] = [];
+      for (const q of updated) {
+        const b = q.applied;
+        if (!b) continue;
+        const name = q.file.name.replace(/\.[^.]+$/, "") + ".jpg";
+        files.push(new File([b], name, { type: "image/jpeg" }));
+      }
+      const keepExisting = previews.length > 0;
+      closeCropFlow();
+      await processFilesToItems(files, { keepExisting });
+    }
+  };
+
+  const changeCropType = (newType: ImgType) => {
+    setCropQueue((prev) =>
+      prev.map((q, i) => (i === cropIndex ? { ...q, type: newType, applied: undefined } : q)),
+    );
+    const imgEl = cropImgRef.current;
+    if (imgEl) {
+      const ratio = TYPE_RULES[newType].ratio;
+      const c = buildDefaultCrop(imgEl.width, imgEl.height, ratio);
+      setCrop(c);
+      setCompletedCrop({
+        unit: "px",
+        x: (imgEl.width * (c.x as number)) / 100,
+        y: (imgEl.height * (c.y as number)) / 100,
+        width: (imgEl.width * (c.width as number)) / 100,
+        height: (imgEl.height * (c.height as number)) / 100,
+      });
+    }
   };
 
   const changeType = async (id: string, newType: ImgType) => {
