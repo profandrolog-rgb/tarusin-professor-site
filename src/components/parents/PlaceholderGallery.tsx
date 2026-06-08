@@ -564,24 +564,29 @@ const PlaceholderGallery = ({
       )}
 
       {previews.length === 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={processing}
-          className="gap-2"
-        >
-          {processing ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" /> Обработка...
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4" /> Добавить фотографии
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col items-center gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+            disabled={processing}
+            className="gap-2"
+          >
+            {processing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Обработка...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" /> Добавить фотографии
+              </>
+            )}
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            или вставьте скриншот (Ctrl+V)
+          </p>
+        </div>
       )}
 
       <input
