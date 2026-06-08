@@ -238,6 +238,14 @@ const SortableThumb = ({
       >
         <RefreshCw className="w-3 h-3" /> перекадрировать
       </button>
+      <input
+        type="text"
+        value={item.caption}
+        onChange={(e) => onChangeCaption(item.id, e.target.value)}
+        disabled={disabled}
+        placeholder="Подпись к фото (необязательно)"
+        className="text-[11px] border rounded px-1.5 py-1 bg-background w-full"
+      />
     </div>
   );
 };
