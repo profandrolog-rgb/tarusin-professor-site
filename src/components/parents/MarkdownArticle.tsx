@@ -16,7 +16,7 @@ interface Segment {
   gallery?: ParsedGallery;
 }
 
-const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*"([^"]*)"\s*((?:\|[^\]]*)?)\]\]/g;
+const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["“”]([^"“”]*)["“”]\s*((?:\|[^\]]*)?)\]\]/g;
 
 function parseGalleryFiles(rest: string): string[] {
   if (!rest) return [];
