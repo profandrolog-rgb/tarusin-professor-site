@@ -12,7 +12,7 @@ interface Props {
   onContentChange?: (newContent: string) => void;
 }
 
-const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*(["'])(.*?)\1\s*((?:\|[^\]]*)?)\]\]|<div\b(?=[^>]*\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?)([^>]*)>\s*<\/div>/gi;
+const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]|<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
 
 const HR_HTML =
   '<hr style="border:none;border-top:2px solid #E2EBF5;margin:32px 0;" />';
@@ -24,7 +24,14 @@ function readHtmlAttr(attrs: string, name: string): string {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(`${escaped}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i");
   const m = attrs.match(re);
-  return (m?.[1] || m?.[2] || m?.[3] || "").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  return (m?.[1] || m?.[2] || m?.[3] || "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#34;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
 }
 
 function withInlineStyle(attrs: string, style: string): string {
@@ -111,9 +118,9 @@ function splitOnGalleryMarkers(html: string): Segment[] {
   let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     if (m.index > last) segments.push({ type: "html", html: html.slice(last, m.index) });
-    const isTextMarker = !!m[2];
-    const caption = isTextMarker ? m[2] || "" : readHtmlAttr(m[4] || "", "data-caption");
-    const files = (isTextMarker ? m[3] || "" : readHtmlAttr(m[4] || "", "data-files"))
+    const isTextMarker = m[1] !== undefined;
+    const caption = isTextMarker ? m[1] || "" : readHtmlAttr(m[3] || "", "data-caption");
+    const files = (isTextMarker ? m[2] || "" : readHtmlAttr(m[3] || "", "data-files"))
       .split("|")
       .map((s) => s.trim())
       .filter(Boolean);

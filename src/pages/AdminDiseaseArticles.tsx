@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ArticleMarkdownEditor from "@/components/parents/ArticleMarkdownEditor";
+import ArticleMarkdownEditor, { type ArticleMarkdownEditorHandle } from "@/components/parents/ArticleMarkdownEditor";
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -52,6 +52,7 @@ const AdminDiseaseArticles = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("all");
+  const articleEditorRef = useRef<ArticleMarkdownEditorHandle>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -138,6 +139,8 @@ const AdminDiseaseArticles = () => {
       const slug = form.slug.trim() || generateSlug(form.title);
       const keywords = form.keywords.split(",").map(k => k.trim()).filter(Boolean);
 
+      const syncedArticleContent = articleEditorRef.current?.getMarkdown() ?? form.article_content;
+
       const payload = {
         title: form.title,
         slug,
@@ -145,7 +148,7 @@ const AdminDiseaseArticles = () => {
         category: form.category,
         keywords,
         description: form.description || null,
-        article_content: form.article_content || null,
+        article_content: syncedArticleContent || null,
         video_path,
         audio_path,
         is_published: form.is_published,
@@ -443,8 +446,9 @@ const AdminDiseaseArticles = () => {
                   <div>
                     <Label>Текст статьи (markdown)</Label>
                     <ArticleMarkdownEditor
+                      ref={articleEditorRef}
                       value={form.article_content}
-                      onChange={(v) => setForm({ ...form, article_content: v })}
+                      onChange={(v) => setForm((prev) => ({ ...prev, article_content: v }))}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       Загрузите .docx, отформатируйте AI, добавьте маркеры галерей. Фото можно вставить позже на странице статьи.
