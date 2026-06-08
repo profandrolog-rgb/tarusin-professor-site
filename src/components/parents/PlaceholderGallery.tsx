@@ -428,12 +428,16 @@ const PlaceholderGallery = ({
           toast.error(`Не удалось загрузить ${p.originalName}: ${error.message}`);
           continue;
         }
-        uploaded.push({ filename });
+        uploaded.push({ filename, caption: (p.caption || "").trim() });
       }
 
       if (uploaded.length === 0) return;
 
-      const newMarker = `[[GALLERY: caption="${caption}" | ${uploaded.map((u) => u.filename).join(" | ")}]]`;
+      const entries = uploaded.map((u) => {
+        const safe = u.caption.replace(/"/g, "”").replace(/\|/g, "／");
+        return safe ? `${u.filename} "${safe}"` : u.filename;
+      });
+      const newMarker = `[[GALLERY: caption="${caption}" | ${entries.join(" | ")}]]`;
       const newContent = fullContent.replace(marker, newMarker);
 
       const { error: updErr } = await supabase
