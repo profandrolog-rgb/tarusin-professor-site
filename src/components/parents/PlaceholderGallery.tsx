@@ -331,6 +331,20 @@ const PlaceholderGallery = ({
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
+  // --- Интерактивное кадрирование ---
+  interface CropQueueItem {
+    id: string;
+    file: File;
+    previewUrl: string;
+    type: ImgType;
+    applied?: Blob; // финальная обрезанная версия (для предпросмотра/возврата)
+  }
+  const [cropQueue, setCropQueue] = useState<CropQueueItem[]>([]);
+  const [cropIndex, setCropIndex] = useState(0);
+  const [crop, setCrop] = useState<Crop | undefined>(undefined);
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
+  const cropImgRef = useRef<HTMLImageElement | null>(null);
+
   const existing = useMemo<ExistingItem[]>(
     () => (existingFiles ?? []).map(parseExistingEntry),
     [existingFiles],
