@@ -39,6 +39,7 @@ const GalleryView = ({ node, updateAttributes, editor }: NodeViewProps) => {
       }}
       data-gallery-placeholder=""
       data-caption={node.attrs.caption || ""}
+      data-files={node.attrs.files || ""}
     >
       <ImageIcon className="w-6 h-6 shrink-0 text-slate-500" />
       <div className="flex-1 min-w-0">
@@ -113,6 +114,11 @@ export const GalleryPlaceholder = Node.create({
         default: "",
         parseHTML: (el) => el.getAttribute("data-caption") || "",
         renderHTML: (attrs) => ({ "data-caption": attrs.caption || "" }),
+      },
+      files: {
+        default: "",
+        parseHTML: (el) => el.getAttribute("data-files") || "",
+        renderHTML: (attrs) => ({ "data-files": attrs.files || "" }),
       },
     };
   },
