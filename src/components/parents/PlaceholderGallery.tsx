@@ -147,6 +147,7 @@ interface Processed {
   previewUrl: string;
   originalName: string;
   type: ImgType;
+  caption: string;
 }
 
 interface SortableThumbProps {
@@ -156,6 +157,7 @@ interface SortableThumbProps {
   isReprocessing: boolean;
   disabled: boolean;
   onChangeType: (id: string, t: ImgType) => void;
+  onChangeCaption: (id: string, caption: string) => void;
   onReprocess: (id: string) => void;
 }
 
@@ -165,6 +167,7 @@ const SortableThumb = ({
   isReprocessing,
   disabled,
   onChangeType,
+  onChangeCaption,
   onReprocess,
 }: SortableThumbProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -235,6 +238,14 @@ const SortableThumb = ({
       >
         <RefreshCw className="w-3 h-3" /> перекадрировать
       </button>
+      <input
+        type="text"
+        value={item.caption}
+        onChange={(e) => onChangeCaption(item.id, e.target.value)}
+        disabled={disabled}
+        placeholder="Подпись к фото (необязательно)"
+        className="text-[11px] border rounded px-1.5 py-1 bg-background w-full"
+      />
     </div>
   );
 };
@@ -296,6 +307,7 @@ const PlaceholderGallery = ({
             previewUrl: URL.createObjectURL(blob),
             originalName: f.name,
             type: detectedType,
+            caption: "",
           });
         } catch (e: any) {
           toast.error(`Ошибка обработки ${f.name}: ${e?.message || e}`);
@@ -392,7 +404,7 @@ const PlaceholderGallery = ({
     if (previews.length === 0) return;
     setUploading(true);
     try {
-      const uploaded: { filename: string }[] = [];
+      const uploaded: { filename: string; caption: string }[] = [];
       // Подсчёт индексов по каждому типу отдельно
       const typeCounters: Record<string, number> = {};
       for (let i = 0; i < previews.length; i++) {
@@ -416,12 +428,16 @@ const PlaceholderGallery = ({
           toast.error(`Не удалось загрузить ${p.originalName}: ${error.message}`);
           continue;
         }
-        uploaded.push({ filename });
+        uploaded.push({ filename, caption: (p.caption || "").trim() });
       }
 
       if (uploaded.length === 0) return;
 
-      const newMarker = `[[GALLERY: caption="${caption}" | ${uploaded.map((u) => u.filename).join(" | ")}]]`;
+      const entries = uploaded.map((u) => {
+        const safe = u.caption.replace(/"/g, "”").replace(/\|/g, "／");
+        return safe ? `${u.filename} "${safe}"` : u.filename;
+      });
+      const newMarker = `[[GALLERY: caption="${caption}" | ${entries.join(" | ")}]]`;
       const newContent = fullContent.replace(marker, newMarker);
 
       const { error: updErr } = await supabase
@@ -520,6 +536,11 @@ const PlaceholderGallery = ({
                     isReprocessing={reprocessingId === p.id}
                     disabled={uploading}
                     onChangeType={changeType}
+                    onChangeCaption={(id, caption) =>
+                      setPreviews((prev) =>
+                        prev.map((x) => (x.id === id ? { ...x, caption } : x)),
+                      )
+                    }
                     onReprocess={(id) => {
                       const cur = previews.find((x) => x.id === id);
                       if (cur) changeType(id, cur.type);
