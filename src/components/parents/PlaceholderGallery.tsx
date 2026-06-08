@@ -252,12 +252,25 @@ const SortableThumb = ({
 };
 
 
+interface ExistingItem {
+  filename: string;
+  caption: string;
+}
+
+function parseExistingEntry(raw: string): ExistingItem {
+  const s = raw.trim();
+  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
+  if (m) return { filename: m[1], caption: m[2].trim() };
+  return { filename: s, caption: "" };
+}
+
 const PlaceholderGallery = ({
   articleId,
   articleSlug,
   caption,
   marker,
   fullContent,
+  existingFiles,
   onContentChange,
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -268,6 +281,59 @@ const PlaceholderGallery = ({
   const [uploading, setUploading] = useState(false);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
+  const [deletingFile, setDeletingFile] = useState<string | null>(null);
+
+  const existing = useMemo<ExistingItem[]>(
+    () => (existingFiles ?? []).map(parseExistingEntry),
+    [existingFiles],
+  );
+  const hasExisting = existing.length > 0;
+
+  const formatEntry = (e: ExistingItem) => {
+    const safe = (e.caption || "").replace(/"/g, "”").replace(/\|/g, "／");
+    return safe ? `${e.filename} "${safe}"` : e.filename;
+  };
+
+  const buildMarker = (entries: ExistingItem[]) => {
+    const parts = entries.map(formatEntry);
+    return `[[GALLERY: caption="${caption}"${
+      parts.length ? ` | ${parts.join(" | ")}` : ""
+    }]]`;
+  };
+
+  const persistEntries = async (entries: ExistingItem[]): Promise<boolean> => {
+    const newMarker = buildMarker(entries);
+    const newContent = fullContent.replace(marker, newMarker);
+    const { error } = await supabase
+      .from("disease_articles")
+      .update({ article_content: newContent })
+      .eq("id", articleId);
+    if (error) {
+      toast.error("Не удалось сохранить галерею: " + error.message);
+      return false;
+    }
+    onContentChange?.(newContent);
+    return true;
+  };
+
+  const deleteExisting = async (filename: string) => {
+    if (deletingFile) return;
+    if (!confirm("Удалить это фото из галереи?")) return;
+    setDeletingFile(filename);
+    try {
+      // best-effort удаление файла из storage
+      await supabase.storage
+        .from("disease-media")
+        .remove([`${ARTICLE_IMAGES_FOLDER}/${filename}`]);
+      const next = existing.filter((e) => e.filename !== filename);
+      const ok = await persistEntries(next);
+      if (ok) toast.success("Фото удалено");
+    } finally {
+      setDeletingFile(null);
+    }
+  };
+
+
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
