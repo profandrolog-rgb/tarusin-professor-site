@@ -166,7 +166,7 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2 items-center border rounded-md p-2 bg-muted/30">
+      <div className="sticky top-0 z-30 flex flex-wrap gap-2 items-center border rounded-md p-2 bg-background shadow-sm">
         <Button
           type="button"
           variant="outline"
