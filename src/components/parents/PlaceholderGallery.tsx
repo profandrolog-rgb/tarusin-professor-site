@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2 } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -21,6 +21,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
 
 interface Props {
   articleId: string;
@@ -137,6 +139,52 @@ async function processImage(source: Blob, type: ImgType): Promise<Blob> {
       (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
       "image/jpeg",
       0.85,
+    );
+  });
+}
+
+function buildDefaultCrop(imgW: number, imgH: number, ratio: number | null): Crop {
+  if (ratio === null) {
+    return { unit: "%", x: 5, y: 5, width: 90, height: 90 };
+  }
+  return centerCrop(
+    makeAspectCrop({ unit: "%", width: 90 }, ratio, imgW, imgH),
+    imgW,
+    imgH,
+  );
+}
+
+async function cropToBlob(
+  imgEl: HTMLImageElement,
+  pixelCrop: PixelCrop,
+  maxW: number,
+): Promise<Blob> {
+  const scaleX = imgEl.naturalWidth / imgEl.width;
+  const scaleY = imgEl.naturalHeight / imgEl.height;
+  const sx = pixelCrop.x * scaleX;
+  const sy = pixelCrop.y * scaleY;
+  const sw = pixelCrop.width * scaleX;
+  const sh = pixelCrop.height * scaleY;
+  let dw = sw;
+  let dh = sh;
+  if (dw > maxW) {
+    const k = maxW / dw;
+    dw = maxW;
+    dh = sh * k;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(dw);
+  canvas.height = Math.round(dh);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas недоступен");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+      "image/jpeg",
+      0.9,
     );
   });
 }
@@ -283,6 +331,20 @@ const PlaceholderGallery = ({
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
 
+  // --- Интерактивное кадрирование ---
+  interface CropQueueItem {
+    id: string;
+    file: File;
+    previewUrl: string;
+    type: ImgType;
+    applied?: Blob; // финальная обрезанная версия (для предпросмотра/возврата)
+  }
+  const [cropQueue, setCropQueue] = useState<CropQueueItem[]>([]);
+  const [cropIndex, setCropIndex] = useState(0);
+  const [crop, setCrop] = useState<Crop | undefined>(undefined);
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
+  const cropImgRef = useRef<HTMLImageElement | null>(null);
+
   const existing = useMemo<ExistingItem[]>(
     () => (existingFiles ?? []).map(parseExistingEntry),
     [existingFiles],
@@ -393,10 +455,23 @@ const PlaceholderGallery = ({
     }
   };
 
+  const startCropFlow = (files: File[]) => {
+    const items: CropQueueItem[] = files.map((f) => ({
+      id: makeId(),
+      file: f,
+      previewUrl: URL.createObjectURL(f),
+      type: detectedType,
+    }));
+    setCropQueue(items);
+    setCropIndex(0);
+    setCrop(undefined);
+    setCompletedCrop(null);
+  };
+
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    clearPreviews();
-    await processFilesToItems(Array.from(files), { keepExisting: false });
+    startCropFlow(Array.from(files));
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -419,7 +494,121 @@ const PlaceholderGallery = ({
     }
     if (imageFiles.length === 0) return;
     e.preventDefault();
-    await processFilesToItems(imageFiles, { keepExisting: true });
+    startCropFlow(imageFiles);
+  };
+
+  const closeCropFlow = () => {
+    cropQueue.forEach((q) => URL.revokeObjectURL(q.previewUrl));
+    setCropQueue([]);
+    setCropIndex(0);
+    setCrop(undefined);
+    setCompletedCrop(null);
+    cropImgRef.current = null;
+  };
+
+  const onCropImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const imgEl = e.currentTarget;
+    cropImgRef.current = imgEl;
+    const ratio = TYPE_RULES[cropQueue[cropIndex]?.type ?? "default"].ratio;
+    const c = buildDefaultCrop(imgEl.width, imgEl.height, ratio);
+    setCrop(c);
+    const pixel: PixelCrop = {
+      unit: "px",
+      x: (imgEl.width * (c.x as number)) / 100,
+      y: (imgEl.height * (c.y as number)) / 100,
+      width: (imgEl.width * (c.width as number)) / 100,
+      height: (imgEl.height * (c.height as number)) / 100,
+    };
+    setCompletedCrop(pixel);
+  };
+
+  const resetCurrentCrop = () => {
+    const imgEl = cropImgRef.current;
+    if (!imgEl) return;
+    const ratio = TYPE_RULES[cropQueue[cropIndex].type].ratio;
+    const c = buildDefaultCrop(imgEl.width, imgEl.height, ratio);
+    setCrop(c);
+    setCompletedCrop({
+      unit: "px",
+      x: (imgEl.width * (c.x as number)) / 100,
+      y: (imgEl.height * (c.y as number)) / 100,
+      width: (imgEl.width * (c.width as number)) / 100,
+      height: (imgEl.height * (c.height as number)) / 100,
+    });
+  };
+
+  const applyCurrentCrop = async (): Promise<Blob | null> => {
+    const imgEl = cropImgRef.current;
+    const cur = cropQueue[cropIndex];
+    if (!imgEl || !completedCrop || !cur) return null;
+    try {
+      const maxW = TYPE_RULES[cur.type].maxW;
+      const blob = await cropToBlob(imgEl, completedCrop, maxW);
+      setCropQueue((prev) =>
+        prev.map((q, i) => (i === cropIndex ? { ...q, applied: blob } : q)),
+      );
+      return blob;
+    } catch (e: any) {
+      toast.error("Не удалось обрезать: " + (e?.message || e));
+      return null;
+    }
+  };
+
+  const goCropPrev = () => {
+    if (cropIndex > 0) {
+      setCropIndex((i) => i - 1);
+      setCrop(undefined);
+      setCompletedCrop(null);
+    }
+  };
+
+  const goCropNext = async () => {
+    const cur = cropQueue[cropIndex];
+    if (!cur) return;
+    let blob = cur.applied;
+    if (!blob) {
+      const b = await applyCurrentCrop();
+      if (!b) return;
+      blob = b;
+    }
+    if (cropIndex < cropQueue.length - 1) {
+      setCropIndex((i) => i + 1);
+      setCrop(undefined);
+      setCompletedCrop(null);
+    } else {
+      const updated = cropQueue.map((q, i) =>
+        i === cropIndex ? { ...q, applied: blob } : q,
+      );
+      const files: File[] = [];
+      for (const q of updated) {
+        const b = q.applied;
+        if (!b) continue;
+        const name = q.file.name.replace(/\.[^.]+$/, "") + ".jpg";
+        files.push(new File([b], name, { type: "image/jpeg" }));
+      }
+      const keepExisting = previews.length > 0;
+      closeCropFlow();
+      await processFilesToItems(files, { keepExisting });
+    }
+  };
+
+  const changeCropType = (newType: ImgType) => {
+    setCropQueue((prev) =>
+      prev.map((q, i) => (i === cropIndex ? { ...q, type: newType, applied: undefined } : q)),
+    );
+    const imgEl = cropImgRef.current;
+    if (imgEl) {
+      const ratio = TYPE_RULES[newType].ratio;
+      const c = buildDefaultCrop(imgEl.width, imgEl.height, ratio);
+      setCrop(c);
+      setCompletedCrop({
+        unit: "px",
+        x: (imgEl.width * (c.x as number)) / 100,
+        y: (imgEl.height * (c.y as number)) / 100,
+        width: (imgEl.width * (c.width as number)) / 100,
+        height: (imgEl.height * (c.height as number)) / 100,
+      });
+    }
   };
 
   const changeType = async (id: string, newType: ImgType) => {
@@ -733,6 +922,119 @@ const PlaceholderGallery = ({
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
+
+      {cropQueue.length > 0 && (() => {
+        const cur = cropQueue[cropIndex];
+        const ratio = TYPE_RULES[cur.type].ratio;
+        const isLast = cropIndex === cropQueue.length - 1;
+        return (
+          <div
+            className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-background rounded-lg shadow-xl max-w-3xl w-full max-h-[92vh] flex flex-col">
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <div className="text-sm font-medium">
+                  Кадрирование — Фото {cropIndex + 1} из {cropQueue.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeCropFlow}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Закрыть"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 px-4 py-2 border-b flex-wrap">
+                <span className="text-xs text-muted-foreground">Формат:</span>
+                <select
+                  className="text-xs border rounded px-2 py-1 bg-background"
+                  value={cur.type}
+                  onChange={(e) => changeCropType(e.target.value as ImgType)}
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+                  ))}
+                </select>
+                {cur.applied && (
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> применено
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-4">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percent) => setCrop(percent)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  aspect={ratio ?? undefined}
+                  keepSelection
+                >
+                  <img
+                    src={cur.previewUrl}
+                    alt={cur.file.name}
+                    onLoad={onCropImageLoad}
+                    style={{ maxHeight: "60vh", maxWidth: "100%" }}
+                  />
+                </ReactCrop>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 px-4 py-3 border-t flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={goCropPrev}
+                    disabled={cropIndex === 0}
+                    className="gap-1"
+                  >
+                    <ChevronLeft className="w-4 h-4" /> Назад
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {cropIndex + 1} / {cropQueue.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={resetCurrentCrop}
+                    className="gap-1"
+                  >
+                    <RotateCcw className="w-4 h-4" /> Сбросить
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={applyCurrentCrop}
+                    className="gap-1"
+                  >
+                    <Check className="w-4 h-4" /> Применить
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={goCropNext}
+                    className="gap-1"
+                  >
+                    {isLast ? (
+                      <>Готово <Check className="w-4 h-4" /></>
+                    ) : (
+                      <>Далее <ChevronRight className="w-4 h-4" /></>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
