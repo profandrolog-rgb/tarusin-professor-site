@@ -136,12 +136,104 @@ async function processImage(source: Blob, type: ImgType): Promise<Blob> {
 }
 
 interface Processed {
+  id: string;
   originalFile: File;
   blob: Blob;
   previewUrl: string;
   originalName: string;
   type: ImgType;
 }
+
+interface SortableThumbProps {
+  item: Processed;
+  index: number;
+  total: number;
+  isReprocessing: boolean;
+  disabled: boolean;
+  onChangeType: (id: string, t: ImgType) => void;
+  onReprocess: (id: string) => void;
+}
+
+const SortableThumb = ({
+  item,
+  index,
+  isReprocessing,
+  disabled,
+  onChangeType,
+  onReprocess,
+}: SortableThumbProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    boxShadow: isDragging
+      ? "0 10px 25px -5px rgba(0,0,0,0.25), 0 8px 10px -6px rgba(0,0,0,0.1)"
+      : undefined,
+    opacity: isDragging ? 0.95 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex flex-col items-center gap-1.5 w-32 bg-background rounded"
+    >
+      <div className="relative w-32 h-32">
+        <img
+          src={item.previewUrl}
+          alt={item.originalName}
+          className="w-32 h-32 object-cover rounded border bg-white pointer-events-none select-none"
+          draggable={false}
+        />
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="absolute top-1 left-1 bg-black/60 text-white rounded p-0.5 cursor-grab active:cursor-grabbing touch-none"
+          title="Перетащить"
+          aria-label="Перетащить миниатюру"
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </button>
+        <span className="absolute bottom-6 right-1 bg-primary text-primary-foreground text-[11px] font-semibold rounded-full w-5 h-5 flex items-center justify-center shadow">
+          {index + 1}
+        </span>
+        {isReprocessing && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
+            <Loader2 className="w-5 h-5 animate-spin text-white" />
+          </div>
+        )}
+        <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1 rounded-b">
+          {item.originalName}
+        </span>
+      </div>
+      <select
+        className="text-xs border rounded px-1 py-0.5 bg-background w-full"
+        value={item.type}
+        disabled={isReprocessing || disabled}
+        onChange={(e) => onChangeType(item.id, e.target.value as ImgType)}
+        title={TYPE_LABEL[item.type]}
+      >
+        {TYPE_OPTIONS.map((t) => (
+          <option key={t} value={t}>{TYPE_LABEL[t]}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => onReprocess(item.id)}
+        disabled={isReprocessing || disabled}
+        className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5"
+        title="Повторно применить кадрирование"
+      >
+        <RefreshCw className="w-3 h-3" /> перекадрировать
+      </button>
+    </div>
+  );
+};
+
 
 const PlaceholderGallery = ({
   articleId,
@@ -156,9 +248,20 @@ const PlaceholderGallery = ({
   const [progressText, setProgressText] = useState("");
   const [previews, setPreviews] = useState<Processed[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [reprocessingIdx, setReprocessingIdx] = useState<number | null>(null);
+  const [reprocessingId, setReprocessingId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const detectedType = detectType(caption);
+
+  const makeId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   const clearPreviews = () => {
     previews.forEach((p) => URL.revokeObjectURL(p.previewUrl));
@@ -177,6 +280,7 @@ const PlaceholderGallery = ({
         try {
           const blob = await processImage(f, detectedType);
           results.push({
+            id: makeId(),
             originalFile: f,
             blob,
             previewUrl: URL.createObjectURL(blob),
@@ -195,36 +299,50 @@ const PlaceholderGallery = ({
     }
   };
 
-  const changeType = async (idx: number, newType: ImgType) => {
-    const p = previews[idx];
-    if (!p) return;
-    setReprocessingIdx(idx);
+  const changeType = async (id: string, newType: ImgType) => {
+    const current = previews.find((p) => p.id === id);
+    if (!current) return;
+    setReprocessingId(id);
     try {
-      const blob = await processImage(p.originalFile, newType);
+      const blob = await processImage(current.originalFile, newType);
       const previewUrl = URL.createObjectURL(blob);
-      setPreviews((prev) => {
-        const copy = [...prev];
-        URL.revokeObjectURL(copy[idx].previewUrl);
-        copy[idx] = { ...copy[idx], blob, previewUrl, type: newType };
-        return copy;
-      });
+      setPreviews((prev) =>
+        prev.map((p) => {
+          if (p.id !== id) return p;
+          URL.revokeObjectURL(p.previewUrl);
+          return { ...p, blob, previewUrl, type: newType };
+        }),
+      );
     } catch (e: any) {
       toast.error("Не удалось перекадрировать: " + (e?.message || e));
     } finally {
-      setReprocessingIdx(null);
+      setReprocessingId(null);
     }
   };
 
   const reprocessAll = async (newType: ImgType) => {
     setProcessing(true);
     try {
-      for (let i = 0; i < previews.length; i++) {
-        await changeType(i, newType);
+      const ids = previews.map((p) => p.id);
+      for (const id of ids) {
+        await changeType(id, newType);
       }
     } finally {
       setProcessing(false);
     }
   };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setPreviews((prev) => {
+      const oldIndex = prev.findIndex((p) => p.id === active.id);
+      const newIndex = prev.findIndex((p) => p.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
 
   const handleUpload = async () => {
     if (previews.length === 0) return;
@@ -318,54 +436,45 @@ const PlaceholderGallery = ({
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-3 justify-center mb-3">
-            {previews.map((p, i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5 w-32">
-                <div className="relative">
-                  <img
-                    src={p.previewUrl}
-                    alt={p.originalName}
-                    className="w-32 h-32 object-cover rounded border bg-white"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={previews.map((p) => p.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-3 justify-center mb-2">
+                {previews.map((p, i) => (
+                  <SortableThumb
+                    key={p.id}
+                    item={p}
+                    index={i}
+                    total={previews.length}
+                    isReprocessing={reprocessingId === p.id}
+                    disabled={uploading}
+                    onChangeType={changeType}
+                    onReprocess={(id) => {
+                      const cur = previews.find((x) => x.id === id);
+                      if (cur) changeType(id, cur.type);
+                    }}
                   />
-                  {reprocessingIdx === i && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
-                      <Loader2 className="w-5 h-5 animate-spin text-white" />
-                    </div>
-                  )}
-                  <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1 rounded-b">
-                    {p.originalName}
-                  </span>
-                </div>
-                <select
-                  className="text-xs border rounded px-1 py-0.5 bg-background w-full"
-                  value={p.type}
-                  disabled={reprocessingIdx === i || uploading}
-                  onChange={(e) => changeType(i, e.target.value as ImgType)}
-                  title={TYPE_LABEL[p.type]}
-                >
-                  {TYPE_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{TYPE_LABEL[t]}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => changeType(i, p.type)}
-                  disabled={reprocessingIdx === i || uploading}
-                  className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5"
-                  title="Повторно применить кадрирование"
-                >
-                  <RefreshCw className="w-3 h-3" /> перекадрировать
-                </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
+          <p className="text-xs text-muted-foreground mb-3">
+            Перетащите фото чтобы изменить порядок
+          </p>
+
 
           <div className="flex gap-2 justify-center">
             <Button
               type="button"
               size="sm"
               onClick={handleUpload}
-              disabled={uploading || reprocessingIdx !== null}
+              disabled={uploading || reprocessingId !== null}
               className="gap-1.5"
             >
               {uploading ? (
