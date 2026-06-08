@@ -143,6 +143,52 @@ async function processImage(source: Blob, type: ImgType): Promise<Blob> {
   });
 }
 
+function buildDefaultCrop(imgW: number, imgH: number, ratio: number | null): Crop {
+  if (ratio === null) {
+    return { unit: "%", x: 5, y: 5, width: 90, height: 90 };
+  }
+  return centerCrop(
+    makeAspectCrop({ unit: "%", width: 90 }, ratio, imgW, imgH),
+    imgW,
+    imgH,
+  );
+}
+
+async function cropToBlob(
+  imgEl: HTMLImageElement,
+  pixelCrop: PixelCrop,
+  maxW: number,
+): Promise<Blob> {
+  const scaleX = imgEl.naturalWidth / imgEl.width;
+  const scaleY = imgEl.naturalHeight / imgEl.height;
+  const sx = pixelCrop.x * scaleX;
+  const sy = pixelCrop.y * scaleY;
+  const sw = pixelCrop.width * scaleX;
+  const sh = pixelCrop.height * scaleY;
+  let dw = sw;
+  let dh = sh;
+  if (dw > maxW) {
+    const k = maxW / dw;
+    dw = maxW;
+    dh = sh * k;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(dw);
+  canvas.height = Math.round(dh);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas недоступен");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+      "image/jpeg",
+      0.9,
+    );
+  });
+}
+
 interface Processed {
   id: string;
   originalFile: File;
