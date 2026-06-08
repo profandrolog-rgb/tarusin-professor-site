@@ -1,14 +1,42 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import mammoth from "mammoth";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Sparkles, ImagePlus, Loader2, Eye, Pencil } from "lucide-react";
+import {
+  Upload,
+  Sparkles,
+  ImagePlus,
+  Loader2,
+  Eye,
+  Pencil,
+  Bold,
+  Italic,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Link as LinkIcon,
+  Undo,
+  Redo,
+} from "lucide-react";
 import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { GalleryPlaceholder } from "./tiptap/GalleryPlaceholderNode";
+import { markdownToHtml, htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
 
 interface Props {
   value: string;
@@ -17,13 +45,52 @@ interface Props {
 
 const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
   const fileRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [importing, setImporting] = useState(false);
   const [formatting, setFormatting] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
+
+  // Track last markdown we emitted/received so we don't reset the editor on our own updates.
+  const lastSyncedMd = useRef<string>(value);
+  const isInternalUpdate = useRef(false);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      Link.configure({ openOnClick: false, autolink: true }),
+      GalleryPlaceholder,
+    ],
+    content: markdownToHtml(value),
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[420px] px-4 py-3",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      const md = htmlToMarkdown(editor.getHTML());
+      lastSyncedMd.current = md;
+      isInternalUpdate.current = true;
+      onChange(md);
+    },
+  });
+
+  // External value changes (e.g., format, .docx import, initial load) → reload editor content.
+  useEffect(() => {
+    if (!editor) return;
+    if (isInternalUpdate.current) {
+      isInternalUpdate.current = false;
+      return;
+    }
+    if (value === lastSyncedMd.current) return;
+    lastSyncedMd.current = value;
+    const html = markdownToHtml(value);
+    editor.commands.setContent(html, { emitUpdate: false });
+  }, [value, editor]);
 
   const handleDocx = async (file: File | null) => {
     if (!file) return;
@@ -74,20 +141,28 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
       toast.error("Введите подпись");
       return;
     }
-    const marker = `\n\n[[GALLERY: caption="${galleryCaption.trim().replace(/"/g, "'")}"]]\n\n`;
-    const ta = textareaRef.current;
-    if (ta) {
-      const start = ta.selectionStart ?? value.length;
-      const end = ta.selectionEnd ?? value.length;
-      const next = value.slice(0, start) + marker + value.slice(end);
-      onChange(next);
-    } else {
-      onChange(value + marker);
-    }
+    if (!editor) return;
+    editor
+      .chain()
+      .focus()
+      .insertGalleryPlaceholder(galleryCaption.trim().replace(/"/g, "'"))
+      .run();
     setGalleryCaption("");
     setGalleryOpen(false);
-    toast.success("Маркер галереи вставлен");
+    toast.success("Блок галереи вставлен");
   };
+
+  const promptLink = useCallback(() => {
+    if (!editor) return;
+    const prev = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("URL ссылки", prev || "https://");
+    if (url === null) return;
+    if (url === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }, [editor]);
 
   return (
     <div className="space-y-2">
@@ -100,7 +175,11 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
           disabled={importing}
           className="gap-1.5"
         >
-          {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+          {importing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Upload className="w-3.5 h-3.5" />
+          )}
           Загрузить .docx
         </Button>
         <input
@@ -119,7 +198,11 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
           disabled={formatting || !value.trim()}
           className="gap-1.5"
         >
-          {formatting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {formatting ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5" />
+          )}
           {formatting ? "Форматирую..." : "Форматировать"}
         </Button>
 
@@ -135,7 +218,7 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
         </Button>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Markdown · {value.length} симв.</span>
+          <span className="text-xs text-muted-foreground">{value.length} симв.</span>
           <div className="flex rounded-md border overflow-hidden">
             <Button
               type="button"
@@ -162,13 +245,10 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
       </div>
 
       {mode === "edit" ? (
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Сырой текст или markdown статьи..."
-          className="min-h-[420px] font-mono text-sm leading-relaxed"
-        />
+        <div className="border rounded-md bg-background">
+          <FormattingToolbar editor={editor} onLink={promptLink} />
+          <EditorContent editor={editor} />
+        </div>
       ) : (
         <div className="border rounded-md bg-muted/30 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b bg-background">
@@ -237,12 +317,10 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
         </div>
       )}
 
-
-
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Вставить маркер галереи</DialogTitle>
+            <DialogTitle>Вставить блок галереи</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
             <Label>Подпись к галерее</Label>
@@ -259,15 +337,132 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
               }}
             />
             <p className="text-xs text-muted-foreground">
-              Маркер вставится в позицию курсора. Фото можно добавить позже прямо на странице статьи.
+              Блок вставится в позицию курсора. Фото можно добавить позже прямо на странице статьи.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGalleryOpen(false)}>Отмена</Button>
+            <Button variant="outline" onClick={() => setGalleryOpen(false)}>
+              Отмена
+            </Button>
             <Button onClick={insertGallery}>Вставить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+interface ToolbarProps {
+  editor: Editor | null;
+  onLink: () => void;
+}
+
+const TBtn = ({
+  active,
+  onClick,
+  title,
+  children,
+  disabled,
+}: {
+  active?: boolean;
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) => (
+  <Button
+    type="button"
+    variant={active ? "default" : "ghost"}
+    size="sm"
+    className="h-8 w-8 p-0"
+    onClick={onClick}
+    title={title}
+    disabled={disabled}
+  >
+    {children}
+  </Button>
+);
+
+const FormattingToolbar = ({ editor, onLink }: ToolbarProps) => {
+  if (!editor) return null;
+  return (
+    <div className="flex flex-wrap gap-0.5 items-center border-b px-2 py-1.5 bg-muted/20 sticky top-0 z-10">
+      <TBtn
+        title="H1"
+        active={editor.isActive("heading", { level: 1 })}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+      >
+        <Heading1 className="w-4 h-4" />
+      </TBtn>
+      <TBtn
+        title="H2"
+        active={editor.isActive("heading", { level: 2 })}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+      >
+        <Heading2 className="w-4 h-4" />
+      </TBtn>
+      <TBtn
+        title="H3"
+        active={editor.isActive("heading", { level: 3 })}
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+      >
+        <Heading3 className="w-4 h-4" />
+      </TBtn>
+      <div className="w-px h-5 bg-border mx-1" />
+      <TBtn
+        title="Жирный"
+        active={editor.isActive("bold")}
+        onClick={() => editor.chain().focus().toggleBold().run()}
+      >
+        <Bold className="w-4 h-4" />
+      </TBtn>
+      <TBtn
+        title="Курсив"
+        active={editor.isActive("italic")}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+      >
+        <Italic className="w-4 h-4" />
+      </TBtn>
+      <div className="w-px h-5 bg-border mx-1" />
+      <TBtn
+        title="Маркированный список"
+        active={editor.isActive("bulletList")}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+      >
+        <List className="w-4 h-4" />
+      </TBtn>
+      <TBtn
+        title="Нумерованный список"
+        active={editor.isActive("orderedList")}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+      >
+        <ListOrdered className="w-4 h-4" />
+      </TBtn>
+      <TBtn
+        title="Цитата"
+        active={editor.isActive("blockquote")}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+      >
+        <Quote className="w-4 h-4" />
+      </TBtn>
+      <TBtn title="Ссылка" active={editor.isActive("link")} onClick={onLink}>
+        <LinkIcon className="w-4 h-4" />
+      </TBtn>
+      <div className="w-px h-5 bg-border mx-1" />
+      <TBtn
+        title="Отменить"
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().undo()}
+      >
+        <Undo className="w-4 h-4" />
+      </TBtn>
+      <TBtn
+        title="Повторить"
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().redo()}
+      >
+        <Redo className="w-4 h-4" />
+      </TBtn>
     </div>
   );
 };
