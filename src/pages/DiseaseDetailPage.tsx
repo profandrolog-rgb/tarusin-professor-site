@@ -14,8 +14,7 @@ import HtmlArticle from "@/components/parents/HtmlArticle";
 
 const isMarkdownContent = (s: string) => {
   const trimmed = s.trim();
-  if (trimmed.includes("[[GALLERY:")) return true;
-  // HTML обычно начинается с тега
+  // HTML может содержать [[GALLERY]], но всё равно должен идти через HTML-рендерер.
   return !/^<[a-zA-Z!]/.test(trimmed);
 };
 
