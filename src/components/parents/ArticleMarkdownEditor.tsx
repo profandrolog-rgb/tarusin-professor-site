@@ -166,92 +166,96 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
-      <div className="sticky top-0 z-30 flex flex-wrap gap-2 items-center border rounded-md p-2 bg-background shadow-sm">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileRef.current?.click()}
-          disabled={importing}
-          className="gap-1.5"
-        >
-          {importing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Upload className="w-3.5 h-3.5" />
-          )}
-          Загрузить .docx
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          className="hidden"
-          onChange={(e) => handleDocx(e.target.files?.[0] || null)}
-        />
+      <div className="sticky top-0 z-30 bg-background border rounded-md shadow-sm">
+        <div className="flex flex-wrap gap-2 items-center p-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={importing}
+            className="gap-1.5"
+          >
+            {importing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Upload className="w-3.5 h-3.5" />
+            )}
+            Загрузить .docx
+          </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => handleDocx(e.target.files?.[0] || null)}
+          />
 
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          onClick={handleFormat}
-          disabled={formatting || !value.trim()}
-          className="gap-1.5"
-        >
-          {formatting ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="w-3.5 h-3.5" />
-          )}
-          {formatting ? "Форматирую..." : "Форматировать"}
-        </Button>
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={handleFormat}
+            disabled={formatting || !value.trim()}
+            className="gap-1.5"
+          >
+            {formatting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            {formatting ? "Форматирую..." : "Форматировать"}
+          </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setGalleryOpen(true)}
-          className="gap-1.5"
-        >
-          <ImagePlus className="w-3.5 h-3.5" />
-          Галерея
-        </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setGalleryOpen(true)}
+            className="gap-1.5"
+          >
+            <ImagePlus className="w-3.5 h-3.5" />
+            Галерея
+          </Button>
 
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{value.length} симв.</span>
-          <div className="flex rounded-md border overflow-hidden">
-            <Button
-              type="button"
-              variant={mode === "edit" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setMode("edit")}
-              className="gap-1 rounded-none h-8"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              Редактор
-            </Button>
-            <Button
-              type="button"
-              variant={mode === "preview" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setMode("preview")}
-              className="gap-1 rounded-none h-8"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              Предпросмотр
-            </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{value.length} симв.</span>
+            <div className="flex rounded-md border overflow-hidden">
+              <Button
+                type="button"
+                variant={mode === "edit" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setMode("edit")}
+                className="gap-1 rounded-none h-8"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Редактор
+              </Button>
+              <Button
+                type="button"
+                variant={mode === "preview" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setMode("preview")}
+                className="gap-1 rounded-none h-8"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Предпросмотр
+              </Button>
+            </div>
           </div>
         </div>
+        {mode === "edit" && (
+          <div className="border-t">
+            <FormattingToolbar editor={editor} onLink={promptLink} />
+          </div>
+        )}
       </div>
 
       {mode === "edit" ? (
         <div className="border rounded-md bg-background">
-          <div className="sticky top-[60px] z-20 bg-background border-b">
-            <FormattingToolbar editor={editor} onLink={promptLink} />
-          </div>
           <EditorContent editor={editor} />
-
         </div>
+
       ) : (
         <div className="border rounded-md bg-muted/30 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b bg-background">
