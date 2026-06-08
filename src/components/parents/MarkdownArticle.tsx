@@ -57,21 +57,44 @@ interface Props {
   articleId: string;
   articleSlug: string;
   isAdmin: boolean;
+  title?: string;
   onContentChange?: (newContent: string) => void;
 }
 
 // Ensure `---` on its own line is parsed as a thematic break (<hr>) and not a setext heading.
-// Markdown requires a blank line before/after `---` for it to become <hr>.
 function normalizeHorizontalRules(md: string): string {
-  // Add blank lines around standalone --- (3+ dashes)
   return md.replace(/([^\n])\n(-{3,})\s*\n/g, "$1\n\n$2\n\n").replace(/\n(-{3,})\s*\n([^\n])/g, "\n\n$1\n\n$2");
 }
 
-const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, onContentChange }: Props) => {
-  const segments = useMemo(() => parseArticleContent(normalizeHorizontalRules(content)), [content]);
+function stripDuplicateTitle(md: string, title?: string): string {
+  if (!title) return md;
+  const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const target = normalize(title);
+  const lines = md.split("\n");
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") i++;
+  if (i >= lines.length) return md;
+  const first = lines[i];
+  const headingMatch = first.match(/^#{1,3}\s+(.+?)\s*#*\s*$/);
+  if (headingMatch && normalize(headingMatch[1]) === target) {
+    lines.splice(i, 1);
+    return lines.join("\n");
+  }
+  if (i + 1 < lines.length && /^(=+|-+)\s*$/.test(lines[i + 1]) && normalize(first) === target) {
+    lines.splice(i, 2);
+    return lines.join("\n");
+  }
+  return md;
+}
+
+const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onContentChange }: Props) => {
+  const segments = useMemo(
+    () => parseArticleContent(normalizeHorizontalRules(stripDuplicateTitle(content, title))),
+    [content, title]
+  );
 
   return (
-    <div className="article-markdown prose prose-base max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-7 [&_p]:leading-[1.85] [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mt-14 [&_h2]:mb-5 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:mt-10 [&_h3]:mb-4 [&_ul]:my-5 [&_ol]:my-5 [&_li]:my-2 [&_hr]:my-10 [&_hr]:border-0 [&_hr]:border-t [&_hr]:border-[#E2EBF5]">
+    <div className="article-markdown prose prose-base max-w-none text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-7 [&_p]:leading-[1.85] [&_ul]:my-5 [&_ol]:my-5 [&_li]:my-2">
       {segments.map((seg, i) => {
         if (seg.type === "md") {
           return (
@@ -83,10 +106,25 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, onContentCh
                   <hr
                     style={{
                       border: "none",
-                      borderTop: "1px solid #E2EBF5",
+                      borderTop: "2px solid #E2EBF5",
                       margin: "32px 0",
                     }}
                   />
+                ),
+                h1: ({ children }) => (
+                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px" }}>
+                    {children}
+                  </h2>
+                ),
+                h2: ({ children }) => (
+                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px" }}>
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#1A1A1A", marginTop: "28px", marginBottom: "12px" }}>
+                    {children}
+                  </h3>
                 ),
               }}
             >
