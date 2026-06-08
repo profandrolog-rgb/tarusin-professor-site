@@ -162,6 +162,7 @@ const DiseaseDetailPage = () => {
                 articleId={article.id}
                 articleSlug={article.slug}
                 isAdmin={!!isAdmin}
+                title={article.title}
                 onContentChange={(c) => setArticle({ ...article, article_content: c })}
               />
             ) : (
