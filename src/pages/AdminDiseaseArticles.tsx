@@ -298,12 +298,19 @@ const AdminDiseaseArticles = () => {
 
         {/* Create/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editing ? "Редактирование материала" : "Новый материал о заболевании"}</DialogTitle>
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0 flex flex-row items-center justify-between gap-4 space-y-0">
+              <DialogTitle className="flex-1">{editing ? "Редактирование материала" : "Новый материал о заболевании"}</DialogTitle>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Отмена</Button>
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {uploading && saving ? "Загрузка..." : editing ? "Сохранить" : "Создать"}
+                </Button>
+              </div>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-y-auto px-6 py-6">
               {/* Basic info */}
               <div className="grid gap-4">
                 <div>
