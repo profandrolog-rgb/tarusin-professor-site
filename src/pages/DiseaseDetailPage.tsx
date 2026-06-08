@@ -10,6 +10,7 @@ import DOMPurify from "dompurify";
 import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
 import { useAuth } from "@/hooks/useAuth";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
+import HtmlArticle from "@/components/parents/HtmlArticle";
 
 const isMarkdownContent = (s: string) => {
   const trimmed = s.trim();
