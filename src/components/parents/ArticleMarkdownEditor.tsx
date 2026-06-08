@@ -246,8 +246,11 @@ const ArticleMarkdownEditor = ({ value, onChange }: Props) => {
 
       {mode === "edit" ? (
         <div className="border rounded-md bg-background">
-          <FormattingToolbar editor={editor} onLink={promptLink} />
+          <div className="sticky top-[60px] z-20 bg-background border-b">
+            <FormattingToolbar editor={editor} onLink={promptLink} />
+          </div>
           <EditorContent editor={editor} />
+
         </div>
       ) : (
         <div className="border rounded-md bg-muted/30 overflow-hidden">
