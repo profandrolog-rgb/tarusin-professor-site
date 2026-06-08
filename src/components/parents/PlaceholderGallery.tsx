@@ -500,23 +500,13 @@ const PlaceholderGallery = ({
 
       if (uploaded.length === 0) return;
 
-      const entries = uploaded.map((u) => {
-        const safe = u.caption.replace(/"/g, "”").replace(/\|/g, "／");
-        return safe ? `${u.filename} "${safe}"` : u.filename;
-      });
-      const newMarker = `[[GALLERY: caption="${caption}" | ${entries.join(" | ")}]]`;
-      const newContent = fullContent.replace(marker, newMarker);
-
-      const { error: updErr } = await supabase
-        .from("disease_articles")
-        .update({ article_content: newContent })
-        .eq("id", articleId);
-
-      if (updErr) {
-        toast.error("Не удалось сохранить галерею: " + updErr.message);
-      } else {
+      const allEntries: ExistingItem[] = [
+        ...existing,
+        ...uploaded.map((u) => ({ filename: u.filename, caption: u.caption })),
+      ];
+      const ok = await persistEntries(allEntries);
+      if (ok) {
         toast.success(`Загружено фото: ${uploaded.length}`);
-        onContentChange?.(newContent);
         clearPreviews();
       }
     } finally {
