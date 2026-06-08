@@ -68,24 +68,37 @@ function normalizeHorizontalRules(md: string): string {
 
 function stripDuplicateTitle(md: string, title?: string): string {
   if (!title) return md;
-  const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const normalize = (s: string) => s.trim().toLowerCase().replace(/[*_`#]/g, "").replace(/\s+/g, " ").trim();
   const target = normalize(title);
   const lines = md.split("\n");
   let i = 0;
   while (i < lines.length && lines[i].trim() === "") i++;
   if (i >= lines.length) return md;
   const first = lines[i];
+  // ATX heading: # / ## / ###
   const headingMatch = first.match(/^#{1,3}\s+(.+?)\s*#*\s*$/);
   if (headingMatch && normalize(headingMatch[1]) === target) {
     lines.splice(i, 1);
     return lines.join("\n");
   }
+  // Setext heading: title\n===  or  title\n---
   if (i + 1 < lines.length && /^(=+|-+)\s*$/.test(lines[i + 1]) && normalize(first) === target) {
     lines.splice(i, 2);
     return lines.join("\n");
   }
+  // Bold-only paragraph: **Title**
+  if (/^\*\*(.+)\*\*\s*$/.test(first.trim()) && normalize(first) === target) {
+    lines.splice(i, 1);
+    return lines.join("\n");
+  }
+  // Plain text first line equal to title
+  if (normalize(first) === target) {
+    lines.splice(i, 1);
+    return lines.join("\n");
+  }
   return md;
 }
+
 
 const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onContentChange }: Props) => {
   const segments = useMemo(
@@ -112,17 +125,17 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
                   />
                 ),
                 h1: ({ children }) => (
-                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px" }}>
+                  <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
                     {children}
                   </h2>
                 ),
                 h2: ({ children }) => (
-                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px" }}>
+                  <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#1B4F8A", marginTop: "40px", marginBottom: "16px", lineHeight: 1.3 }}>
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#1A1A1A", marginTop: "28px", marginBottom: "12px" }}>
+                  <h3 style={{ fontSize: "20px", fontWeight: 600, color: "#1A1A1A", marginTop: "28px", marginBottom: "12px", lineHeight: 1.35 }}>
                     {children}
                   </h3>
                 ),
