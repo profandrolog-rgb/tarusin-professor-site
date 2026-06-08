@@ -532,6 +532,11 @@ const PlaceholderGallery = ({
                     isReprocessing={reprocessingId === p.id}
                     disabled={uploading}
                     onChangeType={changeType}
+                    onChangeCaption={(id, caption) =>
+                      setPreviews((prev) =>
+                        prev.map((x) => (x.id === id ? { ...x, caption } : x)),
+                      )
+                    }
                     onReprocess={(id) => {
                       const cur = previews.find((x) => x.id === id);
                       if (cur) changeType(id, cur.type);
