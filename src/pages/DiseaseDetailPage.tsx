@@ -154,11 +154,21 @@ const DiseaseDetailPage = () => {
 
         <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl">
           {article.article_content ? (
-            <div
-              className="prose prose-base max-w-none text-foreground [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content) }}
-              onCopy={(e) => e.preventDefault()}
-            />
+            isMarkdownContent(article.article_content) ? (
+              <MarkdownArticle
+                content={article.article_content}
+                articleId={article.id}
+                articleSlug={article.slug}
+                isAdmin={!!isAdmin}
+                onContentChange={(c) => setArticle({ ...article, article_content: c })}
+              />
+            ) : (
+              <div
+                className="prose prose-base max-w-none text-foreground [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content) }}
+                onCopy={(e) => e.preventDefault()}
+              />
+            )
           ) : (
             <p className="text-muted-foreground">Полный текст статьи скоро появится.</p>
           )}
