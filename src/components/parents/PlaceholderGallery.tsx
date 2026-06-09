@@ -697,10 +697,12 @@ const PlaceholderGallery = ({
     setUploading(true);
     try {
       const uploaded: { filename: string; caption: string }[] = [];
+      const savedIds = new Set<string>();
       // Подсчёт индексов по каждому типу отдельно
       const typeCounters: Record<string, number> = {};
       for (let i = 0; i < previews.length; i++) {
         const p = previews[i];
+        setProgressText(`Загружается ${i + 1}/${previews.length}: ${p.originalName}`);
         if (typeCounters[p.type] === undefined) {
           const { data: existingInStorage } = await supabase.storage
             .from("disease-media")
@@ -712,30 +714,50 @@ const PlaceholderGallery = ({
         const idx = typeCounters[p.type]++;
         const filename = `${articleSlug}-${p.type}-${idx}.jpg`;
         const path = `${ARTICLE_IMAGES_FOLDER}/${filename}`;
-        const { error } = await supabase.storage
+        const { error: upErr } = await supabase.storage
           .from("disease-media")
           .upload(path, p.blob, { upsert: true, contentType: "image/jpeg" });
-        if (error) {
-          console.error(error);
-          toast.error(`Не удалось загрузить ${p.originalName}: ${error.message}`);
+        if (upErr) {
+          console.error("[PlaceholderGallery] upload error", upErr);
+          toast.error(`Не удалось загрузить ${p.originalName}: ${upErr.message}`);
           continue;
         }
         uploaded.push({ filename, caption: (p.caption || "").trim() });
+
+        // АВТОСОХРАНЕНИЕ: после КАЖДОГО успешно загруженного файла
+        // сразу пишем маркер в БД, чтобы фото не терялись при сбое/перезагрузке.
+        const entriesSoFar: ExistingItem[] = [
+          ...existing,
+          ...uploaded.map((u) => ({ filename: u.filename, caption: u.caption })),
+        ];
+        const ok = await persistEntries(entriesSoFar);
+        if (ok) {
+          savedIds.add(p.id);
+        } else {
+          console.error("[PlaceholderGallery] persistEntries failed for", filename);
+          toast.error(`Файл загружен, но не записан в статью: ${filename}. Не закрывайте страницу.`);
+        }
       }
 
-      if (uploaded.length === 0) return;
+      setProgressText("");
 
-      const allEntries: ExistingItem[] = [
-        ...existing,
-        ...uploaded.map((u) => ({ filename: u.filename, caption: u.caption })),
-      ];
-      const ok = await persistEntries(allEntries);
-      if (ok) {
-        toast.success(`Загружено фото: ${uploaded.length}`);
+      if (savedIds.size === previews.length) {
+        toast.success(`Загружено и сохранено: ${savedIds.size}`);
         clearPreviews();
+      } else if (savedIds.size > 0) {
+        toast.success(`Сохранено: ${savedIds.size} из ${previews.length}. Остальные оставлены в очереди.`);
+        // оставляем в превью только то, что НЕ сохранилось — чтобы можно было повторить
+        setPreviews((prev) => {
+          const remaining = prev.filter((p) => !savedIds.has(p.id));
+          prev.forEach((p) => {
+            if (savedIds.has(p.id)) URL.revokeObjectURL(p.previewUrl);
+          });
+          return remaining;
+        });
       }
     } finally {
       setUploading(false);
+      setProgressText("");
     }
   };
 
