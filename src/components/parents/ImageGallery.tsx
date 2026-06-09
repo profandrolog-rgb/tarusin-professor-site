@@ -84,49 +84,28 @@ const ImageGallery = ({ caption, files }: Props) => {
       )}
       {isSingle ? (
         <div className="max-w-[700px] mx-auto w-full">
-          {isInfographic(items[0].filename) ? (
-            <button
-              type="button"
-              onClick={() => setLightboxIdx(0)}
-              className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
-            >
-              <img
-                src={publicUrl(items[0].filename)}
-                alt={items[0].caption || caption || "Фото 1"}
-                loading="lazy"
-                style={{
-                  maxWidth: "100%",
-                  width: "100%",
-                  height: "auto",
-                  objectFit: "contain",
-                  display: "block",
-                }}
-                draggable={false}
-                onDragStart={noDragStart}
-                onContextMenu={noContextMenu}
-              />
-              <span style={watermarkStyle}>tarusin.pro</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setLightboxIdx(0)}
-              className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-              style={{ aspectRatio: "4 / 3" }}
-            >
-              <img
-                src={publicUrl(items[0].filename)}
-                alt={items[0].caption || caption || "Фото 1"}
-                loading="lazy"
-                className="w-full h-full object-cover"
-                style={{ maxWidth: "100%", height: "auto" }}
-                draggable={false}
-                onDragStart={noDragStart}
-                onContextMenu={noContextMenu}
-              />
-              <span style={watermarkStyle}>tarusin.pro</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setLightboxIdx(0)}
+            className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+          >
+            <img
+              src={publicUrl(items[0].filename)}
+              alt={items[0].caption || caption || "Фото 1"}
+              loading="lazy"
+              style={{
+                maxWidth: "100%",
+                width: "100%",
+                height: "auto",
+                objectFit: "contain",
+                display: "block",
+              }}
+              draggable={false}
+              onDragStart={noDragStart}
+              onContextMenu={noContextMenu}
+            />
+            <span style={watermarkStyle}>tarusin.pro</span>
+          </button>
           {items[0].caption && (
             <figcaption style={photoCaptionStyle}>{items[0].caption}</figcaption>
           )}
