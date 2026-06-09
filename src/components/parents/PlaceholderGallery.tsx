@@ -394,12 +394,19 @@ const PlaceholderGallery = ({
         toast.warning("Маркер галереи не найден в статье — добавил в конец, чтобы фото не потерялись");
       }
     }
-    const { error } = await supabase
+    const { error, data: updated } = await supabase
       .from("disease_articles")
       .update({ article_content: newContent })
-      .eq("id", articleId);
+      .eq("id", articleId)
+      .select("id");
     if (error) {
+      console.error("[PlaceholderGallery] DB update error", error);
       toast.error("Не удалось сохранить галерею: " + error.message);
+      return false;
+    }
+    if (!updated || updated.length === 0) {
+      console.error("[PlaceholderGallery] update returned 0 rows. Possibly RLS or stale session.");
+      toast.error("Сохранение не прошло (нет прав или сессия истекла). Войдите заново.");
       return false;
     }
     onContentChange?.(newContent);
