@@ -76,6 +76,10 @@ const ImageGallery = ({ caption, files }: Props) => {
   const noDragStart = (e: React.DragEvent) => e.preventDefault();
 
   const isInfographic = (filename: string) => /-infographic-/i.test(filename);
+  const isPatientFull = (filename: string) => /-patient-full-/i.test(filename);
+  // Высота карточки вертикального фото (рост 9:16). Ширина = высота * 9/16.
+  const PATIENT_FULL_H = 500;
+  const PATIENT_FULL_W = Math.round((PATIENT_FULL_H * 9) / 16); // ~281px
 
   return (
     <figure
