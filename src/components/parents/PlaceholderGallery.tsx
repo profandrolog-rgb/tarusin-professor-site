@@ -23,6 +23,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+import {
+  buildGalleryMarkerFromEntries,
+  parseGalleryFileEntries,
+  readGalleryEntriesFromContent,
+  upsertGalleryEntriesInContent,
+  type GalleryFileEntry,
+} from "@/lib/markdown/galleryMarkers";
 
 interface Props {
   articleId: string;
@@ -35,6 +42,16 @@ interface Props {
 }
 
 const ARTICLE_IMAGES_FOLDER = "article-images";
+const ARTICLE_IMAGES_BUCKET = "disease-media";
+const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${ARTICLE_IMAGES_BUCKET}`;
+
+function publicArticleImageUrl(filename: string) {
+  const safe = filename
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  return `${STORAGE_BASE}/${ARTICLE_IMAGES_FOLDER}/${safe}`;
+}
 
 type ImgType = "surgery" | "ultrasound" | "patient" | "urology" | "urology-closeup" | "infographic" | "anatomy" | "default";
 
@@ -301,17 +318,7 @@ const SortableThumb = ({
 };
 
 
-interface ExistingItem {
-  filename: string;
-  caption: string;
-}
-
-function parseExistingEntry(raw: string): ExistingItem {
-  const s = raw.trim();
-  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].trim() };
-  return { filename: s, caption: "" };
-}
+type ExistingItem = GalleryFileEntry;
 
 const PlaceholderGallery = ({
   articleId,
