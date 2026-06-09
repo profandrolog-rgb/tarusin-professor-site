@@ -13,7 +13,7 @@ export function markdownToHtml(md: string): string {
   const prepared = md.replace(
     GALLERY_RE,
     (_m, caption: string, files: string) =>
-      `\n\n<div data-gallery-placeholder data-caption="${escapeHtml(caption)}" data-files="${escapeHtml((files || "").replace(/^\|/, ""))}">Галерея</div>\n\n`
+      `\n\n<div data-gallery-placeholder data-caption="${escapeHtml(caption)}" data-files="${escapeHtml((files || "").replace(/^\|/, "").trim())}">Галерея</div>\n\n`
   );
   return marked.parse(prepared, { async: false }) as string;
 }
