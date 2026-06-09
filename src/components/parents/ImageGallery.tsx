@@ -76,6 +76,10 @@ const ImageGallery = ({ caption, files }: Props) => {
   const noDragStart = (e: React.DragEvent) => e.preventDefault();
 
   const isInfographic = (filename: string) => /-infographic-/i.test(filename);
+  const isPatientFull = (filename: string) => /-patient-full-/i.test(filename);
+  // Высота карточки вертикального фото (рост 9:16). Ширина = высота * 9/16.
+  const PATIENT_FULL_H = 500;
+  const PATIENT_FULL_W = Math.round((PATIENT_FULL_H * 9) / 16); // ~281px
 
   return (
     <figure
@@ -88,40 +92,68 @@ const ImageGallery = ({ caption, files }: Props) => {
         </h4>
       )}
       {isSingle ? (
-        <div className="max-w-[860px] mx-auto w-full">
-          <button
-            type="button"
-            onClick={() => setLightboxIdx(0)}
-            className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
-          >
-            <img
-              src={publicUrl(items[0].filename)}
-              alt={items[0].caption || caption || "Фото 1"}
-              loading="lazy"
-              style={{
+        (() => {
+          const single = items[0];
+          const single_patientFull = isPatientFull(single.filename);
+          const wrapperClass = single_patientFull
+            ? "mx-auto"
+            : "max-w-[860px] mx-auto w-full";
+          const wrapperStyle: React.CSSProperties = single_patientFull
+            ? { width: PATIENT_FULL_W, maxWidth: "100%" }
+            : {};
+          const imgStyle: React.CSSProperties = single_patientFull
+            ? {
+                maxWidth: "100%",
+                width: "auto",
+                height: PATIENT_FULL_H,
+                maxHeight: "70vh",
+                objectFit: "contain",
+                display: "block",
+                margin: "0 auto",
+              }
+            : {
                 maxWidth: "100%",
                 width: "100%",
                 height: "auto",
                 objectFit: "contain",
                 display: "block",
-              }}
-              draggable={false}
-              onDragStart={noDragStart}
-              onContextMenu={noContextMenu}
-            />
-            <span style={watermarkStyle}>tarusin.pro</span>
-          </button>
-          {items[0].caption && (
-            <figcaption style={photoCaptionStyle}>{items[0].caption}</figcaption>
-          )}
-        </div>
+              };
+          return (
+            <div className={wrapperClass} style={wrapperStyle}>
+              <button
+                type="button"
+                onClick={() => setLightboxIdx(0)}
+                className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+              >
+                <img
+                  src={publicUrl(single.filename)}
+                  alt={single.caption || caption || "Фото 1"}
+                  loading="lazy"
+                  style={imgStyle}
+                  draggable={false}
+                  onDragStart={noDragStart}
+                  onContextMenu={noContextMenu}
+                />
+                <span style={watermarkStyle}>tarusin.pro</span>
+              </button>
+              {single.caption && (
+                <figcaption style={photoCaptionStyle}>{single.caption}</figcaption>
+              )}
+            </div>
+          );
+        })()
       ) : (
         <div className="flex flex-wrap justify-center gap-3">
-          {items.map((it, i) => (
-            <div
-              key={it.filename + i}
-              className="basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]"
-            >
+          {items.map((it, i) => {
+            const patientFull = isPatientFull(it.filename);
+            const itemClass = patientFull
+              ? "shrink-0"
+              : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
+            const itemStyle: React.CSSProperties = patientFull
+              ? { width: PATIENT_FULL_W, maxWidth: "100%" }
+              : {};
+            return (
+            <div key={it.filename + i} className={itemClass} style={itemStyle}>
               {isInfographic(it.filename) ? (
                 <button
                   type="button"
@@ -150,14 +182,14 @@ const ImageGallery = ({ caption, files }: Props) => {
                   type="button"
                   onClick={() => setLightboxIdx(i)}
                   className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-                  style={{ aspectRatio: "4 / 3" }}
+                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull ? PATIENT_FULL_H : undefined }}
                 >
                   <img
                     src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
                     className="w-full h-full object-cover"
-                    style={{ maxWidth: "100%", height: "auto" }}
+                    style={{ maxWidth: "100%", height: "100%" }}
                     draggable={false}
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}
@@ -169,7 +201,8 @@ const ImageGallery = ({ caption, files }: Props) => {
                 <figcaption style={photoCaptionStyle}>{it.caption}</figcaption>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
