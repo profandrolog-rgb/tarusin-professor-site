@@ -145,7 +145,8 @@ async function processImage(source: Blob, type: ImgType): Promise<Blob> {
 
 function buildDefaultCrop(imgW: number, imgH: number, ratio: number | null): Crop {
   if (ratio === null) {
-    return { unit: "%", x: 5, y: 5, width: 90, height: 90 };
+    // Инфографика — берём всё изображение целиком, без обрезки краёв
+    return { unit: "%", x: 0, y: 0, width: 100, height: 100 };
   }
   return centerCrop(
     makeAspectCrop({ unit: "%", width: 90 }, ratio, imgW, imgH),
