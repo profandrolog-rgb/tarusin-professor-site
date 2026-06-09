@@ -354,7 +354,7 @@ const PlaceholderGallery = ({
   const cropImgRef = useRef<HTMLImageElement | null>(null);
 
   const existing = useMemo<ExistingItem[]>(
-    () => (existingFiles ?? []).map(parseExistingEntry),
+    () => parseGalleryFileEntries((existingFiles ?? []).join("|")),
     [existingFiles],
   );
   const hasExisting = existing.length > 0;
@@ -395,7 +395,8 @@ const PlaceholderGallery = ({
       .split("|")
       .map((s) => s.trim())
       .filter(Boolean)
-      .map(parseExistingEntry);
+      .map((entry) => parseGalleryFileEntries(entry)[0])
+      .filter(Boolean);
   };
 
   // writer получает реально сохранённый сейчас список файлов (из БД)
