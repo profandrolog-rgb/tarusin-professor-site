@@ -53,7 +53,7 @@ function publicArticleImageUrl(filename: string) {
   return `${STORAGE_BASE}/${ARTICLE_IMAGES_FOLDER}/${safe}`;
 }
 
-type ImgType = "surgery" | "ultrasound" | "patient" | "urology" | "urology-closeup" | "infographic" | "anatomy" | "default";
+type ImgType = "surgery" | "ultrasound" | "patient" | "patient-full" | "urology" | "urology-closeup" | "infographic" | "anatomy" | "default";
 
 interface TypeRule {
   ratio: number | null; // width / height, null = no crop
@@ -66,6 +66,7 @@ const TYPE_RULES: Record<ImgType, TypeRule> = {
   anatomy:           { ratio: 4 / 3, crop: "center", maxW: 1600 },
   ultrasound:        { ratio: 1,     crop: "center", maxW: 1200 },
   patient:           { ratio: 3 / 4, crop: "top",    maxW: 1000 },
+  "patient-full":    { ratio: 9 / 16, crop: "center", maxW: 800 },
   urology:           { ratio: 3 / 4, crop: "center", maxW: 1000 },
   "urology-closeup": { ratio: 1,     crop: "center", maxW: 1200 },
   infographic:       { ratio: null,  crop: "center", maxW: 1800 },
@@ -76,6 +77,7 @@ const TYPE_LABEL: Record<ImgType, string> = {
   surgery: "Операция (4:3)",
   ultrasound: "УЗИ (1:1)",
   patient: "Пациент (3:4, от верха)",
+  "patient-full": "Рост (9:16, центр)",
   urology: "Урология (3:4, центр)",
   "urology-closeup": "Урология крупный план (1:1, центр)",
   infographic: "Инфографика (без кадра)",
@@ -83,18 +85,20 @@ const TYPE_LABEL: Record<ImgType, string> = {
   default: "По умолчанию (4:3)",
 };
 
-const TYPE_OPTIONS: ImgType[] = ["surgery", "ultrasound", "patient", "urology", "urology-closeup", "infographic", "anatomy", "default"];
+const TYPE_OPTIONS: ImgType[] = ["surgery", "ultrasound", "patient", "patient-full", "urology", "urology-closeup", "infographic", "anatomy", "default"];
 
 function detectType(caption: string): ImgType {
   const c = caption.toLowerCase();
   if (/операци|хирург|разрез|этап|интраопер/.test(c)) return "surgery";
   if (/узи|эхограм|ультразвук|допплер/.test(c)) return "ultrasound";
+  if (/рост|целиком|полный|синдром|кариотип|фенотип/.test(c)) return "patient-full";
   if (/мошонк|яичк|половой|препуци|головк|фимоз|крипторхизм|гидроцеле|варикоцеле/.test(c)) return "urology";
   if (/пациент|клиническ|внешн|вид|фото|симптом/.test(c)) return "patient";
   if (/схем|алгоритм|инфографик|классификац|таблиц|эпидемиолог|распростран|график|диаграм/.test(c)) return "infographic";
   if (/анатоми|строени/.test(c)) return "anatomy";
   return "default";
 }
+
 
 function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
