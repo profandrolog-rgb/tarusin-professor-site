@@ -445,8 +445,10 @@ const PlaceholderGallery = ({
       await supabase.storage
         .from("disease-media")
         .remove([`${ARTICLE_IMAGES_FOLDER}/${filename}`]);
-      const next = existing.filter((e) => e.filename !== filename);
-      const ok = await persistEntries(next);
+      // Удаляем по актуальному списку из БД, а не по prop-снимку
+      const ok = await persistEntries((current) =>
+        current.filter((e) => e.filename !== filename),
+      );
       if (ok) toast.success("Фото удалено");
     } finally {
       setDeletingFile(null);
