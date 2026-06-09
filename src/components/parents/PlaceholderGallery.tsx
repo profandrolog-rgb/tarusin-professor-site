@@ -868,7 +868,11 @@ const PlaceholderGallery = ({
               disabled={uploading || deletingFile !== null}
               className="gap-1.5"
               onClick={async () => {
-                const ok = await persistEntries(existing);
+                const ok = await persistEntries((current) => {
+                  const seen = new Set(current.map((e) => e.filename));
+                  const additions = existing.filter((e) => !seen.has(e.filename));
+                  return [...current, ...additions];
+                });
                 if (ok) toast.success(`Галерея сохранена (${existing.length} фото)`);
               }}
             >
