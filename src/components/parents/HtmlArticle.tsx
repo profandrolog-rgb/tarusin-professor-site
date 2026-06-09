@@ -138,7 +138,7 @@ const ARTICLE_CLASS =
   "[&_h2]:text-[26px] [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4 [&_h2]:text-[#1B4F8A] [&_h2]:leading-tight " +
   "[&_h3]:text-[20px] [&_h3]:font-semibold [&_h3]:mt-7 [&_h3]:mb-3 [&_h3]:text-[#1A1A1A] [&_h3]:leading-snug " +
   "[&_hr]:border-0 [&_hr]:border-t-2 [&_hr]:border-[#E2EBF5] [&_hr]:my-8 " +
-  "[&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full " +
+  "[&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_img]:h-auto [&_img]:block " +
   "[&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border";
 
 const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onContentChange }: Props) => {
