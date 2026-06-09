@@ -79,6 +79,13 @@ describe("Gallery markers — защита от стирания файлов", 
       '[[GALLERY: caption="Фото" | new.jpg | old.jpg | saved.jpg "подпись"]]',
     );
   });
+
+  it("возвращает файлы и в HTML-плейсхолдер редактора", () => {
+    const draft = '<p>До</p><div data-gallery-placeholder data-caption="Фото"></div><p>После</p>';
+    const persisted = '[[GALLERY: caption="Фото" | old.jpg]]';
+
+    expect(mergePersistedGalleryFiles(draft, persisted)).toContain('data-files="old.jpg"');
+  });
 });
 
 describe("HtmlArticle — публичный HTML-рендер статьи", () => {
