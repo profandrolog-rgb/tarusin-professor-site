@@ -2,6 +2,7 @@ import { marked } from "marked";
 import TurndownService from "turndown";
 
 const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
+const GALLERY_DIV_RE = /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -26,7 +27,7 @@ function readHtmlAttr(attrs: string, name: string): string {
 
 function galleryDivsToMarkers(html: string): string {
   return html.replace(
-    /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi,
+    GALLERY_DIV_RE,
     (_m, attrs: string) => {
       const caption = readHtmlAttr(attrs, "data-caption").replace(/"/g, "'");
       const files = readHtmlAttr(attrs, "data-files")
@@ -80,6 +81,82 @@ turndownService.addRule("galleryTextMarker", {
 export function htmlToMarkdown(html: string): string {
   if (!html) return "";
   return turndownService.turndown(galleryDivsToMarkers(html)).trim();
+}
+
+type GallerySnapshot = {
+  caption: string;
+  files: string[];
+};
+
+function parseGalleryFiles(raw: string): string[] {
+  return (raw || "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function galleryFileKey(entry: string): string {
+  return entry.trim().split(/\s+/)[0] || entry.trim();
+}
+
+function mergeFileEntries(draftFiles: string[], persistedFiles: string[]): string[] {
+  const seen = new Set(draftFiles.map(galleryFileKey));
+  const merged = [...draftFiles];
+  for (const file of persistedFiles) {
+    const key = galleryFileKey(file);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(file);
+  }
+  return merged;
+}
+
+function extractGallerySnapshots(content: string): Map<string, GallerySnapshot> {
+  const byCaption = new Map<string, GallerySnapshot>();
+  if (!content) return byCaption;
+
+  const markerRe = new RegExp(GALLERY_RE.source, "g");
+  let marker: RegExpExecArray | null;
+  while ((marker = markerRe.exec(content)) !== null) {
+    const caption = marker[1] || "";
+    const files = parseGalleryFiles(marker[2] || "");
+    if (files.length > 0 && !byCaption.has(caption)) byCaption.set(caption, { caption, files });
+  }
+
+  const divRe = new RegExp(GALLERY_DIV_RE.source, "gi");
+  let div: RegExpExecArray | null;
+  while ((div = divRe.exec(content)) !== null) {
+    const attrs = div[1] || "";
+    const caption = readHtmlAttr(attrs, "data-caption");
+    const files = parseGalleryFiles(readHtmlAttr(attrs, "data-files"));
+    if (caption && files.length > 0 && !byCaption.has(caption)) byCaption.set(caption, { caption, files });
+  }
+
+  return byCaption;
+}
+
+function buildGalleryMarker(caption: string, files: string[]): string {
+  const safeCaption = caption.replace(/"/g, "'");
+  return `[[GALLERY: caption="${safeCaption}"${files.length ? ` | ${files.join(" | ")}` : ""}]]`;
+}
+
+/**
+ * Prevents stale article editor drafts from deleting already-uploaded gallery files.
+ * The text being saved wins for normal article content, while persisted gallery file
+ * lists are merged back by caption before the database update.
+ */
+export function mergePersistedGalleryFiles(draftContent: string, persistedContent: string): string {
+  if (!draftContent || !persistedContent) return draftContent;
+  const persisted = extractGallerySnapshots(persistedContent);
+  if (persisted.size === 0) return draftContent;
+
+  return draftContent.replace(GALLERY_RE, (_match, caption: string, rawFiles: string) => {
+    const saved = persisted.get(caption || "");
+    if (!saved?.files.length) return _match;
+    const draftFiles = parseGalleryFiles(rawFiles || "");
+    const merged = mergeFileEntries(draftFiles, saved.files);
+    return merged.length === draftFiles.length ? _match : buildGalleryMarker(caption || "", merged);
+  });
 }
 
 function escapeHtml(s: string): string {
