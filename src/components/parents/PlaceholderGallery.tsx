@@ -30,6 +30,7 @@ import {
   upsertGalleryEntriesInContent,
   type GalleryFileEntry,
 } from "@/lib/markdown/galleryMarkers";
+import { isStorageCollisionError, nextGalleryImageIndex } from "@/lib/markdown/galleryImageFilenames";
 
 interface Props {
   articleId: string;
@@ -711,28 +712,49 @@ const PlaceholderGallery = ({
     try {
       const uploaded: { filename: string; caption: string }[] = [];
       const savedIds = new Set<string>();
-      // Подсчёт индексов по каждому типу отдельно
+      // Подсчёт индексов по каждому типу отдельно. ВАЖНО: берём следующий номер
+      // от максимального суффикса, а не от количества файлов — иначе после удаления
+      // patient-full-1 новый скриншот снова становился patient-full-2 и затирал старый.
       const typeCounters: Record<string, number> = {};
       for (let i = 0; i < previews.length; i++) {
         const p = previews[i];
         setProgressText(`Загружается ${i + 1}/${previews.length}: ${p.originalName}`);
         if (typeCounters[p.type] === undefined) {
-          const { data: existingInStorage } = await supabase.storage
+          const { data: existingInStorage, error: listErr } = await supabase.storage
             .from("disease-media")
-            .list(ARTICLE_IMAGES_FOLDER, { limit: 1000, search: articleSlug });
-          const prefix = `${articleSlug}-${p.type}-`;
-          typeCounters[p.type] =
-            (existingInStorage || []).filter((f) => f.name.startsWith(prefix)).length + 1;
+            .list(ARTICLE_IMAGES_FOLDER, { limit: 1000, search: `${articleSlug}-${p.type}-` });
+          if (listErr) {
+            console.error("[PlaceholderGallery] storage list error", listErr);
+            toast.error(`Не удалось проверить номера файлов: ${listErr.message}`);
+            continue;
+          }
+          typeCounters[p.type] = nextGalleryImageIndex(
+            (existingInStorage || []).map((f) => f.name),
+            articleSlug,
+            p.type,
+          );
         }
-        const idx = typeCounters[p.type]++;
-        const filename = `${articleSlug}-${p.type}-${idx}.jpg`;
-        const path = `${ARTICLE_IMAGES_FOLDER}/${filename}`;
-        const { error: upErr } = await supabase.storage
-          .from("disease-media")
-          .upload(path, p.blob, { upsert: true, contentType: "image/jpeg" });
-        if (upErr) {
+
+        let filename = "";
+        let upErr: any = null;
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const idx = typeCounters[p.type]++;
+          filename = `${articleSlug}-${p.type}-${idx}.jpg`;
+          const path = `${ARTICLE_IMAGES_FOLDER}/${filename}`;
+          const { error } = await supabase.storage
+            .from("disease-media")
+            .upload(path, p.blob, { upsert: false, contentType: "image/jpeg" });
+          if (!error) {
+            upErr = null;
+            break;
+          }
+          upErr = error;
+          if (!isStorageCollisionError(error)) break;
+        }
+
+        if (upErr || !filename) {
           console.error("[PlaceholderGallery] upload error", upErr);
-          toast.error(`Не удалось загрузить ${p.originalName}: ${upErr.message}`);
+          toast.error(`Не удалось загрузить ${p.originalName}: ${upErr?.message || "не удалось подобрать имя файла"}`);
           continue;
         }
         uploaded.push({ filename, caption: (p.caption || "").trim() });
