@@ -70,32 +70,63 @@ const ImageGallery = ({ caption, files }: Props) => {
   const noContextMenu = (e: React.MouseEvent) => e.preventDefault();
   const noDragStart = (e: React.DragEvent) => e.preventDefault();
 
+  const isInfographic = (filename: string) => /-infographic-/i.test(filename);
+
   return (
-    <figure className="my-8 not-prose select-none" style={{ userSelect: "none" }}>
+    <figure
+      className="my-8 not-prose select-none max-w-full overflow-hidden"
+      style={{ userSelect: "none" }}
+    >
       {caption && (
         <h4 className="text-base md:text-lg font-semibold mb-3" style={{ color: "#1B4F8A" }}>
           {caption}
         </h4>
       )}
       {isSingle ? (
-        <div className="max-w-[700px] mx-auto">
-          <button
-            type="button"
-            onClick={() => setLightboxIdx(0)}
-            className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-            style={{ aspectRatio: "4 / 3" }}
-          >
-            <img
-              src={publicUrl(items[0].filename)}
-              alt={items[0].caption || caption || "Фото 1"}
-              loading="lazy"
-              className="w-full h-full object-cover"
-              draggable={false}
-              onDragStart={noDragStart}
-              onContextMenu={noContextMenu}
-            />
-            <span style={watermarkStyle}>tarusin.pro</span>
-          </button>
+        <div className="max-w-[700px] mx-auto w-full">
+          {isInfographic(items[0].filename) ? (
+            <button
+              type="button"
+              onClick={() => setLightboxIdx(0)}
+              className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+            >
+              <img
+                src={publicUrl(items[0].filename)}
+                alt={items[0].caption || caption || "Фото 1"}
+                loading="lazy"
+                style={{
+                  maxWidth: "100%",
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+                draggable={false}
+                onDragStart={noDragStart}
+                onContextMenu={noContextMenu}
+              />
+              <span style={watermarkStyle}>tarusin.pro</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setLightboxIdx(0)}
+              className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
+              style={{ aspectRatio: "4 / 3" }}
+            >
+              <img
+                src={publicUrl(items[0].filename)}
+                alt={items[0].caption || caption || "Фото 1"}
+                loading="lazy"
+                className="w-full h-full object-cover"
+                style={{ maxWidth: "100%", height: "auto" }}
+                draggable={false}
+                onDragStart={noDragStart}
+                onContextMenu={noContextMenu}
+              />
+              <span style={watermarkStyle}>tarusin.pro</span>
+            </button>
+          )}
           {items[0].caption && (
             <figcaption style={photoCaptionStyle}>{items[0].caption}</figcaption>
           )}
@@ -107,23 +138,49 @@ const ImageGallery = ({ caption, files }: Props) => {
               key={it.filename + i}
               className="basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]"
             >
-              <button
-                type="button"
-                onClick={() => setLightboxIdx(i)}
-                className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-                style={{ aspectRatio: "4 / 3" }}
-              >
-                <img
-                  src={publicUrl(it.filename)}
-                  alt={it.caption || caption || `Фото ${i + 1}`}
-                  loading="lazy"
-                  className="w-full h-full object-cover"
-                  draggable={false}
-                  onDragStart={noDragStart}
-                  onContextMenu={noContextMenu}
-                />
-                <span style={watermarkStyle}>tarusin.pro</span>
-              </button>
+              {isInfographic(it.filename) ? (
+                <button
+                  type="button"
+                  onClick={() => setLightboxIdx(i)}
+                  className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+                >
+                  <img
+                    src={publicUrl(it.filename)}
+                    alt={it.caption || caption || `Фото ${i + 1}`}
+                    loading="lazy"
+                    style={{
+                      maxWidth: "100%",
+                      width: "100%",
+                      height: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                    draggable={false}
+                    onDragStart={noDragStart}
+                    onContextMenu={noContextMenu}
+                  />
+                  <span style={watermarkStyle}>tarusin.pro</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setLightboxIdx(i)}
+                  className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
+                  style={{ aspectRatio: "4 / 3" }}
+                >
+                  <img
+                    src={publicUrl(it.filename)}
+                    alt={it.caption || caption || `Фото ${i + 1}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                    style={{ maxWidth: "100%", height: "auto" }}
+                    draggable={false}
+                    onDragStart={noDragStart}
+                    onContextMenu={noContextMenu}
+                  />
+                  <span style={watermarkStyle}>tarusin.pro</span>
+                </button>
+              )}
               {it.caption && (
                 <figcaption style={photoCaptionStyle}>{it.caption}</figcaption>
               )}
