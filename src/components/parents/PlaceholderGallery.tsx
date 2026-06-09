@@ -794,6 +794,22 @@ const PlaceholderGallery = ({
               </div>
             ))}
           </div>
+          <div className="flex justify-center mt-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={uploading || deletingFile !== null}
+              className="gap-1.5"
+              onClick={async () => {
+                const ok = await persistEntries(existing);
+                if (ok) toast.success(`Галерея сохранена (${existing.length} фото)`);
+              }}
+            >
+              <Save className="w-4 h-4" />
+              Сохранить галерею ({existing.length})
+            </Button>
+          </div>
         </div>
       )}
 
