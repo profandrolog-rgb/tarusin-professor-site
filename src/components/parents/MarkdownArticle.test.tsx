@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import MarkdownArticle from "./MarkdownArticle";
 import HtmlArticle from "./HtmlArticle";
+import { mergePersistedGalleryFiles } from "@/lib/markdown/galleryMarkers";
 
 // Mock heavy children so the test stays focused on visibility logic.
 vi.mock("./PlaceholderGallery", () => ({
@@ -44,7 +45,7 @@ describe("MarkdownArticle — видимость PlaceholderGallery", () => {
     expect(screen.getByText(/Заключительный абзац/)).toBeInTheDocument();
   });
 
-  it("при наличии файлов галерея показывается обоим — и админу, и читателю", () => {
+  it("при наличии файлов читателю показывает галерею, админу — галерею и блок управления", () => {
     const withFiles = {
       ...baseProps,
       content: `Текст.\n\n[[GALLERY: caption="Снимки" | a.jpg | b.jpg]]\n\nЕщё текст.`,
@@ -55,7 +56,35 @@ describe("MarkdownArticle — видимость PlaceholderGallery", () => {
 
     rerender(<MarkdownArticle {...withFiles} isAdmin />);
     expect(screen.getByTestId("image-gallery")).toBeInTheDocument();
-    expect(screen.queryByTestId("placeholder-gallery")).not.toBeInTheDocument();
+    expect(screen.getByTestId("placeholder-gallery")).toBeInTheDocument();
+  });
+});
+
+describe("Gallery markers — защита от стирания файлов", () => {
+  it("возвращает файлы из актуальной базы, если редактор сохраняет старый пустой маркер", () => {
+    const staleDraft = 'До\n\n[[GALLERY: caption="Эпидемиология гинекомастии"]]\n\nПосле';
+    const persisted =
+      'До\n\n[[GALLERY: caption="Эпидемиология гинекомастии" | ginekomastiya-infographic-1.jpg]]\n\nПосле';
+
+    expect(mergePersistedGalleryFiles(staleDraft, persisted)).toContain(
+      '[[GALLERY: caption="Эпидемиология гинекомастии" | ginekomastiya-infographic-1.jpg]]',
+    );
+  });
+
+  it("не удаляет уже существующие файлы и добавляет новые без дублей", () => {
+    const draft = '[[GALLERY: caption="Фото" | new.jpg | old.jpg]]';
+    const persisted = '[[GALLERY: caption="Фото" | old.jpg | saved.jpg "подпись"]]';
+
+    expect(mergePersistedGalleryFiles(draft, persisted)).toBe(
+      '[[GALLERY: caption="Фото" | new.jpg | old.jpg | saved.jpg "подпись"]]',
+    );
+  });
+
+  it("возвращает файлы и в HTML-плейсхолдер редактора", () => {
+    const draft = '<p>До</p><div data-gallery-placeholder data-caption="Фото"></div><p>После</p>';
+    const persisted = '[[GALLERY: caption="Фото" | old.jpg]]';
+
+    expect(mergePersistedGalleryFiles(draft, persisted)).toContain('data-files="old.jpg"');
   });
 });
 

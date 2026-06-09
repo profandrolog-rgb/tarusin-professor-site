@@ -373,8 +373,17 @@ const PlaceholderGallery = ({
       `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${escCaption}["'“”]\\s*((?:\\|[^\\]]*)?)\\]\\]`,
     );
     const m = content.match(re);
-    if (!m) return [];
-    const rest = (m[1] || "").replace(/^\|/, "");
+    let rest = (m?.[1] || "").replace(/^\|/, "");
+    if (!m) {
+      const divRe = new RegExp(
+        `<div\\b(?=[^>]*(?:\\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\\s>]+))?|\\bdata-type\\s*=\\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))(?=[^>]*\\bdata-caption\\s*=\\s*(?:"${escCaption}"|'${escCaption}'|${escCaption}(?=[\\s>])))\\b([^>]*)>[\\s\\S]*?<\\/div>`,
+        "i",
+      );
+      const div = content.match(divRe);
+      const attrs = div?.[1] || "";
+      const filesAttr = attrs.match(/\bdata-files\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      rest = filesAttr?.[1] || filesAttr?.[2] || filesAttr?.[3] || "";
+    }
     return rest
       .split("|")
       .map((s) => s.trim())
@@ -868,7 +877,11 @@ const PlaceholderGallery = ({
               disabled={uploading || deletingFile !== null}
               className="gap-1.5"
               onClick={async () => {
-                const ok = await persistEntries(existing);
+                const ok = await persistEntries((current) => {
+                  const seen = new Set(current.map((e) => e.filename));
+                  const additions = existing.filter((e) => !seen.has(e.filename));
+                  return [...current, ...additions];
+                });
                 if (ok) toast.success(`Галерея сохранена (${existing.length} фото)`);
               }}
             >

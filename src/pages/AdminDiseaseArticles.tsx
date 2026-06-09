@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ArticleMarkdownEditor, { type ArticleMarkdownEditorHandle } from "@/components/parents/ArticleMarkdownEditor";
+import { mergePersistedGalleryFiles } from "@/lib/markdown/galleryMarkers";
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -139,7 +140,19 @@ const AdminDiseaseArticles = () => {
       const slug = form.slug.trim() || generateSlug(form.title);
       const keywords = form.keywords.split(",").map(k => k.trim()).filter(Boolean);
 
-      const syncedArticleContent = articleEditorRef.current?.getMarkdown() ?? form.article_content;
+      let syncedArticleContent = articleEditorRef.current?.getMarkdown() ?? form.article_content;
+      if (editing?.id) {
+        const { data: freshArticle, error: freshError } = await supabase
+          .from("disease_articles")
+          .select("article_content")
+          .eq("id", editing.id)
+          .maybeSingle();
+        if (freshError) throw freshError;
+        syncedArticleContent = mergePersistedGalleryFiles(
+          syncedArticleContent,
+          (freshArticle as any)?.article_content || "",
+        );
+      }
 
       const payload = {
         title: form.title,
