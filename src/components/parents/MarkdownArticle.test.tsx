@@ -9,6 +9,7 @@ import {
   readGalleryEntriesFromContent,
   upsertGalleryEntriesInContent,
 } from "@/lib/markdown/galleryMarkers";
+import { nextGalleryImageIndex } from "@/lib/markdown/galleryImageFilenames";
 
 // Mock heavy children so the test stays focused on visibility logic.
 vi.mock("./PlaceholderGallery", () => ({
@@ -67,6 +68,16 @@ describe("MarkdownArticle — видимость PlaceholderGallery", () => {
 });
 
 describe("Gallery markers — защита от стирания файлов", () => {
+  it("выдаёт следующий номер по максимальному суффиксу, а не по количеству файлов", () => {
+    expect(
+      nextGalleryImageIndex(
+        ["ginekomastiya-patient-full-2.jpg", "ginekomastiya-patient-12.jpg"],
+        "ginekomastiya",
+        "patient-full",
+      ),
+    ).toBe(3);
+  });
+
   it("возвращает файлы из актуальной базы, если редактор сохраняет старый пустой маркер", () => {
     const staleDraft = 'До\n\n[[GALLERY: caption="Эпидемиология гинекомастии"]]\n\nПосле';
     const persisted =
