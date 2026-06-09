@@ -2,7 +2,13 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import MarkdownArticle from "./MarkdownArticle";
 import HtmlArticle from "./HtmlArticle";
-import { mergePersistedGalleryFiles } from "@/lib/markdown/galleryMarkers";
+import {
+  htmlToMarkdown,
+  markdownToHtml,
+  mergePersistedGalleryFiles,
+  readGalleryEntriesFromContent,
+  upsertGalleryEntriesInContent,
+} from "@/lib/markdown/galleryMarkers";
 
 // Mock heavy children so the test stays focused on visibility logic.
 vi.mock("./PlaceholderGallery", () => ({
@@ -85,6 +91,69 @@ describe("Gallery markers — защита от стирания файлов", 
     const persisted = '[[GALLERY: caption="Фото" | old.jpg]]';
 
     expect(mergePersistedGalleryFiles(draft, persisted)).toContain('data-files="old.jpg"');
+  });
+
+  it("сценарий: первая загрузка фото в пустую галерею сразу пишет файлы в маркер", () => {
+    const initial = 'До\n\n[[GALLERY: caption="Галерея 1"]]\n\nПосле';
+    const saved = upsertGalleryEntriesInContent(initial, "Галерея 1", [
+      { filename: "g1-photo-1.jpg", caption: "" },
+      { filename: "g1-photo-2.jpg", caption: "Снимок 2" },
+    ]);
+
+    expect(saved.found).toBe(true);
+    expect(saved.content).toContain(
+      '[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg | g1-photo-2.jpg "Снимок 2"]]',
+    );
+    expect(readGalleryEntriesFromContent(saved.content, "Галерея 1").map((f) => f.filename)).toEqual([
+      "g1-photo-1.jpg",
+      "g1-photo-2.jpg",
+    ]);
+  });
+
+  it("сценарий: добавление фото в существующую галерею не стирает прежние фото", () => {
+    const current = '[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg]]';
+    const entries = readGalleryEntriesFromContent(current, "Галерея 1");
+    const saved = upsertGalleryEntriesInContent(current, "Галерея 1", [
+      ...entries,
+      { filename: "g1-photo-2.jpg", caption: "" },
+    ]);
+
+    expect(saved.content).toBe(
+      '[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg | g1-photo-2.jpg]]',
+    );
+  });
+
+  it("сценарий: новая галерея после старой не обнуляет файлы старой при сохранении статьи", () => {
+    const persisted = 'A\n\n[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg]]\n\nB';
+    const tiptapDraft =
+      'A\n\n[[GALLERY: caption="Галерея 1"]]\n\nB\n\n[[GALLERY: caption="Галерея 2"]]';
+    const articleSaved = mergePersistedGalleryFiles(tiptapDraft, persisted);
+    const gallery2Saved = upsertGalleryEntriesInContent(articleSaved, "Галерея 2", [
+      { filename: "g2-photo-1.jpg", caption: "" },
+    ]).content;
+
+    expect(gallery2Saved).toContain('[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg]]');
+    expect(gallery2Saved).toContain('[[GALLERY: caption="Галерея 2" | g2-photo-1.jpg]]');
+  });
+
+  it("сценарий: удаление одной галереи не возвращает её файлы, но сохраняет файлы оставшейся", () => {
+    const persisted =
+      '[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg]]\n\n[[GALLERY: caption="Галерея 2" | g2-photo-1.jpg]]';
+    const draftAfterDeletingGallery1 = '[[GALLERY: caption="Галерея 2"]]';
+
+    expect(mergePersistedGalleryFiles(draftAfterDeletingGallery1, persisted)).toBe(
+      '[[GALLERY: caption="Галерея 2" | g2-photo-1.jpg]]',
+    );
+  });
+
+  it("TipTap HTML-сериализация сохраняет data-files и возвращает полный [[GALLERY]] тег", () => {
+    const markdown = 'До\n\n[[GALLERY: caption="Галерея 1" | g1-photo-1.jpg | g1-photo-2.jpg]]\n\nПосле';
+    const html = markdownToHtml(markdown);
+
+    expect(html).toContain('data-files="g1-photo-1.jpg | g1-photo-2.jpg"');
+    expect(htmlToMarkdown(html)).toContain(
+      '[[GALLERY: caption="Галерея 1"|g1-photo-1.jpg|g1-photo-2.jpg]]',
+    );
   });
 });
 
