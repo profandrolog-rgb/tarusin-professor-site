@@ -118,19 +118,27 @@ export const GalleryPlaceholder = Node.create({
       files: {
         default: "",
         parseHTML: (el) => el.getAttribute("data-files") || "",
-        renderHTML: (attrs) => ({ "data-files": attrs.files || "" }),
+        // ВАЖНО: всегда отдаём data-files, даже пустой — иначе TipTap может выкинуть
+        // атрибут при сериализации и список файлов потеряется.
+        renderHTML: (attrs) => ({ "data-files": attrs.files ?? "" }),
       },
     };
   },
 
   parseHTML() {
-    return [{ tag: "div[data-gallery-placeholder]" }];
+    return [
+      { tag: "div[data-gallery-placeholder]" },
+      { tag: 'div[data-type="galleryPlaceholder"]' },
+    ];
   },
 
   renderHTML({ HTMLAttributes }) {
     return [
       "div",
-      mergeAttributes(HTMLAttributes, { "data-gallery-placeholder": "" }),
+      mergeAttributes(HTMLAttributes, {
+        "data-gallery-placeholder": "",
+        "data-type": "galleryPlaceholder",
+      }),
     ];
   },
 
