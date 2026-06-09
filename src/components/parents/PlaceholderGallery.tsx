@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -365,7 +365,34 @@ const PlaceholderGallery = ({
 
   const persistEntries = async (entries: ExistingItem[]): Promise<boolean> => {
     const newMarker = buildMarker(entries);
-    const newContent = fullContent.replace(marker, newMarker);
+    // Всегда читаем свежий article_content из БД, чтобы не перезаписать чужими стейлами
+    const { data: fresh, error: fetchErr } = await supabase
+      .from("disease_articles")
+      .select("article_content")
+      .eq("id", articleId)
+      .maybeSingle();
+    if (fetchErr || !fresh) {
+      toast.error("Не удалось прочитать статью: " + (fetchErr?.message || "нет данных"));
+      return false;
+    }
+    const baseContent = (fresh as any).article_content || fullContent;
+    let newContent: string;
+    if (marker && baseContent.includes(marker)) {
+      newContent = baseContent.split(marker).join(newMarker);
+    } else {
+      // Маркер не найден (был перезаписан) — пробуем найти по подписи
+      const captionMarkerRe = new RegExp(
+        `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${caption.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}["'“”][^\\]]*\\]\\]`,
+        "g",
+      );
+      if (captionMarkerRe.test(baseContent)) {
+        newContent = baseContent.replace(captionMarkerRe, newMarker);
+      } else {
+        // Совсем не нашли — допишем маркер в конец, чтобы не потерять фото
+        newContent = baseContent + "\n\n" + newMarker;
+        toast.warning("Маркер галереи не найден в статье — добавил в конец, чтобы фото не потерялись");
+      }
+    }
     const { error } = await supabase
       .from("disease_articles")
       .update({ article_content: newContent })
@@ -766,6 +793,22 @@ const PlaceholderGallery = ({
                 )}
               </div>
             ))}
+          </div>
+          <div className="flex justify-center mt-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={uploading || deletingFile !== null}
+              className="gap-1.5"
+              onClick={async () => {
+                const ok = await persistEntries(existing);
+                if (ok) toast.success(`Галерея сохранена (${existing.length} фото)`);
+              }}
+            >
+              <Save className="w-4 h-4" />
+              Сохранить галерею ({existing.length})
+            </Button>
           </div>
         </div>
       )}
