@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   caption: string;
@@ -13,10 +12,16 @@ interface Item {
 }
 
 const FOLDER = "article-images";
+const BUCKET = "disease-media";
+// Стабильный базовый URL из env — не зависит от состояния клиента Supabase.
+const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${BUCKET}`;
 
 function publicUrl(filename: string) {
-  const { data } = supabase.storage.from("disease-media").getPublicUrl(`${FOLDER}/${filename}`);
-  return data.publicUrl;
+  const safe = filename
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  return `${STORAGE_BASE}/${FOLDER}/${safe}`;
 }
 
 // Parses entries like:  `name.jpg` or `name.jpg "подпись"` (also `'…'`, `“…”`)
