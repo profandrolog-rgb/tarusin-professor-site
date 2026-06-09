@@ -201,7 +201,8 @@ const ImageGallery = ({ caption, files }: Props) => {
                 <figcaption style={photoCaptionStyle}>{it.caption}</figcaption>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
