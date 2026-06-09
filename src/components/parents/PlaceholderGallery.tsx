@@ -373,8 +373,17 @@ const PlaceholderGallery = ({
       `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${escCaption}["'“”]\\s*((?:\\|[^\\]]*)?)\\]\\]`,
     );
     const m = content.match(re);
-    if (!m) return [];
-    const rest = (m[1] || "").replace(/^\|/, "");
+    let rest = (m?.[1] || "").replace(/^\|/, "");
+    if (!m) {
+      const divRe = new RegExp(
+        `<div\\b(?=[^>]*(?:\\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\\s>]+))?|\\bdata-type\\s*=\\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))(?=[^>]*\\bdata-caption\\s*=\\s*(?:"${escCaption}"|'${escCaption}'|${escCaption}(?=[\\s>])))\\b([^>]*)>[\\s\\S]*?<\\/div>`,
+        "i",
+      );
+      const div = content.match(divRe);
+      const attrs = div?.[1] || "";
+      const filesAttr = attrs.match(/\bdata-files\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      rest = filesAttr?.[1] || filesAttr?.[2] || filesAttr?.[3] || "";
+    }
     return rest
       .split("|")
       .map((s) => s.trim())
