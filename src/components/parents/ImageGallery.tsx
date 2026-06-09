@@ -74,7 +74,7 @@ const ImageGallery = ({ caption, files }: Props) => {
 
   return (
     <figure
-      className="my-8 not-prose select-none max-w-full overflow-hidden"
+      className="my-8 not-prose select-none max-w-full overflow-x-visible"
       style={{ userSelect: "none" }}
     >
       {caption && (

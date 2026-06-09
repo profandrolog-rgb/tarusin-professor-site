@@ -132,7 +132,7 @@ function splitOnGalleryMarkers(html: string): Segment[] {
 }
 
 const ARTICLE_CLASS =
-  "prose prose-base max-w-none text-foreground " +
+  "prose prose-base max-w-none overflow-x-visible text-foreground " +
   "[&_p]:mb-7 [&_p]:leading-[1.85] " +
   "[&_h1]:text-[26px] [&_h1]:font-bold [&_h1]:mt-10 [&_h1]:mb-4 [&_h1]:text-[#1B4F8A] [&_h1]:leading-tight " +
   "[&_h2]:text-[26px] [&_h2]:font-bold [&_h2]:mt-10 [&_h2]:mb-4 [&_h2]:text-[#1B4F8A] [&_h2]:leading-tight " +
@@ -148,7 +148,7 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
   }, [content, title]);
 
   return (
-    <div onCopy={(e) => e.preventDefault()}>
+    <div className="overflow-x-visible" onCopy={(e) => e.preventDefault()}>
       {segments.map((seg, i) => {
         if (seg.type === "html") {
           return (
