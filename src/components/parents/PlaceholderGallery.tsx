@@ -364,9 +364,29 @@ const PlaceholderGallery = ({
     }]]`;
   };
 
-  const persistEntries = async (entries: ExistingItem[]): Promise<boolean> => {
-    const newMarker = buildMarker(entries);
-    // Всегда читаем свежий article_content из БД, чтобы не перезаписать чужими стейлами
+  // Парсит файлы из ТЕКУЩЕГО маркера в свежем article_content (по подписи).
+  // Защита от перезаписи: даже если prop `existing` устарел, мы видим
+  // реальный список файлов из БД.
+  const parseMarkerFilesFromContent = (content: string): ExistingItem[] => {
+    const escCaption = caption.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(
+      `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${escCaption}["'“”]\\s*((?:\\|[^\\]]*)?)\\]\\]`,
+    );
+    const m = content.match(re);
+    if (!m) return [];
+    const rest = (m[1] || "").replace(/^\|/, "");
+    return rest
+      .split("|")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map(parseExistingEntry);
+  };
+
+  // writer получает реально сохранённый сейчас список файлов (из БД)
+  // и возвращает следующий — это исключает гонки и затирания.
+  const persistEntries = async (
+    writer: ExistingItem[] | ((current: ExistingItem[]) => ExistingItem[]),
+  ): Promise<boolean> => {
     const { data: fresh, error: fetchErr } = await supabase
       .from("disease_articles")
       .select("article_content")
@@ -377,19 +397,22 @@ const PlaceholderGallery = ({
       return false;
     }
     const baseContent = (fresh as any).article_content || fullContent;
+    const currentFiles = parseMarkerFilesFromContent(baseContent);
+    const nextEntries =
+      typeof writer === "function" ? writer(currentFiles) : writer;
+    const newMarker = buildMarker(nextEntries);
+
     let newContent: string;
     if (marker && baseContent.includes(marker)) {
       newContent = baseContent.split(marker).join(newMarker);
     } else {
-      // Маркер не найден (был перезаписан) — пробуем найти по подписи
       const captionMarkerRe = new RegExp(
-        `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${caption.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}["'“”][^\\]]*\\]\\]`,
+        `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${caption.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'“”][^\\]]*\\]\\]`,
         "g",
       );
       if (captionMarkerRe.test(baseContent)) {
         newContent = baseContent.replace(captionMarkerRe, newMarker);
       } else {
-        // Совсем не нашли — допишем маркер в конец, чтобы не потерять фото
         newContent = baseContent + "\n\n" + newMarker;
         toast.warning("Маркер галереи не найден в статье — добавил в конец, чтобы фото не потерялись");
       }
