@@ -150,13 +150,27 @@ export function mergePersistedGalleryFiles(draftContent: string, persistedConten
   const persisted = extractGallerySnapshots(persistedContent);
   if (persisted.size === 0) return draftContent;
 
-  return draftContent.replace(GALLERY_RE, (_match, caption: string, rawFiles: string) => {
+  const mergeMarker = (_match: string, caption: string, rawFiles: string) => {
     const saved = persisted.get(caption || "");
     if (!saved?.files.length) return _match;
     const draftFiles = parseGalleryFiles(rawFiles || "");
     const merged = mergeFileEntries(draftFiles, saved.files);
     return merged.length === draftFiles.length ? _match : buildGalleryMarker(caption || "", merged);
-  });
+  };
+
+  return draftContent
+    .replace(GALLERY_RE, mergeMarker)
+    .replace(GALLERY_DIV_RE, (_match, attrs: string) => {
+      const caption = readHtmlAttr(attrs, "data-caption");
+      const saved = persisted.get(caption || "");
+      if (!caption || !saved?.files.length) return _match;
+      const draftFiles = parseGalleryFiles(readHtmlAttr(attrs, "data-files"));
+      const merged = mergeFileEntries(draftFiles, saved.files).join("|");
+      return _match.replace(/\sdata-files\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/i, "").replace(
+        /<div\b/i,
+        `<div data-files="${escapeHtml(merged)}"`,
+      );
+    });
 }
 
 function escapeHtml(s: string): string {
