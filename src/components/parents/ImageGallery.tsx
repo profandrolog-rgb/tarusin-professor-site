@@ -92,33 +92,56 @@ const ImageGallery = ({ caption, files }: Props) => {
         </h4>
       )}
       {isSingle ? (
-        <div className="max-w-[860px] mx-auto w-full">
-          <button
-            type="button"
-            onClick={() => setLightboxIdx(0)}
-            className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
-          >
-            <img
-              src={publicUrl(items[0].filename)}
-              alt={items[0].caption || caption || "Фото 1"}
-              loading="lazy"
-              style={{
+        (() => {
+          const single = items[0];
+          const single_patientFull = isPatientFull(single.filename);
+          const wrapperClass = single_patientFull
+            ? "mx-auto"
+            : "max-w-[860px] mx-auto w-full";
+          const wrapperStyle: React.CSSProperties = single_patientFull
+            ? { width: PATIENT_FULL_W, maxWidth: "100%" }
+            : {};
+          const imgStyle: React.CSSProperties = single_patientFull
+            ? {
+                maxWidth: "100%",
+                width: "auto",
+                height: PATIENT_FULL_H,
+                maxHeight: "70vh",
+                objectFit: "contain",
+                display: "block",
+                margin: "0 auto",
+              }
+            : {
                 maxWidth: "100%",
                 width: "100%",
                 height: "auto",
                 objectFit: "contain",
                 display: "block",
-              }}
-              draggable={false}
-              onDragStart={noDragStart}
-              onContextMenu={noContextMenu}
-            />
-            <span style={watermarkStyle}>tarusin.pro</span>
-          </button>
-          {items[0].caption && (
-            <figcaption style={photoCaptionStyle}>{items[0].caption}</figcaption>
-          )}
-        </div>
+              };
+          return (
+            <div className={wrapperClass} style={wrapperStyle}>
+              <button
+                type="button"
+                onClick={() => setLightboxIdx(0)}
+                className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+              >
+                <img
+                  src={publicUrl(single.filename)}
+                  alt={single.caption || caption || "Фото 1"}
+                  loading="lazy"
+                  style={imgStyle}
+                  draggable={false}
+                  onDragStart={noDragStart}
+                  onContextMenu={noContextMenu}
+                />
+                <span style={watermarkStyle}>tarusin.pro</span>
+              </button>
+              {single.caption && (
+                <figcaption style={photoCaptionStyle}>{single.caption}</figcaption>
+              )}
+            </div>
+          );
+        })()
       ) : (
         <div className="flex flex-wrap justify-center gap-3">
           {items.map((it, i) => (
