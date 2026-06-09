@@ -13,7 +13,7 @@ export function markdownToHtml(md: string): string {
   const prepared = md.replace(
     GALLERY_RE,
     (_m, caption: string, files: string) =>
-      `\n\n<div data-gallery-placeholder data-caption="${escapeHtml(caption)}" data-files="${escapeHtml((files || "").replace(/^\|/, ""))}">Галерея</div>\n\n`
+      `\n\n<div data-gallery-placeholder data-caption="${escapeHtml(caption)}" data-files="${escapeHtml((files || "").replace(/^\|/, "").trim())}">Галерея</div>\n\n`
   );
   return marked.parse(prepared, { async: false }) as string;
 }
@@ -88,11 +88,27 @@ type GallerySnapshot = {
   files: string[];
 };
 
+export type GalleryFileEntry = {
+  filename: string;
+  caption: string;
+};
+
 function parseGalleryFiles(raw: string): string[] {
   return (raw || "")
     .split("|")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function parseGalleryFileEntry(raw: string): GalleryFileEntry {
+  const s = raw.trim();
+  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
+  if (m) return { filename: m[1], caption: m[2].trim() };
+  return { filename: s, caption: "" };
+}
+
+export function parseGalleryFileEntries(raw: string): GalleryFileEntry[] {
+  return parseGalleryFiles(raw).map(parseGalleryFileEntry);
 }
 
 function galleryFileKey(entry: string): string {
@@ -138,6 +154,61 @@ function extractGallerySnapshots(content: string): Map<string, GallerySnapshot> 
 function buildGalleryMarker(caption: string, files: string[]): string {
   const safeCaption = caption.replace(/"/g, "'");
   return `[[GALLERY: caption="${safeCaption}"${files.length ? ` | ${files.join(" | ")}` : ""}]]`;
+}
+
+function formatGalleryFileEntry(entry: GalleryFileEntry): string {
+  const safeCaption = (entry.caption || "").replace(/"/g, "”").replace(/\|/g, "／");
+  return safeCaption ? `${entry.filename} "${safeCaption}"` : entry.filename;
+}
+
+export function buildGalleryMarkerFromEntries(caption: string, entries: GalleryFileEntry[]): string {
+  return buildGalleryMarker(caption, entries.map(formatGalleryFileEntry));
+}
+
+export function readGalleryEntriesFromContent(content: string, caption: string): GalleryFileEntry[] {
+  if (!content) return [];
+  const markerRe = new RegExp(GALLERY_RE.source, "g");
+  let marker: RegExpExecArray | null;
+  while ((marker = markerRe.exec(content)) !== null) {
+    if ((marker[1] || "") === caption) return parseGalleryFileEntries(marker[2] || "");
+  }
+
+  const divRe = new RegExp(GALLERY_DIV_RE.source, "gi");
+  let div: RegExpExecArray | null;
+  while ((div = divRe.exec(content)) !== null) {
+    const attrs = div[1] || "";
+    if (readHtmlAttr(attrs, "data-caption") === caption) {
+      return parseGalleryFileEntries(readHtmlAttr(attrs, "data-files"));
+    }
+  }
+  return [];
+}
+
+export function upsertGalleryEntriesInContent(
+  content: string,
+  caption: string,
+  entries: GalleryFileEntry[],
+  exactMarker?: string,
+): { content: string; found: boolean } {
+  const newMarker = buildGalleryMarkerFromEntries(caption, entries);
+  if (exactMarker && content.includes(exactMarker)) {
+    return { content: content.split(exactMarker).join(newMarker), found: true };
+  }
+
+  let found = false;
+  let next = content.replace(GALLERY_RE, (match, markerCaption: string) => {
+    if ((markerCaption || "") !== caption) return match;
+    found = true;
+    return newMarker;
+  });
+
+  next = next.replace(GALLERY_DIV_RE, (match, attrs: string) => {
+    if (readHtmlAttr(attrs, "data-caption") !== caption) return match;
+    found = true;
+    return newMarker;
+  });
+
+  return found ? { content: next, found } : { content: `${content}\n\n${newMarker}`, found: false };
 }
 
 /**

@@ -23,6 +23,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
+import {
+  buildGalleryMarkerFromEntries,
+  parseGalleryFileEntries,
+  readGalleryEntriesFromContent,
+  upsertGalleryEntriesInContent,
+  type GalleryFileEntry,
+} from "@/lib/markdown/galleryMarkers";
 
 interface Props {
   articleId: string;
@@ -35,6 +42,16 @@ interface Props {
 }
 
 const ARTICLE_IMAGES_FOLDER = "article-images";
+const ARTICLE_IMAGES_BUCKET = "disease-media";
+const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${ARTICLE_IMAGES_BUCKET}`;
+
+function publicArticleImageUrl(filename: string) {
+  const safe = filename
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  return `${STORAGE_BASE}/${ARTICLE_IMAGES_FOLDER}/${safe}`;
+}
 
 type ImgType = "surgery" | "ultrasound" | "patient" | "urology" | "urology-closeup" | "infographic" | "anatomy" | "default";
 
@@ -301,17 +318,7 @@ const SortableThumb = ({
 };
 
 
-interface ExistingItem {
-  filename: string;
-  caption: string;
-}
-
-function parseExistingEntry(raw: string): ExistingItem {
-  const s = raw.trim();
-  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].trim() };
-  return { filename: s, caption: "" };
-}
+type ExistingItem = GalleryFileEntry;
 
 const PlaceholderGallery = ({
   articleId,
@@ -347,48 +354,20 @@ const PlaceholderGallery = ({
   const cropImgRef = useRef<HTMLImageElement | null>(null);
 
   const existing = useMemo<ExistingItem[]>(
-    () => (existingFiles ?? []).map(parseExistingEntry),
+    () => parseGalleryFileEntries((existingFiles ?? []).join("|")),
     [existingFiles],
   );
   const hasExisting = existing.length > 0;
 
-  const formatEntry = (e: ExistingItem) => {
-    const safe = (e.caption || "").replace(/"/g, "”").replace(/\|/g, "／");
-    return safe ? `${e.filename} "${safe}"` : e.filename;
-  };
-
   const buildMarker = (entries: ExistingItem[]) => {
-    const parts = entries.map(formatEntry);
-    return `[[GALLERY: caption="${caption}"${
-      parts.length ? ` | ${parts.join(" | ")}` : ""
-    }]]`;
+    return buildGalleryMarkerFromEntries(caption, entries);
   };
 
   // Парсит файлы из ТЕКУЩЕГО маркера в свежем article_content (по подписи).
   // Защита от перезаписи: даже если prop `existing` устарел, мы видим
   // реальный список файлов из БД.
   const parseMarkerFilesFromContent = (content: string): ExistingItem[] => {
-    const escCaption = caption.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const re = new RegExp(
-      `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${escCaption}["'“”]\\s*((?:\\|[^\\]]*)?)\\]\\]`,
-    );
-    const m = content.match(re);
-    let rest = (m?.[1] || "").replace(/^\|/, "");
-    if (!m) {
-      const divRe = new RegExp(
-        `<div\\b(?=[^>]*(?:\\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\\s>]+))?|\\bdata-type\\s*=\\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))(?=[^>]*\\bdata-caption\\s*=\\s*(?:"${escCaption}"|'${escCaption}'|${escCaption}(?=[\\s>])))\\b([^>]*)>[\\s\\S]*?<\\/div>`,
-        "i",
-      );
-      const div = content.match(divRe);
-      const attrs = div?.[1] || "";
-      const filesAttr = attrs.match(/\bdata-files\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
-      rest = filesAttr?.[1] || filesAttr?.[2] || filesAttr?.[3] || "";
-    }
-    return rest
-      .split("|")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map(parseExistingEntry);
+    return readGalleryEntriesFromContent(content, caption);
   };
 
   // writer получает реально сохранённый сейчас список файлов (из БД)
@@ -409,22 +388,11 @@ const PlaceholderGallery = ({
     const currentFiles = parseMarkerFilesFromContent(baseContent);
     const nextEntries =
       typeof writer === "function" ? writer(currentFiles) : writer;
-    const newMarker = buildMarker(nextEntries);
 
-    let newContent: string;
-    if (marker && baseContent.includes(marker)) {
-      newContent = baseContent.split(marker).join(newMarker);
-    } else {
-      const captionMarkerRe = new RegExp(
-        `\\[\\[GALLERY:\\s*caption\\s*=\\s*["'“”]${caption.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'“”][^\\]]*\\]\\]`,
-        "g",
-      );
-      if (captionMarkerRe.test(baseContent)) {
-        newContent = baseContent.replace(captionMarkerRe, newMarker);
-      } else {
-        newContent = baseContent + "\n\n" + newMarker;
-        toast.warning("Маркер галереи не найден в статье — добавил в конец, чтобы фото не потерялись");
-      }
+    const result = upsertGalleryEntriesInContent(baseContent, caption, nextEntries, marker);
+    const newContent = result.content;
+    if (!result.found) {
+      toast.warning("Маркер галереи не найден в статье — добавил в конец, чтобы фото не потерялись");
     }
     const { error, data: updated } = await supabase
       .from("disease_articles")
@@ -838,11 +806,7 @@ const PlaceholderGallery = ({
                 title={it.caption || it.filename}
               >
                 <img
-                  src={
-                    supabase.storage
-                      .from("disease-media")
-                      .getPublicUrl(`${ARTICLE_IMAGES_FOLDER}/${it.filename}`).data.publicUrl
-                  }
+                  src={publicArticleImageUrl(it.filename)}
                   alt={it.caption || it.filename}
                   className="w-full h-full object-cover"
                   loading="lazy"
