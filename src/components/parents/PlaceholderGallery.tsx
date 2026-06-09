@@ -756,13 +756,16 @@ const PlaceholderGallery = ({
         }
         uploaded.push({ filename, caption: (p.caption || "").trim() });
 
-        // АВТОСОХРАНЕНИЕ: после КАЖДОГО успешно загруженного файла
-        // сразу пишем маркер в БД, чтобы фото не терялись при сбое/перезагрузке.
-        const entriesSoFar: ExistingItem[] = [
-          ...existing,
-          ...uploaded.map((u) => ({ filename: u.filename, caption: u.caption })),
-        ];
-        const ok = await persistEntries(entriesSoFar);
+        // АВТОСОХРАНЕНИЕ: добавляем только что загруженный файл к АКТУАЛЬНОМУ
+        // списку из БД (а не к stale-снимку), чтобы исключить затирание.
+        const ok = await persistEntries((current) => {
+          // дедуп по filename — на случай если upsert повторил запись
+          const seen = new Set(current.map((e) => e.filename));
+          const additions = uploaded
+            .filter((u) => !seen.has(u.filename))
+            .map((u) => ({ filename: u.filename, caption: u.caption }));
+          return [...current, ...additions];
+        });
         if (ok) {
           savedIds.add(p.id);
         } else {
