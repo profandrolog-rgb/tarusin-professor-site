@@ -125,7 +125,7 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
   );
 
   return (
-    <div className="article-markdown prose prose-base max-w-none text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-7 [&_p]:leading-[1.85] [&_ul]:my-5 [&_ol]:my-5 [&_li]:my-2">
+    <div className="article-markdown prose prose-base max-w-none overflow-x-visible text-foreground prose-strong:text-foreground prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-primary/5 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-table:w-full prose-th:bg-muted prose-th:p-2 prose-th:border prose-th:border-border prose-td:p-2 prose-td:border prose-td:border-border [&_p]:mb-7 [&_p]:leading-[1.85] [&_ul]:my-5 [&_ol]:my-5 [&_li]:my-2">
       {segments.map((seg, i) => {
         if (seg.type === "md") {
           return (

@@ -154,7 +154,7 @@ const DiseaseDetailPage = () => {
           </div>
         </header>
 
-        <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl">
+        <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl overflow-x-visible">
           {article.article_content ? (
             isMarkdownContent(article.article_content) ? (
               <MarkdownArticle
