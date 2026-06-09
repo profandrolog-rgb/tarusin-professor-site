@@ -83,7 +83,7 @@ const ImageGallery = ({ caption, files }: Props) => {
         </h4>
       )}
       {isSingle ? (
-        <div className="max-w-[700px] mx-auto w-full">
+        <div className="max-w-[860px] mx-auto w-full">
           <button
             type="button"
             onClick={() => setLightboxIdx(0)}
