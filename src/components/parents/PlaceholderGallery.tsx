@@ -388,7 +388,6 @@ const PlaceholderGallery = ({
     const currentFiles = parseMarkerFilesFromContent(baseContent);
     const nextEntries =
       typeof writer === "function" ? writer(currentFiles) : writer;
-    const newMarker = buildMarker(nextEntries);
 
     const result = upsertGalleryEntriesInContent(baseContent, caption, nextEntries, marker);
     const newContent = result.content;
@@ -807,11 +806,7 @@ const PlaceholderGallery = ({
                 title={it.caption || it.filename}
               >
                 <img
-                  src={
-                    supabase.storage
-                      .from("disease-media")
-                      .getPublicUrl(`${ARTICLE_IMAGES_FOLDER}/${it.filename}`).data.publicUrl
-                  }
+                  src={publicArticleImageUrl(it.filename)}
                   alt={it.caption || it.filename}
                   className="w-full h-full object-cover"
                   loading="lazy"
