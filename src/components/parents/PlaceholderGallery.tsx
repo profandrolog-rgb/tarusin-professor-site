@@ -74,7 +74,7 @@ function detectType(caption: string): ImgType {
   if (/узи|эхограм|ультразвук|допплер/.test(c)) return "ultrasound";
   if (/мошонк|яичк|половой|препуци|головк|фимоз|крипторхизм|гидроцеле|варикоцеле/.test(c)) return "urology";
   if (/пациент|клиническ|внешн|вид|фото|симптом/.test(c)) return "patient";
-  if (/схем|алгоритм|инфографик|классификац|таблиц/.test(c)) return "infographic";
+  if (/схем|алгоритм|инфографик|классификац|таблиц|эпидемиолог|распростран|график|диаграм/.test(c)) return "infographic";
   if (/анатоми|строени/.test(c)) return "anatomy";
   return "default";
 }
@@ -607,16 +607,24 @@ const PlaceholderGallery = ({
       const updated = cropQueue.map((q, i) =>
         i === cropIndex ? { ...q, applied: blob } : q,
       );
-      const files: File[] = [];
+      const results: Processed[] = [];
       for (const q of updated) {
         const b = q.applied;
         if (!b) continue;
         const name = q.file.name.replace(/\.[^.]+$/, "") + ".jpg";
-        files.push(new File([b], name, { type: "image/jpeg" }));
+        results.push({
+          id: makeId(),
+          originalFile: q.file,
+          blob: b,
+          previewUrl: URL.createObjectURL(b),
+          originalName: name,
+          type: q.type,
+          caption: "",
+        });
       }
       const keepExisting = previews.length > 0;
       closeCropFlow();
-      await processFilesToItems(files, { keepExisting });
+      setPreviews((prev) => (keepExisting ? [...prev, ...results] : results));
     }
   };
 
