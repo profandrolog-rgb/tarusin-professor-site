@@ -47,6 +47,29 @@ export interface PenisExamData {
   conclusion?: string;
 }
 
+export interface ParaprostaticVeinsData {
+  diameter?: string;
+  reflux?: string;
+}
+
+export interface ProstateExamData {
+  position?: string;
+  syntopy?: string;
+  pelvic_effusion?: string;
+  prostate_volume?: string;
+  middle_lobe_volume?: string;
+  infravesical_obstruction?: string;
+  urethra_internal_opening?: string;
+  elastography_right?: string;
+  elastography_left?: string;
+  bladder_volume?: string;
+  micturition_urge?: string;
+  residual_urine_volume?: string;
+  residual_urine_percent?: string;
+  paraprostatic_veins?: ParaprostaticVeinsData;
+  conclusion?: string;
+}
+
 export interface UziReproductiveData {
   device?: string;
   right_testis_size?: string;
@@ -60,6 +83,7 @@ export interface UziReproductiveData {
   arterial_flow?: ArterialFlowData;
   venous_flow?: VenousFlowData;
   penis_exam?: PenisExamData;
+  prostate?: ProstateExamData;
   vessels?: string;
   doppler?: string;
   free_fluid?: string;
@@ -80,6 +104,15 @@ export const DEFAULT_PENIS_EXAM: PenisExamData = {
     "Типичного состава, дорзальная вена компримируема, расширений, тромбозов нет. Дорзальная артерия проходима.",
   cavernous_arteries: "Кавернозные артерии проходимы.",
   urethra: "Структура не нарушена, проходима. Стенки не утолщены.",
+};
+
+export const DEFAULT_PROSTATE: ProstateExamData = {
+  position: "нормативное",
+  syntopy: "не изменена",
+  pelvic_effusion: "нет",
+  infravesical_obstruction: "нет",
+  urethra_internal_opening: "симптом скобы не отмечается",
+  paraprostatic_veins: { diameter: "", reflux: "нет" },
 };
 
 export const DEFAULT_UZI_REPRODUCTIVE: UziReproductiveData = {
@@ -146,6 +179,27 @@ export function UziReproductiveSection({ data, onChange }: Props) {
   };
   const setPenis = (key: keyof PenisExamData, val: string) => {
     onChange({ penis_exam: { ...penis, [key]: val } });
+  };
+
+  const prostate = data.prostate || {};
+  const setProstate = (key: keyof ProstateExamData, val: string) => {
+    const next: ProstateExamData = { ...prostate, [key]: val };
+    if (key === "residual_urine_volume" || key === "bladder_volume") {
+      const bladder = parseFloat((key === "bladder_volume" ? val : prostate.bladder_volume || "").replace(",", "."));
+      const residual = parseFloat((key === "residual_urine_volume" ? val : prostate.residual_urine_volume || "").replace(",", "."));
+      if (isFinite(bladder) && bladder > 0 && isFinite(residual) && residual >= 0) {
+        next.residual_urine_percent = ((residual / bladder) * 100).toFixed(1);
+      }
+    }
+    onChange({ prostate: next });
+  };
+  const setParaVeins = (key: keyof ParaprostaticVeinsData, val: string) => {
+    onChange({
+      prostate: {
+        ...prostate,
+        paraprostatic_veins: { ...(prostate.paraprostatic_veins || {}), [key]: val },
+      },
+    });
   };
 
   return (
@@ -331,6 +385,106 @@ export function UziReproductiveSection({ data, onChange }: Props) {
           <Textarea rows={3} placeholder="Если оставить пустым — не будет напечатано" value={penis.conclusion || ""} onChange={(e) => setPenis("conclusion", e.target.value)} />
         </div>
       </div>
+
+      {/* Предстательная железа */}
+      <div className="p-3 border rounded-md space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="font-medium text-sm">УЗИ предстательной железы</div>
+          <Button type="button" variant="outline" size="sm" onClick={() => onChange({ prostate: { ...prostate, ...DEFAULT_PROSTATE } })}>
+            <Zap className="h-3 w-3 mr-1" /> Стандарт
+          </Button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Положение</Label>
+            <Input className="h-8" value={prostate.position || ""} onChange={(e) => setProstate("position", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Синтопия с органами таза</Label>
+            <Input className="h-8" value={prostate.syntopy || ""} onChange={(e) => setProstate("syntopy", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Выпот в углублениях таза</Label>
+          <Input className="h-8" value={prostate.pelvic_effusion || ""} onChange={(e) => setProstate("pelvic_effusion", e.target.value)} />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Объём предстательной железы (см³)</Label>
+            <Input className="h-8" value={prostate.prostate_volume || ""} onChange={(e) => setProstate("prostate_volume", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Средняя доля, объём (см³)</Label>
+            <Input className="h-8" value={prostate.middle_lobe_volume || ""} onChange={(e) => setProstate("middle_lobe_volume", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Косвенные признаки инфравезикальной обструкции</Label>
+          <Textarea rows={2} value={prostate.infravesical_obstruction || ""} onChange={(e) => setProstate("infravesical_obstruction", e.target.value)} />
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Внутреннее отверстие уретры</Label>
+          <Input className="h-8" value={prostate.urethra_internal_opening || ""} onChange={(e) => setProstate("urethra_internal_opening", e.target.value)} />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Эластография — правая доля</Label>
+            <Textarea rows={2} value={prostate.elastography_right || ""} onChange={(e) => setProstate("elastography_right", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Эластография — левая доля</Label>
+            <Textarea rows={2} value={prostate.elastography_left || ""} onChange={(e) => setProstate("elastography_left", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Объём мочевого пузыря при исследовании (мл)</Label>
+            <Input className="h-8" value={prostate.bladder_volume || ""} onChange={(e) => setProstate("bladder_volume", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Позыв на микцию (баллов)</Label>
+            <Input className="h-8" value={prostate.micturition_urge || ""} onChange={(e) => setProstate("micturition_urge", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Объём остаточной мочи (мл)</Label>
+            <Input className="h-8" value={prostate.residual_urine_volume || ""} onChange={(e) => setProstate("residual_urine_volume", e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Остаточная моча (% от исходного объёма)</Label>
+            <Input className="h-8" placeholder="рассчитывается автоматически" value={prostate.residual_urine_percent || ""} onChange={(e) => setProstate("residual_urine_percent", e.target.value)} />
+          </div>
+        </div>
+
+        <div className="p-2 border rounded space-y-2">
+          <div className="text-xs font-medium">Парапростатические вены</div>
+          <div className="grid md:grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Диаметр (мм)</Label>
+              <Input className="h-8" value={prostate.paraprostatic_veins?.diameter || ""} onChange={(e) => setParaVeins("diameter", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Наличие рефлюкса</Label>
+              <Input className="h-8" value={prostate.paraprostatic_veins?.reflux || ""} onChange={(e) => setParaVeins("reflux", e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs">Заключение по предстательной железе</Label>
+          <Textarea rows={3} placeholder="Если оставить пустым — не будет напечатано" value={prostate.conclusion || ""} onChange={(e) => setProstate("conclusion", e.target.value)} />
+        </div>
+      </div>
+
 
       <div className="space-y-1"><Label>Заключение УЗИ</Label>
         <Textarea rows={3} value={data.conclusion || ""} onChange={(e) => onChange({ conclusion: e.target.value })} />
