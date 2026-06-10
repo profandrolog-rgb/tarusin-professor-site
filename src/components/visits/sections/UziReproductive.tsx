@@ -288,14 +288,14 @@ export function UziReproductiveSection({ data, onChange }: Props) {
               </tr>
             </thead>
             <tbody>
-              {VENOUS_PARAMS.map((p) => (
+              {VENOUS_PARAMS.map((p, idx) => (
                 <tr key={p.key} className="border-b last:border-b-0">
                   <td className="py-1 pr-2 text-muted-foreground">{p.label}</td>
                   <td className="py-1 px-2">
-                    <Input className="h-8" value={venous.right?.[p.key] || ""} onChange={(e) => setVen("right", p.key, e.target.value)} />
+                    <Input className="h-8" data-flow-col="right" data-flow-row={idx} onKeyDown={handleFlowTab} value={venous.right?.[p.key] || ""} onChange={(e) => setVen("right", p.key, e.target.value)} />
                   </td>
                   <td className="py-1 pl-2">
-                    <Input className="h-8" value={venous.left?.[p.key] || ""} onChange={(e) => setVen("left", p.key, e.target.value)} />
+                    <Input className="h-8" data-flow-col="left" data-flow-row={idx} onKeyDown={handleFlowTab} value={venous.left?.[p.key] || ""} onChange={(e) => setVen("left", p.key, e.target.value)} />
                   </td>
                 </tr>
               ))}
