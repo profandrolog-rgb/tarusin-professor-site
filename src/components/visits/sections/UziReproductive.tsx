@@ -181,6 +181,27 @@ export function UziReproductiveSection({ data, onChange }: Props) {
     onChange({ penis_exam: { ...penis, [key]: val } });
   };
 
+  const prostate = data.prostate || {};
+  const setProstate = (key: keyof ProstateExamData, val: string) => {
+    const next: ProstateExamData = { ...prostate, [key]: val };
+    if (key === "residual_urine_volume" || key === "bladder_volume") {
+      const bladder = parseFloat((key === "bladder_volume" ? val : prostate.bladder_volume || "").replace(",", "."));
+      const residual = parseFloat((key === "residual_urine_volume" ? val : prostate.residual_urine_volume || "").replace(",", "."));
+      if (isFinite(bladder) && bladder > 0 && isFinite(residual) && residual >= 0) {
+        next.residual_urine_percent = ((residual / bladder) * 100).toFixed(1);
+      }
+    }
+    onChange({ prostate: next });
+  };
+  const setParaVeins = (key: keyof ParaprostaticVeinsData, val: string) => {
+    onChange({
+      prostate: {
+        ...prostate,
+        paraprostatic_veins: { ...(prostate.paraprostatic_veins || {}), [key]: val },
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-1"><Label>Аппарат</Label>
