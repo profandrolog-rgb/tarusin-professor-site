@@ -99,6 +99,20 @@ const UZI_LABELS: Record<string, string> = {
   right_cavernous_artery: "Правая кавернозная артерия",
   left_cavernous_artery: "Левая кавернозная артерия",
   urethra: "Уретра",
+  position: "Положение", syntopy: "Синтопия с органами таза",
+  pelvic_effusion: "Выпот в углублениях таза",
+  prostate_volume: "Объём предстательной железы, см³",
+  middle_lobe_volume: "Средняя доля, объём, см³",
+  infravesical_obstruction: "Косвенные признаки инфравезикальной обструкции",
+  urethra_internal_opening: "Внутреннее отверстие уретры",
+  elastography_right: "Эластография (правая доля)",
+  elastography_left: "Эластография (левая доля)",
+  bladder_volume: "Объём мочевого пузыря, мл",
+  micturition_urge: "Позыв на микцию, баллов",
+  residual_urine_volume: "Остаточная моча, мл",
+  residual_urine_percent: "Остаточная моча, %",
+  paraprostatic_veins: "Парапростатические вены",
+  diameter: "Диаметр, мм", reflux: "Рефлюкс",
 };
 const humanize = (k: string) => UZI_LABELS[k] || k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const isPlainObject = (v: any): v is Record<string, any> => v !== null && typeof v === "object" && !Array.isArray(v);
