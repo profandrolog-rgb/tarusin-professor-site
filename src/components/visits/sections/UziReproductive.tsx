@@ -106,6 +106,15 @@ export const DEFAULT_PENIS_EXAM: PenisExamData = {
   urethra: "Структура не нарушена, проходима. Стенки не утолщены.",
 };
 
+export const DEFAULT_PROSTATE: ProstateExamData = {
+  position: "нормативное",
+  syntopy: "не изменена",
+  pelvic_effusion: "нет",
+  infravesical_obstruction: "нет",
+  urethra_internal_opening: "симптом скобы не отмечается",
+  paraprostatic_veins: { diameter: "", reflux: "нет" },
+};
+
 export const DEFAULT_UZI_REPRODUCTIVE: UziReproductiveData = {
   device: "УЗ-сканер с линейным датчиком 7,5–12 МГц",
   right_testis_structure: "Эхоструктура однородная, эхогенность не изменена. Образований не выявлено.",
