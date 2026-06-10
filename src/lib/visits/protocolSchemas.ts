@@ -32,6 +32,7 @@ export interface PostOpDay3Data {
 export interface PostOpDay7Data {
   operation_name?: string;
   operation_date?: string;
+  day_number?: number;
   general_status?: string;
   wound_status?: string;
   sutures_removed?: boolean;
