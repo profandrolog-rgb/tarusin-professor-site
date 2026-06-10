@@ -181,6 +181,24 @@ export function UziReproductiveSection({ data, onChange }: Props) {
     onChange({ penis_exam: { ...penis, [key]: val } });
   };
 
+  // Tab-навигация по столбцам: сначала все «справа», затем все «слева»
+  const handleFlowTab = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Tab") return;
+    const target = e.currentTarget;
+    const tbody = target.closest("tbody");
+    if (!tbody) return;
+    const rights = Array.from(tbody.querySelectorAll<HTMLInputElement>('input[data-flow-col="right"]'));
+    const lefts = Array.from(tbody.querySelectorAll<HTMLInputElement>('input[data-flow-col="left"]'));
+    const order = [...rights, ...lefts];
+    const idx = order.indexOf(target);
+    if (idx === -1) return;
+    const nextIdx = e.shiftKey ? idx - 1 : idx + 1;
+    if (nextIdx < 0 || nextIdx >= order.length) return; // выпускаем фокус из таблицы
+    e.preventDefault();
+    order[nextIdx].focus();
+    order[nextIdx].select();
+  };
+
   const prostate = data.prostate || {};
   const setProstate = (key: keyof ProstateExamData, val: string) => {
     const next: ProstateExamData = { ...prostate, [key]: val };
