@@ -47,6 +47,29 @@ export interface PenisExamData {
   conclusion?: string;
 }
 
+export interface ParaprostaticVeinsData {
+  diameter?: string;
+  reflux?: string;
+}
+
+export interface ProstateExamData {
+  position?: string;
+  syntopy?: string;
+  pelvic_effusion?: string;
+  prostate_volume?: string;
+  middle_lobe_volume?: string;
+  infravesical_obstruction?: string;
+  urethra_internal_opening?: string;
+  elastography_right?: string;
+  elastography_left?: string;
+  bladder_volume?: string;
+  micturition_urge?: string;
+  residual_urine_volume?: string;
+  residual_urine_percent?: string;
+  paraprostatic_veins?: ParaprostaticVeinsData;
+  conclusion?: string;
+}
+
 export interface UziReproductiveData {
   device?: string;
   right_testis_size?: string;
@@ -60,6 +83,7 @@ export interface UziReproductiveData {
   arterial_flow?: ArterialFlowData;
   venous_flow?: VenousFlowData;
   penis_exam?: PenisExamData;
+  prostate?: ProstateExamData;
   vessels?: string;
   doppler?: string;
   free_fluid?: string;
