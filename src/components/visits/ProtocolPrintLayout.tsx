@@ -107,7 +107,6 @@ const UZI_LABELS: Record<string, string> = {
   urethra_internal_opening: "Внутреннее отверстие уретры",
   elastography_right: "Эластография (правая доля)",
   elastography_left: "Эластография (левая доля)",
-  bladder_volume: "Объём мочевого пузыря, мл",
   micturition_urge: "Позыв на микцию, баллов",
   residual_urine_volume: "Остаточная моча, мл",
   residual_urine_percent: "Остаточная моча, %",
