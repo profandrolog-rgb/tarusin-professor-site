@@ -58,7 +58,16 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
       </div>
 
       <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", marginBottom: "4mm" }}>
-        {def?.title || visit.protocol_type}
+        {(() => {
+          const base = def?.title || visit.protocol_type;
+          if (visit.protocol_type === "postop_day7") {
+            const n = (visit.protocol_data as any)?.day_number;
+            if (typeof n === "number" && n > 0 && n !== 7) {
+              return `Контрольный осмотр на ${n} сутки после операции`;
+            }
+          }
+          return base;
+        })()}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10pt", marginBottom: "4mm" }}>

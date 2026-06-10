@@ -32,6 +32,7 @@ export interface PostOpDay3Data {
 export interface PostOpDay7Data {
   operation_name?: string;
   operation_date?: string;
+  day_number?: number;
   general_status?: string;
   wound_status?: string;
   sutures_removed?: boolean;
@@ -135,6 +136,7 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
       "Перевязки 1 раз в день. Туалет послеоперационной раны. Ограничение физических нагрузок. Контрольный осмотр на 7-е сутки.\nКонтрольный осмотр: ____________ 2026 г.\nКонтрольное УЗИ исследование — по назначению профессора.",
   },
   postop_day7: {
+    day_number: 7,
     general_status: "Удовлетворительное.",
     wound_status: "Послеоперационная рана зажила первичным натяжением. Воспалительных явлений нет.",
     sutures_removed: true,
