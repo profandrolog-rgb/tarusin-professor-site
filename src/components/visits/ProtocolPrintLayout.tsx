@@ -775,7 +775,16 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         {/* TITLE */}
         <div className="ppl-title">
           <div className="sub">Протокол медицинского осмотра</div>
-          <div className="main">{def?.title || visit.protocol_type}</div>
+          <div className="main">{(() => {
+            const base = def?.title || visit.protocol_type;
+            if (visit.protocol_type === "postop_day7") {
+              const n = (visit.protocol_data as any)?.day_number;
+              if (typeof n === "number" && n > 0 && n !== 7) {
+                return `Контрольный осмотр на ${n} сутки после операции`;
+              }
+            }
+            return base;
+          })()}</div>
         </div>
 
         {/* BODY */}
