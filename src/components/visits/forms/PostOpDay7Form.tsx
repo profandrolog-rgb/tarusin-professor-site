@@ -14,7 +14,7 @@ interface Props {
 export function PostOpDay7Form({ data, onChange }: Props) {
   return (
     <div className="space-y-4">
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1">
           <Label>Название операции</Label>
           <Input value={data.operation_name || ""} onChange={(e) => onChange({ operation_name: e.target.value })} />
@@ -22,6 +22,19 @@ export function PostOpDay7Form({ data, onChange }: Props) {
         <div className="space-y-1">
           <Label>Дата операции</Label>
           <Input type="date" value={data.operation_date || ""} onChange={(e) => onChange({ operation_date: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <Label>Срок осмотра (сутки)</Label>
+          <Input
+            type="number"
+            min={1}
+            max={365}
+            value={data.day_number ?? 7}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              onChange({ day_number: Number.isFinite(v) && v > 0 ? v : undefined });
+            }}
+          />
         </div>
       </div>
       <div className="space-y-1">
