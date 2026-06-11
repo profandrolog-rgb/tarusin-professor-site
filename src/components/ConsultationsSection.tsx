@@ -116,15 +116,7 @@ const ConsultationsSection = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="w-5 h-5" />
-                    <span className="text-sm">+7 (495) 374-81-81 ({t("consultations.forInquiries")})</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5" />
-                    <span className="text-sm">+7 (926) 600-555-0 ({t("consultations.whatsappBooking")})</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5" />
-                    <span className="text-sm">+7 (977) 807-55-44 ({t("consultations.urgentQuestions")})</span>
+                    <span className="text-sm">+7 (926) 600-555-0 (WhatsApp, Telegram, MAX)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5" />
