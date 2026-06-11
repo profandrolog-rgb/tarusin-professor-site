@@ -173,31 +173,61 @@ Deno.serve(async (req) => {
 
     // Parse SSE stream from Anthropic to accumulate text deltas
     let raw = '';
-    const reader = aiResp.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const payload = line.slice(6).trim();
-        if (!payload || payload === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(payload);
-          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-            raw += evt.delta.text || '';
+    let streamError: string | null = null;
+    let stopReason: string | null = null;
+    let apiErrorMessage: string | null = null;
+    try {
+      if (!aiResp.body) throw new Error('Anthropic response has no body');
+      const reader = aiResp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              raw += evt.delta.text || '';
+            } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
+              stopReason = evt.delta.stop_reason;
+            } else if (evt.type === 'error') {
+              apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
+            }
+          } catch (parseErr) {
+            console.error('SSE parse error', String((parseErr as any)?.message || parseErr), 'payload:', payload.slice(0, 200));
           }
-        } catch { /* ignore parse errors */ }
+        }
       }
+    } catch (streamErr) {
+      streamError = String((streamErr as any)?.message || streamErr);
+      console.error('Stream read error:', streamError, 'partial length:', raw.length);
     }
+
+    if (apiErrorMessage) {
+      return new Response(JSON.stringify({ error: `Anthropic stream error: ${apiErrorMessage}`, partial: raw }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (streamError && !raw) {
+      return new Response(JSON.stringify({ error: `Stream failed: ${streamError}` }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
+    console.log(`format-disease-article ok: stop_reason=${stopReason} output_chars=${formatted.length}`);
 
-
-    return new Response(JSON.stringify({ formatted }), {
+    return new Response(JSON.stringify({ formatted, stop_reason: stopReason, stream_error: streamError }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
