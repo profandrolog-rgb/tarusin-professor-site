@@ -124,24 +124,24 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
+        max_tokens: 8000,
+        stream: true,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: text }],
       }),
     });
 
-    // Retry on transient errors (429/529/503/502/500) with exponential backoff
+    // Single retry on transient errors to stay under 150s idle timeout
     let aiResp: Response | null = null;
     let lastErrText = '';
-    const delays = [1000, 2500, 5000];
-    for (let attempt = 0; attempt <= delays.length; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
       aiResp = await callAnthropic();
       if (aiResp.ok) break;
       lastErrText = await aiResp.text();
       const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
       console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
-      if (!retriable || attempt === delays.length) break;
-      await new Promise((r) => setTimeout(r, delays[attempt]));
+      if (!retriable || attempt === 1) break;
+      await new Promise((r) => setTimeout(r, 1500));
     }
 
     if (!aiResp || !aiResp.ok) {
@@ -157,9 +157,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    const data = await aiResp.json();
-    const raw = (data?.content?.[0]?.text || '').trim();
+    // Parse SSE stream from Anthropic to accumulate text deltas
+    let raw = '';
+    const reader = aiResp.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(payload);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            raw += evt.delta.text || '';
+          }
+        } catch { /* ignore parse errors */ }
+      }
+    }
     const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
+
 
     return new Response(JSON.stringify({ formatted }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
