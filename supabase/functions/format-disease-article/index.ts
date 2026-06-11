@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+    const callAnthropic = () => fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
@@ -130,12 +130,28 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (!aiResp.ok) {
-      const errText = await aiResp.text();
-      console.error('Anthropic error', aiResp.status, errText);
-      return new Response(JSON.stringify({
-        error: `Anthropic ${aiResp.status}: ${errText}`,
-      }), {
+    // Retry on transient errors (429/529/503/502/500) with exponential backoff
+    let aiResp: Response | null = null;
+    let lastErrText = '';
+    const delays = [1000, 2500, 5000];
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      aiResp = await callAnthropic();
+      if (aiResp.ok) break;
+      lastErrText = await aiResp.text();
+      const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
+      console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
+      if (!retriable || attempt === delays.length) break;
+      await new Promise((r) => setTimeout(r, delays[attempt]));
+    }
+
+    if (!aiResp || !aiResp.ok) {
+      const status = aiResp?.status ?? 500;
+      const userMsg = status === 529 || status === 503
+        ? 'Сервис ИИ временно перегружен. Попробуйте ещё раз через минуту.'
+        : status === 429
+        ? 'Превышен лимит запросов к ИИ. Попробуйте позже.'
+        : `Ошибка ИИ (${status}). Попробуйте ещё раз.`;
+      return new Response(JSON.stringify({ error: userMsg, details: lastErrText }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
