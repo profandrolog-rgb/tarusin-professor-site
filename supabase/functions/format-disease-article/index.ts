@@ -115,34 +115,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    const callAnthropic = () => fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
-        stream: true,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: text }],
-      }),
-    });
+    const callAnthropic = (maxTokens: number) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
+      return fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: maxTokens,
+          stream: true,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: text }],
+        }),
+      }).finally(() => clearTimeout(timeoutId));
+    };
 
-    // Single retry on transient errors to stay under 150s idle timeout
+    // First attempt with 16000 tokens; one retry with 8000 tokens on failure
     let aiResp: Response | null = null;
     let lastErrText = '';
-    for (let attempt = 0; attempt < 2; attempt++) {
-      aiResp = await callAnthropic();
-      if (aiResp.ok) break;
-      lastErrText = await aiResp.text();
-      const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
-      console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
-      if (!retriable || attempt === 1) break;
-      await new Promise((r) => setTimeout(r, 1500));
+    const tokenBudgets = [16000, 8000];
+    for (let attempt = 0; attempt < tokenBudgets.length; attempt++) {
+      try {
+        aiResp = await callAnthropic(tokenBudgets[attempt]);
+        if (aiResp.ok) break;
+        lastErrText = await aiResp.text();
+        const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
+        console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
+        if (!retriable || attempt === tokenBudgets.length - 1) break;
+        await new Promise((r) => setTimeout(r, 1500));
+      } catch (err) {
+        lastErrText = String((err as any)?.message || err);
+        console.error(`Anthropic attempt ${attempt + 1} threw`, lastErrText);
+        if (attempt === tokenBudgets.length - 1) break;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
     }
+
 
     if (!aiResp || !aiResp.ok) {
       const status = aiResp?.status ?? 500;
