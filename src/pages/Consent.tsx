@@ -41,7 +41,7 @@ const Consent = () => {
                   <h2 className="text-xl font-semibold text-foreground mt-8">5. Legal Basis</h2>
                   <p>Personal data processing is carried out in accordance with applicable data protection legislation.</p>
                   <h2 className="text-xl font-semibold text-foreground mt-8">6. Contact Information</h2>
-                  <p>For questions about personal data processing, please call +7 (495) 374-81-81 or use the contact form on the website.</p>
+                  <p>For questions about personal data processing, please call +7 (926) 600-555-0 or use the contact form on the website.</p>
                 </>
               ) : (
                 <>
@@ -62,7 +62,7 @@ const Consent = () => {
                   <h2 className="text-xl font-semibold text-foreground mt-8">5. Правовая основа</h2>
                   <p>Обработка персональных данных осуществляется в соответствии с Федеральным законом от 27.07.2006 №&nbsp;152-ФЗ «О персональных данных».</p>
                   <h2 className="text-xl font-semibold text-foreground mt-8">6. Контактная информация</h2>
-                  <p>По вопросам обработки персональных данных обращайтесь по телефону +7&nbsp;(495)&nbsp;374-81-81 или через форму обратной связи на сайте.</p>
+                  <p>По вопросам обработки персональных данных обращайтесь по телефону +7&nbsp;(926)&nbsp;600-555-0 или через форму обратной связи на сайте.</p>
                 </>
               )}
             </div>

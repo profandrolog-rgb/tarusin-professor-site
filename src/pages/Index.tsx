@@ -69,7 +69,7 @@ const jsonLd = {
             "addressLocality": "Немчиновка",
             "addressCountry": "RU"
           },
-          "telephone": "+7-495-374-81-81"
+          "telephone": "+7-926-600-555-0"
         }
       ],
       "sameAs": [

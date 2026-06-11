@@ -38,11 +38,11 @@ const HeroSection = () => {
                     <span>+7 (495) 303-00-00</span>
                   </span>
                 </Button>
-                <Button size="lg" onClick={() => window.open("tel:+74953748181")} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base px-6">
+                <Button size="lg" onClick={() => window.open("tel:+79266005550")} className="bg-accent hover:bg-accent/90 text-accent-foreground text-base px-6">
                   <Phone className="w-5 h-5 mr-2" />
                   <span className="flex flex-col items-start leading-tight">
                     <span className="text-xs opacity-80">{t("hero.aveClinic")}</span>
-                    <span>+7 (495) 374-81-81</span>
+                    <span>+7 (926) 600-555-0</span>
                   </span>
                 </Button>
               </div>

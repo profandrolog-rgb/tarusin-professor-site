@@ -170,9 +170,7 @@ const ContactSection = () => {
             name="AVE-CLINIC"
             address={isEn ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}
             phones={[
-              { number: "+7 (495) 374-81-81", href: "+74953748181", label: isEn ? "inquiries" : "для справок" },
-              { number: "+7 (926) 600-555-0", href: "79266005550", label: isEn ? "WhatsApp booking" : "WhatsApp для записи", isWhatsApp: true },
-              { number: "+7 (977) 807-55-44", href: "+79778075544", label: isEn ? "urgent" : "для срочных вопросов" },
+              { number: "+7 (926) 600-555-0", href: "79266005550", label: "WhatsApp, Telegram, MAX", isWhatsApp: true },
             ]}
             schedule={isEn ? "By appointment only" : "Только по предварительной записи"}
             directions={aveDirections}

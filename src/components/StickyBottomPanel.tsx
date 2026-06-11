@@ -66,9 +66,7 @@ const StickyBottomPanel = () => {
                 <h4 className="font-semibold text-foreground mb-2">{t("hero.aveClinic")}</h4>
                 <p className="text-xs text-muted-foreground mb-3">{isEn ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}</p>
                 <div className="space-y-1.5">
-                  <a href="tel:+74953748181" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (495) 374-81-81 <span className="text-xs text-muted-foreground font-normal">({t("sticky.inquiries")})</span></a>
-                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (926) 600-555-0 <span className="text-xs text-muted-foreground font-normal">({t("sticky.whatsApp")})</span></a>
-                  <a href="tel:+79778075544" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (977) 807-55-44 <span className="text-xs text-muted-foreground font-normal">({t("sticky.urgent")})</span></a>
+                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (926) 600-555-0 <span className="text-xs text-muted-foreground font-normal">(WhatsApp, Telegram, MAX)</span></a>
                 </div>
               </div>
             </div>
@@ -88,7 +86,7 @@ const StickyBottomPanel = () => {
             <div className="hidden md:flex items-center gap-4">
               <a href="tel:+74953030000" className="text-sm text-primary-foreground/90 hover:text-primary-foreground transition-colors">+7 (495) 303-00-00</a>
               <span className="text-primary-foreground/30">|</span>
-              <a href="tel:+74953748181" className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">+7 (495) 374-81-81</a>
+              <a href="tel:+79266005550" className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">+7 (926) 600-555-0</a>
             </div>
             <Dialog open={questionOpen} onOpenChange={setQuestionOpen}>
               <DialogTrigger asChild>

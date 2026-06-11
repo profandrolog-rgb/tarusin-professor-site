@@ -123,9 +123,7 @@ const Footer = () => {
               <div>
                 <p className="font-medium text-background/90 text-sm mb-2">{t("hero.aveClinic")}</p>
                 <ul className="space-y-2">
-                  <li className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 flex-shrink-0 text-background/70" /><div><a href="tel:+74953748181" className="text-background/70 hover:text-background transition-colors">+7 (495) 374-81-81</a><span className="text-background/50 ml-1">({t("sticky.inquiries")})</span></div></li>
-                  <li className="flex items-center gap-3 text-sm"><WhatsAppIcon className="w-4 h-4 flex-shrink-0 text-background/70" /><div><a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">+7 (926) 600-555-0</a><span className="text-background/50 ml-1">(WhatsApp)</span></div></li>
-                  <li className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 flex-shrink-0 text-background/70" /><div><a href="tel:+79778075544" className="text-background/70 hover:text-background transition-colors">+7 (977) 807-55-44</a><span className="text-background/50 ml-1">({t("sticky.urgent")})</span></div></li>
+                  <li className="flex items-center gap-3 text-sm"><WhatsAppIcon className="w-4 h-4 flex-shrink-0 text-background/70" /><div><a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">+7 (926) 600-555-0</a><span className="text-background/50 ml-1">(WhatsApp, Telegram, MAX)</span></div></li>
                   <li className="flex items-start gap-3 text-sm"><MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" /><span className="text-background/70">{t("lang") === "en" ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}</span></li>
                 </ul>
               </div>
