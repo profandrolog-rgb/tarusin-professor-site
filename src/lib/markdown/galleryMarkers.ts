@@ -1,5 +1,7 @@
 import { marked } from "marked";
 import TurndownService from "turndown";
+// @ts-ignore - turndown-plugin-gfm has no types but exports `gfm`
+import { gfm as turndownGfm } from "turndown-plugin-gfm";
 
 const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
 const GALLERY_DIV_RE = /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
