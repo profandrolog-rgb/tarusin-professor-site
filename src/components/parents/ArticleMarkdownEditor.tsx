@@ -32,7 +32,9 @@ import {
   Undo,
   Redo,
   Plug,
+  Save,
 } from "lucide-react";
+
 import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
