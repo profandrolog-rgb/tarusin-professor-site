@@ -31,6 +31,7 @@ import {
   Link as LinkIcon,
   Undo,
   Redo,
+  Plug,
 } from "lucide-react";
 import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
@@ -55,6 +56,27 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   const [galleryCaption, setGalleryCaption] = useState("");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
+  const [testingConn, setTestingConn] = useState(false);
+  const [connStatus, setConnStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleTestConnection = async () => {
+    setTestingConn(true);
+    setConnStatus(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-claude-connection", { body: {} });
+      if (error) {
+        setConnStatus({ ok: false, text: `❌ Нет связи: ${error.message || "unknown"}` });
+      } else if (data?.ok) {
+        setConnStatus({ ok: true, text: `✅ Связь с Claude API подтверждена (${data.latencyMs} мс)` });
+      } else {
+        setConnStatus({ ok: false, text: `❌ Нет связи: ${data?.error || "unknown"}` });
+      }
+    } catch (e: any) {
+      setConnStatus({ ok: false, text: `❌ Нет связи: ${e?.message || "unknown"}` });
+    } finally {
+      setTestingConn(false);
+    }
+  };
 
   // Track last markdown we emitted/received so we don't reset the editor on our own updates.
   const lastSyncedMd = useRef<string>(value);
@@ -227,9 +249,26 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
 
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleTestConnection}
+            disabled={testingConn}
+            className="gap-1.5"
+            title="Проверить связь с Claude API"
+          >
+            {testingConn ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Plug className="w-3.5 h-3.5" />
+            )}
+            🔌 Тест связи
+          </Button>
+
+          <Button
+            type="button"
             variant="default"
             size="sm"
-            onClick={handleFormat}
+            onClick={() => { setConnStatus(null); handleFormat(); }}
             disabled={formatting || !value.trim()}
             className="gap-1.5"
           >
@@ -245,12 +284,24 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setGalleryOpen(true)}
+            onClick={() => { setConnStatus(null); setGalleryOpen(true); }}
             className="gap-1.5"
           >
             <ImagePlus className="w-3.5 h-3.5" />
             Галерея
           </Button>
+
+          {connStatus && (
+            <span
+              className={`text-xs px-2 py-1 rounded-md ${
+                connStatus.ok
+                  ? "bg-green-50 text-green-700 border border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-900"
+                  : "bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900"
+              }`}
+            >
+              {connStatus.text}
+            </span>
+          )}
 
           <div className="ml-auto flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{value.length} симв.</span>
