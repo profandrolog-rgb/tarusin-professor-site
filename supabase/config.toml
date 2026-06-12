@@ -2,3 +2,6 @@ project_id = "bpbwkizvvythqotcyfii"
 
 [functions.process-email-queue]
 verify_jwt = true
+
+[functions.notify-telegram-appointment]
+verify_jwt = false
