@@ -1,5 +1,5 @@
 import { ArrowLeft, BookOpen, Baby, User, FileText, ClipboardList } from "lucide-react";
-import { Link, useLoaderData } from "react-router-dom";
+import { Link, useLoaderData, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,10 @@ const ForParents = () => {
   const isEn = i18n.language === "en";
   const loaderData = useLoaderData() as ParentsLoaderData | undefined;
   const initialArticles = loaderData?.articles || [];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const validTabs = ["useful", "children", "adults", "guide", "publications"];
+  const activeTab = validTabs.includes(tabParam || "") ? (tabParam as string) : "useful";
 
   return (
     <AgeConfirmationModal>
@@ -38,7 +42,7 @@ const ForParents = () => {
         </header>
 
         <main className="container mx-auto px-4 py-12 md:py-16">
-          <Tabs defaultValue="useful" className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => { const sp = new URLSearchParams(searchParams); sp.set("tab", v); setSearchParams(sp, { replace: true }); }} className="w-full">
             <TabsList className="w-full grid grid-cols-5 h-auto mb-10">
               <TabsTrigger value="useful" className="flex items-center gap-2 py-3 text-xs md:text-base"><BookOpen className="w-4 h-4 hidden sm:block" />{isEn ? "Useful Materials" : "Полезные материалы"}</TabsTrigger>
               <TabsTrigger value="children" className="flex items-center gap-2 py-3 text-xs md:text-base"><Baby className="w-4 h-4 hidden sm:block" />{isEn ? "Pediatric Conditions" : "О детских болезнях"}</TabsTrigger>

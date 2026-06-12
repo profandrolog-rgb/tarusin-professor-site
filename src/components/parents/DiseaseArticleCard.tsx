@@ -216,33 +216,35 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
                 </div>
               )}
 
-              {/* Article text - collapsible */}
+              {/* Article text */}
               {activeTab === "text" && hasText && (
                 <>
-                  <Collapsible open={isArticleOpen} onOpenChange={setIsArticleOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" className="w-full mb-2">
-                        {isArticleOpen ? (
-                          <>
-                            <ChevronUp className="w-4 h-4 mr-2" />
-                            Свернуть статью
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="w-4 h-4 mr-2" />
-                            Развернуть статью
-                          </>
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div
-                        className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content!) }}
-                        onCopy={(e) => e.preventDefault()}
-                      />
-                    </CollapsibleContent>
-                  </Collapsible>
+                  {isAdmin && (
+                    <Collapsible open={isArticleOpen} onOpenChange={setIsArticleOpen}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" className="w-full mb-2">
+                          {isArticleOpen ? (
+                            <>
+                              <ChevronUp className="w-4 h-4 mr-2" />
+                              Свернуть статью (admin preview)
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4 mr-2" />
+                              Развернуть статью (admin preview)
+                            </>
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div
+                          className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content!) }}
+                          onCopy={(e) => e.preventDefault()}
+                        />
+                      </CollapsibleContent>
+                    </Collapsible>
+                  )}
                   <Button asChild variant="secondary" className="w-full mt-2">
                     <Link to={`/for-parents/${article.slug}/`}>
                       <ExternalLink className="w-4 h-4 mr-2" />
