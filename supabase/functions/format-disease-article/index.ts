@@ -7,14 +7,33 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 - > 💡 **Важно знать:** for key facts
 - > ⚠️ **Когда срочно к врачу:** for warning signs
 - > 📊 **Цифры:** for statistics
-- TABLES (CRITICAL): If the input contains any tabular data — rows with the same repeating set of columns, classification grids, comparison tables, dose tables, schedules, etc. — you MUST render them as proper GFM markdown tables using pipes and a header separator, for example:
-  | Степень | Описание | Лечение |
-  | --- | --- | --- |
-  | I | ... | ... |
-  Never output table data as a single concatenated paragraph. Preserve every cell verbatim. Detect column boundaries from the source structure (line breaks, repeated labels like I/II/III, "Степень", "Стадия", numbered rows). Always include the header separator row (\`| --- | --- |\`) so the table renders.
+
+=== АБСОЛЮТНЫЙ ЗАПРЕТ — ТАБЛИЦЫ (САМОЕ ВАЖНОЕ ПРАВИЛО) ===
+Таблицы в тексте — священны. Эти правила нарушать НЕЛЬЗЯ НИКОГДА:
+1. НИКОГДА не превращай таблицу в сплошной текст или абзац.
+2. НИКОГДА не склеивай ячейки таблицы в один абзац или строку.
+3. НИКОГДА не удаляй колонки или строки из таблицы.
+4. НИКОГДА не упрощай таблицу — все колонки и все строки должны остаться.
+5. НИКОГДА не заменяй таблицу маркированным или нумерованным списком.
+
+Любые табличные данные (классификации, сравнения, дозировки, расписания, степени/стадии, протоколы) ОБЯЗАТЕЛЬНО сохраняй строго в GFM-формате:
+
+| Колонка 1 | Колонка 2 | Колонка 3 |
+| --- | --- | --- |
+| Ячейка | Ячейка | Ячейка |
+
+Жёсткие требования к таблице:
+- Строка-разделитель \`| --- | --- | --- |\` ОБЯЗАТЕЛЬНА сразу после строки заголовка.
+- Каждая строка начинается и заканчивается символом \`|\`.
+- Между таблицей и соседними абзацами — пустая строка сверху и пустая строка снизу.
+- Каждая ячейка сохраняется ДОСЛОВНО, без сокращений и перефразирования.
+
+Если таблица пришла слипшейся (например: «СтепеньОписаниеХарактеристика...» или вся таблица в одном абзаце) — ВОССТАНОВИ её структуру по смыслу: определи названия колонок по повторяющимся меткам (Степень, Стадия, I/II/III, римские/арабские номера, ключевые термины), разбей слипшийся текст на правильные колонки и строки и выведи как полноценную GFM-таблицу. Никогда не оставляй слипшийся табличный текст как абзац.
+=== КОНЕЦ ПРАВИЛ ПО ТАБЛИЦАМ ===
+
 - Keep [[GALLERY: caption="..."]] markers exactly as they appear in the text
 - Preserve the author's voice and personal stories
-- Do not add or remove content
+- Do not add or remove content (кроме восстановления структуры таблиц, описанного выше)
 
 Return only the formatted markdown, nothing else.`;
 
