@@ -182,8 +182,25 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     setImporting(true);
     try {
       const buf = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer: buf });
-      const text = (result.value || "").trim();
+      // Convert to HTML first so tables/lists/bold are preserved, then to GFM markdown.
+      const html = await mammoth.convertToHtml({ arrayBuffer: buf });
+      const htmlStr = (html.value || "").trim();
+      let text = "";
+      if (htmlStr) {
+        const td = new TurndownService({
+          headingStyle: "atx",
+          bulletListMarker: "-",
+          codeBlockStyle: "fenced",
+          emDelimiter: "_",
+        });
+        td.use(turndownGfm);
+        text = td.turndown(htmlStr).trim();
+      }
+      if (!text) {
+        // Fallback to raw text if HTML conversion produced nothing
+        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        text = (result.value || "").trim();
+      }
       if (!text) {
         toast.error("Не удалось извлечь текст из документа");
         return;
