@@ -44,13 +44,39 @@ import { markdownToHtml, htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
 interface Props {
   value: string;
   onChange: (v: string) => void;
+  /** Optional: when set, shows a "Save as-is" button that triggers parent save without formatting. */
+  onSaveAsIs?: () => void;
+  saving?: boolean;
 }
 
 export interface ArticleMarkdownEditorHandle {
   getMarkdown: () => string;
 }
 
-const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange }, ref) => {
+const CHUNK_TARGET = 12000;
+
+function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
+  if (text.length <= target) return [text];
+  const paragraphs = text.split(/\n\s*\n/);
+  const chunks: string[] = [];
+  let cur = "";
+  for (const p of paragraphs) {
+    if (!cur) cur = p;
+    else if (cur.length + p.length + 2 <= target) cur += "\n\n" + p;
+    else { chunks.push(cur); cur = p; }
+    while (cur.length > target * 1.5) {
+      const cut = cur.lastIndexOf("\n", target);
+      const at = cut > target / 2 ? cut : target;
+      chunks.push(cur.slice(0, at));
+      cur = cur.slice(at);
+    }
+  }
+  if (cur) chunks.push(cur);
+  return chunks;
+}
+
+const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving }, ref) => {
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [formatting, setFormatting] = useState(false);
