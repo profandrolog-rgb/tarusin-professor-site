@@ -212,7 +212,7 @@ const DiseaseDetailPage = () => {
 
           <div className="mt-12 pt-8 border-t">
             <Link
-              to="/for-parents"
+              to={`/for-parents?tab=${article.age_group === "adults" ? "adults" : "children"}`}
               className="inline-flex items-center gap-2 text-primary hover:underline"
             >
               <ArrowLeft className="w-4 h-4" /> Назад к каталогу болезней
