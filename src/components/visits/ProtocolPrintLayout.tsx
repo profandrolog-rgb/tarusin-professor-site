@@ -409,6 +409,8 @@ const KNOWN_KEYS = new Set([
   "reason","prior_visit","prior_visit_date","prior_visit_note","current_state",
   "external_exam_by_photo","external_exam_by_video","external_genitalia",
   "interpretation","channel","duration_min","in_person_needed","in_person_urgency",
+  // peptide_program
+  "program_title","goal","start_date","control_date","items",
   "_normalized_version","_normalized_at",
 ]);
 
@@ -576,6 +578,62 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       rows.push(<Field key="oc-ip" label="Необходимость очного осмотра" value={text} />);
     }
   }
+
+  if (t === "peptide_program") {
+    const metaRows: React.ReactNode[] = [];
+    if (d.program_title) metaRows.push(<Field key="pt" label="Программа" value={d.program_title} />);
+    if (d.goal) metaRows.push(<Field key="gl" label="Цель" value={d.goal} />);
+    if (d.start_date) metaRows.push(
+      <Field key="sd" label="Дата начала курса" value={format(new Date(d.start_date), "dd.MM.yyyy")} />
+    );
+    if (d.control_date) metaRows.push(
+      <Field key="cd" label="Контрольный визит / анализы" value={format(new Date(d.control_date), "dd.MM.yyyy")} />
+    );
+    if (metaRows.length > 0) {
+      rows.push(<Section key="pp-meta" title="Пептидная программа">{metaRows}</Section>);
+    }
+
+    const list = Array.isArray(d.items) ? d.items : [];
+    if (list.length > 0) {
+      rows.push(
+        <Section key="pp-items" title={`Состав программы (препаратов: ${list.length})`}>
+          <tr>
+            <td colSpan={2} className="ppl-value" style={{ paddingTop: "1mm" }}>
+              <ol style={{ margin: 0, paddingLeft: "6mm" }}>
+                {list.map((it: any, i: number) => {
+                  const tags: string[] = [];
+                  const rf = (it.rf_status || "").toLowerCase();
+                  if (rf.includes("зарегистрирован")) tags.push("ЛС РФ");
+                  else if (rf.includes("бад")) tags.push("БАД");
+                  else if (rf.includes("research")) tags.push("Research");
+                  if (it.evidence_level) tags.push(`дока ${it.evidence_level}`);
+                  const onco = (it.onco_risk || "").toLowerCase();
+                  if (onco && !onco.includes("не описан") && !onco.includes("нет данных")) tags.push("онкориск");
+                  return (
+                    <li key={i} style={{ marginBottom: "2mm" }}>
+                      <strong>{it.name}</strong>
+                      {it.group_name ? <span style={{ color: "#555" }}> — {it.group_name}</span> : null}
+                      {tags.length > 0 && (
+                        <span style={{ fontSize: "8pt", color: "#666" }}> [{tags.join(", ")}]</span>
+                      )}
+                      <div>Схема: {it.schedule || "—"}</div>
+                      <div>Длительность: {it.duration || "—"}</div>
+                      {it.monitoring && <div>Контроль: {it.monitoring}</div>}
+                      {it.notes && <div style={{ fontStyle: "italic" }}>{it.notes}</div>}
+                    </li>
+                  );
+                })}
+              </ol>
+            </td>
+          </tr>
+        </Section>
+      );
+    }
+
+    if (d.conclusion) rows.push(<Field key="pp-z" label="Заключение по программе" value={d.conclusion} />);
+  }
+
+
 
 
   // Fallback for generic protocols — render any string fields under d.fields
