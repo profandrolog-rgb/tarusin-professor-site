@@ -206,4 +206,14 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     conclusion: "Без отрицательной динамики.",
     recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
   } as RepeatWithUziData,
+  online_consult: {
+    reason: "Первичная онлайн-консультация",
+    prior_visit: "no",
+    external_exam_by_photo: false,
+    external_exam_by_video: false,
+    external_genitalia:
+      "Наружные половые органы развиты по мужскому типу, яички в мошонке, семенные канатики не изменены, область паховых колец не изменена, половой член развит по возрасту, уретра в типичном положении, меатус в типичном положении, крайняя плоть открывается, половое развитие соответствует возрасту.",
+    in_person_needed: "no",
+    recommendations: "Контрольный осмотр / повторная консультация по согласованию.",
+  } as OnlineConsultData,
 };
