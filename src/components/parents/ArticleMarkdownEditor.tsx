@@ -439,6 +439,22 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             {formatting ? "Форматирую..." : "Форматировать"}
           </Button>
 
+          {onSaveAsIs && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onSaveAsIs}
+              disabled={saving || !value.trim()}
+              className="gap-1.5"
+              title="Сохранить текст как есть, без AI-форматирования (для уже готового markdown)"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              Сохранить без форматирования
+            </Button>
+          )}
+
+
           <Button
             type="button"
             variant="outline"
