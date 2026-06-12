@@ -16,6 +16,10 @@ const ForParents = () => {
   const isEn = i18n.language === "en";
   const loaderData = useLoaderData() as ParentsLoaderData | undefined;
   const initialArticles = loaderData?.articles || [];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const validTabs = ["useful", "children", "adults", "guide", "publications"];
+  const activeTab = validTabs.includes(tabParam || "") ? (tabParam as string) : "useful";
 
   return (
     <AgeConfirmationModal>
