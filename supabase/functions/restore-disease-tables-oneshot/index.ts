@@ -18,33 +18,16 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    // Admin-only via user JWT
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claims } = await userClient.auth.getClaims(token);
-    const userId = claims?.claims?.sub as string | undefined;
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const { data: role } = await userClient.from('user_roles').select('role')
-      .eq('user_id', userId).eq('role', 'admin').maybeSingle();
-    if (!role) {
+    // One-shot token guard (function is deleted right after use)
+    const ONE_SHOT = 'restore-tables-2026-06-12-fk7Q9xZpL';
+    const provided = req.headers.get('x-one-shot-token');
+    if (provided !== ONE_SHOT) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
