@@ -80,6 +80,7 @@ const UZI_LABELS: Record<string, string> = {
   right_testis_volume: "Правое яичко, V мл", left_testis_volume: "Левое яичко, V мл",
   right_testis_structure: "Правое яичко (структура)", left_testis_structure: "Левое яичко (структура)",
   right_epididymis: "Правый придаток", left_epididymis: "Левый придаток",
+  right_epididymis_volume: "Правый придаток, V см³", left_epididymis_volume: "Левый придаток, V см³",
   right_kidney_size: "Правая почка (размеры)", left_kidney_size: "Левая почка (размеры)",
   right_kidney_parenchyma: "Правая почка (паренхима)", left_kidney_parenchyma: "Левая почка (паренхима)",
   right_kidney_pelvis: "Правая почка (лоханка)", left_kidney_pelvis: "Левая почка (лоханка)",
@@ -112,6 +113,23 @@ const UZI_LABELS: Record<string, string> = {
   residual_urine_percent: "Остаточная моча, %",
   paraprostatic_veins: "Парапростатические вены",
   diameter: "Диаметр, мм", reflux: "Рефлюкс",
+  // Аорто-мезентериальный конфликт
+  aorto_mesenteric: "Зона аорто-мезентериального конфликта",
+  aorta_structure: "Структура и ход аорты",
+  sma_origin: "Отхождение верхней брыжеечной артерии",
+  left_renal_vein_position: "Положение левой почечной вены",
+  retroaortic_component: "Ретроаортальный компонент левой почечной вены",
+  diameter_premesenteric: "Премезентериальный диаметр ЛПВ, мм",
+  diameter_intramesenteric: "Интрамезентериальный диаметр ЛПВ, мм",
+  diameter_postmesenteric: "Постмезентериальный диаметр ЛПВ, мм",
+  ratio_pre_intra: "Соотношение премезентериальный : интрамезентериальный",
+  stenosis_flow_velocity: "Скорость потока в зоне сужения, см/с",
+  // Илиакальный конфликт (Мей–Тернера)
+  iliac_may_thurner: "Зона илиакального конфликта (Мей–Тернера)",
+  may_thurner_anatomy: "Анатомия зоны Мей–Тернера",
+  left_common_iliac_diameter: "Диаметр левой общей подвздошной вены, мм",
+  flow_videographically: "Видеографически",
+  compression_flow_velocity: "Скорость потока в зоне компрессии, см/с",
 };
 const humanize = (k: string) => UZI_LABELS[k] || k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const isPlainObject = (v: any): v is Record<string, any> => v !== null && typeof v === "object" && !Array.isArray(v);
