@@ -427,7 +427,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     }
   };
 
-  };
+
 
 
 
