@@ -178,7 +178,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       }
       if (!resp.body) throw new Error("Пустой ответ от AI");
 
-      // NDJSON stream: ":keepalive" comment lines + final {type:"result"|"error",...}
+      // SSE stream: ":keepalive" comments + "data: {...}" final event
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -191,10 +191,11 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith(":")) continue;
+          if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (!payload) continue;
           try {
-            const obj = JSON.parse(trimmed);
+            const obj = JSON.parse(payload);
             if (obj?.type === "result") finalObj = obj;
             else if (obj?.type === "error") finalErr = obj.error || "Ошибка форматирования";
           } catch {
