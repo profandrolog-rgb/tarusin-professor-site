@@ -283,8 +283,9 @@ Deno.serve(async (req) => {
       error_message: null,
     }).eq('id', draftId);
 
-    // ---- Protect tables: strip BEFORE sending to AI, restore AFTER ----
-    const { stripped, tables } = extractTables(chunks[chunkIndex]);
+    // ---- Protect tables AND galleries: strip BEFORE sending to AI, restore AFTER ----
+    const { stripped: noTables, tables } = extractTables(chunks[chunkIndex]);
+    const { stripped, galleries } = extractGalleries(noTables);
     const r = await callAnthropic(apiKey, stripped);
     if (r.error || !r.formatted) {
       const reason = r.error || (r.stop_reason ? `stop_reason=${r.stop_reason}` : 'empty response');
@@ -300,8 +301,9 @@ Deno.serve(async (req) => {
     // append formatted chunk
     const prev = draft.formatted_content || '';
     const sep = prev ? '\n\n' : '';
-    // Restore tables (guarantees no table data is ever lost, even if AI dropped the placeholder)
-    const restored = restoreTables(r.formatted, tables);
+    // Restore galleries first (inline markers), then tables — neither can ever be lost,
+    // because dropped placeholders are appended at the end of the chunk.
+    const restored = restoreTables(restoreGalleries(r.formatted, galleries), tables);
     const newFormatted = prev + sep + restored;
     const newLastDone = chunkIndex + 1;
     const isDone = newLastDone >= chunks.length;
