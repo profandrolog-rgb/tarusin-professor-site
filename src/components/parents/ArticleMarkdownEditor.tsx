@@ -1,5 +1,8 @@
 import { forwardRef, useImperativeHandle, useRef, useState, useEffect, useCallback } from "react";
 import mammoth from "mammoth";
+import TurndownService from "turndown";
+// @ts-ignore - turndown-plugin-gfm has no types but exports `tables`/`gfm`
+import { gfm as turndownGfm } from "turndown-plugin-gfm";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
