@@ -467,102 +467,242 @@ export function UziReproductiveSection({ data, onChange }: Props) {
 
       {/* Предстательная железа */}
       <div className="p-3 border rounded-md space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="font-medium text-sm">УЗИ предстательной железы</div>
-          <Button type="button" variant="outline" size="sm" onClick={() => onChange({ prostate: { ...prostate, ...DEFAULT_PROSTATE } })}>
-            <Zap className="h-3 w-3 mr-1" /> Стандарт
-          </Button>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-prostate"
+              checked={data.show_prostate !== false}
+              onCheckedChange={(v) => onChange({ show_prostate: v === true })}
+            />
+            <Label htmlFor="show-prostate" className="font-medium text-sm cursor-pointer">
+              Выводить «УЗИ предстательной железы» в протоколе
+            </Label>
+          </div>
+          {data.show_prostate !== false && (
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange({ prostate: { ...prostate, ...DEFAULT_PROSTATE } })}>
+              <Zap className="h-3 w-3 mr-1" /> Стандарт
+            </Button>
+          )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Положение</Label>
-            <Input className="h-8" value={prostate.position || ""} onChange={(e) => setProstate("position", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Синтопия с органами таза</Label>
-            <Input className="h-8" value={prostate.syntopy || ""} onChange={(e) => setProstate("syntopy", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Выпот в углублениях таза</Label>
-          <Input className="h-8" value={prostate.pelvic_effusion || ""} onChange={(e) => setProstate("pelvic_effusion", e.target.value)} />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Объём предстательной железы (см³)</Label>
-            <Input className="h-8" value={prostate.prostate_volume || ""} onChange={(e) => setProstate("prostate_volume", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Средняя доля, объём (см³)</Label>
-            <Input className="h-8" value={prostate.middle_lobe_volume || ""} onChange={(e) => setProstate("middle_lobe_volume", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Косвенные признаки инфравезикальной обструкции</Label>
-          <Textarea rows={2} value={prostate.infravesical_obstruction || ""} onChange={(e) => setProstate("infravesical_obstruction", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Внутреннее отверстие уретры</Label>
-          <Input className="h-8" value={prostate.urethra_internal_opening || ""} onChange={(e) => setProstate("urethra_internal_opening", e.target.value)} />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Эластография — правая доля</Label>
-            <Textarea rows={2} value={prostate.elastography_right || ""} onChange={(e) => setProstate("elastography_right", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Эластография — левая доля</Label>
-            <Textarea rows={2} value={prostate.elastography_left || ""} onChange={(e) => setProstate("elastography_left", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Объём мочевого пузыря при исследовании (мл)</Label>
-            <Input className="h-8" value={prostate.bladder_volume || ""} onChange={(e) => setProstate("bladder_volume", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Позыв на микцию (баллов)</Label>
-            <Input className="h-8" value={prostate.micturition_urge || ""} onChange={(e) => setProstate("micturition_urge", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Объём остаточной мочи (мл)</Label>
-            <Input className="h-8" value={prostate.residual_urine_volume || ""} onChange={(e) => setProstate("residual_urine_volume", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Остаточная моча (% от исходного объёма)</Label>
-            <Input className="h-8" placeholder="рассчитывается автоматически" value={prostate.residual_urine_percent || ""} onChange={(e) => setProstate("residual_urine_percent", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="p-2 border rounded space-y-2">
-          <div className="text-xs font-medium">Парапростатические вены</div>
-          <div className="grid md:grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Диаметр (мм)</Label>
-              <Input className="h-8" value={prostate.paraprostatic_veins?.diameter || ""} onChange={(e) => setParaVeins("diameter", e.target.value)} />
+        {data.show_prostate !== false && (
+          <div className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Положение</Label>
+                <Input className="h-8" value={prostate.position || ""} onChange={(e) => setProstate("position", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Синтопия с органами таза</Label>
+                <Input className="h-8" value={prostate.syntopy || ""} onChange={(e) => setProstate("syntopy", e.target.value)} />
+              </div>
             </div>
+
             <div className="space-y-1">
-              <Label className="text-xs">Наличие рефлюкса</Label>
-              <Input className="h-8" value={prostate.paraprostatic_veins?.reflux || ""} onChange={(e) => setParaVeins("reflux", e.target.value)} />
+              <Label className="text-xs">Выпот в углублениях таза</Label>
+              <Input className="h-8" value={prostate.pelvic_effusion || ""} onChange={(e) => setProstate("pelvic_effusion", e.target.value)} />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Объём предстательной железы (см³)</Label>
+                <Input className="h-8" value={prostate.prostate_volume || ""} onChange={(e) => setProstate("prostate_volume", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Средняя доля, объём (см³)</Label>
+                <Input className="h-8" value={prostate.middle_lobe_volume || ""} onChange={(e) => setProstate("middle_lobe_volume", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Косвенные признаки инфравезикальной обструкции</Label>
+              <Textarea rows={2} value={prostate.infravesical_obstruction || ""} onChange={(e) => setProstate("infravesical_obstruction", e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Внутреннее отверстие уретры</Label>
+              <Input className="h-8" value={prostate.urethra_internal_opening || ""} onChange={(e) => setProstate("urethra_internal_opening", e.target.value)} />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Эластография — правая доля</Label>
+                <Textarea rows={2} value={prostate.elastography_right || ""} onChange={(e) => setProstate("elastography_right", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Эластография — левая доля</Label>
+                <Textarea rows={2} value={prostate.elastography_left || ""} onChange={(e) => setProstate("elastography_left", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Объём мочевого пузыря при исследовании (мл)</Label>
+                <Input className="h-8" value={prostate.bladder_volume || ""} onChange={(e) => setProstate("bladder_volume", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Позыв на микцию (баллов)</Label>
+                <Input className="h-8" value={prostate.micturition_urge || ""} onChange={(e) => setProstate("micturition_urge", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Объём остаточной мочи (мл)</Label>
+                <Input className="h-8" value={prostate.residual_urine_volume || ""} onChange={(e) => setProstate("residual_urine_volume", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Остаточная моча (% от исходного объёма)</Label>
+                <Input className="h-8" placeholder="рассчитывается автоматически" value={prostate.residual_urine_percent || ""} onChange={(e) => setProstate("residual_urine_percent", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="p-2 border rounded space-y-2">
+              <div className="text-xs font-medium">Парапростатические вены</div>
+              <div className="grid md:grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Диаметр (мм)</Label>
+                  <Input className="h-8" value={prostate.paraprostatic_veins?.diameter || ""} onChange={(e) => setParaVeins("diameter", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Наличие рефлюкса</Label>
+                  <Input className="h-8" value={prostate.paraprostatic_veins?.reflux || ""} onChange={(e) => setParaVeins("reflux", e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Заключение по предстательной железе</Label>
+              <Textarea rows={3} placeholder="Если оставить пустым — не будет напечатано" value={prostate.conclusion || ""} onChange={(e) => setProstate("conclusion", e.target.value)} />
             </div>
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Заключение по предстательной железе</Label>
-          <Textarea rows={3} placeholder="Если оставить пустым — не будет напечатано" value={prostate.conclusion || ""} onChange={(e) => setProstate("conclusion", e.target.value)} />
-        </div>
+        )}
       </div>
+
+      {/* Зона аорто-мезентериального конфликта */}
+      {(() => {
+        const am = data.aorto_mesenteric || {};
+        const setAm = (key: keyof AortoMesentericData, val: string) => {
+          const next: AortoMesentericData = { ...am, [key]: val };
+          if (key === "diameter_premesenteric" || key === "diameter_intramesenteric") {
+            const pre = parseFloat(((key === "diameter_premesenteric" ? val : am.diameter_premesenteric) || "").replace(",", "."));
+            const intra = parseFloat(((key === "diameter_intramesenteric" ? val : am.diameter_intramesenteric) || "").replace(",", "."));
+            if (isFinite(pre) && isFinite(intra) && intra > 0) {
+              next.ratio_pre_intra = (pre / intra).toFixed(2);
+            }
+          }
+          onChange({ aorto_mesenteric: next });
+        };
+        return (
+          <div className="p-3 border rounded-md space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="font-medium text-sm">Зона аорто-мезентериального конфликта</div>
+              <Button type="button" variant="outline" size="sm" onClick={() => onChange({ aorto_mesenteric: { ...am, ...DEFAULT_AORTO_MESENTERIC } })}>
+                <Zap className="h-3 w-3 mr-1" /> Стандарт
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Структура и ход аорты</Label>
+                <Input className="h-8" value={am.aorta_structure || ""} onChange={(e) => setAm("aorta_structure", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Отхождение верхней брыжеечной артерии</Label>
+                <Input className="h-8" value={am.sma_origin || ""} onChange={(e) => setAm("sma_origin", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Положение левой почечной вены</Label>
+                <Input className="h-8" value={am.left_renal_vein_position || ""} onChange={(e) => setAm("left_renal_vein_position", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Ретроаортальный компонент ЛПВ (есть/нет)</Label>
+                <Input className="h-8" value={am.retroaortic_component || ""} onChange={(e) => setAm("retroaortic_component", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="text-xs font-medium pt-1">Диаметры левой почечной вены (мм)</div>
+            <div className="grid md:grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Премезентериальный</Label>
+                <Input className="h-8" value={am.diameter_premesenteric || ""} onChange={(e) => setAm("diameter_premesenteric", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Интрамезентериальный</Label>
+                <Input className="h-8" value={am.diameter_intramesenteric || ""} onChange={(e) => setAm("diameter_intramesenteric", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Постмезентериальный</Label>
+                <Input className="h-8" value={am.diameter_postmesenteric || ""} onChange={(e) => setAm("diameter_postmesenteric", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Соотношение премезентериальный : интрамезентериальный</Label>
+                <Input className="h-8" placeholder="рассчитывается автоматически" value={am.ratio_pre_intra || ""} onChange={(e) => setAm("ratio_pre_intra", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Скорость потока в зоне сужения (см/с)</Label>
+                <Input className="h-8" value={am.stenosis_flow_velocity || ""} onChange={(e) => setAm("stenosis_flow_velocity", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Заключение</Label>
+              <Textarea rows={2} placeholder="Если оставить пустым — не будет напечатано" value={am.conclusion || ""} onChange={(e) => setAm("conclusion", e.target.value)} />
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Зона илиакального конфликта (Мей–Тернера) */}
+      {(() => {
+        const mt = data.iliac_may_thurner || {};
+        const setMt = (key: keyof IliacMayThurnerData, val: string) => {
+          onChange({ iliac_may_thurner: { ...mt, [key]: val } });
+        };
+        return (
+          <div className="p-3 border rounded-md space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="font-medium text-sm">Зона илиакального конфликта (Мей–Тернера)</div>
+              <Button type="button" variant="outline" size="sm" onClick={() => onChange({ iliac_may_thurner: { ...mt, ...DEFAULT_ILIAC_MAY_THURNER } })}>
+                <Zap className="h-3 w-3 mr-1" /> Стандарт
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Анатомия зоны Мей–Тернера</Label>
+                <Input className="h-8" value={mt.may_thurner_anatomy || ""} onChange={(e) => setMt("may_thurner_anatomy", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Диаметр левой общей подвздошной вены (мм)</Label>
+                <Input className="h-8" value={mt.left_common_iliac_diameter || ""} onChange={(e) => setMt("left_common_iliac_diameter", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Видеографически</Label>
+                <Input className="h-8" value={mt.flow_videographically || ""} onChange={(e) => setMt("flow_videographically", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Скорость потока в зоне компрессии (см/с)</Label>
+                <Input className="h-8" value={mt.compression_flow_velocity || ""} onChange={(e) => setMt("compression_flow_velocity", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Заключение</Label>
+              <Textarea rows={2} placeholder="Если оставить пустым — не будет напечатано" value={mt.conclusion || ""} onChange={(e) => setMt("conclusion", e.target.value)} />
+            </div>
+          </div>
+        );
+      })()}
 
 
       <div className="space-y-1"><Label>Заключение УЗИ</Label>
