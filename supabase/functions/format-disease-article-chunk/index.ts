@@ -13,21 +13,11 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 - > ⚠️ **Когда срочно к врачу:** for warning signs
 - > 📊 **Цифры:** for statistics
 
-=== АБСОЛЮТНЫЙ ЗАПРЕТ — ТАБЛИЦЫ (САМОЕ ВАЖНОЕ ПРАВИЛО) ===
-Таблицы — священны:
-1. НИКОГДА не превращай таблицу в сплошной текст.
-2. НИКОГДА не склеивай ячейки в один абзац.
-3. НИКОГДА не удаляй колонки/строки.
-4. НИКОГДА не заменяй таблицу списком.
-
-Используй строго GFM-формат:
-
-| Колонка 1 | Колонка 2 |
-| --- | --- |
-| Ячейка | Ячейка |
-
-Каждая ячейка — дословно. Пустая строка до и после таблицы.
-=== КОНЕЦ ПРАВИЛ ===
+=== ПЛЕЙСХОЛДЕРЫ — НЕ ТРОГАЙ ===
+В тексте могут встречаться маркеры вида [[TABLE_PROTECTED_0]], [[TABLE_PROTECTED_1]] и т.д.
+Это защищённые таблицы. Скопируй их в ответ ДОСЛОВНО, на том же месте, в той же строке абзаца.
+НЕ удаляй, НЕ переименовывай, НЕ оборачивай в кавычки, НЕ добавляй вокруг них пояснения.
+=== КОНЕЦ ===
 
 - Keep [[GALLERY: caption="..."]] markers exactly as they appear
 - Preserve the author's voice
@@ -35,6 +25,65 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 - Это ЧАСТЬ длинной статьи. Не добавляй вступление/заключение — только форматируй фрагмент.
 
 Return only the formatted markdown.`;
+
+// ---------- TABLE PROTECTION ----------
+// Tables (GFM pipe tables) are extracted BEFORE sending to AI and restored AFTER.
+// This guarantees the model can never touch them, no matter what the prompt says.
+const TABLE_PLACEHOLDER_RE = /\[\[TABLE_PROTECTED_(\d+)\]\]/g;
+
+function isTableLine(line: string): boolean {
+  const t = line.trim();
+  return t.startsWith('|') && t.endsWith('|') && t.length > 2;
+}
+function isSeparatorLine(line: string): boolean {
+  const t = line.trim();
+  return /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(t);
+}
+
+function extractTables(text: string): { stripped: string; tables: string[] } {
+  const lines = text.split('\n');
+  const out: string[] = [];
+  const tables: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    // Detect start of GFM table: header row + separator row
+    if (isTableLine(lines[i]) && i + 1 < lines.length && isSeparatorLine(lines[i + 1])) {
+      const buf: string[] = [lines[i], lines[i + 1]];
+      let j = i + 2;
+      while (j < lines.length && isTableLine(lines[j])) {
+        buf.push(lines[j]);
+        j++;
+      }
+      const idx = tables.length;
+      tables.push(buf.join('\n'));
+      out.push(`[[TABLE_PROTECTED_${idx}]]`);
+      i = j;
+    } else {
+      out.push(lines[i]);
+      i++;
+    }
+  }
+  return { stripped: out.join('\n'), tables };
+}
+
+function restoreTables(text: string, tables: string[]): string {
+  if (tables.length === 0) return text;
+  // Replace placeholders. If AI dropped a placeholder, append the table at the end.
+  const used = new Set<number>();
+  let restored = text.replace(TABLE_PLACEHOLDER_RE, (_m, n) => {
+    const idx = Number(n);
+    if (Number.isInteger(idx) && idx >= 0 && idx < tables.length) {
+      used.add(idx);
+      return `\n\n${tables[idx]}\n\n`;
+    }
+    return _m;
+  });
+  // Append any tables the model dropped, so data is NEVER lost.
+  for (let i = 0; i < tables.length; i++) {
+    if (!used.has(i)) restored += `\n\n${tables[i]}\n\n`;
+  }
+  return restored;
+}
 
 const MODEL_ID = 'claude-haiku-4-5';
 const TIMEOUT_MS = 120000; // 2 min per single chunk — well under 150s edge limit
@@ -191,7 +240,9 @@ Deno.serve(async (req) => {
       error_message: null,
     }).eq('id', draftId);
 
-    const r = await callAnthropic(apiKey, chunks[chunkIndex]);
+    // ---- Protect tables: strip BEFORE sending to AI, restore AFTER ----
+    const { stripped, tables } = extractTables(chunks[chunkIndex]);
+    const r = await callAnthropic(apiKey, stripped);
     if (r.error || !r.formatted) {
       const reason = r.error || (r.stop_reason ? `stop_reason=${r.stop_reason}` : 'empty response');
       await admin.from('disease_article_drafts').update({
@@ -206,7 +257,9 @@ Deno.serve(async (req) => {
     // append formatted chunk
     const prev = draft.formatted_content || '';
     const sep = prev ? '\n\n' : '';
-    const newFormatted = prev + sep + r.formatted;
+    // Restore tables (guarantees no table data is ever lost, even if AI dropped the placeholder)
+    const restored = restoreTables(r.formatted, tables);
+    const newFormatted = prev + sep + restored;
     const newLastDone = chunkIndex + 1;
     const isDone = newLastDone >= chunks.length;
 
