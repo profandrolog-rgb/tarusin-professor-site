@@ -42,6 +42,8 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 
 Return only the formatted markdown, nothing else.`;
 
+const MODEL_ID = 'claude-sonnet-4-6';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -51,8 +53,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -66,22 +67,16 @@ Deno.serve(async (req) => {
     const { data: claims, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claims?.claims?.sub) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', claims.claims.sub)
-      .eq('role', 'admin')
-      .maybeSingle();
-
+      .from('user_roles').select('role')
+      .eq('user_id', claims.claims.sub).eq('role', 'admin').maybeSingle();
     if (!roleData) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -89,100 +84,69 @@ Deno.serve(async (req) => {
     const text = typeof body?.text === 'string' ? body.text.trim() : '';
     if (!text) {
       return new Response(JSON.stringify({ error: 'text is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     if (text.length > 80000) {
       return new Response(JSON.stringify({ error: 'text too long (max 80000 chars)' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const MODEL_ID = 'claude-sonnet-4-6';
-
-    const callAnthropic = (maxTokens: number) => {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 300000);
-      return {
-        promise: fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          signal: ctrl.signal,
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: MODEL_ID,
-            max_tokens: maxTokens,
-            stream: true,
-            system: SYSTEM_PROMPT,
-            messages: [{ role: 'user', content: text }],
-          }),
-        }).finally(() => clearTimeout(tid)),
-      };
-    };
-
-    // Streamed NDJSON response. Heartbeats keep the connection alive so the
-    // platform's 150s idle timeout never fires. Final line is either
-    // {type:"result",formatted} or {type:"error",error,stop_reason}.
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         let closed = false;
-        const send = (obj: unknown) => {
-          if (closed) return;
-          try { controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n')); } catch { /* ignore */ }
-        };
-        const heartbeat = setInterval(() => {
-          if (closed) return;
-          try { controller.enqueue(encoder.encode(':keepalive\n')); } catch { /* ignore */ }
-        }, 10000);
+        const enq = (s: string) => { if (!closed) { try { controller.enqueue(encoder.encode(s)); } catch { /* ignore */ } } };
+        const sendEvent = (obj: unknown) => enq(`event: message\ndata: ${JSON.stringify(obj)}\n\n`);
+        const heartbeat = setInterval(() => enq(':keepalive\n\n'), 10000);
+        enq(':keepalive\n\n');
 
-        const runOnce = async (maxTokens: number) => {
-          let raw = '';
-          let stopReason: string | null = null;
-          let apiErrorMessage: string | null = null;
-          let aiResp: Response | null = null;
-          let lastErrText = '';
-          const budgets = [maxTokens, 8000];
-          let used = budgets[0];
-          for (let attempt = 0; attempt < budgets.length; attempt++) {
-            used = budgets[attempt];
-            try {
-              aiResp = await callAnthropic(used).promise;
-              if (aiResp.ok) break;
-              lastErrText = await aiResp.text();
-              const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
-              console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
-              if (!retriable || attempt === budgets.length - 1) break;
-              await new Promise((r) => setTimeout(r, 1500));
-            } catch (err) {
-              lastErrText = String((err as any)?.message || err);
-              console.error(`Anthropic attempt ${attempt + 1} threw`, lastErrText);
-              if (attempt === budgets.length - 1) break;
-              await new Promise((r) => setTimeout(r, 1500));
-            }
-          }
-          if (!aiResp || !aiResp.ok || !aiResp.body) {
-            const status = aiResp?.status ?? 500;
+        const fetchCtrl = new AbortController();
+        const fetchTimeout = setTimeout(() => fetchCtrl.abort(), 300000);
+
+        let raw = '';
+        let stopReason: string | null = null;
+        let apiErrorMessage: string | null = null;
+
+        try {
+          const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            signal: fetchCtrl.signal,
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: MODEL_ID,
+              max_tokens: 16000,
+              stream: true,
+              system: SYSTEM_PROMPT,
+              messages: [{ role: 'user', content: text }],
+            }),
+          });
+
+          if (!aiResp.ok || !aiResp.body) {
+            const errText = await aiResp.text().catch(() => '');
+            const status = aiResp.status;
             const userMsg = status === 529 || status === 503
               ? 'Сервис ИИ временно перегружен. Попробуйте ещё раз через минуту.'
               : status === 429
               ? 'Превышен лимит запросов к ИИ. Попробуйте позже.'
-              : `Ошибка ИИ (${status}). ${lastErrText.slice(0, 200)}`;
-            return { raw: '', stopReason, apiErrorMessage: userMsg };
+              : `Ошибка ИИ (${status}): ${errText.slice(0, 300)}`;
+            console.error(`Anthropic HTTP ${status}: ${errText.slice(0, 500)}`);
+            sendEvent({ type: 'error', error: userMsg });
+            return;
           }
+
           const reader = aiResp.body.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
@@ -206,52 +170,36 @@ Deno.serve(async (req) => {
                 } else if (evt.type === 'error') {
                   apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
                   console.error('Anthropic stream error event:', apiErrorMessage);
+                  break;
                 }
               } catch (parseErr) {
                 console.error('SSE parse error', String((parseErr as any)?.message || parseErr));
               }
             }
-          }
-          return { raw, stopReason, apiErrorMessage };
-        };
-
-        try {
-          // initial keepalive so client sees bytes immediately
-          controller.enqueue(encoder.encode(':keepalive\n'));
-
-          let { raw, stopReason, apiErrorMessage } = await runOnce(16000);
-
-          // streamed retry once if empty
-          let retried = false;
-          if (!raw.trim() && !apiErrorMessage) {
-            retried = true;
-            console.log('format-disease-article streamed retry');
-            const r2 = await runOnce(16000);
-            raw = r2.raw;
-            stopReason = r2.stopReason ?? stopReason;
-            apiErrorMessage = r2.apiErrorMessage ?? apiErrorMessage;
+            if (apiErrorMessage) break;
           }
 
           const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
-          if (!formatted) {
-            const reason = apiErrorMessage
-              ? `Anthropic: ${apiErrorMessage}`
-              : stopReason
+          if (apiErrorMessage) {
+            sendEvent({ type: 'error', error: `Anthropic: ${apiErrorMessage}`, stop_reason: stopReason });
+          } else if (!formatted) {
+            const reason = stopReason
               ? `Модель остановилась без текста (stop_reason=${stopReason})`
               : 'Модель не вернула текст';
-            console.error(`format-disease-article EMPTY: ${reason} retried=${retried}`);
-            send({ type: 'error', error: reason, stop_reason: stopReason });
+            console.error(`format-disease-article EMPTY: ${reason}`);
+            sendEvent({ type: 'error', error: reason, stop_reason: stopReason });
           } else {
-            console.log(`format-disease-article ok: stop_reason=${stopReason} chars=${formatted.length} retried=${retried}`);
-            send({ type: 'result', formatted, stop_reason: stopReason });
+            console.log(`format-disease-article ok: stop_reason=${stopReason} chars=${formatted.length}`);
+            sendEvent({ type: 'result', formatted, stop_reason: stopReason });
           }
         } catch (e) {
           const msg = String((e as any)?.message || e);
           console.error('format-disease-article stream error:', msg);
-          send({ type: 'error', error: msg });
+          sendEvent({ type: 'error', error: msg });
         } finally {
-          closed = true;
+          clearTimeout(fetchTimeout);
           clearInterval(heartbeat);
+          closed = true;
           try { controller.close(); } catch { /* ignore */ }
         }
       },
@@ -261,12 +209,12 @@ Deno.serve(async (req) => {
       status: 200,
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/x-ndjson; charset=utf-8',
+        'Content-Type': 'text/event-stream; charset=utf-8',
         'Cache-Control': 'no-cache, no-transform',
         'X-Accel-Buffering': 'no',
+        Connection: 'keep-alive',
       },
     });
-
   } catch (e) {
     console.error('format-disease-article error:', e);
     return new Response(JSON.stringify({ error: String((e as any)?.message || e) }), {
