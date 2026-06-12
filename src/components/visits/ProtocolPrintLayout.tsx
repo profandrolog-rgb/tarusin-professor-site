@@ -405,6 +405,10 @@ const KNOWN_KEYS = new Set([
   "uzi","assignments","fields",
   "cbc","urinalysis","biochem","hormones","other_labs",
   "operation_name","operation_date","temperature","general_status","wound_status","dressing","pain","healing","sutures_removed",
+  // online_consult
+  "reason","prior_visit","prior_visit_date","prior_visit_note","current_state",
+  "external_exam_by_photo","external_exam_by_video","external_genitalia",
+  "interpretation","channel","duration_min","in_person_needed","in_person_urgency",
   "_normalized_version","_normalized_at",
 ]);
 
