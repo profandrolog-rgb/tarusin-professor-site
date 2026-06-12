@@ -462,7 +462,10 @@ const AdminDiseaseArticles = () => {
                       ref={articleEditorRef}
                       value={form.article_content}
                       onChange={(v) => setForm((prev) => ({ ...prev, article_content: v }))}
+                      onSaveAsIs={handleSave}
+                      saving={saving}
                     />
+
                     <p className="text-xs text-muted-foreground mt-1">
                       Загрузите .docx, отформатируйте AI, добавьте маркеры галерей. Фото можно вставить позже на странице статьи.
                     </p>
