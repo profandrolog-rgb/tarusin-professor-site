@@ -1,8 +1,15 @@
 import { forwardRef, useImperativeHandle, useRef, useState, useEffect, useCallback } from "react";
 import mammoth from "mammoth";
+import TurndownService from "turndown";
+// @ts-ignore - turndown-plugin-gfm has no types but exports `tables`/`gfm`
+import { gfm as turndownGfm } from "turndown-plugin-gfm";
 import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -64,18 +71,22 @@ function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
   const paragraphs = text.split(/\n\s*\n/);
   const chunks: string[] = [];
   let cur = "";
+  const flush = () => { if (cur) { chunks.push(cur); cur = ""; } };
   for (const p of paragraphs) {
     if (!cur) cur = p;
     else if (cur.length + p.length + 2 <= target) cur += "\n\n" + p;
-    else { chunks.push(cur); cur = p; }
-    while (cur.length > target * 1.5) {
+    else { flush(); cur = p; }
+    // Never split inside a markdown table — keep the whole block together
+    // even if it exceeds 1.5×target.
+    const looksLikeTable = /(^|\n)\s*\|.*\|/.test(cur);
+    while (!looksLikeTable && cur.length > target * 1.5) {
       const cut = cur.lastIndexOf("\n", target);
       const at = cut > target / 2 ? cut : target;
       chunks.push(cur.slice(0, at));
       cur = cur.slice(at);
     }
   }
-  if (cur) chunks.push(cur);
+  flush();
   return chunks;
 }
 
@@ -140,6 +151,10 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
         heading: { levels: [1, 2, 3] },
       }),
       Link.configure({ openOnClick: false, autolink: true }),
+      Table.configure({ resizable: false, HTMLAttributes: { class: "tiptap-table" } }),
+      TableRow,
+      TableHeader,
+      TableCell,
       GalleryPlaceholder,
     ],
     content: markdownToHtml(value),
@@ -179,8 +194,25 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     setImporting(true);
     try {
       const buf = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer: buf });
-      const text = (result.value || "").trim();
+      // Convert to HTML first so tables/lists/bold are preserved, then to GFM markdown.
+      const html = await mammoth.convertToHtml({ arrayBuffer: buf });
+      const htmlStr = (html.value || "").trim();
+      let text = "";
+      if (htmlStr) {
+        const td = new TurndownService({
+          headingStyle: "atx",
+          bulletListMarker: "-",
+          codeBlockStyle: "fenced",
+          emDelimiter: "_",
+        });
+        td.use(turndownGfm);
+        text = td.turndown(htmlStr).trim();
+      }
+      if (!text) {
+        // Fallback to raw text if HTML conversion produced nothing
+        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        text = (result.value || "").trim();
+      }
       if (!text) {
         toast.error("Не удалось извлечь текст из документа");
         return;
