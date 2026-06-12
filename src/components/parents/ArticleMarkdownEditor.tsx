@@ -31,6 +31,7 @@ import {
   Link as LinkIcon,
   Undo,
   Redo,
+  Plug,
 } from "lucide-react";
 import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
