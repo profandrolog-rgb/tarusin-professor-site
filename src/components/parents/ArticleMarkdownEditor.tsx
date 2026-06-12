@@ -47,6 +47,10 @@ interface Props {
   /** Optional: when set, shows a "Save as-is" button that triggers parent save without formatting. */
   onSaveAsIs?: () => void;
   saving?: boolean;
+  /** Stable key for the persistent draft row (e.g. article id, or "new" for fresh articles). */
+  draftKey?: string;
+  /** Article metadata mirrored into the draft so a tab close never loses it. */
+  draftMeta?: { title?: string; slug?: string; description?: string; tags?: string; articleId?: string | null };
 }
 
 export interface ArticleMarkdownEditorHandle {
