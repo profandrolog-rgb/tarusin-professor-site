@@ -110,174 +110,161 @@ Deno.serve(async (req) => {
 
     const MODEL_ID = 'claude-sonnet-4-6';
 
-    const callAnthropic = (maxTokens: number, stream: boolean) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 300000);
-      return fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: MODEL_ID,
-          max_tokens: maxTokens,
-          stream,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: text }],
-        }),
-      }).finally(() => clearTimeout(timeoutId));
+    const callAnthropic = (maxTokens: number) => {
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 300000);
+      return {
+        promise: fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: MODEL_ID,
+            max_tokens: maxTokens,
+            stream: true,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: text }],
+          }),
+        }).finally(() => clearTimeout(tid)),
+      };
     };
 
-    // First attempt with 16000 tokens; one retry with 8000 tokens on failure
-    let aiResp: Response | null = null;
-    let lastErrText = '';
-    const tokenBudgets = [16000, 8000];
-    let usedTokenBudget = tokenBudgets[0];
-    let httpAttempts = 0;
-    for (let attempt = 0; attempt < tokenBudgets.length; attempt++) {
-      httpAttempts++;
-      usedTokenBudget = tokenBudgets[attempt];
-      try {
-        aiResp = await callAnthropic(usedTokenBudget, true);
-        if (aiResp.ok) break;
-        lastErrText = await aiResp.text();
-        const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
-        console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
-        if (!retriable || attempt === tokenBudgets.length - 1) break;
-        await new Promise((r) => setTimeout(r, 1500));
-      } catch (err) {
-        lastErrText = String((err as any)?.message || err);
-        console.error(`Anthropic attempt ${attempt + 1} threw`, lastErrText);
-        if (attempt === tokenBudgets.length - 1) break;
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-    }
+    // Streamed NDJSON response. Heartbeats keep the connection alive so the
+    // platform's 150s idle timeout never fires. Final line is either
+    // {type:"result",formatted} or {type:"error",error,stop_reason}.
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        let closed = false;
+        const send = (obj: unknown) => {
+          if (closed) return;
+          try { controller.enqueue(encoder.encode(JSON.stringify(obj) + '\n')); } catch { /* ignore */ }
+        };
+        const heartbeat = setInterval(() => {
+          if (closed) return;
+          try { controller.enqueue(encoder.encode(':keepalive\n')); } catch { /* ignore */ }
+        }, 10000);
 
-    if (!aiResp || !aiResp.ok) {
-      const status = aiResp?.status ?? 500;
-      const userMsg = status === 529 || status === 503
-        ? 'Сервис ИИ временно перегружен. Попробуйте ещё раз через минуту.'
-        : status === 429
-        ? 'Превышен лимит запросов к ИИ. Попробуйте позже.'
-        : `Ошибка ИИ (${status}). Попробуйте ещё раз.`;
-      return new Response(JSON.stringify({ error: userMsg, details: lastErrText }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Buffer the Anthropic SSE stream fully on the server, then return a single JSON
-    // response. Streaming the Response from this edge function was unreliable
-    // (downstream consumer closed the stream before bytes could be enqueued).
-    if (!aiResp.body) {
-      return new Response(JSON.stringify({ error: 'Пустой ответ от ИИ' }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    let raw = '';
-    let stopReason: string | null = null;
-    let apiErrorMessage: string | null = null;
-    let textDeltaCount = 0;
-    try {
-      const reader = aiResp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const payload = line.slice(6).trim();
-          if (!payload || payload === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-              const piece = evt.delta.text || '';
-              if (piece) {
-                raw += piece;
-                textDeltaCount++;
-              }
-            } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
-              stopReason = evt.delta.stop_reason;
-            } else if (evt.type === 'error') {
-              apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
-              console.error('Anthropic stream error event:', apiErrorMessage);
+        const runOnce = async (maxTokens: number) => {
+          let raw = '';
+          let stopReason: string | null = null;
+          let apiErrorMessage: string | null = null;
+          let aiResp: Response | null = null;
+          let lastErrText = '';
+          const budgets = [maxTokens, 8000];
+          let used = budgets[0];
+          for (let attempt = 0; attempt < budgets.length; attempt++) {
+            used = budgets[attempt];
+            try {
+              aiResp = await callAnthropic(used).promise;
+              if (aiResp.ok) break;
+              lastErrText = await aiResp.text();
+              const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
+              console.error(`Anthropic attempt ${attempt + 1} status ${aiResp.status}`, lastErrText);
+              if (!retriable || attempt === budgets.length - 1) break;
+              await new Promise((r) => setTimeout(r, 1500));
+            } catch (err) {
+              lastErrText = String((err as any)?.message || err);
+              console.error(`Anthropic attempt ${attempt + 1} threw`, lastErrText);
+              if (attempt === budgets.length - 1) break;
+              await new Promise((r) => setTimeout(r, 1500));
             }
-          } catch (parseErr) {
-            console.error('Anthropic SSE parse error', String((parseErr as any)?.message || parseErr), 'payload:', payload.slice(0, 200));
           }
+          if (!aiResp || !aiResp.ok || !aiResp.body) {
+            const status = aiResp?.status ?? 500;
+            const userMsg = status === 529 || status === 503
+              ? 'Сервис ИИ временно перегружен. Попробуйте ещё раз через минуту.'
+              : status === 429
+              ? 'Превышен лимит запросов к ИИ. Попробуйте позже.'
+              : `Ошибка ИИ (${status}). ${lastErrText.slice(0, 200)}`;
+            return { raw: '', stopReason, apiErrorMessage: userMsg };
+          }
+          const reader = aiResp.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (!payload || payload === '[DONE]') continue;
+              try {
+                const evt = JSON.parse(payload);
+                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+                  const piece = evt.delta.text || '';
+                  if (piece) raw += piece;
+                } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
+                  stopReason = evt.delta.stop_reason;
+                } else if (evt.type === 'error') {
+                  apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
+                  console.error('Anthropic stream error event:', apiErrorMessage);
+                }
+              } catch (parseErr) {
+                console.error('SSE parse error', String((parseErr as any)?.message || parseErr));
+              }
+            }
+          }
+          return { raw, stopReason, apiErrorMessage };
+        };
+
+        try {
+          // initial keepalive so client sees bytes immediately
+          controller.enqueue(encoder.encode(':keepalive\n'));
+
+          let { raw, stopReason, apiErrorMessage } = await runOnce(16000);
+
+          // streamed retry once if empty
+          let retried = false;
+          if (!raw.trim() && !apiErrorMessage) {
+            retried = true;
+            console.log('format-disease-article streamed retry');
+            const r2 = await runOnce(16000);
+            raw = r2.raw;
+            stopReason = r2.stopReason ?? stopReason;
+            apiErrorMessage = r2.apiErrorMessage ?? apiErrorMessage;
+          }
+
+          const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
+          if (!formatted) {
+            const reason = apiErrorMessage
+              ? `Anthropic: ${apiErrorMessage}`
+              : stopReason
+              ? `Модель остановилась без текста (stop_reason=${stopReason})`
+              : 'Модель не вернула текст';
+            console.error(`format-disease-article EMPTY: ${reason} retried=${retried}`);
+            send({ type: 'error', error: reason, stop_reason: stopReason });
+          } else {
+            console.log(`format-disease-article ok: stop_reason=${stopReason} chars=${formatted.length} retried=${retried}`);
+            send({ type: 'result', formatted, stop_reason: stopReason });
+          }
+        } catch (e) {
+          const msg = String((e as any)?.message || e);
+          console.error('format-disease-article stream error:', msg);
+          send({ type: 'error', error: msg });
+        } finally {
+          closed = true;
+          clearInterval(heartbeat);
+          try { controller.close(); } catch { /* ignore */ }
         }
-      }
-    } catch (streamErr) {
-      const msg = String((streamErr as any)?.message || streamErr);
-      console.error('Upstream stream error:', msg, 'partial chars:', raw.length);
-      if (!raw) {
-        return new Response(JSON.stringify({ error: `Ошибка чтения ответа ИИ: ${msg}` }), {
-          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
+      },
+    });
 
-    console.log(`format-disease-article stream done: stop_reason=${stopReason} text_deltas=${textDeltaCount} chars=${raw.length} api_error=${apiErrorMessage ?? 'none'}`);
-
-    // Fallback: if stream produced no text and there's no explicit API error,
-    // try ONE non-streaming request with the same model/max_tokens.
-    let fallbackUsed = false;
-    if (!raw.trim() && !apiErrorMessage) {
-      try {
-        httpAttempts++;
-        fallbackUsed = true;
-        console.log(`format-disease-article fallback (non-stream) max_tokens=${usedTokenBudget}`);
-        const fbResp = await callAnthropic(usedTokenBudget, false);
-        if (fbResp.ok) {
-          const fbJson = await fbResp.json();
-          const fbText = Array.isArray(fbJson?.content)
-            ? fbJson.content.map((b: any) => b?.text || '').join('')
-            : '';
-          if (typeof fbJson?.stop_reason === 'string') stopReason = fbJson.stop_reason;
-          raw = fbText || '';
-          console.log(`format-disease-article fallback ok: stop_reason=${stopReason} chars=${raw.length}`);
-        } else {
-          const errBody = await fbResp.text();
-          apiErrorMessage = `HTTP ${fbResp.status}: ${errBody.slice(0, 500)}`;
-          console.error('Anthropic fallback failed:', apiErrorMessage);
-        }
-      } catch (fbErr) {
-        apiErrorMessage = String((fbErr as any)?.message || fbErr);
-        console.error('Anthropic fallback threw:', apiErrorMessage);
-      }
-    }
-
-    const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
-
-    if (!formatted) {
-      const reason = apiErrorMessage
-        ? `Anthropic: ${apiErrorMessage}`
-        : stopReason
-        ? `Модель остановилась без текста (stop_reason=${stopReason})`
-        : 'Модель не вернула текст';
-      console.error(`format-disease-article EMPTY: ${reason} attempts=${httpAttempts} fallback=${fallbackUsed}`);
-      return new Response(JSON.stringify({
-        error: reason,
-        stop_reason: stopReason,
-        attempts: httpAttempts,
-      }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`format-disease-article ok: stop_reason=${stopReason} output_chars=${formatted.length} attempts=${httpAttempts} fallback=${fallbackUsed}`);
-
-    return new Response(JSON.stringify({ formatted, stop_reason: stopReason, attempts: httpAttempts }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/x-ndjson; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+      },
     });
 
   } catch (e) {
