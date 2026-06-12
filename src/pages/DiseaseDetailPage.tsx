@@ -138,12 +138,16 @@ const DiseaseDetailPage = () => {
           type="article"
         />
 
+        {(() => {
+          const catalogTab = article.age_group === "adults" ? "adults" : "children";
+          const catalogHref = `/for-parents?tab=${catalogTab}`;
+          return (
         <header className="bg-primary text-primary-foreground py-10 md:py-16">
           <div className="container mx-auto px-4">
             <nav className="flex items-center flex-wrap gap-1 text-sm text-primary-foreground/80 mb-6">
               <Link to="/" className="hover:text-primary-foreground transition-colors">Главная</Link>
               <ChevronRight className="w-3 h-3" />
-              <Link to="/for-parents" className="hover:text-primary-foreground transition-colors">Для родителей</Link>
+              <Link to={catalogHref} className="hover:text-primary-foreground transition-colors">Каталог болезней</Link>
               <ChevronRight className="w-3 h-3" />
               <span className="text-primary-foreground">{article.title}</span>
             </nav>
@@ -153,6 +157,8 @@ const DiseaseDetailPage = () => {
             )}
           </div>
         </header>
+          );
+        })()}
 
         <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl overflow-x-visible">
           {article.article_content ? (
