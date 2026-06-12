@@ -55,6 +55,27 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   const [galleryCaption, setGalleryCaption] = useState("");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
+  const [testingConn, setTestingConn] = useState(false);
+  const [connStatus, setConnStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleTestConnection = async () => {
+    setTestingConn(true);
+    setConnStatus(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("test-claude-connection", { body: {} });
+      if (error) {
+        setConnStatus({ ok: false, text: `❌ Нет связи: ${error.message || "unknown"}` });
+      } else if (data?.ok) {
+        setConnStatus({ ok: true, text: `✅ Связь с Claude API подтверждена (${data.latencyMs} мс)` });
+      } else {
+        setConnStatus({ ok: false, text: `❌ Нет связи: ${data?.error || "unknown"}` });
+      }
+    } catch (e: any) {
+      setConnStatus({ ok: false, text: `❌ Нет связи: ${e?.message || "unknown"}` });
+    } finally {
+      setTestingConn(false);
+    }
+  };
 
   // Track last markdown we emitted/received so we don't reset the editor on our own updates.
   const lastSyncedMd = useRef<string>(value);
