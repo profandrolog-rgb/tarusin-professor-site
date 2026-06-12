@@ -290,11 +290,13 @@ export function UziReproductiveSection({ data, onChange }: Props) {
       <div className="grid md:grid-cols-2 gap-3">
         <div className="space-y-2 p-3 border rounded-md">
           <div className="font-medium text-sm">Правый придаток</div>
-          <Textarea rows={2} value={data.right_epididymis || ""} onChange={(e) => onChange({ right_epididymis: e.target.value })} />
+          <Input placeholder="Объём придатка (см³)" value={data.right_epididymis_volume || ""} onChange={(e) => onChange({ right_epididymis_volume: e.target.value })} />
+          <Textarea rows={2} placeholder="Описание" value={data.right_epididymis || ""} onChange={(e) => onChange({ right_epididymis: e.target.value })} />
         </div>
         <div className="space-y-2 p-3 border rounded-md">
           <div className="font-medium text-sm">Левый придаток</div>
-          <Textarea rows={2} value={data.left_epididymis || ""} onChange={(e) => onChange({ left_epididymis: e.target.value })} />
+          <Input placeholder="Объём придатка (см³)" value={data.left_epididymis_volume || ""} onChange={(e) => onChange({ left_epididymis_volume: e.target.value })} />
+          <Textarea rows={2} placeholder="Описание" value={data.left_epididymis || ""} onChange={(e) => onChange({ left_epididymis: e.target.value })} />
         </div>
       </div>
 
