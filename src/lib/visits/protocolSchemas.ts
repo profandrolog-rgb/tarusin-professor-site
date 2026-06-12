@@ -130,6 +130,9 @@ export interface OnlineConsultData {
   in_person_urgency?: "plan" | "soon" | "urgent" | "";
 }
 
+export type { PeptideProgramData } from "@/components/visits/forms/PeptideProgramForm";
+import { DEFAULT_PEPTIDE_PROGRAM, type PeptideProgramData } from "@/components/visits/forms/PeptideProgramForm";
+
 
 export type AnyProtocolData =
   | UltrashortData
@@ -142,6 +145,7 @@ export type AnyProtocolData =
   | DynamicWithUziData
   | RepeatWithUziData
   | OnlineConsultData
+  | PeptideProgramData
   | Record<string, any>;
 
 export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData>> = {
@@ -216,4 +220,5 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     in_person_needed: "no",
     recommendations: "Контрольный осмотр / повторная консультация по согласованию.",
   } as OnlineConsultData,
+  peptide_program: DEFAULT_PEPTIDE_PROGRAM,
 };

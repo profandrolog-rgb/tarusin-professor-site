@@ -1659,6 +1659,72 @@ export type Database = {
         }
         Relationships: []
       }
+      peptides: {
+        Row: {
+          composition: string | null
+          course_duration: string | null
+          created_at: string
+          evidence_level: string | null
+          expected_effect: string | null
+          group_name: string | null
+          id: string
+          indications: string | null
+          is_active: boolean
+          monitoring: string | null
+          name: string
+          notes: string | null
+          onco_risk: string | null
+          rf_status: string | null
+          side_effects: string | null
+          sort_order: number
+          target_organ: string | null
+          typical_schedule: string | null
+          updated_at: string
+        }
+        Insert: {
+          composition?: string | null
+          course_duration?: string | null
+          created_at?: string
+          evidence_level?: string | null
+          expected_effect?: string | null
+          group_name?: string | null
+          id?: string
+          indications?: string | null
+          is_active?: boolean
+          monitoring?: string | null
+          name: string
+          notes?: string | null
+          onco_risk?: string | null
+          rf_status?: string | null
+          side_effects?: string | null
+          sort_order?: number
+          target_organ?: string | null
+          typical_schedule?: string | null
+          updated_at?: string
+        }
+        Update: {
+          composition?: string | null
+          course_duration?: string | null
+          created_at?: string
+          evidence_level?: string | null
+          expected_effect?: string | null
+          group_name?: string | null
+          id?: string
+          indications?: string | null
+          is_active?: boolean
+          monitoring?: string | null
+          name?: string
+          notes?: string | null
+          onco_risk?: string | null
+          rf_status?: string | null
+          side_effects?: string | null
+          sort_order?: number
+          target_organ?: string | null
+          typical_schedule?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prescription_items: {
         Row: {
           created_at: string
