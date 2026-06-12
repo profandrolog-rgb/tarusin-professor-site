@@ -459,6 +459,7 @@ const AdminDiseaseArticles = () => {
                   <div>
                     <Label>Текст статьи (markdown)</Label>
                     <ArticleMarkdownEditor
+                      key={`editor-${editing?.id || "new"}-${dialogOpen ? "open" : "closed"}`}
                       ref={articleEditorRef}
                       value={form.article_content}
                       onChange={(v) => setForm((prev) => ({ ...prev, article_content: v }))}
