@@ -103,6 +103,14 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   } | null>(null);
   const effectiveDraftKey = draftKey || draftMeta?.articleId || "new";
 
+  useEffect(() => {
+    setDraftId(null);
+    setDraftRow(null);
+    setConnStatus(null);
+    setFormatting(false);
+  }, [effectiveDraftKey]);
+
+
   const handleTestConnection = async () => {
     setTestingConn(true);
     setConnStatus(null);
