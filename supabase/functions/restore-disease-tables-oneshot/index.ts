@@ -1,4 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import fimoz from "./data/fimoz-u-malchikov.ts";
+import kista from "./data/kista_semennogo_kanatika.ts";
+import krip from "./data/kriptorhizm.ts";
+import gin from "./data/ginekomastiya.ts";
+import pri from "./data/priapizm-u-detey-i-podrostkov.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,28 +11,23 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const SLUGS = [
-  'fimoz-u-malchikov',
-  'kista_semennogo_kanatika',
-  'kriptorhizm',
-  'ginekomastiya',
-  'priapizm-u-detey-i-podrostkov',
-];
+const CONTENT: Record<string, string> = {
+  'fimoz-u-malchikov': fimoz,
+  'kista_semennogo_kanatika': kista,
+  'kriptorhizm': krip,
+  'ginekomastiya': gin,
+  'priapizm-u-detey-i-podrostkov': pri,
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-
   try {
-    // One-shot token guard (function is deleted right after use)
     const ONE_SHOT = 'restore-tables-2026-06-12-fk7Q9xZpL';
-    const provided = req.headers.get('x-one-shot-token');
-    if (provided !== ONE_SHOT) {
+    if (req.headers.get('x-one-shot-token') !== ONE_SHOT) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -35,18 +35,12 @@ Deno.serve(async (req) => {
     );
 
     const results: Array<{ slug: string; ok: boolean; len?: number; error?: string }> = [];
-    for (const slug of SLUGS) {
-      try {
-        const url = new URL(`./data/${slug}.md`, import.meta.url);
-        const content = await Deno.readTextFile(url);
-        const { error } = await admin.from('disease_articles')
-          .update({ article_content: content, updated_at: new Date().toISOString() })
-          .eq('slug', slug);
-        if (error) results.push({ slug, ok: false, error: error.message });
-        else results.push({ slug, ok: true, len: content.length });
-      } catch (e) {
-        results.push({ slug, ok: false, error: String((e as any)?.message || e) });
-      }
+    for (const [slug, content] of Object.entries(CONTENT)) {
+      const { error } = await admin.from('disease_articles')
+        .update({ article_content: content, updated_at: new Date().toISOString() })
+        .eq('slug', slug);
+      if (error) results.push({ slug, ok: false, error: error.message });
+      else results.push({ slug, ok: true, len: content.length });
     }
 
     return new Response(JSON.stringify({ ok: true, results }), {

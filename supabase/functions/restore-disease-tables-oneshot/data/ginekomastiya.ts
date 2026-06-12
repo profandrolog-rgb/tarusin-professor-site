@@ -1,8 +1,8 @@
-**Гинекомастия у детей и подростков: профессиональный опыт и современные научные данные**
+export default `**Гинекомастия у детей и подростков: профессиональный опыт и современные научные данные**
 
 ## ***Введение: о чем важно знать***
 
-***\---***
+***\\---***
 
 [[GALLERY: caption="Клиническая картина гинекомастии"|ginekomastiya-patient-1.jpg|ginekomastiya-patient-2.jpg|ginekomastiya-patient-3.jpg|ginekomastiya-patient-4.jpg|ginekomastiya-patient-5.jpg|ginekomastiya-patient-6.jpg|ginekomastiya-patient-7.jpg|ginekomastiya-patient-8.jpg|ginekomastiya-patient-9.jpg|ginekomastiya-patient-10.jpg|ginekomastiya-patient-11.jpg|ginekomastiya-patient-12.jpg]]
 
@@ -267,3 +267,4 @@
 Персонализированный подход и участие опытных специалистов — залог успешного разрешения проблемы.
 
 **Если у вашего ребёнка появились признаки гинекомастии, обращайтесь за консультацией: я готов помочь, используя современные методы диагностики и лечения.**
+`;
