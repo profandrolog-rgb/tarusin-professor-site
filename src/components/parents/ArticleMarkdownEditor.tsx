@@ -53,7 +53,7 @@ export interface ArticleMarkdownEditorHandle {
   getMarkdown: () => string;
 }
 
-const CHUNK_TARGET = 12000;
+const CHUNK_TARGET = 6000;
 
 function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
   if (text.length <= target) return [text];
