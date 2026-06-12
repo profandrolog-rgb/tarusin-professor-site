@@ -237,17 +237,23 @@ const UZI_FIELD_ORDER = [
   "indications",
   "right_testis_size", "right_testis_volume", "right_testis_structure",
   "left_testis_size", "left_testis_volume", "left_testis_structure",
-  "right_epididymis", "left_epididymis",
+  "right_epididymis", "right_epididymis_volume",
+  "left_epididymis", "left_epididymis_volume",
   "arterial_flow",
   "venous_flow",
   "prostate",
   "perineum",
   "penis_exam",
+  "aorto_mesenteric",
+  "iliac_may_thurner",
   "vessels",
   "doppler",
   "free_fluid",
   "conclusion",
 ];
+
+// Поля-флаги в данных УЗИ, которые управляют видимостью разделов и не должны печататься
+const UZI_HIDDEN_KEYS = new Set(["show_penis_exam", "show_prostate"]);
 
 function orderedEntries(obj: Record<string, any>): [string, any][] {
   const keys = Object.keys(obj);
@@ -263,10 +269,15 @@ function orderedEntries(obj: Record<string, any>): [string, any][] {
 
 function UziRenderer({ uzi, title }: { uzi: Record<string, any>; title: string }) {
   const rows: React.ReactNode[] = [];
+  const showPenis = uzi.show_penis_exam !== false;
+  const showProstate = uzi.show_prostate !== false;
   const walk = (obj: Record<string, any>, prefix = "", ordered = false) => {
     const entries = ordered ? orderedEntries(obj) : Object.entries(obj);
     entries.forEach(([k, v]) => {
       if (v === null || v === undefined || v === "") return;
+      if (ordered && UZI_HIDDEN_KEYS.has(k)) return;
+      if (ordered && k === "penis_exam" && !showPenis) return;
+      if (ordered && k === "prostate" && !showProstate) return;
       const rk = `${prefix}${k}`;
       if (k === "arterial_flow") {
         pushArterialFlow(rows, v, rk);
