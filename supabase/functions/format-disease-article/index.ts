@@ -7,6 +7,11 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 - > 💡 **Важно знать:** for key facts
 - > ⚠️ **Когда срочно к врачу:** for warning signs
 - > 📊 **Цифры:** for statistics
+- TABLES (CRITICAL): If the input contains any tabular data — rows with the same repeating set of columns, classification grids, comparison tables, dose tables, schedules, etc. — you MUST render them as proper GFM markdown tables using pipes and a header separator, for example:
+  | Степень | Описание | Лечение |
+  | --- | --- | --- |
+  | I | ... | ... |
+  Never output table data as a single concatenated paragraph. Preserve every cell verbatim. Detect column boundaries from the source structure (line breaks, repeated labels like I/II/III, "Степень", "Стадия", numbered rows). Always include the header separator row (\`| --- | --- |\`) so the table renders.
 - Keep [[GALLERY: caption="..."]] markers exactly as they appear in the text
 - Preserve the author's voice and personal stories
 - Do not add or remove content
