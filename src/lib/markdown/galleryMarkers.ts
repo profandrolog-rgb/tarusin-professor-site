@@ -48,6 +48,7 @@ const turndownService = new TurndownService({
   codeBlockStyle: "fenced",
   emDelimiter: "*",
 });
+turndownService.use(turndownGfm);
 
 turndownService.addRule("galleryPlaceholder", {
   filter: (node) =>
