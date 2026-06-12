@@ -267,7 +267,9 @@ Deno.serve(async (req) => {
     // append formatted chunk
     const prev = draft.formatted_content || '';
     const sep = prev ? '\n\n' : '';
-    const newFormatted = prev + sep + r.formatted;
+    // Restore tables (guarantees no table data is ever lost, even if AI dropped the placeholder)
+    const restored = restoreTables(r.formatted, tables);
+    const newFormatted = prev + sep + restored;
     const newLastDone = chunkIndex + 1;
     const isDone = newLastDone >= chunks.length;
 
