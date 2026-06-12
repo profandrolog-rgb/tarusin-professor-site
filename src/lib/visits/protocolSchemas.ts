@@ -220,4 +220,5 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     in_person_needed: "no",
     recommendations: "Контрольный осмотр / повторная консультация по согласованию.",
   } as OnlineConsultData,
+  peptide_program: DEFAULT_PEPTIDE_PROGRAM,
 };
