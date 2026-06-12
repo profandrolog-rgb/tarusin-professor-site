@@ -155,38 +155,10 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
         throw new Error(msg);
       }
 
-      // Read SSE stream: accumulate deltas, finish on done event
-      if (!resp.body) throw new Error("Пустой ответ от AI");
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let accumulated = "";
-      let formatted: string | null = null;
-      let streamErrorMsg: string | null = null;
-
-      while (true) {
-        const { done, value: chunk } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(chunk, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const payload = line.slice(6).trim();
-          if (!payload) continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (evt.delta) accumulated += evt.delta;
-            if (evt.done && typeof evt.formatted === "string") formatted = evt.formatted;
-            if (evt.error) streamErrorMsg = evt.error;
-          } catch {
-            /* ignore partial JSON */
-          }
-        }
-      }
-
-      if (streamErrorMsg) throw new Error(streamErrorMsg);
-      const result = formatted ?? accumulated.trim();
+      const json = await resp.json().catch(() => null);
+      if (!json) throw new Error("Пустой ответ от AI");
+      if (json.error) throw new Error(json.error);
+      const result = typeof json.formatted === "string" ? json.formatted.trim() : "";
       if (!result) throw new Error("Пустой ответ от AI");
       onChange(result);
       toast.success("Текст отформатирован");

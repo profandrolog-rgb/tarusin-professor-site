@@ -1,5 +1,10 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input text into clean markdown. Rules:
 - ## for main sections, ### for subsections
@@ -145,7 +150,6 @@ Deno.serve(async (req) => {
       }
     }
 
-
     if (!aiResp || !aiResp.ok) {
       const status = aiResp?.status ?? 500;
       const userMsg = status === 529 || status === 503
@@ -159,76 +163,75 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Stream the result back to the client as SSE so the gateway's 150s idle
-    // timeout never triggers (bytes flow continuously while Claude generates).
-    const encoder = new TextEncoder();
-    const upstream = aiResp.body;
+    // Buffer the Anthropic SSE stream fully on the server, then return a single JSON
+    // response. Streaming the Response from this edge function was unreliable
+    // (downstream consumer closed the stream before bytes could be enqueued —
+    // see "stream controller cannot close or enqueue" logs).
+    if (!aiResp.body) {
+      return new Response(JSON.stringify({ error: 'Пустой ответ от ИИ' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        const send = (obj: unknown) => {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
-        };
-        let raw = '';
-        let stopReason: string | null = null;
-        let apiErrorMessage: string | null = null;
-        let streamError: string | null = null;
-        try {
-          if (!upstream) throw new Error('Anthropic response has no body');
-          const reader = upstream.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const payload = line.slice(6).trim();
-              if (!payload || payload === '[DONE]') continue;
-              try {
-                const evt = JSON.parse(payload);
-                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-                  const piece = evt.delta.text || '';
-                  raw += piece;
-                  send({ delta: piece });
-                } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
-                  stopReason = evt.delta.stop_reason;
-                } else if (evt.type === 'error') {
-                  apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
-                }
-              } catch (parseErr) {
-                console.error('SSE parse error', String((parseErr as any)?.message || parseErr), 'payload:', payload.slice(0, 200));
-              }
+    let raw = '';
+    let stopReason: string | null = null;
+    let apiErrorMessage: string | null = null;
+    try {
+      const reader = aiResp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              raw += evt.delta.text || '';
+            } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
+              stopReason = evt.delta.stop_reason;
+            } else if (evt.type === 'error') {
+              apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
             }
+          } catch (parseErr) {
+            console.error('Anthropic SSE parse error', String((parseErr as any)?.message || parseErr), 'payload:', payload.slice(0, 200));
           }
-        } catch (streamErr) {
-          streamError = String((streamErr as any)?.message || streamErr);
-          console.error('Stream read error:', streamError, 'partial length:', raw.length);
         }
+      }
+    } catch (streamErr) {
+      const msg = String((streamErr as any)?.message || streamErr);
+      console.error('Upstream stream error:', msg, 'partial chars:', raw.length);
+      if (!raw) {
+        return new Response(JSON.stringify({ error: `Ошибка чтения ответа ИИ: ${msg}` }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // fall through with partial result
+    }
 
-        if (apiErrorMessage) {
-          send({ error: `Anthropic stream error: ${apiErrorMessage}`, partial: raw });
-        } else if (streamError && !raw) {
-          send({ error: `Stream failed: ${streamError}` });
-        } else {
-          const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
-          console.log(`format-disease-article ok: stop_reason=${stopReason} output_chars=${formatted.length}`);
-          send({ done: true, formatted, stop_reason: stopReason, stream_error: streamError });
-        }
-        controller.close();
-      },
-    });
+    if (apiErrorMessage && !raw) {
+      return new Response(JSON.stringify({ error: `Ошибка ИИ: ${apiErrorMessage}` }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    return new Response(stream, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
+    const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
+    console.log(`format-disease-article ok: stop_reason=${stopReason} output_chars=${formatted.length}`);
+
+    if (!formatted) {
+      return new Response(JSON.stringify({ error: 'ИИ вернул пустой ответ. Попробуйте ещё раз.' }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ formatted, stop_reason: stopReason }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
     console.error('format-disease-article error:', e);
