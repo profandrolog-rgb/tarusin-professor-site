@@ -71,6 +71,27 @@ export interface ProstateExamData {
   conclusion?: string;
 }
 
+export interface AortoMesentericData {
+  aorta_structure?: string;
+  sma_origin?: string;
+  left_renal_vein_position?: string;
+  retroaortic_component?: string;
+  diameter_premesenteric?: string;
+  diameter_intramesenteric?: string;
+  diameter_postmesenteric?: string;
+  ratio_pre_intra?: string;
+  stenosis_flow_velocity?: string;
+  conclusion?: string;
+}
+
+export interface IliacMayThurnerData {
+  may_thurner_anatomy?: string;
+  left_common_iliac_diameter?: string;
+  flow_videographically?: string;
+  compression_flow_velocity?: string;
+  conclusion?: string;
+}
+
 export interface UziReproductiveData {
   device?: string;
   right_testis_size?: string;
@@ -80,11 +101,17 @@ export interface UziReproductiveData {
   left_testis_volume?: string;
   left_testis_structure?: string;
   right_epididymis?: string;
+  right_epididymis_volume?: string;
   left_epididymis?: string;
+  left_epididymis_volume?: string;
   arterial_flow?: ArterialFlowData;
   venous_flow?: VenousFlowData;
+  show_penis_exam?: boolean;
   penis_exam?: PenisExamData;
+  show_prostate?: boolean;
   prostate?: ProstateExamData;
+  aorto_mesenteric?: AortoMesentericData;
+  iliac_may_thurner?: IliacMayThurnerData;
   vessels?: string;
   doppler?: string;
   free_fluid?: string;
