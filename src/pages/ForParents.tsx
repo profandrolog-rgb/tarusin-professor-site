@@ -1,5 +1,5 @@
 import { ArrowLeft, BookOpen, Baby, User, FileText, ClipboardList } from "lucide-react";
-import { Link, useLoaderData } from "react-router-dom";
+import { Link, useLoaderData, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "react-i18next";
