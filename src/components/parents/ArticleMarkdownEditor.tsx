@@ -171,6 +171,132 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     }
   };
 
+  // Refs so retry from a sonner toast can splice the failed chunk back in.
+  const chunksRef = useRef<string[]>([]);
+  const resultsRef = useRef<(string | null)[]>([]);
+
+  /** Format a single chunk via SSE. Returns formatted text or throws with reason. */
+  const formatOneChunk = async (chunkText: string, accessToken: string): Promise<string> => {
+    const resp = await fetch(
+      `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/format-disease-article`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ text: chunkText }),
+      },
+    );
+    if (!resp.ok) {
+      let msg = `Ошибка ${resp.status}`;
+      try {
+        const errJson = await resp.json();
+        msg = errJson?.error || msg;
+      } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    if (!resp.body) throw new Error("Пустой ответ от AI");
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalObj: any = null;
+    let finalErr: string | null = null;
+    while (true) {
+      const { done, value: v } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(v, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
+        const payload = line.slice(6).trim();
+        if (!payload) continue;
+        try {
+          const obj = JSON.parse(payload);
+          if (obj?.type === "result") finalObj = obj;
+          else if (obj?.type === "error") finalErr = obj.error || "Ошибка форматирования";
+        } catch { /* ignore */ }
+      }
+    }
+    if (finalErr) throw new Error(finalErr);
+    const result = typeof finalObj?.formatted === "string" ? finalObj.formatted.trim() : "";
+    if (!result) throw new Error("Модель не вернула текст");
+    return result;
+  };
+
+  /** Try a chunk up to 1 + autoRetries times. Returns text or null on final failure. */
+  const tryChunkWithRetries = async (
+    index: number,
+    accessToken: string,
+    autoRetries = 2,
+  ): Promise<string | null> => {
+    let lastErr = "";
+    for (let attempt = 0; attempt <= autoRetries; attempt++) {
+      try {
+        const label = attempt === 0
+          ? `Часть ${index + 1}/${chunksRef.current.length}...`
+          : `Часть ${index + 1}/${chunksRef.current.length} — попытка ${attempt + 1}...`;
+        toast.message(label, { id: `fmt-progress-${index}` });
+        const out = await formatOneChunk(chunksRef.current[index], accessToken);
+        return out;
+      } catch (e: any) {
+        lastErr = e?.message || "неизвестно";
+        console.warn(`chunk ${index + 1} attempt ${attempt + 1} failed:`, lastErr);
+      }
+    }
+    toast.dismiss(`fmt-progress-${index}`);
+    return null;
+  };
+
+  /** When all chunks succeeded, commit the joined markdown. NEVER called on partial failure. */
+  const commitIfComplete = () => {
+    if (resultsRef.current.some((r) => r == null)) return false;
+    const merged = (resultsRef.current as string[]).join("\n\n").trim();
+    onChange(merged);
+    toast.success("Текст отформатирован");
+    return true;
+  };
+
+  /** Retry a single failed chunk (called from the retry-toast button). */
+  const retryChunk = async (index: number) => {
+    toast.dismiss(`fmt-retry-${index}`);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("Требуется авторизация");
+        return;
+      }
+      setFormatting(true);
+      const out = await tryChunkWithRetries(index, accessToken);
+      if (out == null) {
+        showRetryToast(index, "не удалось");
+        return;
+      }
+      resultsRef.current[index] = out;
+      toast.success(`Часть ${index + 1} обработана`);
+      commitIfComplete();
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Ошибка повтора: " + (e?.message || "неизвестно"));
+    } finally {
+      setFormatting(false);
+    }
+  };
+
+  const showRetryToast = (index: number, reason: string) => {
+    toast.error(`Часть ${index + 1} не обработалась: ${reason}`, {
+      id: `fmt-retry-${index}`,
+      duration: Infinity,
+      action: {
+        label: "Повторить",
+        onClick: () => { void retryChunk(index); },
+      },
+    });
+  };
+
   const handleFormat = async () => {
     if (!value.trim()) {
       toast.error("Сначала добавьте текст");
@@ -182,75 +308,48 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Требуется авторизация");
 
-      const resp = await fetch(
-        `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/format-disease-article`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ text: value }),
-        }
-      );
+      const chunks = splitIntoChunks(value);
+      chunksRef.current = chunks;
+      resultsRef.current = new Array(chunks.length).fill(null);
 
-      if (!resp.ok) {
-        let msg = `Ошибка ${resp.status}`;
-        try {
-          const errJson = await resp.json();
-          msg = errJson?.error || msg;
-        } catch {
-          /* ignore */
-        }
-        throw new Error(msg);
+      if (chunks.length > 1) {
+        toast.message(`Начато форматирование (${chunks.length} частей)`);
       }
-      if (!resp.body) throw new Error("Пустой ответ от AI");
 
-      // SSE stream: ":keepalive" comments + "data: {...}" final event
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let finalObj: any = null;
-      let finalErr: string | null = null;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
-          const payload = line.slice(6).trim();
-          if (!payload) continue;
-          try {
-            const obj = JSON.parse(payload);
-            if (obj?.type === "result") finalObj = obj;
-            else if (obj?.type === "error") finalErr = obj.error || "Ошибка форматирования";
-            else if (obj?.type === "progress") {
-              if (obj.stage === "start") {
-                toast.message(`Начато форматирование (${obj.chunks} ${obj.chunks === 1 ? "часть" : "частей"})`);
-              } else if (obj.stage === "chunk") {
-                toast.message(`Обработка части ${obj.index}/${obj.total}...`);
-              }
-            }
-          } catch {
-            /* ignore partial */
-          }
+      let hadFailure = false;
+      for (let i = 0; i < chunks.length; i++) {
+        const out = await tryChunkWithRetries(i, accessToken);
+        if (out == null) {
+          hadFailure = true;
+          showRetryToast(i, "после 3 попыток");
+          // Continue with remaining chunks so user can retry only failed ones later.
+          continue;
         }
+        resultsRef.current[i] = out;
       }
-      if (finalErr) throw new Error(finalErr);
-      const result = typeof finalObj?.formatted === "string" ? finalObj.formatted.trim() : "";
-      if (!result) throw new Error("Пустой ответ от AI");
-      onChange(result);
-      toast.success("Текст отформатирован");
 
+      if (hadFailure) {
+        const failed = resultsRef.current
+          .map((r, i) => (r == null ? i + 1 : null))
+          .filter((x) => x != null) as number[];
+        toast.warning(
+          `Готово ${chunks.length - failed.length}/${chunks.length}. Не обработаны: ${failed.join(", ")}. Нажмите «Повторить» в тостах. Форма не изменена.`,
+          { duration: 10000 },
+        );
+        return; // do NOT touch onChange — preserve form
+      }
+
+      commitIfComplete();
     } catch (e: any) {
       console.error(e);
       toast.error("Ошибка форматирования: " + (e?.message || "неизвестно"));
+      // Form is preserved — we never touched onChange.
     } finally {
       setFormatting(false);
     }
   };
+
+
 
   const insertGallery = () => {
     if (!galleryCaption.trim()) {
