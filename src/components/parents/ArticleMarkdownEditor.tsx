@@ -301,11 +301,6 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
               {connStatus.text}
             </span>
           )}
-            className="gap-1.5"
-          >
-            <ImagePlus className="w-3.5 h-3.5" />
-            Галерея
-          </Button>
 
           <div className="ml-auto flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{value.length} симв.</span>
