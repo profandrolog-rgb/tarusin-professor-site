@@ -128,13 +128,67 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     }
     setFormatting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("format-disease-article", {
-        body: { text: value },
-      });
-      if (error) throw error;
-      const formatted = (data as any)?.formatted;
-      if (!formatted) throw new Error("Пустой ответ от AI");
-      onChange(formatted);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Требуется авторизация");
+
+      const resp = await fetch(
+        `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/format-disease-article`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ text: value }),
+        }
+      );
+
+      if (!resp.ok) {
+        let msg = `Ошибка ${resp.status}`;
+        try {
+          const errJson = await resp.json();
+          msg = errJson?.error || msg;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(msg);
+      }
+
+      // Read SSE stream: accumulate deltas, finish on done event
+      if (!resp.body) throw new Error("Пустой ответ от AI");
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+      let formatted: string | null = null;
+      let streamErrorMsg: string | null = null;
+
+      while (true) {
+        const { done, value: chunk } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(chunk, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (!payload) continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (evt.delta) accumulated += evt.delta;
+            if (evt.done && typeof evt.formatted === "string") formatted = evt.formatted;
+            if (evt.error) streamErrorMsg = evt.error;
+          } catch {
+            /* ignore partial JSON */
+          }
+        }
+      }
+
+      if (streamErrorMsg) throw new Error(streamErrorMsg);
+      const result = formatted ?? accumulated.trim();
+      if (!result) throw new Error("Пустой ответ от AI");
+      onChange(result);
       toast.success("Текст отформатирован");
     } catch (e: any) {
       console.error(e);
