@@ -76,10 +76,11 @@ function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
     if (!cur) cur = p;
     else if (cur.length + p.length + 2 <= target) cur += "\n\n" + p;
     else { flush(); cur = p; }
-    // Never split inside a markdown table — keep the whole block together
-    // even if it exceeds 1.5×target.
+    // Never split inside a markdown table or a [[GALLERY:...]] marker —
+    // keep the whole block together even if it exceeds 1.5×target.
     const looksLikeTable = /(^|\n)\s*\|.*\|/.test(cur);
-    while (!looksLikeTable && cur.length > target * 1.5) {
+    const hasOpenGallery = /\[\[GALLERY:[^\]]*$/.test(cur);
+    while (!looksLikeTable && !hasOpenGallery && cur.length > target * 1.5) {
       const cut = cur.lastIndexOf("\n", target);
       const at = cut > target / 2 ? cut : target;
       chunks.push(cur.slice(0, at));
