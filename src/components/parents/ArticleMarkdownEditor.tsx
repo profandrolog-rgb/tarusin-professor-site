@@ -176,11 +176,34 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
         }
         throw new Error(msg);
       }
+      if (!resp.body) throw new Error("Пустой ответ от AI");
 
-      const json = await resp.json().catch(() => null);
-      if (!json) throw new Error("Пустой ответ от AI");
-      if (json.error) throw new Error(json.error);
-      const result = typeof json.formatted === "string" ? json.formatted.trim() : "";
+      // NDJSON stream: ":keepalive" comment lines + final {type:"result"|"error",...}
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalObj: any = null;
+      let finalErr: string | null = null;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(":")) continue;
+          try {
+            const obj = JSON.parse(trimmed);
+            if (obj?.type === "result") finalObj = obj;
+            else if (obj?.type === "error") finalErr = obj.error || "Ошибка форматирования";
+          } catch {
+            /* ignore partial */
+          }
+        }
+      }
+      if (finalErr) throw new Error(finalErr);
+      const result = typeof finalObj?.formatted === "string" ? finalObj.formatted.trim() : "";
       if (!result) throw new Error("Пустой ответ от AI");
       onChange(result);
       toast.success("Текст отформатирован");
