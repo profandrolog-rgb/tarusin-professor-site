@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       `📞 <b>Контакт:</b> ${escapeHtml(String(contact))}\n` +
       `🧒 <b>Возраст ребёнка:</b> ${escapeHtml(String(childAge))}\n` +
       `📝 <b>Комментарий:</b>\n${escapeHtml(String(problem))}\n\n` +
-      `🕒 ${escapeHtml(String(createdAt))}`;
+      `🕒 ${escapeHtml(formatMoscowTime(String(createdAt)))}`;
 
     const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
