@@ -381,73 +381,88 @@ export function UziReproductiveSection({ data, onChange }: Props) {
 
       {/* Исследование полового члена */}
       <div className="p-3 border rounded-md space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="font-medium text-sm">Исследование полового члена</div>
-          <Button type="button" variant="outline" size="sm" onClick={() => onChange({ penis_exam: { ...penis, ...DEFAULT_PENIS_EXAM } })}>
-            <Zap className="h-3 w-3 mr-1" /> Стандарт
-          </Button>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Структура полового члена</Label>
-          <Textarea rows={3} value={penis.structure || ""} onChange={(e) => setPenis("structure", e.target.value)} />
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Ø правого кавернозного тела (мм)</Label>
-            <Input className="h-8" value={penis.right_cavernous_diameter || ""} onChange={(e) => setPenis("right_cavernous_diameter", e.target.value)} />
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-penis-exam"
+              checked={data.show_penis_exam !== false}
+              onCheckedChange={(v) => onChange({ show_penis_exam: v === true })}
+            />
+            <Label htmlFor="show-penis-exam" className="font-medium text-sm cursor-pointer">
+              Выводить «Исследование полового члена» в протоколе
+            </Label>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Ø левого кавернозного тела (мм)</Label>
-            <Input className="h-8" value={penis.left_cavernous_diameter || ""} onChange={(e) => setPenis("left_cavernous_diameter", e.target.value)} />
+          {data.show_penis_exam !== false && (
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange({ penis_exam: { ...penis, ...DEFAULT_PENIS_EXAM } })}>
+              <Zap className="h-3 w-3 mr-1" /> Стандарт
+            </Button>
+          )}
+        </div>
+
+        {data.show_penis_exam !== false && (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Структура полового члена</Label>
+              <Textarea rows={3} value={penis.structure || ""} onChange={(e) => setPenis("structure", e.target.value)} />
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Ø правого кавернозного тела (мм)</Label>
+                <Input className="h-8" value={penis.right_cavernous_diameter || ""} onChange={(e) => setPenis("right_cavernous_diameter", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Ø левого кавернозного тела (мм)</Label>
+                <Input className="h-8" value={penis.left_cavernous_diameter || ""} onChange={(e) => setPenis("left_cavernous_diameter", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Ø спонгиозного тела (мм)</Label>
+                <Input className="h-8" value={penis.spongious_diameter || ""} onChange={(e) => setPenis("spongious_diameter", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Белочная оболочка и фасции</Label>
+              <Textarea rows={2} value={penis.tunica || ""} onChange={(e) => setPenis("tunica", e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Дорзальный пучок</Label>
+              <Textarea rows={2} value={penis.dorsal_bundle || ""} onChange={(e) => setPenis("dorsal_bundle", e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Дорзальная артерия, Vmax (см/с)</Label>
+              <Input className="h-8" value={penis.dorsal_artery_vmax || ""} onChange={(e) => setPenis("dorsal_artery_vmax", e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Кавернозные артерии</Label>
+              <Textarea rows={2} value={penis.cavernous_arteries || ""} onChange={(e) => setPenis("cavernous_arteries", e.target.value)} />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Правая кавернозная артерия</Label>
+                <Textarea rows={2} value={penis.right_cavernous_artery || ""} onChange={(e) => setPenis("right_cavernous_artery", e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Левая кавернозная артерия</Label>
+                <Textarea rows={2} value={penis.left_cavernous_artery || ""} onChange={(e) => setPenis("left_cavernous_artery", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Уретра</Label>
+              <Textarea rows={2} value={penis.urethra || ""} onChange={(e) => setPenis("urethra", e.target.value)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Заключение по половому члену</Label>
+              <Textarea rows={3} placeholder="Если оставить пустым — не будет напечатано" value={penis.conclusion || ""} onChange={(e) => setPenis("conclusion", e.target.value)} />
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Ø спонгиозного тела (мм)</Label>
-            <Input className="h-8" value={penis.spongious_diameter || ""} onChange={(e) => setPenis("spongious_diameter", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Белочная оболочка и фасции</Label>
-          <Textarea rows={2} value={penis.tunica || ""} onChange={(e) => setPenis("tunica", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Дорзальный пучок</Label>
-          <Textarea rows={2} value={penis.dorsal_bundle || ""} onChange={(e) => setPenis("dorsal_bundle", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Дорзальная артерия, Vmax (см/с)</Label>
-          <Input className="h-8" value={penis.dorsal_artery_vmax || ""} onChange={(e) => setPenis("dorsal_artery_vmax", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Кавернозные артерии</Label>
-          <Textarea rows={2} value={penis.cavernous_arteries || ""} onChange={(e) => setPenis("cavernous_arteries", e.target.value)} />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label className="text-xs">Правая кавернозная артерия</Label>
-            <Textarea rows={2} value={penis.right_cavernous_artery || ""} onChange={(e) => setPenis("right_cavernous_artery", e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Левая кавернозная артерия</Label>
-            <Textarea rows={2} value={penis.left_cavernous_artery || ""} onChange={(e) => setPenis("left_cavernous_artery", e.target.value)} />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Уретра</Label>
-          <Textarea rows={2} value={penis.urethra || ""} onChange={(e) => setPenis("urethra", e.target.value)} />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs">Заключение по половому члену</Label>
-          <Textarea rows={3} placeholder="Если оставить пустым — не будет напечатано" value={penis.conclusion || ""} onChange={(e) => setPenis("conclusion", e.target.value)} />
-        </div>
+        )}
       </div>
 
       {/* Предстательная железа */}
