@@ -1,9 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import fimoz from "./data/fimoz-u-malchikov.ts";
-import kista from "./data/kista_semennogo_kanatika.ts";
-import krip from "./data/kriptorhizm.ts";
-import gin from "./data/ginekomastiya.ts";
-import pri from "./data/priapizm-u-detey-i-podrostkov.ts";
+import fimoz from "./fimoz-u-malchikov.ts";
+import kista from "./kista_semennogo_kanatika.ts";
+import krip from "./kriptorhizm.ts";
+import gin from "./ginekomastiya.ts";
+import pri from "./priapizm-u-detey-i-podrostkov.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
