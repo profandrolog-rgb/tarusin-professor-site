@@ -33,16 +33,123 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 - Между таблицей и соседними абзацами — пустая строка сверху и пустая строка снизу.
 - Каждая ячейка сохраняется ДОСЛОВНО, без сокращений и перефразирования.
 
-Если таблица пришла слипшейся (например: «СтепеньОписаниеХарактеристика...» или вся таблица в одном абзаце) — ВОССТАНОВИ её структуру по смыслу: определи названия колонок по повторяющимся меткам (Степень, Стадия, I/II/III, римские/арабские номера, ключевые термины), разбей слипшийся текст на правильные колонки и строки и выведи как полноценную GFM-таблицу. Никогда не оставляй слипшийся табличный текст как абзац.
+Если таблица пришла слипшейся — ВОССТАНОВИ её структуру по смыслу и выведи как полноценную GFM-таблицу.
 === КОНЕЦ ПРАВИЛ ПО ТАБЛИЦАМ ===
 
 - Keep [[GALLERY: caption="..."]] markers exactly as they appear in the text
 - Preserve the author's voice and personal stories
-- Do not add or remove content (кроме восстановления структуры таблиц, описанного выше)
+- Do not add or remove content (кроме восстановления структуры таблиц)
 
 Return only the formatted markdown, nothing else.`;
 
 const MODEL_ID = 'claude-sonnet-4-6';
+const CHUNK_TARGET = 12000; // chars per chunk
+const PER_CHUNK_TIMEOUT_MS = 180000; // 3 min per chunk
+
+// Split text into chunks at paragraph boundaries (preferring blank lines),
+// each <= CHUNK_TARGET chars. Never splits inside a paragraph if possible.
+function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
+  if (text.length <= target) return [text];
+  const paragraphs = text.split(/\n\s*\n/);
+  const chunks: string[] = [];
+  let cur = '';
+  for (const p of paragraphs) {
+    if (!cur) {
+      cur = p;
+    } else if (cur.length + p.length + 2 <= target) {
+      cur += '\n\n' + p;
+    } else {
+      chunks.push(cur);
+      cur = p;
+    }
+    // hard-split a single oversized paragraph
+    while (cur.length > target * 1.5) {
+      const cut = cur.lastIndexOf('\n', target);
+      const at = cut > target / 2 ? cut : target;
+      chunks.push(cur.slice(0, at));
+      cur = cur.slice(at);
+    }
+  }
+  if (cur) chunks.push(cur);
+  return chunks;
+}
+
+async function formatOneChunk(
+  apiKey: string,
+  text: string,
+  isPart: boolean,
+): Promise<{ formatted: string; stop_reason: string | null; error?: string }> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), PER_CHUNK_TIMEOUT_MS);
+  try {
+    const system = isPart
+      ? SYSTEM_PROMPT + '\n\nЭто ЧАСТЬ длинной статьи. Не добавляй вступление/заключение, только форматируй полученный фрагмент.'
+      : SYSTEM_PROMPT;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL_ID,
+        max_tokens: 16000,
+        stream: true,
+        system,
+        messages: [{ role: 'user', content: text }],
+      }),
+    });
+    if (!resp.ok || !resp.body) {
+      const errText = await resp.text().catch(() => '');
+      return {
+        formatted: '',
+        stop_reason: null,
+        error: `Anthropic HTTP ${resp.status}: ${errText.slice(0, 300)}`,
+      };
+    }
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let raw = '';
+    let stopReason: string | null = null;
+    let apiErr: string | null = null;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(payload);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            raw += evt.delta.text || '';
+          } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
+            stopReason = evt.delta.stop_reason;
+          } else if (evt.type === 'error') {
+            apiErr = evt.error?.message || JSON.stringify(evt.error);
+            break;
+          }
+        } catch { /* ignore */ }
+      }
+      if (apiErr) break;
+    }
+    return { formatted: raw.trim(), stop_reason: stopReason, error: apiErr || undefined };
+  } catch (e) {
+    return {
+      formatted: '',
+      stop_reason: null,
+      error: String((e as any)?.message || e),
+    };
+  } finally {
+    clearTimeout(t);
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -87,8 +194,8 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if (text.length > 80000) {
-      return new Response(JSON.stringify({ error: 'text too long (max 80000 chars)' }), {
+    if (text.length > 200000) {
+      return new Response(JSON.stringify({ error: 'text too long (max 200000 chars)' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -100,7 +207,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    const chunks = splitIntoChunks(text);
     const encoder = new TextEncoder();
+
     const stream = new ReadableStream({
       async start(controller) {
         let closed = false;
@@ -109,95 +218,44 @@ Deno.serve(async (req) => {
         const heartbeat = setInterval(() => enq(':keepalive\n\n'), 10000);
         enq(':keepalive\n\n');
 
-        const fetchCtrl = new AbortController();
-        const fetchTimeout = setTimeout(() => fetchCtrl.abort(), 300000);
-
-        let raw = '';
-        let stopReason: string | null = null;
-        let apiErrorMessage: string | null = null;
-
         try {
-          const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            signal: fetchCtrl.signal,
-            headers: {
-              'x-api-key': apiKey,
-              'anthropic-version': '2023-06-01',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: MODEL_ID,
-              max_tokens: 16000,
-              stream: true,
-              system: SYSTEM_PROMPT,
-              messages: [{ role: 'user', content: text }],
-            }),
-          });
-
-          if (!aiResp.ok || !aiResp.body) {
-            const errText = await aiResp.text().catch(() => '');
-            const status = aiResp.status;
-            const userMsg = status === 529 || status === 503
-              ? 'Сервис ИИ временно перегружен. Попробуйте ещё раз через минуту.'
-              : status === 429
-              ? 'Превышен лимит запросов к ИИ. Попробуйте позже.'
-              : `Ошибка ИИ (${status}): ${errText.slice(0, 300)}`;
-            console.error(`Anthropic HTTP ${status}: ${errText.slice(0, 500)}`);
-            sendEvent({ type: 'error', error: userMsg });
-            return;
-          }
-
-          const reader = aiResp.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const payload = line.slice(6).trim();
-              if (!payload || payload === '[DONE]') continue;
-              try {
-                const evt = JSON.parse(payload);
-                if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-                  const piece = evt.delta.text || '';
-                  if (piece) raw += piece;
-                } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
-                  stopReason = evt.delta.stop_reason;
-                } else if (evt.type === 'error') {
-                  apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
-                  console.error('Anthropic stream error event:', apiErrorMessage);
-                  break;
-                }
-              } catch (parseErr) {
-                console.error('SSE parse error', String((parseErr as any)?.message || parseErr));
-              }
+          sendEvent({ type: 'progress', stage: 'start', chunks: chunks.length });
+          const parts: string[] = [];
+          const isPart = chunks.length > 1;
+          for (let i = 0; i < chunks.length; i++) {
+            sendEvent({ type: 'progress', stage: 'chunk', index: i + 1, total: chunks.length });
+            const r = await formatOneChunk(apiKey, chunks[i], isPart);
+            if (r.error) {
+              console.error(`chunk ${i + 1}/${chunks.length} error: ${r.error}`);
+              sendEvent({
+                type: 'error',
+                error: `Часть ${i + 1}/${chunks.length}: ${r.error}`,
+                stop_reason: r.stop_reason,
+              });
+              return;
             }
-            if (apiErrorMessage) break;
+            if (!r.formatted) {
+              const reason = r.stop_reason
+                ? `Модель остановилась без текста (stop_reason=${r.stop_reason})`
+                : 'Модель не вернула текст';
+              console.error(`chunk ${i + 1}/${chunks.length} EMPTY: ${reason}`);
+              sendEvent({
+                type: 'error',
+                error: `Часть ${i + 1}/${chunks.length}: ${reason}`,
+                stop_reason: r.stop_reason,
+              });
+              return;
+            }
+            parts.push(r.formatted);
           }
-
-          const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
-          if (apiErrorMessage) {
-            sendEvent({ type: 'error', error: `Anthropic: ${apiErrorMessage}`, stop_reason: stopReason });
-          } else if (!formatted) {
-            const reason = stopReason
-              ? `Модель остановилась без текста (stop_reason=${stopReason})`
-              : 'Модель не вернула текст';
-            console.error(`format-disease-article EMPTY: ${reason}`);
-            sendEvent({ type: 'error', error: reason, stop_reason: stopReason });
-          } else {
-            console.log(`format-disease-article ok: stop_reason=${stopReason} chars=${formatted.length}`);
-            sendEvent({ type: 'result', formatted, stop_reason: stopReason });
-          }
+          const formatted = parts.join('\n\n').replace(/===КОНЕЦ===\s*$/i, '').trim();
+          console.log(`format-disease-article ok: chunks=${chunks.length} chars=${formatted.length}`);
+          sendEvent({ type: 'result', formatted, chunks: chunks.length });
         } catch (e) {
           const msg = String((e as any)?.message || e);
           console.error('format-disease-article stream error:', msg);
           sendEvent({ type: 'error', error: msg });
         } finally {
-          clearTimeout(fetchTimeout);
           clearInterval(heartbeat);
           closed = true;
           try { controller.close(); } catch { /* ignore */ }

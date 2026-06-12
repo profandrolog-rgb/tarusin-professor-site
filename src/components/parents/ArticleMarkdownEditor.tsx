@@ -198,6 +198,13 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             const obj = JSON.parse(payload);
             if (obj?.type === "result") finalObj = obj;
             else if (obj?.type === "error") finalErr = obj.error || "Ошибка форматирования";
+            else if (obj?.type === "progress") {
+              if (obj.stage === "start") {
+                toast.message(`Начато форматирование (${obj.chunks} ${obj.chunks === 1 ? "часть" : "частей"})`);
+              } else if (obj.stage === "chunk") {
+                toast.message(`Обработка части ${obj.index}/${obj.total}...`);
+              }
+            }
           } catch {
             /* ignore partial */
           }
@@ -208,6 +215,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       if (!result) throw new Error("Пустой ответ от AI");
       onChange(result);
       toast.success("Текст отформатирован");
+
     } catch (e: any) {
       console.error(e);
       toast.error("Ошибка форматирования: " + (e?.message || "неизвестно"));
