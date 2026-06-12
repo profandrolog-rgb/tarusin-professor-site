@@ -14,8 +14,8 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 - > 📊 **Цифры:** for statistics
 
 === ПЛЕЙСХОЛДЕРЫ — НЕ ТРОГАЙ ===
-В тексте могут встречаться маркеры вида [[TABLE_PROTECTED_0]], [[TABLE_PROTECTED_1]] и т.д.
-Это защищённые таблицы. Скопируй их в ответ ДОСЛОВНО, на том же месте, в той же строке абзаца.
+В тексте могут встречаться маркеры вида [[TABLE_PROTECTED_0]], [[TABLE_PROTECTED_1]], [[GALLERY_PROTECTED_0]] и т.д.
+Это защищённые блоки (таблицы и галереи). Скопируй их в ответ ДОСЛОВНО, на том же месте, в той же строке абзаца.
 НЕ удаляй, НЕ переименовывай, НЕ оборачивай в кавычки, НЕ добавляй вокруг них пояснения.
 === КОНЕЦ ===
 
@@ -43,10 +43,12 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 
 Return only the formatted markdown.`;
 
-// ---------- TABLE PROTECTION ----------
-// Tables (GFM pipe tables) are extracted BEFORE sending to AI and restored AFTER.
-// This guarantees the model can never touch them, no matter what the prompt says.
+// ---------- TABLE & GALLERY PROTECTION ----------
+// Tables (GFM pipe tables) and gallery markers are extracted BEFORE sending to AI
+// and restored AFTER. This guarantees the model can never touch them.
 const TABLE_PLACEHOLDER_RE = /\[\[TABLE_PROTECTED_(\d+)\]\]/g;
+const GALLERY_PLACEHOLDER_RE = /\[\[GALLERY_PROTECTED_(\d+)\]\]/g;
+const GALLERY_MARKER_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”][^"'“”]*["'“”]\s*(?:\|[^\]]*)?\]\]/g;
 
 function isTableLine(line: string): boolean {
   const t = line.trim();
@@ -63,7 +65,6 @@ function extractTables(text: string): { stripped: string; tables: string[] } {
   const tables: string[] = [];
   let i = 0;
   while (i < lines.length) {
-    // Detect start of GFM table: header row + separator row
     if (isTableLine(lines[i]) && i + 1 < lines.length && isSeparatorLine(lines[i + 1])) {
       const buf: string[] = [lines[i], lines[i + 1]];
       let j = i + 2;
@@ -83,9 +84,18 @@ function extractTables(text: string): { stripped: string; tables: string[] } {
   return { stripped: out.join('\n'), tables };
 }
 
+function extractGalleries(text: string): { stripped: string; galleries: string[] } {
+  const galleries: string[] = [];
+  const stripped = text.replace(GALLERY_MARKER_RE, (m) => {
+    const idx = galleries.length;
+    galleries.push(m);
+    return `[[GALLERY_PROTECTED_${idx}]]`;
+  });
+  return { stripped, galleries };
+}
+
 function restoreTables(text: string, tables: string[]): string {
   if (tables.length === 0) return text;
-  // Replace placeholders. If AI dropped a placeholder, append the table at the end.
   const used = new Set<number>();
   let restored = text.replace(TABLE_PLACEHOLDER_RE, (_m, n) => {
     const idx = Number(n);
@@ -95,9 +105,25 @@ function restoreTables(text: string, tables: string[]): string {
     }
     return _m;
   });
-  // Append any tables the model dropped, so data is NEVER lost.
   for (let i = 0; i < tables.length; i++) {
     if (!used.has(i)) restored += `\n\n${tables[i]}\n\n`;
+  }
+  return restored;
+}
+
+function restoreGalleries(text: string, galleries: string[]): string {
+  if (galleries.length === 0) return text;
+  const used = new Set<number>();
+  let restored = text.replace(GALLERY_PLACEHOLDER_RE, (_m, n) => {
+    const idx = Number(n);
+    if (Number.isInteger(idx) && idx >= 0 && idx < galleries.length) {
+      used.add(idx);
+      return `\n\n${galleries[idx]}\n\n`;
+    }
+    return _m;
+  });
+  for (let i = 0; i < galleries.length; i++) {
+    if (!used.has(i)) restored += `\n\n${galleries[i]}\n\n`;
   }
   return restored;
 }
@@ -257,8 +283,9 @@ Deno.serve(async (req) => {
       error_message: null,
     }).eq('id', draftId);
 
-    // ---- Protect tables: strip BEFORE sending to AI, restore AFTER ----
-    const { stripped, tables } = extractTables(chunks[chunkIndex]);
+    // ---- Protect tables AND galleries: strip BEFORE sending to AI, restore AFTER ----
+    const { stripped: noTables, tables } = extractTables(chunks[chunkIndex]);
+    const { stripped, galleries } = extractGalleries(noTables);
     const r = await callAnthropic(apiKey, stripped);
     if (r.error || !r.formatted) {
       const reason = r.error || (r.stop_reason ? `stop_reason=${r.stop_reason}` : 'empty response');
@@ -274,8 +301,9 @@ Deno.serve(async (req) => {
     // append formatted chunk
     const prev = draft.formatted_content || '';
     const sep = prev ? '\n\n' : '';
-    // Restore tables (guarantees no table data is ever lost, even if AI dropped the placeholder)
-    const restored = restoreTables(r.formatted, tables);
+    // Restore galleries first (inline markers), then tables — neither can ever be lost,
+    // because dropped placeholders are appended at the end of the chunk.
+    const restored = restoreTables(restoreGalleries(r.formatted, galleries), tables);
     const newFormatted = prev + sep + restored;
     const newLastDone = chunkIndex + 1;
     const isDone = newLastDone >= chunks.length;
