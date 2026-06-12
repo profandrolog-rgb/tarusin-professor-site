@@ -143,13 +143,29 @@ export const DEFAULT_PROSTATE: ProstateExamData = {
   paraprostatic_veins: { diameter: "", reflux: "нет" },
 };
 
+export const DEFAULT_AORTO_MESENTERIC: AortoMesentericData = {
+  aorta_structure: "нормативный ход",
+  sma_origin: "нормативное",
+  left_renal_vein_position: "типичная интерпозиция",
+  retroaortic_component: "нет",
+  conclusion: "Признаков аорто-мезентериальной компрессии не выявлено.",
+};
+
+export const DEFAULT_ILIAC_MAY_THURNER: IliacMayThurnerData = {
+  may_thurner_anatomy: "типичная",
+  flow_videographically: "поток не изменён",
+  conclusion: "Данных за конфликт Мей–Тернера не получено.",
+};
+
 export const DEFAULT_UZI_REPRODUCTIVE: UziReproductiveData = {
   device: "УЗ-сканер с линейным датчиком 7,5–12 МГц",
   right_testis_structure: "Эхоструктура однородная, эхогенность не изменена. Образований не выявлено.",
   left_testis_structure: "Эхоструктура однородная, эхогенность не изменена. Образований не выявлено.",
   right_epididymis: "Не увеличен, структура однородная.",
   left_epididymis: "Не увеличен, структура однородная.",
+  show_penis_exam: true,
   penis_exam: DEFAULT_PENIS_EXAM,
+  show_prostate: true,
   vessels: "Вены гроздьевидного сплетения не расширены.",
   doppler: "При ЦДК кровоток сохранён, симметричный с обеих сторон.",
   free_fluid: "Свободной жидкости в оболочках яичек не определяется.",
