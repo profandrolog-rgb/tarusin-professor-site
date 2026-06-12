@@ -910,6 +910,69 @@ export type Database = {
         }
         Relationships: []
       }
+      disease_article_drafts: {
+        Row: {
+          article_id: string | null
+          chunks: Json
+          content: string
+          created_at: string
+          description: string | null
+          draft_key: string
+          error_message: string | null
+          format_progress: string | null
+          format_status: string
+          formatted_content: string
+          id: string
+          last_chunk_done: number
+          slug: string | null
+          tags: string | null
+          title: string | null
+          total_chunks: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          chunks?: Json
+          content?: string
+          created_at?: string
+          description?: string | null
+          draft_key: string
+          error_message?: string | null
+          format_progress?: string | null
+          format_status?: string
+          formatted_content?: string
+          id?: string
+          last_chunk_done?: number
+          slug?: string | null
+          tags?: string | null
+          title?: string | null
+          total_chunks?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          chunks?: Json
+          content?: string
+          created_at?: string
+          description?: string | null
+          draft_key?: string
+          error_message?: string | null
+          format_progress?: string | null
+          format_status?: string
+          formatted_content?: string
+          id?: string
+          last_chunk_done?: number
+          slug?: string | null
+          tags?: string | null
+          title?: string | null
+          total_chunks?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       disease_articles: {
         Row: {
           age_group: string
