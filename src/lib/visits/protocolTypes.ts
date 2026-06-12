@@ -7,7 +7,8 @@ export type ProtocolType =
   | "uzi_urinary"
   | "postop_day3"
   | "postop_day7"
-  | "repeat_with_uzi";
+  | "repeat_with_uzi"
+  | "online_consult";
 
 export interface ProtocolDef {
   key: ProtocolType;
@@ -59,6 +60,7 @@ const PROTOCOL_SHORT: Record<string, string> = {
 export const PROTOCOL_TYPES: ProtocolDef[] = [
   "ultrashort",
   "primary_short",
+  "online_consult",
   "dynamic_with_uzi",
   "repeat_with_labs",
   "uzi_reproductive",
