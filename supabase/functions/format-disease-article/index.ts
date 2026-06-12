@@ -42,9 +42,10 @@ const SYSTEM_PROMPT = `You are a medical article formatter. Convert the input te
 
 Return only the formatted markdown, nothing else.`;
 
-const MODEL_ID = 'claude-sonnet-4-6';
-const CHUNK_TARGET = 12000; // chars per chunk
-const PER_CHUNK_TIMEOUT_MS = 180000; // 3 min per chunk
+const MODEL_ID = 'claude-haiku-4-5';
+const CHUNK_TARGET = 6000; // chars per chunk (client also enforces this)
+const PER_CHUNK_TIMEOUT_MS = 240000; // 4 min per chunk — must be >= client timeout
+
 
 // Split text into chunks at paragraph boundaries (preferring blank lines),
 // each <= CHUNK_TARGET chars. Never splits inside a paragraph if possible.
