@@ -603,12 +603,18 @@ function ListEditor({ items, onChange, addPlaceholder, picker }: ListEditorProps
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); addDraft(); }
           }}
+          onBlur={() => { if (draft.trim()) addDraft(); }}
           placeholder={addPlaceholder}
         />
         <Button type="button" size="sm" variant="secondary" onClick={addDraft} disabled={!draft.trim()}>
           <Plus className="h-4 w-4 mr-1" />Своё
         </Button>
       </div>
+      {draft.trim() && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          Не забудьте нажать «Своё» или Enter, иначе текст не сохранится.
+        </p>
+      )}
     </div>
   );
 }
