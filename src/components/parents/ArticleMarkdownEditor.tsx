@@ -79,7 +79,7 @@ function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
   return chunks;
 }
 
-const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving }, ref) => {
+const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving, draftKey, draftMeta }, ref) => {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -90,6 +90,18 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
   const [testingConn, setTestingConn] = useState(false);
   const [connStatus, setConnStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Persistent-draft state (Pkt 1, 2, 5, 6 — save-first, resumable, realtime progress)
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftRow, setDraftRow] = useState<{
+    format_status: string;
+    format_progress: string | null;
+    last_chunk_done: number;
+    total_chunks: number;
+    error_message: string | null;
+    formatted_content: string;
+  } | null>(null);
+  const effectiveDraftKey = draftKey || draftMeta?.articleId || "new";
 
   const handleTestConnection = async () => {
     setTestingConn(true);
