@@ -109,6 +109,28 @@ export interface RepeatWithUziData extends PsychStatusData {
 }
 
 
+export interface OnlineConsultData {
+  reason?: string;
+  complaints?: string;
+  anamnesis?: string;
+  prior_visit?: "yes" | "no" | "";
+  prior_visit_date?: string;
+  prior_visit_note?: string;
+  current_state?: string;
+  external_exam_by_photo?: boolean;
+  external_exam_by_video?: boolean;
+  external_genitalia?: string;
+  interpretation?: string;
+  conclusion?: string;
+  recommendations?: string;
+  channel?: string;
+  duration_min?: number | string;
+  exam_plan?: string;
+  in_person_needed?: "yes" | "no" | "";
+  in_person_urgency?: "plan" | "soon" | "urgent" | "";
+}
+
+
 export type AnyProtocolData =
   | UltrashortData
   | PostOpDay3Data
@@ -119,6 +141,7 @@ export type AnyProtocolData =
   | UziUrinaryOnlyData
   | DynamicWithUziData
   | RepeatWithUziData
+  | OnlineConsultData
   | Record<string, any>;
 
 export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData>> = {
@@ -183,4 +206,14 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     conclusion: "Без отрицательной динамики.",
     recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
   } as RepeatWithUziData,
+  online_consult: {
+    reason: "Первичная онлайн-консультация",
+    prior_visit: "no",
+    external_exam_by_photo: false,
+    external_exam_by_video: false,
+    external_genitalia:
+      "Наружные половые органы развиты по мужскому типу, яички в мошонке, семенные канатики не изменены, область паховых колец не изменена, половой член развит по возрасту, уретра в типичном положении, меатус в типичном положении, крайняя плоть открывается, половое развитие соответствует возрасту.",
+    in_person_needed: "no",
+    recommendations: "Контрольный осмотр / повторная консультация по согласованию.",
+  } as OnlineConsultData,
 };

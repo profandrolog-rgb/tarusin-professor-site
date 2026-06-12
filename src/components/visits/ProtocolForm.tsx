@@ -6,6 +6,7 @@ import { PrimaryShortForm } from "./forms/PrimaryShortForm";
 import { RepeatWithLabsForm } from "./forms/RepeatWithLabsForm";
 import { UziReproductiveForm, UziUrinaryForm, DynamicWithUziForm, RepeatWithUziForm } from "./forms/UziForms";
 import { GenericFieldsForm } from "./forms/GenericFieldsForm";
+import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import {
   SmartTemplatesProvider,
   FillStandardButton,
@@ -43,6 +44,8 @@ export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
         return <DynamicWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
       case "repeat_with_uzi":
         return <RepeatWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
+      case "online_consult":
+        return <OnlineConsultForm data={data || {}} onChange={patch} />;
 
       default:
         // unknown / dynamic / postop_day10 / online_consult и любые будущие типы

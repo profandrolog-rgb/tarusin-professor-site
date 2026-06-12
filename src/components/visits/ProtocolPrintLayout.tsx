@@ -405,6 +405,10 @@ const KNOWN_KEYS = new Set([
   "uzi","assignments","fields",
   "cbc","urinalysis","biochem","hormones","other_labs",
   "operation_name","operation_date","temperature","general_status","wound_status","dressing","pain","healing","sutures_removed",
+  // online_consult
+  "reason","prior_visit","prior_visit_date","prior_visit_note","current_state",
+  "external_exam_by_photo","external_exam_by_video","external_genitalia",
+  "interpretation","channel","duration_min","in_person_needed","in_person_urgency",
   "_normalized_version","_normalized_at",
 ]);
 
@@ -500,6 +504,79 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     }
     rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
+
+  if (t === "online_consult") {
+    // Сведения о консультации
+    const infoRows: React.ReactNode[] = [];
+    if (d.channel) infoRows.push(<Field key="ch" label="Канал связи" value={d.channel} />);
+    if (d.duration_min) infoRows.push(<Field key="dur" label="Длительность, мин" value={d.duration_min} />);
+    if (d.reason) infoRows.push(<Field key="rs" label="Повод обращения" value={d.reason} />);
+    if (infoRows.length > 0) {
+      rows.push(<Section key="oc-info" title="Сведения о консультации">{infoRows}</Section>);
+    }
+
+    rows.push(<Field key="oc-c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="oc-a" label="Анамнез" value={d.anamnesis} />);
+
+    // Очный осмотр ранее
+    if (d.prior_visit) {
+      const priorRows: React.ReactNode[] = [];
+      priorRows.push(
+        <Field key="pv" label="Был ли очный осмотр" value={d.prior_visit === "yes" ? "Да" : "Нет"} />
+      );
+      if (d.prior_visit === "yes") {
+        if (d.prior_visit_date) {
+          priorRows.push(
+            <Field key="pvd" label="Дата осмотра"
+              value={format(new Date(d.prior_visit_date), "dd.MM.yyyy")} />
+          );
+        }
+        if (d.prior_visit_note) priorRows.push(<Field key="pvn" label="Кратко" value={d.prior_visit_note} />);
+      }
+      rows.push(<Section key="oc-prior" title="Очный осмотр профессора ранее">{priorRows}</Section>);
+    }
+
+    rows.push(<Field key="oc-cs" label="Настоящее состояние" value={d.current_state} />);
+
+    // НПО
+    const examMethods: string[] = [];
+    if (d.external_exam_by_photo) examMethods.push("по фото");
+    if (d.external_exam_by_video) examMethods.push("по видеосвязи");
+    if (d.external_genitalia || examMethods.length > 0) {
+      const npoRows: React.ReactNode[] = [];
+      if (examMethods.length > 0) {
+        npoRows.push(<Field key="oc-em" label="Метод осмотра" value={examMethods.join(", ")} />);
+      }
+      if (d.external_genitalia) {
+        npoRows.push(<Field key="oc-eg" label="Описание" value={d.external_genitalia} />);
+      }
+      rows.push(<Section key="oc-npo" title="Состояние наружных половых органов">{npoRows}</Section>);
+    }
+
+    if (d.interpretation) {
+      rows.push(
+        <Section key="oc-int" title="Интерпретация анализов и исследований">
+          <Field label="Интерпретация" value={d.interpretation} />
+        </Section>
+      );
+    }
+
+    rows.push(<Field key="oc-z" label="Заключение" value={d.conclusion} />);
+    rows.push(<Field key="oc-ep" label="План дообследования" value={d.exam_plan} />);
+
+    if (d.in_person_needed) {
+      const urgencyMap: Record<string, string> = {
+        plan: "планово (1–3 мес)",
+        soon: "в ближайшее время (1–4 нед)",
+        urgent: "срочно (в течение недели)",
+      };
+      const text = d.in_person_needed === "yes"
+        ? `Требуется${d.in_person_urgency ? ` — ${urgencyMap[d.in_person_urgency] || d.in_person_urgency}` : ""}`
+        : "Не требуется";
+      rows.push(<Field key="oc-ip" label="Необходимость очного осмотра" value={text} />);
+    }
+  }
+
 
   // Fallback for generic protocols — render any string fields under d.fields
   if (rows.length === 0 && d.fields && typeof d.fields === "object") {
