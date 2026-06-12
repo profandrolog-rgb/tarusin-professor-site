@@ -464,6 +464,14 @@ const AdminDiseaseArticles = () => {
                       onChange={(v) => setForm((prev) => ({ ...prev, article_content: v }))}
                       onSaveAsIs={handleSave}
                       saving={saving}
+                      draftKey={editing?.id || "new"}
+                      draftMeta={{
+                        title: form.title,
+                        slug: form.slug,
+                        description: form.description,
+                        tags: form.keywords,
+                        articleId: editing?.id ?? null,
+                      }}
                     />
 
                     <p className="text-xs text-muted-foreground mt-1">

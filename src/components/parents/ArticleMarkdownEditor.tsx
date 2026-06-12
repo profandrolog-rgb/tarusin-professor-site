@@ -47,6 +47,10 @@ interface Props {
   /** Optional: when set, shows a "Save as-is" button that triggers parent save without formatting. */
   onSaveAsIs?: () => void;
   saving?: boolean;
+  /** Stable key for the persistent draft row (e.g. article id, or "new" for fresh articles). */
+  draftKey?: string;
+  /** Article metadata mirrored into the draft so a tab close never loses it. */
+  draftMeta?: { title?: string; slug?: string; description?: string; tags?: string; articleId?: string | null };
 }
 
 export interface ArticleMarkdownEditorHandle {
@@ -75,7 +79,7 @@ function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
   return chunks;
 }
 
-const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving }, ref) => {
+const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving, draftKey, draftMeta }, ref) => {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -86,6 +90,18 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
   const [testingConn, setTestingConn] = useState(false);
   const [connStatus, setConnStatus] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Persistent-draft state (Pkt 1, 2, 5, 6 — save-first, resumable, realtime progress)
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftRow, setDraftRow] = useState<{
+    format_status: string;
+    format_progress: string | null;
+    last_chunk_done: number;
+    total_chunks: number;
+    error_message: string | null;
+    formatted_content: string;
+  } | null>(null);
+  const effectiveDraftKey = draftKey || draftMeta?.articleId || "new";
 
   const handleTestConnection = async () => {
     setTestingConn(true);
@@ -171,135 +187,199 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     }
   };
 
-  // Refs so retry from a sonner toast can splice the failed chunk back in.
-  const chunksRef = useRef<string[]>([]);
-  const resultsRef = useRef<(string | null)[]>([]);
+  // ---------- Persistent draft (save-first architecture) ----------
+  // We mirror the form into Supabase BEFORE any formatting starts. From then on
+  // the source of truth is the draft row — closing the tab, refreshing, or any
+  // edge timeout cannot lose data.
 
-  /** Format a single chunk via SSE. Returns formatted text or throws with reason. */
-  const formatOneChunk = async (chunkText: string, accessToken: string): Promise<string> => {
-    const resp = await fetch(
-      `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/format-disease-article`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ text: chunkText }),
-      },
-    );
-    if (!resp.ok) {
-      let msg = `Ошибка ${resp.status}`;
-      try {
-        const errJson = await resp.json();
-        msg = errJson?.error || msg;
-      } catch { /* ignore */ }
-      throw new Error(msg);
-    }
-    if (!resp.body) throw new Error("Пустой ответ от AI");
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let finalObj: any = null;
-    let finalErr: string | null = null;
-    while (true) {
-      const { done, value: v } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(v, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line || line.startsWith(":") || !line.startsWith("data: ")) continue;
-        const payload = line.slice(6).trim();
-        if (!payload) continue;
-        try {
-          const obj = JSON.parse(payload);
-          if (obj?.type === "result") finalObj = obj;
-          else if (obj?.type === "error") finalErr = obj.error || "Ошибка форматирования";
-        } catch { /* ignore */ }
+  // Load existing draft for this key on mount / key change.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("disease_article_drafts")
+        .select("id, format_status, format_progress, last_chunk_done, total_chunks, error_message, formatted_content")
+        .eq("user_id", uid)
+        .eq("draft_key", effectiveDraftKey)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data) {
+        setDraftId(data.id);
+        setDraftRow({
+          format_status: data.format_status,
+          format_progress: data.format_progress,
+          last_chunk_done: data.last_chunk_done,
+          total_chunks: data.total_chunks,
+          error_message: data.error_message,
+          formatted_content: data.formatted_content || "",
+        });
+      } else {
+        setDraftId(null);
+        setDraftRow(null);
       }
-    }
-    if (finalErr) throw new Error(finalErr);
-    const result = typeof finalObj?.formatted === "string" ? finalObj.formatted.trim() : "";
-    if (!result) throw new Error("Модель не вернула текст");
-    return result;
+    })();
+    return () => { cancelled = true; };
+  }, [effectiveDraftKey]);
+
+  // Realtime subscription on the draft row → live progress / error / resume hint.
+  useEffect(() => {
+    if (!draftId) return;
+    const ch = supabase
+      .channel(`disease_article_drafts:${draftId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "disease_article_drafts", filter: `id=eq.${draftId}` },
+        (payload) => {
+          const r: any = payload.new;
+          setDraftRow({
+            format_status: r.format_status,
+            format_progress: r.format_progress,
+            last_chunk_done: r.last_chunk_done,
+            total_chunks: r.total_chunks,
+            error_message: r.error_message,
+            formatted_content: r.formatted_content || "",
+          });
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [draftId]);
+
+  // Debounced auto-save of content/tags/description into the draft.
+  const saveTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(async () => {
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const uid = sess.session?.user?.id;
+        if (!uid) return;
+        const upsertPayload: any = {
+          user_id: uid,
+          draft_key: effectiveDraftKey,
+          content: value || "",
+          title: draftMeta?.title ?? null,
+          slug: draftMeta?.slug ?? null,
+          description: draftMeta?.description ?? null,
+          tags: draftMeta?.tags ?? null,
+          article_id: draftMeta?.articleId ?? null,
+        };
+        const { data, error } = await supabase
+          .from("disease_article_drafts")
+          .upsert(upsertPayload, { onConflict: "user_id,draft_key" })
+          .select("id")
+          .maybeSingle();
+        if (!error && data?.id && !draftId) setDraftId(data.id);
+      } catch (e) {
+        console.warn("draft auto-save failed", e);
+      }
+    }, 800);
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, draftMeta?.title, draftMeta?.slug, draftMeta?.description, draftMeta?.tags, draftMeta?.articleId, effectiveDraftKey]);
+
+  /** Ensure a draft row exists right now, return its id (synchronous wait). */
+  const ensureDraft = async (chunks: string[]): Promise<string> => {
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user?.id;
+    if (!uid) throw new Error("Требуется авторизация");
+    const payload: any = {
+      user_id: uid,
+      draft_key: effectiveDraftKey,
+      content: value || "",
+      chunks,
+      formatted_content: "",
+      format_status: "processing",
+      format_progress: `0/${chunks.length}`,
+      last_chunk_done: 0,
+      total_chunks: chunks.length,
+      error_message: null,
+      title: draftMeta?.title ?? null,
+      slug: draftMeta?.slug ?? null,
+      description: draftMeta?.description ?? null,
+      tags: draftMeta?.tags ?? null,
+      article_id: draftMeta?.articleId ?? null,
+    };
+    const { data, error } = await supabase
+      .from("disease_article_drafts")
+      .upsert(payload, { onConflict: "user_id,draft_key" })
+      .select("id")
+      .maybeSingle();
+    if (error || !data) throw new Error("Не удалось создать черновик: " + (error?.message || "unknown"));
+    setDraftId(data.id);
+    return data.id;
   };
 
-  /** Try a chunk up to 1 + autoRetries times. Returns text or null on final failure. */
-  const tryChunkWithRetries = async (
-    index: number,
-    accessToken: string,
-    autoRetries = 2,
-  ): Promise<string | null> => {
+  /** Call the single-chunk edge function with up to (1 + autoRetries) tries. */
+  const processChunk = async (dId: string, index: number, total: number, autoRetries = 2): Promise<boolean> => {
     let lastErr = "";
     for (let attempt = 0; attempt <= autoRetries; attempt++) {
+      const label = attempt === 0
+        ? `Часть ${index + 1}/${total}...`
+        : `Часть ${index + 1}/${total} — попытка ${attempt + 1}...`;
+      toast.message(label, { id: `fmt-progress-${index}` });
       try {
-        const label = attempt === 0
-          ? `Часть ${index + 1}/${chunksRef.current.length}...`
-          : `Часть ${index + 1}/${chunksRef.current.length} — попытка ${attempt + 1}...`;
-        toast.message(label, { id: `fmt-progress-${index}` });
-        const out = await formatOneChunk(chunksRef.current[index], accessToken);
-        return out;
-      } catch (e: any) {
-        lastErr = e?.message || "неизвестно";
-        console.warn(`chunk ${index + 1} attempt ${attempt + 1} failed:`, lastErr);
-        if (attempt < autoRetries) {
-          // brief pause before retry — let transient timeouts / rate limits clear
-          await new Promise((r) => setTimeout(r, 2500));
+        const { data, error } = await supabase.functions.invoke("format-disease-article-chunk", {
+          body: { draft_id: dId, chunk_index: index },
+        });
+        if (error) throw new Error(error.message || "network error");
+        if (data?.ok) {
+          toast.dismiss(`fmt-progress-${index}`);
+          return true;
         }
+        lastErr = data?.error || "неизвестная ошибка";
+      } catch (e: any) {
+        lastErr = e?.message || "сетевая ошибка";
       }
+      console.warn(`chunk ${index + 1} attempt ${attempt + 1} failed:`, lastErr);
+      if (attempt < autoRetries) await new Promise((r) => setTimeout(r, 2500));
     }
-
     toast.dismiss(`fmt-progress-${index}`);
-    return null;
+    toast.error(`Часть ${index + 1} не удалась: ${lastErr}`, {
+      id: `fmt-retry-${index}`,
+      duration: Infinity,
+      action: {
+        label: "Повторить",
+        onClick: () => { void retrySingleChunk(dId, index, total); },
+      },
+    });
+    return false;
   };
 
-  /** When all chunks succeeded, commit the joined markdown. NEVER called on partial failure. */
-  const commitIfComplete = () => {
-    if (resultsRef.current.some((r) => r == null)) return false;
-    const merged = (resultsRef.current as string[]).join("\n\n").trim();
-    onChange(merged);
-    toast.success("Текст отформатирован");
-    return true;
-  };
-
-  /** Retry a single failed chunk (called from the retry-toast button). */
-  const retryChunk = async (index: number) => {
+  const retrySingleChunk = async (dId: string, index: number, total: number) => {
     toast.dismiss(`fmt-retry-${index}`);
+    setFormatting(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        toast.error("Требуется авторизация");
-        return;
+      const ok = await processChunk(dId, index, total);
+      if (ok) {
+        // continue from this chunk to the end
+        for (let i = index + 1; i < total; i++) {
+          const okNext = await processChunk(dId, i, total);
+          if (!okNext) return;
+        }
+        await commitFromDraft(dId);
       }
-      setFormatting(true);
-      const out = await tryChunkWithRetries(index, accessToken);
-      if (out == null) {
-        showRetryToast(index, "не удалось");
-        return;
-      }
-      resultsRef.current[index] = out;
-      toast.success(`Часть ${index + 1} обработана`);
-      commitIfComplete();
-    } catch (e: any) {
-      console.error(e);
-      toast.error("Ошибка повтора: " + (e?.message || "неизвестно"));
     } finally {
       setFormatting(false);
     }
   };
 
-  const showRetryToast = (index: number, reason: string) => {
-    toast.error(`Часть ${index + 1} не обработалась: ${reason}`, {
-      id: `fmt-retry-${index}`,
-      duration: Infinity,
-      action: {
-        label: "Повторить",
-        onClick: () => { void retryChunk(index); },
-      },
-    });
+  const commitFromDraft = async (dId: string) => {
+    const { data } = await supabase
+      .from("disease_article_drafts")
+      .select("formatted_content, total_chunks, last_chunk_done, format_status")
+      .eq("id", dId)
+      .maybeSingle();
+    if (!data) return;
+    if (data.format_status === "done" && data.formatted_content) {
+      onChange(data.formatted_content.trim());
+      toast.success("Текст отформатирован");
+    }
   };
 
   const handleFormat = async () => {
@@ -309,50 +389,45 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     }
     setFormatting(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Требуется авторизация");
-
       const chunks = splitIntoChunks(value);
-      chunksRef.current = chunks;
-      resultsRef.current = new Array(chunks.length).fill(null);
-
-      if (chunks.length > 1) {
-        toast.message(`Начато форматирование (${chunks.length} частей)`);
-      }
-
-      let hadFailure = false;
+      const dId = await ensureDraft(chunks);
+      if (chunks.length > 1) toast.message(`Начато форматирование (${chunks.length} частей)`);
       for (let i = 0; i < chunks.length; i++) {
-        const out = await tryChunkWithRetries(i, accessToken);
-        if (out == null) {
-          hadFailure = true;
-          showRetryToast(i, "после 3 попыток");
-          // Continue with remaining chunks so user can retry only failed ones later.
-          continue;
-        }
-        resultsRef.current[i] = out;
+        const ok = await processChunk(dId, i, chunks.length);
+        if (!ok) return; // draft preserves state for resume; form unchanged
       }
-
-      if (hadFailure) {
-        const failed = resultsRef.current
-          .map((r, i) => (r == null ? i + 1 : null))
-          .filter((x) => x != null) as number[];
-        toast.warning(
-          `Готово ${chunks.length - failed.length}/${chunks.length}. Не обработаны: ${failed.join(", ")}. Нажмите «Повторить» в тостах. Форма не изменена.`,
-          { duration: 10000 },
-        );
-        return; // do NOT touch onChange — preserve form
-      }
-
-      commitIfComplete();
+      await commitFromDraft(dId);
     } catch (e: any) {
       console.error(e);
       toast.error("Ошибка форматирования: " + (e?.message || "неизвестно"));
-      // Form is preserved — we never touched onChange.
     } finally {
       setFormatting(false);
     }
   };
+
+  /** Resume an interrupted job from last_chunk_done + 1. */
+  const handleResume = async () => {
+    if (!draftId || !draftRow) return;
+    setFormatting(true);
+    try {
+      const start = draftRow.last_chunk_done;
+      const total = draftRow.total_chunks;
+      if (start >= total) {
+        await commitFromDraft(draftId);
+        return;
+      }
+      toast.message(`Возобновление с части ${start + 1}/${total}`);
+      for (let i = start; i < total; i++) {
+        const ok = await processChunk(draftId, i, total);
+        if (!ok) return;
+      }
+      await commitFromDraft(draftId);
+    } finally {
+      setFormatting(false);
+    }
+  };
+
+
 
 
 
@@ -443,6 +518,37 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             )}
             {formatting ? "Форматирую..." : "Форматировать"}
           </Button>
+
+          {/* Resume button — visible when an interrupted job exists */}
+          {draftRow &&
+            draftRow.total_chunks > 0 &&
+            draftRow.last_chunk_done < draftRow.total_chunks &&
+            (draftRow.format_status === "error" || draftRow.format_status === "processing") && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResume}
+                disabled={formatting}
+                className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300"
+                title="Продолжить форматирование с прерванной части"
+              >
+                {formatting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                ▶️ Продолжить ({draftRow.last_chunk_done}/{draftRow.total_chunks})
+              </Button>
+            )}
+
+          {/* Live progress indicator from realtime draft row */}
+          {draftRow && (draftRow.format_status === "processing" || formatting) && draftRow.format_progress && (
+            <span className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900">
+              Обработка: {draftRow.format_progress}
+            </span>
+          )}
+          {draftRow?.format_status === "error" && draftRow.error_message && (
+            <span className="text-xs px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900" title={draftRow.error_message}>
+              ⚠️ {draftRow.error_message.length > 60 ? draftRow.error_message.slice(0, 60) + "…" : draftRow.error_message}
+            </span>
+          )}
 
           {onSaveAsIs && (
             <Button
