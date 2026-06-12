@@ -108,7 +108,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const callAnthropic = (maxTokens: number) => {
+    const MODEL_ID = 'claude-sonnet-4-6';
+
+    const callAnthropic = (maxTokens: number, stream: boolean) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
       return fetch('https://api.anthropic.com/v1/messages', {
@@ -120,9 +122,9 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: MODEL_ID,
           max_tokens: maxTokens,
-          stream: true,
+          stream,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: text }],
         }),
@@ -133,9 +135,13 @@ Deno.serve(async (req) => {
     let aiResp: Response | null = null;
     let lastErrText = '';
     const tokenBudgets = [16000, 8000];
+    let usedTokenBudget = tokenBudgets[0];
+    let httpAttempts = 0;
     for (let attempt = 0; attempt < tokenBudgets.length; attempt++) {
+      httpAttempts++;
+      usedTokenBudget = tokenBudgets[attempt];
       try {
-        aiResp = await callAnthropic(tokenBudgets[attempt]);
+        aiResp = await callAnthropic(usedTokenBudget, true);
         if (aiResp.ok) break;
         lastErrText = await aiResp.text();
         const retriable = [429, 500, 502, 503, 529].includes(aiResp.status);
@@ -165,8 +171,7 @@ Deno.serve(async (req) => {
 
     // Buffer the Anthropic SSE stream fully on the server, then return a single JSON
     // response. Streaming the Response from this edge function was unreliable
-    // (downstream consumer closed the stream before bytes could be enqueued —
-    // see "stream controller cannot close or enqueue" logs).
+    // (downstream consumer closed the stream before bytes could be enqueued).
     if (!aiResp.body) {
       return new Response(JSON.stringify({ error: 'Пустой ответ от ИИ' }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -176,6 +181,7 @@ Deno.serve(async (req) => {
     let raw = '';
     let stopReason: string | null = null;
     let apiErrorMessage: string | null = null;
+    let textDeltaCount = 0;
     try {
       const reader = aiResp.body.getReader();
       const decoder = new TextDecoder();
@@ -193,11 +199,16 @@ Deno.serve(async (req) => {
           try {
             const evt = JSON.parse(payload);
             if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-              raw += evt.delta.text || '';
+              const piece = evt.delta.text || '';
+              if (piece) {
+                raw += piece;
+                textDeltaCount++;
+              }
             } else if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
               stopReason = evt.delta.stop_reason;
             } else if (evt.type === 'error') {
               apiErrorMessage = evt.error?.message || JSON.stringify(evt.error);
+              console.error('Anthropic stream error event:', apiErrorMessage);
             }
           } catch (parseErr) {
             console.error('Anthropic SSE parse error', String((parseErr as any)?.message || parseErr), 'payload:', payload.slice(0, 200));
@@ -212,27 +223,63 @@ Deno.serve(async (req) => {
           status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      // fall through with partial result
     }
 
-    if (apiErrorMessage && !raw) {
-      return new Response(JSON.stringify({ error: `Ошибка ИИ: ${apiErrorMessage}` }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    console.log(`format-disease-article stream done: stop_reason=${stopReason} text_deltas=${textDeltaCount} chars=${raw.length} api_error=${apiErrorMessage ?? 'none'}`);
+
+    // Fallback: if stream produced no text and there's no explicit API error,
+    // try ONE non-streaming request with the same model/max_tokens.
+    let fallbackUsed = false;
+    if (!raw.trim() && !apiErrorMessage) {
+      try {
+        httpAttempts++;
+        fallbackUsed = true;
+        console.log(`format-disease-article fallback (non-stream) max_tokens=${usedTokenBudget}`);
+        const fbResp = await callAnthropic(usedTokenBudget, false);
+        if (fbResp.ok) {
+          const fbJson = await fbResp.json();
+          const fbText = Array.isArray(fbJson?.content)
+            ? fbJson.content.map((b: any) => b?.text || '').join('')
+            : '';
+          if (typeof fbJson?.stop_reason === 'string') stopReason = fbJson.stop_reason;
+          raw = fbText || '';
+          console.log(`format-disease-article fallback ok: stop_reason=${stopReason} chars=${raw.length}`);
+        } else {
+          const errBody = await fbResp.text();
+          apiErrorMessage = `HTTP ${fbResp.status}: ${errBody.slice(0, 500)}`;
+          console.error('Anthropic fallback failed:', apiErrorMessage);
+        }
+      } catch (fbErr) {
+        apiErrorMessage = String((fbErr as any)?.message || fbErr);
+        console.error('Anthropic fallback threw:', apiErrorMessage);
+      }
     }
 
     const formatted = raw.replace(/===КОНЕЦ===\s*$/i, '').trim();
-    console.log(`format-disease-article ok: stop_reason=${stopReason} output_chars=${formatted.length}`);
 
     if (!formatted) {
-      return new Response(JSON.stringify({ error: 'ИИ вернул пустой ответ. Попробуйте ещё раз.' }), {
-        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      const reason = apiErrorMessage
+        ? `Anthropic: ${apiErrorMessage}`
+        : stopReason
+        ? `Модель остановилась без текста (stop_reason=${stopReason})`
+        : 'Модель не вернула текст';
+      console.error(`format-disease-article EMPTY: ${reason} attempts=${httpAttempts} fallback=${fallbackUsed}`);
+      return new Response(JSON.stringify({
+        error: reason,
+        stop_reason: stopReason,
+        attempts: httpAttempts,
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ formatted, stop_reason: stopReason }), {
+    console.log(`format-disease-article ok: stop_reason=${stopReason} output_chars=${formatted.length} attempts=${httpAttempts} fallback=${fallbackUsed}`);
+
+    return new Response(JSON.stringify({ formatted, stop_reason: stopReason, attempts: httpAttempts }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (e) {
     console.error('format-disease-article error:', e);
     return new Response(JSON.stringify({ error: String((e as any)?.message || e) }), {
