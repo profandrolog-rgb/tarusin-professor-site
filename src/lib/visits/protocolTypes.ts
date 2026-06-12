@@ -8,7 +8,8 @@ export type ProtocolType =
   | "postop_day3"
   | "postop_day7"
   | "repeat_with_uzi"
-  | "online_consult";
+  | "online_consult"
+  | "peptide_program";
 
 export interface ProtocolDef {
   key: ProtocolType;
@@ -33,6 +34,7 @@ export const PROTOCOL_LABELS: Record<string, string> = {
   uzi_urinary: "Ультразвуковое исследование органов мочевыделительной системы",
   ultrashort: "Краткий осмотр",
   online_consult: "ONLINE консультация",
+  peptide_program: "Пептидная программа",
   dynamic: "Динамический осмотр",
   unknown: "Осмотр",
 };
@@ -53,6 +55,7 @@ const PROTOCOL_SHORT: Record<string, string> = {
   uzi_urinary: "УЗИ мочевыделительной",
   ultrashort: "Краткий",
   online_consult: "ONLINE",
+  peptide_program: "Пептидная программа",
   dynamic: "Динамический",
   unknown: "Осмотр",
 };
@@ -68,6 +71,7 @@ export const PROTOCOL_TYPES: ProtocolDef[] = [
   "postop_day3",
   "postop_day7",
   "repeat_with_uzi",
+  "peptide_program",
 ].map((key) => ({
   key: key as ProtocolType,
   title: PROTOCOL_LABELS[key],
