@@ -244,8 +244,13 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       } catch (e: any) {
         lastErr = e?.message || "неизвестно";
         console.warn(`chunk ${index + 1} attempt ${attempt + 1} failed:`, lastErr);
+        if (attempt < autoRetries) {
+          // brief pause before retry — let transient timeouts / rate limits clear
+          await new Promise((r) => setTimeout(r, 2500));
+        }
       }
     }
+
     toast.dismiss(`fmt-progress-${index}`);
     return null;
   };
