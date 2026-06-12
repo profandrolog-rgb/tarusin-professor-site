@@ -250,7 +250,9 @@ Deno.serve(async (req) => {
       error_message: null,
     }).eq('id', draftId);
 
-    const r = await callAnthropic(apiKey, chunks[chunkIndex]);
+    // ---- Protect tables: strip BEFORE sending to AI, restore AFTER ----
+    const { stripped, tables } = extractTables(chunks[chunkIndex]);
+    const r = await callAnthropic(apiKey, stripped);
     if (r.error || !r.formatted) {
       const reason = r.error || (r.stop_reason ? `stop_reason=${r.stop_reason}` : 'empty response');
       await admin.from('disease_article_drafts').update({
