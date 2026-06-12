@@ -519,6 +519,37 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             {formatting ? "Форматирую..." : "Форматировать"}
           </Button>
 
+          {/* Resume button — visible when an interrupted job exists */}
+          {draftRow &&
+            draftRow.total_chunks > 0 &&
+            draftRow.last_chunk_done < draftRow.total_chunks &&
+            (draftRow.format_status === "error" || draftRow.format_status === "processing") && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResume}
+                disabled={formatting}
+                className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300"
+                title="Продолжить форматирование с прерванной части"
+              >
+                {formatting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                ▶️ Продолжить ({draftRow.last_chunk_done}/{draftRow.total_chunks})
+              </Button>
+            )}
+
+          {/* Live progress indicator from realtime draft row */}
+          {draftRow && (draftRow.format_status === "processing" || formatting) && draftRow.format_progress && (
+            <span className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900">
+              Обработка: {draftRow.format_progress}
+            </span>
+          )}
+          {draftRow?.format_status === "error" && draftRow.error_message && (
+            <span className="text-xs px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-900" title={draftRow.error_message}>
+              ⚠️ {draftRow.error_message.length > 60 ? draftRow.error_message.slice(0, 60) + "…" : draftRow.error_message}
+            </span>
+          )}
+
           {onSaveAsIs && (
             <Button
               type="button"
