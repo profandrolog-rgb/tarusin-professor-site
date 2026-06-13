@@ -132,7 +132,8 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
           return (
             <ReactMarkdown
               key={i}
-              remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
               components={{
                 hr: () => (
                   <hr
