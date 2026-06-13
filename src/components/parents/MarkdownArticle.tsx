@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import PlaceholderGallery from "./PlaceholderGallery";
 import ImageGallery from "./ImageGallery";
 
@@ -131,7 +132,8 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
           return (
             <ReactMarkdown
               key={i}
-              remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
               components={{
                 hr: () => (
                   <hr
