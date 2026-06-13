@@ -184,3 +184,13 @@ video::-webkit-media-controls-overflow-button {
   border-bottom: 1px solid #E2E8F0;
 }
 
+/* Force first row to look like a header even when content has no <thead> */
+.article-markdown table tr:first-child {
+  background-color: #1E3A5F !important;
+}
+.article-markdown table tr:first-child td,
+.article-markdown table tr:first-child th {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
