@@ -143,10 +143,18 @@ video::-webkit-media-controls-overflow-button {
   border: 1px solid #E2E8F0;
 }
 
-/* Синяя шапка — работает и для thead, и для первой строки */
-.article-markdown table thead th,
-.article-markdown table tr:first-child td,
-.article-markdown table tr:first-child th {
+/* Если есть thead — красим только его */
+.article-markdown table thead th {
+  background-color: #1E3A5F;
+  color: #FFFFFF;
+  font-weight: bold;
+  text-align: left;
+  padding: 12px 16px;
+}
+
+/* Если thead НЕТ — красим первую строку (для HTML-таблиц) */
+.article-markdown table:not(:has(thead)) tr:first-child td,
+.article-markdown table:not(:has(thead)) tr:first-child th {
   background-color: #1E3A5F;
   color: #FFFFFF;
   font-weight: bold;
@@ -161,13 +169,12 @@ video::-webkit-media-controls-overflow-button {
   border: 1px solid #E2E8F0;
 }
 
-/* Полосатые строки (кроме первой) */
-.article-markdown table tr:nth-child(even):not(:first-child) {
+/* Полосатые строки только в tbody */
+.article-markdown table tbody tr:nth-child(even) {
   background-color: #F8FAFC;
 }
 
-/* Подсветка при наведении */
-.article-markdown table tr:hover:not(:first-child) {
+.article-markdown table tbody tr:hover {
   background-color: #EBF5FF;
 }
 
