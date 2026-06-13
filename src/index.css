@@ -172,12 +172,15 @@ video::-webkit-media-controls-overflow-button {
 }
 .article-markdown table td,
 .article-markdown table th {
-  padding: 8px 14px;
+  padding: 8px 16px;
   line-height: 1.4;
   vertical-align: middle;
 }
 .article-markdown table tr {
   height: auto;
   min-height: unset;
+}
+.article-markdown table tbody tr {
+  border-bottom: 1px solid #E2E8F0;
 }
 
