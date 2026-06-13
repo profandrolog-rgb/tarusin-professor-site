@@ -148,7 +148,7 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
   }, [content, title]);
 
   return (
-    <div className="overflow-x-visible" onCopy={(e) => e.preventDefault()}>
+    <div className="article-markdown overflow-x-visible" onCopy={(e) => e.preventDefault()}>
       {segments.map((seg, i) => {
         if (seg.type === "html") {
           return (
