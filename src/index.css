@@ -170,3 +170,14 @@ video::-webkit-media-controls-overflow-button {
 .article-markdown table tbody tr:hover {
   background-color: #EBF5FF;
 }
+.article-markdown table td,
+.article-markdown table th {
+  padding: 8px 14px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.article-markdown table tr {
+  height: auto;
+  min-height: unset;
+}
+
