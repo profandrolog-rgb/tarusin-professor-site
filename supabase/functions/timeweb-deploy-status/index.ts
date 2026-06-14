@@ -16,11 +16,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const res = await fetch(
-      `https://api.timeweb.cloud/api/v1/apps/${TIMEWEB_APP_ID}/deploy?limit=5`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    // Параллельно: общая инфа о приложении + список деплоев
+    const auth = { Authorization: `Bearer ${token}` };
+    const [appRes, deploysRes] = await Promise.all([
+      fetch(`https://api.timeweb.cloud/api/v1/apps/${TIMEWEB_APP_ID}`, { headers: auth }),
+      fetch(`https://api.timeweb.cloud/api/v1/apps/${TIMEWEB_APP_ID}/deploys?limit=5`, { headers: auth }),
+    ]);
+    const res = deploysRes;
     const text = await res.text();
+    const appText = await appRes.text();
+    let appBody: any = appText;
+    try { appBody = JSON.parse(appText); } catch { /* keep */ }
     let body: any = text;
     try { body = JSON.parse(text); } catch { /* keep text */ }
 
