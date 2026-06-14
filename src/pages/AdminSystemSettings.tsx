@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle, Download } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle, Download, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +59,21 @@ const AdminSystemSettings = () => {
   const [exporting, setExporting] = useState(false);
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ patients: number | null; visits: number | null }>({ patients: null, visits: null });
+  const [deploying, setDeploying] = useState(false);
+
+  const triggerTimewebDeploy = async () => {
+    setDeploying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("trigger-timeweb-deploy", { method: "POST" });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("🚀 Деплой на Timeweb запущен");
+    } catch (e: any) {
+      toast.error(`Не удалось запустить деплой: ${e?.message || "ошибка"}`);
+    } finally {
+      setDeploying(false);
+    }
+  };
 
   useEffect(() => {
     setLastExportAt(localStorage.getItem(LAST_EXPORT_KEY));
@@ -170,6 +185,22 @@ const AdminSystemSettings = () => {
 
         <h1 className="text-3xl font-bold text-foreground mb-2">Системные настройки</h1>
         <p className="text-muted-foreground mb-8">Состояние фоновых задач и интеграций</p>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Деплой на Timeweb</CardTitle>
+            <CardDescription>
+              Обычно деплой запускается автоматически после Publish из Lovable. Эта кнопка — на случай,
+              если автодеплой не сработал.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={triggerTimewebDeploy} disabled={deploying} className="gap-2">
+              {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+              🚀 Запустить деплой вручную
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="mb-6">
           <CardHeader>
