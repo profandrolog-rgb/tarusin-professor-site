@@ -2,6 +2,8 @@ name: Deploy to Timeweb
 
 # Триггерит деплой на Timeweb после каждого пуша в main
 # (в т.ч. после коммитов, которые делает Lovable при нажатии Publish).
+# Вызывает edge-функцию trigger-timeweb-deploy, которая хранит TIMEWEB_API_TOKEN
+# в секретах Lovable Cloud — в GitHub секреты добавлять не нужно.
 on:
   push:
     branches: [main]
@@ -11,19 +13,15 @@ jobs:
   trigger-timeweb:
     runs-on: ubuntu-latest
     steps:
-      - name: Call Timeweb deploy hook
-        env:
-          HOOK_URL: ${{ secrets.TIMEWEB_DEPLOY_HOOK }}
+      - name: Call Timeweb deploy edge function
         run: |
-          if [ -z "$HOOK_URL" ]; then
-            echo "::error::Secret TIMEWEB_DEPLOY_HOOK is not set in repo Settings → Secrets → Actions"
-            exit 1
-          fi
-          echo "Triggering Timeweb deploy hook..."
-          http_code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST "$HOOK_URL")
+          URL="https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/trigger-timeweb-deploy"
+          echo "POST $URL"
+          http_code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST "$URL")
           echo "HTTP $http_code"
           cat /tmp/resp.txt || true
+          echo ""
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "::error::Timeweb hook returned non-2xx status"
+            echo "::error::Timeweb deploy trigger failed"
             exit 1
           fi
