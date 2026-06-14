@@ -188,6 +188,22 @@ const AdminSystemSettings = () => {
 
         <Card className="mb-6">
           <CardHeader>
+            <CardTitle>Деплой на Timeweb</CardTitle>
+            <CardDescription>
+              Обычно деплой запускается автоматически после Publish из Lovable. Эта кнопка — на случай,
+              если автодеплой не сработал.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={triggerTimewebDeploy} disabled={deploying} className="gap-2">
+              {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+              🚀 Запустить деплой вручную
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
             <CardTitle>Экспорт базы данных</CardTitle>
             <CardDescription>Резервная выгрузка пациентов и визитов в CSV. Рекомендуется делать еженедельно.</CardDescription>
           </CardHeader>
