@@ -40,7 +40,8 @@ Deno.serve(async (req) => {
 
     // Нормализуем ответ: API может возвращать { deploys: [...] } или { deploy: [...] }
     const deploys = body?.deploys ?? body?.deploy ?? body?.data ?? [];
-    return new Response(JSON.stringify({ deploys }), {
+    const app = appBody?.app ?? appBody ?? null;
+    return new Response(JSON.stringify({ deploys, app }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
