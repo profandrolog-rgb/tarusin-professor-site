@@ -398,7 +398,7 @@ function pushClinical(rows: React.ReactNode[], d: any) {
 }
 
 const KNOWN_KEYS = new Set([
-  "complaints","anamnesis","conclusion","indications","exam_plan","recommendations",
+  "complaints","anamnesis","conclusion","indications","exam_plan","recommendations","consultation_notes",
   "somatic","sexual_formula","sexual_formula_text","sexual_constitution","local_status",
   "ortho_status","neuro_status","neuro_status_full","psych_status","psych_status_full","psych_conclusion",
   "proj_person","proj_htp","proj_family","proj_animal","proj_free",
