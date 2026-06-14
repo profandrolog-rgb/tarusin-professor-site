@@ -11,9 +11,16 @@ import { PsychStatusData } from "@/components/visits/sections/PsychStatus";
 
 export interface UltrashortData {
   complaints?: string;
-  local_status?: string;
-  recommendations?: string;
+  anamnesis?: string;
+  consultation_notes?: string;
+  somatic?: SomaticStatusData;
+  sexual_formula?: SexualFormulaData;
+  sexual_formula_text?: string;
+  sexual_constitution?: string | SexualConstitutionData;
+  // local_status: object (новый формат) или строка (legacy)
+  local_status?: LocalStatusData | string;
   conclusion?: string;
+  recommendations?: string;
 }
 
 export interface PostOpDay3Data {
