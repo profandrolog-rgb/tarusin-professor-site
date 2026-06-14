@@ -59,6 +59,21 @@ const AdminSystemSettings = () => {
   const [exporting, setExporting] = useState(false);
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ patients: number | null; visits: number | null }>({ patients: null, visits: null });
+  const [deploying, setDeploying] = useState(false);
+
+  const triggerTimewebDeploy = async () => {
+    setDeploying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("trigger-timeweb-deploy", { method: "POST" });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("🚀 Деплой на Timeweb запущен");
+    } catch (e: any) {
+      toast.error(`Не удалось запустить деплой: ${e?.message || "ошибка"}`);
+    } finally {
+      setDeploying(false);
+    }
+  };
 
   useEffect(() => {
     setLastExportAt(localStorage.getItem(LAST_EXPORT_KEY));
