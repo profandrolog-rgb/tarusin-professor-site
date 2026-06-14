@@ -218,11 +218,76 @@ const AdminSystemSettings = () => {
               если автодеплой не сработал.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Button onClick={triggerTimewebDeploy} disabled={deploying} className="gap-2">
               {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
               🚀 Запустить деплой вручную
             </Button>
+
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Текущий статус</div>
+                <Button variant="ghost" size="sm" onClick={loadDeployStatus} disabled={deployStatusLoading} className="gap-2 h-7">
+                  <RefreshCw className={`w-3.5 h-3.5 ${deployStatusLoading ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
+
+              {!deployStatus ? (
+                <div className="text-sm text-muted-foreground">{deployStatusLoading ? "Загрузка..." : "Нет данных"}</div>
+              ) : (
+                <>
+                  {(() => {
+                    const app = deployStatus.app;
+                    const last = deployStatus.deploys?.[0];
+                    const statusMap: Record<string, { label: string; cls: string }> = {
+                      deployed: { label: "Развёрнуто", cls: "bg-green-100 text-green-700" },
+                      deploy: { label: "Деплой идёт", cls: "bg-blue-100 text-blue-700" },
+                      building: { label: "Сборка", cls: "bg-blue-100 text-blue-700" },
+                      pending: { label: "В очереди", cls: "bg-amber-100 text-amber-700" },
+                      stopped: { label: "Остановлен", cls: "bg-red-100 text-red-700" },
+                      failed: { label: "Ошибка", cls: "bg-red-100 text-red-700" },
+                    };
+                    const appS = statusMap[app?.status] || { label: app?.status || "—", cls: "bg-gray-100 text-gray-700" };
+                    const lastS = last ? (statusMap[last.status] || { label: last.status, cls: "bg-gray-100 text-gray-700" }) : null;
+                    return (
+                      <>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-muted-foreground">Приложение:</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${appS.cls}`}>{appS.label}</span>
+                        </div>
+                        {last && (
+                          <div className="text-sm space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Последний деплой:</span>
+                              {lastS && <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${lastS.cls}`}>{lastS.label}</span>}
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(last.started_at + (last.started_at.endsWith("Z") ? "" : "Z")), "d MMM HH:mm", { locale: ru })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <GitCommit className="w-3.5 h-3.5 text-muted-foreground" />
+                              <code className="text-xs bg-background px-1.5 py-0.5 rounded border">{last.commit_sha?.slice(0, 7) || "—"}</code>
+                              <span className="text-xs text-muted-foreground truncate max-w-[300px]" title={last.commit_msg}>
+                                {(last.commit_msg || "").split("\n")[0]}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {app?.domains?.[0]?.fqdn && (
+                          <a
+                            href={`https://${app.domains[0].fqdn}`}
+                            target="_blank" rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                          >
+                            {app.domains[0].fqdn} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
