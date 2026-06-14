@@ -432,6 +432,17 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Краткий анамнез" value={d.anamnesis} />);
+    pushSomatic(rows, d);
+    pushSexual(rows, d);
+    if (d.consultation_notes) {
+      rows.push(<Field key="cn" label="Сведения о консультации" value={d.consultation_notes} />);
+    }
+    if (typeof d.local_status === "string" && d.local_status) {
+      rows.push(<Field key="ls-legacy" label="Локальный статус" value={d.local_status} />);
+    } else {
+      pushLocalStatus(rows, d);
+    }
     rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
 
