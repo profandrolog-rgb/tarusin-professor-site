@@ -91,6 +91,7 @@ const AdminSystemSettings = () => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success("🚀 Деплой на Timeweb запущен");
+      setTimeout(loadDeployStatus, 2000);
     } catch (e: any) {
       toast.error(`Не удалось запустить деплой: ${e?.message || "ошибка"}`);
     } finally {
