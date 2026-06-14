@@ -1,0 +1,29 @@
+name: Deploy to Timeweb
+
+# Триггерит деплой на Timeweb после каждого пуша в main
+# (в т.ч. после коммитов, которые делает Lovable при нажатии Publish).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  trigger-timeweb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Timeweb deploy hook
+        env:
+          HOOK_URL: ${{ secrets.TIMEWEB_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK_URL" ]; then
+            echo "::error::Secret TIMEWEB_DEPLOY_HOOK is not set in repo Settings → Secrets → Actions"
+            exit 1
+          fi
+          echo "Triggering Timeweb deploy hook..."
+          http_code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST "$HOOK_URL")
+          echo "HTTP $http_code"
+          cat /tmp/resp.txt || true
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Timeweb hook returned non-2xx status"
+            exit 1
+          fi
