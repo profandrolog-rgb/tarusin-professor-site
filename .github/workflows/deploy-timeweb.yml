@@ -1,8 +1,7 @@
 name: Deploy to Timeweb
 
-# Триггерит деплой на Timeweb после каждого пуша в main
-# (в т.ч. после коммитов, которые делает Lovable при нажатии Publish).
-# Вызывает edge-функцию trigger-timeweb-deploy, которая хранит TIMEWEB_API_TOKEN
+# Триггерит деплой на Timeweb после каждого пуша в main.
+# Передаёт commit_sha в edge-функцию, которая хранит TIMEWEB_API_TOKEN
 # в секретах Lovable Cloud — в GitHub секреты добавлять не нужно.
 on:
   push:
@@ -14,10 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Call Timeweb deploy edge function
+        env:
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           URL="https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/trigger-timeweb-deploy"
-          echo "POST $URL"
-          http_code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" -X POST "$URL")
+          echo "POST $URL (commit $COMMIT_SHA)"
+          http_code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
+            -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"commit_sha\":\"$COMMIT_SHA\"}")
           echo "HTTP $http_code"
           cat /tmp/resp.txt || true
           echo ""
