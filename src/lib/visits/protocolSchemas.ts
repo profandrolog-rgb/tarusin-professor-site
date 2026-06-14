@@ -158,8 +158,12 @@ export type AnyProtocolData =
 export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData>> = {
   ultrashort: {
     complaints: "Активных жалоб не предъявляет.",
+    anamnesis: "Со слов родителей: рос и развивался по возрасту. Хронические заболевания отрицают.",
+    somatic: DEFAULT_SOMATIC,
+    sexual_formula: DEFAULT_SEXUAL_FORMULA,
+    local_status: DEFAULT_LOCAL_STATUS,
     recommendations: "Динамическое наблюдение. Контрольный осмотр через 6 месяцев.",
-  },
+  } as UltrashortData,
   postop_day3: {
     general_status: "Удовлетворительное. Температура тела нормальная.",
     wound_status: "Послеоперационная рана без признаков воспаления, повязка чистая, сухая.",
