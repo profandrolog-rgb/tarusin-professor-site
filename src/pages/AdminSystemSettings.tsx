@@ -60,6 +60,29 @@ const AdminSystemSettings = () => {
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ patients: number | null; visits: number | null }>({ patients: null, visits: null });
   const [deploying, setDeploying] = useState(false);
+  const [deployStatus, setDeployStatus] = useState<{ app: any; deploys: any[] } | null>(null);
+  const [deployStatusLoading, setDeployStatusLoading] = useState(false);
+
+  const loadDeployStatus = async () => {
+    setDeployStatusLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("timeweb-deploy-status", { method: "GET" });
+      if (error) throw error;
+      setDeployStatus(data as any);
+    } catch (e: any) {
+      console.error("deploy status error", e);
+    } finally {
+      setDeployStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      loadDeployStatus();
+      const t = setInterval(loadDeployStatus, 15000);
+      return () => clearInterval(t);
+    }
+  }, [user, isAdmin]);
 
   const triggerTimewebDeploy = async () => {
     setDeploying(true);
