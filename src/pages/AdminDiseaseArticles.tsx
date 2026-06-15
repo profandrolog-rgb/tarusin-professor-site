@@ -253,10 +253,10 @@ const AdminDiseaseArticles = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">Нет материалов. Нажмите «Добавить материал».</div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4 min-w-0">
             {filtered.map((article) => (
-              <Card key={article.id}>
-                <CardContent className="p-4 flex items-center justify-between">
+              <Card key={article.id} className="min-w-0 overflow-hidden">
+                <CardContent className="p-4 flex items-center justify-between min-w-0 w-full">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="flex gap-1.5">
                       {article.video_path && <Video className="w-4 h-4 text-blue-500" />}
