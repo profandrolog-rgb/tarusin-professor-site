@@ -143,6 +143,11 @@ function ConvRow({
 }) {
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("application/x-conv-id", conv.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
       onClick={onOpen}
     >
@@ -198,6 +203,8 @@ export default function Cabinet() {
     try { return JSON.parse(window.localStorage.getItem(FOLDERS_OPEN_LS_KEY) || "{}"); } catch { return {}; }
   });
   const [unfiledOpen, setUnfiledOpen] = useState(true);
+  const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -436,12 +443,15 @@ export default function Cabinet() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const newConversation = async () => {
+  const newConversation = async (folderId: string | null = null) => {
     setActiveId(null);
     setMessages([]);
     setAttachments([]);
     setInput("");
+    setPendingFolderId(folderId);
+    if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
+
 
   const deleteConversation = async (id: string) => {
     if (!confirm("Удалить диалог?")) return;
@@ -481,12 +491,13 @@ export default function Cabinet() {
     const title = titleSeed.slice(0, 60) || "Новый диалог";
     const { data, error } = await supabase
       .from("ai_conversations")
-      .insert({ user_id: user.id, title, model: modelTag })
+      .insert({ user_id: user.id, title, model: modelTag, folder_id: pendingFolderId })
       .select("id, title, model, updated_at, folder_id")
       .single();
     if (error || !data) { toast.error("Не удалось создать диалог"); return null; }
     setActiveId(data.id);
     setConversations((prev) => [data as Conversation, ...prev]);
+    setPendingFolderId(null);
     return data.id;
   };
 
@@ -655,7 +666,7 @@ export default function Cabinet() {
       const title = text.slice(0, 60) || "Новый диалог";
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: user.id, title, model })
+        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId })
         .select("id, title, model, updated_at, folder_id")
         .single();
       if (error || !data) {
@@ -666,6 +677,7 @@ export default function Cabinet() {
       convId = data.id;
       setActiveId(convId);
       setConversations((prev) => [data as Conversation, ...prev]);
+      setPendingFolderId(null);
     }
 
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
@@ -837,7 +849,7 @@ export default function Cabinet() {
       {/* Sidebar */}
       <aside className="md:w-72 border-r border-border md:h-screen flex flex-col bg-muted/30">
         <div className="p-3 border-b border-border space-y-2">
-          <Button onClick={newConversation} className="w-full" size="sm">
+          <Button onClick={() => newConversation(null)} className="w-full" size="sm">
             <Plus className="w-4 h-4 mr-2" />Новый диалог
           </Button>
           <Button onClick={createFolder} className="w-full" size="sm" variant="outline">
@@ -855,7 +867,23 @@ export default function Cabinet() {
               const items = conversations.filter((c) => c.folder_id === f.id);
               const isOpen = openFolders[f.id] ?? true;
               return (
-                <div key={f.id} className="space-y-0.5">
+                <div
+                  key={f.id}
+                  className={`space-y-0.5 rounded-md ${dragOverFolder === f.id ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
+                  onDragOver={(e) => {
+                    if (e.dataTransfer.types.includes("application/x-conv-id")) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverFolder(f.id);
+                    }
+                  }}
+                  onDragLeave={() => setDragOverFolder((cur) => (cur === f.id ? null : cur))}
+                  onDrop={(e) => {
+                    const id = e.dataTransfer.getData("application/x-conv-id");
+                    setDragOverFolder(null);
+                    if (id) moveConversation(id, f.id);
+                  }}
+                >
                   <div className="group flex items-center gap-1 rounded-md px-1 py-1.5 hover:bg-accent">
                     <button
                       type="button"
@@ -866,6 +894,15 @@ export default function Cabinet() {
                       {isOpen ? <FolderOpen className="w-3.5 h-3.5 shrink-0 text-primary" /> : <Folder className="w-3.5 h-3.5 shrink-0 text-primary" />}
                       <span className="text-sm font-medium truncate">{f.name}</span>
                       <span className="text-xs text-muted-foreground">{items.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); newConversation(f.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:text-primary"
+                      aria-label="Новый чат в папке"
+                      title="Новый чат в папке"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -922,7 +959,22 @@ export default function Cabinet() {
                 ));
               }
               return (
-                <div className="space-y-0.5 pt-1">
+                <div
+                  className={`space-y-0.5 pt-1 rounded-md ${dragOverFolder === "unfiled" ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
+                  onDragOver={(e) => {
+                    if (e.dataTransfer.types.includes("application/x-conv-id")) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverFolder("unfiled");
+                    }
+                  }}
+                  onDragLeave={() => setDragOverFolder((cur) => (cur === "unfiled" ? null : cur))}
+                  onDrop={(e) => {
+                    const id = e.dataTransfer.getData("application/x-conv-id");
+                    setDragOverFolder(null);
+                    if (id) moveConversation(id, null);
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setUnfiledOpen((v) => !v)}
