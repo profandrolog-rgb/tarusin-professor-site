@@ -237,6 +237,28 @@ export default function Cabinet() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
+  const [extendedPickerOpen, setExtendedPickerOpen] = useState(false);
+  const { byId: liveModelsById, loading: liveModelsLoading } = useOpenRouterModels();
+  const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById));
+  const fastModels = resolvedModels.filter((m) => m.tier === "fast");
+  const deepModels = resolvedModels.filter((m) => m.tier === "deep");
+  const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
+  // Once live list is in, upgrade the bootstrap default to the resolved slug.
+  useEffect(() => {
+    if (liveModelsLoading || !resolvedModels.length) return;
+    const isCurated = resolvedModels.some((r) => r.id === model);
+    const isLive = liveModelsById.has(model);
+    if (!isCurated && !isLive) {
+      const fallback = resolvedModels.find((r) => r.key === DEFAULT_MODEL_KEY && r.available)
+        ?? resolvedModels.find((r) => r.available);
+      if (fallback) setModel(fallback.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveModelsLoading]);
+  const currentResolved = resolvedModels.find((r) => r.id === model);
+  const currentLive = liveModelsById.get(model);
+  const modelKnown = !!currentLive || !!currentResolved?.available;
+
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
