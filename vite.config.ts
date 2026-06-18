@@ -8,6 +8,7 @@ import { componentTagger } from "lovable-tagger";
 const EXCLUDED_FROM_SSG = new Set([
   "/auth",
   "/portal",
+  "/cabinet",
   "/admin",
   "/admin/requests",
   "/admin/certificates",
