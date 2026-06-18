@@ -112,8 +112,13 @@ export default function Cabinet() {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
     return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
   });
+  const [summarizerPrompt, setSummarizerPrompt] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_SUMMARIZER_PROMPT;
+    return window.localStorage.getItem(SUMMARIZER_PROMPT_LS_KEY) || DEFAULT_SUMMARIZER_PROMPT;
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [systemDraft, setSystemDraft] = useState(systemPrompt);
+  const [summarizerDraft, setSummarizerDraft] = useState(summarizerPrompt);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
