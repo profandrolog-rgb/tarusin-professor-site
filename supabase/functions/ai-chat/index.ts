@@ -66,7 +66,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const resolvedModel = body.model === "x-ai/grok-4" ? "x-ai/grok-4.3" : body.model;
+    const rawModel = (body.model as string).replace(/^pubmed:/, "");
+    const resolvedModel = rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
     const effort: "low" | "medium" | "high" =
       body.reasoning_effort === "high" || body.reasoning_effort === "medium"
         ? body.reasoning_effort
