@@ -120,6 +120,12 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
 export default function Cabinet() {
   const { user, loading, isAdmin } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [folders, setFolders] = useState<ChatFolder[]>([]);
+  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(window.localStorage.getItem(FOLDERS_OPEN_LS_KEY) || "{}"); } catch { return {}; }
+  });
+  const [unfiledOpen, setUnfiledOpen] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
