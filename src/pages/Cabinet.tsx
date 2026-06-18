@@ -231,7 +231,11 @@ export default function Cabinet() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sess.session?.access_token ?? ""}`,
         },
-        body: JSON.stringify({ model, messages: historyForApi }),
+        body: JSON.stringify({
+          model,
+          messages: historyForApi,
+          reasoning_effort: speed === "fast" ? "low" : "high",
+        }),
       });
 
       if (!resp.ok || !resp.body) {
