@@ -497,7 +497,7 @@ export default function Cabinet() {
       {/* Main chat */}
       <main className="flex-1 flex flex-col md:h-screen">
         <header className="border-b border-border px-4 py-3 flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold flex-1 min-w-0">Кабинет · ИИ-чат</h1>
+          <h1 className="text-lg font-semibold flex-1 min-w-0">Мультимодальный ассистент профессора</h1>
           <div className="inline-flex rounded-md border border-border overflow-hidden">
             <button
               type="button"
