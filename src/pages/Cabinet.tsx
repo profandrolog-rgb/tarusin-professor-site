@@ -68,6 +68,8 @@ type Attachment = {
 
 type CouncilAnswer = { model: string; content: string; error: string | null };
 
+type SourceCitation = { url: string; title?: string; content?: string };
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -75,6 +77,7 @@ type Msg = {
   attachments?: Attachment[];
   model?: string;
   council?: CouncilAnswer[];
+  sources?: SourceCitation[];
 };
 
 type Conversation = {
