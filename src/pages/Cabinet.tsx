@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -20,27 +20,20 @@ import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
 import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
 import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
-
-
+import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, type ResolvedModel } from "@/config/aiModels";
+import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
 const PUBMED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed`;
 const PUBMED_FULLTEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed-fulltext`;
 
-type ModelOpt = { id: string; label: string; group: "fast" | "deep" };
-const MODELS: ModelOpt[] = [
-  // Быстрые — по умолчанию
-  { id: "google/gemini-2.5-flash", label: "⚡ Gemini 2.5 Flash (быстрый)", group: "fast" },
-  { id: "anthropic/claude-sonnet-4.5", label: "⚡ Claude Sonnet 4.5 (быстрый)", group: "fast" },
-  { id: "openai/gpt-5-mini", label: "⚡ GPT-5 mini (быстрый)", group: "fast" },
-  { id: "x-ai/grok-4.3", label: "⚡ Grok 4.3 (быстрый)", group: "fast" },
-  // Глубокие
-  { id: "google/gemini-2.5-pro", label: "🧠 Gemini 2.5 Pro (глубокий)", group: "deep" },
-  { id: "anthropic/claude-opus-4.1", label: "🧠 Claude Opus 4.1 (глубокий)", group: "deep" },
-  { id: "openai/gpt-5", label: "🧠 GPT-5 (глубокий)", group: "deep" },
-];
-const DEFAULT_MODEL = "google/gemini-2.5-flash";
+// Bootstrap default — replaced once live OpenRouter list resolves.
+const DEFAULT_MODEL =
+  CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
+  "google/gemini-2.5-flash";
+
 
 const DEFAULT_SYSTEM_PROMPT =
   "Ты — ассистент профессора Д. И. Тарусина: профессор, д.м.н., 40 лет клинического стажа, основатель детской урологии-андрологии в России, руководитель Городского центра репродуктивного здоровья детей и подростков. " +
@@ -244,6 +237,28 @@ export default function Cabinet() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
+  const [extendedPickerOpen, setExtendedPickerOpen] = useState(false);
+  const { byId: liveModelsById, loading: liveModelsLoading } = useOpenRouterModels();
+  const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById));
+  const fastModels = resolvedModels.filter((m) => m.tier === "fast");
+  const deepModels = resolvedModels.filter((m) => m.tier === "deep");
+  const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
+  // Once live list is in, upgrade the bootstrap default to the resolved slug.
+  useEffect(() => {
+    if (liveModelsLoading || !resolvedModels.length) return;
+    const isCurated = resolvedModels.some((r) => r.id === model);
+    const isLive = liveModelsById.has(model);
+    if (!isCurated && !isLive) {
+      const fallback = resolvedModels.find((r) => r.key === DEFAULT_MODEL_KEY && r.available)
+        ?? resolvedModels.find((r) => r.available);
+      if (fallback) setModel(fallback.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveModelsLoading]);
+  const currentResolved = resolvedModels.find((r) => r.id === model);
+  const currentLive = liveModelsById.get(model);
+  const modelKnown = !!currentLive || !!currentResolved?.available;
+
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
@@ -808,8 +823,9 @@ export default function Cabinet() {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
-        ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt }
+        ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt, models: councilPanel }
         : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch, search_source: searchSource };
+
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -1146,13 +1162,57 @@ export default function Cabinet() {
             <Users className="w-3.5 h-3.5" />Консилиум
           </button>
           <Select value={model} onValueChange={setModel} disabled={streaming || council}>
-            <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[300px]">
+              <SelectValue>
+                {(() => {
+                  const r = currentResolved;
+                  if (r) return `${r.emoji} ${r.label}${!r.available ? " · недоступно" : ""}`;
+                  if (currentLive) return `🧪 ${currentLive.name || currentLive.id}`;
+                  return `⚠ ${model}`;
+                })()}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
-              {MODELS.map((m) => (
-                <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Быстрые</div>
+              {fastModels.map((m) => (
+                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                  <span className="flex items-center gap-1">
+                    <span>{m.emoji}</span>
+                    <span>{m.label}</span>
+                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                  </span>
+                </SelectItem>
               ))}
+              <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Глубокие</div>
+              {deepModels.map((m) => (
+                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                  <span className="flex items-center gap-1">
+                    <span>{m.emoji}</span>
+                    <span>{m.label}</span>
+                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                  </span>
+                </SelectItem>
+              ))}
+              {currentResolved == null && currentLive && (
+                <>
+                  <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Расширенный выбор</div>
+                  <SelectItem value={model}>🧪 {currentLive.name || currentLive.id}</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
+          <button
+            type="button"
+            onClick={() => setExtendedPickerOpen(true)}
+            disabled={streaming || council}
+            className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
+            title={modelKnown
+              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive })}`
+              : `⚠ Слаг ${model} не найден в OpenRouter — может вернуть 404`}
+          >
+            <Search className="w-3.5 h-3.5" />Ещё
+          </button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -1198,8 +1258,15 @@ export default function Cabinet() {
           </button>
         </header>
 
+        <ExtendedModelPicker
+          open={extendedPickerOpen}
+          onOpenChange={setExtendedPickerOpen}
+          onPick={(id) => setModel(id)}
+          currentId={model}
+        />
 
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Системные промпты</DialogTitle>
