@@ -304,14 +304,16 @@ export default function Cabinet() {
 
       // Persist assistant message
       if (assistantSoFar) {
+        const persistModel = council ? "council" : model;
         await supabase.from("ai_messages").insert({
           conversation_id: convId,
           user_id: user.id,
           role: "assistant",
           content: assistantSoFar,
-          model,
+          model: persistModel,
+          attachments: councilAnswers ? ([{ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` }] as any) : null,
         });
-        await supabase.from("ai_conversations").update({ model, updated_at: new Date().toISOString() }).eq("id", convId);
+        await supabase.from("ai_conversations").update({ model: persistModel, updated_at: new Date().toISOString() }).eq("id", convId);
         loadConversations();
       }
     } catch (e: any) {
