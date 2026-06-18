@@ -472,10 +472,48 @@ export default function Cabinet() {
                   </div>
                 )}
                 {m.role === "assistant" ? (
-                  m.content ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
-                    </div>
+                  m.content || m.council ? (
+                    <>
+                      {m.council && m.council.length > 0 && (
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
+                          <Users className="w-3 h-3" /> Сводный ответ консилиума
+                        </div>
+                      )}
+                      {m.content ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Сводим ответы…
+                        </div>
+                      )}
+                      {m.council && m.council.length > 0 && (
+                        <Accordion type="single" collapsible className="mt-3 border-t border-border/50 pt-2">
+                          <AccordionItem value="answers" className="border-0">
+                            <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                              Ответы моделей по отдельности ({m.council.length})
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-3">
+                                {m.council.map((a, k) => (
+                                  <div key={k} className="rounded-md bg-background/60 p-2">
+                                    <div className="text-[11px] font-mono text-muted-foreground mb-1">{a.model}</div>
+                                    {a.error ? (
+                                      <div className="text-xs text-destructive">⚠️ {a.error}</div>
+                                    ) : (
+                                      <div className="prose prose-xs dark:prose-invert max-w-none text-xs">
+                                        <ReactMarkdown>{a.content}</ReactMarkdown>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )}
+                    </>
                   ) : (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )
