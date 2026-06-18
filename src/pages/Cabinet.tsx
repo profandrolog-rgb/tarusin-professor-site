@@ -85,7 +85,15 @@ type Conversation = {
   title: string;
   model: string | null;
   updated_at: string;
+  folder_id: string | null;
 };
+
+type ChatFolder = {
+  id: string;
+  name: string;
+};
+
+const FOLDERS_OPEN_LS_KEY = "cabinet.foldersOpen.v1";
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
