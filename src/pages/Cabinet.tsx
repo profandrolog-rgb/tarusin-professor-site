@@ -1438,7 +1438,7 @@ export default function Cabinet() {
                   sendMessage();
                 }
               }}
-              placeholder="Сообщение (Enter — отправить, Shift+Enter — перенос)"
+              placeholder={pubmedMode ? "Клинический вопрос для поиска в PubMed (Enter — искать)" : "Сообщение (Enter — отправить, Shift+Enter — перенос)"}
               className="flex-1 min-h-[44px] max-h-40 resize-none"
               disabled={streaming}
             />
