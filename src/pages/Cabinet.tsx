@@ -354,10 +354,34 @@ export default function Cabinet() {
 
       {/* Main chat */}
       <main className="flex-1 flex flex-col md:h-screen">
-        <header className="border-b border-border px-4 py-3 flex items-center gap-3">
-          <h1 className="text-lg font-semibold flex-1">Кабинет · ИИ-чат</h1>
+        <header className="border-b border-border px-4 py-3 flex flex-wrap items-center gap-2">
+          <h1 className="text-lg font-semibold flex-1 min-w-0">Кабинет · ИИ-чат</h1>
+          <div className="inline-flex rounded-md border border-border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setSpeed("fast")}
+              disabled={streaming}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1 transition-colors ${
+                speed === "fast" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"
+              }`}
+              title="Минимальное обдумывание — быстрый ответ"
+            >
+              <Zap className="w-3.5 h-3.5" />Быстро
+            </button>
+            <button
+              type="button"
+              onClick={() => setSpeed("deep")}
+              disabled={streaming}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1 transition-colors border-l border-border ${
+                speed === "deep" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"
+              }`}
+              title="Расширенное обдумывание — медленнее, но глубже"
+            >
+              <Brain className="w-3.5 h-3.5" />Вдумчиво
+            </button>
+          </div>
           <Select value={model} onValueChange={setModel} disabled={streaming}>
-            <SelectTrigger className="w-[260px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               {MODELS.map((m) => (
                 <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
