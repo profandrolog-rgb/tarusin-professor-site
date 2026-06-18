@@ -867,7 +867,23 @@ export default function Cabinet() {
               const items = conversations.filter((c) => c.folder_id === f.id);
               const isOpen = openFolders[f.id] ?? true;
               return (
-                <div key={f.id} className="space-y-0.5">
+                <div
+                  key={f.id}
+                  className={`space-y-0.5 rounded-md ${dragOverFolder === f.id ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
+                  onDragOver={(e) => {
+                    if (e.dataTransfer.types.includes("application/x-conv-id")) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverFolder(f.id);
+                    }
+                  }}
+                  onDragLeave={() => setDragOverFolder((cur) => (cur === f.id ? null : cur))}
+                  onDrop={(e) => {
+                    const id = e.dataTransfer.getData("application/x-conv-id");
+                    setDragOverFolder(null);
+                    if (id) moveConversation(id, f.id);
+                  }}
+                >
                   <div className="group flex items-center gap-1 rounded-md px-1 py-1.5 hover:bg-accent">
                     <button
                       type="button"
@@ -878,6 +894,15 @@ export default function Cabinet() {
                       {isOpen ? <FolderOpen className="w-3.5 h-3.5 shrink-0 text-primary" /> : <Folder className="w-3.5 h-3.5 shrink-0 text-primary" />}
                       <span className="text-sm font-medium truncate">{f.name}</span>
                       <span className="text-xs text-muted-foreground">{items.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); newConversation(f.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:text-primary"
+                      aria-label="Новый чат в папке"
+                      title="Новый чат в папке"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
