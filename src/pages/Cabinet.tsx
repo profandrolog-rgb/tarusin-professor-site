@@ -98,6 +98,12 @@ export default function Cabinet() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
+    return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [systemDraft, setSystemDraft] = useState(systemPrompt);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
