@@ -584,34 +584,120 @@ export default function Cabinet() {
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Sidebar */}
       <aside className="md:w-72 border-r border-border md:h-screen flex flex-col bg-muted/30">
-        <div className="p-3 border-b border-border">
+        <div className="p-3 border-b border-border space-y-2">
           <Button onClick={newConversation} className="w-full" size="sm">
             <Plus className="w-4 h-4 mr-2" />Новый диалог
+          </Button>
+          <Button onClick={createFolder} className="w-full" size="sm" variant="outline">
+            <FolderPlus className="w-4 h-4 mr-2" />Новая папка
           </Button>
         </div>
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
-            {conversations.length === 0 && (
+            {conversations.length === 0 && folders.length === 0 && (
               <p className="text-xs text-muted-foreground p-3 text-center">История пуста</p>
             )}
-            {conversations.map((c) => (
-              <div
-                key={c.id}
-                className={`group flex items-center gap-1 rounded-md px-2 py-2 cursor-pointer hover:bg-accent ${
-                  activeId === c.id ? "bg-accent" : ""
-                }`}
-                onClick={() => setActiveId(c.id)}
-              >
-                <span className="flex-1 text-sm truncate">{c.title}</span>
-                <button
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); deleteConversation(c.id); }}
-                  aria-label="Удалить"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+
+            {/* Folders */}
+            {folders.map((f) => {
+              const items = conversations.filter((c) => c.folder_id === f.id);
+              const isOpen = openFolders[f.id] ?? true;
+              return (
+                <div key={f.id} className="space-y-0.5">
+                  <div className="group flex items-center gap-1 rounded-md px-1 py-1.5 hover:bg-accent">
+                    <button
+                      type="button"
+                      onClick={() => toggleFolder(f.id)}
+                      className="flex items-center gap-1 flex-1 min-w-0 text-left"
+                    >
+                      {isOpen ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
+                      {isOpen ? <FolderOpen className="w-3.5 h-3.5 shrink-0 text-primary" /> : <Folder className="w-3.5 h-3.5 shrink-0 text-primary" />}
+                      <span className="text-sm font-medium truncate">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">{items.length}</span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="opacity-0 group-hover:opacity-100 p-1" aria-label="Действия">
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => renameFolder(f)}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" />Переименовать
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => deleteFolder(f)} className="text-destructive">
+                          <Trash2 className="w-3.5 h-3.5 mr-2" />Удалить папку
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {isOpen && (
+                    <div className="pl-5 space-y-0.5">
+                      {items.length === 0 && (
+                        <p className="text-xs text-muted-foreground px-2 py-1">Пусто</p>
+                      )}
+                      {items.map((c) => (
+                        <ConvRow
+                          key={c.id}
+                          conv={c}
+                          active={activeId === c.id}
+                          folders={folders}
+                          onOpen={() => setActiveId(c.id)}
+                          onDelete={() => deleteConversation(c.id)}
+                          onMove={(fid) => moveConversation(c.id, fid)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Unfiled */}
+            {(() => {
+              const unfiled = conversations.filter((c) => !c.folder_id);
+              if (!folders.length) {
+                return unfiled.map((c) => (
+                  <ConvRow
+                    key={c.id}
+                    conv={c}
+                    active={activeId === c.id}
+                    folders={folders}
+                    onOpen={() => setActiveId(c.id)}
+                    onDelete={() => deleteConversation(c.id)}
+                    onMove={(fid) => moveConversation(c.id, fid)}
+                  />
+                ));
+              }
+              return (
+                <div className="space-y-0.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setUnfiledOpen((v) => !v)}
+                    className="flex items-center gap-1 w-full text-left rounded-md px-1 py-1.5 hover:bg-accent"
+                  >
+                    {unfiledOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Без папки</span>
+                    <span className="text-xs text-muted-foreground">{unfiled.length}</span>
+                  </button>
+                  {unfiledOpen && (
+                    <div className="pl-5 space-y-0.5">
+                      {unfiled.map((c) => (
+                        <ConvRow
+                          key={c.id}
+                          conv={c}
+                          active={activeId === c.id}
+                          folders={folders}
+                          onOpen={() => setActiveId(c.id)}
+                          onDelete={() => deleteConversation(c.id)}
+                          onMove={(fid) => moveConversation(c.id, fid)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </ScrollArea>
       </aside>
