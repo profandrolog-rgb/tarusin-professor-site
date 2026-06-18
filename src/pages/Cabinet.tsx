@@ -120,6 +120,7 @@ export default function Cabinet() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
+  const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
   const [streaming, setStreaming] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
@@ -373,7 +374,7 @@ export default function Cabinet() {
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
         ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt }
-        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch };
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch, search_source: searchSource };
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -912,17 +913,39 @@ export default function Cabinet() {
               size="icon"
               onClick={() => setWebSearch((v) => !v)}
               disabled={streaming || council}
-              aria-label="Веб-поиск"
+              aria-label="Поиск источников"
               title={
                 council
-                  ? "Веб-поиск недоступен в режиме Консилиум"
+                  ? "Поиск недоступен в режиме Консилиум"
                   : webSearch
-                    ? "Веб-поиск включён — модель проверит источники в интернете"
-                    : "Включить веб-поиск для этого сообщения"
+                    ? `Поиск включён (${searchSource === "pubmed" ? "PubMed" : "Веб"}) — модель опирается на источники`
+                    : "Включить поиск источников для этого сообщения"
               }
             >
               <Globe className="w-4 h-4" />
             </Button>
+            {webSearch && !council && (
+              <div className="flex rounded-md border overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSearchSource("web")}
+                  disabled={streaming}
+                  className={`px-2 py-1 ${searchSource === "web" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  title="Поиск в открытом вебе"
+                >
+                  Веб
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchSource("pubmed")}
+                  disabled={streaming}
+                  className={`px-2 py-1 border-l ${searchSource === "pubmed" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  title="Поиск в PubMed (англоязычная медицинская литература)"
+                >
+                  PubMed
+                </button>
+              </div>
+            )}
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}

@@ -77,16 +77,120 @@ Deno.serve(async (req) => {
     const messagesWithSystem = [{ role: "system", content: systemPrompt }, ...body.messages];
 
     const webSearch = body.web_search === true;
+    const searchSource: "web" | "pubmed" =
+      body.search_source === "pubmed" ? "pubmed" : "web";
+    const usePubmed = webSearch && searchSource === "pubmed";
+
+    // PubMed mode: fetch citations and inject them as context
+    let pubmedSources: Array<{ url: string; title: string; content: string }> = [];
+    let finalMessages = messagesWithSystem;
+    if (usePubmed) {
+      try {
+        const lastUser = [...body.messages].reverse().find((m: any) => m?.role === "user");
+        const userText = typeof lastUser?.content === "string"
+          ? lastUser.content
+          : Array.isArray(lastUser?.content)
+            ? lastUser.content.filter((p: any) => p?.type === "text").map((p: any) => p.text).join(" ")
+            : "";
+
+        // 1) Ask model to formulate short English PubMed query
+        let englishQuery = userText.slice(0, 200);
+        try {
+          const qResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: resolvedModel,
+              messages: [
+                { role: "system", content: "You translate a clinical question into a concise English PubMed search query (keywords, MeSH-like). Output ONLY the query, no quotes, no explanations." },
+                { role: "user", content: userText },
+              ],
+              max_tokens: 80,
+            }),
+          });
+          if (qResp.ok) {
+            const qJson = await qResp.json();
+            const q = qJson?.choices?.[0]?.message?.content?.trim();
+            if (q) englishQuery = q.replace(/^["']|["']$/g, "").slice(0, 300);
+          }
+        } catch (_) { /* fall back to raw text */ }
+
+        console.log("[ai-chat] pubmed query", englishQuery);
+
+        // 2) esearch → PMIDs
+        const ncbiKey = Deno.env.get("NCBI_API_KEY");
+        const keyParam = ncbiKey ? `&api_key=${ncbiKey}` : "";
+        const esearchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&retmax=6&sort=relevance&term=${encodeURIComponent(englishQuery)}${keyParam}`;
+        const esearchResp = await fetch(esearchUrl);
+        const esearchJson = await esearchResp.json();
+        const pmids: string[] = esearchJson?.esearchresult?.idlist ?? [];
+
+        if (pmids.length) {
+          // 3) esummary + efetch (abstracts) in parallel
+          const esummaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${pmids.join(",")}${keyParam}`;
+          const efetchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&rettype=abstract&retmode=text&id=${pmids.join(",")}${keyParam}`;
+          const [sumResp, fetchResp] = await Promise.all([fetch(esummaryUrl), fetch(efetchUrl)]);
+          const sumJson = await sumResp.json();
+          const abstractsText = await fetchResp.text();
+
+          // Split abstracts (PubMed separates with blank line between records)
+          const abstractBlocks = abstractsText.split(/\n\n(?=\d+:\s|\n*PMID-)/g);
+
+          pubmedSources = pmids.map((pmid, i) => {
+            const r = sumJson?.result?.[pmid] || {};
+            const title = r.title || "(no title)";
+            const authors = Array.isArray(r.authors)
+              ? r.authors.slice(0, 4).map((a: any) => a?.name).filter(Boolean).join(", ") +
+                (r.authors.length > 4 ? ", et al." : "")
+              : "";
+            const journal = r.fulljournalname || r.source || "";
+            const year = (r.pubdate || "").slice(0, 4);
+            const doi = Array.isArray(r.articleids)
+              ? r.articleids.find((x: any) => x?.idtype === "doi")?.value
+              : undefined;
+            const abstract = (abstractBlocks[i] || "").trim().slice(0, 1500);
+            return {
+              url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
+              title: `[PMID:${pmid}] ${title}`,
+              content: `${authors}. ${journal}. ${year}.${doi ? ` DOI: ${doi}.` : ""}\n${abstract}`,
+            };
+          });
+
+          // 4) Inject context block before user messages
+          const contextBlock = pubmedSources.map((s, i) =>
+            `[${i + 1}] PMID:${s.url.match(/\/(\d+)\//)?.[1]} — ${s.title.replace(/^\[PMID:\d+\]\s*/, "")}\n${s.content}`
+          ).join("\n\n");
+          const pubmedSystem = "Тебе предоставлены аннотации из PubMed по запросу пользователя. Отвечай на русском, по существу клинического вопроса, опираясь на эти источники. После утверждений ставь ссылки в формате [PMID:XXXXXX]. Если данных недостаточно — скажи прямо.\n\nИСТОЧНИКИ PUBMED (запрос: \"" + englishQuery + "\"):\n\n" + contextBlock;
+          finalMessages = [
+            { role: "system", content: systemPrompt },
+            { role: "system", content: pubmedSystem },
+            ...body.messages,
+          ];
+        } else {
+          finalMessages = [
+            { role: "system", content: systemPrompt },
+            { role: "system", content: `PubMed по запросу "${englishQuery}" не вернул результатов. Сообщи об этом пользователю и ответь на основе собственных знаний, отметив отсутствие источников PubMed.` },
+            ...body.messages,
+          ];
+        }
+      } catch (e) {
+        console.error("[ai-chat] pubmed error", e);
+      }
+    }
+
     const requestPayload: Record<string, unknown> = {
       model: resolvedModel,
-      messages: messagesWithSystem,
+      messages: finalMessages,
       stream: true,
       // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
       reasoning: { effort },
       // Route to the fastest provider for the selected model (equivalent to :nitro)
       provider: { sort: "throughput" },
     };
-    if (webSearch) {
+    if (webSearch && !usePubmed) {
       requestPayload.plugins = [{ id: "web", max_results: 5 }];
     }
 
@@ -144,7 +248,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(orResp.body, {
+    let outBody: ReadableStream<Uint8Array> = orResp.body;
+    if (pubmedSources.length) {
+      const annotations = pubmedSources.map((s) => ({
+        type: "url_citation",
+        url_citation: { url: s.url, title: s.title, content: s.content.slice(0, 400) },
+      }));
+      const annChunk = `data: ${JSON.stringify({ choices: [{ delta: { annotations } }] })}\n\n`;
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
+      const reader = orResp.body.getReader();
+      outBody = new ReadableStream({
+        async pull(controller) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.enqueue(enc.encode(annChunk));
+            controller.enqueue(enc.encode("data: [DONE]\n\n"));
+            controller.close();
+            return;
+          }
+          const text = dec.decode(value, { stream: true });
+          if (text.includes("[DONE]")) {
+            const cleaned = text.replace(/data:\s*\[DONE\]\s*\n+/g, "");
+            if (cleaned) controller.enqueue(enc.encode(cleaned));
+          } else {
+            controller.enqueue(value);
+          }
+        },
+        cancel() { reader.cancel(); },
+      });
+    }
+
+    return new Response(outBody, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream; charset=utf-8",
