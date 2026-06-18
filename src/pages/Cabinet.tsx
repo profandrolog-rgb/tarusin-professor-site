@@ -87,6 +87,7 @@ export default function Cabinet() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [council, setCouncil] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
