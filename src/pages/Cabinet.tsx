@@ -20,27 +20,20 @@ import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
 import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
 import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
-
-
+import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, type ResolvedModel } from "@/config/aiModels";
+import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
 const PUBMED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed`;
 const PUBMED_FULLTEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed-fulltext`;
 
-type ModelOpt = { id: string; label: string; group: "fast" | "deep" };
-const MODELS: ModelOpt[] = [
-  // Быстрые — по умолчанию
-  { id: "google/gemini-2.5-flash", label: "⚡ Gemini 2.5 Flash (быстрый)", group: "fast" },
-  { id: "anthropic/claude-sonnet-4.5", label: "⚡ Claude Sonnet 4.5 (быстрый)", group: "fast" },
-  { id: "openai/gpt-5-mini", label: "⚡ GPT-5 mini (быстрый)", group: "fast" },
-  { id: "x-ai/grok-4.3", label: "⚡ Grok 4.3 (быстрый)", group: "fast" },
-  // Глубокие
-  { id: "google/gemini-2.5-pro", label: "🧠 Gemini 2.5 Pro (глубокий)", group: "deep" },
-  { id: "anthropic/claude-opus-4.1", label: "🧠 Claude Opus 4.1 (глубокий)", group: "deep" },
-  { id: "openai/gpt-5", label: "🧠 GPT-5 (глубокий)", group: "deep" },
-];
-const DEFAULT_MODEL = "google/gemini-2.5-flash";
+// Bootstrap default — replaced once live OpenRouter list resolves.
+const DEFAULT_MODEL =
+  CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
+  "google/gemini-2.5-flash";
+
 
 const DEFAULT_SYSTEM_PROMPT =
   "Ты — ассистент профессора Д. И. Тарусина: профессор, д.м.н., 40 лет клинического стажа, основатель детской урологии-андрологии в России, руководитель Городского центра репродуктивного здоровья детей и подростков. " +
