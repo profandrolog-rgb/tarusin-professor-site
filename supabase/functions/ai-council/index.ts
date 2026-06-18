@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
             messages: [{ role: "user", content: synthPrompt }],
             stream: true,
             reasoning: { effort: "low" },
+            provider: { sort: "throughput" },
           }),
         });
 
