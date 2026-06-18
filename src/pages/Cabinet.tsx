@@ -423,7 +423,18 @@ export default function Cabinet() {
               <Brain className="w-3.5 h-3.5" />Вдумчиво
             </button>
           </div>
-          <Select value={model} onValueChange={setModel} disabled={streaming}>
+          <button
+            type="button"
+            onClick={() => setCouncil((v) => !v)}
+            disabled={streaming}
+            className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
+              council ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
+            }`}
+            title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
+          >
+            <Users className="w-3.5 h-3.5" />Консилиум
+          </button>
+          <Select value={model} onValueChange={setModel} disabled={streaming || council}>
             <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               {MODELS.map((m) => (
