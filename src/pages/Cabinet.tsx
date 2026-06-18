@@ -323,7 +323,7 @@ export default function Cabinet() {
           role: "assistant",
           content: assistantSoFar,
           model: persistModel,
-          attachments: councilAnswers ? ([{ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` }] as any) : null,
+          attachments: councilAnswers ? ([{ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` }] as any) : [],
         });
         await supabase.from("ai_conversations").update({ model: persistModel, updated_at: new Date().toISOString() }).eq("id", convId);
         loadConversations();
