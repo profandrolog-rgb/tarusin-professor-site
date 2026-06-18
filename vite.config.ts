@@ -37,6 +37,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  ssr: {
+    // CJS-only packages that the SSG worker imports must be bundled,
+    // otherwise Node ESM fails on named imports like `saveAs` from `file-saver`.
+    noExternal: ["file-saver"],
+  },
   // Поле читается плагином vite-react-ssg
   ssgOptions: {
     entry: "src/main.tsx",
