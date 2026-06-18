@@ -248,7 +248,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(orResp.body, {
+    let outBody: ReadableStream<Uint8Array> = orResp.body;
+    if (pubmedSources.length) {
+      const annotations = pubmedSources.map((s) => ({
+        type: "url_citation",
+        url_citation: { url: s.url, title: s.title, content: s.content.slice(0, 400) },
+      }));
+      const annChunk = `data: ${JSON.stringify({ choices: [{ delta: { annotations } }] })}\n\n`;
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
+      const reader = orResp.body.getReader();
+      outBody = new ReadableStream({
+        async pull(controller) {
+          const { done, value } = await reader.read();
+          if (done) {
+            controller.enqueue(enc.encode(annChunk));
+            controller.enqueue(enc.encode("data: [DONE]\n\n"));
+            controller.close();
+            return;
+          }
+          const text = dec.decode(value, { stream: true });
+          if (text.includes("[DONE]")) {
+            const cleaned = text.replace(/data:\s*\[DONE\]\s*\n+/g, "");
+            if (cleaned) controller.enqueue(enc.encode(cleaned));
+          } else {
+            controller.enqueue(value);
+          }
+        },
+        cancel() { reader.cancel(); },
+      });
+    }
+
+    return new Response(outBody, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream; charset=utf-8",
