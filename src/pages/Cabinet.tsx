@@ -429,6 +429,7 @@ export default function Cabinet() {
           const councilAtt = atts.find((a) => a?.name === "__council__");
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
           const pubmedAtt = atts.find((a) => a?.name === "__pubmed__");
+          const fulltextAtt = atts.find((a) => a?.name === "__fulltext__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -450,18 +451,27 @@ export default function Cabinet() {
               pubmed = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let fulltext: FulltextMeta | undefined;
+          if (fulltextAtt?.dataUrl) {
+            try {
+              const b64 = fulltextAtt.dataUrl.split(",")[1] || "";
+              fulltext = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__"].includes(a?.name)),
+            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__", "__fulltext__"].includes(a?.name)),
             model: m.model,
             council: councilAnswers,
             sources,
             pubmed,
+            fulltext,
           };
         }),
       );
+
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model === "council") {
         setCouncil(true);
