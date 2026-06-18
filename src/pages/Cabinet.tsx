@@ -75,6 +75,14 @@ type CouncilAnswer = { model: string; content: string; error: string | null };
 
 type SourceCitation = { url: string; title?: string; content?: string };
 
+type PubmedPayload = {
+  used_query: string;
+  english_query: string;
+  total_count: number;
+  retstart: number;
+  sources: PubmedSource[];
+};
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -83,6 +91,7 @@ type Msg = {
   model?: string;
   council?: CouncilAnswer[];
   sources?: SourceCitation[];
+  pubmed?: PubmedPayload;
 };
 
 type Conversation = {
