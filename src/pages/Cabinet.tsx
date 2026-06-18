@@ -663,7 +663,50 @@ export default function Cabinet() {
                 ) : (
                   <div className="whitespace-pre-wrap text-sm">{m.content}</div>
                 )}
-                {m.model && m.role === "assistant" && (
+                {m.role === "assistant" && m.content && !streaming && (
+                  <div className="flex items-center gap-1 mt-2 -mb-1 opacity-70 hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const ok = await copyToClipboard(m.content);
+                        ok ? toast.success("Скопировано") : toast.error("Ошибка");
+                      }}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Копировать"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadMarkdown(m.content, `answer-${i + 1}.md`)}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Скачать .md"
+                    >
+                      <FileCode2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await downloadDocx([{ role: "assistant", content: m.content, model: m.model }], `answer-${i + 1}.docx`, "Ответ");
+                        toast.success("DOCX сохранён");
+                      }}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Скачать .docx"
+                    >
+                      <FileType2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { const ok = downloadPdf([{ role: "assistant", content: m.content, model: m.model }], "Ответ"); if (!ok) toast.error("Браузер заблокировал окно печати"); }}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Скачать .pdf"
+                    >
+                      <FileDown className="w-3 h-3" />
+                    </button>
+                    {m.model && <span className="text-[10px] text-muted-foreground ml-auto">{m.model}</span>}
+                  </div>
+                )}
+                {m.model && m.role === "assistant" && (!m.content || streaming) && (
                   <div className="text-[10px] text-muted-foreground mt-1 opacity-60">{m.model}</div>
                 )}
               </div>
