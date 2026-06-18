@@ -75,7 +75,19 @@ Deno.serve(async (req) => {
     const systemPrompt = typeof body.system === "string" && body.system.trim()
       ? body.system
       : DEFAULT_SYSTEM_PROMPT;
-    const messagesWithSystem = [{ role: "system", content: systemPrompt }, ...body.messages];
+    const TABLE_FORMAT_RULES =
+      "Форматирование таблиц (строго): " +
+      "(1) Для простых табличных данных используй валидный GFM-markdown: первая строка заголовков `| A | B | C |`, ОБЯЗАТЕЛЬНАЯ строка-разделитель `| --- | --- | --- |`, далее строки данных. " +
+      "(2) Если в ячейках нужны списки/несколько пунктов (например, плюсы/минусы, сравнение опций) — отдавай ПОЛНОЦЕННЫЙ HTML: `<table><thead><tr><th>…</th></tr></thead><tbody><tr><td><ul><li>…</li></ul></td></tr></tbody></table>`. Внутри `<td>` разрешены `<ul>`, `<ol>`, `<li>`, `<br>`, `<strong>`, `<em>`, `<mark>`. " +
+      "(3) Никогда не смешивай в одной таблице сырые `|` GFM-синтаксиса и блочные HTML-теги. " +
+      "(4) Никогда не выводи разметку таблицы как обычный текст: не оставляй видимыми символы `|`, `||`, `<br>`, `<ul>`, `<li>` без оборачивающей таблицы. Если выбрал HTML — все теги корректно закрыты; если markdown — есть строка-разделитель `---`. " +
+      "(5) Не оборачивай таблицу в ```code-блоки.";
+    const messagesWithSystem = [
+      { role: "system", content: systemPrompt },
+      { role: "system", content: TABLE_FORMAT_RULES },
+      ...body.messages,
+    ];
+
 
     const webSearch = body.web_search === true;
     const searchSource: "web" | "pubmed" =

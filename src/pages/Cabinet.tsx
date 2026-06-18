@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -19,6 +19,8 @@ import { PubmedPanel, type PubmedFilters, DEFAULT_FILTERS as PUBMED_DEFAULT_FILT
 import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
 import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
+import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
+
 
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
@@ -1308,37 +1310,36 @@ export default function Cabinet() {
                         />
                       ) : m.content ? (
 
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown
-                            components={m.pubmed ? {
-                              a: ({ href, children, ...props }: any) => {
-                                if (typeof href === "string" && href.startsWith("#pubmed-src-")) {
-                                  return (
-                                    <a
-                                      href={href}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        const el = document.getElementById(href.slice(1));
-                                        if (el) {
-                                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                                          el.classList.add("ring-2", "ring-primary");
-                                          setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1400);
-                                        }
-                                      }}
-                                      className="inline-flex items-center px-1 rounded bg-primary/10 text-primary no-underline hover:bg-primary/20 font-medium text-[0.85em] mx-0.5"
-                                      {...props}
-                                    >
-                                      {children}
-                                    </a>
-                                  );
-                                }
-                                return <a href={href} {...props}>{children}</a>;
-                              },
-                            } : undefined}
-                          >
-                            {m.pubmed ? linkifyPubmedCitations(m.content, m.pubmed.sources, i) : m.content}
-                          </ReactMarkdown>
-                        </div>
+                        <ChatMarkdownWith
+                          extraComponents={m.pubmed ? {
+                            a: ({ href, children, ...props }: any) => {
+                              if (typeof href === "string" && href.startsWith("#pubmed-src-")) {
+                                return (
+                                  <a
+                                    href={href}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      const el = document.getElementById(href.slice(1));
+                                      if (el) {
+                                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                        el.classList.add("ring-2", "ring-primary");
+                                        setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1400);
+                                      }
+                                    }}
+                                    className="inline-flex items-center px-1 rounded bg-primary/10 text-primary no-underline hover:bg-primary/20 font-medium text-[0.85em] mx-0.5"
+                                    {...props}
+                                  >
+                                    {children}
+                                  </a>
+                                );
+                              }
+                              return <a href={href} {...props}>{children}</a>;
+                            },
+                          } : undefined}
+                        >
+                          {m.pubmed ? linkifyPubmedCitations(m.content, m.pubmed.sources, i) : m.content}
+                        </ChatMarkdownWith>
+
                       ) : (
                         <div className="text-xs text-muted-foreground flex items-center gap-2">
                           <Loader2 className="w-3 h-3 animate-spin" /> Сводим ответы…
@@ -1358,9 +1359,8 @@ export default function Cabinet() {
                                     {a.error ? (
                                       <div className="text-xs text-destructive">⚠️ {a.error}</div>
                                     ) : (
-                                      <div className="prose prose-xs dark:prose-invert max-w-none text-xs">
-                                        <ReactMarkdown>{a.content}</ReactMarkdown>
-                                      </div>
+                                      <ChatMarkdown className="prose prose-xs dark:prose-invert max-w-none text-xs">{a.content}</ChatMarkdown>
+
                                     )}
                                   </div>
                                 ))}

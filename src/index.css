@@ -178,3 +178,46 @@ video::-webkit-media-controls-overflow-button {
   background-color: #EBF5FF;
 }
 
+
+/* Chat answer tables (Cabinet, PatientPortal, PubMed fulltext) */
+@layer components {
+  .chat-md-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+  .chat-md-table th,
+  .chat-md-table td {
+    border: 1px solid hsl(var(--border));
+    padding: 0.5rem 0.625rem;
+    vertical-align: top;
+    text-align: left;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .chat-md-table thead th {
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    font-weight: 600;
+  }
+  .chat-md-table tbody tr:nth-child(even) td {
+    background: hsl(var(--muted) / 0.4);
+  }
+  .chat-md-table td ul,
+  .chat-md-table td ol {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+  .chat-md-table td ul { list-style: disc; }
+  .chat-md-table td ol { list-style: decimal; }
+  .chat-md-table td li { margin: 0.15rem 0; }
+  .chat-md-table td p { margin: 0.25rem 0; }
+  .chat-md-table mark {
+    background: hsl(var(--primary) / 0.18);
+    color: inherit;
+    padding: 0 0.15em;
+    border-radius: 2px;
+  }
+}

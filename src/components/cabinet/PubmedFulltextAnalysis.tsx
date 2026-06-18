@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Quote, Copy, Sparkles, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { ChatMarkdown } from "@/components/cabinet/ChatMarkdown";
 import { copyToClipboard } from "@/lib/cabinetExport";
 import { toast } from "sonner";
 
@@ -141,9 +141,8 @@ export function PubmedFulltextAnalysis({
   if (!items) {
     return (
       <div className="space-y-3">
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown>{raw}</ReactMarkdown>
-        </div>
+        <ChatMarkdown>{raw}</ChatMarkdown>
+
         {onFollowup && (
           <FollowupRow q={q} setQ={setQ} loading={!!followupLoading} onSend={() => { if (q.trim()) { onFollowup(q.trim()); setQ(""); } }} />
         )}
