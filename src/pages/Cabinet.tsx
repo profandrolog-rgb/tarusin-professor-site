@@ -341,7 +341,7 @@ export default function Cabinet() {
       const { data, error } = await supabase
         .from("ai_conversations")
         .insert({ user_id: user.id, title, model })
-        .select("id, title, model, updated_at")
+        .select("id, title, model, updated_at, folder_id")
         .single();
       if (error || !data) {
         toast.error("Не удалось создать диалог");
