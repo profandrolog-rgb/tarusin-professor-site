@@ -1209,6 +1209,72 @@ export default function Cabinet() {
                           </ol>
                         </div>
                       )}
+                      {m.pubmed && (
+                        <div className="mt-3 border-t border-border/50 pt-2 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                            <span className="uppercase tracking-wide font-semibold">PubMed</span>
+                            <span>· Найдено: {m.pubmed.total_count}</span>
+                            <span>· Показано: {m.pubmed.sources.length}</span>
+                            <a
+                              href={`https://pubmed.ncbi.nlm.nih.gov/?term=${encodeURIComponent(m.pubmed.used_query)}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline ml-auto"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Открыть в PubMed
+                            </a>
+                          </div>
+                          {m.pubmed.used_query && (
+                            <details className="text-[11px] text-muted-foreground">
+                              <summary className="cursor-pointer">Использованный запрос</summary>
+                              <code className="block mt-1 p-2 bg-background/50 rounded text-[10px] whitespace-pre-wrap break-all">{m.pubmed.used_query}</code>
+                            </details>
+                          )}
+                          <div className="space-y-2">
+                            {m.pubmed.sources.map((s, k) => (
+                              <PubmedSourceCard
+                                key={s.pmid}
+                                index={k + 1}
+                                source={s}
+                                onAnalyze={(src) => {
+                                  // find originating user question (previous user msg)
+                                  const userQ = (() => {
+                                    for (let x = i - 1; x >= 0; x--) {
+                                      if (messages[x]?.role === "user") return messages[x].content;
+                                    }
+                                    return "";
+                                  })();
+                                  analyzePubmedArticle(src, userQ);
+                                }}
+                                analyzing={pubmedAnalyzing === s.pmid}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {m.pubmed.sources.length < m.pubmed.total_count && (
+                              <Button
+                                type="button" size="sm" variant="outline"
+                                onClick={() => loadMorePubmed(i)}
+                                disabled={pubmedLoadingMore !== null}
+                              >
+                                {pubmedLoadingMore === i ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                                Показать ещё
+                              </Button>
+                            )}
+                            <Button
+                              type="button" size="sm" variant="ghost"
+                              onClick={() => downloadSourcesDocx(m.pubmed!.sources)}
+                            >
+                              <FileType2 className="w-3 h-3 mr-1" />Экспорт .docx
+                            </Button>
+                            <Button
+                              type="button" size="sm" variant="ghost"
+                              onClick={() => downloadRis(m.pubmed!.sources)}
+                            >
+                              <FileDown className="w-3 h-3 mr-1" />Экспорт .ris
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <Loader2 className="w-4 h-4 animate-spin" />
