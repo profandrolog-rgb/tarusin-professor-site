@@ -374,7 +374,7 @@ export default function Cabinet() {
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
         ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt }
-        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch };
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch, search_source: searchSource };
       const resp = await fetch(url, {
         method: "POST",
         headers: {
