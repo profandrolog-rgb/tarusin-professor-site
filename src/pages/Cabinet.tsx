@@ -127,13 +127,25 @@ export default function Cabinet() {
         return;
       }
       setMessages(
-        (data || []).map((m: any) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          attachments: m.attachments || [],
-          model: m.model,
-        })),
+        (data || []).map((m: any) => {
+          const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
+          const councilAtt = atts.find((a) => a?.name === "__council__");
+          let councilAnswers: CouncilAnswer[] | undefined;
+          if (councilAtt?.dataUrl) {
+            try {
+              const b64 = councilAtt.dataUrl.split(",")[1] || "";
+              councilAnswers = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
+          return {
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            attachments: atts.filter((a) => a?.name !== "__council__"),
+            model: m.model,
+            council: councilAnswers,
+          };
+        }),
       );
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model) setModel(conv.model);
