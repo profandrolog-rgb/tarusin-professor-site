@@ -443,12 +443,15 @@ export default function Cabinet() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const newConversation = async () => {
+  const newConversation = async (folderId: string | null = null) => {
     setActiveId(null);
     setMessages([]);
     setAttachments([]);
     setInput("");
+    setPendingFolderId(folderId);
+    if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
+
 
   const deleteConversation = async (id: string) => {
     if (!confirm("Удалить диалог?")) return;
