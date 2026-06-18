@@ -18,6 +18,8 @@ import { copyToClipboard, messagesToMarkdown, downloadMarkdown, downloadDocx, do
 import { PubmedPanel, type PubmedFilters, DEFAULT_FILTERS as PUBMED_DEFAULT_FILTERS } from "@/components/cabinet/PubmedPanel";
 import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
+import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
+
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
