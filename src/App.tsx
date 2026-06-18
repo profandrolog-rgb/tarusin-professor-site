@@ -65,6 +65,7 @@ const AdminPatientNew = () => <AdminPatientForm mode="create" />;
 const AdminPatientEdit = () => <AdminPatientForm mode="edit" />;
 import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
 import PublicTreatmentPlan from "./pages/PublicTreatmentPlan";
+import Cabinet from "./pages/Cabinet";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 
@@ -190,6 +191,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/patients/:id", Component: AdminPatientDetail, entry: "src/pages/AdminPatientDetail.tsx" },
       { path: "admin/treatment-plans/compare", Component: TreatmentPlanCompare, entry: "src/pages/TreatmentPlanCompare.tsx" },
       { path: "p/:hash", Component: PublicTreatmentPlan, entry: "src/pages/PublicTreatmentPlan.tsx" },
+      { path: "cabinet", Component: Cabinet, entry: "src/pages/Cabinet.tsx" },
 
       { path: "*", Component: NotFound },
     ],
