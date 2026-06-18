@@ -913,17 +913,39 @@ export default function Cabinet() {
               size="icon"
               onClick={() => setWebSearch((v) => !v)}
               disabled={streaming || council}
-              aria-label="Веб-поиск"
+              aria-label="Поиск источников"
               title={
                 council
-                  ? "Веб-поиск недоступен в режиме Консилиум"
+                  ? "Поиск недоступен в режиме Консилиум"
                   : webSearch
-                    ? "Веб-поиск включён — модель проверит источники в интернете"
-                    : "Включить веб-поиск для этого сообщения"
+                    ? `Поиск включён (${searchSource === "pubmed" ? "PubMed" : "Веб"}) — модель опирается на источники`
+                    : "Включить поиск источников для этого сообщения"
               }
             >
               <Globe className="w-4 h-4" />
             </Button>
+            {webSearch && !council && (
+              <div className="flex rounded-md border overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSearchSource("web")}
+                  disabled={streaming}
+                  className={`px-2 py-1 ${searchSource === "web" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  title="Поиск в открытом вебе"
+                >
+                  Веб
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchSource("pubmed")}
+                  disabled={streaming}
+                  className={`px-2 py-1 border-l ${searchSource === "pubmed" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  title="Поиск в PubMed (англоязычная медицинская литература)"
+                >
+                  PubMed
+                </button>
+              </div>
+            )}
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
