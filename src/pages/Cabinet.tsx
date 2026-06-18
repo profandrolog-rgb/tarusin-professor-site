@@ -247,7 +247,12 @@ export default function Cabinet() {
         }),
       );
       const conv = conversations.find((c) => c.id === activeId);
-      if (conv?.model) setModel(conv.model);
+      if (conv?.model === "council") {
+        setCouncil(true);
+      } else if (conv?.model) {
+        setCouncil(false);
+        setModel(conv.model);
+      }
     })();
   }, [activeId]);
 
