@@ -847,7 +847,7 @@ export default function Cabinet() {
       {/* Sidebar */}
       <aside className="md:w-72 border-r border-border md:h-screen flex flex-col bg-muted/30">
         <div className="p-3 border-b border-border space-y-2">
-          <Button onClick={newConversation} className="w-full" size="sm">
+          <Button onClick={() => newConversation(null)} className="w-full" size="sm">
             <Plus className="w-4 h-4 mr-2" />Новый диалог
           </Button>
           <Button onClick={createFolder} className="w-full" size="sm" variant="outline">
