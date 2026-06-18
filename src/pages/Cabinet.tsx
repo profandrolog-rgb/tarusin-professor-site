@@ -203,6 +203,8 @@ export default function Cabinet() {
     try { return JSON.parse(window.localStorage.getItem(FOLDERS_OPEN_LS_KEY) || "{}"); } catch { return {}; }
   });
   const [unfiledOpen, setUnfiledOpen] = useState(true);
+  const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
