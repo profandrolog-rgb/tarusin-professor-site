@@ -366,12 +366,14 @@ export default function Cabinet() {
 
     let assistantSoFar = "";
     let councilAnswers: CouncilAnswer[] | undefined;
+    let collectedSources: SourceCitation[] = [];
+    const usedWebSearch = webSearch && !council;
     try {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
         ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt }
-        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt };
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch };
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -390,6 +392,16 @@ export default function Cabinet() {
       const decoder = new TextDecoder();
       let buf = "";
       let pendingEvent: string | null = null;
+      const mergeAnnotations = (anns: any) => {
+        if (!Array.isArray(anns)) return;
+        for (const a of anns) {
+          const cit = a?.url_citation || (a?.type === "url_citation" ? a : null);
+          const url = cit?.url || a?.url;
+          if (!url) continue;
+          if (collectedSources.some((s) => s.url === url)) continue;
+          collectedSources.push({ url, title: cit?.title || a?.title, content: cit?.content || a?.content });
+        }
+      };
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -422,12 +434,18 @@ export default function Cabinet() {
                 });
               }
             } else {
-              const delta = parsed.choices?.[0]?.delta?.content;
+              const choice = parsed.choices?.[0];
+              const delta = choice?.delta?.content;
+              mergeAnnotations(choice?.delta?.annotations);
+              mergeAnnotations(choice?.message?.annotations);
               if (delta) {
                 assistantSoFar += delta;
+              }
+              if (delta || collectedSources.length) {
+                const sourcesSnapshot = collectedSources.slice();
                 setMessages((prev) => {
                   const next = [...prev];
-                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model };
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model, sources: sourcesSnapshot.length ? sourcesSnapshot : undefined };
                   return next;
                 });
               }
@@ -441,13 +459,20 @@ export default function Cabinet() {
       // Persist assistant message
       if (assistantSoFar) {
         const persistModel = council ? "council" : model;
+        const persistAtts: any[] = [];
+        if (councilAnswers) {
+          persistAtts.push({ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` });
+        }
+        if (collectedSources.length) {
+          persistAtts.push({ name: "__sources__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(collectedSources))))}` });
+        }
         await supabase.from("ai_messages").insert({
           conversation_id: convId,
           user_id: user.id,
           role: "assistant",
           content: assistantSoFar,
           model: persistModel,
-          attachments: councilAnswers ? ([{ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` }] as any) : [],
+          attachments: persistAtts as any,
         });
         await supabase.from("ai_conversations").update({ model: persistModel, updated_at: new Date().toISOString() }).eq("id", convId);
         loadConversations();
