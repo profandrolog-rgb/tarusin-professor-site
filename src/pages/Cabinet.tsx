@@ -231,9 +231,66 @@ export default function Cabinet() {
     setConversations(data || []);
   }, [user]);
 
+  const loadFolders = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("ai_conversation_folders")
+      .select("id, name")
+      .order("name", { ascending: true });
+    if (error) return;
+    setFolders(data || []);
+  }, [user]);
+
   useEffect(() => {
     loadConversations();
-  }, [loadConversations]);
+    loadFolders();
+  }, [loadConversations, loadFolders]);
+
+  const toggleFolder = (id: string) => {
+    setOpenFolders((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try { window.localStorage.setItem(FOLDERS_OPEN_LS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const createFolder = async () => {
+    if (!user) return;
+    const name = window.prompt("Название папки (пациент или тема):")?.trim();
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("ai_conversation_folders")
+      .insert({ user_id: user.id, name })
+      .select("id, name")
+      .single();
+    if (error || !data) { toast.error("Не удалось создать папку"); return; }
+    setFolders((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name, "ru")));
+    setOpenFolders((prev) => ({ ...prev, [data.id]: true }));
+  };
+
+  const renameFolder = async (f: ChatFolder) => {
+    const name = window.prompt("Новое название:", f.name)?.trim();
+    if (!name || name === f.name) return;
+    const { error } = await supabase.from("ai_conversation_folders").update({ name }).eq("id", f.id);
+    if (error) { toast.error("Не удалось переименовать"); return; }
+    setFolders((prev) => prev.map((x) => x.id === f.id ? { ...x, name } : x).sort((a, b) => a.name.localeCompare(b.name, "ru")));
+  };
+
+  const deleteFolder = async (f: ChatFolder) => {
+    if (!confirm(`Удалить папку «${f.name}»? Диалоги внутри сохранятся (вне папок).`)) return;
+    const { error } = await supabase.from("ai_conversation_folders").delete().eq("id", f.id);
+    if (error) { toast.error("Не удалось удалить папку"); return; }
+    setFolders((prev) => prev.filter((x) => x.id !== f.id));
+    setConversations((prev) => prev.map((c) => c.folder_id === f.id ? { ...c, folder_id: null } : c));
+  };
+
+  const moveConversation = async (convId: string, folderId: string | null) => {
+    const { error } = await supabase.from("ai_conversations").update({ folder_id: folderId }).eq("id", convId);
+    if (error) { toast.error("Не удалось переместить"); return; }
+    setConversations((prev) => prev.map((c) => c.id === convId ? { ...c, folder_id: folderId } : c));
+    toast.success(folderId ? "Перемещено в папку" : "Убрано из папки");
+  };
+
 
   // Load messages for active conversation
   useEffect(() => {
