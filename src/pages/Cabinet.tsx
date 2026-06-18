@@ -18,6 +18,8 @@ import { copyToClipboard, messagesToMarkdown, downloadMarkdown, downloadDocx, do
 import { PubmedPanel, type PubmedFilters, DEFAULT_FILTERS as PUBMED_DEFAULT_FILTERS } from "@/components/cabinet/PubmedPanel";
 import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
+import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
+
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
@@ -83,6 +85,14 @@ type PubmedPayload = {
   sources: PubmedSource[];
 };
 
+type FulltextMeta = {
+  pmid: string;
+  pmcid?: string;
+  title?: string;
+  doi?: string;
+  pmc_url?: string;
+};
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -92,7 +102,9 @@ type Msg = {
   council?: CouncilAnswer[];
   sources?: SourceCitation[];
   pubmed?: PubmedPayload;
+  fulltext?: FulltextMeta;
 };
+
 
 type Conversation = {
   id: string;
@@ -417,6 +429,7 @@ export default function Cabinet() {
           const councilAtt = atts.find((a) => a?.name === "__council__");
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
           const pubmedAtt = atts.find((a) => a?.name === "__pubmed__");
+          const fulltextAtt = atts.find((a) => a?.name === "__fulltext__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -438,18 +451,27 @@ export default function Cabinet() {
               pubmed = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let fulltext: FulltextMeta | undefined;
+          if (fulltextAtt?.dataUrl) {
+            try {
+              const b64 = fulltextAtt.dataUrl.split(",")[1] || "";
+              fulltext = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__"].includes(a?.name)),
+            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__", "__fulltext__"].includes(a?.name)),
             model: m.model,
             council: councilAnswers,
             sources,
             pubmed,
+            fulltext,
           };
         }),
       );
+
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model === "council") {
         setCouncil(true);
@@ -632,45 +654,100 @@ export default function Cabinet() {
     }
   };
 
+  const callFulltext = async (args: { pmid: string; pmcid?: string; title?: string; question: string }) => {
+    const { data: sess } = await supabase.auth.getSession();
+    const resp = await fetch(PUBMED_FULLTEXT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+      body: JSON.stringify({
+        pmid: args.pmid,
+        pmcid: args.pmcid,
+        question: args.question,
+        model,
+        system: systemPrompt,
+      }),
+    });
+    const json = await resp.json();
+    return { ok: resp.ok, json } as const;
+  };
+
+  const persistFulltextMessage = async (content: string, meta: FulltextMeta) => {
+    const convId = activeId;
+    if (!convId || !user) return;
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(meta))));
+    const att = { name: "__fulltext__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` };
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "assistant", content,
+      model: `pubmed-fulltext:${model}`, attachments: [att] as any,
+    });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    loadConversations();
+  };
+
   const analyzePubmedArticle = async (source: PubmedSource, originalQuestion: string) => {
     if (!user || pubmedAnalyzing) return;
     setPubmedAnalyzing(source.pmid);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const resp = await fetch(PUBMED_FULLTEXT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
-        body: JSON.stringify({
-          pmid: source.pmid,
-          pmcid: source.pmcid,
-          question: originalQuestion,
-          model,
-          system: systemPrompt,
-        }),
+      const { ok, json } = await callFulltext({
+        pmid: source.pmid, pmcid: source.pmcid, title: source.title, question: originalQuestion,
       });
-      const json = await resp.json();
-      if (!resp.ok) {
+      if (!ok) {
         toast.error(json?.error || "Не удалось получить полный текст");
         return;
       }
-      const header = `**Разбор полного текста PMID:${source.pmid}** — _${source.title || ""}_\n\n`;
-      const content = header + (json.analysis || "");
-      const assistantMsg: Msg = { role: "assistant", content, model: `pubmed-fulltext:${model}` };
+      const meta: FulltextMeta = {
+        pmid: source.pmid,
+        pmcid: json.pmcid || source.pmcid,
+        title: source.title,
+        pmc_url: json.pmc_url,
+      };
+      const content = json.analysis || "";
+      const assistantMsg: Msg = { role: "assistant", content, model: `pubmed-fulltext:${model}`, fulltext: meta };
       setMessages((prev) => [...prev, assistantMsg]);
-      const convId = activeId;
-      if (convId) {
-        await supabase.from("ai_messages").insert({
-          conversation_id: convId, user_id: user.id, role: "assistant", content, model: assistantMsg.model,
-        });
-        await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-        loadConversations();
-      }
+      await persistFulltextMessage(content, meta);
     } catch (e: any) {
       toast.error("Ошибка разбора: " + (e?.message || ""));
     } finally {
       setPubmedAnalyzing(null);
     }
   };
+
+  const [fulltextFollowupLoading, setFulltextFollowupLoading] = useState<string | null>(null);
+  const askFulltextFollowup = async (meta: FulltextMeta, userQuestion: string) => {
+    if (!user || fulltextFollowupLoading) return;
+    setFulltextFollowupLoading(meta.pmid);
+    // Show the user's question in the thread for transparency
+    const userMsg: Msg = { role: "user", content: userQuestion };
+    setMessages((prev) => [...prev, userMsg]);
+    if (activeId) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: activeId, user_id: user.id, role: "user", content: userQuestion, model,
+      });
+    }
+    try {
+      const { ok, json } = await callFulltext({
+        pmid: meta.pmid, pmcid: meta.pmcid, title: meta.title, question: userQuestion,
+      });
+      if (!ok) {
+        toast.error(json?.error || "Не удалось получить ответ");
+        return;
+      }
+      const assistantMsg: Msg = {
+        role: "assistant",
+        content: json.analysis || "",
+        model: `pubmed-fulltext:${model}`,
+        fulltext: meta,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      await persistFulltextMessage(assistantMsg.content, meta);
+    } catch (e: any) {
+      toast.error("Ошибка: " + (e?.message || ""));
+    } finally {
+      setFulltextFollowupLoading(null);
+    }
+  };
+
+
 
   const sendMessage = async () => {
     if (pubmedMode) return sendPubmedMessage();
@@ -1222,7 +1299,15 @@ export default function Cabinet() {
                           <Users className="w-3 h-3" /> Сводный ответ консилиума
                         </div>
                       )}
-                      {m.content ? (
+                      {m.content && m.fulltext ? (
+                        <PubmedFulltextAnalysis
+                          raw={m.content}
+                          meta={m.fulltext}
+                          onFollowup={(q) => askFulltextFollowup(m.fulltext!, q)}
+                          followupLoading={fulltextFollowupLoading === m.fulltext.pmid}
+                        />
+                      ) : m.content ? (
+
                         <div className="prose prose-sm dark:prose-invert max-w-none">
                           <ReactMarkdown
                             components={m.pubmed ? {
