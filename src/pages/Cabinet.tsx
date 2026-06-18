@@ -131,6 +131,27 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   return parts;
 };
 
+function linkifyPubmedCitations(content: string, sources: PubmedSource[], msgIndex: number): string {
+  if (!sources?.length) return content;
+  // Strip legacy/hallucinated [PMID:xxxx] markers — we cite by index only.
+  let text = content.replace(/\[PMID[:\s]*\d+\]/gi, "").replace(/\s{2,}/g, " ");
+  // Replace [n], [n, m, k], [n,m][k] etc. with markdown links per index.
+  text = text.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (_m, group: string) => {
+    const nums = group.split(",").map((s) => s.trim()).filter(Boolean);
+    return nums
+      .map((n) => {
+        const idx = Number(n);
+        const src = sources[idx - 1];
+        if (!src) return `[${n}]`;
+        return `[\\[${n}\\]](#pubmed-src-${msgIndex}-${src.pmid})`;
+      })
+      .join(" ");
+  });
+  return text;
+}
+
+
+
 function ConvRow({
   conv, active, folders, onOpen, onDelete, onMove,
 }: {
@@ -1203,7 +1224,35 @@ export default function Cabinet() {
                       )}
                       {m.content ? (
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                          <ReactMarkdown
+                            components={m.pubmed ? {
+                              a: ({ href, children, ...props }: any) => {
+                                if (typeof href === "string" && href.startsWith("#pubmed-src-")) {
+                                  return (
+                                    <a
+                                      href={href}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        const el = document.getElementById(href.slice(1));
+                                        if (el) {
+                                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                          el.classList.add("ring-2", "ring-primary");
+                                          setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1400);
+                                        }
+                                      }}
+                                      className="inline-flex items-center px-1 rounded bg-primary/10 text-primary no-underline hover:bg-primary/20 font-medium text-[0.85em] mx-0.5"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </a>
+                                  );
+                                }
+                                return <a href={href} {...props}>{children}</a>;
+                              },
+                            } : undefined}
+                          >
+                            {m.pubmed ? linkifyPubmedCitations(m.content, m.pubmed.sources, i) : m.content}
+                          </ReactMarkdown>
                         </div>
                       ) : (
                         <div className="text-xs text-muted-foreground flex items-center gap-2">
@@ -1283,22 +1332,26 @@ export default function Cabinet() {
                           )}
                           <div className="space-y-2">
                             {m.pubmed.sources.map((s, k) => (
-                              <PubmedSourceCard
+                              <div
                                 key={s.pmid}
-                                index={k + 1}
-                                source={s}
-                                onAnalyze={(src) => {
-                                  // find originating user question (previous user msg)
-                                  const userQ = (() => {
-                                    for (let x = i - 1; x >= 0; x--) {
-                                      if (messages[x]?.role === "user") return messages[x].content;
-                                    }
-                                    return "";
-                                  })();
-                                  analyzePubmedArticle(src, userQ);
-                                }}
-                                analyzing={pubmedAnalyzing === s.pmid}
-                              />
+                                id={`pubmed-src-${i}-${s.pmid}`}
+                                className="rounded-md transition-shadow scroll-mt-24"
+                              >
+                                <PubmedSourceCard
+                                  index={k + 1}
+                                  source={s}
+                                  onAnalyze={(src) => {
+                                    const userQ = (() => {
+                                      for (let x = i - 1; x >= 0; x--) {
+                                        if (messages[x]?.role === "user") return messages[x].content;
+                                      }
+                                      return "";
+                                    })();
+                                    analyzePubmedArticle(src, userQ);
+                                  }}
+                                  analyzing={pubmedAnalyzing === s.pmid}
+                                />
+                              </div>
                             ))}
                           </div>
                           <div className="flex flex-wrap gap-2 pt-1">

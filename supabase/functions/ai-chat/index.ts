@@ -160,10 +160,18 @@ Deno.serve(async (req) => {
           });
 
           // 4) Inject context block before user messages
-          const contextBlock = pubmedSources.map((s, i) =>
-            `[${i + 1}] PMID:${s.url.match(/\/(\d+)\//)?.[1]} — ${s.title.replace(/^\[PMID:\d+\]\s*/, "")}\n${s.content}`
-          ).join("\n\n");
-          const pubmedSystem = "Тебе предоставлены аннотации из PubMed по запросу пользователя. Отвечай на русском, по существу клинического вопроса, опираясь на эти источники. После утверждений ставь ссылки в формате [PMID:XXXXXX]. Если данных недостаточно — скажи прямо.\n\nИСТОЧНИКИ PUBMED (запрос: \"" + englishQuery + "\"):\n\n" + contextBlock;
+          const contextBlock = pubmedSources.map((s, i) => {
+            const pmid = s.url.match(/\/(\d+)\//)?.[1] ?? "";
+            const cleanTitle = s.title.replace(/^\[PMID:\d+\]\s*/, "");
+            return `[${i + 1}] ${cleanTitle}${pmid ? ` (PMID:${pmid})` : ""}\n${s.content}`;
+          }).join("\n\n");
+          const pubmedSystem =
+            "Тебе предоставлены пронумерованные аннотации из PubMed по запросу пользователя. Отвечай на русском, по существу клинического вопроса, опираясь на эти источники.\n" +
+            "СТРОГИЕ ПРАВИЛА ЦИТИРОВАНИЯ:\n" +
+            `• Ссылайся на источники ТОЛЬКО по их порядковому номеру в списке ниже, в формате [1], [2], … [${pubmedSources.length}].\n` +
+            "• НИКОГДА не пиши PMID в тексте ответа. Не используй форму [PMID:...] и не выдумывай идентификаторы — настоящие PMID и ссылки уже показаны пользователю в карточках источников.\n" +
+            "• Допустимо группировать ссылки: [1, 3] или [2][4]. Если данных недостаточно — скажи прямо.\n\n" +
+            "ИСТОЧНИКИ PUBMED (запрос: \"" + englishQuery + "\"):\n\n" + contextBlock;
           finalMessages = [
             { role: "system", content: systemPrompt },
             { role: "system", content: pubmedSystem },
