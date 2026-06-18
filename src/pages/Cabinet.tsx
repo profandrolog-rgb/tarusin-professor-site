@@ -1161,13 +1161,57 @@ export default function Cabinet() {
             <Users className="w-3.5 h-3.5" />Консилиум
           </button>
           <Select value={model} onValueChange={setModel} disabled={streaming || council}>
-            <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[300px]">
+              <SelectValue>
+                {(() => {
+                  const r = currentResolved;
+                  if (r) return `${r.emoji} ${r.label}${!r.available ? " · недоступно" : ""}`;
+                  if (currentLive) return `🧪 ${currentLive.name || currentLive.id}`;
+                  return `⚠ ${model}`;
+                })()}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
-              {MODELS.map((m) => (
-                <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Быстрые</div>
+              {fastModels.map((m) => (
+                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                  <span className="flex items-center gap-1">
+                    <span>{m.emoji}</span>
+                    <span>{m.label}</span>
+                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                  </span>
+                </SelectItem>
               ))}
+              <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Глубокие</div>
+              {deepModels.map((m) => (
+                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                  <span className="flex items-center gap-1">
+                    <span>{m.emoji}</span>
+                    <span>{m.label}</span>
+                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                  </span>
+                </SelectItem>
+              ))}
+              {currentResolved == null && currentLive && (
+                <>
+                  <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Расширенный выбор</div>
+                  <SelectItem value={model}>🧪 {currentLive.name || currentLive.id}</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
+          <button
+            type="button"
+            onClick={() => setExtendedPickerOpen(true)}
+            disabled={streaming || council}
+            className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
+            title={modelKnown
+              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive })}`
+              : `⚠ Слаг ${model} не найден в OpenRouter — может вернуть 404`}
+          >
+            <Search className="w-3.5 h-3.5" />Ещё
+          </button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
