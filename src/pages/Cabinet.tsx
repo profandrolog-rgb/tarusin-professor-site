@@ -240,6 +240,7 @@ export default function Cabinet() {
         (data || []).map((m: any) => {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
+          const sourcesAtt = atts.find((a) => a?.name === "__sources__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -247,13 +248,21 @@ export default function Cabinet() {
               councilAnswers = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let sources: SourceCitation[] | undefined;
+          if (sourcesAtt?.dataUrl) {
+            try {
+              const b64 = sourcesAtt.dataUrl.split(",")[1] || "";
+              sources = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => a?.name !== "__council__"),
+            attachments: atts.filter((a) => a?.name !== "__council__" && a?.name !== "__sources__"),
             model: m.model,
             council: councilAnswers,
+            sources,
           };
         }),
       );
