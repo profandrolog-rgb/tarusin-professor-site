@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Bot, User, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { ChatMarkdown } from "@/components/cabinet/ChatMarkdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
