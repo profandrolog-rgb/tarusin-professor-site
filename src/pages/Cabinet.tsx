@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { copyToClipboard, messagesToMarkdown, downloadMarkdown, downloadDocx, downloadPdf, type ExportMessage } from "@/lib/cabinetExport";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
@@ -472,6 +474,37 @@ export default function Cabinet() {
               ))}
             </SelectContent>
           </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={messages.length === 0}
+                className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
+                title="Экспорт всего диалога"
+              >
+                <Download className="w-3.5 h-3.5" />Экспорт
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={async () => {
+                  const ok = await copyToClipboard(messagesToMarkdown(messages as ExportMessage[]));
+                  ok ? toast.success("Скопировано") : toast.error("Не удалось скопировать");
+                }}
+              >
+                <Copy className="w-3.5 h-3.5 mr-2" /> Копировать (Markdown)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadMarkdown(messagesToMarkdown(messages as ExportMessage[]))}>
+                <FileCode2 className="w-3.5 h-3.5 mr-2" /> Скачать .md
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => { await downloadDocx(messages as ExportMessage[]); toast.success("DOCX сохранён"); }}>
+                <FileType2 className="w-3.5 h-3.5 mr-2" /> Скачать .docx
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { const ok = downloadPdf(messages as ExportMessage[]); if (!ok) toast.error("Браузер заблокировал окно печати"); }}>
+                <FileDown className="w-3.5 h-3.5 mr-2" /> Скачать .pdf (через печать)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             type="button"
             onClick={() => {
@@ -485,6 +518,7 @@ export default function Cabinet() {
             <Settings className="w-3.5 h-3.5" />
           </button>
         </header>
+
 
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -629,7 +663,50 @@ export default function Cabinet() {
                 ) : (
                   <div className="whitespace-pre-wrap text-sm">{m.content}</div>
                 )}
-                {m.model && m.role === "assistant" && (
+                {m.role === "assistant" && m.content && !streaming && (
+                  <div className="flex items-center gap-1 mt-2 -mb-1 opacity-70 hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const ok = await copyToClipboard(m.content);
+                        ok ? toast.success("Скопировано") : toast.error("Ошибка");
+                      }}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Копировать"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadMarkdown(m.content, `answer-${i + 1}.md`)}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Скачать .md"
+                    >
+                      <FileCode2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await downloadDocx([{ role: "assistant", content: m.content, model: m.model }], `answer-${i + 1}.docx`, "Ответ");
+                        toast.success("DOCX сохранён");
+                      }}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Скачать .docx"
+                    >
+                      <FileType2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { const ok = downloadPdf([{ role: "assistant", content: m.content, model: m.model }], "Ответ"); if (!ok) toast.error("Браузер заблокировал окно печати"); }}
+                      className="p-1 rounded hover:bg-background/60"
+                      title="Скачать .pdf"
+                    >
+                      <FileDown className="w-3 h-3" />
+                    </button>
+                    {m.model && <span className="text-[10px] text-muted-foreground ml-auto">{m.model}</span>}
+                  </div>
+                )}
+                {m.model && m.role === "assistant" && (!m.content || streaming) && (
                   <div className="text-[10px] text-muted-foreground mt-1 opacity-60">{m.model}</div>
                 )}
               </div>
