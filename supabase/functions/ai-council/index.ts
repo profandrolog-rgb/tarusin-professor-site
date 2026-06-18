@@ -29,7 +29,7 @@ async function callOpenRouter(apiKey: string, origin: string, model: string, mes
       "HTTP-Referer": origin,
       "X-Title": "Tarusin Council",
     },
-    body: JSON.stringify({ model, messages, reasoning: { effort: "low" } }),
+    body: JSON.stringify({ model, messages, reasoning: { effort: "low" }, provider: { sort: "throughput" } }),
   });
   if (!r.ok) {
     const t = await r.text().catch(() => "");
@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
             messages: [{ role: "user", content: synthPrompt }],
             stream: true,
             reasoning: { effort: "low" },
+            provider: { sort: "throughput" },
           }),
         });
 

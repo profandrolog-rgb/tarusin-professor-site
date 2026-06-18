@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
       stream: true,
       // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
       reasoning: { effort },
+      // Route to the fastest provider for the selected model (equivalent to :nitro)
+      provider: { sort: "throughput" },
     };
 
     console.log("[ai-chat] request", JSON.stringify({
