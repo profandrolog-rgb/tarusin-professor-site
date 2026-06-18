@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -123,6 +123,73 @@ export default function Cabinet() {
   const [summarizerDraft, setSummarizerDraft] = useState(summarizerPrompt);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+
+  const startRecording = useCallback(async () => {
+    if (recording || transcribing) return;
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast.error("Нет доступа к микрофону");
+      return;
+    }
+    const mimeType = ["audio/webm", "audio/mp4"].find((t) => MediaRecorder.isTypeSupported(t));
+    if (!mimeType) {
+      stream.getTracks().forEach((t) => t.stop());
+      toast.error("Браузер не поддерживает запись");
+      return;
+    }
+    const rec = new MediaRecorder(stream, { mimeType });
+    recordedChunksRef.current = [];
+    rec.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data); };
+    rec.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      const blob = new Blob(recordedChunksRef.current, { type: rec.mimeType });
+      recordedChunksRef.current = [];
+      if (blob.size < 1024) { toast.error("Слишком короткая запись"); return; }
+      setTranscribing(true);
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const fd = new FormData();
+        const ext = rec.mimeType.includes("mp4") ? "mp4" : "webm";
+        fd.append("file", blob, `recording.${ext}`);
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-transcribe`;
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${sess.session?.access_token || ""}` },
+          body: fd,
+        });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error(j?.error || `HTTP ${r.status}`);
+        }
+        const { text } = await r.json();
+        if (text) {
+          setInput((prev) => prev ? `${prev} ${text}`.trim() : text);
+        } else {
+          toast.error("Ничего не распознано");
+        }
+      } catch (e: any) {
+        toast.error(e?.message || "Ошибка распознавания");
+      } finally {
+        setTranscribing(false);
+      }
+    };
+    recorderRef.current = rec;
+    rec.start();
+    setRecording(true);
+  }, [recording, transcribing]);
+
+  const stopRecording = useCallback(() => {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  }, []);
 
   // Load conversations
   const loadConversations = useCallback(async () => {
@@ -750,6 +817,18 @@ export default function Cabinet() {
               aria-label="Прикрепить файл"
             >
               <Paperclip className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              variant={recording ? "destructive" : "outline"}
+              size="icon"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={streaming || transcribing}
+              aria-label={recording ? "Остановить запись" : "Голосовой ввод"}
+              title={recording ? "Остановить запись" : "Голосовой ввод (микрофон)"}
+              className={recording ? "animate-pulse" : ""}
+            >
+              {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </Button>
             <Textarea
               value={input}
