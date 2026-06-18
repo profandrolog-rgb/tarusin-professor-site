@@ -473,7 +473,175 @@ export default function Cabinet() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const pubmedMode = webSearch && searchSource === "pubmed" && !council;
+
+  const ensureConversation = async (titleSeed: string, modelTag: string): Promise<string | null> => {
+    if (!user) return null;
+    if (activeId) return activeId;
+    const title = titleSeed.slice(0, 60) || "Новый диалог";
+    const { data, error } = await supabase
+      .from("ai_conversations")
+      .insert({ user_id: user.id, title, model: modelTag })
+      .select("id, title, model, updated_at, folder_id")
+      .single();
+    if (error || !data) { toast.error("Не удалось создать диалог"); return null; }
+    setActiveId(data.id);
+    setConversations((prev) => [data as Conversation, ...prev]);
+    return data.id;
+  };
+
+  const persistPubmedAssistant = async (
+    convId: string, content: string, payload: PubmedPayload,
+  ) => {
+    if (!user) return;
+    const pubmedB64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId,
+      user_id: user.id,
+      role: "assistant",
+      content,
+      model: `pubmed:${model}`,
+      attachments: [{ name: "__pubmed__", type: "application/json", dataUrl: `data:application/json;base64,${pubmedB64}` }] as any,
+    });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    loadConversations();
+  };
+
+  const sendPubmedMessage = async () => {
+    if (!user || streaming) return;
+    const text = input.trim();
+    if (!text) { toast.error("Введите клинический вопрос"); return; }
+    setStreaming(true);
+
+    const userMsg: Msg = { role: "user", content: text };
+    const convId = await ensureConversation(text, `pubmed:${model}`);
+    if (!convId) { setStreaming(false); return; }
+    setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
+    setInput("");
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "user", content: text, model,
+    });
+
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(PUBMED_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+        body: JSON.stringify({ question: text, filters: pubmedFilters, model, system: systemPrompt }),
+      });
+      if (!resp.ok) {
+        const err = await resp.text().catch(() => "");
+        throw new Error(err || `HTTP ${resp.status}`);
+      }
+      const json = await resp.json();
+      const payload: PubmedPayload = {
+        used_query: json.used_query || "",
+        english_query: json.english_query || "",
+        total_count: Number(json.total_count) || 0,
+        retstart: Number(json.retstart) || 0,
+        sources: (json.sources || []) as PubmedSource[],
+      };
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: json.answer || "", model: `pubmed:${model}`, pubmed: payload };
+        return next;
+      });
+      await persistPubmedAssistant(convId, json.answer || "", payload);
+    } catch (e: any) {
+      toast.error("PubMed-поиск не удался: " + (e?.message || ""));
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка PubMed-поиска." };
+        return next;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  const loadMorePubmed = async (msgIndex: number) => {
+    const msg = messages[msgIndex];
+    if (!msg?.pubmed || pubmedLoadingMore !== null) return;
+    setPubmedLoadingMore(msgIndex);
+    try {
+      const nextStart = msg.pubmed.retstart + msg.pubmed.sources.length;
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(PUBMED_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+        body: JSON.stringify({
+          question: msg.pubmed.english_query,
+          english_query: msg.pubmed.english_query,
+          filters: pubmedFilters,
+          model,
+          retstart: nextStart,
+          skip_answer: true,
+        }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      const json = await resp.json();
+      const newSources: PubmedSource[] = json.sources || [];
+      const merged: PubmedSource[] = [...msg.pubmed.sources];
+      for (const s of newSources) {
+        if (!merged.some((x) => x.pmid === s.pmid)) merged.push(s);
+      }
+      const updated: PubmedPayload = { ...msg.pubmed, sources: merged, total_count: Number(json.total_count) || msg.pubmed.total_count };
+      setMessages((prev) => prev.map((m, i) => i === msgIndex ? { ...m, pubmed: updated } : m));
+      if (msg.id) {
+        const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(updated))));
+        await supabase.from("ai_messages").update({
+          attachments: [{ name: "__pubmed__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
+        }).eq("id", msg.id);
+      }
+    } catch (e: any) {
+      toast.error("Не удалось дозагрузить: " + (e?.message || ""));
+    } finally {
+      setPubmedLoadingMore(null);
+    }
+  };
+
+  const analyzePubmedArticle = async (source: PubmedSource, originalQuestion: string) => {
+    if (!user || pubmedAnalyzing) return;
+    setPubmedAnalyzing(source.pmid);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(PUBMED_FULLTEXT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+        body: JSON.stringify({
+          pmid: source.pmid,
+          pmcid: source.pmcid,
+          question: originalQuestion,
+          model,
+          system: systemPrompt,
+        }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) {
+        toast.error(json?.error || "Не удалось получить полный текст");
+        return;
+      }
+      const header = `**Разбор полного текста PMID:${source.pmid}** — _${source.title || ""}_\n\n`;
+      const content = header + (json.analysis || "");
+      const assistantMsg: Msg = { role: "assistant", content, model: `pubmed-fulltext:${model}` };
+      setMessages((prev) => [...prev, assistantMsg]);
+      const convId = activeId;
+      if (convId) {
+        await supabase.from("ai_messages").insert({
+          conversation_id: convId, user_id: user.id, role: "assistant", content, model: assistantMsg.model,
+        });
+        await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+        loadConversations();
+      }
+    } catch (e: any) {
+      toast.error("Ошибка разбора: " + (e?.message || ""));
+    } finally {
+      setPubmedAnalyzing(null);
+    }
+  };
+
   const sendMessage = async () => {
+    if (pubmedMode) return sendPubmedMessage();
     if (!user || streaming) return;
     const text = input.trim();
     if (!text && !attachments.length) return;
