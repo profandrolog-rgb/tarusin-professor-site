@@ -1334,6 +1334,14 @@ export default function Cabinet() {
         </div>
 
         <div className="border-t border-border p-3 space-y-2">
+          {pubmedMode && user && (
+            <PubmedPanel
+              userId={user.id}
+              filters={pubmedFilters}
+              onFiltersChange={setPubmedFilters}
+              disabled={streaming}
+            />
+          )}
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {attachments.map((a, i) => (
