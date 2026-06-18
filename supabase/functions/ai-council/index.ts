@@ -96,19 +96,37 @@ Deno.serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         const enc = new TextEncoder();
-        const send = (line: string) => controller.enqueue(enc.encode(line));
+        const send = (line: string) => {
+          try { controller.enqueue(enc.encode(line)); } catch { /* closed */ }
+        };
+
+        console.log("[ai-council] start", JSON.stringify({ panel, summarizerModel, messages_count: messages.length }));
+
+        // Immediate first byte + keepalive to prevent proxy/browser closing the connection
+        // while we wait for the parallel fan-out to complete.
+        send(`: council-start\n\n`);
+        const keepalive = setInterval(() => send(`: ping\n\n`), 5000);
 
         // 1. Fan out in parallel
-        const results = await Promise.all(panel.map(async (model) => {
-          try {
-            const content = await callOpenRouter(apiKey, origin, model, messages);
-            return { model, content, error: null as string | null };
-          } catch (e: any) {
-            return { model, content: "", error: e?.message || String(e) };
-          }
-        }));
+        let results: { model: string; content: string; error: string | null }[] = [];
+        try {
+          results = await Promise.all(panel.map(async (model) => {
+            const t0 = Date.now();
+            try {
+              const content = await callOpenRouter(apiKey, origin, model, messages);
+              console.log("[ai-council] model ok", JSON.stringify({ model, ms: Date.now() - t0, len: content.length }));
+              return { model, content, error: null as string | null };
+            } catch (e: any) {
+              console.error("[ai-council] model fail", JSON.stringify({ model, ms: Date.now() - t0, err: e?.message || String(e) }));
+              return { model, content: "", error: e?.message || String(e) };
+            }
+          }));
+        } finally {
+          clearInterval(keepalive);
+        }
 
         send(`event: answers\ndata: ${JSON.stringify(results)}\n\n`);
+
 
         // 2. Summarize via SSE streaming
         const successful = results.filter((r) => !r.error && r.content);
