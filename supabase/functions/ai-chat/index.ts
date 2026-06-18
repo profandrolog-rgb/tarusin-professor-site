@@ -63,9 +63,14 @@ Deno.serve(async (req) => {
       body.reasoning_effort === "high" || body.reasoning_effort === "medium"
         ? body.reasoning_effort
         : "low";
+    const systemPrompt = typeof body.system === "string" && body.system.trim()
+      ? body.system
+      : DEFAULT_SYSTEM_PROMPT;
+    const messagesWithSystem = [{ role: "system", content: systemPrompt }, ...body.messages];
+
     const requestPayload: Record<string, unknown> = {
       model: resolvedModel,
-      messages: body.messages,
+      messages: messagesWithSystem,
       stream: true,
       // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
       reasoning: { effort },
