@@ -141,9 +141,8 @@ export function PubmedFulltextAnalysis({
   if (!items) {
     return (
       <div className="space-y-3">
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown>{raw}</ReactMarkdown>
-        </div>
+        <ChatMarkdown>{raw}</ChatMarkdown>
+
         {onFollowup && (
           <FollowupRow q={q} setQ={setQ} loading={!!followupLoading} onSend={() => { if (q.trim()) { onFollowup(q.trim()); setQ(""); } }} />
         )}
