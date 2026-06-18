@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
         "X-Title": "Tarusin Cabinet AI",
       },
       body: JSON.stringify({
-        model: body.model,
+        model: body.model === "x-ai/grok-4" ? "x-ai/grok-4.3" : body.model,
         messages: body.messages,
         stream: true,
       }),
