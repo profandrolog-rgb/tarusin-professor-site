@@ -171,7 +171,10 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             model: summarizerModel,
-            messages: [{ role: "user", content: synthPrompt }],
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: synthPrompt },
+            ],
             stream: true,
             reasoning: { effort: "low" },
             provider: { sort: "throughput" },
