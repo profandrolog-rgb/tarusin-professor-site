@@ -160,9 +160,8 @@ const PatientPortalChat = ({ userId, isEn }: PatientPortalChatProps) => {
               </div>
               <div className={`rounded-xl px-3 py-2 text-sm max-w-[85%] ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted text-foreground rounded-tl-sm"}`}>
                 {msg.role === "assistant" ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+                  <ChatMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">{msg.content}</ChatMarkdown>
+
                 ) : msg.content}
               </div>
             </div>
