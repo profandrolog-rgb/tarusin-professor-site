@@ -83,6 +83,14 @@ type PubmedPayload = {
   sources: PubmedSource[];
 };
 
+type FulltextMeta = {
+  pmid: string;
+  pmcid?: string;
+  title?: string;
+  doi?: string;
+  pmc_url?: string;
+};
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -92,7 +100,9 @@ type Msg = {
   council?: CouncilAnswer[];
   sources?: SourceCitation[];
   pubmed?: PubmedPayload;
+  fulltext?: FulltextMeta;
 };
+
 
 type Conversation = {
   id: string;
