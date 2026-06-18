@@ -666,7 +666,7 @@ export default function Cabinet() {
       const title = text.slice(0, 60) || "Новый диалог";
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: user.id, title, model })
+        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId })
         .select("id, title, model, updated_at, folder_id")
         .single();
       if (error || !data) {
@@ -677,6 +677,7 @@ export default function Cabinet() {
       convId = data.id;
       setActiveId(convId);
       setConversations((prev) => [data as Conversation, ...prev]);
+      setPendingFolderId(null);
     }
 
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
