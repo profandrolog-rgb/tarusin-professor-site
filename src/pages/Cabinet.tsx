@@ -823,8 +823,9 @@ export default function Cabinet() {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
-        ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt }
+        ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt, models: councilPanel }
         : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch, search_source: searchSource };
+
       const resp = await fetch(url, {
         method: "POST",
         headers: {
