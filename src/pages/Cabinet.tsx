@@ -38,12 +38,15 @@ type Attachment = {
   dataUrl: string; // data:...;base64,...
 };
 
+type CouncilAnswer = { model: string; content: string; error: string | null };
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
   content: string;
   attachments?: Attachment[];
   model?: string;
+  council?: CouncilAnswer[];
 };
 
 type Conversation = {
