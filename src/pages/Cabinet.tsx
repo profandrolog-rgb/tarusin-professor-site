@@ -388,6 +388,7 @@ export default function Cabinet() {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
+          const pubmedAtt = atts.find((a) => a?.name === "__pubmed__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -402,14 +403,22 @@ export default function Cabinet() {
               sources = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let pubmed: PubmedPayload | undefined;
+          if (pubmedAtt?.dataUrl) {
+            try {
+              const b64 = pubmedAtt.dataUrl.split(",")[1] || "";
+              pubmed = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => a?.name !== "__council__" && a?.name !== "__sources__"),
+            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__"].includes(a?.name)),
             model: m.model,
             council: councilAnswers,
             sources,
+            pubmed,
           };
         }),
       );
