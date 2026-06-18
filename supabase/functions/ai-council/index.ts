@@ -89,7 +89,10 @@ Deno.serve(async (req) => {
       ? body.models.slice(0, 6)
       : DEFAULT_PANEL;
     const summarizerModel: string = typeof body.summarizer === "string" ? body.summarizer : DEFAULT_SUMMARIZER;
-    const messages = body.messages;
+    const systemPrompt = typeof body.system === "string" && body.system.trim()
+      ? body.system
+      : DEFAULT_SYSTEM_PROMPT;
+    const messages = [{ role: "system", content: systemPrompt }, ...body.messages];
     const origin = req.headers.get("origin") ?? "https://lovable.app";
 
     const userQuestion =
