@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
       : DEFAULT_SYSTEM_PROMPT;
     const messagesWithSystem = [{ role: "system", content: systemPrompt }, ...body.messages];
 
+    const webSearch = body.web_search === true;
     const requestPayload: Record<string, unknown> = {
       model: resolvedModel,
       messages: messagesWithSystem,
@@ -85,6 +86,9 @@ Deno.serve(async (req) => {
       // Route to the fastest provider for the selected model (equivalent to :nitro)
       provider: { sort: "throughput" },
     };
+    if (webSearch) {
+      requestPayload.plugins = [{ id: "web", max_results: 5 }];
+    }
 
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,

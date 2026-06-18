@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -68,6 +68,8 @@ type Attachment = {
 
 type CouncilAnswer = { model: string; content: string; error: string | null };
 
+type SourceCitation = { url: string; title?: string; content?: string };
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -75,6 +77,7 @@ type Msg = {
   attachments?: Attachment[];
   model?: string;
   council?: CouncilAnswer[];
+  sources?: SourceCitation[];
 };
 
 type Conversation = {
@@ -116,6 +119,7 @@ export default function Cabinet() {
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
+  const [webSearch, setWebSearch] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
@@ -236,6 +240,7 @@ export default function Cabinet() {
         (data || []).map((m: any) => {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
+          const sourcesAtt = atts.find((a) => a?.name === "__sources__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -243,13 +248,21 @@ export default function Cabinet() {
               councilAnswers = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let sources: SourceCitation[] | undefined;
+          if (sourcesAtt?.dataUrl) {
+            try {
+              const b64 = sourcesAtt.dataUrl.split(",")[1] || "";
+              sources = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => a?.name !== "__council__"),
+            attachments: atts.filter((a) => a?.name !== "__council__" && a?.name !== "__sources__"),
             model: m.model,
             council: councilAnswers,
+            sources,
           };
         }),
       );
@@ -353,12 +366,14 @@ export default function Cabinet() {
 
     let assistantSoFar = "";
     let councilAnswers: CouncilAnswer[] | undefined;
+    let collectedSources: SourceCitation[] = [];
+    const usedWebSearch = webSearch && !council;
     try {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
         ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt }
-        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt };
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch };
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -377,6 +392,16 @@ export default function Cabinet() {
       const decoder = new TextDecoder();
       let buf = "";
       let pendingEvent: string | null = null;
+      const mergeAnnotations = (anns: any) => {
+        if (!Array.isArray(anns)) return;
+        for (const a of anns) {
+          const cit = a?.url_citation || (a?.type === "url_citation" ? a : null);
+          const url = cit?.url || a?.url;
+          if (!url) continue;
+          if (collectedSources.some((s) => s.url === url)) continue;
+          collectedSources.push({ url, title: cit?.title || a?.title, content: cit?.content || a?.content });
+        }
+      };
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -409,12 +434,18 @@ export default function Cabinet() {
                 });
               }
             } else {
-              const delta = parsed.choices?.[0]?.delta?.content;
+              const choice = parsed.choices?.[0];
+              const delta = choice?.delta?.content;
+              mergeAnnotations(choice?.delta?.annotations);
+              mergeAnnotations(choice?.message?.annotations);
               if (delta) {
                 assistantSoFar += delta;
+              }
+              if (delta || collectedSources.length) {
+                const sourcesSnapshot = collectedSources.slice();
                 setMessages((prev) => {
                   const next = [...prev];
-                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model };
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model, sources: sourcesSnapshot.length ? sourcesSnapshot : undefined };
                   return next;
                 });
               }
@@ -428,13 +459,20 @@ export default function Cabinet() {
       // Persist assistant message
       if (assistantSoFar) {
         const persistModel = council ? "council" : model;
+        const persistAtts: any[] = [];
+        if (councilAnswers) {
+          persistAtts.push({ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` });
+        }
+        if (collectedSources.length) {
+          persistAtts.push({ name: "__sources__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(collectedSources))))}` });
+        }
         await supabase.from("ai_messages").insert({
           conversation_id: convId,
           user_id: user.id,
           role: "assistant",
           content: assistantSoFar,
           model: persistModel,
-          attachments: councilAnswers ? ([{ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` }] as any) : [],
+          attachments: persistAtts as any,
         });
         await supabase.from("ai_conversations").update({ model: persistModel, updated_at: new Date().toISOString() }).eq("id", convId);
         loadConversations();
@@ -735,6 +773,32 @@ export default function Cabinet() {
                           </AccordionItem>
                         </Accordion>
                       )}
+                      {m.sources && m.sources.length > 0 && (
+                        <div className="mt-3 border-t border-border/50 pt-2">
+                          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1">
+                            <Globe className="w-3 h-3" /> Источники ({m.sources.length})
+                          </div>
+                          <ol className="space-y-1 text-xs list-decimal pl-4">
+                            {m.sources.map((s, k) => (
+                              <li key={k} className="leading-snug">
+                                <a
+                                  href={s.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline inline-flex items-start gap-1 break-all"
+                                  title={s.url}
+                                >
+                                  <span>{s.title || s.url}</span>
+                                  <ExternalLink className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                </a>
+                                {s.title && (
+                                  <div className="text-[10px] text-muted-foreground break-all">{s.url}</div>
+                                )}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -841,6 +905,23 @@ export default function Cabinet() {
               className={recording ? "animate-pulse" : ""}
             >
               {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
+            <Button
+              type="button"
+              variant={webSearch ? "default" : "outline"}
+              size="icon"
+              onClick={() => setWebSearch((v) => !v)}
+              disabled={streaming || council}
+              aria-label="Веб-поиск"
+              title={
+                council
+                  ? "Веб-поиск недоступен в режиме Консилиум"
+                  : webSearch
+                    ? "Веб-поиск включён — модель проверит источники в интернете"
+                    : "Включить веб-поиск для этого сообщения"
+              }
+            >
+              <Globe className="w-4 h-4" />
             </Button>
             <Textarea
               value={input}
