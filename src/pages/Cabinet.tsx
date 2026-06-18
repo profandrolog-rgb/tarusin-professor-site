@@ -773,6 +773,32 @@ export default function Cabinet() {
                           </AccordionItem>
                         </Accordion>
                       )}
+                      {m.sources && m.sources.length > 0 && (
+                        <div className="mt-3 border-t border-border/50 pt-2">
+                          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1">
+                            <Globe className="w-3 h-3" /> Источники ({m.sources.length})
+                          </div>
+                          <ol className="space-y-1 text-xs list-decimal pl-4">
+                            {m.sources.map((s, k) => (
+                              <li key={k} className="leading-snug">
+                                <a
+                                  href={s.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline inline-flex items-start gap-1 break-all"
+                                  title={s.url}
+                                >
+                                  <span>{s.title || s.url}</span>
+                                  <ExternalLink className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                                </a>
+                                {s.title && (
+                                  <div className="text-[10px] text-muted-foreground break-all">{s.url}</div>
+                                )}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <Loader2 className="w-4 h-4 animate-spin" />
