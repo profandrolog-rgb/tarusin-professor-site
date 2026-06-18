@@ -79,7 +79,8 @@ export default function Cabinet() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
-  const [model, setModel] = useState(MODELS[0].id);
+  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
