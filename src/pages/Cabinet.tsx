@@ -906,6 +906,23 @@ export default function Cabinet() {
             >
               {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </Button>
+            <Button
+              type="button"
+              variant={webSearch ? "default" : "outline"}
+              size="icon"
+              onClick={() => setWebSearch((v) => !v)}
+              disabled={streaming || council}
+              aria-label="Веб-поиск"
+              title={
+                council
+                  ? "Веб-поиск недоступен в режиме Консилиум"
+                  : webSearch
+                    ? "Веб-поиск включён — модель проверит источники в интернете"
+                    : "Включить веб-поиск для этого сообщения"
+              }
+            >
+              <Globe className="w-4 h-4" />
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
