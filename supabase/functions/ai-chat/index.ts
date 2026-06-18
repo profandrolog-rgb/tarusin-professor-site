@@ -51,6 +51,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    const resolvedModel = body.model === "x-ai/grok-4" ? "x-ai/grok-4.3" : body.model;
+    const requestPayload = {
+      model: resolvedModel,
+      messages: body.messages,
+      stream: true,
+    };
+
+    console.log("[ai-chat] request", JSON.stringify({
+      user: claimsData.claims.sub,
+      origin: req.headers.get("origin"),
+      original_model: body.model,
+      resolved_model: resolvedModel,
+      messages_count: body.messages.length,
+      messages_preview: body.messages.map((m: any) => ({
+        role: m?.role,
+        content_type: Array.isArray(m?.content) ? "array" : typeof m?.content,
+        content_len: typeof m?.content === "string"
+          ? m.content.length
+          : Array.isArray(m?.content) ? m.content.length : 0,
+      })),
+    }));
+
     const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -59,17 +81,32 @@ Deno.serve(async (req) => {
         "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
         "X-Title": "Tarusin Cabinet AI",
       },
-      body: JSON.stringify({
-        model: body.model === "x-ai/grok-4" ? "x-ai/grok-4.3" : body.model,
-        messages: body.messages,
-        stream: true,
-      }),
+      body: JSON.stringify(requestPayload),
     });
+
+    console.log("[ai-chat] openrouter response", JSON.stringify({
+      status: orResp.status,
+      ok: orResp.ok,
+      content_type: orResp.headers.get("content-type"),
+      has_body: !!orResp.body,
+    }));
 
     if (!orResp.ok || !orResp.body) {
       const text = await orResp.text().catch(() => "");
-      console.error("OpenRouter error", orResp.status, text);
-      return new Response(JSON.stringify({ error: "OpenRouter request failed", status: orResp.status }), {
+      console.error("[ai-chat] OpenRouter error", JSON.stringify({
+        status: orResp.status,
+        model: resolvedModel,
+        body_preview: text.slice(0, 2000),
+        request_payload: {
+          model: resolvedModel,
+          messages_count: body.messages.length,
+        },
+      }));
+      return new Response(JSON.stringify({
+        error: "OpenRouter request failed",
+        status: orResp.status,
+        details: text.slice(0, 1000),
+      }), {
         status: orResp.status === 429 ? 429 : orResp.status === 402 ? 402 : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
