@@ -457,7 +457,54 @@ export default function Cabinet() {
               ))}
             </SelectContent>
           </Select>
+          <button
+            type="button"
+            onClick={() => { setSystemDraft(systemPrompt); setSettingsOpen(true); }}
+            className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1"
+            title="Системный промпт"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </button>
         </header>
+
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Системный промпт</DialogTitle>
+              <DialogDescription>
+                Отправляется первым сообщением во все модели (включая режим «Консилиум» и суммаризатор).
+                Сохраняется локально в этом браузере.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={systemDraft}
+              onChange={(e) => setSystemDraft(e.target.value)}
+              rows={14}
+              className="font-mono text-xs"
+            />
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setSystemDraft(DEFAULT_SYSTEM_PROMPT)}
+              >
+                Вернуть по умолчанию
+              </Button>
+              <Button variant="ghost" onClick={() => setSettingsOpen(false)}>Отмена</Button>
+              <Button
+                onClick={() => {
+                  const value = systemDraft.trim() || DEFAULT_SYSTEM_PROMPT;
+                  setSystemPrompt(value);
+                  try { window.localStorage.setItem(SYSTEM_PROMPT_LS_KEY, value); } catch { /* ignore */ }
+                  setSettingsOpen(false);
+                  toast.success("Системный промпт сохранён");
+                }}
+              >
+                Сохранить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {messages.length === 0 && (
