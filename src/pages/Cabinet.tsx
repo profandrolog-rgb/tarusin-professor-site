@@ -1299,7 +1299,15 @@ export default function Cabinet() {
                           <Users className="w-3 h-3" /> Сводный ответ консилиума
                         </div>
                       )}
-                      {m.content ? (
+                      {m.content && m.fulltext ? (
+                        <PubmedFulltextAnalysis
+                          raw={m.content}
+                          meta={m.fulltext}
+                          onFollowup={(q) => askFulltextFollowup(m.fulltext!, q)}
+                          followupLoading={fulltextFollowupLoading === m.fulltext.pmid}
+                        />
+                      ) : m.content ? (
+
                         <div className="prose prose-sm dark:prose-invert max-w-none">
                           <ReactMarkdown
                             components={m.pubmed ? {
