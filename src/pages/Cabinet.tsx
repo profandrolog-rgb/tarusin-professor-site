@@ -644,45 +644,100 @@ export default function Cabinet() {
     }
   };
 
+  const callFulltext = async (args: { pmid: string; pmcid?: string; title?: string; question: string }) => {
+    const { data: sess } = await supabase.auth.getSession();
+    const resp = await fetch(PUBMED_FULLTEXT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+      body: JSON.stringify({
+        pmid: args.pmid,
+        pmcid: args.pmcid,
+        question: args.question,
+        model,
+        system: systemPrompt,
+      }),
+    });
+    const json = await resp.json();
+    return { ok: resp.ok, json } as const;
+  };
+
+  const persistFulltextMessage = async (content: string, meta: FulltextMeta) => {
+    const convId = activeId;
+    if (!convId || !user) return;
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(meta))));
+    const att = { name: "__fulltext__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` };
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "assistant", content,
+      model: `pubmed-fulltext:${model}`, attachments: [att] as any,
+    });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    loadConversations();
+  };
+
   const analyzePubmedArticle = async (source: PubmedSource, originalQuestion: string) => {
     if (!user || pubmedAnalyzing) return;
     setPubmedAnalyzing(source.pmid);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const resp = await fetch(PUBMED_FULLTEXT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
-        body: JSON.stringify({
-          pmid: source.pmid,
-          pmcid: source.pmcid,
-          question: originalQuestion,
-          model,
-          system: systemPrompt,
-        }),
+      const { ok, json } = await callFulltext({
+        pmid: source.pmid, pmcid: source.pmcid, title: source.title, question: originalQuestion,
       });
-      const json = await resp.json();
-      if (!resp.ok) {
+      if (!ok) {
         toast.error(json?.error || "Не удалось получить полный текст");
         return;
       }
-      const header = `**Разбор полного текста PMID:${source.pmid}** — _${source.title || ""}_\n\n`;
-      const content = header + (json.analysis || "");
-      const assistantMsg: Msg = { role: "assistant", content, model: `pubmed-fulltext:${model}` };
+      const meta: FulltextMeta = {
+        pmid: source.pmid,
+        pmcid: json.pmcid || source.pmcid,
+        title: source.title,
+        pmc_url: json.pmc_url,
+      };
+      const content = json.analysis || "";
+      const assistantMsg: Msg = { role: "assistant", content, model: `pubmed-fulltext:${model}`, fulltext: meta };
       setMessages((prev) => [...prev, assistantMsg]);
-      const convId = activeId;
-      if (convId) {
-        await supabase.from("ai_messages").insert({
-          conversation_id: convId, user_id: user.id, role: "assistant", content, model: assistantMsg.model,
-        });
-        await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-        loadConversations();
-      }
+      await persistFulltextMessage(content, meta);
     } catch (e: any) {
       toast.error("Ошибка разбора: " + (e?.message || ""));
     } finally {
       setPubmedAnalyzing(null);
     }
   };
+
+  const [fulltextFollowupLoading, setFulltextFollowupLoading] = useState<string | null>(null);
+  const askFulltextFollowup = async (meta: FulltextMeta, userQuestion: string) => {
+    if (!user || fulltextFollowupLoading) return;
+    setFulltextFollowupLoading(meta.pmid);
+    // Show the user's question in the thread for transparency
+    const userMsg: Msg = { role: "user", content: userQuestion };
+    setMessages((prev) => [...prev, userMsg]);
+    if (activeId) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: activeId, user_id: user.id, role: "user", content: userQuestion, model,
+      });
+    }
+    try {
+      const { ok, json } = await callFulltext({
+        pmid: meta.pmid, pmcid: meta.pmcid, title: meta.title, question: userQuestion,
+      });
+      if (!ok) {
+        toast.error(json?.error || "Не удалось получить ответ");
+        return;
+      }
+      const assistantMsg: Msg = {
+        role: "assistant",
+        content: json.analysis || "",
+        model: `pubmed-fulltext:${model}`,
+        fulltext: meta,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      await persistFulltextMessage(assistantMsg.content, meta);
+    } catch (e: any) {
+      toast.error("Ошибка: " + (e?.message || ""));
+    } finally {
+      setFulltextFollowupLoading(null);
+    }
+  };
+
+
 
   const sendMessage = async () => {
     if (pubmedMode) return sendPubmedMessage();
