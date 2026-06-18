@@ -143,6 +143,11 @@ function ConvRow({
 }) {
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("application/x-conv-id", conv.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
       onClick={onOpen}
     >
