@@ -2185,6 +2185,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pubmed_search_presets: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       questions: {
         Row: {
           answer_text: string | null
