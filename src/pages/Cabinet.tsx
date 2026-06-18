@@ -117,6 +117,64 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   return parts;
 };
 
+function ConvRow({
+  conv, active, folders, onOpen, onDelete, onMove,
+}: {
+  conv: Conversation;
+  active: boolean;
+  folders: ChatFolder[];
+  onOpen: () => void;
+  onDelete: () => void;
+  onMove: (folderId: string | null) => void;
+}) {
+  return (
+    <div
+      className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
+      onClick={onOpen}
+    >
+      <span className="flex-1 text-sm truncate">{conv.title}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="opacity-0 group-hover:opacity-100 p-1"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="В папку"
+            title="В папку"
+          >
+            <FolderInput className="w-3.5 h-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {folders.length === 0 && (
+            <DropdownMenuItem disabled>Нет папок</DropdownMenuItem>
+          )}
+          {folders.map((f) => (
+            <DropdownMenuItem
+              key={f.id}
+              disabled={conv.folder_id === f.id}
+              onClick={(e) => { e.stopPropagation(); onMove(f.id); }}
+            >
+              <Folder className="w-3.5 h-3.5 mr-2" />{f.name}
+            </DropdownMenuItem>
+          ))}
+          {conv.folder_id && (
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(null); }}>
+              <X className="w-3.5 h-3.5 mr-2" />Убрать из папки
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <button
+        className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive"
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        aria-label="Удалить"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export default function Cabinet() {
   const { user, loading, isAdmin } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
