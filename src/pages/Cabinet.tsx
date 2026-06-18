@@ -1258,8 +1258,15 @@ export default function Cabinet() {
           </button>
         </header>
 
+        <ExtendedModelPicker
+          open={extendedPickerOpen}
+          onOpenChange={setExtendedPickerOpen}
+          onPick={(id) => setModel(id)}
+          currentId={model}
+        />
 
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Системные промпты</DialogTitle>
