@@ -131,6 +131,27 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   return parts;
 };
 
+function linkifyPubmedCitations(content: string, sources: PubmedSource[], msgIndex: number): string {
+  if (!sources?.length) return content;
+  // Strip legacy/hallucinated [PMID:xxxx] markers — we cite by index only.
+  let text = content.replace(/\[PMID[:\s]*\d+\]/gi, "").replace(/\s{2,}/g, " ");
+  // Replace [n], [n, m, k], [n,m][k] etc. with markdown links per index.
+  text = text.replace(/\[(\d+(?:\s*,\s*\d+)*)\]/g, (_m, group: string) => {
+    const nums = group.split(",").map((s) => s.trim()).filter(Boolean);
+    return nums
+      .map((n) => {
+        const idx = Number(n);
+        const src = sources[idx - 1];
+        if (!src) return `[${n}]`;
+        return `[\\[${n}\\]](#pubmed-src-${msgIndex}-${src.pmid})`;
+      })
+      .join(" ");
+  });
+  return text;
+}
+
+
+
 function ConvRow({
   conv, active, folders, onOpen, onDelete, onMove,
 }: {
