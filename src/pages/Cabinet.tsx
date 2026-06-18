@@ -229,19 +229,20 @@ export default function Cabinet() {
     }));
 
     let assistantSoFar = "";
+    let councilAnswers: CouncilAnswer[] | undefined;
     try {
       const { data: sess } = await supabase.auth.getSession();
-      const resp = await fetch(CHAT_URL, {
+      const url = council ? COUNCIL_URL : CHAT_URL;
+      const payload = council
+        ? { messages: historyForApi }
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high" };
+      const resp = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sess.session?.access_token ?? ""}`,
         },
-        body: JSON.stringify({
-          model,
-          messages: historyForApi,
-          reasoning_effort: speed === "fast" ? "low" : "high",
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!resp.ok || !resp.body) {
@@ -252,6 +253,7 @@ export default function Cabinet() {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
+      let pendingEvent: string | null = null;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -261,23 +263,44 @@ export default function Cabinet() {
           let line = buf.slice(0, idx);
           buf = buf.slice(idx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
+          if (line.startsWith("event: ")) { pendingEvent = line.slice(7).trim(); continue; }
+          if (!line.startsWith("data: ")) { if (line === "") pendingEvent = null; continue; }
           const json = line.slice(6).trim();
-          if (json === "[DONE]") continue;
+          if (json === "[DONE]") { pendingEvent = null; continue; }
           try {
             const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              assistantSoFar += delta;
-              setMessages((prev) => {
-                const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: assistantSoFar, model };
-                return next;
-              });
+            if (council) {
+              if (pendingEvent === "answers") {
+                councilAnswers = parsed as CouncilAnswer[];
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model: "council", council: councilAnswers };
+                  return next;
+                });
+              } else if (typeof parsed.delta === "string") {
+                assistantSoFar += parsed.delta;
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model: "council", council: councilAnswers };
+                  return next;
+                });
+              }
+            } else {
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                assistantSoFar += delta;
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model };
+                  return next;
+                });
+              }
             }
           } catch { /* partial */ }
+          pendingEvent = null;
         }
       }
+
 
       // Persist assistant message
       if (assistantSoFar) {
