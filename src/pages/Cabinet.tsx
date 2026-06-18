@@ -818,6 +818,18 @@ export default function Cabinet() {
             >
               <Paperclip className="w-4 h-4" />
             </Button>
+            <Button
+              type="button"
+              variant={recording ? "destructive" : "outline"}
+              size="icon"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={streaming || transcribing}
+              aria-label={recording ? "Остановить запись" : "Голосовой ввод"}
+              title={recording ? "Остановить запись" : "Голосовой ввод (микрофон)"}
+              className={recording ? "animate-pulse" : ""}
+            >
+              {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
