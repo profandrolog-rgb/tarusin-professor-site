@@ -216,7 +216,7 @@ export default function Cabinet() {
     if (!user) return;
     const { data, error } = await supabase
       .from("ai_conversations")
-      .select("id, title, model, updated_at")
+      .select("id, title, model, updated_at, folder_id")
       .order("updated_at", { ascending: false });
     if (error) {
       toast.error("Не удалось загрузить историю");
