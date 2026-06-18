@@ -959,7 +959,22 @@ export default function Cabinet() {
                 ));
               }
               return (
-                <div className="space-y-0.5 pt-1">
+                <div
+                  className={`space-y-0.5 pt-1 rounded-md ${dragOverFolder === "unfiled" ? "bg-primary/10 ring-1 ring-primary/40" : ""}`}
+                  onDragOver={(e) => {
+                    if (e.dataTransfer.types.includes("application/x-conv-id")) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverFolder("unfiled");
+                    }
+                  }}
+                  onDragLeave={() => setDragOverFolder((cur) => (cur === "unfiled" ? null : cur))}
+                  onDrop={(e) => {
+                    const id = e.dataTransfer.getData("application/x-conv-id");
+                    setDragOverFolder(null);
+                    if (id) moveConversation(id, null);
+                  }}
+                >
                   <button
                     type="button"
                     onClick={() => setUnfiledOpen((v) => !v)}
