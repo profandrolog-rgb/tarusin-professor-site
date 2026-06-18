@@ -21,7 +21,7 @@ const MODELS = [
   { id: "openai/gpt-5-mini", label: "GPT-5 mini (OpenAI)" },
   { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Google)" },
   { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (Google)" },
-  { id: "x-ai/grok-4", label: "Grok 4 (xAI)" },
+  { id: "x-ai/grok-4.3", label: "Grok 4.3 (xAI)" },
 ];
 
 type Attachment = {
