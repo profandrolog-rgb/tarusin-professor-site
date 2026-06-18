@@ -1332,22 +1332,26 @@ export default function Cabinet() {
                           )}
                           <div className="space-y-2">
                             {m.pubmed.sources.map((s, k) => (
-                              <PubmedSourceCard
+                              <div
                                 key={s.pmid}
-                                index={k + 1}
-                                source={s}
-                                onAnalyze={(src) => {
-                                  // find originating user question (previous user msg)
-                                  const userQ = (() => {
-                                    for (let x = i - 1; x >= 0; x--) {
-                                      if (messages[x]?.role === "user") return messages[x].content;
-                                    }
-                                    return "";
-                                  })();
-                                  analyzePubmedArticle(src, userQ);
-                                }}
-                                analyzing={pubmedAnalyzing === s.pmid}
-                              />
+                                id={`pubmed-src-${i}-${s.pmid}`}
+                                className="rounded-md transition-shadow scroll-mt-24"
+                              >
+                                <PubmedSourceCard
+                                  index={k + 1}
+                                  source={s}
+                                  onAnalyze={(src) => {
+                                    const userQ = (() => {
+                                      for (let x = i - 1; x >= 0; x--) {
+                                        if (messages[x]?.role === "user") return messages[x].content;
+                                      }
+                                      return "";
+                                    })();
+                                    analyzePubmedArticle(src, userQ);
+                                  }}
+                                  analyzing={pubmedAnalyzing === s.pmid}
+                                />
+                              </div>
                             ))}
                           </div>
                           <div className="flex flex-wrap gap-2 pt-1">
