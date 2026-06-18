@@ -52,10 +52,16 @@ Deno.serve(async (req) => {
     }
 
     const resolvedModel = body.model === "x-ai/grok-4" ? "x-ai/grok-4.3" : body.model;
-    const requestPayload = {
+    const effort: "low" | "medium" | "high" =
+      body.reasoning_effort === "high" || body.reasoning_effort === "medium"
+        ? body.reasoning_effort
+        : "low";
+    const requestPayload: Record<string, unknown> = {
       model: resolvedModel,
       messages: body.messages,
       stream: true,
+      // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
+      reasoning: { effort },
     };
 
     console.log("[ai-chat] request", JSON.stringify({
@@ -115,9 +121,10 @@ Deno.serve(async (req) => {
     return new Response(orResp.body, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (err) {
