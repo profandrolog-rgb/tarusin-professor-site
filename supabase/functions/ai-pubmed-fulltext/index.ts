@@ -60,7 +60,8 @@ Deno.serve(async (req) => {
     const pmid = String(body.pmid).replace(/\D/g, "");
     const userQuestion = typeof body.question === "string" ? body.question.trim() : "";
     const systemPrompt = typeof body.system === "string" && body.system.trim() ? body.system : "";
-    const model = typeof body.model === "string" && body.model ? body.model : "google/gemini-2.5-flash";
+    const rawModel = typeof body.model === "string" && body.model ? body.model : "google/gemini-2.5-flash";
+    const model = rawModel.replace(/^pubmed:/, "");
     const ncbiKey = Deno.env.get("NCBI_API_KEY");
     const kp = ncbiKey ? `&api_key=${ncbiKey}` : "";
 
