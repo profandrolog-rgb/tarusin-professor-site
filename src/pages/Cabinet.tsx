@@ -119,6 +119,7 @@ export default function Cabinet() {
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
+  const [webSearch, setWebSearch] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
