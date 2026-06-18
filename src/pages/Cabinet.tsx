@@ -15,9 +15,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { copyToClipboard, messagesToMarkdown, downloadMarkdown, downloadDocx, downloadPdf, type ExportMessage } from "@/lib/cabinetExport";
+import { PubmedPanel, type PubmedFilters, DEFAULT_FILTERS as PUBMED_DEFAULT_FILTERS } from "@/components/cabinet/PubmedPanel";
+import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
+import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
+const PUBMED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed`;
+const PUBMED_FULLTEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed-fulltext`;
 
 type ModelOpt = { id: string; label: string; group: "fast" | "deep" };
 const MODELS: ModelOpt[] = [
