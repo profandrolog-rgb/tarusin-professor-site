@@ -491,12 +491,13 @@ export default function Cabinet() {
     const title = titleSeed.slice(0, 60) || "Новый диалог";
     const { data, error } = await supabase
       .from("ai_conversations")
-      .insert({ user_id: user.id, title, model: modelTag })
+      .insert({ user_id: user.id, title, model: modelTag, folder_id: pendingFolderId })
       .select("id, title, model, updated_at, folder_id")
       .single();
     if (error || !data) { toast.error("Не удалось создать диалог"); return null; }
     setActiveId(data.id);
     setConversations((prev) => [data as Conversation, ...prev]);
+    setPendingFolderId(null);
     return data.id;
   };
 
