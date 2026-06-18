@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
 
 type ModelOpt = { id: string; label: string; group: "fast" | "deep" };
 const MODELS: ModelOpt[] = [
@@ -36,12 +38,15 @@ type Attachment = {
   dataUrl: string; // data:...;base64,...
 };
 
+type CouncilAnswer = { model: string; content: string; error: string | null };
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
   content: string;
   attachments?: Attachment[];
   model?: string;
+  council?: CouncilAnswer[];
 };
 
 type Conversation = {
@@ -82,6 +87,7 @@ export default function Cabinet() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [council, setCouncil] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,13 +127,25 @@ export default function Cabinet() {
         return;
       }
       setMessages(
-        (data || []).map((m: any) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          attachments: m.attachments || [],
-          model: m.model,
-        })),
+        (data || []).map((m: any) => {
+          const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
+          const councilAtt = atts.find((a) => a?.name === "__council__");
+          let councilAnswers: CouncilAnswer[] | undefined;
+          if (councilAtt?.dataUrl) {
+            try {
+              const b64 = councilAtt.dataUrl.split(",")[1] || "";
+              councilAnswers = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
+          return {
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            attachments: atts.filter((a) => a?.name !== "__council__"),
+            model: m.model,
+            council: councilAnswers,
+          };
+        }),
       );
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model) setModel(conv.model);
@@ -223,19 +241,20 @@ export default function Cabinet() {
     }));
 
     let assistantSoFar = "";
+    let councilAnswers: CouncilAnswer[] | undefined;
     try {
       const { data: sess } = await supabase.auth.getSession();
-      const resp = await fetch(CHAT_URL, {
+      const url = council ? COUNCIL_URL : CHAT_URL;
+      const payload = council
+        ? { messages: historyForApi }
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high" };
+      const resp = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${sess.session?.access_token ?? ""}`,
         },
-        body: JSON.stringify({
-          model,
-          messages: historyForApi,
-          reasoning_effort: speed === "fast" ? "low" : "high",
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!resp.ok || !resp.body) {
@@ -246,6 +265,7 @@ export default function Cabinet() {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
+      let pendingEvent: string | null = null;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -255,34 +275,57 @@ export default function Cabinet() {
           let line = buf.slice(0, idx);
           buf = buf.slice(idx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
+          if (line.startsWith("event: ")) { pendingEvent = line.slice(7).trim(); continue; }
+          if (!line.startsWith("data: ")) { if (line === "") pendingEvent = null; continue; }
           const json = line.slice(6).trim();
-          if (json === "[DONE]") continue;
+          if (json === "[DONE]") { pendingEvent = null; continue; }
           try {
             const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              assistantSoFar += delta;
-              setMessages((prev) => {
-                const next = [...prev];
-                next[next.length - 1] = { role: "assistant", content: assistantSoFar, model };
-                return next;
-              });
+            if (council) {
+              if (pendingEvent === "answers") {
+                councilAnswers = parsed as CouncilAnswer[];
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model: "council", council: councilAnswers };
+                  return next;
+                });
+              } else if (typeof parsed.delta === "string") {
+                assistantSoFar += parsed.delta;
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model: "council", council: councilAnswers };
+                  return next;
+                });
+              }
+            } else {
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                assistantSoFar += delta;
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantSoFar, model };
+                  return next;
+                });
+              }
             }
           } catch { /* partial */ }
+          pendingEvent = null;
         }
       }
 
+
       // Persist assistant message
       if (assistantSoFar) {
+        const persistModel = council ? "council" : model;
         await supabase.from("ai_messages").insert({
           conversation_id: convId,
           user_id: user.id,
           role: "assistant",
           content: assistantSoFar,
-          model,
+          model: persistModel,
+          attachments: councilAnswers ? ([{ name: "__council__", type: "application/json", dataUrl: `data:application/json;base64,${btoa(unescape(encodeURIComponent(JSON.stringify(councilAnswers))))}` }] as any) : null,
         });
-        await supabase.from("ai_conversations").update({ model, updated_at: new Date().toISOString() }).eq("id", convId);
+        await supabase.from("ai_conversations").update({ model: persistModel, updated_at: new Date().toISOString() }).eq("id", convId);
         loadConversations();
       }
     } catch (e: any) {
@@ -380,7 +423,18 @@ export default function Cabinet() {
               <Brain className="w-3.5 h-3.5" />Вдумчиво
             </button>
           </div>
-          <Select value={model} onValueChange={setModel} disabled={streaming}>
+          <button
+            type="button"
+            onClick={() => setCouncil((v) => !v)}
+            disabled={streaming}
+            className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
+              council ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
+            }`}
+            title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
+          >
+            <Users className="w-3.5 h-3.5" />Консилиум
+          </button>
+          <Select value={model} onValueChange={setModel} disabled={streaming || council}>
             <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               {MODELS.map((m) => (
@@ -418,10 +472,48 @@ export default function Cabinet() {
                   </div>
                 )}
                 {m.role === "assistant" ? (
-                  m.content ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
-                    </div>
+                  m.content || m.council ? (
+                    <>
+                      {m.council && m.council.length > 0 && (
+                        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
+                          <Users className="w-3 h-3" /> Сводный ответ консилиума
+                        </div>
+                      )}
+                      {m.content ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Сводим ответы…
+                        </div>
+                      )}
+                      {m.council && m.council.length > 0 && (
+                        <Accordion type="single" collapsible className="mt-3 border-t border-border/50 pt-2">
+                          <AccordionItem value="answers" className="border-0">
+                            <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                              Ответы моделей по отдельности ({m.council.length})
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-3">
+                                {m.council.map((a, k) => (
+                                  <div key={k} className="rounded-md bg-background/60 p-2">
+                                    <div className="text-[11px] font-mono text-muted-foreground mb-1">{a.model}</div>
+                                    {a.error ? (
+                                      <div className="text-xs text-destructive">⚠️ {a.error}</div>
+                                    ) : (
+                                      <div className="prose prose-xs dark:prose-invert max-w-none text-xs">
+                                        <ReactMarkdown>{a.content}</ReactMarkdown>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )}
+                    </>
                   ) : (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )
