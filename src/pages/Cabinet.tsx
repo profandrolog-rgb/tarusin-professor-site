@@ -474,44 +474,75 @@ export default function Cabinet() {
           </Select>
           <button
             type="button"
-            onClick={() => { setSystemDraft(systemPrompt); setSettingsOpen(true); }}
+            onClick={() => {
+              setSystemDraft(systemPrompt);
+              setSummarizerDraft(summarizerPrompt);
+              setSettingsOpen(true);
+            }}
             className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1"
-            title="Системный промпт"
+            title="Системные промпты"
           >
             <Settings className="w-3.5 h-3.5" />
           </button>
         </header>
 
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Системный промпт</DialogTitle>
+              <DialogTitle>Системные промпты</DialogTitle>
               <DialogDescription>
-                Отправляется первым сообщением во все модели (включая режим «Консилиум» и суммаризатор).
-                Сохраняется локально в этом браузере.
+                Сохраняются локально в этом браузере.
               </DialogDescription>
             </DialogHeader>
-            <Textarea
-              value={systemDraft}
-              onChange={(e) => setSystemDraft(e.target.value)}
-              rows={14}
-              className="font-mono text-xs"
-            />
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                Основной промпт (обычный чат и модели-участники консилиума)
+              </div>
+              <Textarea
+                value={systemDraft}
+                onChange={(e) => setSystemDraft(e.target.value)}
+                rows={12}
+                className="font-mono text-xs"
+              />
+              <div className="flex justify-end">
+                <Button size="sm" variant="ghost" onClick={() => setSystemDraft(DEFAULT_SYSTEM_PROMPT)}>
+                  Вернуть по умолчанию
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground">
+                Промпт суммаризатора консилиума
+              </div>
+              <Textarea
+                value={summarizerDraft}
+                onChange={(e) => setSummarizerDraft(e.target.value)}
+                rows={10}
+                className="font-mono text-xs"
+              />
+              <div className="flex justify-end">
+                <Button size="sm" variant="ghost" onClick={() => setSummarizerDraft(DEFAULT_SUMMARIZER_PROMPT)}>
+                  Вернуть по умолчанию
+                </Button>
+              </div>
+            </div>
+
             <DialogFooter className="gap-2 sm:gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setSystemDraft(DEFAULT_SYSTEM_PROMPT)}
-              >
-                Вернуть по умолчанию
-              </Button>
               <Button variant="ghost" onClick={() => setSettingsOpen(false)}>Отмена</Button>
               <Button
                 onClick={() => {
-                  const value = systemDraft.trim() || DEFAULT_SYSTEM_PROMPT;
-                  setSystemPrompt(value);
-                  try { window.localStorage.setItem(SYSTEM_PROMPT_LS_KEY, value); } catch { /* ignore */ }
+                  const sys = systemDraft.trim() || DEFAULT_SYSTEM_PROMPT;
+                  const sum = summarizerDraft.trim() || DEFAULT_SUMMARIZER_PROMPT;
+                  setSystemPrompt(sys);
+                  setSummarizerPrompt(sum);
+                  try {
+                    window.localStorage.setItem(SYSTEM_PROMPT_LS_KEY, sys);
+                    window.localStorage.setItem(SUMMARIZER_PROMPT_LS_KEY, sum);
+                  } catch { /* ignore */ }
                   setSettingsOpen(false);
-                  toast.success("Системный промпт сохранён");
+                  toast.success("Промпты сохранены");
                 }}
               >
                 Сохранить
@@ -519,6 +550,7 @@ export default function Cabinet() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
 
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
