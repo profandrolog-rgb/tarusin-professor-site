@@ -1,5 +1,6 @@
 // Export helpers for Cabinet chat: copy / markdown / docx / pdf.
-import { saveAs } from "file-saver";
+import fileSaver from "file-saver";
+const { saveAs } = fileSaver;
 import { marked } from "marked";
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
