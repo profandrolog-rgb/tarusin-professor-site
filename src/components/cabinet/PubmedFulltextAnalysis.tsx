@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Quote, Copy, Sparkles, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { ChatMarkdown } from "@/components/cabinet/ChatMarkdown";
 import { copyToClipboard } from "@/lib/cabinetExport";
 import { toast } from "sonner";
 
