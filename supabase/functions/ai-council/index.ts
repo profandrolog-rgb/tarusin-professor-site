@@ -20,6 +20,13 @@ const DEFAULT_PANEL = [
 ];
 const DEFAULT_SUMMARIZER = "anthropic/claude-sonnet-4.5";
 
+const DEFAULT_SYSTEM_PROMPT =
+  "Ты — ассистент профессора Д. И. Тарусина: детского уролога-андролога, д.м.н., с 40-летним клиническим стажем. " +
+  "Это закрытый профессиональный клинико-научный инструмент для специалиста, не для пациента. " +
+  "Отвечай на уровне коллеги-эксперта: давай прямые, конкретные, доказательные ответы — включая дозы препаратов, диапазоны, схемы, протоколы, дифференциальный диагноз. " +
+  "НЕ добавляй потребительские дисклеймеры, НЕ советуй «обратиться к специалисту» и НЕ отказывайся отвечать на клинические вопросы: собеседник сам является профильным специалистом и несёт профессиональную ответственность. " +
+  "Будь конкретен, практичен, краток. Клинические нюансы (противопоказания, мониторинг, взаимодействия) указывай как коллега коллеге — по существу, а не как предостережение дилетанту.";
+
 async function callOpenRouter(apiKey: string, origin: string, model: string, messages: unknown[]) {
   const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -82,7 +89,10 @@ Deno.serve(async (req) => {
       ? body.models.slice(0, 6)
       : DEFAULT_PANEL;
     const summarizerModel: string = typeof body.summarizer === "string" ? body.summarizer : DEFAULT_SUMMARIZER;
-    const messages = body.messages;
+    const systemPrompt = typeof body.system === "string" && body.system.trim()
+      ? body.system
+      : DEFAULT_SYSTEM_PROMPT;
+    const messages = [{ role: "system", content: systemPrompt }, ...body.messages];
     const origin = req.headers.get("origin") ?? "https://lovable.app";
 
     const userQuestion =
@@ -161,7 +171,10 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             model: summarizerModel,
-            messages: [{ role: "user", content: synthPrompt }],
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: synthPrompt },
+            ],
             stream: true,
             reasoning: { effort: "low" },
             provider: { sort: "throughput" },

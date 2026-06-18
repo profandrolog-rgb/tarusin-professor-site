@@ -9,6 +9,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const DEFAULT_SYSTEM_PROMPT =
+  "Ты — ассистент профессора Д. И. Тарусина: детского уролога-андролога, д.м.н., с 40-летним клиническим стажем. " +
+  "Это закрытый профессиональный клинико-научный инструмент для специалиста, не для пациента. " +
+  "Отвечай на уровне коллеги-эксперта: давай прямые, конкретные, доказательные ответы — включая дозы препаратов, диапазоны, схемы, протоколы, дифференциальный диагноз. " +
+  "НЕ добавляй потребительские дисклеймеры, НЕ советуй «обратиться к специалисту» и НЕ отказывайся отвечать на клинические вопросы: собеседник сам является профильным специалистом и несёт профессиональную ответственность. " +
+  "Будь конкретен, практичен, краток. Клинические нюансы (противопоказания, мониторинг, взаимодействия) указывай как коллега коллеге — по существу, а не как предостережение дилетанту.";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -56,9 +63,14 @@ Deno.serve(async (req) => {
       body.reasoning_effort === "high" || body.reasoning_effort === "medium"
         ? body.reasoning_effort
         : "low";
+    const systemPrompt = typeof body.system === "string" && body.system.trim()
+      ? body.system
+      : DEFAULT_SYSTEM_PROMPT;
+    const messagesWithSystem = [{ role: "system", content: systemPrompt }, ...body.messages];
+
     const requestPayload: Record<string, unknown> = {
       model: resolvedModel,
-      messages: body.messages,
+      messages: messagesWithSystem,
       stream: true,
       // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
       reasoning: { effort },

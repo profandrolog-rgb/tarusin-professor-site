@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
@@ -29,6 +30,14 @@ const MODELS: ModelOpt[] = [
   { id: "openai/gpt-5", label: "🧠 GPT-5 (глубокий)", group: "deep" },
 ];
 const DEFAULT_MODEL = "google/gemini-2.5-flash";
+
+const DEFAULT_SYSTEM_PROMPT =
+  "Ты — ассистент профессора Д. И. Тарусина: детского уролога-андролога, д.м.н., с 40-летним клиническим стажем. " +
+  "Это закрытый профессиональный клинико-научный инструмент для специалиста, не для пациента. " +
+  "Отвечай на уровне коллеги-эксперта: давай прямые, конкретные, доказательные ответы — включая дозы препаратов, диапазоны, схемы, протоколы, дифференциальный диагноз. " +
+  "НЕ добавляй потребительские дисклеймеры, НЕ советуй «обратиться к специалисту» и НЕ отказывайся отвечать на клинические вопросы: собеседник сам является профильным специалистом и несёт профессиональную ответственность. " +
+  "Будь конкретен, практичен, краток. Клинические нюансы (противопоказания, мониторинг, взаимодействия) указывай как коллега коллеге — по существу, а не как предостережение дилетанту.";
+const SYSTEM_PROMPT_LS_KEY = "cabinet.systemPrompt.v1";
 
 type SpeedMode = "fast" | "deep";
 
@@ -89,6 +98,12 @@ export default function Cabinet() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [council, setCouncil] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
+    return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [systemDraft, setSystemDraft] = useState(systemPrompt);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -246,8 +261,8 @@ export default function Cabinet() {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
       const payload = council
-        ? { messages: historyForApi }
-        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high" };
+        ? { messages: historyForApi, system: systemPrompt }
+        : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt };
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -442,7 +457,54 @@ export default function Cabinet() {
               ))}
             </SelectContent>
           </Select>
+          <button
+            type="button"
+            onClick={() => { setSystemDraft(systemPrompt); setSettingsOpen(true); }}
+            className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1"
+            title="Системный промпт"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </button>
         </header>
+
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Системный промпт</DialogTitle>
+              <DialogDescription>
+                Отправляется первым сообщением во все модели (включая режим «Консилиум» и суммаризатор).
+                Сохраняется локально в этом браузере.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={systemDraft}
+              onChange={(e) => setSystemDraft(e.target.value)}
+              rows={14}
+              className="font-mono text-xs"
+            />
+            <DialogFooter className="gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setSystemDraft(DEFAULT_SYSTEM_PROMPT)}
+              >
+                Вернуть по умолчанию
+              </Button>
+              <Button variant="ghost" onClick={() => setSettingsOpen(false)}>Отмена</Button>
+              <Button
+                onClick={() => {
+                  const value = systemDraft.trim() || DEFAULT_SYSTEM_PROMPT;
+                  setSystemPrompt(value);
+                  try { window.localStorage.setItem(SYSTEM_PROMPT_LS_KEY, value); } catch { /* ignore */ }
+                  setSettingsOpen(false);
+                  toast.success("Системный промпт сохранён");
+                }}
+              >
+                Сохранить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {messages.length === 0 && (
