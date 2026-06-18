@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -85,7 +85,15 @@ type Conversation = {
   title: string;
   model: string | null;
   updated_at: string;
+  folder_id: string | null;
 };
+
+type ChatFolder = {
+  id: string;
+  name: string;
+};
+
+const FOLDERS_OPEN_LS_KEY = "cabinet.foldersOpen.v1";
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -109,9 +117,73 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   return parts;
 };
 
+function ConvRow({
+  conv, active, folders, onOpen, onDelete, onMove,
+}: {
+  conv: Conversation;
+  active: boolean;
+  folders: ChatFolder[];
+  onOpen: () => void;
+  onDelete: () => void;
+  onMove: (folderId: string | null) => void;
+}) {
+  return (
+    <div
+      className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
+      onClick={onOpen}
+    >
+      <span className="flex-1 text-sm truncate">{conv.title}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="opacity-0 group-hover:opacity-100 p-1"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="В папку"
+            title="В папку"
+          >
+            <FolderInput className="w-3.5 h-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {folders.length === 0 && (
+            <DropdownMenuItem disabled>Нет папок</DropdownMenuItem>
+          )}
+          {folders.map((f) => (
+            <DropdownMenuItem
+              key={f.id}
+              disabled={conv.folder_id === f.id}
+              onClick={(e) => { e.stopPropagation(); onMove(f.id); }}
+            >
+              <Folder className="w-3.5 h-3.5 mr-2" />{f.name}
+            </DropdownMenuItem>
+          ))}
+          {conv.folder_id && (
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMove(null); }}>
+              <X className="w-3.5 h-3.5 mr-2" />Убрать из папки
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <button
+        className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive"
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        aria-label="Удалить"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export default function Cabinet() {
   const { user, loading, isAdmin } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [folders, setFolders] = useState<ChatFolder[]>([]);
+  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(window.localStorage.getItem(FOLDERS_OPEN_LS_KEY) || "{}"); } catch { return {}; }
+  });
+  const [unfiledOpen, setUnfiledOpen] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -208,7 +280,7 @@ export default function Cabinet() {
     if (!user) return;
     const { data, error } = await supabase
       .from("ai_conversations")
-      .select("id, title, model, updated_at")
+      .select("id, title, model, updated_at, folder_id")
       .order("updated_at", { ascending: false });
     if (error) {
       toast.error("Не удалось загрузить историю");
@@ -217,9 +289,66 @@ export default function Cabinet() {
     setConversations(data || []);
   }, [user]);
 
+  const loadFolders = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("ai_conversation_folders")
+      .select("id, name")
+      .order("name", { ascending: true });
+    if (error) return;
+    setFolders(data || []);
+  }, [user]);
+
   useEffect(() => {
     loadConversations();
-  }, [loadConversations]);
+    loadFolders();
+  }, [loadConversations, loadFolders]);
+
+  const toggleFolder = (id: string) => {
+    setOpenFolders((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try { window.localStorage.setItem(FOLDERS_OPEN_LS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const createFolder = async () => {
+    if (!user) return;
+    const name = window.prompt("Название папки (пациент или тема):")?.trim();
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("ai_conversation_folders")
+      .insert({ user_id: user.id, name })
+      .select("id, name")
+      .single();
+    if (error || !data) { toast.error("Не удалось создать папку"); return; }
+    setFolders((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name, "ru")));
+    setOpenFolders((prev) => ({ ...prev, [data.id]: true }));
+  };
+
+  const renameFolder = async (f: ChatFolder) => {
+    const name = window.prompt("Новое название:", f.name)?.trim();
+    if (!name || name === f.name) return;
+    const { error } = await supabase.from("ai_conversation_folders").update({ name }).eq("id", f.id);
+    if (error) { toast.error("Не удалось переименовать"); return; }
+    setFolders((prev) => prev.map((x) => x.id === f.id ? { ...x, name } : x).sort((a, b) => a.name.localeCompare(b.name, "ru")));
+  };
+
+  const deleteFolder = async (f: ChatFolder) => {
+    if (!confirm(`Удалить папку «${f.name}»? Диалоги внутри сохранятся (вне папок).`)) return;
+    const { error } = await supabase.from("ai_conversation_folders").delete().eq("id", f.id);
+    if (error) { toast.error("Не удалось удалить папку"); return; }
+    setFolders((prev) => prev.filter((x) => x.id !== f.id));
+    setConversations((prev) => prev.map((c) => c.folder_id === f.id ? { ...c, folder_id: null } : c));
+  };
+
+  const moveConversation = async (convId: string, folderId: string | null) => {
+    const { error } = await supabase.from("ai_conversations").update({ folder_id: folderId }).eq("id", convId);
+    if (error) { toast.error("Не удалось переместить"); return; }
+    setConversations((prev) => prev.map((c) => c.id === convId ? { ...c, folder_id: folderId } : c));
+    toast.success(folderId ? "Перемещено в папку" : "Убрано из папки");
+  };
+
 
   // Load messages for active conversation
   useEffect(() => {
@@ -333,7 +462,7 @@ export default function Cabinet() {
       const { data, error } = await supabase
         .from("ai_conversations")
         .insert({ user_id: user.id, title, model })
-        .select("id, title, model, updated_at")
+        .select("id, title, model, updated_at, folder_id")
         .single();
       if (error || !data) {
         toast.error("Не удалось создать диалог");
@@ -513,34 +642,120 @@ export default function Cabinet() {
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Sidebar */}
       <aside className="md:w-72 border-r border-border md:h-screen flex flex-col bg-muted/30">
-        <div className="p-3 border-b border-border">
+        <div className="p-3 border-b border-border space-y-2">
           <Button onClick={newConversation} className="w-full" size="sm">
             <Plus className="w-4 h-4 mr-2" />Новый диалог
+          </Button>
+          <Button onClick={createFolder} className="w-full" size="sm" variant="outline">
+            <FolderPlus className="w-4 h-4 mr-2" />Новая папка
           </Button>
         </div>
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
-            {conversations.length === 0 && (
+            {conversations.length === 0 && folders.length === 0 && (
               <p className="text-xs text-muted-foreground p-3 text-center">История пуста</p>
             )}
-            {conversations.map((c) => (
-              <div
-                key={c.id}
-                className={`group flex items-center gap-1 rounded-md px-2 py-2 cursor-pointer hover:bg-accent ${
-                  activeId === c.id ? "bg-accent" : ""
-                }`}
-                onClick={() => setActiveId(c.id)}
-              >
-                <span className="flex-1 text-sm truncate">{c.title}</span>
-                <button
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); deleteConversation(c.id); }}
-                  aria-label="Удалить"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+
+            {/* Folders */}
+            {folders.map((f) => {
+              const items = conversations.filter((c) => c.folder_id === f.id);
+              const isOpen = openFolders[f.id] ?? true;
+              return (
+                <div key={f.id} className="space-y-0.5">
+                  <div className="group flex items-center gap-1 rounded-md px-1 py-1.5 hover:bg-accent">
+                    <button
+                      type="button"
+                      onClick={() => toggleFolder(f.id)}
+                      className="flex items-center gap-1 flex-1 min-w-0 text-left"
+                    >
+                      {isOpen ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
+                      {isOpen ? <FolderOpen className="w-3.5 h-3.5 shrink-0 text-primary" /> : <Folder className="w-3.5 h-3.5 shrink-0 text-primary" />}
+                      <span className="text-sm font-medium truncate">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">{items.length}</span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="opacity-0 group-hover:opacity-100 p-1" aria-label="Действия">
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => renameFolder(f)}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" />Переименовать
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => deleteFolder(f)} className="text-destructive">
+                          <Trash2 className="w-3.5 h-3.5 mr-2" />Удалить папку
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {isOpen && (
+                    <div className="pl-5 space-y-0.5">
+                      {items.length === 0 && (
+                        <p className="text-xs text-muted-foreground px-2 py-1">Пусто</p>
+                      )}
+                      {items.map((c) => (
+                        <ConvRow
+                          key={c.id}
+                          conv={c}
+                          active={activeId === c.id}
+                          folders={folders}
+                          onOpen={() => setActiveId(c.id)}
+                          onDelete={() => deleteConversation(c.id)}
+                          onMove={(fid) => moveConversation(c.id, fid)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Unfiled */}
+            {(() => {
+              const unfiled = conversations.filter((c) => !c.folder_id);
+              if (!folders.length) {
+                return unfiled.map((c) => (
+                  <ConvRow
+                    key={c.id}
+                    conv={c}
+                    active={activeId === c.id}
+                    folders={folders}
+                    onOpen={() => setActiveId(c.id)}
+                    onDelete={() => deleteConversation(c.id)}
+                    onMove={(fid) => moveConversation(c.id, fid)}
+                  />
+                ));
+              }
+              return (
+                <div className="space-y-0.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setUnfiledOpen((v) => !v)}
+                    className="flex items-center gap-1 w-full text-left rounded-md px-1 py-1.5 hover:bg-accent"
+                  >
+                    {unfiledOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Без папки</span>
+                    <span className="text-xs text-muted-foreground">{unfiled.length}</span>
+                  </button>
+                  {unfiledOpen && (
+                    <div className="pl-5 space-y-0.5">
+                      {unfiled.map((c) => (
+                        <ConvRow
+                          key={c.id}
+                          conv={c}
+                          active={activeId === c.id}
+                          folders={folders}
+                          onOpen={() => setActiveId(c.id)}
+                          onDelete={() => deleteConversation(c.id)}
+                          onMove={(fid) => moveConversation(c.id, fid)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </ScrollArea>
       </aside>
