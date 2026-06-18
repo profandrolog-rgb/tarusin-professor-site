@@ -474,6 +474,37 @@ export default function Cabinet() {
               ))}
             </SelectContent>
           </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                disabled={messages.length === 0}
+                className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
+                title="Экспорт всего диалога"
+              >
+                <Download className="w-3.5 h-3.5" />Экспорт
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={async () => {
+                  const ok = await copyToClipboard(messagesToMarkdown(messages as ExportMessage[]));
+                  ok ? toast.success("Скопировано") : toast.error("Не удалось скопировать");
+                }}
+              >
+                <Copy className="w-3.5 h-3.5 mr-2" /> Копировать (Markdown)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadMarkdown(messagesToMarkdown(messages as ExportMessage[]))}>
+                <FileCode2 className="w-3.5 h-3.5 mr-2" /> Скачать .md
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => { await downloadDocx(messages as ExportMessage[]); toast.success("DOCX сохранён"); }}>
+                <FileType2 className="w-3.5 h-3.5 mr-2" /> Скачать .docx
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { const ok = downloadPdf(messages as ExportMessage[]); if (!ok) toast.error("Браузер заблокировал окно печати"); }}>
+                <FileDown className="w-3.5 h-3.5 mr-2" /> Скачать .pdf (через печать)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             type="button"
             onClick={() => {
@@ -487,6 +518,7 @@ export default function Cabinet() {
             <Settings className="w-3.5 h-3.5" />
           </button>
         </header>
+
 
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
