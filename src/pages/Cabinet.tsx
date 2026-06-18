@@ -1203,7 +1203,35 @@ export default function Cabinet() {
                       )}
                       {m.content ? (
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                          <ReactMarkdown
+                            components={m.pubmed ? {
+                              a: ({ href, children, ...props }: any) => {
+                                if (typeof href === "string" && href.startsWith("#pubmed-src-")) {
+                                  return (
+                                    <a
+                                      href={href}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        const el = document.getElementById(href.slice(1));
+                                        if (el) {
+                                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                          el.classList.add("ring-2", "ring-primary");
+                                          setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1400);
+                                        }
+                                      }}
+                                      className="inline-flex items-center px-1 rounded bg-primary/10 text-primary no-underline hover:bg-primary/20 font-medium text-[0.85em] mx-0.5"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </a>
+                                  );
+                                }
+                                return <a href={href} {...props}>{children}</a>;
+                              },
+                            } : undefined}
+                          >
+                            {m.pubmed ? linkifyPubmedCitations(m.content, m.pubmed.sources, i) : m.content}
+                          </ReactMarkdown>
                         </div>
                       ) : (
                         <div className="text-xs text-muted-foreground flex items-center gap-2">
