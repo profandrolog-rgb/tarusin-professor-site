@@ -174,6 +174,13 @@ const adminSections = [
     href: "/admin/system-backup",
     color: "text-amber-600",
   },
+  {
+    title: "🤖 Кабинет (ИИ-чат)",
+    description: "Приватный чат с моделями Claude, GPT, Gemini, Grok через OpenRouter",
+    icon: Settings,
+    href: "/cabinet",
+    color: "text-fuchsia-600",
+  },
 ];
 
 const analyticsServices = [
