@@ -8,21 +8,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
-const MODELS = [
-  { id: "anthropic/claude-sonnet-4.5", label: "Claude Sonnet 4.5 (Anthropic)" },
-  { id: "anthropic/claude-opus-4.1", label: "Claude Opus 4.1 (Anthropic)" },
-  { id: "openai/gpt-5", label: "GPT-5 (OpenAI)" },
-  { id: "openai/gpt-5-mini", label: "GPT-5 mini (OpenAI)" },
-  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Google)" },
-  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (Google)" },
-  { id: "x-ai/grok-4.3", label: "Grok 4.3 (xAI)" },
+type ModelOpt = { id: string; label: string; group: "fast" | "deep" };
+const MODELS: ModelOpt[] = [
+  // Быстрые — по умолчанию
+  { id: "google/gemini-2.5-flash", label: "⚡ Gemini 2.5 Flash (быстрый)", group: "fast" },
+  { id: "anthropic/claude-sonnet-4.5", label: "⚡ Claude Sonnet 4.5 (быстрый)", group: "fast" },
+  { id: "openai/gpt-5-mini", label: "⚡ GPT-5 mini (быстрый)", group: "fast" },
+  { id: "x-ai/grok-4.3", label: "⚡ Grok 4.3 (быстрый)", group: "fast" },
+  // Глубокие
+  { id: "google/gemini-2.5-pro", label: "🧠 Gemini 2.5 Pro (глубокий)", group: "deep" },
+  { id: "anthropic/claude-opus-4.1", label: "🧠 Claude Opus 4.1 (глубокий)", group: "deep" },
+  { id: "openai/gpt-5", label: "🧠 GPT-5 (глубокий)", group: "deep" },
 ];
+const DEFAULT_MODEL = "google/gemini-2.5-flash";
+
+type SpeedMode = "fast" | "deep";
 
 type Attachment = {
   name: string;
