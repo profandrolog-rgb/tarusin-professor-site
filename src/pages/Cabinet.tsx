@@ -1359,9 +1359,8 @@ export default function Cabinet() {
                                     {a.error ? (
                                       <div className="text-xs text-destructive">⚠️ {a.error}</div>
                                     ) : (
-                                      <div className="prose prose-xs dark:prose-invert max-w-none text-xs">
-                                        <ReactMarkdown>{a.content}</ReactMarkdown>
-                                      </div>
+                                      <ChatMarkdown className="prose prose-xs dark:prose-invert max-w-none text-xs">{a.content}</ChatMarkdown>
+
                                     )}
                                   </div>
                                 ))}
