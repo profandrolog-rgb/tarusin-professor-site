@@ -301,6 +301,9 @@ export default function Cabinet() {
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
 
   const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
+  const visionCapableLabels = resolvedModels
+    .filter((r) => r.available && modelSupportsAttachments(r.liveInfo))
+    .map((r) => r.label);
   const [pubmedLoadingMore, setPubmedLoadingMore] = useState<number | null>(null);
   const [pubmedAnalyzing, setPubmedAnalyzing] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
