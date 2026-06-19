@@ -49,6 +49,10 @@ Deno.serve(async (req) => {
       const phase = nextIdx >= totalSub ? "final" : "subbatch";
 
       console.log(`[recovery] re-triggering batch ${b.id} → phase=${phase}, subbatchIndex=${nextIdx} (done=${doneIdx.size}/${totalSub}, updated_at=${b.updated_at})`);
+      await supabase.rpc("append_analysis_batch_log", {
+        _batch_id: b.id,
+        _entry: { stage: "recovery_trigger", phase, subbatch_index: nextIdx, done: doneIdx.size, total_subbatches: totalSub, stale_since: b.updated_at },
+      }).then(() => undefined, () => undefined);
 
       // Fire-and-forget the chain step; don't await response body.
       fetch(`${baseUrl}/functions/v1/${TARGET_FN}`, {
@@ -60,6 +64,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({ batchId: b.id, phase, subbatchIndex: nextIdx }),
       }).catch((e) => console.log(`[recovery] failed to trigger ${b.id}:`, e?.message));
+
 
       restarted.push({ id: b.id, nextIndex: nextIdx, phase });
     }
