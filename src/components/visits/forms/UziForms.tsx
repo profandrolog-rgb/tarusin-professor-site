@@ -79,9 +79,7 @@ export function DynamicWithUziForm({ data, onChange, birthDate }: { data: Dynami
 export function RepeatWithUziForm({ data, onChange, birthDate }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void; birthDate?: string | null }) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-        <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-      </div>
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={3} />
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
