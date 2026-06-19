@@ -23,6 +23,7 @@ import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdow
 import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, type ResolvedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
+import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
