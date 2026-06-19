@@ -323,7 +323,6 @@ Deno.serve(async (req) => {
 
     // External callers (client) must be the row owner.
     if (!isInternal) {
-      const authHeader = req.headers.get("Authorization") || "";
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
