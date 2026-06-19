@@ -19,7 +19,7 @@ const DEFAULT_MODEL = "anthropic/claude-sonnet-4.6";
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 const MAX_FILES = 50;
 
-type FileRef = { path: string; name: string; signedUrl: string; ext: string };
+type FileRef = { path: string; name: string; ext: string };
 
 function mimeFor(ext: string): { kind: "image" | "pdf"; mime: string } | null {
   const e = ext.toLowerCase();
@@ -28,6 +28,16 @@ function mimeFor(ext: string): { kind: "image" | "pdf"; mime: string } | null {
     return { kind: "image", mime: e === "jpg" ? "image/jpeg" : `image/${e === "heic" ? "heic" : e}` };
   }
   return null;
+}
+
+function toBase64(bytes: Uint8Array): string {
+  // chunked to avoid stack blow-up on large files
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
 }
 
 function humanizeOpenRouterError(status: number, body: string): string {
