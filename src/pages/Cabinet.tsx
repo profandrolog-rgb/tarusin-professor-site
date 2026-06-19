@@ -20,7 +20,7 @@ import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
 import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
 import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
-import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, type ResolvedModel } from "@/config/aiModels";
+import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, modelSupportsAttachments, type ResolvedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
@@ -143,6 +143,32 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
     }
   }
   return parts;
+};
+
+/** Convert provider error text into a short Russian explanation. */
+const friendlyChatError = (raw: string): string => {
+  const s = (raw || "").toLowerCase();
+  if (/context[_ ]?length|maximum context|token.*exceed/i.test(s))
+    return "Контекст модели переполнен — удалите часть истории/вложений или выберите модель с большим контекстом.";
+  if (/\b429\b|rate ?limit|too many requests/i.test(s))
+    return "Превышен лимит запросов к модели (429). Подождите несколько секунд и повторите.";
+  if (/\b402\b|insufficient.*credit|payment required|out of credit/i.test(s))
+    return "Закончились кредиты у провайдера модели (402). Попробуйте другую модель или пополните баланс.";
+  if (/\b401\b|invalid api key|unauthorized/i.test(s))
+    return "Провайдер отклонил ключ (401). Сообщите администратору.";
+  if (/\b404\b|model.*not.*found|no endpoints? found/i.test(s))
+    return "Эта модель сейчас недоступна у провайдера (404). Выберите другую из списка.";
+  if (/unsupported.*(image|file|modality|pdf)|does not support (images?|files?|pdf|vision)/i.test(s))
+    return "Выбранная модель не поддерживает вложения (картинки/PDF). Снимите файл или выберите модель с поддержкой vision/PDF.";
+  if (/\b5\d\d\b|internal server|bad gateway|service unavailable|timeout|timed out/i.test(s))
+    return "Провайдер модели временно недоступен. Попробуйте ещё раз или выберите другую модель.";
+  // Try to extract a short message from OpenRouter JSON
+  try {
+    const j = JSON.parse(raw);
+    const m = j?.error?.message || j?.details || j?.message;
+    if (typeof m === "string" && m.length < 300) return m;
+  } catch { /* not json */ }
+  return raw && raw.length < 240 ? raw : "Не удалось получить ответ от модели.";
 };
 
 function linkifyPubmedCitations(content: string, sources: PubmedSource[], msgIndex: number): string {
@@ -273,6 +299,8 @@ export default function Cabinet() {
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
+
+  const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
   const [pubmedLoadingMore, setPubmedLoadingMore] = useState<number | null>(null);
   const [pubmedAnalyzing, setPubmedAnalyzing] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
@@ -556,6 +584,11 @@ export default function Cabinet() {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !user) return;
+    if (!attachmentsSupported) {
+      toast.error("Выбранная модель не принимает вложения. Выберите модель с поддержкой картинок/PDF (например, Claude Sonnet, Gemini, GPT-5).");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     const MAX_FILES = 2;
     const MAX_SIZE = 25 * 1024 * 1024; // 25 MB per file (Storage upload, not request body)
     const list = Array.from(files);
@@ -1009,7 +1042,7 @@ export default function Cabinet() {
         loadConversations();
       }
     } catch (e: any) {
-      toast.error("Ошибка запроса к модели: " + (e?.message || ""));
+      toast.error(friendlyChatError(e?.message || ""));
       setMessages((prev) => {
         const next = [...prev];
         next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка получения ответа." };
@@ -1739,8 +1772,13 @@ export default function Cabinet() {
               variant="outline"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
-              disabled={streaming}
+              disabled={streaming || !attachmentsSupported}
               aria-label="Прикрепить файл"
+              title={
+                attachmentsSupported
+                  ? "Прикрепить PDF/изображение (до 2 файлов, 25 МБ)"
+                  : `Модель ${currentLive?.name || model} не поддерживает вложения. Выберите модель с vision/PDF (Claude, Gemini, GPT-5).`
+              }
             >
               <Paperclip className="w-4 h-4" />
             </Button>

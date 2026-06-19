@@ -37,6 +37,7 @@ async function fetchModels(): Promise<LiveModelInfo[]> {
         context_length: typeof m.context_length === "number" ? m.context_length : undefined,
         pricing: m.pricing,
         description: m.description,
+        architecture: m.architecture,
       }));
     if (typeof window !== "undefined") {
       try {

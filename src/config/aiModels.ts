@@ -134,7 +134,23 @@ export type LiveModelInfo = {
   context_length?: number;
   pricing?: { prompt?: string; completion?: string };
   description?: string;
+  architecture?: {
+    modality?: string;
+    input_modalities?: string[];
+    output_modalities?: string[];
+  };
 };
+
+/** True if model accepts non-text input (image or file/pdf). */
+export function modelSupportsAttachments(li?: LiveModelInfo | null): boolean {
+  const mods = li?.architecture?.input_modalities;
+  if (Array.isArray(mods) && mods.length) {
+    return mods.some((m) => m === "image" || m === "file" || m === "pdf");
+  }
+  // Fallback: parse legacy modality string "text+image+file->text"
+  const modality = li?.architecture?.modality || "";
+  return /image|file|pdf/i.test(modality);
+}
 
 const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠" };
 
