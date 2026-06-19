@@ -313,12 +313,15 @@ async function processFinal(batchId: string) {
     await supabase.from("analysis_batches").update({
       status: "done", final_result: finalText, partial_results: partial,
     }).eq("id", batchId);
+    await logEvent(supabase, batchId, { stage: "final_done", chars: finalText.length });
   } catch (e) {
+    await logEvent(supabase, batchId, { stage: "final_error", message: (e as Error).message });
     await supabase.from("analysis_batches").update({
       status: "error", error: `Финальный синтез: ${(e as Error).message}`, partial_results: partial,
     }).eq("id", batchId);
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
