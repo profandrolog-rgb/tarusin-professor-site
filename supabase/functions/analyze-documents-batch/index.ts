@@ -194,27 +194,19 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   const partial: any[] = Array.isArray(batch.partial_results) ? [...batch.partial_results] : [];
   const group = subbatches[subbatchIndex];
 
-  console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1}/${subbatches.length}: signing ${group.length} files`);
-  const signed = await supabase.storage.from(BUCKET).createSignedUrls(group, SIGNED_URL_TTL);
-  if (signed.error || !signed.data) {
-    console.log(`[batch ${batchId}] sign error:`, signed.error?.message);
-    partial.push({ subbatch_index: subbatchIndex, files: group.map(p => p.split("/").pop() || p), error: signed.error?.message || "не удалось получить ссылки" });
-  } else {
-    const refs: FileRef[] = signed.data.map((s: any, idx: number) => {
-      const path = group[idx];
-      const name = path.split("/").pop() || path;
-      const ext = (name.split(".").pop() || "").toLowerCase();
-      return { path, name, signedUrl: s.signedUrl, ext };
-    });
-    try {
-      console.log(`[batch ${batchId}] calling OpenRouter for subbatch ${subbatchIndex + 1}`);
-      const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, model, task, refs, subbatchIndex, subbatches.length);
-      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} done, ${content.length} chars`);
-      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
-    } catch (e) {
-      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} failed:`, (e as Error).message);
-      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
-    }
+  const refs: FileRef[] = group.map((path) => {
+    const name = path.split("/").pop() || path;
+    const ext = (name.split(".").pop() || "").toLowerCase();
+    return { path, name, ext };
+  });
+  try {
+    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1}/${subbatches.length}: downloading ${refs.length} files + calling OpenRouter`);
+    const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, supabase, model, task, refs, subbatchIndex, subbatches.length);
+    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} done, ${content.length} chars, ${per_file_errors.length} per-file errors`);
+    partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
+  } catch (e) {
+    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} failed:`, (e as Error).message);
+    partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
   }
 
   await supabase.from("analysis_batches").update({
