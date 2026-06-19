@@ -259,18 +259,25 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
 
         {(phase === "uploading" || phase === "analyzing" || phase === "done" || phase === "error") && (
           <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-medium">
-                  {phase === "uploading" && "Загрузка файлов…"}
-                  {phase === "analyzing" && `Анализ: ${activeBatch?.processed_files || 0} из ${activeBatch?.total_files || pending.length} файлов`}
-                  {phase === "done" && "Готово"}
-                  {phase === "error" && "Ошибка"}
-                </span>
-                <span className="text-muted-foreground">{progressPct}%</span>
-              </div>
-              <Progress value={progressPct} />
-            </div>
+            {(() => {
+              const uploadedCount = pending.filter(p => p.uploadedPath).length;
+              const uploadPct = pending.length ? Math.round((uploadedCount / pending.length) * 100) : 0;
+              const displayPct = phase === "uploading" ? uploadPct : progressPct;
+              return (
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="font-medium">
+                      {phase === "uploading" && `Загрузка файлов: ${uploadedCount} из ${pending.length}`}
+                      {phase === "analyzing" && `Анализ: ${activeBatch?.processed_files || 0} из ${activeBatch?.total_files || pending.length} файлов`}
+                      {phase === "done" && "Готово"}
+                      {phase === "error" && "Ошибка"}
+                    </span>
+                    <span className="text-muted-foreground">{displayPct}%</span>
+                  </div>
+                  <Progress value={displayPct} />
+                </div>
+              );
+            })()}
             {phase === "error" && activeBatch?.error && (
               <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded p-3 text-sm">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
