@@ -538,6 +538,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
 
     rows.push(<Field key="oc-c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="oc-a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="oc-dy" label="Динамика" value={d.dynamics} />);
 
     // Очный осмотр ранее
     if (d.prior_visit) {
