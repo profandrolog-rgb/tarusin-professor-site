@@ -145,6 +145,32 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   return parts;
 };
 
+/** Convert provider error text into a short Russian explanation. */
+const friendlyChatError = (raw: string): string => {
+  const s = (raw || "").toLowerCase();
+  if (/context[_ ]?length|maximum context|token.*exceed/i.test(s))
+    return "Контекст модели переполнен — удалите часть истории/вложений или выберите модель с большим контекстом.";
+  if (/\b429\b|rate ?limit|too many requests/i.test(s))
+    return "Превышен лимит запросов к модели (429). Подождите несколько секунд и повторите.";
+  if (/\b402\b|insufficient.*credit|payment required|out of credit/i.test(s))
+    return "Закончились кредиты у провайдера модели (402). Попробуйте другую модель или пополните баланс.";
+  if (/\b401\b|invalid api key|unauthorized/i.test(s))
+    return "Провайдер отклонил ключ (401). Сообщите администратору.";
+  if (/\b404\b|model.*not.*found|no endpoints? found/i.test(s))
+    return "Эта модель сейчас недоступна у провайдера (404). Выберите другую из списка.";
+  if (/unsupported.*(image|file|modality|pdf)|does not support (images?|files?|pdf|vision)/i.test(s))
+    return "Выбранная модель не поддерживает вложения (картинки/PDF). Снимите файл или выберите модель с поддержкой vision/PDF.";
+  if (/\b5\d\d\b|internal server|bad gateway|service unavailable|timeout|timed out/i.test(s))
+    return "Провайдер модели временно недоступен. Попробуйте ещё раз или выберите другую модель.";
+  // Try to extract a short message from OpenRouter JSON
+  try {
+    const j = JSON.parse(raw);
+    const m = j?.error?.message || j?.details || j?.message;
+    if (typeof m === "string" && m.length < 300) return m;
+  } catch { /* not json */ }
+  return raw && raw.length < 240 ? raw : "Не удалось получить ответ от модели.";
+};
+
 function linkifyPubmedCitations(content: string, sources: PubmedSource[], msgIndex: number): string {
   if (!sources?.length) return content;
   // Strip legacy/hallucinated [PMID:xxxx] markers — we cite by index only.
