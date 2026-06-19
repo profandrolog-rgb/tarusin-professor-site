@@ -1042,7 +1042,7 @@ export default function Cabinet() {
         loadConversations();
       }
     } catch (e: any) {
-      toast.error("Ошибка запроса к модели: " + (e?.message || ""));
+      toast.error(friendlyChatError(e?.message || ""));
       setMessages((prev) => {
         const next = [...prev];
         next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка получения ответа." };
