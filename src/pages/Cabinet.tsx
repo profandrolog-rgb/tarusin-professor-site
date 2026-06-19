@@ -448,8 +448,7 @@ export default function Cabinet() {
         toast.error("Не удалось загрузить сообщения");
         return;
       }
-      setMessages(
-        (data || []).map((m: any) => {
+      const loadedMessages: Msg[] = (data || []).map((m: any) => {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
@@ -503,8 +502,22 @@ export default function Cabinet() {
             fulltext,
             batch,
           };
-        }),
-      );
+        });
+
+      // Re-sign storage-backed attachments in batch (1h TTL)
+      const pathsToSign = Array.from(new Set(
+        loadedMessages.flatMap((m) => (m.attachments || []).filter((a) => a.path && !a.dataUrl).map((a) => a.path as string))
+      ));
+      if (pathsToSign.length) {
+        const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrls(pathsToSign, 60 * 60);
+        const map = new Map<string, string>();
+        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(pathsToSign[i], s.signedUrl); });
+        for (const m of loadedMessages) {
+          if (!m.attachments) continue;
+          m.attachments = m.attachments.map((a) => a.path && map.has(a.path) ? { ...a, dataUrl: map.get(a.path) } : a);
+        }
+      }
+      setMessages(loadedMessages);
 
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model === "council") {
