@@ -265,6 +265,7 @@ export default function Cabinet() {
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [council, setCouncil] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
