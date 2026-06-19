@@ -291,6 +291,7 @@ export default function Cabinet() {
   const currentResolved = resolvedModels.find((r) => r.id === model);
   const currentLive = liveModelsById.get(model);
   const modelKnown = !!currentLive || !!currentResolved?.available;
+  const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
