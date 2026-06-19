@@ -1,12 +1,10 @@
-// Batch document analyzer.
-// Input: { batchId: string }
-// Reads analysis_batches row, processes file_paths in subbatches,
-// updates progress + partial_results, finally synthesizes one summary
-// into final_result. Uses a fixed vision-capable model (Claude Sonnet 4.5)
-// via OpenRouter, regardless of the model picked in the general chat.
+// Batch document analyzer (chunked self-reinvocation).
+// Input: { batchId: string, subbatchIndex?: number, phase?: "subbatch"|"final" }
 //
-// Runs the heavy work via EdgeRuntime.waitUntil so the HTTP response
-// returns immediately and the client can subscribe to Realtime updates.
+// Pattern: each invocation processes exactly ONE subbatch (or the final
+// synthesis) so a single edge-function lifetime never has to cover the
+// whole pipeline. After finishing its slice, the function re-invokes
+// itself for the next slice via fetch(...) inside EdgeRuntime.waitUntil.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -39,6 +37,28 @@ function humanizeOpenRouterError(status: number, body: string): string {
   if (lower.includes("context_length") || lower.includes("maximum context")) return "Превышен контекст модели — слишком большой подпакет. Уменьшите subbatch_size.";
   if (lower.includes("unsupported") && (lower.includes("image") || lower.includes("file") || lower.includes("modality"))) return "Модель не поддерживает один из типов вложений.";
   return `Ошибка модели (${status}): ${body.slice(0, 400)}`;
+}
+
+function admin() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
+function selfInvoke(body: Record<string, unknown>) {
+  // Fire-and-forget call to ourselves with the service role so the next
+  // subbatch (or final synthesis) runs in a fresh worker.
+  const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/analyze-documents-batch`;
+  return fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      "x-internal-chain": "1",
+    },
+    body: JSON.stringify(body),
+  }).catch(() => undefined);
 }
 
 async function fetchSubbatchAnalysis(
@@ -101,7 +121,6 @@ async function fetchSubbatchAnalysis(
   }
   const json = await resp.json();
   const content: string = json.choices?.[0]?.message?.content || "";
-  // Detect per-file failures by simple regex on the structured headers.
   const per_file_errors: { file: string; error: string }[] = [];
   for (const r of refs) {
     const re = new RegExp(`###\\s*\\[\\d+\\][^\\n]*${r.name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}([\\s\\S]*?)(?=\\n###|$)`, "i");
@@ -113,26 +132,19 @@ async function fetchSubbatchAnalysis(
   return { content, per_file_errors };
 }
 
-async function processBatch(batchId: string) {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+async function processSubbatch(batchId: string, subbatchIndex: number) {
+  const supabase = admin();
   const apiKey = Deno.env.get("OPENROUTER_API_KEY");
   if (!apiKey) {
     await supabase.from("analysis_batches").update({ status: "error", error: "OPENROUTER_API_KEY not configured" }).eq("id", batchId);
     return;
   }
 
-  const { data: batch, error: bErr } = await supabase
-    .from("analysis_batches")
-    .select("*")
-    .eq("id", batchId)
-    .single();
-  if (bErr || !batch) return;
+  const { data: batch } = await supabase.from("analysis_batches").select("*").eq("id", batchId).single();
+  if (!batch) return;
 
   const files: string[] = Array.isArray(batch.file_paths) ? batch.file_paths : [];
-  if (files.length === 0) {
+  if (!files.length) {
     await supabase.from("analysis_batches").update({ status: "error", error: "Список файлов пуст" }).eq("id", batchId);
     return;
   }
@@ -144,62 +156,71 @@ async function processBatch(batchId: string) {
   const subSize = Math.max(1, Math.min(15, batch.subbatch_size || 7));
   const model = batch.model || DEFAULT_MODEL;
   const task = (batch.task || "").trim();
-
-  await supabase.from("analysis_batches").update({
-    status: "processing", processed_files: 0, partial_results: [], error: null, total_files: files.length,
-  }).eq("id", batchId);
-
-  const partial: any[] = [];
   const subbatches: string[][] = [];
   for (let i = 0; i < files.length; i += subSize) subbatches.push(files.slice(i, i + subSize));
 
-  for (let i = 0; i < subbatches.length; i++) {
-    const group = subbatches[i];
+  // First subbatch — ensure status = processing.
+  if (subbatchIndex === 0) {
+    await supabase.from("analysis_batches").update({
+      status: "processing", processed_files: 0, partial_results: [], error: null, total_files: files.length,
+    }).eq("id", batchId);
+  }
 
-    // Sign URLs for this group
-    const signed = await supabase.storage.from(BUCKET).createSignedUrls(group, SIGNED_URL_TTL);
-    if (signed.error || !signed.data) {
-      partial.push({ subbatch_index: i, files: group, error: signed.error?.message || "не удалось получить ссылки" });
-      await supabase.from("analysis_batches").update({
-        partial_results: partial,
-        processed_files: Math.min(files.length, (i + 1) * subSize),
-      }).eq("id", batchId);
-      continue;
-    }
+  if (subbatchIndex >= subbatches.length) {
+    // Nothing to do — schedule final synthesis.
+    // @ts-ignore
+    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase: "final" }));
+    return;
+  }
+
+  const partial: any[] = Array.isArray(batch.partial_results) ? [...batch.partial_results] : [];
+  const group = subbatches[subbatchIndex];
+
+  const signed = await supabase.storage.from(BUCKET).createSignedUrls(group, SIGNED_URL_TTL);
+  if (signed.error || !signed.data) {
+    partial.push({ subbatch_index: subbatchIndex, files: group.map(p => p.split("/").pop() || p), error: signed.error?.message || "не удалось получить ссылки" });
+  } else {
     const refs: FileRef[] = signed.data.map((s: any, idx: number) => {
       const path = group[idx];
       const name = path.split("/").pop() || path;
       const ext = (name.split(".").pop() || "").toLowerCase();
       return { path, name, signedUrl: s.signedUrl, ext };
     });
-
     try {
-      const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, model, task, refs, i, subbatches.length);
-      partial.push({
-        subbatch_index: i,
-        files: refs.map(r => r.name),
-        content,
-        per_file_errors,
-      });
+      const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, model, task, refs, subbatchIndex, subbatches.length);
+      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
     } catch (e) {
-      partial.push({
-        subbatch_index: i,
-        files: refs.map(r => r.name),
-        error: (e as Error).message,
-      });
+      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
     }
-
-    await supabase.from("analysis_batches").update({
-      partial_results: partial,
-      processed_files: Math.min(files.length, (i + 1) * subSize),
-    }).eq("id", batchId);
   }
 
-  // Final synthesis: pass partial results as plain text (no files)
+  await supabase.from("analysis_batches").update({
+    partial_results: partial,
+    processed_files: Math.min(files.length, (subbatchIndex + 1) * subSize),
+  }).eq("id", batchId);
+
+  const next = subbatchIndex + 1;
+  if (next < subbatches.length) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(selfInvoke({ batchId, subbatchIndex: next, phase: "subbatch" }));
+  } else {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase: "final" }));
+  }
+}
+
+async function processFinal(batchId: string) {
+  const supabase = admin();
+  const apiKey = Deno.env.get("OPENROUTER_API_KEY")!;
+  const { data: batch } = await supabase.from("analysis_batches").select("*").eq("id", batchId).single();
+  if (!batch) return;
+  const partial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
+  const model = batch.model || DEFAULT_MODEL;
+  const task = (batch.task || "").trim();
   try {
     const combined = partial.map((p, i) => {
-      if (p.error) return `## Подпакет ${i + 1} (${p.files.length} файлов): ОШИБКА\n${p.error}`;
-      return `## Подпакет ${i + 1} (${p.files.length} файлов)\n${p.content}`;
+      if (p.error) return `## Подпакет ${i + 1} (${p.files?.length || 0} файлов): ОШИБКА\n${p.error}`;
+      return `## Подпакет ${i + 1} (${p.files?.length || 0} файлов)\n${p.content}`;
     }).join("\n\n---\n\n");
 
     const finalResp = await fetch(OPENROUTER_URL, {
@@ -224,10 +245,7 @@ async function processBatch(batchId: string) {
               "(4) рекомендации по дообследованию (если показано). " +
               "Не выдумывай данные, опирайся только на присланные разборы.",
           },
-          {
-            role: "user",
-            content: `Задача от врача:\n${task}\n\nРазборы по подпакетам:\n\n${combined}`,
-          },
+          { role: "user", content: `Задача от врача:\n${task}\n\nРазборы по подпакетам:\n\n${combined}` },
         ],
         max_tokens: 6000,
       }),
@@ -251,36 +269,37 @@ async function processBatch(batchId: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const authHeader = req.headers.get("Authorization") || "";
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const body = await req.json().catch(() => ({}));
+    const batchId: string | undefined = body.batchId;
+    const phase: "subbatch" | "final" = body.phase || "subbatch";
+    const subbatchIndex: number = typeof body.subbatchIndex === "number" ? body.subbatchIndex : 0;
+    const isInternal = req.headers.get("x-internal-chain") === "1";
 
-    const { batchId } = await req.json();
     if (typeof batchId !== "string") {
       return new Response(JSON.stringify({ error: "batchId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    const { data: row } = await supabase.from("analysis_batches").select("id, user_id, status").eq("id", batchId).maybeSingle();
-    if (!row || row.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: "not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    if (row.status === "processing") {
-      return new Response(JSON.stringify({ ok: true, already: "processing" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // External callers (client) must be the row owner.
+    if (!isInternal) {
+      const authHeader = req.headers.get("Authorization") || "";
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: row } = await admin().from("analysis_batches").select("id, user_id").eq("id", batchId).maybeSingle();
+      if (!row || row.user_id !== user.id) {
+        return new Response(JSON.stringify({ error: "not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
-    // @ts-ignore EdgeRuntime is available in Supabase Edge runtime
-    EdgeRuntime.waitUntil(processBatch(batchId));
+    const work = phase === "final" ? processFinal(batchId) : processSubbatch(batchId, subbatchIndex);
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
 
-    return new Response(JSON.stringify({ ok: true, batchId }), {
+    return new Response(JSON.stringify({ ok: true, batchId, phase, subbatchIndex }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
