@@ -1756,6 +1756,15 @@ export default function Cabinet() {
           </div>
         </div>
       </main>
+      {user && (
+        <BatchAnalysisDialog
+          open={batchDialogOpen}
+          onOpenChange={setBatchDialogOpen}
+          userId={user.id}
+          conversationId={activeId}
+          onResult={handleBatchResult}
+        />
+      )}
     </div>
   );
 }
