@@ -301,6 +301,9 @@ export default function Cabinet() {
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
 
   const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
+  const visionCapableLabels = resolvedModels
+    .filter((r) => r.available && modelSupportsAttachments(r.liveInfo))
+    .map((r) => r.label);
   const [pubmedLoadingMore, setPubmedLoadingMore] = useState<number | null>(null);
   const [pubmedAnalyzing, setPubmedAnalyzing] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
@@ -1777,7 +1780,7 @@ export default function Cabinet() {
               title={
                 attachmentsSupported
                   ? "Прикрепить PDF/изображение (до 2 файлов, 25 МБ)"
-                  : `Модель ${currentLive?.name || model} не поддерживает вложения. Выберите модель с vision/PDF (Claude, Gemini, GPT-5).`
+                  : `Модель «${currentLive?.name || model}» не принимает картинки/PDF.\nПодходят: ${visionCapableLabels.length ? visionCapableLabels.join(", ") : "Claude Sonnet, Gemini, GPT-5"}.`
               }
             >
               <Paperclip className="w-4 h-4" />
