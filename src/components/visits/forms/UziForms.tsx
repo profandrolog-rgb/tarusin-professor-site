@@ -7,6 +7,7 @@ import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
 import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 
 export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void }) {
