@@ -542,19 +542,39 @@ export default function Cabinet() {
   };
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files) return;
+    if (!files || !user) return;
+    const MAX_FILES = 2;
+    const MAX_SIZE = 25 * 1024 * 1024; // 25 MB per file (Storage upload, not request body)
+    const list = Array.from(files);
     const out: Attachment[] = [];
-    for (const f of Array.from(files)) {
-      if (f.size > 10 * 1024 * 1024) {
-        toast.error(`${f.name}: больше 10 МБ`);
+    for (const f of list) {
+      if (attachments.length + out.length >= MAX_FILES) {
+        toast.error(`В обычный чат можно прикрепить максимум ${MAX_FILES} файла. Для больших объёмов используйте «Пакетный анализ».`);
+        break;
+      }
+      if (f.size > MAX_SIZE) {
+        toast.error(`${f.name}: больше 25 МБ`);
         continue;
       }
       if (!f.type.startsWith("image/") && f.type !== "application/pdf") {
         toast.error(`${f.name}: только PDF и изображения`);
         continue;
       }
-      const dataUrl = await fileToDataUrl(f);
-      out.push({ name: f.name, type: f.type, dataUrl });
+      const safeName = f.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${user.id}/chat/${crypto.randomUUID()}/${safeName}`;
+      const up = await supabase.storage.from("chat-attachments").upload(path, f, {
+        contentType: f.type, upsert: false,
+      });
+      if (up.error) {
+        toast.error(`${f.name}: не удалось загрузить (${up.error.message})`);
+        continue;
+      }
+      const signed = await supabase.storage.from("chat-attachments").createSignedUrl(path, 60 * 60);
+      if (signed.error || !signed.data?.signedUrl) {
+        toast.error(`${f.name}: не удалось получить ссылку`);
+        continue;
+      }
+      out.push({ name: f.name, type: f.type, path, dataUrl: signed.data.signedUrl });
     }
     setAttachments((prev) => [...prev, ...out]);
     if (fileInputRef.current) fileInputRef.current.value = "";
