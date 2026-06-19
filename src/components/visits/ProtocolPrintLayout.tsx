@@ -433,6 +433,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Краткий анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     pushSomatic(rows, d);
     pushSexual(rows, d);
     if (d.consultation_notes) {
