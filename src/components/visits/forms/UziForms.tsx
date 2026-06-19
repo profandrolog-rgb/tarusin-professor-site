@@ -13,6 +13,7 @@ import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void }) {
   return (
     <div className="space-y-4">
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
       <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
