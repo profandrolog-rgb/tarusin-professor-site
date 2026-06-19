@@ -1677,8 +1677,15 @@ export default function Cabinet() {
             </Button>
             <Button
               type="button"
-              variant={recording ? "destructive" : "outline"}
+              variant="outline"
               size="icon"
+              onClick={() => setBatchDialogOpen(true)}
+              disabled={streaming || !user}
+              aria-label="Пакетный анализ документов"
+              title="Пакетный анализ документов (много PDF/изображений сразу, через Claude)"
+            >
+              <Layers className="w-4 h-4" />
+            </Button>
               onClick={recording ? stopRecording : startRecording}
               disabled={streaming || transcribing}
               aria-label={recording ? "Остановить запись" : "Голосовой ввод"}
