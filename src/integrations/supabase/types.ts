@@ -338,6 +338,7 @@ export type Database = {
       }
       analysis_batches: {
         Row: {
+          chain_log: Json
           conversation_id: string | null
           created_at: string
           error: string | null
@@ -355,6 +356,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          chain_log?: Json
           conversation_id?: string | null
           created_at?: string
           error?: string | null
@@ -372,6 +374,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          chain_log?: Json
           conversation_id?: string | null
           created_at?: string
           error?: string | null
@@ -3843,6 +3846,10 @@ export type Database = {
           _to: string
         }
         Returns: Json
+      }
+      append_analysis_batch_log: {
+        Args: { _batch_id: string; _entry: Json }
+        Returns: undefined
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }
