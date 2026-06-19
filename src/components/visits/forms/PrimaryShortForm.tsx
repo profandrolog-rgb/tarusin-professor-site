@@ -34,12 +34,16 @@ export function PrimaryShortForm({ data, onChange, birthDate }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
           <Textarea rows={4} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
         </div>
         <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis">Анамнез</SmartFieldLabel>
           <Textarea rows={4} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
+        </div>
+        <div className="space-y-1">
+          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => onChange({ dynamics: v } as any)}>Динамика</SmartFieldLabel>
+          <Textarea rows={4} value={(data as any).dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value } as any)} placeholder="Если первичный визит — оставьте пустым" />
         </div>
       </div>
 
