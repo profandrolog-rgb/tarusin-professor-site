@@ -296,11 +296,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    const work = phase === "final" ? processFinal(batchId) : processSubbatch(batchId, subbatchIndex);
-    // @ts-ignore
-    EdgeRuntime.waitUntil(work);
+    if (isInternal) {
+      // Internal chained step: do the work in this invocation so the
+      // worker stays alive until it's finished, then return.
+      if (phase === "final") await processFinal(batchId);
+      else await processSubbatch(batchId, subbatchIndex);
+      return new Response(JSON.stringify({ ok: true, batchId, phase, subbatchIndex }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    return new Response(JSON.stringify({ ok: true, batchId, phase, subbatchIndex }), {
+    // External (client) call: kick off the first subbatch in a fresh
+    // worker via self-invoke, return immediately so the client can
+    // subscribe to Realtime updates.
+    selfInvoke({ batchId, phase: "subbatch", subbatchIndex: 0 });
+    return new Response(JSON.stringify({ ok: true, batchId, started: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
