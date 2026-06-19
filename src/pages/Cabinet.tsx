@@ -575,6 +575,32 @@ export default function Cabinet() {
     return data.id;
   };
 
+  const handleBatchResult = useCallback(async ({ final, partial, task }: { final: string; partial: BatchPartial[]; task: string }) => {
+    if (!user) return;
+    const convId = await ensureConversation(`📚 ${task.slice(0, 50)}`, "anthropic/claude-sonnet-4.5");
+    if (!convId) return;
+    const userContent = `📚 Пакетный анализ документов: ${task}`;
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "user", content: userContent, model: "batch-input",
+    });
+    const batchJson = JSON.stringify({ task, partial });
+    const b64 = btoa(unescape(encodeURIComponent(batchJson)));
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "assistant",
+      content: final, model: "anthropic/claude-sonnet-4.5 (batch)",
+      attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
+    });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    // Append to local view
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userContent },
+      { role: "assistant", content: final, model: "anthropic/claude-sonnet-4.5 (batch)", batch: { task, partial } },
+    ]);
+    loadConversations();
+    toast.success("Анализ готов");
+  }, [user, activeId, pendingFolderId]);
+
   const persistPubmedAssistant = async (
     convId: string, content: string, payload: PubmedPayload,
   ) => {
