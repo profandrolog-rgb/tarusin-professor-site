@@ -358,9 +358,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    await logEvent(admin(), batchId, {
+      stage: "invoke", origin: isInternal ? "internal" : "external",
+      phase, subbatch_index: subbatchIndex,
+    });
+
     if (isInternal) {
-      // Internal chained step: do the work in this invocation so the
-      // worker stays alive until it's finished, then return.
       if (phase === "final") await processFinal(batchId);
       else await processSubbatch(batchId, subbatchIndex);
       return new Response(JSON.stringify({ ok: true, batchId, phase, subbatchIndex }), {
@@ -368,14 +371,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // External (client / cron) call: kick off processing in a fresh
-    // worker via self-invoke and return immediately so the client can
-    // subscribe to Realtime updates.
     // @ts-ignore EdgeRuntime in Supabase
     EdgeRuntime.waitUntil(selfInvoke({ batchId, phase, subbatchIndex }));
     return new Response(JSON.stringify({ ok: true, batchId, started: true, phase, subbatchIndex }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
