@@ -7,11 +7,13 @@ import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
 import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 
 export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void }) {
   return (
     <div className="space-y-4">
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
       <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
@@ -26,6 +28,7 @@ export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveO
 export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; onChange: (p: Partial<UziUrinaryOnlyData>) => void }) {
   return (
     <div className="space-y-4">
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
       <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
@@ -76,9 +79,7 @@ export function DynamicWithUziForm({ data, onChange, birthDate }: { data: Dynami
 export function RepeatWithUziForm({ data, onChange, birthDate }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void; birthDate?: string | null }) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-        <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-      </div>
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={3} />
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>

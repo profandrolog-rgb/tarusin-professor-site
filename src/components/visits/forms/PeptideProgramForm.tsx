@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, FlaskConical, AlertTriangle } from "lucide-react";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 export interface Peptide {
   id: string;
@@ -162,6 +163,7 @@ export function PeptideProgramForm({ data, onChange }: Props) {
 
   return (
     <div className="space-y-5">
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
       {/* Параметры программы */}
       <Card>
         <CardHeader>

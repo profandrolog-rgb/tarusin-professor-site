@@ -398,7 +398,7 @@ function pushClinical(rows: React.ReactNode[], d: any) {
 }
 
 const KNOWN_KEYS = new Set([
-  "complaints","anamnesis","conclusion","indications","exam_plan","recommendations","consultation_notes",
+  "complaints","anamnesis","dynamics","conclusion","indications","exam_plan","recommendations","consultation_notes",
   "somatic","sexual_formula","sexual_formula_text","sexual_constitution","local_status",
   "ortho_status","neuro_status","neuro_status_full","psych_status","psych_status_full","psych_conclusion",
   "proj_person","proj_htp","proj_family","proj_animal","proj_free",
@@ -433,6 +433,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Краткий анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     pushSomatic(rows, d);
     pushSexual(rows, d);
     if (d.consultation_notes) {
@@ -461,11 +462,14 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       rows.push(<Field key="su" label="Швы сняты" value={d.sutures_removed} />);
     }
     rows.push(<Field key="cm" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="an" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
   }
 
   if (t === "primary_short") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     pushSomatic(rows, d);
     pushSexual(rows, d);
     pushLocalStatus(rows, d);
@@ -477,7 +481,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "repeat_with_labs") {
-    rows.push(<Field key="c" label="Жалобы / динамика" value={d.complaints} />);
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(
       <Section key="labs" title="Лабораторные данные">
         <Field label="ОАК" value={d.cbc} />
@@ -492,10 +498,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "uzi_reproductive" || t === "dynamic_with_uzi" || t === "repeat_with_uzi") {
-    if (t !== "uzi_reproductive") {
-      rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
-      rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
-    }
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi}
@@ -511,6 +516,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "uzi_urinary") {
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мочевыделительной системы" />);
@@ -530,6 +538,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
 
     rows.push(<Field key="oc-c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="oc-a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="oc-dy" label="Динамика" value={d.dynamics} />);
 
     // Очный осмотр ранее
     if (d.prior_visit) {
@@ -591,6 +600,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "peptide_program") {
+    rows.push(<Field key="pp-c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="pp-an" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="pp-dy" label="Динамика" value={d.dynamics} />);
     const metaRows: React.ReactNode[] = [];
     if (d.program_title) metaRows.push(<Field key="pt" label="Программа" value={d.program_title} />);
     if (d.goal) metaRows.push(<Field key="gl" label="Цель" value={d.goal} />);

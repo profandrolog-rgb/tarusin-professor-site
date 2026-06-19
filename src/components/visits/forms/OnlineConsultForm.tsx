@@ -85,8 +85,8 @@ export function OnlineConsultForm({ data, onChange }: Props) {
         </CardContent>
       </Card>
 
-      {/* Жалобы и анамнез */}
-      <div className="grid md:grid-cols-2 gap-4">
+      {/* Жалобы / Анамнез / Динамика */}
+      <div className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1">
           <SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
           <Textarea rows={4} value={data.complaints || ""} onChange={(e) => set("complaints", e.target.value)} />
@@ -94,6 +94,10 @@ export function OnlineConsultForm({ data, onChange }: Props) {
         <div className="space-y-1">
           <SmartFieldLabel fieldKey="anamnesis">Анамнез</SmartFieldLabel>
           <Textarea rows={4} value={data.anamnesis || ""} onChange={(e) => set("anamnesis", e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => set("dynamics" as any, v)}>Динамика</SmartFieldLabel>
+          <Textarea rows={4} value={(data as any).dynamics || ""} onChange={(e) => set("dynamics" as any, e.target.value)} placeholder="Если первичный визит — оставьте пустым" />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PostOpDay7Data } from "@/lib/visits/protocolSchemas";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 
 interface Props {
@@ -14,6 +15,12 @@ interface Props {
 export function PostOpDay7Form({ data, onChange }: Props) {
   return (
     <div className="space-y-4">
+      <ClinicalHistorySection
+        data={data as any}
+        onChange={(p) => onChange(p as any)}
+        show={{ complaints: false }}
+        rows={2}
+      />
       <div className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1">
           <Label>Название операции</Label>
