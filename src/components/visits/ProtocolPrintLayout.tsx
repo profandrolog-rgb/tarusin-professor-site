@@ -600,6 +600,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "peptide_program") {
+    rows.push(<Field key="pp-c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="pp-an" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="pp-dy" label="Динамика" value={d.dynamics} />);
     const metaRows: React.ReactNode[] = [];
     if (d.program_title) metaRows.push(<Field key="pt" label="Программа" value={d.program_title} />);
     if (d.goal) metaRows.push(<Field key="gl" label="Цель" value={d.goal} />);
