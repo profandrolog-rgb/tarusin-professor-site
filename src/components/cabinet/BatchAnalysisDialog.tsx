@@ -13,6 +13,8 @@ const MAX_FILES = 50;
 const MAX_TOTAL_MB = 300;
 const MAX_FILE_MB = 30;
 
+type ChainLogEntry = { ts?: string; stage?: string; subbatch_index?: number; [k: string]: unknown };
+
 type Pending = { file: File; localId: string; progress: number; uploadedPath?: string; error?: string };
 
 type BatchRow = {
@@ -23,7 +25,10 @@ type BatchRow = {
   partial_results: { subbatch_index: number; files: string[]; content?: string; error?: string; per_file_errors?: { file: string; error: string }[] }[];
   final_result: string | null;
   error: string | null;
+  chain_log?: ChainLogEntry[] | null;
+  updated_at?: string;
 };
+
 
 interface Props {
   open: boolean;
@@ -294,8 +299,37 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
                 ))}
               </div>
             )}
+            {activeBatch?.chain_log && activeBatch.chain_log.length > 0 && (
+              <details className="text-xs border border-border rounded">
+                <summary className="cursor-pointer px-3 py-2 font-medium select-none">
+                  Журнал цепочки ({activeBatch.chain_log.length})
+                </summary>
+                <div className="max-h-56 overflow-y-auto px-3 py-2 space-y-1 font-mono">
+                  {[...activeBatch.chain_log].slice(-200).map((e, i) => {
+                    const stage = String(e.stage ?? "");
+                    const danger = /error/i.test(stage);
+                    const recovery = stage === "recovery_trigger";
+                    return (
+                      <div key={i} className={`flex gap-2 ${danger ? "text-destructive" : recovery ? "text-orange-600" : ""}`}>
+                        <span className="text-muted-foreground shrink-0">
+                          {e.ts ? new Date(e.ts).toLocaleTimeString("ru-RU", { hour12: false }) : "--:--:--"}
+                        </span>
+                        <span className="font-medium shrink-0">{stage}</span>
+                        <span className="truncate">
+                          {Object.entries(e)
+                            .filter(([k]) => k !== "ts" && k !== "stage")
+                            .map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`)
+                            .join(" ")}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
           </div>
         )}
+
 
         <DialogFooter>
           {phase === "select" && (
