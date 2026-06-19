@@ -584,6 +584,11 @@ export default function Cabinet() {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !user) return;
+    if (!attachmentsSupported) {
+      toast.error("Выбранная модель не принимает вложения. Выберите модель с поддержкой картинок/PDF (например, Claude Sonnet, Gemini, GPT-5).");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     const MAX_FILES = 2;
     const MAX_SIZE = 25 * 1024 * 1024; // 25 MB per file (Storage upload, not request body)
     const list = Array.from(files);
