@@ -10,6 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, FlaskConical, AlertTriangle } from "lucide-react";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 export interface Peptide {
   id: string;
