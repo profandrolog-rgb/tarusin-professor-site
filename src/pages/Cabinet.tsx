@@ -66,7 +66,8 @@ type SpeedMode = "fast" | "deep";
 type Attachment = {
   name: string;
   type: string; // mime
-  dataUrl: string; // data:...;base64,...
+  path?: string;   // storage path in chat-attachments (new scheme)
+  dataUrl?: string; // signed URL (new) OR legacy data:...;base64,... (old messages)
 };
 
 type CouncilAnswer = { model: string; content: string; error: string | null };
