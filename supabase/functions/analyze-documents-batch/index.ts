@@ -167,17 +167,17 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   }
 
   if (subbatchIndex >= subbatches.length) {
-    // Nothing to do — schedule final synthesis.
-    // @ts-ignore
-    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase: "final" }));
+    await selfInvoke({ batchId, phase: "final" });
     return;
   }
 
   const partial: any[] = Array.isArray(batch.partial_results) ? [...batch.partial_results] : [];
   const group = subbatches[subbatchIndex];
 
+  console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1}/${subbatches.length}: signing ${group.length} files`);
   const signed = await supabase.storage.from(BUCKET).createSignedUrls(group, SIGNED_URL_TTL);
   if (signed.error || !signed.data) {
+    console.log(`[batch ${batchId}] sign error:`, signed.error?.message);
     partial.push({ subbatch_index: subbatchIndex, files: group.map(p => p.split("/").pop() || p), error: signed.error?.message || "не удалось получить ссылки" });
   } else {
     const refs: FileRef[] = signed.data.map((s: any, idx: number) => {
@@ -187,9 +187,12 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
       return { path, name, signedUrl: s.signedUrl, ext };
     });
     try {
+      console.log(`[batch ${batchId}] calling OpenRouter for subbatch ${subbatchIndex + 1}`);
       const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, model, task, refs, subbatchIndex, subbatches.length);
+      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} done, ${content.length} chars`);
       partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
     } catch (e) {
+      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} failed:`, (e as Error).message);
       partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
     }
   }
