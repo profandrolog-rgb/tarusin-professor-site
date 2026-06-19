@@ -1476,6 +1476,36 @@ export default function Cabinet() {
                           </AccordionItem>
                         </Accordion>
                       )}
+                      {m.batch && m.batch.partial.length > 0 && (
+                        <Accordion type="single" collapsible className="mt-3 border-t border-border/50 pt-2">
+                          <AccordionItem value="batch" className="border-0">
+                            <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                              <span className="inline-flex items-center gap-1"><Layers className="w-3 h-3" /> Разбор по подпакетам ({m.batch.partial.length})</span>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-3">
+                                {m.batch.partial.map((p, k) => (
+                                  <div key={k} className="rounded-md bg-background/60 p-2">
+                                    <div className="text-[11px] font-mono text-muted-foreground mb-1">
+                                      Подпакет {p.subbatch_index + 1} · {p.files.length} файлов: {p.files.join(", ")}
+                                    </div>
+                                    {p.error ? (
+                                      <div className="text-xs text-destructive">⚠️ {p.error}</div>
+                                    ) : (
+                                      <ChatMarkdown className="prose prose-xs dark:prose-invert max-w-none text-xs">{p.content || ""}</ChatMarkdown>
+                                    )}
+                                    {p.per_file_errors && p.per_file_errors.length > 0 && (
+                                      <div className="mt-1 text-[11px] text-amber-600">
+                                        Не прочитано: {p.per_file_errors.map(f => f.file).join(", ")}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )}
                       {m.sources && m.sources.length > 0 && (
                         <div className="mt-3 border-t border-border/50 pt-2">
                           <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1">
