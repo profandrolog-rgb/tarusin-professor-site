@@ -56,6 +56,19 @@ function admin() {
   );
 }
 
+async function logEvent(
+  supabase: ReturnType<typeof admin>,
+  batchId: string,
+  entry: Record<string, unknown>,
+) {
+  try {
+    console.log(`[batch ${batchId}]`, JSON.stringify(entry));
+    await supabase.rpc("append_analysis_batch_log", { _batch_id: batchId, _entry: entry });
+  } catch (e) {
+    console.log(`[batch ${batchId}] log failed:`, (e as Error).message);
+  }
+}
+
 function selfInvoke(body: Record<string, unknown>) {
   // Fire-and-forget call to ourselves with the service role so the next
   // subbatch (or final synthesis) runs in a fresh worker.
@@ -70,6 +83,7 @@ function selfInvoke(body: Record<string, unknown>) {
     body: JSON.stringify(body),
   }).catch(() => undefined);
 }
+
 
 async function fetchSubbatchAnalysis(
   apiKey: string,
