@@ -1,72 +1,78 @@
-## Цель
-Заменить textarea в `ArticleMarkdownEditor` на визуальный WYSIWYG-редактор на TipTap. Markdown из БД должен рендериться как форматированный текст (заголовки, жирный, списки), а маркеры `[[GALLERY: caption="..."]]` — как серые блоки-плейсхолдеры с подписью. При сохранении контент конвертируется обратно в markdown.
+## Источник
+**OOREP `publicum`** (`/tmp/oorep/oorep.sql` уже скачан, 44 МБ распакованного SQL).
+- Английская выборка на базе оригинального Кента, лицензия GPL v3, общественное достояние по содержанию.
+- `kent-de` отбрасываем (немецкий, не нужен).
+- В дампе ~74 667 рубрик `publicum`, ~735 тыс. записей `rubricremedy` с градациями 1/2/3, 36 глав (0–35).
 
-## Что делаем
+## Расхождения схем
 
-### 1. Зависимости
-Установить парсеры markdown ↔ HTML:
-- `marked` — markdown → HTML (при загрузке)
-- `turndown` — HTML → markdown (при сохранении)
-- `turndown-plugin-gfm` — поддержка таблиц/strikethrough
+| OOREP | Наша БД |
+|---|---|
+| `chapter (abbrev,id,textt)` — **пуст в дампе** | `repertory_chapters (id, ord, name_en, name_ru)` |
+| `rubric (id, mother, ismother, chapterid, fullpath, path, textt)` — иерархия плоская, дерево через `fullpath` | `repertory_rubrics (id, chapter_id, parent_id, name, kent_page)` |
+| `remedy (id, nameabbrev, namelong, namealt[])` | `repertory_remedies (id, slug, name_latin, abbrev, name_ru)` |
+| `rubricremedy (rubricid, remedyid, weight, chapterid)` | `repertory_rubric_remedies (rubric_id, remedy_id, grade)` |
 
-TipTap уже есть в проекте (`@tiptap/react`, `@tiptap/starter-kit` используются в `RichTextEditor.tsx` и блог-редакторе).
+Иерархию строим из `fullpath`: разбиваем по `, ` → первый сегмент = глава, остаток = путь рубрик, для каждого префикса гарантируем существование родительской рубрики.
 
-### 2. Новый компонент `ArticleWysiwygEditor.tsx`
-Заменяет внутренности `ArticleMarkdownEditor` (панель инструментов + textarea). Сохраняем тот же интерфейс `{ value, onChange }`, где `value` — markdown-строка.
+## Шаги импорта (одноразовый скрипт через psql, без UI)
 
-Архитектура:
-- При монтировании / смене `value` извне: `marked(value)` → HTML → `editor.commands.setContent(html)`. Защита от циклов через флаг "внутреннее обновление".
-- При изменениях в редакторе: HTML → `turndown(html)` → `onChange(markdown)`.
-- Конвертация маркеров галерей в обе стороны (см. ниже).
+1. **Подготовка staging-таблиц** (миграция):
+   - `_import_oorep_rubric (oorep_id int PK, chapter_idx int, fullpath text)`
+   - `_import_oorep_remedy (oorep_id int PK, nameabbrev text, namelong text)`
+   - `_import_oorep_rr (oorep_rubric_id int, oorep_remedy_id int, weight int)`
+   - `_import_oorep_remedy_map (oorep_id int PK, remedy_id uuid)`
+   - `_import_oorep_rubric_map (oorep_id int PK, rubric_id uuid)`
 
-### 3. Кастомный TipTap-узел `GalleryPlaceholder`
-- Тип: `Node`, `group: 'block'`, `atom: true`, `selectable: true`.
-- Атрибут: `caption: string`.
-- `renderHTML`: `<div data-gallery-placeholder data-caption="...">…</div>`.
-- `parseHTML`: матч по `div[data-gallery-placeholder]`.
-- NodeView (React): серый прямоугольник `border-2 border-dashed bg-muted` с иконкой `ImagePlus`, текстом «Галерея: {caption}» и кнопкой-карандашом для редактирования подписи через тот же диалог.
+2. **Загрузка дампа** (локально через psql `\copy`):
+   - Из `oorep.sql` вытаскиваем три COPY-блока (`remedy`, `rubric`, `rubricremedy`) фильтром только по `publicum` → три TSV-файла.
+   - `\copy` каждой в соответствующую staging-таблицу.
 
-### 4. Преобразование маркеров
-**Markdown → HTML (загрузка):** перед `marked()` заменяем регулярку `\[\[GALLERY:\s*caption="([^"]*)"\]\]` на `<div data-gallery-placeholder data-caption="$1"></div>`. TipTap парсит это в узел `GalleryPlaceholder`.
+3. **Главы** — для всех 36 chapter_idx, встречающихся в данных:
+   - Берём `lower(first_segment(fullpath))` как `name_en`, ищем `repertory_chapters.name_en ILIKE`, если нет — `INSERT` с `ord = MAX+1`, `name_ru = name_en` (переведём позже вручную).
+   - Сохраняем mapping `chapter_idx → chapters.id`.
 
-**HTML → Markdown (сохранение):** регистрируем правило в `turndown`:
-```
-turndownService.addRule('galleryPlaceholder', {
-  filter: (node) => node.getAttribute?.('data-gallery-placeholder') !== null,
-  replacement: (_, node) => `\n\n[[GALLERY: caption="${node.getAttribute('data-caption')}"]]\n\n`
-})
-```
+4. **Рубрики** (батчами через рекурсивный CTE):
+   - Для каждого `fullpath` генерируем все префиксы (`p1`, `p1, p2`, `p1, p2, p3`, …) с глубиной.
+   - Сначала вставляем все уровни 1 (только chapter, нет parent), затем 2, и т.д. По каждому уровню:
+     - сопоставляем существующие рубрики `WHERE chapter_id=? AND parent_id IS NOT DISTINCT FROM ? AND lower(name)=lower(?)` — если есть, переиспользуем (это и есть «не дублировать андрологические»);
+     - если нет — `INSERT` и сохраняем id в `_import_oorep_rubric_map` для финального уровня.
+   - Батчи по 5 000 строк в `INSERT … ON CONFLICT DO NOTHING` + `RETURNING`.
 
-### 5. Панель инструментов
-Сохраняем все существующие кнопки:
-- **Загрузить .docx** — без изменений (mammoth → текст → `onChange`).
-- **Форматировать** (✨) — без изменений (вызывает edge-функцию, заменяет `value`).
-- **Галерея** (📷) — открывает текущий диалог, при подтверждении вместо вставки строки делает `editor.chain().focus().insertContent({ type: 'galleryPlaceholder', attrs: { caption } }).run()`.
+5. **Препараты**:
+   - Для каждого OOREP-remedy: `slug = lower(nameabbrev)`. Если `repertory_remedies.slug = ?` уже есть — переиспользуем. Иначе `INSERT (slug, name_latin=namelong, abbrev=nameabbrev)`.
+   - Mapping в `_import_oorep_remedy_map`.
 
-Добавляем базовые WYSIWYG-кнопки (H1/H2/H3, Bold, Italic, маркированный/нумерованный список, цитата, ссылка) — стиль как в `RichTextEditor.tsx`.
+6. **Связи rubric_remedy** (самый большой, батчами по 10 000):
+   - JOIN staging-связей через оба mapping → `INSERT INTO repertory_rubric_remedies (rubric_id, remedy_id, grade) … ON CONFLICT (rubric_id, remedy_id) DO UPDATE SET grade = GREATEST(repertory_rubric_remedies.grade, EXCLUDED.grade)`.
+   - Это автоматически защищает 389 существующих андрологических связей (если совпадут — оставится более высокая градация; гарантированно ничего не удалится).
+   - Нужен уникальный индекс `(rubric_id, remedy_id)` — проверить, есть ли он; если нет, добавить миграцией перед импортом.
 
-Переключатель «Редактор / Предпросмотр» оставляем — в режиме предпросмотра показываем `MarkdownArticle` с актуальным `value` (markdown).
+7. **Верификация** (psql-запросы, отчёт в чат):
+   - Counts: рубрик / препаратов / связей до и после.
+   - Sample-rubric «Mind; ANXIETY» → ожидаем десятки препаратов с распределением grade 1/2/3 как в оригинале.
+   - Sample-rubric «Generalities; cold, agg.» — аналогично.
+   - Проверка, что все 389 исходных андрологических связей на месте: `SELECT count(*) FROM repertory_rubric_remedies WHERE created_at < <ts_перед_импортом>`.
 
-### 6. Файлы
-- **Новый**: `src/components/parents/ArticleWysiwygEditor.tsx` — главный компонент.
-- **Новый**: `src/components/parents/tiptap/GalleryPlaceholderNode.tsx` — Node + NodeView.
-- **Новый**: `src/lib/markdown/galleryMarkers.ts` — `markdownToHtml(md)` / `htmlToMarkdown(html)` с правилами для галерей.
-- **Изменён**: `src/components/parents/ArticleMarkdownEditor.tsx` — оборачивает новый компонент (или прямая замена, экспорт остаётся прежним, чтобы не трогать места использования).
-
-### 7. Совместимость
-- Внешний API (`value: string` markdown, `onChange(v: string)`) не меняется → `AdminDiseaseArticles` и предпросмотр `MarkdownArticle` работают без изменений.
-- БД-формат остаётся markdown с маркерами `[[GALLERY:...]]` — старые статьи и публичная страница `/for-parents/:slug` работают как раньше.
+8. **Очистка**:
+   - `DROP TABLE _import_oorep_*` после успеха.
+   - Дамп `/tmp/oorep/*` не коммитим.
 
 ## Технические детали
 
-- `marked` настройка: `{ gfm: true, breaks: false }`.
-- `turndown` настройка: `{ headingStyle: 'atx', bulletListMarker: '-', codeBlockStyle: 'fenced' }` + плагин gfm.
-- TipTap extensions: `StarterKit`, `Link`, `Image` (на будущее), `GalleryPlaceholder`.
-- Защита от лупа: при `onUpdate` сравнивать новый markdown с последним пропом `value`; обновлять контент редактора при изменении `value` только если он отличается от текущего сериализованного.
-- Стили серого блока: `rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/40 p-6 my-4 flex items-center gap-3 text-muted-foreground`.
+- Импорт идёт через `psql` в exec-инструменте (быстрее edge-функции и без таймаутов).
+- Каждый батч — отдельный `BEGIN; … COMMIT;`, чтобы рост WAL не съел память.
+- Прогресс пишу в stdout (виден в логе инструмента): `chapters: 36/36`, `rubrics: 12 000/74 667`, и т.д.
+- Уникальный индекс `(chapter_id, parent_id, lower(name))` на `repertory_rubrics` — нужен, чтобы дедуп работал; добавлю миграцией если нет.
+- Уникальный индекс `(rubric_id, remedy_id)` на `repertory_rubric_remedies` — нужен для `ON CONFLICT`.
+- Поле `kent_page` в наших рубриках в OOREP отсутствует — оставим `NULL` для импортируемых.
+
+## Откат
+
+Все импортируемые рубрики и препараты можно отличить от исходных андрологических по `created_at >= <ts_перед_импортом>`. На случай отката оставлю SQL-скрипт удаления только импортированных строк (исходные 389 связей не пострадают, т.к. их `created_at` раньше).
 
 ## Что НЕ делаем
-- Не меняем `MarkdownArticle` (публичный рендер) — он по-прежнему получает markdown.
-- Не меняем edge-функцию `format-disease-article`.
-- Не меняем схему БД.
-- Загрузку реальных фото в галерею оставляем на существующий механизм страницы статьи (как раньше).
+
+- Не создаём новые таблицы вместо существующих.
+- Не трогаем UI `/admin/repertory` — структура та же, объёмы вырастут, существующая виртуализация ScrollArea справится (если будут лаги — отдельная задача).
+- Не переводим `name_ru` рубрик автоматически — это отдельный шаг (тысячи строк, нужен либо ручной перевод, либо отдельный AI-проход).
