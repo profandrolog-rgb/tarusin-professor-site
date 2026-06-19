@@ -452,6 +452,7 @@ export default function Cabinet() {
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
           const pubmedAtt = atts.find((a) => a?.name === "__pubmed__");
           const fulltextAtt = atts.find((a) => a?.name === "__fulltext__");
+          const batchAtt = atts.find((a) => a?.name === "__batch__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -480,16 +481,24 @@ export default function Cabinet() {
               fulltext = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let batch: Msg["batch"];
+          if (batchAtt?.dataUrl) {
+            try {
+              const b64 = batchAtt.dataUrl.split(",")[1] || "";
+              batch = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__", "__fulltext__"].includes(a?.name)),
+            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__", "__fulltext__", "__batch__"].includes(a?.name)),
             model: m.model,
             council: councilAnswers,
             sources,
             pubmed,
             fulltext,
+            batch,
           };
         }),
       );
