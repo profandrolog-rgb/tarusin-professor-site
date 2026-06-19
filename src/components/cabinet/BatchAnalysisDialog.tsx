@@ -133,7 +133,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
       setUploading(false); setPhase("select"); return;
     }
     const batchId = batchRow.id;
-    setActiveBatch(batchRow as BatchRow);
+    setActiveBatch(batchRow as unknown as BatchRow);
 
     // 2. Upload each file
     const uploadedPaths: string[] = [];
