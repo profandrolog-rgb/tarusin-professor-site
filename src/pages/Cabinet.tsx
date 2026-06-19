@@ -1780,7 +1780,7 @@ export default function Cabinet() {
               title={
                 attachmentsSupported
                   ? "Прикрепить PDF/изображение (до 2 файлов, 25 МБ)"
-                  : `Модель ${currentLive?.name || model} не поддерживает вложения. Выберите модель с vision/PDF (Claude, Gemini, GPT-5).`
+                  : `Модель «${currentLive?.name || model}» не принимает картинки/PDF.\nПодходят: ${visionCapableLabels.length ? visionCapableLabels.join(", ") : "Claude Sonnet, Gemini, GPT-5"}.`
               }
             >
               <Paperclip className="w-4 h-4" />
