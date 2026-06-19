@@ -462,6 +462,8 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       rows.push(<Field key="su" label="Швы сняты" value={d.sutures_removed} />);
     }
     rows.push(<Field key="cm" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="an" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
   }
 
   if (t === "primary_short") {
