@@ -12,11 +12,16 @@ interface Props {
 export function RepeatWithLabsForm({ data, onChange }: Props) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-        <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-      </div>
-      <div className="space-y-1"><SmartFieldLabel value={data.dynamics || ""} onSet={(v) => onChange({ dynamics: v })}>Динамика</SmartFieldLabel>
-        <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
+      <div className="grid md:grid-cols-3 gap-4">
+        <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
+          <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
+        </div>
+        <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis" value={(data as any).anamnesis || ""} onSet={(v) => onChange({ anamnesis: v } as any)}>Анамнез</SmartFieldLabel>
+          <Textarea rows={3} value={(data as any).anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value } as any)} />
+        </div>
+        <div className="space-y-1"><SmartFieldLabel value={data.dynamics || ""} onSet={(v) => onChange({ dynamics: v })}>Динамика</SmartFieldLabel>
+          <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
+        </div>
       </div>
 
       <Card><CardHeader><CardTitle className="text-sm">Лабораторные данные</CardTitle></CardHeader>
