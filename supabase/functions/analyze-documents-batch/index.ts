@@ -308,7 +308,14 @@ Deno.serve(async (req) => {
     const batchId: string | undefined = body.batchId;
     const phase: "subbatch" | "final" = body.phase || "subbatch";
     const subbatchIndex: number = typeof body.subbatchIndex === "number" ? body.subbatchIndex : 0;
-    const isInternal = req.headers.get("x-internal-chain") === "1";
+    // Internal chain / cron recovery calls must present the service-role
+    // key as Authorization — that proves they originated from us, not a
+    // random client poking the batchId.
+    const authHeader = req.headers.get("Authorization") || "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isInternal = req.headers.get("x-internal-chain") === "1"
+      && serviceKey.length > 0
+      && authHeader === `Bearer ${serviceKey}`;
 
     if (typeof batchId !== "string") {
       return new Response(JSON.stringify({ error: "batchId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
