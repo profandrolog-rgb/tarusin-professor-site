@@ -66,7 +66,8 @@ type SpeedMode = "fast" | "deep";
 type Attachment = {
   name: string;
   type: string; // mime
-  dataUrl: string; // data:...;base64,...
+  path?: string;   // storage path in chat-attachments (new scheme)
+  dataUrl?: string; // signed URL (new) OR legacy data:...;base64,... (old messages)
 };
 
 type CouncilAnswer = { model: string; content: string; error: string | null };
@@ -133,10 +134,12 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   const parts: any[] = [];
   if (text.trim()) parts.push({ type: "text", text });
   for (const a of atts) {
+    const url = a.dataUrl; // signed URL for new, base64 data URL for legacy
+    if (!url) continue;
     if (a.type.startsWith("image/")) {
-      parts.push({ type: "image_url", image_url: { url: a.dataUrl } });
+      parts.push({ type: "image_url", image_url: { url } });
     } else if (a.type === "application/pdf") {
-      parts.push({ type: "file", file: { filename: a.name, file_data: a.dataUrl } });
+      parts.push({ type: "file", file: { filename: a.name, file_data: url } });
     }
   }
   return parts;
@@ -445,8 +448,7 @@ export default function Cabinet() {
         toast.error("Не удалось загрузить сообщения");
         return;
       }
-      setMessages(
-        (data || []).map((m: any) => {
+      const loadedMessages: Msg[] = (data || []).map((m: any) => {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
@@ -500,8 +502,22 @@ export default function Cabinet() {
             fulltext,
             batch,
           };
-        }),
-      );
+        });
+
+      // Re-sign storage-backed attachments in batch (1h TTL)
+      const pathsToSign = Array.from(new Set(
+        loadedMessages.flatMap((m) => (m.attachments || []).filter((a) => a.path && !a.dataUrl).map((a) => a.path as string))
+      ));
+      if (pathsToSign.length) {
+        const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrls(pathsToSign, 60 * 60);
+        const map = new Map<string, string>();
+        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(pathsToSign[i], s.signedUrl); });
+        for (const m of loadedMessages) {
+          if (!m.attachments) continue;
+          m.attachments = m.attachments.map((a) => a.path && map.has(a.path) ? { ...a, dataUrl: map.get(a.path) } : a);
+        }
+      }
+      setMessages(loadedMessages);
 
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model === "council") {
@@ -539,19 +555,39 @@ export default function Cabinet() {
   };
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files) return;
+    if (!files || !user) return;
+    const MAX_FILES = 2;
+    const MAX_SIZE = 25 * 1024 * 1024; // 25 MB per file (Storage upload, not request body)
+    const list = Array.from(files);
     const out: Attachment[] = [];
-    for (const f of Array.from(files)) {
-      if (f.size > 10 * 1024 * 1024) {
-        toast.error(`${f.name}: больше 10 МБ`);
+    for (const f of list) {
+      if (attachments.length + out.length >= MAX_FILES) {
+        toast.error(`В обычный чат можно прикрепить максимум ${MAX_FILES} файла. Для больших объёмов используйте «Пакетный анализ».`);
+        break;
+      }
+      if (f.size > MAX_SIZE) {
+        toast.error(`${f.name}: больше 25 МБ`);
         continue;
       }
       if (!f.type.startsWith("image/") && f.type !== "application/pdf") {
         toast.error(`${f.name}: только PDF и изображения`);
         continue;
       }
-      const dataUrl = await fileToDataUrl(f);
-      out.push({ name: f.name, type: f.type, dataUrl });
+      const safeName = f.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${user.id}/chat/${crypto.randomUUID()}/${safeName}`;
+      const up = await supabase.storage.from("chat-attachments").upload(path, f, {
+        contentType: f.type, upsert: false,
+      });
+      if (up.error) {
+        toast.error(`${f.name}: не удалось загрузить (${up.error.message})`);
+        continue;
+      }
+      const signed = await supabase.storage.from("chat-attachments").createSignedUrl(path, 60 * 60);
+      if (signed.error || !signed.data?.signedUrl) {
+        toast.error(`${f.name}: не удалось получить ссылку`);
+        continue;
+      }
+      out.push({ name: f.name, type: f.type, path, dataUrl: signed.data.signedUrl });
     }
     setAttachments((prev) => [...prev, ...out]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -577,7 +613,7 @@ export default function Cabinet() {
 
   const handleBatchResult = useCallback(async ({ final, partial, task }: { final: string; partial: BatchPartial[]; task: string }) => {
     if (!user) return;
-    const convId = await ensureConversation(`📚 ${task.slice(0, 50)}`, "anthropic/claude-sonnet-4.5");
+    const convId = await ensureConversation(`📚 ${task.slice(0, 50)}`, "anthropic/claude-sonnet-4.6");
     if (!convId) return;
     const userContent = `📚 Пакетный анализ документов: ${task}`;
     await supabase.from("ai_messages").insert({
@@ -587,7 +623,7 @@ export default function Cabinet() {
     const b64 = btoa(unescape(encodeURIComponent(batchJson)));
     await supabase.from("ai_messages").insert({
       conversation_id: convId, user_id: user.id, role: "assistant",
-      content: final, model: "anthropic/claude-sonnet-4.5 (batch)",
+      content: final, model: "anthropic/claude-sonnet-4.6 (batch)",
       attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
     });
     await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
@@ -595,7 +631,7 @@ export default function Cabinet() {
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userContent },
-      { role: "assistant", content: final, model: "anthropic/claude-sonnet-4.5 (batch)", batch: { task, partial } },
+      { role: "assistant", content: final, model: "anthropic/claude-sonnet-4.6 (batch)", batch: { task, partial } },
     ]);
     loadConversations();
     toast.success("Анализ готов");
@@ -839,13 +875,16 @@ export default function Cabinet() {
     setInput("");
     setAttachments([]);
 
-    // Persist user message
+    // Persist user message — strip transient signed URLs for path-based attachments
+    const persistedAtts = (userMsg.attachments || []).map((a) =>
+      a.path ? { name: a.name, type: a.type, path: a.path } : a,
+    );
     await supabase.from("ai_messages").insert({
       conversation_id: convId,
       user_id: user.id,
       role: "user",
       content: text,
-      attachments: userMsg.attachments as any,
+      attachments: persistedAtts as any,
       model,
     });
 

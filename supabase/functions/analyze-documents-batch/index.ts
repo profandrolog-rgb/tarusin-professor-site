@@ -17,7 +17,7 @@ const corsHeaders = {
 
 const BUCKET = "chat-attachments";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4.5";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4.6";
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 const MAX_FILES = 50;
 
