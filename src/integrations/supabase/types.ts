@@ -2208,6 +2208,84 @@ export type Database = {
           },
         ]
       }
+      protocol_template_items_backup_20260619: {
+        Row: {
+          catalog_id: string | null
+          created_at: string | null
+          day_pattern: string | null
+          dilution_solvent: string | null
+          dilution_volume: number | null
+          dose: number | null
+          dose_unit: string | null
+          dosing_schedule: string | null
+          duration_days: number | null
+          frequency: string | null
+          id: string | null
+          infusion_rate: string | null
+          name_snapshot: string | null
+          notes: string | null
+          order_index: number | null
+          potency: string | null
+          repertory_remedy_id: string | null
+          route_override: string | null
+          section_category:
+            | Database["public"]["Enums"]["treatment_category"]
+            | null
+          template_id: string | null
+          time_of_day: string[] | null
+        }
+        Insert: {
+          catalog_id?: string | null
+          created_at?: string | null
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          dosing_schedule?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          id?: string | null
+          infusion_rate?: string | null
+          name_snapshot?: string | null
+          notes?: string | null
+          order_index?: number | null
+          potency?: string | null
+          repertory_remedy_id?: string | null
+          route_override?: string | null
+          section_category?:
+            | Database["public"]["Enums"]["treatment_category"]
+            | null
+          template_id?: string | null
+          time_of_day?: string[] | null
+        }
+        Update: {
+          catalog_id?: string | null
+          created_at?: string | null
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          dosing_schedule?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          id?: string | null
+          infusion_rate?: string | null
+          name_snapshot?: string | null
+          notes?: string | null
+          order_index?: number | null
+          potency?: string | null
+          repertory_remedy_id?: string | null
+          route_override?: string | null
+          section_category?:
+            | Database["public"]["Enums"]["treatment_category"]
+            | null
+          template_id?: string | null
+          time_of_day?: string[] | null
+        }
+        Relationships: []
+      }
       protocol_templates: {
         Row: {
           created_at: string
@@ -2991,6 +3069,150 @@ export type Database = {
           },
         ]
       }
+      treatment_catalog_backup_20260619: {
+        Row: {
+          acupuncture_protocol_id: string | null
+          category: Database["public"]["Enums"]["treatment_category"] | null
+          contraindications: string | null
+          created_at: string | null
+          created_by: string | null
+          default_dilution_solvent: string | null
+          default_dilution_volume: number | null
+          default_dose: number | null
+          default_duration_days: number | null
+          default_frequency: string | null
+          default_route_label: string | null
+          dose_range_max: number | null
+          dose_range_min: number | null
+          dose_unit: string | null
+          form: string | null
+          glucose_only: boolean | null
+          id: string | null
+          infusion_rate: string | null
+          inn: string | null
+          is_active: boolean | null
+          is_off_label: boolean | null
+          is_rx: boolean | null
+          light_sensitive: boolean | null
+          name: string | null
+          notes: string | null
+          pack_size: string | null
+          pack_size_num: number | null
+          parse_query: string | null
+          patient_info: Json | null
+          potency: string | null
+          price_auto: number | null
+          price_auto_sources: Json | null
+          price_auto_updated_at: string | null
+          price_currency: string | null
+          price_override: number | null
+          price_source_note: string | null
+          price_source_preference: string | null
+          price_updated_at: string | null
+          remedy_id: string | null
+          search_vector: unknown
+          subcategory: string | null
+          tags: string[] | null
+          time_of_day_default: string[] | null
+          units_per_dose_num: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          acupuncture_protocol_id?: string | null
+          category?: Database["public"]["Enums"]["treatment_category"] | null
+          contraindications?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          default_dilution_solvent?: string | null
+          default_dilution_volume?: number | null
+          default_dose?: number | null
+          default_duration_days?: number | null
+          default_frequency?: string | null
+          default_route_label?: string | null
+          dose_range_max?: number | null
+          dose_range_min?: number | null
+          dose_unit?: string | null
+          form?: string | null
+          glucose_only?: boolean | null
+          id?: string | null
+          infusion_rate?: string | null
+          inn?: string | null
+          is_active?: boolean | null
+          is_off_label?: boolean | null
+          is_rx?: boolean | null
+          light_sensitive?: boolean | null
+          name?: string | null
+          notes?: string | null
+          pack_size?: string | null
+          pack_size_num?: number | null
+          parse_query?: string | null
+          patient_info?: Json | null
+          potency?: string | null
+          price_auto?: number | null
+          price_auto_sources?: Json | null
+          price_auto_updated_at?: string | null
+          price_currency?: string | null
+          price_override?: number | null
+          price_source_note?: string | null
+          price_source_preference?: string | null
+          price_updated_at?: string | null
+          remedy_id?: string | null
+          search_vector?: unknown
+          subcategory?: string | null
+          tags?: string[] | null
+          time_of_day_default?: string[] | null
+          units_per_dose_num?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          acupuncture_protocol_id?: string | null
+          category?: Database["public"]["Enums"]["treatment_category"] | null
+          contraindications?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          default_dilution_solvent?: string | null
+          default_dilution_volume?: number | null
+          default_dose?: number | null
+          default_duration_days?: number | null
+          default_frequency?: string | null
+          default_route_label?: string | null
+          dose_range_max?: number | null
+          dose_range_min?: number | null
+          dose_unit?: string | null
+          form?: string | null
+          glucose_only?: boolean | null
+          id?: string | null
+          infusion_rate?: string | null
+          inn?: string | null
+          is_active?: boolean | null
+          is_off_label?: boolean | null
+          is_rx?: boolean | null
+          light_sensitive?: boolean | null
+          name?: string | null
+          notes?: string | null
+          pack_size?: string | null
+          pack_size_num?: number | null
+          parse_query?: string | null
+          patient_info?: Json | null
+          potency?: string | null
+          price_auto?: number | null
+          price_auto_sources?: Json | null
+          price_auto_updated_at?: string | null
+          price_currency?: string | null
+          price_override?: number | null
+          price_source_note?: string | null
+          price_source_preference?: string | null
+          price_updated_at?: string | null
+          remedy_id?: string | null
+          search_vector?: unknown
+          subcategory?: string | null
+          tags?: string[] | null
+          time_of_day_default?: string[] | null
+          units_per_dose_num?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       treatment_plan_items: {
         Row: {
           catalog_id: string | null
@@ -3110,6 +3332,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      treatment_plan_items_backup_20260619: {
+        Row: {
+          catalog_id: string | null
+          created_at: string | null
+          day_pattern: string | null
+          dilution_solvent: string | null
+          dilution_volume: number | null
+          dose: number | null
+          dose_unit: string | null
+          dosing_schedule: string | null
+          duration_days: number | null
+          form_snapshot: string | null
+          frequency: string | null
+          id: string | null
+          infusion_rate: string | null
+          inn_snapshot: string | null
+          is_off_label: boolean | null
+          name_snapshot: string | null
+          notes: string | null
+          order_index: number | null
+          plan_id: string | null
+          potency: string | null
+          prn_estimated_doses: number | null
+          repertory_remedy_id: string | null
+          route_override: string | null
+          section_category:
+            | Database["public"]["Enums"]["treatment_category"]
+            | null
+          time_of_day: string[] | null
+        }
+        Insert: {
+          catalog_id?: string | null
+          created_at?: string | null
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          dosing_schedule?: string | null
+          duration_days?: number | null
+          form_snapshot?: string | null
+          frequency?: string | null
+          id?: string | null
+          infusion_rate?: string | null
+          inn_snapshot?: string | null
+          is_off_label?: boolean | null
+          name_snapshot?: string | null
+          notes?: string | null
+          order_index?: number | null
+          plan_id?: string | null
+          potency?: string | null
+          prn_estimated_doses?: number | null
+          repertory_remedy_id?: string | null
+          route_override?: string | null
+          section_category?:
+            | Database["public"]["Enums"]["treatment_category"]
+            | null
+          time_of_day?: string[] | null
+        }
+        Update: {
+          catalog_id?: string | null
+          created_at?: string | null
+          day_pattern?: string | null
+          dilution_solvent?: string | null
+          dilution_volume?: number | null
+          dose?: number | null
+          dose_unit?: string | null
+          dosing_schedule?: string | null
+          duration_days?: number | null
+          form_snapshot?: string | null
+          frequency?: string | null
+          id?: string | null
+          infusion_rate?: string | null
+          inn_snapshot?: string | null
+          is_off_label?: boolean | null
+          name_snapshot?: string | null
+          notes?: string | null
+          order_index?: number | null
+          plan_id?: string | null
+          potency?: string | null
+          prn_estimated_doses?: number | null
+          repertory_remedy_id?: string | null
+          route_override?: string | null
+          section_category?:
+            | Database["public"]["Enums"]["treatment_category"]
+            | null
+          time_of_day?: string[] | null
+        }
+        Relationships: []
       }
       treatment_plan_lab_control: {
         Row: {
