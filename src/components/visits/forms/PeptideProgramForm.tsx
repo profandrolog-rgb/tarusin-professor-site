@@ -162,6 +162,7 @@ export function PeptideProgramForm({ data, onChange }: Props) {
 
   return (
     <div className="space-y-5">
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
       {/* Параметры программы */}
       <Card>
         <CardHeader>
