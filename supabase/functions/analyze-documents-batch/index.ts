@@ -170,6 +170,7 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   const supabase = admin();
   const apiKey = Deno.env.get("OPENROUTER_API_KEY");
   if (!apiKey) {
+    await logEvent(supabase, batchId, { stage: "error", message: "OPENROUTER_API_KEY not configured" });
     await supabase.from("analysis_batches").update({ status: "error", error: "OPENROUTER_API_KEY not configured" }).eq("id", batchId);
     return;
   }
@@ -179,6 +180,7 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
 
   const files: string[] = Array.isArray(batch.file_paths) ? batch.file_paths : [];
   if (!files.length) {
+    await logEvent(supabase, batchId, { stage: "error", message: "Список файлов пуст" });
     await supabase.from("analysis_batches").update({ status: "error", error: "Список файлов пуст" }).eq("id", batchId);
     return;
   }
@@ -194,9 +196,6 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   for (let i = 0; i < files.length; i += subSize) subbatches.push(files.slice(i, i + subSize));
 
   // First subbatch — ensure status = processing.
-  // IMPORTANT: don't blindly wipe partial_results here, because the
-  // cron-recovery path may invoke us at subbatchIndex=0 for a batch that
-  // already has partial results. Only reset when nothing was recorded yet.
   if (subbatchIndex === 0) {
     const initPartial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
     await supabase.from("analysis_batches").update({
@@ -208,18 +207,22 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
     }).eq("id", batchId);
   }
 
+  await logEvent(supabase, batchId, {
+    stage: "subbatch_start", subbatch_index: subbatchIndex, total_subbatches: subbatches.length,
+    files_in_subbatch: subbatches[subbatchIndex]?.length ?? 0,
+  });
+
   if (subbatchIndex >= subbatches.length) {
+    await logEvent(supabase, batchId, { stage: "chain_to_final", reason: "subbatchIndex out of range" });
     // @ts-ignore EdgeRuntime in Supabase
     EdgeRuntime.waitUntil(selfInvoke({ batchId, phase: "final" }));
     return;
   }
 
-  // Idempotency: skip OpenRouter if this subbatch index was already
-  // processed in a prior invocation (cron retry / duplicated chain).
   const existingPartial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
   const alreadyDone = existingPartial.some((p: any) => p && p.subbatch_index === subbatchIndex && (p.content || p.error));
   if (alreadyDone) {
-    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} already in partial_results — skipping work, chaining`);
+    await logEvent(supabase, batchId, { stage: "subbatch_skip_idempotent", subbatch_index: subbatchIndex });
   } else {
     const partial: any[] = existingPartial.filter((p: any) => p?.subbatch_index !== subbatchIndex);
     const group = subbatches[subbatchIndex];
@@ -229,15 +232,17 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
       return { path, name, ext };
     });
     try {
-      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1}/${subbatches.length}: downloading ${refs.length} files + calling OpenRouter`);
+      await logEvent(supabase, batchId, { stage: "openrouter_call", subbatch_index: subbatchIndex, files: refs.length, model });
       const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, supabase, model, task, refs, subbatchIndex, subbatches.length);
-      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} done, ${content.length} chars, ${per_file_errors.length} per-file errors`);
+      await logEvent(supabase, batchId, {
+        stage: "subbatch_done", subbatch_index: subbatchIndex,
+        content_chars: content.length, per_file_errors: per_file_errors.length,
+      });
       partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
     } catch (e) {
-      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} failed:`, (e as Error).message);
+      await logEvent(supabase, batchId, { stage: "subbatch_error", subbatch_index: subbatchIndex, message: (e as Error).message });
       partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
     }
-    // Sort by subbatch_index for deterministic final synthesis order.
     partial.sort((a, b) => (a.subbatch_index ?? 0) - (b.subbatch_index ?? 0));
     const processedIndices = new Set(partial.filter(p => p?.content || p?.error).map(p => p.subbatch_index));
     const processedFiles = Array.from(processedIndices).reduce((acc, idx) => acc + (subbatches[idx]?.length || 0), 0);
@@ -251,9 +256,7 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   const nextBody = next < subbatches.length
     ? { batchId, subbatchIndex: next, phase: "subbatch" as const }
     : { batchId, phase: "final" as const };
-  // Fire-and-forget: kick off the next step in a fresh worker. waitUntil
-  // only needs to keep us alive long enough for the outbound HTTP to be
-  // delivered (~1s), not for the next subbatch's compute.
+  await logEvent(supabase, batchId, { stage: "chain_next", next });
   // @ts-ignore EdgeRuntime in Supabase
   EdgeRuntime.waitUntil(selfInvoke(nextBody));
 }
@@ -266,11 +269,13 @@ async function processFinal(batchId: string) {
   const partial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
   const model = batch.model || DEFAULT_MODEL;
   const task = (batch.task || "").trim();
+  await logEvent(supabase, batchId, { stage: "final_start", partial_count: partial.length });
   try {
     const combined = partial.map((p, i) => {
       if (p.error) return `## Подпакет ${i + 1} (${p.files?.length || 0} файлов): ОШИБКА\n${p.error}`;
       return `## Подпакет ${i + 1} (${p.files?.length || 0} файлов)\n${p.content}`;
     }).join("\n\n---\n\n");
+
 
     const finalResp = await fetch(OPENROUTER_URL, {
       method: "POST",
