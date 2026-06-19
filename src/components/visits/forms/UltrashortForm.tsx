@@ -40,11 +40,11 @@ export function UltrashortForm({ data, onChange }: Props) {
           <Textarea rows={3} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
         </div>
         <div className="space-y-1">
-          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => onChange({ ...(data as any), dynamics: v } as any)}>Динамика</SmartFieldLabel>
+          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => onChange({ dynamics: v } as any)}>Динамика</SmartFieldLabel>
           <Textarea
             rows={3}
             value={(data as any).dynamics || ""}
-            onChange={(e) => onChange({ ...(data as any), dynamics: e.target.value } as any)}
+            onChange={(e) => onChange({ dynamics: e.target.value } as any)}
             placeholder="Если первичный визит — оставьте пустым"
           />
         </div>
