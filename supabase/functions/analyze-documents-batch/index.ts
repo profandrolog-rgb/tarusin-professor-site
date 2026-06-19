@@ -73,6 +73,7 @@ function selfInvoke(body: Record<string, unknown>) {
 
 async function fetchSubbatchAnalysis(
   apiKey: string,
+  supabase: ReturnType<typeof admin>,
   model: string,
   task: string,
   refs: FileRef[],
@@ -91,13 +92,22 @@ async function fetchSubbatchAnalysis(
         `Если конкретный файл не удалось прочитать или он пустой/повреждён — явно напиши "НЕ УДАЛОСЬ ПРОЧИТАТЬ" и причину, не выдумывай данные.`,
     },
   ];
+  const per_file_errors: { file: string; error: string }[] = [];
   for (const r of refs) {
     const info = mimeFor(r.ext);
-    if (!info) continue;
+    if (!info) { per_file_errors.push({ file: r.name, error: "неподдерживаемый формат" }); continue; }
+    // Download bytes from storage and inline as base64 data URL.
+    const { data: blob, error: dErr } = await supabase.storage.from(BUCKET).download(r.path);
+    if (dErr || !blob) {
+      per_file_errors.push({ file: r.name, error: `не удалось скачать: ${dErr?.message || "unknown"}` });
+      continue;
+    }
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const dataUrl = `data:${info.mime};base64,${toBase64(bytes)}`;
     if (info.kind === "image") {
-      contentBlocks.push({ type: "image_url", image_url: { url: r.signedUrl } });
+      contentBlocks.push({ type: "image_url", image_url: { url: dataUrl } });
     } else {
-      contentBlocks.push({ type: "file", file: { filename: r.name, file_data: r.signedUrl } });
+      contentBlocks.push({ type: "file", file: { filename: r.name, file_data: dataUrl } });
     }
   }
 
