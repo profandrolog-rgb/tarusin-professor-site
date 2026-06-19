@@ -28,6 +28,7 @@ export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveO
 export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; onChange: (p: Partial<UziUrinaryOnlyData>) => void }) {
   return (
     <div className="space-y-4">
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
       <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
