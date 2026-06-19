@@ -141,7 +141,7 @@ async function fetchSubbatchAnalysis(
   }
   const json = await resp.json();
   const content: string = json.choices?.[0]?.message?.content || "";
-  const per_file_errors: { file: string; error: string }[] = [];
+  // (per_file_errors was already declared above for download failures.)
   for (const r of refs) {
     const re = new RegExp(`###\\s*\\[\\d+\\][^\\n]*${r.name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}([\\s\\S]*?)(?=\\n###|$)`, "i");
     const m = content.match(re);
