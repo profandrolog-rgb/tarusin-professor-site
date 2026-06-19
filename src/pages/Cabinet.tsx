@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -23,6 +23,7 @@ import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdow
 import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, type ResolvedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
+import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
@@ -88,6 +89,8 @@ type FulltextMeta = {
   pmc_url?: string;
 };
 
+type BatchPartial = { subbatch_index: number; files: string[]; content?: string; error?: string; per_file_errors?: { file: string; error: string }[] };
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -98,6 +101,7 @@ type Msg = {
   sources?: SourceCitation[];
   pubmed?: PubmedPayload;
   fulltext?: FulltextMeta;
+  batch?: { task: string; partial: BatchPartial[] };
 };
 
 
@@ -261,6 +265,7 @@ export default function Cabinet() {
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [council, setCouncil] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
@@ -447,6 +452,7 @@ export default function Cabinet() {
           const sourcesAtt = atts.find((a) => a?.name === "__sources__");
           const pubmedAtt = atts.find((a) => a?.name === "__pubmed__");
           const fulltextAtt = atts.find((a) => a?.name === "__fulltext__");
+          const batchAtt = atts.find((a) => a?.name === "__batch__");
           let councilAnswers: CouncilAnswer[] | undefined;
           if (councilAtt?.dataUrl) {
             try {
@@ -475,16 +481,24 @@ export default function Cabinet() {
               fulltext = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          let batch: Msg["batch"];
+          if (batchAtt?.dataUrl) {
+            try {
+              const b64 = batchAtt.dataUrl.split(",")[1] || "";
+              batch = JSON.parse(decodeURIComponent(escape(atob(b64))));
+            } catch { /* ignore */ }
+          }
           return {
             id: m.id,
             role: m.role,
             content: m.content,
-            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__", "__fulltext__"].includes(a?.name)),
+            attachments: atts.filter((a) => !["__council__", "__sources__", "__pubmed__", "__fulltext__", "__batch__"].includes(a?.name)),
             model: m.model,
             council: councilAnswers,
             sources,
             pubmed,
             fulltext,
+            batch,
           };
         }),
       );
@@ -560,6 +574,32 @@ export default function Cabinet() {
     setPendingFolderId(null);
     return data.id;
   };
+
+  const handleBatchResult = useCallback(async ({ final, partial, task }: { final: string; partial: BatchPartial[]; task: string }) => {
+    if (!user) return;
+    const convId = await ensureConversation(`📚 ${task.slice(0, 50)}`, "anthropic/claude-sonnet-4.5");
+    if (!convId) return;
+    const userContent = `📚 Пакетный анализ документов: ${task}`;
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "user", content: userContent, model: "batch-input",
+    });
+    const batchJson = JSON.stringify({ task, partial });
+    const b64 = btoa(unescape(encodeURIComponent(batchJson)));
+    await supabase.from("ai_messages").insert({
+      conversation_id: convId, user_id: user.id, role: "assistant",
+      content: final, model: "anthropic/claude-sonnet-4.5 (batch)",
+      attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
+    });
+    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    // Append to local view
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: userContent },
+      { role: "assistant", content: final, model: "anthropic/claude-sonnet-4.5 (batch)", batch: { task, partial } },
+    ]);
+    loadConversations();
+    toast.success("Анализ готов");
+  }, [user, activeId, pendingFolderId]);
 
   const persistPubmedAssistant = async (
     convId: string, content: string, payload: PubmedPayload,
@@ -1436,6 +1476,36 @@ export default function Cabinet() {
                           </AccordionItem>
                         </Accordion>
                       )}
+                      {m.batch && m.batch.partial.length > 0 && (
+                        <Accordion type="single" collapsible className="mt-3 border-t border-border/50 pt-2">
+                          <AccordionItem value="batch" className="border-0">
+                            <AccordionTrigger className="text-xs py-1 hover:no-underline">
+                              <span className="inline-flex items-center gap-1"><Layers className="w-3 h-3" /> Разбор по подпакетам ({m.batch.partial.length})</span>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-3">
+                                {m.batch.partial.map((p, k) => (
+                                  <div key={k} className="rounded-md bg-background/60 p-2">
+                                    <div className="text-[11px] font-mono text-muted-foreground mb-1">
+                                      Подпакет {p.subbatch_index + 1} · {p.files.length} файлов: {p.files.join(", ")}
+                                    </div>
+                                    {p.error ? (
+                                      <div className="text-xs text-destructive">⚠️ {p.error}</div>
+                                    ) : (
+                                      <ChatMarkdown className="prose prose-xs dark:prose-invert max-w-none text-xs">{p.content || ""}</ChatMarkdown>
+                                    )}
+                                    {p.per_file_errors && p.per_file_errors.length > 0 && (
+                                      <div className="mt-1 text-[11px] text-amber-600">
+                                        Не прочитано: {p.per_file_errors.map(f => f.file).join(", ")}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      )}
                       {m.sources && m.sources.length > 0 && (
                         <div className="mt-3 border-t border-border/50 pt-2">
                           <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1">
@@ -1637,6 +1707,17 @@ export default function Cabinet() {
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setBatchDialogOpen(true)}
+              disabled={streaming || !user}
+              aria-label="Пакетный анализ документов"
+              title="Пакетный анализ документов (много PDF/изображений сразу, через Claude)"
+            >
+              <Layers className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
               variant={recording ? "destructive" : "outline"}
               size="icon"
               onClick={recording ? stopRecording : startRecording}
@@ -1705,6 +1786,15 @@ export default function Cabinet() {
           </div>
         </div>
       </main>
+      {user && (
+        <BatchAnalysisDialog
+          open={batchDialogOpen}
+          onOpenChange={setBatchDialogOpen}
+          userId={user.id}
+          conversationId={activeId}
+          onResult={handleBatchResult}
+        />
+      )}
     </div>
   );
 }

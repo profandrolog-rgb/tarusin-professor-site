@@ -336,6 +336,68 @@ export type Database = {
           },
         ]
       }
+      analysis_batches: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          error: string | null
+          file_paths: string[]
+          final_result: string | null
+          id: string
+          model: string
+          partial_results: Json
+          processed_files: number
+          status: string
+          subbatch_size: number
+          task: string
+          total_files: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          error?: string | null
+          file_paths?: string[]
+          final_result?: string | null
+          id?: string
+          model?: string
+          partial_results?: Json
+          processed_files?: number
+          status?: string
+          subbatch_size?: number
+          task: string
+          total_files?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          error?: string | null
+          file_paths?: string[]
+          final_result?: string | null
+          id?: string
+          model?: string
+          partial_results?: Json
+          processed_files?: number
+          status?: string
+          subbatch_size?: number
+          task?: string
+          total_files?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_batches_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_cache: {
         Row: {
           cache_key: string
