@@ -862,13 +862,16 @@ export default function Cabinet() {
     setInput("");
     setAttachments([]);
 
-    // Persist user message
+    // Persist user message — strip transient signed URLs for path-based attachments
+    const persistedAtts = (userMsg.attachments || []).map((a) =>
+      a.path ? { name: a.name, type: a.type, path: a.path } : a,
+    );
     await supabase.from("ai_messages").insert({
       conversation_id: convId,
       user_id: user.id,
       role: "user",
       content: text,
-      attachments: userMsg.attachments as any,
+      attachments: persistedAtts as any,
       model,
     });
 
