@@ -242,6 +242,40 @@ export function PrimaryShortForm({ data, onChange, birthDate }: Props) {
               />
             </div>
           </div>
+
+          {/* Дополнительные поля локального статуса (попадают в печать) */}
+          <div className="grid md:grid-cols-2 gap-3 pt-2">
+            <div className="space-y-1">
+              <SmartFieldLabel fieldKey="local_status_scrotum" value={data.local_status?.scrotum || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), scrotum: v } })}>Мошонка</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.scrotum || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), scrotum: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <SmartFieldLabel fieldKey="local_status_epididymis" value={data.local_status?.epididymis || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), epididymis: v } })}>Придатки</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.epididymis || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), epididymis: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <SmartFieldLabel fieldKey="local_status_right_testis" value={data.local_status?.right_testis || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), right_testis: v } })}>Правое яичко</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.right_testis || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right_testis: e.target.value } })} />
+              <input className="mt-1 flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" placeholder="Объём, мл" value={data.local_status?.right_testis_volume || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), right_testis_volume: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <SmartFieldLabel fieldKey="local_status_left_testis" value={data.local_status?.left_testis || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), left_testis: v } })}>Левое яичко</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.left_testis || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left_testis: e.target.value } })} />
+              <input className="mt-1 flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" placeholder="Объём, мл" value={data.local_status?.left_testis_volume || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), left_testis_volume: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <SmartFieldLabel fieldKey="local_status_spermatic_cord" value={data.local_status?.spermatic_cord || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), spermatic_cord: v } })}>Семенные канатики</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.spermatic_cord || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), spermatic_cord: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <SmartFieldLabel fieldKey="local_status_inguinal_rings" value={data.local_status?.inguinal_rings || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), inguinal_rings: v } })}>Паховые кольца</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.inguinal_rings || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), inguinal_rings: e.target.value } })} />
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <SmartFieldLabel value={data.local_status?.notes || ""} onSet={(v) => onChange({ local_status: { ...(data.local_status || {}), notes: v } })}>Дополнительно (локальный статус)</SmartFieldLabel>
+              <Textarea rows={2} value={data.local_status?.notes || ""} onChange={(e) => onChange({ local_status: { ...(data.local_status || {}), notes: e.target.value } })} />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
