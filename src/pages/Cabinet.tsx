@@ -20,7 +20,7 @@ import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
 import { downloadRis, downloadSourcesDocx, type PubmedSource } from "@/lib/pubmedExport";
 import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnalysis";
 import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
-import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, type ResolvedModel } from "@/config/aiModels";
+import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, modelSupportsAttachments, type ResolvedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
