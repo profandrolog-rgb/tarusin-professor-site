@@ -1686,6 +1686,10 @@ export default function Cabinet() {
             >
               <Layers className="w-4 h-4" />
             </Button>
+            <Button
+              type="button"
+              variant={recording ? "destructive" : "outline"}
+              size="icon"
               onClick={recording ? stopRecording : startRecording}
               disabled={streaming || transcribing}
               aria-label={recording ? "Остановить запись" : "Голосовой ввод"}
