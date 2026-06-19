@@ -1772,8 +1772,13 @@ export default function Cabinet() {
               variant="outline"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
-              disabled={streaming}
+              disabled={streaming || !attachmentsSupported}
               aria-label="Прикрепить файл"
+              title={
+                attachmentsSupported
+                  ? "Прикрепить PDF/изображение (до 2 файлов, 25 МБ)"
+                  : `Модель ${currentLive?.name || model} не поддерживает вложения. Выберите модель с vision/PDF (Claude, Gemini, GPT-5).`
+              }
             >
               <Paperclip className="w-4 h-4" />
             </Button>
