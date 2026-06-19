@@ -204,11 +204,9 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
 
   const next = subbatchIndex + 1;
   if (next < subbatches.length) {
-    // @ts-ignore
-    EdgeRuntime.waitUntil(selfInvoke({ batchId, subbatchIndex: next, phase: "subbatch" }));
+    await selfInvoke({ batchId, subbatchIndex: next, phase: "subbatch" });
   } else {
-    // @ts-ignore
-    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase: "final" }));
+    await selfInvoke({ batchId, phase: "final" });
   }
 }
 
