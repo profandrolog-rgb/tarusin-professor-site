@@ -469,6 +469,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   if (t === "primary_short") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     pushSomatic(rows, d);
     pushSexual(rows, d);
     pushLocalStatus(rows, d);
@@ -480,7 +481,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "repeat_with_labs") {
-    rows.push(<Field key="c" label="Жалобы / динамика" value={d.complaints} />);
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(
       <Section key="labs" title="Лабораторные данные">
         <Field label="ОАК" value={d.cbc} />
@@ -495,10 +498,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "uzi_reproductive" || t === "dynamic_with_uzi" || t === "repeat_with_uzi") {
-    if (t !== "uzi_reproductive") {
-      rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
-      rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
-    }
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi}
@@ -514,6 +516,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
   if (t === "uzi_urinary") {
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
     if (d.uzi && isPlainObject(d.uzi)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi} title="УЗИ органов мочевыделительной системы" />);
