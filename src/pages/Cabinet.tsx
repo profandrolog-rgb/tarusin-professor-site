@@ -291,7 +291,6 @@ export default function Cabinet() {
   const currentResolved = resolvedModels.find((r) => r.id === model);
   const currentLive = liveModelsById.get(model);
   const modelKnown = !!currentLive || !!currentResolved?.available;
-  const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -300,6 +299,8 @@ export default function Cabinet() {
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
+
+  const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
   const [pubmedLoadingMore, setPubmedLoadingMore] = useState<number | null>(null);
   const [pubmedAnalyzing, setPubmedAnalyzing] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
