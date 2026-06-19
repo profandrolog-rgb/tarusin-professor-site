@@ -2453,7 +2453,7 @@ export type Database = {
           grade: number
           id: string
           remedy_id: string
-          repertory_id: string | null
+          repertory_id: string
           rubric_id: string
         }
         Insert: {
@@ -2461,7 +2461,7 @@ export type Database = {
           grade: number
           id?: string
           remedy_id: string
-          repertory_id?: string | null
+          repertory_id: string
           rubric_id: string
         }
         Update: {
@@ -2469,7 +2469,7 @@ export type Database = {
           grade?: number
           id?: string
           remedy_id?: string
-          repertory_id?: string | null
+          repertory_id?: string
           rubric_id?: string
         }
         Relationships: [
