@@ -2355,6 +2355,36 @@ export type Database = {
         }
         Relationships: []
       }
+      repertories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          license: string | null
+          name: string
+          source: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          license?: string | null
+          name: string
+          source?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          license?: string | null
+          name?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
       repertory_chapters: {
         Row: {
           created_at: string
@@ -2386,6 +2416,7 @@ export type Database = {
           id: string
           name_latin: string
           name_ru: string | null
+          repertory_id: string | null
           slug: string
         }
         Insert: {
@@ -2394,6 +2425,7 @@ export type Database = {
           id?: string
           name_latin: string
           name_ru?: string | null
+          repertory_id?: string | null
           slug: string
         }
         Update: {
@@ -2402,9 +2434,18 @@ export type Database = {
           id?: string
           name_latin?: string
           name_ru?: string | null
+          repertory_id?: string | null
           slug?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "repertory_remedies_repertory_id_fkey"
+            columns: ["repertory_id"]
+            isOneToOne: false
+            referencedRelation: "repertories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       repertory_rubric_remedies: {
         Row: {
@@ -2412,6 +2453,7 @@ export type Database = {
           grade: number
           id: string
           remedy_id: string
+          repertory_id: string | null
           rubric_id: string
         }
         Insert: {
@@ -2419,6 +2461,7 @@ export type Database = {
           grade: number
           id?: string
           remedy_id: string
+          repertory_id?: string | null
           rubric_id: string
         }
         Update: {
@@ -2426,6 +2469,7 @@ export type Database = {
           grade?: number
           id?: string
           remedy_id?: string
+          repertory_id?: string | null
           rubric_id?: string
         }
         Relationships: [
@@ -2434,6 +2478,13 @@ export type Database = {
             columns: ["remedy_id"]
             isOneToOne: false
             referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repertory_rubric_remedies_repertory_id_fkey"
+            columns: ["repertory_id"]
+            isOneToOne: false
+            referencedRelation: "repertories"
             referencedColumns: ["id"]
           },
           {
