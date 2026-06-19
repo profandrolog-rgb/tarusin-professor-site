@@ -340,11 +340,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // External (client) call: kick off the first subbatch in a fresh
-    // worker via self-invoke, return immediately so the client can
+    // External (client / cron) call: kick off processing in a fresh
+    // worker via self-invoke and return immediately so the client can
     // subscribe to Realtime updates.
-    selfInvoke({ batchId, phase: "subbatch", subbatchIndex: 0 });
-    return new Response(JSON.stringify({ ok: true, batchId, started: true }), {
+    // @ts-ignore EdgeRuntime in Supabase
+    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase, subbatchIndex }));
+    return new Response(JSON.stringify({ ok: true, batchId, started: true, phase, subbatchIndex }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
