@@ -13,6 +13,8 @@ const MAX_FILES = 50;
 const MAX_TOTAL_MB = 300;
 const MAX_FILE_MB = 30;
 
+type ChainLogEntry = { ts?: string; stage?: string; subbatch_index?: number; [k: string]: unknown };
+
 type Pending = { file: File; localId: string; progress: number; uploadedPath?: string; error?: string };
 
 type BatchRow = {
@@ -23,7 +25,10 @@ type BatchRow = {
   partial_results: { subbatch_index: number; files: string[]; content?: string; error?: string; per_file_errors?: { file: string; error: string }[] }[];
   final_result: string | null;
   error: string | null;
+  chain_log?: ChainLogEntry[] | null;
+  updated_at?: string;
 };
+
 
 interface Props {
   open: boolean;
