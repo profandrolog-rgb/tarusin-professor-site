@@ -180,46 +180,68 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   for (let i = 0; i < files.length; i += subSize) subbatches.push(files.slice(i, i + subSize));
 
   // First subbatch — ensure status = processing.
+  // IMPORTANT: don't blindly wipe partial_results here, because the
+  // cron-recovery path may invoke us at subbatchIndex=0 for a batch that
+  // already has partial results. Only reset when nothing was recorded yet.
   if (subbatchIndex === 0) {
+    const initPartial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
     await supabase.from("analysis_batches").update({
-      status: "processing", processed_files: 0, partial_results: [], error: null, total_files: files.length,
+      status: "processing",
+      processed_files: initPartial.length ? batch.processed_files : 0,
+      partial_results: initPartial.length ? initPartial : [],
+      error: null,
+      total_files: files.length,
     }).eq("id", batchId);
   }
 
   if (subbatchIndex >= subbatches.length) {
-    await selfInvoke({ batchId, phase: "final" });
+    // @ts-ignore EdgeRuntime in Supabase
+    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase: "final" }));
     return;
   }
 
-  const partial: any[] = Array.isArray(batch.partial_results) ? [...batch.partial_results] : [];
-  const group = subbatches[subbatchIndex];
-
-  const refs: FileRef[] = group.map((path) => {
-    const name = path.split("/").pop() || path;
-    const ext = (name.split(".").pop() || "").toLowerCase();
-    return { path, name, ext };
-  });
-  try {
-    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1}/${subbatches.length}: downloading ${refs.length} files + calling OpenRouter`);
-    const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, supabase, model, task, refs, subbatchIndex, subbatches.length);
-    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} done, ${content.length} chars, ${per_file_errors.length} per-file errors`);
-    partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
-  } catch (e) {
-    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} failed:`, (e as Error).message);
-    partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
+  // Idempotency: skip OpenRouter if this subbatch index was already
+  // processed in a prior invocation (cron retry / duplicated chain).
+  const existingPartial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
+  const alreadyDone = existingPartial.some((p: any) => p && p.subbatch_index === subbatchIndex && (p.content || p.error));
+  if (alreadyDone) {
+    console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} already in partial_results — skipping work, chaining`);
+  } else {
+    const partial: any[] = existingPartial.filter((p: any) => p?.subbatch_index !== subbatchIndex);
+    const group = subbatches[subbatchIndex];
+    const refs: FileRef[] = group.map((path) => {
+      const name = path.split("/").pop() || path;
+      const ext = (name.split(".").pop() || "").toLowerCase();
+      return { path, name, ext };
+    });
+    try {
+      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1}/${subbatches.length}: downloading ${refs.length} files + calling OpenRouter`);
+      const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, supabase, model, task, refs, subbatchIndex, subbatches.length);
+      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} done, ${content.length} chars, ${per_file_errors.length} per-file errors`);
+      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
+    } catch (e) {
+      console.log(`[batch ${batchId}] subbatch ${subbatchIndex + 1} failed:`, (e as Error).message);
+      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
+    }
+    // Sort by subbatch_index for deterministic final synthesis order.
+    partial.sort((a, b) => (a.subbatch_index ?? 0) - (b.subbatch_index ?? 0));
+    const processedIndices = new Set(partial.filter(p => p?.content || p?.error).map(p => p.subbatch_index));
+    const processedFiles = Array.from(processedIndices).reduce((acc, idx) => acc + (subbatches[idx]?.length || 0), 0);
+    await supabase.from("analysis_batches").update({
+      partial_results: partial,
+      processed_files: Math.min(files.length, processedFiles),
+    }).eq("id", batchId);
   }
-
-  await supabase.from("analysis_batches").update({
-    partial_results: partial,
-    processed_files: Math.min(files.length, (subbatchIndex + 1) * subSize),
-  }).eq("id", batchId);
 
   const next = subbatchIndex + 1;
-  if (next < subbatches.length) {
-    await selfInvoke({ batchId, subbatchIndex: next, phase: "subbatch" });
-  } else {
-    await selfInvoke({ batchId, phase: "final" });
-  }
+  const nextBody = next < subbatches.length
+    ? { batchId, subbatchIndex: next, phase: "subbatch" as const }
+    : { batchId, phase: "final" as const };
+  // Fire-and-forget: kick off the next step in a fresh worker. waitUntil
+  // only needs to keep us alive long enough for the outbound HTTP to be
+  // delivered (~1s), not for the next subbatch's compute.
+  // @ts-ignore EdgeRuntime in Supabase
+  EdgeRuntime.waitUntil(selfInvoke(nextBody));
 }
 
 async function processFinal(batchId: string) {
@@ -286,7 +308,14 @@ Deno.serve(async (req) => {
     const batchId: string | undefined = body.batchId;
     const phase: "subbatch" | "final" = body.phase || "subbatch";
     const subbatchIndex: number = typeof body.subbatchIndex === "number" ? body.subbatchIndex : 0;
-    const isInternal = req.headers.get("x-internal-chain") === "1";
+    // Internal chain / cron recovery calls must present the service-role
+    // key as Authorization — that proves they originated from us, not a
+    // random client poking the batchId.
+    const authHeader = req.headers.get("Authorization") || "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isInternal = req.headers.get("x-internal-chain") === "1"
+      && serviceKey.length > 0
+      && authHeader === `Bearer ${serviceKey}`;
 
     if (typeof batchId !== "string") {
       return new Response(JSON.stringify({ error: "batchId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -294,7 +323,6 @@ Deno.serve(async (req) => {
 
     // External callers (client) must be the row owner.
     if (!isInternal) {
-      const authHeader = req.headers.get("Authorization") || "";
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -318,11 +346,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // External (client) call: kick off the first subbatch in a fresh
-    // worker via self-invoke, return immediately so the client can
+    // External (client / cron) call: kick off processing in a fresh
+    // worker via self-invoke and return immediately so the client can
     // subscribe to Realtime updates.
-    selfInvoke({ batchId, phase: "subbatch", subbatchIndex: 0 });
-    return new Response(JSON.stringify({ ok: true, batchId, started: true }), {
+    // @ts-ignore EdgeRuntime in Supabase
+    EdgeRuntime.waitUntil(selfInvoke({ batchId, phase, subbatchIndex }));
+    return new Response(JSON.stringify({ ok: true, batchId, started: true, phase, subbatchIndex }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
