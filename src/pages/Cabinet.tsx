@@ -89,6 +89,8 @@ type FulltextMeta = {
   pmc_url?: string;
 };
 
+type BatchPartial = { subbatch_index: number; files: string[]; content?: string; error?: string; per_file_errors?: { file: string; error: string }[] };
+
 type Msg = {
   id?: string;
   role: "user" | "assistant";
@@ -99,6 +101,7 @@ type Msg = {
   sources?: SourceCitation[];
   pubmed?: PubmedPayload;
   fulltext?: FulltextMeta;
+  batch?: { task: string; partial: BatchPartial[] };
 };
 
 
