@@ -53,22 +53,22 @@ BEGIN
   JOIN repertory_remedies n
     ON lower(regexp_replace(o.slug, '\\.$', '')) = lower(regexp_replace(n.slug, '\\.$', ''))
    AND o.id <> n.id
-  WHERE o.repertory_id = 'kent-andrology'
-    AND n.repertory_id = 'oorep-publicum'
+  WHERE o.repertory_id = (SELECT id FROM repertories WHERE code = 'kent-andrology')
+    AND n.repertory_id = (SELECT id FROM repertories WHERE code = 'oorep-publicum')
   ON CONFLICT DO NOTHING;
 
   -- Manual 3: agn. <- agnus, bar-c <- baryta-c, acon <- aco
   INSERT INTO _merge_map (old_id, new_id)
   SELECT
-    (SELECT id FROM repertory_remedies WHERE slug = m.old_slug AND repertory_id = 'kent-andrology'),
-    (SELECT id FROM repertory_remedies WHERE slug = m.new_slug AND repertory_id = 'oorep-publicum')
+    (SELECT id FROM repertory_remedies WHERE slug = m.old_slug AND repertory_id = (SELECT id FROM repertories WHERE code = 'kent-andrology')),
+    (SELECT id FROM repertory_remedies WHERE slug = m.new_slug AND repertory_id = (SELECT id FROM repertories WHERE code = 'oorep-publicum'))
   FROM (VALUES
     ('agnus','agn.'),
     ('baryta-c','bar-c'),
     ('aco','acon')
   ) m(old_slug, new_slug)
-  WHERE (SELECT id FROM repertory_remedies WHERE slug = m.old_slug AND repertory_id = 'kent-andrology') IS NOT NULL
-    AND (SELECT id FROM repertory_remedies WHERE slug = m.new_slug AND repertory_id = 'oorep-publicum') IS NOT NULL
+  WHERE (SELECT id FROM repertory_remedies WHERE slug = m.old_slug AND repertory_id = (SELECT id FROM repertories WHERE code = 'kent-andrology')) IS NOT NULL
+    AND (SELECT id FROM repertory_remedies WHERE slug = m.new_slug AND repertory_id = (SELECT id FROM repertories WHERE code = 'oorep-publicum')) IS NOT NULL
   ON CONFLICT DO NOTHING;
 
   SELECT count(*) INTO v_pairs FROM _merge_map;
