@@ -50,6 +50,7 @@ import TreatmentTemplates from "./pages/TreatmentTemplates";
 import TreatmentTemplateEditor from "./pages/TreatmentTemplateEditor";
 import AdminLabTestsCatalog from "./pages/AdminLabTestsCatalog";
 import AdminRepertory from "./pages/AdminRepertory";
+import AdminTranslationQueue from "./pages/AdminTranslationQueue";
 import AdminAcupoints from "./pages/AdminAcupoints";
 import AdminAcupointsAtlas from "./pages/AdminAcupointsAtlas";
 import AdminAcupunctureProtocols from "./pages/AdminAcupunctureProtocols";
