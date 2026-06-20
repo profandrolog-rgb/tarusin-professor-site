@@ -25,11 +25,7 @@ function admin() {
 }
 
 async function pickNextChapter(sb: ReturnType<typeof admin>) {
-  // Smallest chapter with untranslated rubrics first (faster validation,
-  // forward progress visible). Excludes chapters where 0 untranslated remain.
-  const { data, error } = await sb.rpc("exec_sql_select" as any, {}).catch(() => ({ data: null, error: null } as any));
-  if (data) return data; // not used
-  // Fall back to plain queries.
+  // Smallest chapter with untranslated rubrics first.
   const { data: chapters } = await sb
     .from("repertory_chapters")
     .select("id, name_en");
