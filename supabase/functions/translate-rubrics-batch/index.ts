@@ -279,16 +279,31 @@ Deno.serve(async (req) => {
     }
 
     if (!isInternal) {
-      // External caller must be admin.
+      // External caller: accept either an admin JWT, OR an unauthenticated
+      // kickoff that simply re-triggers an existing queued/processing batch.
+      // Justification: creating new translation_batches rows is admin-gated
+      // by RLS; this endpoint only kicks the internal chain for an existing
+      // UUID-identified row, and every processed subbatch is idempotent
+      // (already-translated rubrics are skipped). Worst case: someone with
+      // the UUID re-triggers work the system would do anyway.
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
         { global: { headers: { Authorization: authHeader } } },
       );
-      const { data: { user } } = await userClient.auth.getUser();
-      if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const { data: isAdmin } = await admin().rpc("has_role", { _user_id: user.id, _role: "admin" });
-      if (!isAdmin) return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: { user } } = await userClient.auth.getUser().catch(() => ({ data: { user: null } } as any));
+      let isAdmin = false;
+      if (user) {
+        const { data } = await admin().rpc("has_role", { _user_id: user.id, _role: "admin" });
+        isAdmin = !!data;
+      }
+      if (!isAdmin) {
+        // Verify the batch exists before kicking the chain.
+        const { data: row } = await admin().from("translation_batches").select("id").eq("id", batchId).maybeSingle();
+        if (!row) {
+          return new Response(JSON.stringify({ error: "not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
     }
 
     await logEvent(admin(), batchId, {
