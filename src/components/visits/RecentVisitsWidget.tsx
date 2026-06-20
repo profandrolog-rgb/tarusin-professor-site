@@ -25,9 +25,10 @@ export function RecentVisitsWidget() {
       const [{ data }, { count: total }] = await Promise.all([
         supabase
           .from("patient_visits")
-          .select("id, visit_date, protocol_type, diagnosis, patient:patients(full_name)")
-          .order("visit_date", { ascending: false })
+          .select("id, visit_date, created_at, protocol_type, diagnosis, patient:patients(full_name)")
+          .order("created_at", { ascending: false })
           .limit(5),
+
         supabase.from("patient_visits").select("*", { count: "exact", head: true }),
       ]);
       setItems((data || []) as any);
