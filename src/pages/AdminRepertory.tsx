@@ -143,11 +143,17 @@ export default function AdminRepertory() {
                 {chapters.length} глав · {rubrics.length} рубрик · {remedies.length} препаратов
               </p>
             </div>
-            {selected.size > 0 && (
-              <Button variant="outline" onClick={() => setSelected(new Set())} className="gap-2">
-                <X className="w-4 h-4"/>Сбросить выбор ({selected.size})
+            <div className="flex items-center gap-2">
+              <Button variant="outline" asChild className="gap-2">
+                <Link to="/admin/translation-queue"><Loader2 className="w-4 h-4"/>Очередь переводов</Link>
               </Button>
-            )}
+              {selected.size > 0 && (
+                <Button variant="outline" onClick={() => setSelected(new Set())} className="gap-2">
+                  <X className="w-4 h-4"/>Сбросить выбор ({selected.size})
+                </Button>
+              )}
+            </div>
+
           </div>
 
           {busy ? (
