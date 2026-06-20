@@ -110,11 +110,15 @@ BEGIN
   GET DIAGNOSTICS v_links_rewired = ROW_COUNT;
   RAISE NOTICE 'links rewired: %', v_links_rewired;
 
-  -- Step 3: rewire other FK references (idempotent)
-  UPDATE treatment_catalog SET repertory_remedy_id = m.old_id
-  FROM _merge_map m WHERE treatment_catalog.repertory_remedy_id = m.new_id;
+  -- Step 3: rewire FK references in dependent tables (idempotent — should be 0 rows)
+  UPDATE treatment_catalog SET remedy_id = m.old_id
+  FROM _merge_map m WHERE treatment_catalog.remedy_id = m.new_id;
 
-  -- (treatment_plan_items / protocol_template_items don't reference repertory_remedies directly per prior analysis)
+  UPDATE treatment_plan_items SET repertory_remedy_id = m.old_id
+  FROM _merge_map m WHERE treatment_plan_items.repertory_remedy_id = m.new_id;
+
+  UPDATE protocol_template_items SET repertory_remedy_id = m.old_id
+  FROM _merge_map m WHERE protocol_template_items.repertory_remedy_id = m.new_id;
 
   -- Step 4: delete duplicate remedy rows
   DELETE FROM repertory_remedies r USING _merge_map m WHERE r.id = m.new_id;
