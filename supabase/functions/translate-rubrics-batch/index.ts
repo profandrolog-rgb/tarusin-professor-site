@@ -106,10 +106,10 @@ async function callAnthropic(
   return { text, usedModel };
 }
 
-function buildPrompt(rubrics: RubricInput[], glossary: string): { system: string; user: string } {
+function buildPrompt(rubrics: RubricInput[], glossary: string, chapterName: string): { system: string; user: string } {
   const system = [
     "Ты — медицинский переводчик с английского на русский, специализирующийся на классической гомеопатической репертuризации (Кент, Бённингхаузен, Богер).",
-    "Переводишь короткие рубрики репертория из главы 'Genitalia — Male' (мужские половые органы).",
+    `Переводишь короткие рубрики репертория из главы '${chapterName}'.`,
     "",
     "ПРАВИЛА:",
     "1. Сохраняй структуру с тире-разделителем: 'Section — modifier, sub' → 'Раздел — модификатор, под'.",
@@ -219,8 +219,23 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
       let translated = 0;
       let usedModel = model;
       if (todo.length > 0) {
+        // Resolve chapter name for the prompt (any rubric — they all share chapter).
+        const { data: oneRubric } = await supabase
+          .from("repertory_rubrics")
+          .select("chapter_id")
+          .eq("id", todo[0].id)
+          .maybeSingle();
+        let chapterName = "репертория";
+        if (oneRubric?.chapter_id) {
+          const { data: chap } = await supabase
+            .from("repertory_chapters")
+            .select("name_en")
+            .eq("id", oneRubric.chapter_id)
+            .maybeSingle();
+          if (chap?.name_en) chapterName = chap.name_en;
+        }
         const glossary = await loadGlossary(supabase);
-        const { system, user } = buildPrompt(todo, glossary);
+        const { system, user } = buildPrompt(todo, glossary, chapterName);
         await logEvent(supabase, batchId, { stage: "anthropic_call", subbatch_index: subbatchIndex, rubrics: todo.length, model });
         const { text, usedModel: um } = await callAnthropic(apiKey, model, system, user);
         usedModel = um;
