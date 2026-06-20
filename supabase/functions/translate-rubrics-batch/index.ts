@@ -185,7 +185,8 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   });
 
   if (subbatchIndex >= subbatches.length) {
-    // All done — mark as finished.
+    // All done — mark as finished, then kick the queue runner to pick the
+    // next chapter automatically.
     const partial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
     const ok = partial.filter((p: any) => !p?.error).reduce((a, p: any) => a + (p.translated_count || 0), 0);
     await supabase.from("translation_batches").update({
@@ -193,6 +194,18 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
       processed_rubrics: ok,
     }).eq("id", batchId);
     await logEvent(supabase, batchId, { stage: "all_done", translated: ok });
+    const runnerUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/translate-queue-runner`;
+    // @ts-ignore EdgeRuntime in Supabase
+    EdgeRuntime.waitUntil(
+      fetch(runnerUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({}),
+      }).catch(() => undefined),
+    );
     return;
   }
 
