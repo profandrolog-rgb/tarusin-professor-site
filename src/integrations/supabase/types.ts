@@ -2889,6 +2889,68 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_batches: {
+        Row: {
+          chain_log: Json
+          chapter_id: string | null
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          model: string
+          partial_results: Json
+          processed_rubrics: number
+          rubric_ids: Json
+          scope: string
+          status: string
+          subbatch_size: number
+          total_rubrics: number
+          updated_at: string
+        }
+        Insert: {
+          chain_log?: Json
+          chapter_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          id?: string
+          model?: string
+          partial_results?: Json
+          processed_rubrics?: number
+          rubric_ids?: Json
+          scope?: string
+          status?: string
+          subbatch_size?: number
+          total_rubrics?: number
+          updated_at?: string
+        }
+        Update: {
+          chain_log?: Json
+          chapter_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          id?: string
+          model?: string
+          partial_results?: Json
+          processed_rubrics?: number
+          rubric_ids?: Json
+          scope?: string
+          status?: string
+          subbatch_size?: number
+          total_rubrics?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_batches_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       travel_photos: {
         Row: {
           caption: string | null
@@ -4220,6 +4282,10 @@ export type Database = {
         Returns: Json
       }
       append_analysis_batch_log: {
+        Args: { _batch_id: string; _entry: Json }
+        Returns: undefined
+      }
+      append_translation_batch_log: {
         Args: { _batch_id: string; _entry: Json }
         Returns: undefined
       }
