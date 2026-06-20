@@ -106,10 +106,10 @@ async function callAnthropic(
   return { text, usedModel };
 }
 
-function buildPrompt(rubrics: RubricInput[], glossary: string): { system: string; user: string } {
+function buildPrompt(rubrics: RubricInput[], glossary: string, chapterName: string): { system: string; user: string } {
   const system = [
     "Ты — медицинский переводчик с английского на русский, специализирующийся на классической гомеопатической репертuризации (Кент, Бённингхаузен, Богер).",
-    "Переводишь короткие рубрики репертория из главы 'Genitalia — Male' (мужские половые органы).",
+    `Переводишь короткие рубрики репертория из главы '${chapterName}'.`,
     "",
     "ПРАВИЛА:",
     "1. Сохраняй структуру с тире-разделителем: 'Section — modifier, sub' → 'Раздел — модификатор, под'.",
