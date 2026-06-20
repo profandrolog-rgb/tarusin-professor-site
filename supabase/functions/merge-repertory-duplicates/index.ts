@@ -144,6 +144,9 @@ Deno.serve(async (req) => {
     await client.connect();
     try {
       await client.queryArray("BEGIN");
+      await client.queryArray("SET LOCAL statement_timeout = 0");
+      await client.queryArray("SET LOCAL idle_in_transaction_session_timeout = 0");
+      await client.queryArray("SET LOCAL lock_timeout = 0");
       const notices: string[] = [];
       // capture NOTICE via connection events is non-trivial; rely on post-checks
       await client.queryArray(MERGE_SQL);
