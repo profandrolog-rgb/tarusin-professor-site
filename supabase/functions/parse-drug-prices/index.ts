@@ -159,6 +159,29 @@ Deno.serve(async (req) => {
         .eq("id", body.catalog_id).single();
       if (error) throw error;
       rows = [data];
+    } else if (body?.plan_id || (Array.isArray(body?.catalog_ids) && body.catalog_ids.length)) {
+      let ids: string[] = Array.isArray(body?.catalog_ids) ? body.catalog_ids.filter((x: any) => typeof x === "string") : [];
+      if (body?.plan_id) {
+        const { data: planItems, error: pErr } = await supabase
+          .from("treatment_plan_items")
+          .select("catalog_id")
+          .eq("plan_id", body.plan_id)
+          .not("catalog_id", "is", null);
+        if (pErr) throw pErr;
+        ids = ids.concat((planItems || []).map((r: any) => r.catalog_id));
+      }
+      ids = Array.from(new Set(ids)).slice(0, 100);
+      if (!ids.length) {
+        return new Response(JSON.stringify({ error: "no catalog items in plan" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data, error } = await supabase
+        .from("treatment_catalog")
+        .select("id, name, parse_query")
+        .in("id", ids);
+      if (error) throw error;
+      rows = data || [];
     } else if (body?.batch) {
       const limit = Math.min(Number(body.limit) || 20, 50);
       const { data, error } = await supabase
@@ -169,8 +192,26 @@ Deno.serve(async (req) => {
       if (error) throw error;
       rows = data || [];
     } else {
-      return new Response(JSON.stringify({ error: "catalog_id or batch required" }), {
+      return new Response(JSON.stringify({ error: "catalog_id, catalog_ids, plan_id or batch required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If many items — run in background to avoid 150s edge idle timeout.
+    // Per-item progress is visible in price_parse_log.
+    if (rows.length > 1 || body?.async) {
+      // @ts-ignore EdgeRuntime in Supabase
+      EdgeRuntime.waitUntil((async () => {
+        for (const row of rows) {
+          try {
+            await parseOne(supabase, FIRECRAWL_API_KEY, row);
+          } catch (e) {
+            console.error(`bg parse failed for ${row?.name}:`, e);
+          }
+        }
+      })());
+      return new Response(JSON.stringify({ started: true, count: rows.length }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -183,6 +224,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ processed: results.length, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("parse-drug-prices error:", e);
     return new Response(JSON.stringify({ error: "Internal error" }), {

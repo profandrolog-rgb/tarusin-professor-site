@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList, Share2, Send, MoreHorizontal, Keyboard } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Printer, Trash2, BookMarked, Download, CalendarDays, List, History, FileDown, ClipboardList, Share2, Send, MoreHorizontal, Keyboard, RefreshCw } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { CommandPaletteDialog } from "@/components/treatment/CommandPaletteDialog";
 import { HotkeysHelpDialog } from "@/components/treatment/HotkeysHelpDialog";
@@ -556,6 +556,22 @@ export default function TreatmentPlanEditor() {
             <Button variant="outline" onClick={() => setPatternExportOpen(true)} className="gap-2" disabled={items.length === 0}>
               <Share2 className="w-4 h-4"/>Экспорт паттерна
             </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={items.filter(i => i.catalog_id).length === 0}
+              onClick={async () => {
+                const catalog_ids = Array.from(new Set(items.map(i => i.catalog_id).filter(Boolean) as string[]));
+                if (!catalog_ids.length) return;
+                toast({ title: "Парсинг цен запущен", description: `Обновляю ${catalog_ids.length} позиций. Это займёт 1–3 минуты.` });
+                const { data, error } = await supabase.functions.invoke("parse-drug-prices", { body: { catalog_ids, async: true } });
+                if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+                else toast({ title: "В работе", description: `Запущено: ${data?.count ?? catalog_ids.length}. Цены обновятся в каталоге автоматически.` });
+              }}
+            >
+              <RefreshCw className="w-4 h-4"/>Парсинг цен
+            </Button>
+
             {!isNew && id && (
               <PublicLinkPopover
                 planId={id}
