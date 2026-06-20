@@ -78,12 +78,12 @@ export default function AdminTranslationQueue() {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>;
   }
 
-  const active = batches.find(b => b.status === "running" || b.status === "queued");
+  const active = batches.find(b => b.status === "processing" || b.status === "queued");
   const activeChapter = active?.chapter_id ? chapters[active.chapter_id] : null;
 
   const statusVariant = (s: string): "default" | "secondary" | "destructive" | "outline" => {
     if (s === "all_done" || s === "completed") return "default";
-    if (s === "running" || s === "queued") return "secondary";
+    if (s === "processing" || s === "queued") return "secondary";
     if (s === "failed" || s === "error") return "destructive";
     return "outline";
   };
