@@ -1200,6 +1200,7 @@ export default function Cabinet() {
                           onOpen={() => setActiveId(c.id)}
                           onDelete={() => deleteConversation(c.id)}
                           onMove={(fid) => moveConversation(c.id, fid)}
+                          onRename={() => renameConversation(c)}
                         />
                       ))}
                     </div>
@@ -1221,6 +1222,7 @@ export default function Cabinet() {
                     onOpen={() => setActiveId(c.id)}
                     onDelete={() => deleteConversation(c.id)}
                     onMove={(fid) => moveConversation(c.id, fid)}
+                          onRename={() => renameConversation(c)}
                   />
                 ));
               }
@@ -1261,6 +1263,7 @@ export default function Cabinet() {
                           onOpen={() => setActiveId(c.id)}
                           onDelete={() => deleteConversation(c.id)}
                           onMove={(fid) => moveConversation(c.id, fid)}
+                          onRename={() => renameConversation(c)}
                         />
                       ))}
                     </div>
