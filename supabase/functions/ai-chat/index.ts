@@ -202,12 +202,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Gemini Flash в режиме reasoning часто упирается в лимит времени edge-функции
+    // (~5 минут) и обрывает стрим. Принудительно держим reasoning минимальным
+    // для всей семьи Gemini Flash, и ставим жёсткий потолок токенов вывода.
+    const isGeminiFlash = /google\/gemini-[^/]*flash/i.test(resolvedModel);
+    const effectiveEffort: "low" | "medium" | "high" = isGeminiFlash ? "low" : effort;
+
     const requestPayload: Record<string, unknown> = {
       model: resolvedModel,
       messages: finalMessages,
       stream: true,
+      // Жёсткий потолок длины ответа — защита от бесконечной генерации,
+      // которую edge-функция всё равно оборвёт по wall-clock.
+      max_tokens: 8192,
       // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
-      reasoning: { effort },
+      reasoning: { effort: effectiveEffort },
       // Route to the fastest provider for the selected model (equivalent to :nitro)
       provider: { sort: "throughput" },
     };
