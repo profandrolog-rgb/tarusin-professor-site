@@ -78,14 +78,24 @@ export default function AdminTranslationQueue() {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>;
   }
 
-  const active = batches.find(b => b.status === "processing" || b.status === "queued");
-  const activeChapter = active?.chapter_id ? chapters[active.chapter_id] : null;
+  const activeBatches = batches.filter(b => b.status === "processing" || b.status === "queued");
 
   const statusVariant = (s: string): "default" | "secondary" | "destructive" | "outline" => {
-    if (s === "all_done" || s === "completed") return "default";
+    if (s === "all_done" || s === "completed" || s === "done") return "default";
     if (s === "processing" || s === "queued") return "secondary";
     if (s === "failed" || s === "error") return "destructive";
     return "outline";
+  };
+
+  const startParallel = async () => {
+    setRefreshing(true);
+    const { data, error } = await supabase.functions.invoke("translate-queue-runner", {
+      body: { parallelism: 3 },
+    });
+    setRefreshing(false);
+    if (error) console.error(error);
+    else console.log("runner:", data);
+    load();
   };
 
   return (
@@ -95,35 +105,49 @@ export default function AdminTranslationQueue() {
           <Button variant="ghost" size="sm" asChild><Link to="/admin"><ArrowLeft className="h-4 w-4 mr-1" />Админка</Link></Button>
           <h1 className="text-2xl font-bold">Очередь переводов реперториума</h1>
         </div>
-        <Button size="sm" variant="outline" onClick={load} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />Обновить
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="default" onClick={startParallel} disabled={refreshing}>
+            Запустить × 3
+          </Button>
+          <Button size="sm" variant="outline" onClick={load} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />Обновить
+          </Button>
+        </div>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Текущая глава</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Активные батчи ({activeBatches.length})</CardTitle></CardHeader>
         <CardContent>
-          {active ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={statusVariant(active.status)}>{active.status}</Badge>
-                <span className="font-medium">{activeChapter?.name_ru || activeChapter?.name_en || "—"}</span>
-                {active.model && <Badge variant="outline">{active.model}</Badge>}
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>{active.processed_rubrics || 0} / {active.total_rubrics || 0} рубрик</span>
-                  <span>{active.total_rubrics ? Math.round(100 * (active.processed_rubrics || 0) / active.total_rubrics) : 0}%</span>
-                </div>
-                <Progress value={active.total_rubrics ? 100 * (active.processed_rubrics || 0) / active.total_rubrics : 0} />
-              </div>
-              <div className="text-xs text-muted-foreground">Обновлено: {new Date(active.updated_at).toLocaleString("ru-RU")}</div>
+          {activeBatches.length ? (
+            <div className="space-y-4">
+              {activeBatches.map(active => {
+                const activeChapter = active.chapter_id ? chapters[active.chapter_id] : null;
+                const pct = active.total_rubrics ? 100 * (active.processed_rubrics || 0) / active.total_rubrics : 0;
+                return (
+                  <div key={active.id} className="space-y-2 pb-3 border-b last:border-0 last:pb-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant={statusVariant(active.status)}>{active.status}</Badge>
+                      <span className="font-medium">{activeChapter?.name_ru || activeChapter?.name_en || "—"}</span>
+                      {active.model && <Badge variant="outline">{active.model}</Badge>}
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>{active.processed_rubrics || 0} / {active.total_rubrics || 0} рубрик</span>
+                        <span>{Math.round(pct)}%</span>
+                      </div>
+                      <Progress value={pct} />
+                    </div>
+                    <div className="text-xs text-muted-foreground">Обновлено: {new Date(active.updated_at).toLocaleString("ru-RU")}</div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="text-muted-foreground">Нет активных батчей. Cron запустит следующий в течение 10 минут.</div>
+            <div className="text-muted-foreground">Нет активных батчей. Cron-watchdog запустит до 3 параллельных в течение часа, либо нажмите «Запустить × 3».</div>
           )}
         </CardContent>
       </Card>
+
 
       <Card>
         <CardHeader><CardTitle>Главы — прогресс перевода</CardTitle></CardHeader>
