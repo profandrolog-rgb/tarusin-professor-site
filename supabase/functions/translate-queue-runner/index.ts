@@ -16,6 +16,8 @@ const SUBBATCH_SIZE = 150;
 const MODEL = "claude-sonnet-4-6";
 // Hard cap to avoid one batch dominating; very large chapters are split.
 const MAX_RUBRICS_PER_BATCH = 2000;
+// Default parallelism — how many chapters may translate concurrently.
+const DEFAULT_PARALLELISM = 3;
 
 function admin() {
   return createClient(
@@ -24,24 +26,31 @@ function admin() {
   );
 }
 
-async function pickNextChapter(sb: ReturnType<typeof admin>) {
-  // Smallest chapter with untranslated rubrics first.
+async function pickNextChapters(
+  sb: ReturnType<typeof admin>,
+  n: number,
+  excludeIds: string[],
+) {
+  // Smallest chapters with untranslated rubrics first, excluding ones already running.
   const { data: chapters } = await sb
     .from("repertory_chapters")
     .select("id, name_en");
-  if (!chapters) return null;
-  let best: { id: string; name_en: string; untranslated: number } | null = null;
+  if (!chapters) return [];
+  const exclude = new Set(excludeIds);
+  const candidates: { id: string; name_en: string; untranslated: number }[] = [];
   for (const c of chapters) {
+    if (exclude.has(c.id)) continue;
     const { count } = await sb
       .from("repertory_rubrics")
       .select("id", { count: "exact", head: true })
       .eq("chapter_id", c.id)
       .is("name_ru", null);
-    const n = count || 0;
-    if (n === 0) continue;
-    if (!best || n < best.untranslated) best = { id: c.id, name_en: c.name_en, untranslated: n };
+    const k = count || 0;
+    if (k === 0) continue;
+    candidates.push({ id: c.id, name_en: c.name_en, untranslated: k });
   }
-  return best;
+  candidates.sort((a, b) => a.untranslated - b.untranslated);
+  return candidates.slice(0, n);
 }
 
 async function triggerBatch(batchId: string) {
@@ -57,80 +66,113 @@ async function triggerBatch(batchId: string) {
   }).catch(() => undefined);
 }
 
+async function startChapter(
+  sb: ReturnType<typeof admin>,
+  chapter: { id: string; name_en: string; untranslated: number },
+) {
+  const { data: rubrics, error: rErr } = await sb
+    .from("repertory_rubrics")
+    .select("id")
+    .eq("chapter_id", chapter.id)
+    .is("name_ru", null)
+    .order("id", { ascending: true })
+    .limit(MAX_RUBRICS_PER_BATCH);
+  if (rErr) throw new Error(`load rubrics: ${rErr.message}`);
+  const ids = (rubrics || []).map((r: any) => r.id);
+  if (!ids.length) return null;
+
+  const { data: batch, error: bErr } = await sb
+    .from("translation_batches")
+    .insert({
+      chapter_id: chapter.id,
+      scope: "chapter",
+      model: MODEL,
+      status: "queued",
+      total_rubrics: ids.length,
+      subbatch_size: SUBBATCH_SIZE,
+      rubric_ids: ids,
+    })
+    .select("id")
+    .single();
+  if (bErr || !batch) throw new Error(`create batch: ${bErr?.message || "unknown"}`);
+
+  // @ts-ignore
+  EdgeRuntime.waitUntil(triggerBatch(batch.id));
+  return {
+    chapter: chapter.name_en,
+    chapterId: chapter.id,
+    batchId: batch.id,
+    rubrics: ids.length,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const sb = admin();
   try {
     const body = await req.json().catch(() => ({} as any));
     const force = !!body.force;
+    const parallelism = Math.max(
+      1,
+      Math.min(10, Number(body.parallelism) || DEFAULT_PARALLELISM),
+    );
 
-    // Guard: if a batch is already active, do nothing (chaining will resume).
-    if (!force) {
-      const { data: active } = await sb
-        .from("translation_batches")
-        .select("id, status")
-        .in("status", ["queued", "processing"])
-        .limit(1);
-      if (active && active.length > 0) {
-        return new Response(
-          JSON.stringify({ ok: true, skipped: "batch_active", activeId: active[0].id }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+    // Count active batches; only top up to `parallelism`.
+    const { data: active } = await sb
+      .from("translation_batches")
+      .select("id, chapter_id")
+      .in("status", ["queued", "processing"]);
+    const activeCount = (active || []).length;
+    const activeChapterIds = (active || [])
+      .map((b: any) => b.chapter_id)
+      .filter(Boolean) as string[];
+
+    const slotsFree = force ? parallelism : Math.max(0, parallelism - activeCount);
+    if (slotsFree === 0) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: "parallelism_reached",
+          activeCount,
+          parallelism,
+          activeIds: (active || []).map((b: any) => b.id),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const chapters = await pickNextChapters(sb, slotsFree, activeChapterIds);
+    if (!chapters.length) {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          done: activeCount === 0,
+          message: activeCount === 0
+            ? "All chapters translated"
+            : "No more chapters to queue (others still running)",
+          activeCount,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const started: any[] = [];
+    for (const ch of chapters) {
+      try {
+        const r = await startChapter(sb, ch);
+        if (r) started.push(r);
+      } catch (e) {
+        started.push({ chapter: ch.name_en, error: (e as Error).message });
       }
     }
-
-    const chapter = await pickNextChapter(sb);
-    if (!chapter) {
-      return new Response(
-        JSON.stringify({ ok: true, done: true, message: "All chapters translated" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Pull rubric ids for this chapter (cap to MAX_RUBRICS_PER_BATCH).
-    const { data: rubrics, error: rErr } = await sb
-      .from("repertory_rubrics")
-      .select("id")
-      .eq("chapter_id", chapter.id)
-      .is("name_ru", null)
-      .order("id", { ascending: true })
-      .limit(MAX_RUBRICS_PER_BATCH);
-    if (rErr) throw new Error(`load rubrics: ${rErr.message}`);
-    const ids = (rubrics || []).map((r: any) => r.id);
-    if (!ids.length) {
-      return new Response(
-        JSON.stringify({ ok: true, skipped: "no_rubrics", chapter: chapter.name_en }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const { data: batch, error: bErr } = await sb
-      .from("translation_batches")
-      .insert({
-        chapter_id: chapter.id,
-        scope: "chapter",
-        model: MODEL,
-        status: "queued",
-        total_rubrics: ids.length,
-        subbatch_size: SUBBATCH_SIZE,
-        rubric_ids: ids,
-      })
-      .select("id")
-      .single();
-    if (bErr || !batch) throw new Error(`create batch: ${bErr?.message || "unknown"}`);
-
-    // @ts-ignore
-    EdgeRuntime.waitUntil(triggerBatch(batch.id));
 
     return new Response(
       JSON.stringify({
         ok: true,
-        started: true,
-        chapter: chapter.name_en,
-        chapterId: chapter.id,
-        batchId: batch.id,
-        rubrics: ids.length,
-        remaining_in_chapter: chapter.untranslated,
+        started: started.length,
+        parallelism,
+        previously_active: activeCount,
+        batches: started,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
