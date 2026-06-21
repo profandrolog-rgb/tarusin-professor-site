@@ -1691,7 +1691,18 @@ export default function Cabinet() {
                       )}
                     </>
                   ) : (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span className="tabular-nums">
+                        Думаю… {elapsedSec}s
+                        {elapsedSec >= 60 && elapsedSec < 240 && (
+                          <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
+                        )}
+                        {elapsedSec >= 240 && (
+                          <span className="text-xs text-amber-600 dark:text-amber-400"> · долго, риск обрыва — можно отменить и сменить модель</span>
+                        )}
+                      </span>
+                    </div>
                   )
                 ) : (
                   <div className="whitespace-pre-wrap text-sm">{m.content}</div>
