@@ -193,7 +193,7 @@ function linkifyPubmedCitations(content: string, sources: PubmedSource[], msgInd
 
 
 function ConvRow({
-  conv, active, folders, onOpen, onDelete, onMove,
+  conv, active, folders, onOpen, onDelete, onMove, onRename,
 }: {
   conv: Conversation;
   active: boolean;
@@ -201,6 +201,7 @@ function ConvRow({
   onOpen: () => void;
   onDelete: () => void;
   onMove: (folderId: string | null) => void;
+  onRename: () => void;
 }) {
   return (
     <div
@@ -211,8 +212,18 @@ function ConvRow({
       }}
       className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
       onClick={onOpen}
+      onDoubleClick={(e) => { e.stopPropagation(); onRename(); }}
+      title={conv.title}
     >
       <span className="flex-1 text-sm truncate">{conv.title}</span>
+      <button
+        className="opacity-0 group-hover:opacity-100 p-1"
+        onClick={(e) => { e.stopPropagation(); onRename(); }}
+        aria-label="Переименовать"
+        title="Переименовать (фамилия пациента, пометка)"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -254,6 +265,7 @@ function ConvRow({
     </div>
   );
 }
+
 
 export default function Cabinet() {
   const { user, loading, isAdmin } = useAuth();
@@ -582,6 +594,17 @@ export default function Cabinet() {
     setPendingFolderId(folderId);
     if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
+
+  const renameConversation = async (conv: Conversation) => {
+    const name = window.prompt("Название диалога (фамилия пациента, пометка):", conv.title)?.trim();
+    if (!name || name === conv.title) return;
+    const trimmed = name.slice(0, 120);
+    const { error } = await supabase.from("ai_conversations").update({ title: trimmed }).eq("id", conv.id);
+    if (error) { toast.error("Не удалось переименовать"); return; }
+    setConversations((prev) => prev.map((c) => c.id === conv.id ? { ...c, title: trimmed } : c));
+    toast.success("Переименовано");
+  };
+
 
 
   const deleteConversation = async (id: string) => {
@@ -1177,6 +1200,7 @@ export default function Cabinet() {
                           onOpen={() => setActiveId(c.id)}
                           onDelete={() => deleteConversation(c.id)}
                           onMove={(fid) => moveConversation(c.id, fid)}
+                          onRename={() => renameConversation(c)}
                         />
                       ))}
                     </div>
@@ -1198,6 +1222,7 @@ export default function Cabinet() {
                     onOpen={() => setActiveId(c.id)}
                     onDelete={() => deleteConversation(c.id)}
                     onMove={(fid) => moveConversation(c.id, fid)}
+                          onRename={() => renameConversation(c)}
                   />
                 ));
               }
@@ -1238,6 +1263,7 @@ export default function Cabinet() {
                           onOpen={() => setActiveId(c.id)}
                           onDelete={() => deleteConversation(c.id)}
                           onMove={(fid) => moveConversation(c.id, fid)}
+                          onRename={() => renameConversation(c)}
                         />
                       ))}
                     </div>
