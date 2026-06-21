@@ -595,6 +595,17 @@ export default function Cabinet() {
     if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
 
+  const renameConversation = async (conv: Conversation) => {
+    const name = window.prompt("Название диалога (фамилия пациента, пометка):", conv.title)?.trim();
+    if (!name || name === conv.title) return;
+    const trimmed = name.slice(0, 120);
+    const { error } = await supabase.from("ai_conversations").update({ title: trimmed }).eq("id", conv.id);
+    if (error) { toast.error("Не удалось переименовать"); return; }
+    setConversations((prev) => prev.map((c) => c.id === conv.id ? { ...c, title: trimmed } : c));
+    toast.success("Переименовано");
+  };
+
+
 
   const deleteConversation = async (id: string) => {
     if (!confirm("Удалить диалог?")) return;
