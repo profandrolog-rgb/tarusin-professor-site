@@ -193,7 +193,7 @@ function linkifyPubmedCitations(content: string, sources: PubmedSource[], msgInd
 
 
 function ConvRow({
-  conv, active, folders, onOpen, onDelete, onMove,
+  conv, active, folders, onOpen, onDelete, onMove, onRename,
 }: {
   conv: Conversation;
   active: boolean;
@@ -201,6 +201,7 @@ function ConvRow({
   onOpen: () => void;
   onDelete: () => void;
   onMove: (folderId: string | null) => void;
+  onRename: () => void;
 }) {
   return (
     <div
@@ -211,8 +212,18 @@ function ConvRow({
       }}
       className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
       onClick={onOpen}
+      onDoubleClick={(e) => { e.stopPropagation(); onRename(); }}
+      title={conv.title}
     >
       <span className="flex-1 text-sm truncate">{conv.title}</span>
+      <button
+        className="opacity-0 group-hover:opacity-100 p-1"
+        onClick={(e) => { e.stopPropagation(); onRename(); }}
+        aria-label="Переименовать"
+        title="Переименовать (фамилия пациента, пометка)"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -254,6 +265,7 @@ function ConvRow({
     </div>
   );
 }
+
 
 export default function Cabinet() {
   const { user, loading, isAdmin } = useAuth();
