@@ -37,7 +37,7 @@ async function callRunner() {
       "Content-Type": "application/json",
       Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
     },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ parallelism: 3 }),
   }).catch(() => undefined);
 }
 
