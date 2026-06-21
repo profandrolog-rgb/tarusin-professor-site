@@ -307,6 +307,16 @@ export default function Cabinet() {
   const [pubmedLoadingMore, setPubmedLoadingMore] = useState<number | null>(null);
   const [pubmedAnalyzing, setPubmedAnalyzing] = useState<string | null>(null);
   const [streaming, setStreaming] = useState(false);
+  const [streamStartedAt, setStreamStartedAt] = useState<number | null>(null);
+  const [elapsedSec, setElapsedSec] = useState(0);
+  useEffect(() => {
+    if (!streaming || !streamStartedAt) { setElapsedSec(0); return; }
+    setElapsedSec(Math.floor((Date.now() - streamStartedAt) / 1000));
+    const t = setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - streamStartedAt) / 1000));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [streaming, streamStartedAt]);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
     return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
@@ -695,6 +705,7 @@ export default function Cabinet() {
     const text = input.trim();
     if (!text) { toast.error("Введите клинический вопрос"); return; }
     setStreaming(true);
+    setStreamStartedAt(Date.now());
 
     const userMsg: Msg = { role: "user", content: text };
     const convId = await ensureConversation(text, `pubmed:${model}`);
@@ -885,6 +896,7 @@ export default function Cabinet() {
     if (!text && !attachments.length) return;
 
     setStreaming(true);
+    setStreamStartedAt(Date.now());
     const userMsg: Msg = { role: "user", content: text, attachments: [...attachments] };
 
     // Ensure conversation
@@ -1679,7 +1691,18 @@ export default function Cabinet() {
                       )}
                     </>
                   ) : (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span className="tabular-nums">
+                        Думаю… {elapsedSec}s
+                        {elapsedSec >= 60 && elapsedSec < 240 && (
+                          <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
+                        )}
+                        {elapsedSec >= 240 && (
+                          <span className="text-xs text-amber-600 dark:text-amber-400"> · долго, риск обрыва — можно отменить и сменить модель</span>
+                        )}
+                      </span>
+                    </div>
                   )
                 ) : (
                   <div className="whitespace-pre-wrap text-sm">{m.content}</div>
