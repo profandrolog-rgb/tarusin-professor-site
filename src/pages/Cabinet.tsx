@@ -895,6 +895,7 @@ export default function Cabinet() {
     if (!text && !attachments.length) return;
 
     setStreaming(true);
+    setStreamStartedAt(Date.now());
     const userMsg: Msg = { role: "user", content: text, attachments: [...attachments] };
 
     // Ensure conversation
