@@ -63,16 +63,9 @@ Deno.serve(async (req) => {
       actions.push({ resumed: b.id, subbatchIndex: nextIdx, processed: done, total: b.total_rubrics });
     }
 
-    // 2) If no active batch at all, ask the runner to pick the next chapter.
-    const { data: active } = await sb
-      .from("translation_batches")
-      .select("id")
-      .in("status", ["processing", "queued"])
-      .limit(1);
-    if (!active || active.length === 0) {
-      await callRunner();
-      actions.push({ runner: "kicked" });
-    }
+    // 2) Always top up parallelism (runner is a no-op when slots are full).
+    await callRunner();
+    actions.push({ runner: "topup" });
 
     return new Response(JSON.stringify({ ok: true, actions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
