@@ -705,6 +705,7 @@ export default function Cabinet() {
     const text = input.trim();
     if (!text) { toast.error("Введите клинический вопрос"); return; }
     setStreaming(true);
+    setStreamStartedAt(Date.now());
 
     const userMsg: Msg = { role: "user", content: text };
     const convId = await ensureConversation(text, `pubmed:${model}`);
