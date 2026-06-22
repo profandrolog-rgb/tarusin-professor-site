@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Loader2, Search, Sparkles, Calculator, X, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Sparkles, Calculator, X, Info, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Candidate {
