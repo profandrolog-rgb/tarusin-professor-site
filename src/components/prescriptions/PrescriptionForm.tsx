@@ -230,18 +230,32 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
   const handleNewPrescription = () => {
     setSavedPrescription(null);
     setItems([]);
+    // try to auto-load next queued Rx blank
+    setTimeout(() => loadNextPendingRx(), 0);
   };
 
   if (savedPrescription) {
     return (
       <div className="space-y-4">
-        <div className="flex gap-2">
+        {pendingRxRemaining > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50 border border-accent text-sm">
+            <FileText className="h-4 w-4 text-primary shrink-0" />
+            <span>В очереди ещё <b>{pendingRxRemaining}</b> бланк(ов) из ассистента — нажмите «Следующий бланк», чтобы продолжить.</span>
+          </div>
+        )}
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" /> Печать рецепта
           </Button>
-          <Button variant="outline" onClick={handleNewPrescription}>
-            Новый рецепт
-          </Button>
+          {pendingRxRemaining > 0 ? (
+            <Button onClick={handleNewPrescription}>
+              <FileText className="h-4 w-4 mr-2" /> Следующий бланк ({pendingRxRemaining})
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleNewPrescription}>
+              Новый рецепт
+            </Button>
+          )}
           <Button variant="outline" onClick={onSaved}>
             К истории
           </Button>
