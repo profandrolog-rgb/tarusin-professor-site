@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Printer, Plus, Trash2, Eye, Info } from "lucide-react";
+import { CalendarIcon, Printer, Plus, Trash2, Eye, Info, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { PatientSelect } from "./PatientSelect";
 import { MedicationSearch } from "./MedicationSearch";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { PrescriptionPreview } from "./PrescriptionPreview";
+import { popNextPendingRxItem, getPendingRxCount } from "@/lib/protocolBridge";
 
 interface PrescriptionItem {
   medication_latin_name: string;
