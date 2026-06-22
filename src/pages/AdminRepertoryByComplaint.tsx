@@ -40,7 +40,7 @@ export default function AdminRepertoryByComplaint() {
   const [links, setLinks] = useState<Link[]>([]);
   const [computed, setComputed] = useState(false);
   const [computing, setComputing] = useState(false);
-  const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; source_url: string | null }[]>>({});
+  const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; body_ru: string | null; source_url: string | null }[]>>({});
 
   // Auto-pipeline progress: extract → select → compute
   type Stage = "idle" | "extract" | "select" | "compute" | "done" | "error";
