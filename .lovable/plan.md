@@ -1,78 +1,69 @@
-## Источник
-**OOREP `publicum`** (`/tmp/oorep/oorep.sql` уже скачан, 44 МБ распакованного SQL).
-- Английская выборка на базе оригинального Кента, лицензия GPL v3, общественное достояние по содержанию.
-- `kent-de` отбрасываем (немецкий, не нужен).
-- В дампе ~74 667 рубрик `publicum`, ~735 тыс. записей `rubricremedy` с градациями 1/2/3, 36 глав (0–35).
+## Цель
 
-## Расхождения схем
+Сделать привязку чата к пациенту явной и управляемой: по умолчанию подхватываем пациента из соседней вкладки, но можно работать «без привязки» или вручную выбрать/сменить пациента. Каждый чат — это отдельный тред со своим пациентом. Подтверждение требуется только при действиях «Сформировать рецепт» и «Распределить по плану».
 
-| OOREP | Наша БД |
-|---|---|
-| `chapter (abbrev,id,textt)` — **пуст в дампе** | `repertory_chapters (id, ord, name_en, name_ru)` |
-| `rubric (id, mother, ismother, chapterid, fullpath, path, textt)` — иерархия плоская, дерево через `fullpath` | `repertory_rubrics (id, chapter_id, parent_id, name, kent_page)` |
-| `remedy (id, nameabbrev, namelong, namealt[])` | `repertory_remedies (id, slug, name_latin, abbrev, name_ru)` |
-| `rubricremedy (rubricid, remedyid, weight, chapterid)` | `repertory_rubric_remedies (rubric_id, remedy_id, grade)` |
+## UX
 
-Иерархию строим из `fullpath`: разбиваем по `, ` → первый сегмент = глава, остаток = путь рубрик, для каждого префикса гарантируем существование родительской рубрики.
+**1. Бейдж пациента в шапке чата (всегда видно)**
+- Заменяет нынешний `ActivePatientBadge` на интерактивный `ThreadPatientBadge`.
+- Состояния:
+  - `Без пациента` (пунктирный бейдж, иконка `UserX`) — клик открывает поповер.
+  - `Имя пациента` (синий бейдж, иконка `User`) — клик открывает поповер.
+- Поповер содержит:
+  - Текущая привязка треда + кнопка «Отвязать».
+  - Блок «Активная вкладка»: что сейчас транслирует BroadcastChannel (например, «Иванов А., осмотр»), кнопка «Привязать к этому пациенту».
+  - Блок «Недавние» (из `getRecentContexts`) — клик привязывает.
+  - Поиск пациента по фамилии/имени (debounced query к `patients` таблице) — выбор привязывает.
 
-## Шаги импорта (одноразовый скрипт через psql, без UI)
+**2. Плашка над composer'ом**
+- Тонкая строка `Контекст: Иванов А.` или `Контекст: без привязки` с маленькой кнопкой «Сменить» (открывает тот же поповер).
+- Кликабельна, ненавязчива (текст muted, без рамки).
 
-1. **Подготовка staging-таблиц** (миграция):
-   - `_import_oorep_rubric (oorep_id int PK, chapter_idx int, fullpath text)`
-   - `_import_oorep_remedy (oorep_id int PK, nameabbrev text, namelong text)`
-   - `_import_oorep_rr (oorep_rubric_id int, oorep_remedy_id int, weight int)`
-   - `_import_oorep_remedy_map (oorep_id int PK, remedy_id uuid)`
-   - `_import_oorep_rubric_map (oorep_id int PK, rubric_id uuid)`
+**3. Подтверждение при действиях (только Рецепт/План)**
+- В `RxItemsPreviewDialog` и `PlanItemsPreviewDialog` добавляется верхняя плашка-подтверждение:
+  - Если привязка треда совпадает с активной вкладкой: «Пациент: **Иванов А.** ✓» (зелёная).
+  - Если различаются: warning «У треда: Иванов; в активной вкладке: Петров. Использовать [треда] / [вкладки] / [без привязки]».
+  - Если привязки нет: warning «Без привязки к пациенту — продолжить или выбрать?». Кнопка «Выбрать пациента» открывает тот же поповер.
+- Эта плашка не блокирует подтверждение, но user явно видит куда уйдут данные.
 
-2. **Загрузка дампа** (локально через psql `\copy`):
-   - Из `oorep.sql` вытаскиваем три COPY-блока (`remedy`, `rubric`, `rubricremedy`) фильтром только по `publicum` → три TSV-файла.
-   - `\copy` каждой в соответствующую staging-таблицу.
+**4. Поведение тредов**
+- Новый чат создаётся с `patient_id = activeContext.patientId ?? null` и `patient_name`.
+- Если у выбранного треда уже есть `patient_id` — этот пациент имеет приоритет над активной вкладкой (вкладка просто справочно).
+- Смена `patient_id` треда обновляет строку в `ai_conversations` и название (если оно дефолтное «Новый чат», подставляется фамилия).
+- Список тредов в сайдбаре показывает иконку/букву рядом с тредами без привязки и фамилию пациента под привязанными (опционально — пока оставим как есть, только при необходимости).
 
-3. **Главы** — для всех 36 chapter_idx, встречающихся в данных:
-   - Берём `lower(first_segment(fullpath))` как `name_en`, ищем `repertory_chapters.name_en ILIKE`, если нет — `INSERT` с `ord = MAX+1`, `name_ru = name_en` (переведём позже вручную).
-   - Сохраняем mapping `chapter_idx → chapters.id`.
+## Технические изменения
 
-4. **Рубрики** (батчами через рекурсивный CTE):
-   - Для каждого `fullpath` генерируем все префиксы (`p1`, `p1, p2`, `p1, p2, p3`, …) с глубиной.
-   - Сначала вставляем все уровни 1 (только chapter, нет parent), затем 2, и т.д. По каждому уровню:
-     - сопоставляем существующие рубрики `WHERE chapter_id=? AND parent_id IS NOT DISTINCT FROM ? AND lower(name)=lower(?)` — если есть, переиспользуем (это и есть «не дублировать андрологические»);
-     - если нет — `INSERT` и сохраняем id в `_import_oorep_rubric_map` для финального уровня.
-   - Батчи по 5 000 строк в `INSERT … ON CONFLICT DO NOTHING` + `RETURNING`.
+**Миграция БД**
+```sql
+ALTER TABLE public.ai_conversations
+  ADD COLUMN patient_id uuid REFERENCES public.patients(id) ON DELETE SET NULL,
+  ADD COLUMN patient_name text;
+CREATE INDEX ai_conversations_patient_idx ON public.ai_conversations(patient_id);
+```
 
-5. **Препараты**:
-   - Для каждого OOREP-remedy: `slug = lower(nameabbrev)`. Если `repertory_remedies.slug = ?` уже есть — переиспользуем. Иначе `INSERT (slug, name_latin=namelong, abbrev=nameabbrev)`.
-   - Mapping в `_import_oorep_remedy_map`.
+**Новый компонент** `src/components/cabinet/ThreadPatientBadge.tsx`
+- Props: `threadPatientId`, `threadPatientName`, `onChange(patientId|null, name|null)`.
+- Внутри: Popover с активным контекстом, recent, поиском.
 
-6. **Связи rubric_remedy** (самый большой, батчами по 10 000):
-   - JOIN staging-связей через оба mapping → `INSERT INTO repertory_rubric_remedies (rubric_id, remedy_id, grade) … ON CONFLICT (rubric_id, remedy_id) DO UPDATE SET grade = GREATEST(repertory_rubric_remedies.grade, EXCLUDED.grade)`.
-   - Это автоматически защищает 389 существующих андрологических связей (если совпадут — оставится более высокая градация; гарантированно ничего не удалится).
-   - Нужен уникальный индекс `(rubric_id, remedy_id)` — проверить, есть ли он; если нет, добавить миграцией перед импортом.
+**Изменения в `src/pages/Cabinet.tsx`**
+- Расширить тип `Conversation` полями `patient_id`, `patient_name`.
+- Select/insert/update подгружать и сохранять эти поля.
+- Заменить `ActivePatientBadge` на `ThreadPatientBadge(currentConv)`.
+- Добавить плашку над composer'ом.
+- При создании треда подставлять `getActiveContext().patientId/patientName`.
 
-7. **Верификация** (psql-запросы, отчёт в чат):
-   - Counts: рубрик / препаратов / связей до и после.
-   - Sample-rubric «Mind; ANXIETY» → ожидаем десятки препаратов с распределением grade 1/2/3 как в оригинале.
-   - Sample-rubric «Generalities; cold, agg.» — аналогично.
-   - Проверка, что все 389 исходных андрологических связей на месте: `SELECT count(*) FROM repertory_rubric_remedies WHERE created_at < <ts_перед_импортом>`.
+**Изменения в `SelectionContextMenu.tsx`**
+- Хранить `boundPatient` — приходит prop'ом из Cabinet (тред-привязка).
+- При формировании рецепта/плана `pushPendingRxItems`/`sendPlanItemsToProtocol` использует `boundPatient.patientId` вместо `active.patientId`.
 
-8. **Очистка**:
-   - `DROP TABLE _import_oorep_*` после успеха.
-   - Дамп `/tmp/oorep/*` не коммитим.
+**Изменения в Rx/Plan диалогах**
+- Добавить шапку с пациентом + warning, опции переключения, чекбокс «без привязки».
 
-## Технические детали
+**Хук поиска пациентов** в `ThreadPatientBadge` — простой `useEffect` + 300ms debounce, query `patients` с ILIKE по фамилии/имени, лимит 10.
 
-- Импорт идёт через `psql` в exec-инструменте (быстрее edge-функции и без таймаутов).
-- Каждый батч — отдельный `BEGIN; … COMMIT;`, чтобы рост WAL не съел память.
-- Прогресс пишу в stdout (виден в логе инструмента): `chapters: 36/36`, `rubrics: 12 000/74 667`, и т.д.
-- Уникальный индекс `(chapter_id, parent_id, lower(name))` на `repertory_rubrics` — нужен, чтобы дедуп работал; добавлю миграцией если нет.
-- Уникальный индекс `(rubric_id, remedy_id)` на `repertory_rubric_remedies` — нужен для `ON CONFLICT`.
-- Поле `kent_page` в наших рубриках в OOREP отсутствует — оставим `NULL` для импортируемых.
+## Что НЕ меняется
 
-## Откат
-
-Все импортируемые рубрики и препараты можно отличить от исходных андрологических по `created_at >= <ts_перед_импортом>`. На случай отката оставлю SQL-скрипт удаления только импортированных строк (исходные 389 связей не пострадают, т.к. их `created_at` раньше).
-
-## Что НЕ делаем
-
-- Не создаём новые таблицы вместо существующих.
-- Не трогаем UI `/admin/repertory` — структура та же, объёмы вырастут, существующая виртуализация ScrollArea справится (если будут лаги — отдельная задача).
-- Не переводим `name_ru` рубрик автоматически — это отдельный шаг (тысячи строк, нужен либо ручной перевод, либо отдельный AI-проход).
+- Логика BroadcastChannel в `protocolBridge.ts` — без правок.
+- Очереди фрагментов/Rx/Plan — без правок (только источник patientId меняется на тред-привязку).
+- Структура сообщений (`ai_messages`) — без правок.
