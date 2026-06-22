@@ -40,7 +40,7 @@ export default function AdminRepertoryByComplaint() {
   const [links, setLinks] = useState<Link[]>([]);
   const [computed, setComputed] = useState(false);
   const [computing, setComputing] = useState(false);
-  const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; source_url: string | null }[]>>({});
+  const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; body_ru: string | null; source_url: string | null }[]>>({});
 
   // Auto-pipeline progress: extract → select → compute
   type Stage = "idle" | "extract" | "select" | "compute" | "done" | "error";
@@ -185,25 +185,43 @@ export default function AdminRepertoryByComplaint() {
     toast({ title: "Подбор завершён", description: `${picked.length} рубрик · ${ex.stmts.length} утверждений` });
   }
 
-  // Load Materia Medica Relationship sections for top-5 remedies
+  // Load Materia Medica Relationship sections for top-5 remedies (translate EN→RU on demand)
   useEffect(() => {
     if (!computed) { setMmSections({}); return; }
     const top5 = ranking.slice(0, 5).map((r) => r.remedy.id);
     if (top5.length === 0) { setMmSections({}); return; }
+    let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("materia_medica_sections")
-        .select("remedy_id, heading, body, source_url")
-        .in("remedy_id", top5)
-        .eq("source", "boericke");
-      if (error) return;
-      const grouped: Record<string, { heading: string; body: string; source_url: string | null }[]> = {};
-      (data || []).forEach((row: any) => {
-        (grouped[row.remedy_id] ||= []).push({ heading: row.heading, body: row.body, source_url: row.source_url });
-      });
-      setMmSections(grouped);
+      const fetchRows = async () => {
+        const { data } = await supabase
+          .from("materia_medica_sections")
+          .select("remedy_id, heading, body, body_ru, source_url")
+          .in("remedy_id", top5)
+          .eq("source", "boericke");
+        const grouped: Record<string, { heading: string; body: string; body_ru: string | null; source_url: string | null }[]> = {};
+        (data || []).forEach((row: any) => {
+          (grouped[row.remedy_id] ||= []).push({ heading: row.heading, body: row.body, body_ru: row.body_ru, source_url: row.source_url });
+        });
+        return { data: data || [], grouped };
+      };
+      const first = await fetchRows();
+      if (cancelled) return;
+      setMmSections(first.grouped);
+      const needsTranslation = first.data.some((r: any) => !r.body_ru);
+      if (needsTranslation) {
+        try {
+          await supabase.functions.invoke("translate-mm-sections", { body: { remedy_ids: top5 } });
+          if (cancelled) return;
+          const second = await fetchRows();
+          if (!cancelled) setMmSections(second.grouped);
+        } catch (e) {
+          console.error("[mm-translate]", e);
+        }
+      }
     })();
+    return () => { cancelled = true; };
   }, [computed, ranking]);
+
 
 
   function removeStatement(s: string) {
@@ -441,9 +459,15 @@ export default function AdminRepertoryByComplaint() {
                               {sections.map((s, i) => (
                                 <div key={i} className="text-xs leading-relaxed">
                                   <span className="font-semibold text-foreground/80">{s.heading}. </span>
-                                  <span className="text-muted-foreground whitespace-pre-wrap">{s.body}</span>
+                                  <span className="text-foreground/90 whitespace-pre-wrap">
+                                    {s.body_ru || s.body}
+                                  </span>
+                                  {!s.body_ru && (
+                                    <span className="ml-1 text-[10px] text-muted-foreground italic">(перевод…)</span>
+                                  )}
                                 </div>
                               ))}
+
                             </div>
                           );
                         })}
