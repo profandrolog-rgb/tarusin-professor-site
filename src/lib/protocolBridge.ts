@@ -25,6 +25,25 @@ export type FragmentMessage = {
   sentAt: number;
 };
 
+export type ParsedPlanItem = {
+  section_category: string;
+  name: string;
+  dose: number | null;
+  dose_unit: string | null;
+  frequency: string | null;
+  duration_days: number | null;
+  time_of_day: string[];
+  route_hint: string | null;
+  notes: string | null;
+};
+
+export type PlanItemsMessage = {
+  type: "plan-items";
+  items: ParsedPlanItem[];
+  targetPatientId?: string;
+  sentAt: number;
+};
+
 let bc: BroadcastChannel | null = null;
 function getChannel(): BroadcastChannel | null {
   if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
