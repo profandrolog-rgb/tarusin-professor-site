@@ -278,6 +278,30 @@ export default function Cabinet() {
   const [unfiledOpen, setUnfiledOpen] = useState(true);
   const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return 288;
+    const saved = parseInt(window.localStorage.getItem("cabinet_sidebar_width") || "");
+    return Number.isFinite(saved) && saved >= 200 && saved <= 600 ? saved : 288;
+  });
+  const sidebarResizingRef = useRef(false);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!sidebarResizingRef.current) return;
+      const w = Math.min(600, Math.max(200, e.clientX));
+      setSidebarWidth(w);
+    };
+    const onUp = () => {
+      if (sidebarResizingRef.current) {
+        sidebarResizingRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        try { window.localStorage.setItem("cabinet_sidebar_width", String(sidebarWidth)); } catch {}
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [sidebarWidth]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
