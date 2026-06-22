@@ -30,7 +30,7 @@ import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
 import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
-import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 
 import type { CostCatalog } from "@/lib/treatment/cost";
