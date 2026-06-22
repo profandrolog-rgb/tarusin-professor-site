@@ -291,6 +291,19 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
             </div>
           )}
 
+          {pendingRxRemaining > 0 && !repeatPrescriptionId && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Бланк из AI-ассистента — препарат уже подставлен</p>
+                <p className="text-muted-foreground">
+                  После сохранения откроется следующий бланк. Осталось в очереди: <b>{pendingRxRemaining}</b>.
+                </p>
+              </div>
+            </div>
+          )}
+
+
           {/* Date */}
           <div className="space-y-2">
             <Label>Дата рецепта</Label>
