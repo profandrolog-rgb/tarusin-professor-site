@@ -73,6 +73,19 @@ export default function AdminRepertoryByComplaint() {
   };
   const pipelineRunning = stage === "extract" || stage === "select" || stage === "compute";
 
+  // Prescribe section
+  const [patient, setPatient] = useState<Patient | null>(null);
+  const [prescribeMap, setPrescribeMap] = useState<Record<string, PrescribeRow>>({});
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [repTitle, setRepTitle] = useState("");
+
+  // History
+  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyFilterPatient, setHistoryFilterPatient] = useState<Patient | null>(null);
+
+
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/repertory/by-complaint" } });
