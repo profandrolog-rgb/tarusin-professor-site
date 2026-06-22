@@ -81,6 +81,10 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
 
   const { data: batch } = await supabase.from("embedding_batches").select("*").eq("id", batchId).single();
   if (!batch) return;
+  if (!["pending", "processing"].includes(batch.status)) {
+    await logEvent(supabase, batchId, { stage: "batch_skip_status", status: batch.status, subbatch_index: subbatchIndex });
+    return;
+  }
 
   const allIds: string[] = Array.isArray(batch.rubric_ids) ? batch.rubric_ids : [];
   if (!allIds.length) {
@@ -160,9 +164,9 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
           embedded_at: new Date().toISOString(),
         }));
 
-        // Upsert in chunks of 100 to keep request size reasonable.
-        for (let i = 0; i < rowsToUpsert.length; i += 100) {
-          const chunk = rowsToUpsert.slice(i, i + 100);
+        // Upsert in small chunks: vector index updates can time out on large batches.
+        for (let i = 0; i < rowsToUpsert.length; i += 25) {
+          const chunk = rowsToUpsert.slice(i, i + 25);
           const { error: upErr } = await supabase.from("rubric_embeddings").upsert(chunk, { onConflict: "rubric_id" });
           if (upErr) throw new Error(`Upsert: ${upErr.message}`);
         }
