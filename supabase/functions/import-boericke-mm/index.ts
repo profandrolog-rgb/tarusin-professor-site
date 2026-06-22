@@ -12,7 +12,7 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SLICE = 25;
+const SLICE = 12;
 const BASE = "https://www.homeoint.org/books/boericmm";
 const WAYBACK = "https://web.archive.org/web/2023id_/https://www.homeoint.org/books/boericmm";
 
