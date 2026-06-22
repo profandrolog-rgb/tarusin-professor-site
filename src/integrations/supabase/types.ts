@@ -859,6 +859,59 @@ export type Database = {
         }
         Relationships: []
       }
+      complaint_repertorizations: {
+        Row: {
+          complaint: string
+          created_at: string
+          id: string
+          notes: string | null
+          patient_id: string | null
+          ranking: Json
+          selected_remedies: Json
+          selected_rubrics: Json
+          statements: Json
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          complaint: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          ranking?: Json
+          selected_remedies?: Json
+          selected_rubrics?: Json
+          statements?: Json
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          complaint?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          ranking?: Json
+          selected_remedies?: Json
+          selected_rubrics?: Json
+          statements?: Json
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_repertorizations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consultation_cases: {
         Row: {
           created_at: string
