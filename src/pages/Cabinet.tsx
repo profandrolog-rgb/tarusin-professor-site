@@ -314,6 +314,12 @@ export default function Cabinet() {
   });
   const [unfiledOpen, setUnfiledOpen] = useState(true);
   const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
+  // Pending patient binding for a not-yet-created conversation. Defaults to the patient
+  // currently broadcast by an open protocol tab (if any), so new chats inherit context.
+  const [pendingPatient, setPendingPatient] = useState<{ id: string | null; name: string | null }>(() => {
+    const a = (typeof window !== "undefined") ? getActiveContext() : null;
+    return { id: a?.patientId ?? null, name: a?.patientName ?? null };
+  });
   const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 288;
