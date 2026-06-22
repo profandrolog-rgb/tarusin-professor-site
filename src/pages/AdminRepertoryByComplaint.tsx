@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Loader2, Search, Sparkles, Calculator, X, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Sparkles, Calculator, X, Info, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Candidate {
@@ -40,6 +41,15 @@ export default function AdminRepertoryByComplaint() {
   const [computed, setComputed] = useState(false);
   const [computing, setComputing] = useState(false);
   const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; source_url: string | null }[]>>({});
+
+  // Auto-pipeline progress: extract → select → compute
+  type Stage = "idle" | "extract" | "select" | "compute" | "done" | "error";
+  const [stage, setStage] = useState<Stage>("idle");
+  const [stageMessage, setStageMessage] = useState<string>("");
+  const stageProgress: Record<Stage, number> = {
+    idle: 0, extract: 25, select: 60, compute: 90, done: 100, error: 0,
+  };
+  const pipelineRunning = stage === "extract" || stage === "select" || stage === "compute";
 
 
   useEffect(() => {
@@ -72,8 +82,8 @@ export default function AdminRepertoryByComplaint() {
       .slice(0, 10);
   }, [computed, selectedIds, links, remedyById]);
 
-  async function runExtract() {
-    if (!complaint.trim()) return;
+  async function runExtract(): Promise<{ stmts: string[]; cands: Omit<Candidate, "selected">[] } | null> {
+    if (!complaint.trim()) return null;
     setExtracting(true);
     setComputed(false);
     setStatements([]);
@@ -87,23 +97,25 @@ export default function AdminRepertoryByComplaint() {
       const cands: Omit<Candidate, "selected">[] = data.candidates || [];
       setStatements(stmts);
       setCandidates(cands.map((c) => ({ ...c, selected: true })));
-      toast({ title: `Найдено ${cands.length} рубрик`, description: `Утверждений: ${stmts.length}` });
+      return { stmts, cands };
     } catch (e: any) {
       toast({ title: "Ошибка извлечения", description: e?.message || String(e), variant: "destructive" });
+      return null;
     } finally {
       setExtracting(false);
     }
   }
 
-  async function runAiSelect() {
-    if (candidates.length === 0) return;
+  async function runAiSelect(initialCandidates?: Omit<Candidate, "selected">[]): Promise<string[] | null> {
+    const source = initialCandidates ?? candidates;
+    if (source.length === 0) return null;
     setSelecting(true);
     try {
       const { data, error } = await supabase.functions.invoke("repertorize-from-complaint", {
         body: {
           mode: "select",
           complaint,
-          candidates: candidates.map((c) => ({ rubric_id: c.rubric_id, name: c.name, name_ru: c.name_ru })),
+          candidates: source.map((c) => ({ rubric_id: c.rubric_id, name: c.name, name_ru: c.name_ru })),
         },
       });
       if (error) throw error;
@@ -112,21 +124,22 @@ export default function AdminRepertoryByComplaint() {
       setCandidates((prev) =>
         prev.map((c) => ({ ...c, selected: picked.has(c.rubric_id), reason: picked.get(c.rubric_id) || c.reason })),
       );
-      toast({ title: `ИИ выбрал ${picks.length} рубрик` });
+      return picks.map((p) => p.rubric_id);
     } catch (e: any) {
       toast({ title: "Ошибка выбора", description: e?.message || String(e), variant: "destructive" });
+      return null;
     } finally {
       setSelecting(false);
     }
   }
 
-  async function runCompute() {
-    if (selectedIds.size === 0) return;
+  async function runCompute(ids?: string[]): Promise<boolean> {
+    const useIds = ids && ids.length > 0 ? ids : Array.from(selectedIds);
+    if (useIds.length === 0) return false;
     setComputing(true);
     try {
-      const ids = Array.from(selectedIds);
       const [linksRes, remediesRes] = await Promise.all([
-        supabase.from("repertory_rubric_remedies").select("rubric_id,remedy_id,grade").in("rubric_id", ids),
+        supabase.from("repertory_rubric_remedies").select("rubric_id,remedy_id,grade").in("rubric_id", useIds),
         supabase.from("repertory_remedies").select("id,name_latin,name_ru,abbrev"),
       ]);
       if (linksRes.error) throw linksRes.error;
@@ -134,11 +147,42 @@ export default function AdminRepertoryByComplaint() {
       setLinks((linksRes.data as any) || []);
       setRemedies((remediesRes.data as any) || []);
       setComputed(true);
+      return true;
     } catch (e: any) {
       toast({ title: "Ошибка подсчёта", description: e?.message || String(e), variant: "destructive" });
+      return false;
     } finally {
       setComputing(false);
     }
+  }
+
+  // Single-click full pipeline: extract → AI select → compute ranking
+  async function runFullPipeline() {
+    if (!complaint.trim()) return;
+    setStage("extract");
+    setStageMessage("Разбираем жалобы и ищем рубрики по смыслу…");
+    const ex = await runExtract();
+    if (!ex) { setStage("error"); setStageMessage("Не удалось извлечь утверждения"); return; }
+    if (ex.cands.length === 0) {
+      setStage("error");
+      setStageMessage("Поиск рубрик не дал результатов. Проверьте, что эмбеддинги рубрик загружены.");
+      return;
+    }
+    setStage("select");
+    setStageMessage(`Найдено ${ex.cands.length} кандидатов из ${ex.stmts.length} утверждений. ИИ выбирает клинически уместные…`);
+    const picked = await runAiSelect(ex.cands);
+    if (!picked || picked.length === 0) {
+      setStage("error");
+      setStageMessage("ИИ не выбрал ни одной рубрики");
+      return;
+    }
+    setStage("compute");
+    setStageMessage(`ИИ выбрал ${picked.length} рубрик. Считаем ранжирование средств…`);
+    const ok = await runCompute(picked);
+    if (!ok) { setStage("error"); setStageMessage("Ошибка подсчёта ранжирования"); return; }
+    setStage("done");
+    setStageMessage(`Готово: ${picked.length} рубрик, ${ex.stmts.length} утверждений`);
+    toast({ title: "Подбор завершён", description: `${picked.length} рубрик · ${ex.stmts.length} утверждений` });
   }
 
   // Load Materia Medica Relationship sections for top-5 remedies
@@ -203,13 +247,53 @@ export default function AdminRepertoryByComplaint() {
                 rows={6}
                 maxLength={8000}
               />
-              <div className="flex items-center gap-2">
-                <Button onClick={runExtract} disabled={extracting || !complaint.trim()} className="gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={runFullPipeline} disabled={pipelineRunning || !complaint.trim()} className="gap-2">
+                  {pipelineRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Подобрать препараты
+                </Button>
+                <Button variant="outline" onClick={() => runExtract()} disabled={extracting || !complaint.trim()} className="gap-2">
                   {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  Найти кандидатов
+                  Только найти кандидатов
                 </Button>
                 <span className="text-xs text-muted-foreground">{complaint.length} / 8000</span>
               </div>
+
+              {stage !== "idle" && (
+                <div className="space-y-2 pt-2">
+                  <Progress value={stageProgress[stage]} className={stage === "error" ? "[&>div]:bg-destructive" : ""} />
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {[
+                      { key: "extract", label: "Поиск рубрик" },
+                      { key: "select", label: "ИИ-отбор" },
+                      { key: "compute", label: "Ранжирование" },
+                    ].map((s) => {
+                      const order = ["extract", "select", "compute", "done"];
+                      const idx = order.indexOf(s.key);
+                      const curIdx = order.indexOf(stage);
+                      const isDone = stage === "done" || curIdx > idx;
+                      const isCurrent = stage === s.key;
+                      return (
+                        <div key={s.key} className="flex items-center gap-1.5">
+                          {isCurrent ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                          ) : isDone ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <Circle className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                          <span className={isCurrent ? "font-medium" : isDone ? "" : "text-muted-foreground"}>{s.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {stageMessage && (
+                    <p className={`text-xs ${stage === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+                      {stageMessage}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -236,11 +320,11 @@ export default function AdminRepertoryByComplaint() {
                 <CardTitle className="text-base flex items-center justify-between flex-wrap gap-2">
                   <span>3. Рубрики-кандидаты ({candidates.length}, отмечено {selectedIds.size})</span>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={runAiSelect} disabled={selecting} className="gap-2">
+                    <Button size="sm" variant="outline" onClick={() => runAiSelect()} disabled={selecting} className="gap-2">
                       {selecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                       ИИ-подсказка выбора
                     </Button>
-                    <Button size="sm" onClick={runCompute} disabled={computing || selectedIds.size === 0} className="gap-2">
+                    <Button size="sm" onClick={() => runCompute()} disabled={computing || selectedIds.size === 0} className="gap-2">
                       {computing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
                       Посчитать ранжирование
                     </Button>

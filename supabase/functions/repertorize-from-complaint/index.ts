@@ -136,16 +136,20 @@ Deno.serve(async (req) => {
       // 2) Voyage embeddings for all statements (query type)
       const vectors = await voyageEmbed(voyageKey, statements, "query");
 
-      // 3) Similarity search per statement
+      // 3) Similarity search per statement — run in parallel to avoid serial latency
       const candidatesMap = new Map<string, {
         rubric_id: string; name: string; name_ru: string | null; chapter_id: string | null;
         similarity: number; matched_statements: string[];
       }>();
-      for (let i = 0; i < statements.length; i++) {
-        const { data, error } = await supabase.rpc("search_rubrics_by_embedding", {
-          _query: vectors[i] as unknown as string, // pg-rest accepts JSON array → vector
-          _limit: 8,
-        });
+      const searchResults = await Promise.all(
+        statements.map((_, i) =>
+          supabase.rpc("search_rubrics_by_embedding", {
+            _query: vectors[i] as unknown as string,
+            _limit: 8,
+          }).then((r) => ({ i, data: r.data, error: r.error })),
+        ),
+      );
+      for (const { i, data, error } of searchResults) {
         if (error) {
           console.log(`[repertorize] search error for stmt ${i}:`, error.message);
           continue;
