@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Copy, Send, Pill, History, Users } from "lucide-react";
+import { Copy, Send, Pill, History, Users, ListPlus } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -16,9 +16,13 @@ import {
   getActiveContext,
   getRecentContexts,
   sendFragmentToProtocol,
+  sendPlanItemsToProtocol,
   subscribeActiveContext,
   type ActivePatientContext,
+  type ParsedPlanItem,
 } from "@/lib/protocolBridge";
+import { supabase } from "@/integrations/supabase/client";
+import { PlanItemsPreviewDialog, type EditableItem } from "./PlanItemsPreviewDialog";
 
 const KIND_LABEL: Record<string, string> = {
   visit: "осмотр",
