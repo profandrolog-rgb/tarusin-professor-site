@@ -246,13 +246,53 @@ export default function AdminRepertoryByComplaint() {
                 rows={6}
                 maxLength={8000}
               />
-              <div className="flex items-center gap-2">
-                <Button onClick={runExtract} disabled={extracting || !complaint.trim()} className="gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={runFullPipeline} disabled={pipelineRunning || !complaint.trim()} className="gap-2">
+                  {pipelineRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Подобрать препараты
+                </Button>
+                <Button variant="outline" onClick={() => runExtract()} disabled={extracting || !complaint.trim()} className="gap-2">
                   {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  Найти кандидатов
+                  Только найти кандидатов
                 </Button>
                 <span className="text-xs text-muted-foreground">{complaint.length} / 8000</span>
               </div>
+
+              {stage !== "idle" && (
+                <div className="space-y-2 pt-2">
+                  <Progress value={stageProgress[stage]} className={stage === "error" ? "[&>div]:bg-destructive" : ""} />
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {[
+                      { key: "extract", label: "Поиск рубрик" },
+                      { key: "select", label: "ИИ-отбор" },
+                      { key: "compute", label: "Ранжирование" },
+                    ].map((s) => {
+                      const order = ["extract", "select", "compute", "done"];
+                      const idx = order.indexOf(s.key);
+                      const curIdx = order.indexOf(stage);
+                      const isDone = stage === "done" || curIdx > idx;
+                      const isCurrent = stage === s.key;
+                      return (
+                        <div key={s.key} className="flex items-center gap-1.5">
+                          {isCurrent ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                          ) : isDone ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <Circle className="w-3.5 h-3.5 text-muted-foreground" />
+                          )}
+                          <span className={isCurrent ? "font-medium" : isDone ? "" : "text-muted-foreground"}>{s.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {stageMessage && (
+                    <p className={`text-xs ${stage === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+                      {stageMessage}
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
