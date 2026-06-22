@@ -39,6 +39,8 @@ export default function AdminRepertoryByComplaint() {
   const [links, setLinks] = useState<Link[]>([]);
   const [computed, setComputed] = useState(false);
   const [computing, setComputing] = useState(false);
+  const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; source_url: string | null }[]>>({});
+
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/repertory/by-complaint" } });
