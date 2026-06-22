@@ -15,7 +15,7 @@ import { PatientSelect } from "./PatientSelect";
 import { MedicationSearch } from "./MedicationSearch";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { PrescriptionPreview } from "./PrescriptionPreview";
-import { popNextPendingRxItem, getPendingRxCount } from "@/lib/protocolBridge";
+import { popNextPendingRxItem, getPendingRxCount, popRxBatch } from "@/lib/protocolBridge";
 
 interface PrescriptionItem {
   medication_latin_name: string;
