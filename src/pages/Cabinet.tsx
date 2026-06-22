@@ -210,12 +210,12 @@ function ConvRow({
         e.dataTransfer.setData("application/x-conv-id", conv.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
+      className={`group flex items-start gap-1 rounded-md px-2 py-1.5 cursor-pointer hover:bg-accent ${active ? "bg-accent" : ""}`}
       onClick={onOpen}
       onDoubleClick={(e) => { e.stopPropagation(); onRename(); }}
       title={conv.title}
     >
-      <span className="flex-1 text-sm truncate">{conv.title}</span>
+      <span className="flex-1 text-sm break-words whitespace-normal leading-snug">{conv.title}</span>
       <button
         className="p-1 text-muted-foreground hover:text-foreground opacity-70 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onRename(); }}
