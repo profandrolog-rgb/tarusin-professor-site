@@ -37,6 +37,8 @@ export default function AdminPatientDetail() {
   const [topItems, setTopItems] = useState<ItemAgg[]>([]);
   const [busy, setBusy] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
+  const [reps, setReps] = useState<{ id: string; title: string | null; complaint: string; created_at: string; selected_remedies: any[] }[]>([]);
+
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
