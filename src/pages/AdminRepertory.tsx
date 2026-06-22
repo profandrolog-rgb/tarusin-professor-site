@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +56,9 @@ export default function AdminRepertory() {
   const [embedDone, setEmbedDone] = useState(0);
   const [embedStatus, setEmbedStatus] = useState<string | null>(null);
   const [enqueueing, setEnqueueing] = useState(false);
+  const embedBaselineRef = useRef<{ done: number; ts: number } | null>(null);
+  const [embedRate, setEmbedRate] = useState<number>(0); // rubrics/sec
+  const wasProcessingRef = useRef(false);
 
   async function refreshEmbedStats() {
     const [{ count: totalCount }, { count: doneCount }, { data: lastBatch }] = await Promise.all([
@@ -63,9 +66,30 @@ export default function AdminRepertory() {
       supabase.from("rubric_embeddings").select("rubric_id", { count: "exact", head: true }),
       supabase.from("embedding_batches").select("id,status,processed_rubrics,total_rubrics").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setEmbedTotal(totalCount || 0);
-    setEmbedDone(doneCount || 0);
-    if (lastBatch) setEmbedStatus(lastBatch.status);
+    const total = totalCount || 0;
+    const done = doneCount || 0;
+    setEmbedTotal(total);
+    setEmbedDone(done);
+    const status = lastBatch?.status ?? null;
+    setEmbedStatus(status);
+
+    if (status === "processing") {
+      if (!embedBaselineRef.current) {
+        embedBaselineRef.current = { done, ts: Date.now() };
+      } else {
+        const elapsed = (Date.now() - embedBaselineRef.current.ts) / 1000;
+        const delta = done - embedBaselineRef.current.done;
+        if (elapsed > 5 && delta > 0) setEmbedRate(delta / elapsed);
+      }
+      wasProcessingRef.current = true;
+    } else {
+      if (wasProcessingRef.current && total > 0 && (status === "completed" || done >= total)) {
+        toast({ title: "Эмбеддинг завершён", description: `Обработано ${done.toLocaleString("ru")} рубрик` });
+      }
+      wasProcessingRef.current = false;
+      embedBaselineRef.current = null;
+      setEmbedRate(0);
+    }
   }
 
   // Materia Medica import (Boericke)
@@ -334,9 +358,32 @@ export default function AdminRepertory() {
                 <div className="mt-2 max-w-md">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                     <span>Эмбеддинги рубрик</span>
-                    <span className="font-mono">{embedDone} / {embedTotal}{embedStatus === "processing" && " · обрабатывается…"}</span>
+                    <span className="font-mono">
+                      {embedDone.toLocaleString("ru")} / {embedTotal.toLocaleString("ru")}
+                      {" · "}
+                      {(embedTotal ? (embedDone / embedTotal) * 100 : 0).toFixed(1)}%
+                      {embedStatus === "processing" && " · идёт…"}
+                    </span>
                   </div>
                   <Progress value={embedTotal ? (embedDone / embedTotal) * 100 : 0} className="h-1.5" />
+                  {embedStatus === "processing" && (
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1 font-mono">
+                      <span>
+                        {embedRate > 0 ? `${(embedRate * 60).toFixed(0)} рубрик/мин` : "оценка скорости…"}
+                      </span>
+                      <span>
+                        {embedRate > 0 && embedDone < embedTotal
+                          ? (() => {
+                              const secs = Math.max(0, Math.round((embedTotal - embedDone) / embedRate));
+                              const h = Math.floor(secs / 3600);
+                              const m = Math.floor((secs % 3600) / 60);
+                              const s = secs % 60;
+                              return `осталось ~${h > 0 ? `${h}ч ` : ""}${m}м ${s}с`;
+                            })()
+                          : ""}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
               {mmJob && mmJob.total > 0 && (
