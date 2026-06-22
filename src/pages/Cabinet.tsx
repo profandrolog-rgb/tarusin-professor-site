@@ -1580,9 +1580,11 @@ export default function Cabinet() {
               }`}>
                 {m.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-primary" />}
               </div>
-              <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] ${
-                m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}>
+              {(() => {
+                const bubble = (
+                  <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] ${
+                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                  }`}>
                 {m.attachments && m.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
                     {m.attachments.map((a, j) => (
@@ -1860,7 +1862,12 @@ export default function Cabinet() {
                 {m.model && m.role === "assistant" && (!m.content || streaming) && (
                   <div className="text-[10px] text-muted-foreground mt-1 opacity-60">{m.model}</div>
                 )}
-              </div>
+                  </div>
+                );
+                return m.role === "assistant"
+                  ? <SelectionContextMenu fullText={m.content}>{bubble}</SelectionContextMenu>
+                  : bubble;
+              })()}
             </div>
           ))}
         </div>
