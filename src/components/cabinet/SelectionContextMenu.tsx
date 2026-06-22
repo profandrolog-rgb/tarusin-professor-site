@@ -234,6 +234,16 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
         patientName={active?.kind === "treatment_plan" ? active.patientName : null}
         onConfirm={confirmSendPlanItems}
       />
+
+      <RxItemsPreviewDialog
+        open={rxOpen}
+        onOpenChange={setRxOpen}
+        items={rxItems}
+        onItemsChange={setRxItems}
+        loading={rxParsing}
+        patientName={active?.patientName ?? null}
+        onConfirm={confirmSendRxItems}
+      />
     </>
   );
 }
