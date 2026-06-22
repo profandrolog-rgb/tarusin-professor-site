@@ -52,6 +52,15 @@ export function RxItemsPreviewDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {boundPatient && (
+          <PatientConfirmationBanner
+            boundPatient={boundPatient}
+            activeContext={activeContext}
+            onPatientChange={onPatientChange}
+          />
+        )}
+
+
         {loading ? (
           <div className="flex-1 flex items-center justify-center py-16 text-muted-foreground">
             <Loader2 className="w-6 h-6 animate-spin mr-2" />
