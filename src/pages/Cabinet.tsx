@@ -24,6 +24,9 @@ import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_K
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
+import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
+import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
+import { Link2 } from "lucide-react";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
