@@ -44,7 +44,10 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
   const [items, setItems] = useState<PrescriptionItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedPrescription, setSavedPrescription] = useState<any>(null);
+  const [pendingRxRemaining, setPendingRxRemaining] = useState<number>(0);
   const printRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  const queryPatientId = searchParams.get("patientId");
 
   // Load repeat prescription data
   useEffect(() => {
@@ -52,6 +55,46 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
       loadRepeatPrescription(repeatPrescriptionId);
     }
   }, [repeatPrescriptionId, repeatWithoutPatient]);
+
+  // Auto-load patient by ?patientId= (from Cabinet)
+  useEffect(() => {
+    if (!queryPatientId || patient) return;
+    (async () => {
+      const { data } = await supabase
+        .from("patients")
+        .select("id, full_name, birth_date")
+        .eq("id", queryPatientId)
+        .maybeSingle();
+      if (data) setPatient(data as Patient);
+    })();
+  }, [queryPatientId, patient]);
+
+  // Pull next queued Rx item (one drug per blank)
+  const loadNextPendingRx = () => {
+    const next = popNextPendingRxItem(queryPatientId ?? undefined);
+    if (next) {
+      setItems([{
+        medication_latin_name: next.item.medication_latin_name,
+        dosage_form: next.item.dosage_form,
+        dose: next.item.dose,
+        quantity: next.item.quantity || 1,
+        frequency: next.item.frequency,
+        duration: next.item.duration,
+      }]);
+      setPendingRxRemaining(next.remaining);
+      return true;
+    }
+    setPendingRxRemaining(0);
+    return false;
+  };
+
+  useEffect(() => {
+    if (repeatPrescriptionId) return;
+    if (getPendingRxCount() > 0) {
+      loadNextPendingRx();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadRepeatPrescription = async (id: string) => {
     const { data: prescription } = await supabase
