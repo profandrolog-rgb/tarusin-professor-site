@@ -4488,6 +4488,15 @@ export type Database = {
       }
       generate_plan_public_hash: { Args: never; Returns: string }
       get_public_plan: { Args: { _hash: string }; Returns: Json }
+      get_repertory_chapter_stats: {
+        Args: never
+        Returns: {
+          chapter_id: string
+          root_rubrics: number
+          total_links: number
+          total_rubrics: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
