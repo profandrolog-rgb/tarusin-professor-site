@@ -1300,6 +1300,20 @@ export default function Cabinet() {
             })()}
           </div>
         </ScrollArea>
+        {/* Resize handle (desktop only) */}
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            sidebarResizingRef.current = true;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+          onDoubleClick={() => setSidebarWidth(288)}
+          className="hidden md:block absolute top-0 right-0 h-full w-1.5 -mr-0.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 transition-colors z-10"
+          title="Потяните, чтобы изменить ширину (двойной клик — сбросить)"
+          aria-label="Изменить ширину панели"
+          role="separator"
+        />
       </aside>
 
       {/* Main chat */}
