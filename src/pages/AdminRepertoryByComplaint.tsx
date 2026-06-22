@@ -322,14 +322,52 @@ export default function AdminRepertoryByComplaint() {
                 )}
 
                 <div className="mt-6 pt-4 border-t">
-                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Info className="w-4 h-4 text-muted-foreground" />Сочетания и сравнения (Materia Medica Бёрике)
+                  <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                    <Info className="w-4 h-4 text-muted-foreground" />Сочетания и сравнения (Materia Medica Бёрике) — топ-5
                   </div>
-                  <div className="text-xs text-muted-foreground bg-muted/40 rounded p-3">
-                    Materia Medica Бёрике ещё не импортирована в базу. После импорта таблицы <code className="text-[11px]">materia_medica_sections</code> здесь
-                    появятся разделы Compare / Complementary / Antidote для топ-5 средств.
-                  </div>
+                  {(() => {
+                    const top5 = ranking.slice(0, 5);
+                    const anyData = top5.some((r) => (mmSections[r.remedy.id] || []).length > 0);
+                    if (!anyData) {
+                      return (
+                        <div className="text-xs text-muted-foreground bg-muted/40 rounded p-3">
+                          Для топ-5 средств не найдено разделов Materia Medica. Запустите импорт Бёрике на странице{" "}
+                          <Link to="/admin/repertory" className="underline">репертория</Link>.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-3">
+                        {top5.map((row) => {
+                          const sections = mmSections[row.remedy.id] || [];
+                          if (sections.length === 0) return null;
+                          return (
+                            <div key={row.remedy.id} className="rounded-md border bg-muted/30 p-3">
+                              <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                                <div className="font-medium text-sm">
+                                  {row.remedy.name_latin}
+                                  {row.remedy.name_ru && <span className="text-muted-foreground font-normal"> · {row.remedy.name_ru}</span>}
+                                </div>
+                                {sections[0]?.source_url && (
+                                  <a href={sections[0].source_url} target="_blank" rel="noreferrer" className="text-[11px] text-muted-foreground hover:text-foreground underline">
+                                    источник
+                                  </a>
+                                )}
+                              </div>
+                              {sections.map((s, i) => (
+                                <div key={i} className="text-xs leading-relaxed">
+                                  <span className="font-semibold text-foreground/80">{s.heading}. </span>
+                                  <span className="text-muted-foreground whitespace-pre-wrap">{s.body}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
+
               </CardContent>
             </Card>
           )}
