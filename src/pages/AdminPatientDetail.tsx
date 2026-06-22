@@ -37,6 +37,8 @@ export default function AdminPatientDetail() {
   const [topItems, setTopItems] = useState<ItemAgg[]>([]);
   const [busy, setBusy] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
+  const [reps, setReps] = useState<{ id: string; title: string | null; complaint: string; created_at: string; selected_remedies: any[] }[]>([]);
+
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
@@ -69,6 +71,18 @@ export default function AdminPatientDetail() {
         else map.set(key, { name, section: it.section_category, count: 1 });
       }
       setTopItems([...map.values()].sort((a, b) => b.count - a.count).slice(0, 5));
+
+      const { data: repsData } = await supabase
+        .from("complaint_repertorizations")
+        .select("id, title, complaint, created_at, selected_remedies")
+        .eq("patient_id", id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setReps(((repsData as any[]) || []).map((r) => ({
+        ...r,
+        selected_remedies: Array.isArray(r.selected_remedies) ? r.selected_remedies : [],
+      })));
+
       setBusy(false);
     })();
   }, [id]);
@@ -276,6 +290,50 @@ export default function AdminPatientDetail() {
             </CardContent>
           </Card>
         )}
+
+        {/* Гомеопатические подборы */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Гомеопатические подборы ({reps.length})</CardTitle>
+            <Link to="/admin/repertory/by-complaint">
+              <Button size="sm" variant="outline" className="gap-2"><Plus className="w-3.5 h-3.5" />Новый подбор</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {reps.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-6">Подборов по жалобам ещё нет</div>
+            ) : (
+              <div className="divide-y">
+                {reps.map((r) => {
+                  const prescribed = r.selected_remedies.filter((s: any) => s.prescribe);
+                  return (
+                    <div key={r.id} className="py-2 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">
+                            {r.title || r.complaint.slice(0, 90) + (r.complaint.length > 90 ? "…" : "")}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{format(parseISO(r.created_at), "d MMM yyyy", { locale: ru })}</span>
+                        </div>
+                        {prescribed.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {prescribed.slice(0, 8).map((s: any, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-[10px] font-normal">{s.name_latin} {s.potency}</Badge>
+                            ))}
+                            {prescribed.length > 8 && <Badge variant="outline" className="text-[10px]">+{prescribed.length - 8}</Badge>}
+                          </div>
+                        )}
+                      </div>
+                      <Link to="/admin/repertory/by-complaint">
+                        <Button size="sm" variant="ghost">Открыть</Button>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

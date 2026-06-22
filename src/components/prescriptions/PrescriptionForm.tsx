@@ -15,7 +15,7 @@ import { PatientSelect } from "./PatientSelect";
 import { MedicationSearch } from "./MedicationSearch";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { PrescriptionPreview } from "./PrescriptionPreview";
-import { popNextPendingRxItem, getPendingRxCount } from "@/lib/protocolBridge";
+import { popNextPendingRxItem, getPendingRxCount, popRxBatch } from "@/lib/protocolBridge";
 
 interface PrescriptionItem {
   medication_latin_name: string;
@@ -90,6 +90,22 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
 
   useEffect(() => {
     if (repeatPrescriptionId) return;
+    // First check for batch (multiple items for one prescription, e.g. homeopathic repertory)
+    const batch = popRxBatch(queryPatientId ?? undefined);
+    if (batch && batch.items.length > 0) {
+      setItems(
+        batch.items.map((it) => ({
+          medication_latin_name: it.medication_latin_name,
+          dosage_form: it.dosage_form,
+          dose: it.dose,
+          quantity: it.quantity || 1,
+          frequency: it.frequency,
+          duration: it.duration,
+        })),
+      );
+      setPendingRxRemaining(0);
+      return;
+    }
     if (getPendingRxCount() > 0) {
       loadNextPendingRx();
     }
