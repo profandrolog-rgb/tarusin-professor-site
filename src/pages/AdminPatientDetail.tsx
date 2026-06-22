@@ -290,6 +290,50 @@ export default function AdminPatientDetail() {
             </CardContent>
           </Card>
         )}
+
+        {/* Гомеопатические подборы */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Гомеопатические подборы ({reps.length})</CardTitle>
+            <Link to="/admin/repertory/by-complaint">
+              <Button size="sm" variant="outline" className="gap-2"><Plus className="w-3.5 h-3.5" />Новый подбор</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {reps.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-6">Подборов по жалобам ещё нет</div>
+            ) : (
+              <div className="divide-y">
+                {reps.map((r) => {
+                  const prescribed = r.selected_remedies.filter((s: any) => s.prescribe);
+                  return (
+                    <div key={r.id} className="py-2 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">
+                            {r.title || r.complaint.slice(0, 90) + (r.complaint.length > 90 ? "…" : "")}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{format(parseISO(r.created_at), "d MMM yyyy", { locale: ru })}</span>
+                        </div>
+                        {prescribed.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {prescribed.slice(0, 8).map((s: any, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-[10px] font-normal">{s.name_latin} {s.potency}</Badge>
+                            ))}
+                            {prescribed.length > 8 && <Badge variant="outline" className="text-[10px]">+{prescribed.length - 8}</Badge>}
+                          </div>
+                        )}
+                      </div>
+                      <Link to="/admin/repertory/by-complaint">
+                        <Button size="sm" variant="ghost">Открыть</Button>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
