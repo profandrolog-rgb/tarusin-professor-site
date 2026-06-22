@@ -108,6 +108,38 @@ type Msg = {
   batch?: { task: string; partial: BatchPartial[] };
 };
 
+function ActivePatientBadge() {
+  const [ctx, setCtx] = useState<ActivePatientContext | null>(() => getActiveContext());
+  useEffect(() => {
+    const unsub = subscribeActiveContext(setCtx);
+    const onFocus = () => setCtx(getActiveContext());
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(() => setCtx(getActiveContext()), 30000);
+    return () => { unsub(); window.removeEventListener("focus", onFocus); clearInterval(interval); };
+  }, []);
+  const KIND: Record<string, string> = { visit: "осмотр", ultrasound: "УЗИ", consultation: "консультация", treatment_plan: "план" };
+  if (!ctx) {
+    return (
+      <span className="text-xs text-muted-foreground inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-dashed">
+        <Link2 className="w-3 h-3" /> Нет активного протокола
+      </span>
+    );
+  }
+  return (
+    <a
+      href={ctx.url}
+      target="_blank"
+      rel="noopener"
+      className="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+      title="Открыть протокол в новой вкладке"
+    >
+      <Link2 className="w-3 h-3" />
+      <span className="font-medium truncate max-w-[180px]">{ctx.patientName}</span>
+      <span className="text-primary/70">· {KIND[ctx.kind] || ctx.kind}</span>
+    </a>
+  );
+}
+
 
 type Conversation = {
   id: string;
