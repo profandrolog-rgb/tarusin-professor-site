@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Loader2, ChevronRight, BookOpen, X, Search } from "lucide-react";
+import { ArrowLeft, Loader2, ChevronRight, BookOpen, X, Search, Sparkles, Zap } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "@/hooks/use-toast";
 
 interface Chapter { id: string; ord: number; name_en: string; name_ru: string }
 interface Rubric { id: string; chapter_id: string; parent_id: string | null; name: string; kent_page: number | null }
