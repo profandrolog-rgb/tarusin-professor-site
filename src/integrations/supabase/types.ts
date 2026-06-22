@@ -4482,6 +4482,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      enqueue_all_missing_embeddings: { Args: never; Returns: string }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
