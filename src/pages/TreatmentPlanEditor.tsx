@@ -30,7 +30,7 @@ import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
 import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
-import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 
 import type { CostCatalog } from "@/lib/treatment/cost";
@@ -92,6 +92,98 @@ export default function TreatmentPlanEditor() {
   const isNew = !id;
 
   useProtocolFragmentReceiver({ patientId: patient?.id, kind: "treatment_plan" });
+
+  // Receive structured plan items distributed from the AI cabinet
+  const ingestParsedItems = useCallback(async (parsed: ParsedPlanItem[]) => {
+    if (!parsed.length) return;
+    // Try to match each by name in treatment_catalog
+    const names = Array.from(new Set(parsed.map((p) => p.name).filter(Boolean)));
+    let catalogRows: any[] = [];
+    if (names.length) {
+      const orExpr = names.map((n) => `name.ilike.%${n.replace(/[,()]/g, " ").trim().split(/\s+/)[0]}%`).join(",");
+      const { data } = await supabase
+        .from("treatment_catalog")
+        .select("*")
+        .eq("is_active", true)
+        .or(orExpr)
+        .limit(200);
+      catalogRows = data || [];
+    }
+    const findMatch = (name: string, section: string) => {
+      const lname = name.toLowerCase();
+      const candidates = catalogRows.filter((c) => {
+        const n = (c.name || "").toLowerCase();
+        const inn = (c.inn || "").toLowerCase();
+        return n && (lname.includes(n) || n.includes(lname) || (inn && lname.includes(inn)));
+      });
+      // prefer same-section match
+      return candidates.find((c) => c.category === section) || candidates[0] || null;
+    };
+    const newItems: PlanItem[] = parsed.map((p) => {
+      const match = findMatch(p.name, p.section_category);
+      const base: PlanItem = match
+        ? {
+            client_id: newId(),
+            catalog_id: match.id,
+            section_category: (p.section_category as TreatmentCategory) || match.category,
+            name_snapshot: match.name,
+            inn_snapshot: match.inn,
+            form_snapshot: match.form,
+            dose: p.dose ?? match.default_dose,
+            dose_unit: p.dose_unit ?? match.dose_unit,
+            dilution_volume: match.default_dilution_volume,
+            dilution_solvent: match.default_dilution_solvent,
+            frequency: p.frequency ?? match.default_frequency,
+            duration_days: p.duration_days ?? match.default_duration_days,
+            time_of_day: p.time_of_day?.length ? p.time_of_day : (match.time_of_day_default || []),
+            infusion_rate: match.infusion_rate,
+            notes: p.notes ?? match.notes,
+            is_off_label: !!match.is_off_label,
+            light_sensitive: match.light_sensitive,
+            glucose_only: match.glucose_only,
+            dose_range_min: match.dose_range_min,
+            dose_range_max: match.dose_range_max,
+            repertory_remedy_id: match.repertory_remedy_id ?? null,
+            potency: match.potency ?? null,
+            dosing_schedule: match.dosing_schedule ?? null,
+          }
+        : {
+            client_id: newId(),
+            catalog_id: null,
+            section_category: p.section_category as TreatmentCategory,
+            name_snapshot: p.name,
+            inn_snapshot: null,
+            form_snapshot: null,
+            dose: p.dose,
+            dose_unit: p.dose_unit,
+            dilution_volume: null,
+            dilution_solvent: null,
+            frequency: p.frequency,
+            duration_days: p.duration_days,
+            time_of_day: p.time_of_day || [],
+            notes: p.notes,
+            is_off_label: false,
+          };
+      if (mode === "scheduled" && !base.day_pattern) base.day_pattern = `1-${durationDays}`;
+      return base;
+    });
+    setItems((prev) => [...prev, ...newItems]);
+    const matched = newItems.filter((i) => i.catalog_id).length;
+    toast({
+      title: `Добавлено ${newItems.length} позиций из ИИ-ассистента`,
+      description: matched > 0 ? `${matched} из каталога, ${newItems.length - matched} как свободный текст` : "все позиции как свободный текст",
+    });
+  }, [mode, durationDays]);
+
+  useEffect(() => {
+    const unsub = subscribePlanItems((msg) => ingestParsedItems(msg.items), { patientId: patient?.id });
+    // drain queued items for this patient on mount
+    const queued = popQueuedPlanItems({ patientId: patient?.id });
+    if (queued.length) {
+      setTimeout(() => queued.forEach((m) => ingestParsedItems(m.items)), 300);
+    }
+    return () => unsub();
+  }, [patient?.id, ingestParsedItems]);
 
   useEffect(() => {
     if (!patient) return;
