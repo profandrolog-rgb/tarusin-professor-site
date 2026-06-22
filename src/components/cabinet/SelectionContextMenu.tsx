@@ -26,6 +26,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { PlanItemsPreviewDialog, type EditableItem } from "./PlanItemsPreviewDialog";
 import { RxItemsPreviewDialog, type EditableRxItem } from "./RxItemsPreviewDialog";
+import type { PatientSelection } from "./PatientPickerPopover";
 
 const KIND_LABEL: Record<string, string> = {
   visit: "осмотр",
@@ -39,7 +40,17 @@ function getSelectedText(): string {
   return sel ? sel.toString().trim() : "";
 }
 
-export function SelectionContextMenu({ children, fullText }: { children: ReactNode; fullText?: string }) {
+export function SelectionContextMenu({
+  children,
+  fullText,
+  boundPatient,
+  onBoundPatientChange,
+}: {
+  children: ReactNode;
+  fullText?: string;
+  boundPatient?: PatientSelection;
+  onBoundPatientChange?: (sel: PatientSelection) => void;
+}) {
   const [active, setActive] = useState<ActivePatientContext | null>(() => getActiveContext());
   const [recent, setRecent] = useState<ActivePatientContext[]>(() => getRecentContexts());
 
@@ -120,13 +131,22 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
     }
   };
 
+  // Use the thread's bound patient as the primary source for action targeting.
+  // Fallback to active tab context only if no thread binding.
+  const effectivePatientId = boundPatient?.id ?? active?.patientId ?? null;
+  const effectivePatientName = boundPatient?.name ?? active?.patientName ?? null;
+
   const confirmSendRxItems = (selected: ParsedRxItem[]) => {
     if (selected.length === 0) return;
-    pushPendingRxItems(selected, active?.patientId);
+    pushPendingRxItems(selected, effectivePatientId ?? undefined);
     setRxOpen(false);
-    const url = `/admin/prescriptions${active?.patientId ? `?patientId=${active.patientId}` : ""}`;
+    const url = `/admin/prescriptions${effectivePatientId ? `?patientId=${effectivePatientId}` : ""}`;
     window.open(url, "_blank", "noopener");
-    toast.success(`В очереди ${selected.length} бланк(ов) — откроется форма рецептов`);
+    toast.success(
+      effectivePatientName
+        ? `${selected.length} бланк(ов) для: ${effectivePatientName}`
+        : `${selected.length} бланк(ов) — без привязки к пациенту`,
+    );
   };
 
 
@@ -163,15 +183,35 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
 
   const confirmSendPlanItems = (selected: ParsedPlanItem[]) => {
     if (selected.length === 0) return;
-    const target = active?.kind === "treatment_plan" ? active : undefined;
+    // Prefer the active treatment_plan tab if its patient matches the bound patient;
+    // otherwise just queue with the bound patientId.
+    const target =
+      active?.kind === "treatment_plan" &&
+      (!effectivePatientId || active.patientId === effectivePatientId)
+        ? active
+        : effectivePatientId
+        ? ({
+            patientId: effectivePatientId,
+            patientName: effectivePatientName ?? "",
+            kind: "treatment_plan" as const,
+            url: "",
+            updatedAt: Date.now(),
+          })
+        : undefined;
     sendPlanItemsToProtocol(selected, target);
     setDialogOpen(false);
     toast.success(
-      target
-        ? `Отправлено ${selected.length} позиций в план: ${target.patientName}`
-        : `${selected.length} позиций в очереди — откройте план лечения пациента`,
+      effectivePatientName
+        ? `${selected.length} позиций для плана: ${effectivePatientName}`
+        : `${selected.length} позиций в очереди — без привязки к пациенту`,
     );
   };
+
+  const bindingLabel = boundPatient?.id
+    ? boundPatient.name
+    : active?.patientName
+    ? `${active.patientName} (из вкладки)`
+    : null;
 
   return (
     <>
@@ -179,10 +219,10 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
         <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent className="w-72">
           <ContextMenuLabel className="text-xs text-muted-foreground font-normal">
-            {active ? (
-              <>Активный протокол: <span className="text-foreground font-medium">{active.patientName}</span> · {KIND_LABEL[active.kind] || active.kind}</>
+            {bindingLabel ? (
+              <>Пациент: <span className="text-foreground font-medium">{bindingLabel}</span></>
             ) : (
-              "Нет активного протокола"
+              "Без привязки к пациенту"
             )}
           </ContextMenuLabel>
           <ContextMenuSeparator />
@@ -231,7 +271,10 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
         items={previewItems}
         onItemsChange={setPreviewItems}
         loading={parsing}
-        patientName={active?.kind === "treatment_plan" ? active.patientName : null}
+        patientName={effectivePatientName}
+        boundPatient={boundPatient ?? { id: null, name: null }}
+        activeContext={active}
+        onPatientChange={onBoundPatientChange}
         onConfirm={confirmSendPlanItems}
       />
 
@@ -241,7 +284,10 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
         items={rxItems}
         onItemsChange={setRxItems}
         loading={rxParsing}
-        patientName={active?.patientName ?? null}
+        patientName={effectivePatientName}
+        boundPatient={boundPatient ?? { id: null, name: null }}
+        activeContext={active}
+        onPatientChange={onBoundPatientChange}
         onConfirm={confirmSendRxItems}
       />
     </>
