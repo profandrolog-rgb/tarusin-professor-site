@@ -107,18 +107,41 @@ export default function AdminRepertory() {
   async function startEmbedding() {
     setEnqueueing(true);
     try {
-      const { data: translated, error: e1 } = await supabase.from("repertory_rubrics").select("id").not("name_ru", "is", null);
-      if (e1) throw e1;
-      const { data: existing, error: e2 } = await supabase.from("rubric_embeddings").select("rubric_id");
-      if (e2) throw e2;
-      const doneSet = new Set((existing || []).map((x: any) => x.rubric_id));
-      const ids = (translated || []).map((x: any) => x.id).filter((id: string) => !doneSet.has(id));
+      // Fetch ALL translated rubric IDs (PostgREST caps at 1000/req — paginate)
+      const PAGE = 1000;
+      const translatedIds: string[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("repertory_rubrics")
+          .select("id")
+          .not("name_ru", "is", null)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        translatedIds.push(...data.map((x: any) => x.id));
+        if (data.length < PAGE) break;
+      }
+      // Fetch ALL existing embedding IDs (paginate too)
+      const doneSet = new Set<string>();
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("rubric_embeddings")
+          .select("rubric_id")
+          .order("rubric_id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        data.forEach((x: any) => doneSet.add(x.rubric_id));
+        if (data.length < PAGE) break;
+      }
+      const ids = translatedIds.filter((id) => !doneSet.has(id));
       if (ids.length === 0) { toast({ title: "Все переведённые рубрики уже эмбеддированы" }); setEnqueueing(false); return; }
       const { data: batch, error: e3 } = await supabase.from("embedding_batches").insert({ rubric_ids: ids, subbatch_size: 200, total_rubrics: ids.length }).select("id").single();
       if (e3) throw e3;
       const { error: e4 } = await supabase.functions.invoke("embed-rubrics-batch", { body: { batchId: batch.id, subbatchIndex: 0 } });
       if (e4) throw e4;
-      toast({ title: `Запущено: ${ids.length} рубрик` });
+      toast({ title: `Запущено: ${ids.length.toLocaleString("ru")} рубрик` });
       setEmbedStatus("processing");
       await refreshEmbedStats();
     } catch (e: any) {
