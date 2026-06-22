@@ -459,9 +459,15 @@ export default function AdminRepertoryByComplaint() {
                               {sections.map((s, i) => (
                                 <div key={i} className="text-xs leading-relaxed">
                                   <span className="font-semibold text-foreground/80">{s.heading}. </span>
-                                  <span className="text-muted-foreground whitespace-pre-wrap">{s.body}</span>
+                                  <span className="text-foreground/90 whitespace-pre-wrap">
+                                    {s.body_ru || s.body}
+                                  </span>
+                                  {!s.body_ru && (
+                                    <span className="ml-1 text-[10px] text-muted-foreground italic">(перевод…)</span>
+                                  )}
                                 </div>
                               ))}
+
                             </div>
                           );
                         })}
