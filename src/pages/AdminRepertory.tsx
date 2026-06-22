@@ -252,6 +252,15 @@ export default function AdminRepertory() {
                   <Progress value={embedTotal ? (embedDone / embedTotal) * 100 : 0} className="h-1.5" />
                 </div>
               )}
+              {mmJob && mmJob.total > 0 && (
+                <div className="mt-2 max-w-md">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Materia Medica (Бёрике)</span>
+                    <span className="font-mono">{mmJob.processed} / {mmJob.total} · {mmJob.inserted} разделов{mmJob.status === "processing" && " · импорт…"}</span>
+                  </div>
+                  <Progress value={mmJob.total ? (mmJob.processed / mmJob.total) * 100 : 0} className="h-1.5" />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Button asChild className="gap-2">
@@ -261,6 +270,11 @@ export default function AdminRepertory() {
                 {enqueueing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Zap className="w-4 h-4"/>}
                 {embedDone >= embedTotal && embedTotal > 0 ? "Доэмбеддить новые" : "Запустить эмбеддинги"}
               </Button>
+              <Button variant="outline" onClick={startMmImport} disabled={mmStarting || mmJob?.status === "processing"} className="gap-2">
+                {mmStarting ? <Loader2 className="w-4 h-4 animate-spin"/> : <BookMarked className="w-4 h-4"/>}
+                Импорт Materia Medica
+              </Button>
+
               <Button variant="outline" asChild className="gap-2">
                 <Link to="/admin/translation-queue"><Loader2 className="w-4 h-4"/>Очередь переводов</Link>
               </Button>
