@@ -215,15 +215,15 @@ function ConvRow({
       onDoubleClick={(e) => { e.stopPropagation(); onRename(); }}
       title={conv.title}
     >
-      <span className="min-w-0 flex-1 text-sm break-words whitespace-normal leading-snug">{conv.title}</span>
       <button
-        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary opacity-100 hover:bg-primary/20 hover:text-primary"
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary opacity-100 hover:bg-primary/20 hover:text-primary"
         onClick={(e) => { e.stopPropagation(); onRename(); }}
         aria-label="Переименовать"
         title="Переименовать (фамилия пациента, пометка)"
       >
-        <Pencil className="w-4 h-4" />
+        <Pencil className="w-3.5 h-3.5" />
       </button>
+      <span className="min-w-0 flex-1 text-sm break-words whitespace-normal leading-snug">{conv.title}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
