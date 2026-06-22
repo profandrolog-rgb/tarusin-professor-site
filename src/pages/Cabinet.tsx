@@ -995,7 +995,7 @@ export default function Cabinet() {
       const title = text.slice(0, 60) || "Новый диалог";
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId })
+        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
         .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
         .single();
       if (error || !data) {
