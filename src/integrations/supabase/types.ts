@@ -263,6 +263,8 @@ export type Database = {
           folder_id: string | null
           id: string
           model: string | null
+          patient_id: string | null
+          patient_name: string | null
           title: string
           updated_at: string
           user_id: string
@@ -272,6 +274,8 @@ export type Database = {
           folder_id?: string | null
           id?: string
           model?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
           title?: string
           updated_at?: string
           user_id: string
@@ -281,6 +285,8 @@ export type Database = {
           folder_id?: string | null
           id?: string
           model?: string | null
+          patient_id?: string | null
+          patient_name?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -291,6 +297,13 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "ai_conversation_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_conversations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]

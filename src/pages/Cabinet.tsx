@@ -25,6 +25,7 @@ import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
+import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
 import { Link2 } from "lucide-react";
 
@@ -147,6 +148,8 @@ type Conversation = {
   model: string | null;
   updated_at: string;
   folder_id: string | null;
+  patient_id: string | null;
+  patient_name: string | null;
 };
 
 type ChatFolder = {
@@ -312,6 +315,22 @@ export default function Cabinet() {
   });
   const [unfiledOpen, setUnfiledOpen] = useState(true);
   const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
+  // Pending patient binding for a not-yet-created conversation. Defaults to the patient
+  // currently broadcast by an open protocol tab (if any), so new chats inherit context.
+  const [pendingPatient, setPendingPatient] = useState<{ id: string | null; name: string | null }>(() => {
+    const a = (typeof window !== "undefined") ? getActiveContext() : null;
+    return { id: a?.patientId ?? null, name: a?.patientName ?? null };
+  });
+  // While no chat is open, mirror the active tab's patient as the pending binding
+  // until the user explicitly picks/unbinds (then we stop overriding).
+  const userTouchedPendingRef = useRef(false);
+  useEffect(() => {
+    const unsub = subscribeActiveContext((ctx) => {
+      if (userTouchedPendingRef.current) return;
+      setPendingPatient({ id: ctx?.patientId ?? null, name: ctx?.patientName ?? null });
+    });
+    return unsub;
+  }, []);
   const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 288;
@@ -474,7 +493,7 @@ export default function Cabinet() {
     if (!user) return;
     const { data, error } = await supabase
       .from("ai_conversations")
-      .select("id, title, model, updated_at, folder_id")
+      .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
       .order("updated_at", { ascending: false });
     if (error) {
       toast.error("Не удалось загрузить историю");
@@ -651,8 +670,38 @@ export default function Cabinet() {
     setAttachments([]);
     setInput("");
     setPendingFolderId(folderId);
+    // New chat inherits the patient currently broadcast by an open protocol tab.
+    const a = getActiveContext();
+    userTouchedPendingRef.current = false;
+    setPendingPatient({ id: a?.patientId ?? null, name: a?.patientName ?? null });
     if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
+
+  // Derive current thread binding: persisted conv first, otherwise pending (for new chat).
+  const currentConv = conversations.find((c) => c.id === activeId) ?? null;
+  const threadPatient = activeId && currentConv
+    ? { id: currentConv.patient_id, name: currentConv.patient_name }
+    : pendingPatient;
+
+  const updateThreadPatient = async (sel: { id: string | null; name: string | null }) => {
+    if (!activeId) {
+      userTouchedPendingRef.current = true;
+      setPendingPatient(sel);
+      toast.success(sel.id ? `Чат привяжется к пациенту: ${sel.name}` : "Чат без привязки");
+      return;
+    }
+    const { error } = await supabase
+      .from("ai_conversations")
+      .update({ patient_id: sel.id, patient_name: sel.name })
+      .eq("id", activeId);
+    if (error) { toast.error("Не удалось обновить привязку"); return; }
+    setConversations((prev) => prev.map((c) => c.id === activeId
+      ? { ...c, patient_id: sel.id, patient_name: sel.name }
+      : c,
+    ));
+    toast.success(sel.id ? `Чат привязан: ${sel.name}` : "Чат отвязан от пациента");
+  };
+
 
   const renameConversation = async (conv: Conversation) => {
     const name = window.prompt("Название диалога (фамилия пациента, пометка):", conv.title)?.trim();
@@ -729,8 +778,8 @@ export default function Cabinet() {
     const title = titleSeed.slice(0, 60) || "Новый диалог";
     const { data, error } = await supabase
       .from("ai_conversations")
-      .insert({ user_id: user.id, title, model: modelTag, folder_id: pendingFolderId })
-      .select("id, title, model, updated_at, folder_id")
+      .insert({ user_id: user.id, title, model: modelTag, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
+      .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
       .single();
     if (error || !data) { toast.error("Не удалось создать диалог"); return null; }
     setActiveId(data.id);
@@ -987,8 +1036,8 @@ export default function Cabinet() {
       const title = text.slice(0, 60) || "Новый диалог";
       const { data, error } = await supabase
         .from("ai_conversations")
-        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId })
-        .select("id, title, model, updated_at, folder_id")
+        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
+        .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
         .single();
       if (error || !data) {
         toast.error("Не удалось создать диалог");
@@ -1356,7 +1405,9 @@ export default function Cabinet() {
         <header className="border-b border-border px-4 pt-3 pb-3 flex flex-col gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg font-semibold truncate">Мультимодальный ассистент профессора</h1>
-            <ActivePatientBadge />
+            <ThreadPatientBadge value={threadPatient} onChange={updateThreadPatient} variant="header" />
+
+
           </div>
           <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-md border border-border overflow-hidden">
@@ -1865,7 +1916,7 @@ export default function Cabinet() {
                   </div>
                 );
                 return m.role === "assistant"
-                  ? <SelectionContextMenu fullText={m.content}>{bubble}</SelectionContextMenu>
+                  ? <SelectionContextMenu fullText={m.content} boundPatient={threadPatient} onBoundPatientChange={updateThreadPatient}>{bubble}</SelectionContextMenu>
                   : bubble;
               })()}
             </div>
@@ -1873,6 +1924,10 @@ export default function Cabinet() {
         </div>
 
         <div className="border-t border-border p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <ThreadPatientBadge value={threadPatient} onChange={updateThreadPatient} variant="inline" />
+          </div>
+
           {pubmedMode && user && (
             <PubmedPanel
               userId={user.id}
