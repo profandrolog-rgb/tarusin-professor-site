@@ -316,3 +316,33 @@ export function getPendingRxCount(): number {
     return 0;
   }
 }
+
+// ----- Rx batch (single prescription with multiple items) -----
+export type RxBatch = { items: ParsedRxItem[]; patientId?: string; pushedAt: number };
+const RX_BATCH_KEY = "pendingRxBatch";
+
+export function pushRxBatch(items: ParsedRxItem[], patientId?: string): void {
+  try {
+    localStorage.setItem(
+      RX_BATCH_KEY,
+      JSON.stringify({ items, patientId, pushedAt: Date.now() } as RxBatch),
+    );
+  } catch {}
+}
+
+export function popRxBatch(patientId?: string): RxBatch | null {
+  try {
+    const raw = localStorage.getItem(RX_BATCH_KEY);
+    if (!raw) return null;
+    const b: RxBatch = JSON.parse(raw);
+    if (Date.now() - b.pushedAt > 60 * 60 * 1000) {
+      localStorage.removeItem(RX_BATCH_KEY);
+      return null;
+    }
+    if (patientId && b.patientId && b.patientId !== patientId) return null;
+    localStorage.removeItem(RX_BATCH_KEY);
+    return b;
+  } catch {
+    return null;
+  }
+}
