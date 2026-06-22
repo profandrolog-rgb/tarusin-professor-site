@@ -48,15 +48,15 @@ function selfInvoke(body: Record<string, unknown>) {
 }
 
 async function voyageEmbed(apiKey: string, inputs: string[], inputType: "document" | "query") {
-  // Voyage free tier = 3 RPM. Retry on 429 up to 6 times waiting 25s each.
-  for (let attempt = 0; attempt < 6; attempt++) {
+  // Tier 1 = 2000 RPM. Short retry on transient 429/5xx.
+  for (let attempt = 0; attempt < 5; attempt++) {
     const resp = await fetch(VOYAGE_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
       body: JSON.stringify({ model: MODEL, input: inputs, input_type: inputType }),
     });
-    if (resp.status === 429) {
-      await new Promise((r) => setTimeout(r, 25_000));
+    if (resp.status === 429 || resp.status >= 500) {
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
       continue;
     }
     if (!resp.ok) {
@@ -67,7 +67,7 @@ async function voyageEmbed(apiKey: string, inputs: string[], inputType: "documen
     const data: { index: number; embedding: number[] }[] = j?.data || [];
     return data.sort((a, b) => a.index - b.index).map((x) => x.embedding);
   }
-  throw new Error("Voyage 429: rate limit exceeded after retries");
+  throw new Error("Voyage: rate limit / transient errors exhausted");
 }
 
 async function processSubbatch(batchId: string, subbatchIndex: number) {
