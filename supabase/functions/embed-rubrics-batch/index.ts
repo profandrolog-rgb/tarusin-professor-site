@@ -48,21 +48,26 @@ function selfInvoke(body: Record<string, unknown>) {
 }
 
 async function voyageEmbed(apiKey: string, inputs: string[], inputType: "document" | "query") {
-  const resp = await fetch(VOYAGE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ model: MODEL, input: inputs, input_type: inputType }),
-  });
-  if (!resp.ok) {
-    const body = await resp.text().catch(() => "");
-    throw new Error(`Voyage ${resp.status}: ${body.slice(0, 500)}`);
+  // Voyage free tier = 3 RPM. Retry on 429 up to 6 times waiting 25s each.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const resp = await fetch(VOYAGE_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify({ model: MODEL, input: inputs, input_type: inputType }),
+    });
+    if (resp.status === 429) {
+      await new Promise((r) => setTimeout(r, 25_000));
+      continue;
+    }
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(`Voyage ${resp.status}: ${body.slice(0, 500)}`);
+    }
+    const j = await resp.json();
+    const data: { index: number; embedding: number[] }[] = j?.data || [];
+    return data.sort((a, b) => a.index - b.index).map((x) => x.embedding);
   }
-  const j = await resp.json();
-  const data: { index: number; embedding: number[] }[] = j?.data || [];
-  return data.sort((a, b) => a.index - b.index).map((x) => x.embedding);
+  throw new Error("Voyage 429: rate limit exceeded after retries");
 }
 
 async function processSubbatch(batchId: string, subbatchIndex: number) {
