@@ -86,6 +86,22 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
     }
   };
 
+  const formPrescription = async () => {
+    const text = getFragment();
+    if (!text) return toast.error("Сначала выделите фрагмент");
+    try {
+      localStorage.setItem(
+        "pendingPrescriptionText",
+        JSON.stringify({ text, patientId: active?.patientId, sentAt: Date.now() }),
+      );
+      await navigator.clipboard.writeText(text);
+    } catch {}
+    const url = `/admin/prescriptions${active?.patientId ? `?patientId=${active.patientId}` : ""}`;
+    window.open(url, "_blank", "noopener");
+    toast.success("Открыта форма назначений (текст в буфере)");
+  };
+
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [previewItems, setPreviewItems] = useState<EditableItem[]>([]);
