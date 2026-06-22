@@ -215,19 +215,19 @@ function ConvRow({
       onDoubleClick={(e) => { e.stopPropagation(); onRename(); }}
       title={conv.title}
     >
-      <span className="flex-1 text-sm break-words whitespace-normal leading-snug">{conv.title}</span>
+      <span className="min-w-0 flex-1 text-sm break-words whitespace-normal leading-snug">{conv.title}</span>
       <button
-        className="p-1 text-muted-foreground hover:text-foreground opacity-70 group-hover:opacity-100"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary opacity-100 hover:bg-primary/20 hover:text-primary"
         onClick={(e) => { e.stopPropagation(); onRename(); }}
         aria-label="Переименовать"
         title="Переименовать (фамилия пациента, пометка)"
       >
-        <Pencil className="w-3.5 h-3.5" />
+        <Pencil className="w-4 h-4" />
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="p-1 text-muted-foreground hover:text-foreground opacity-70 group-hover:opacity-100"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground opacity-70 group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
             aria-label="В папку"
             title="В папку"
@@ -256,7 +256,7 @@ function ConvRow({
         </DropdownMenuContent>
       </DropdownMenu>
       <button
-        className="p-1 text-muted-foreground hover:text-destructive opacity-70 group-hover:opacity-100"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-muted-foreground hover:text-destructive opacity-70 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Удалить"
       >
