@@ -14,6 +14,7 @@ const cors = {
 
 const SLICE = 25;
 const BASE = "https://www.homeoint.org/books/boericmm";
+const WAYBACK = "https://web.archive.org/web/2023id_/https://www.homeoint.org/books/boericmm";
 
 function admin() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
