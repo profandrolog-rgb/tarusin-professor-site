@@ -12,8 +12,9 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SLICE = 25;
+const SLICE = 12;
 const BASE = "https://www.homeoint.org/books/boericmm";
+const WAYBACK = "https://web.archive.org/web/2023id_/https://www.homeoint.org/books/boericmm";
 
 function admin() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -32,22 +33,27 @@ function selfInvoke(body: Record<string, unknown>) {
   }).catch(() => undefined);
 }
 
-function slugToPath(slug: string): string | null {
+function slugToPaths(slug: string): { primary: string; fallback: string } | null {
   const s = slug.trim().toLowerCase().replace(/\.+$/, "");
   if (!s) return null;
   const letter = s[0];
   if (!/[a-z]/.test(letter)) return null;
-  return `${BASE}/${letter}/${encodeURIComponent(s)}.htm`;
+  const tail = `/${letter}/${encodeURIComponent(s)}.htm`;
+  return { primary: `${BASE}${tail}`, fallback: `${WAYBACK}${tail}` };
 }
 
 async function fetchHtml(url: string): Promise<string | null> {
   try {
-    const resp = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; LovableBot/1.0)" } });
+    const resp = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; LovableBot/1.0)" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(15000),
+    });
     if (!resp.ok) return null;
     const buf = new Uint8Array(await resp.arrayBuffer());
-    // Boericke pages are latin-1
     return new TextDecoder("latin1").decode(buf);
-  } catch {
+  } catch (e) {
+    console.log("fetch failed", url, (e as Error).message);
     return null;
   }
 }
@@ -145,10 +151,15 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (existing) { skipped++; continue; }
 
-      const url = slugToPath(slug);
-      if (!url) { skipped++; continue; }
+      const urls = slugToPaths(slug);
+      if (!urls) { skipped++; continue; }
 
-      const html = await fetchHtml(url);
+      let html = await fetchHtml(urls.primary);
+      let usedUrl = urls.primary;
+      if (!html) {
+        html = await fetchHtml(urls.fallback);
+        usedUrl = urls.fallback;
+      }
       if (!html) { failed++; continue; }
       const rel = extractRelationship(html);
       if (!rel) { skipped++; continue; }
@@ -158,7 +169,7 @@ Deno.serve(async (req) => {
         source: "boericke",
         heading: "Relationship",
         body: rel.slice(0, 8000),
-        source_url: url,
+        source_url: usedUrl,
       });
       if (insErr) failed++; else inserted++;
     }
