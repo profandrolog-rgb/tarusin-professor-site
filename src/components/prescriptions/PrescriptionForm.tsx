@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Printer, Plus, Trash2, Eye, Info } from "lucide-react";
+import { CalendarIcon, Printer, Plus, Trash2, Eye, Info, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { PatientSelect } from "./PatientSelect";
 import { MedicationSearch } from "./MedicationSearch";
 import { PrescriptionPrint } from "./PrescriptionPrint";
 import { PrescriptionPreview } from "./PrescriptionPreview";
+import { popNextPendingRxItem, getPendingRxCount } from "@/lib/protocolBridge";
 
 interface PrescriptionItem {
   medication_latin_name: string;
@@ -42,7 +44,10 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
   const [items, setItems] = useState<PrescriptionItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [savedPrescription, setSavedPrescription] = useState<any>(null);
+  const [pendingRxRemaining, setPendingRxRemaining] = useState<number>(0);
   const printRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  const queryPatientId = searchParams.get("patientId");
 
   // Load repeat prescription data
   useEffect(() => {
@@ -50,6 +55,46 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
       loadRepeatPrescription(repeatPrescriptionId);
     }
   }, [repeatPrescriptionId, repeatWithoutPatient]);
+
+  // Auto-load patient by ?patientId= (from Cabinet)
+  useEffect(() => {
+    if (!queryPatientId || patient) return;
+    (async () => {
+      const { data } = await supabase
+        .from("patients")
+        .select("id, full_name, birth_date")
+        .eq("id", queryPatientId)
+        .maybeSingle();
+      if (data) setPatient(data as Patient);
+    })();
+  }, [queryPatientId, patient]);
+
+  // Pull next queued Rx item (one drug per blank)
+  const loadNextPendingRx = () => {
+    const next = popNextPendingRxItem(queryPatientId ?? undefined);
+    if (next) {
+      setItems([{
+        medication_latin_name: next.item.medication_latin_name,
+        dosage_form: next.item.dosage_form,
+        dose: next.item.dose,
+        quantity: next.item.quantity || 1,
+        frequency: next.item.frequency,
+        duration: next.item.duration,
+      }]);
+      setPendingRxRemaining(next.remaining);
+      return true;
+    }
+    setPendingRxRemaining(0);
+    return false;
+  };
+
+  useEffect(() => {
+    if (repeatPrescriptionId) return;
+    if (getPendingRxCount() > 0) {
+      loadNextPendingRx();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadRepeatPrescription = async (id: string) => {
     const { data: prescription } = await supabase
@@ -185,18 +230,32 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
   const handleNewPrescription = () => {
     setSavedPrescription(null);
     setItems([]);
+    // try to auto-load next queued Rx blank
+    setTimeout(() => loadNextPendingRx(), 0);
   };
 
   if (savedPrescription) {
     return (
       <div className="space-y-4">
-        <div className="flex gap-2">
+        {pendingRxRemaining > 0 && (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50 border border-accent text-sm">
+            <FileText className="h-4 w-4 text-primary shrink-0" />
+            <span>В очереди ещё <b>{pendingRxRemaining}</b> бланк(ов) из ассистента — нажмите «Следующий бланк», чтобы продолжить.</span>
+          </div>
+        )}
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" /> Печать рецепта
           </Button>
-          <Button variant="outline" onClick={handleNewPrescription}>
-            Новый рецепт
-          </Button>
+          {pendingRxRemaining > 0 ? (
+            <Button onClick={handleNewPrescription}>
+              <FileText className="h-4 w-4 mr-2" /> Следующий бланк ({pendingRxRemaining})
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleNewPrescription}>
+              Новый рецепт
+            </Button>
+          )}
           <Button variant="outline" onClick={onSaved}>
             К истории
           </Button>
@@ -231,6 +290,19 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
               </div>
             </div>
           )}
+
+          {pendingRxRemaining > 0 && !repeatPrescriptionId && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium">Бланк из AI-ассистента — препарат уже подставлен</p>
+                <p className="text-muted-foreground">
+                  После сохранения откроется следующий бланк. Осталось в очереди: <b>{pendingRxRemaining}</b>.
+                </p>
+              </div>
+            </div>
+          )}
+
 
           {/* Date */}
           <div className="space-y-2">

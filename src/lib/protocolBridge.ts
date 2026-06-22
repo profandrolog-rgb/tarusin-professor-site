@@ -255,3 +255,64 @@ export function popQueuedPlanItems(filter?: { patientId?: string }): PlanItemsMe
     return [];
   }
 }
+
+// ----- Per-blank Rx items queue (Cabinet -> PrescriptionForm) -----
+
+export type ParsedRxItem = {
+  medication_ru_name?: string | null;
+  medication_latin_name: string;
+  dosage_form: string;
+  dose: string;
+  quantity: number;
+  frequency: string;
+  duration: string;
+  signa?: string | null;
+};
+
+const RX_QUEUE_KEY = "pendingRxItems";
+
+export function pushPendingRxItems(items: ParsedRxItem[], patientId?: string): void {
+  try {
+    const raw = localStorage.getItem(RX_QUEUE_KEY);
+    const queue: { item: ParsedRxItem; patientId?: string; pushedAt: number }[] = raw ? JSON.parse(raw) : [];
+    const now = Date.now();
+    const fresh = queue.filter((q) => now - q.pushedAt < 60 * 60 * 1000);
+    for (const it of items) fresh.push({ item: it, patientId, pushedAt: now });
+    localStorage.setItem(RX_QUEUE_KEY, JSON.stringify(fresh));
+  } catch {}
+}
+
+export function popNextPendingRxItem(patientId?: string): { item: ParsedRxItem; remaining: number } | null {
+  try {
+    const raw = localStorage.getItem(RX_QUEUE_KEY);
+    if (!raw) return null;
+    const queue: { item: ParsedRxItem; patientId?: string; pushedAt: number }[] = JSON.parse(raw);
+    const now = Date.now();
+    const fresh = queue.filter((q) => now - q.pushedAt < 60 * 60 * 1000);
+    const idx = patientId
+      ? fresh.findIndex((q) => !q.patientId || q.patientId === patientId)
+      : 0;
+    if (idx < 0 || fresh.length === 0) {
+      localStorage.setItem(RX_QUEUE_KEY, JSON.stringify(fresh));
+      return null;
+    }
+    const taken = fresh[idx];
+    const rest = fresh.filter((_, i) => i !== idx);
+    localStorage.setItem(RX_QUEUE_KEY, JSON.stringify(rest));
+    return { item: taken.item, remaining: rest.length };
+  } catch {
+    return null;
+  }
+}
+
+export function getPendingRxCount(): number {
+  try {
+    const raw = localStorage.getItem(RX_QUEUE_KEY);
+    if (!raw) return 0;
+    const queue: { pushedAt: number }[] = JSON.parse(raw);
+    const now = Date.now();
+    return queue.filter((q) => now - q.pushedAt < 60 * 60 * 1000).length;
+  } catch {
+    return 0;
+  }
+}

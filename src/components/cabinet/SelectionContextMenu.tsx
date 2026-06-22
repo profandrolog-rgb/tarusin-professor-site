@@ -17,12 +17,15 @@ import {
   getRecentContexts,
   sendFragmentToProtocol,
   sendPlanItemsToProtocol,
+  pushPendingRxItems,
   subscribeActiveContext,
   type ActivePatientContext,
   type ParsedPlanItem,
+  type ParsedRxItem,
 } from "@/lib/protocolBridge";
 import { supabase } from "@/integrations/supabase/client";
 import { PlanItemsPreviewDialog, type EditableItem } from "./PlanItemsPreviewDialog";
+import { RxItemsPreviewDialog, type EditableRxItem } from "./RxItemsPreviewDialog";
 
 const KIND_LABEL: Record<string, string> = {
   visit: "осмотр",
@@ -86,19 +89,44 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
     }
   };
 
+  const [rxOpen, setRxOpen] = useState(false);
+  const [rxParsing, setRxParsing] = useState(false);
+  const [rxItems, setRxItems] = useState<EditableRxItem[]>([]);
+
   const formPrescription = async () => {
     const text = getFragment();
     if (!text) return toast.error("Сначала выделите фрагмент");
+    setRxItems([]);
+    setRxOpen(true);
+    setRxParsing(true);
     try {
-      localStorage.setItem(
-        "pendingPrescriptionText",
-        JSON.stringify({ text, patientId: active?.patientId, sentAt: Date.now() }),
+      const { data, error } = await supabase.functions.invoke("parse-prescription-items", {
+        body: { text },
+      });
+      if (error) throw error;
+      const items: ParsedRxItem[] = data?.items || [];
+      setRxItems(
+        items.map((it, idx) => ({
+          ...it,
+          _id: `${Date.now()}-${idx}`,
+          _selected: true,
+        })),
       );
-      await navigator.clipboard.writeText(text);
-    } catch {}
+    } catch (e: any) {
+      toast.error("Не удалось разобрать препараты", { description: e?.message });
+      setRxOpen(false);
+    } finally {
+      setRxParsing(false);
+    }
+  };
+
+  const confirmSendRxItems = (selected: ParsedRxItem[]) => {
+    if (selected.length === 0) return;
+    pushPendingRxItems(selected, active?.patientId);
+    setRxOpen(false);
     const url = `/admin/prescriptions${active?.patientId ? `?patientId=${active.patientId}` : ""}`;
     window.open(url, "_blank", "noopener");
-    toast.success("Открыта форма назначений (текст в буфере)");
+    toast.success(`В очереди ${selected.length} бланк(ов) — откроется форма рецептов`);
   };
 
 
@@ -205,6 +233,16 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
         loading={parsing}
         patientName={active?.kind === "treatment_plan" ? active.patientName : null}
         onConfirm={confirmSendPlanItems}
+      />
+
+      <RxItemsPreviewDialog
+        open={rxOpen}
+        onOpenChange={setRxOpen}
+        items={rxItems}
+        onItemsChange={setRxItems}
+        loading={rxParsing}
+        patientName={active?.patientName ?? null}
+        onConfirm={confirmSendRxItems}
       />
     </>
   );
