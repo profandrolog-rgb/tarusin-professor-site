@@ -96,6 +96,16 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   const subbatches: string[][] = [];
   for (let i = 0; i < allIds.length; i += subSize) subbatches.push(allIds.slice(i, i + subSize));
 
+  const findNextPendingIndex = (partial: any[], startAt = 0) => {
+    const doneIdx = new Set(
+      partial.filter((p: any) => p && p.ok_count !== undefined).map((p: any) => p.subbatch_index),
+    );
+    for (let i = Math.max(0, startAt); i < subbatches.length; i++) {
+      if (!doneIdx.has(i)) return i;
+    }
+    return subbatches.length;
+  };
+
   if (subbatchIndex === 0) {
     await supabase.from("embedding_batches").update({
       status: "processing",
@@ -111,6 +121,13 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
 
   if (subbatchIndex >= subbatches.length) {
     const partial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
+    const missingIndex = findNextPendingIndex(partial, 0);
+    if (missingIndex < subbatches.length) {
+      await logEvent(supabase, batchId, { stage: "retry_missing_subbatch", subbatch_index: missingIndex });
+      // @ts-ignore EdgeRuntime
+      EdgeRuntime.waitUntil(selfInvoke({ batchId, subbatchIndex: missingIndex }));
+      return;
+    }
     const ok = partial.filter((p: any) => !p?.error).reduce((a, p: any) => a + (p.ok_count || 0), 0);
     await supabase.from("embedding_batches").update({
       status: "done",
@@ -192,8 +209,16 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   }
 
   // Chain next
+  const { data: latestBatch } = await supabase
+    .from("embedding_batches")
+    .select("status,partial_results")
+    .eq("id", batchId)
+    .single();
+  if (latestBatch && !["pending", "processing"].includes(latestBatch.status)) return;
+  const latestPartial: any[] = Array.isArray(latestBatch?.partial_results) ? latestBatch.partial_results : existingPartial;
+  const nextIndex = findNextPendingIndex(latestPartial, subbatchIndex + 1);
   // @ts-ignore EdgeRuntime
-  EdgeRuntime.waitUntil(selfInvoke({ batchId, subbatchIndex: subbatchIndex + 1 }));
+  EdgeRuntime.waitUntil(selfInvoke({ batchId, subbatchIndex: nextIndex }));
 }
 
 Deno.serve(async (req) => {
