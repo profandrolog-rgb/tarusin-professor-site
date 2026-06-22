@@ -361,7 +361,11 @@ export default function AdminRepertory() {
               </Button>
               <Button variant="outline" onClick={startEmbedding} disabled={enqueueing || embedStatus === "processing"} className="gap-2">
                 {enqueueing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Zap className="w-4 h-4"/>}
-                {embedDone >= embedTotal && embedTotal > 0 ? "Доэмбеддить новые" : "Запустить эмбеддинги"}
+                {embedStatus === "processing"
+                  ? "Эмбеддинг идёт…"
+                  : embedDone >= embedTotal && embedTotal > 0
+                    ? "Все рубрики эмбеддированы"
+                    : `Эмбеддировать все рубрики (осталось ${(embedTotal - embedDone).toLocaleString("ru")})`}
               </Button>
               <Button variant="outline" onClick={startMmImport} disabled={mmStarting || mmJob?.status === "processing"} className="gap-2">
                 {mmStarting ? <Loader2 className="w-4 h-4 animate-spin"/> : <BookMarked className="w-4 h-4"/>}
