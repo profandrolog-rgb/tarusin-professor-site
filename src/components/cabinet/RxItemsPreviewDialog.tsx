@@ -5,7 +5,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Loader2, Pill, Trash2, FileText } from "lucide-react";
-import type { ParsedRxItem } from "@/lib/protocolBridge";
+import type { ParsedRxItem, ActivePatientContext } from "@/lib/protocolBridge";
+import { PatientConfirmationBanner } from "./PatientConfirmationBanner";
+import type { PatientSelection } from "./PatientPickerPopover";
 
 export type EditableRxItem = ParsedRxItem & { _id: string; _selected: boolean };
 
@@ -16,11 +18,15 @@ interface Props {
   onItemsChange: (items: EditableRxItem[]) => void;
   loading?: boolean;
   patientName?: string | null;
+  boundPatient?: PatientSelection;
+  activeContext?: ActivePatientContext | null;
+  onPatientChange?: (sel: PatientSelection) => void;
   onConfirm: (selected: ParsedRxItem[]) => void;
 }
 
 export function RxItemsPreviewDialog({
-  open, onOpenChange, items, onItemsChange, loading, patientName, onConfirm,
+  open, onOpenChange, items, onItemsChange, loading, patientName,
+  boundPatient, activeContext, onPatientChange, onConfirm,
 }: Props) {
   const update = (id: string, patch: Partial<EditableRxItem>) => {
     onItemsChange(items.map((it) => (it._id === id ? { ...it, ...patch } : it)));
