@@ -141,6 +141,27 @@ export default function AdminRepertoryByComplaint() {
     }
   }
 
+  // Load Materia Medica Relationship sections for top-5 remedies
+  useEffect(() => {
+    if (!computed) { setMmSections({}); return; }
+    const top5 = ranking.slice(0, 5).map((r) => r.remedy.id);
+    if (top5.length === 0) { setMmSections({}); return; }
+    (async () => {
+      const { data, error } = await supabase
+        .from("materia_medica_sections")
+        .select("remedy_id, heading, body, source_url")
+        .in("remedy_id", top5)
+        .eq("source", "boericke");
+      if (error) return;
+      const grouped: Record<string, { heading: string; body: string; source_url: string | null }[]> = {};
+      (data || []).forEach((row: any) => {
+        (grouped[row.remedy_id] ||= []).push({ heading: row.heading, body: row.body, source_url: row.source_url });
+      });
+      setMmSections(grouped);
+    })();
+  }, [computed, ranking]);
+
+
   function removeStatement(s: string) {
     setStatements((prev) => prev.filter((x) => x !== s));
     setCandidates((prev) => prev.map((c) => ({ ...c, matched_statements: c.matched_statements.filter((x) => x !== s) })));
