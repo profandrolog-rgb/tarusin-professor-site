@@ -684,6 +684,7 @@ export default function Cabinet() {
 
   const updateThreadPatient = async (sel: { id: string | null; name: string | null }) => {
     if (!activeId) {
+      userTouchedPendingRef.current = true;
       setPendingPatient(sel);
       toast.success(sel.id ? `Чат привяжется к пациенту: ${sel.name}` : "Чат без привязки");
       return;
