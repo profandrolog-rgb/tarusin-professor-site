@@ -321,6 +321,16 @@ export default function Cabinet() {
     const a = (typeof window !== "undefined") ? getActiveContext() : null;
     return { id: a?.patientId ?? null, name: a?.patientName ?? null };
   });
+  // While no chat is open, mirror the active tab's patient as the pending binding
+  // until the user explicitly picks/unbinds (then we stop overriding).
+  const userTouchedPendingRef = useRef(false);
+  useEffect(() => {
+    const unsub = subscribeActiveContext((ctx) => {
+      if (userTouchedPendingRef.current) return;
+      setPendingPatient({ id: ctx?.patientId ?? null, name: ctx?.patientName ?? null });
+    });
+    return unsub;
+  }, []);
   const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     if (typeof window === "undefined") return 288;
