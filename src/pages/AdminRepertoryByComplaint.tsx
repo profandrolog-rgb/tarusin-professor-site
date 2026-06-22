@@ -42,6 +42,14 @@ export default function AdminRepertoryByComplaint() {
   const [computing, setComputing] = useState(false);
   const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; source_url: string | null }[]>>({});
 
+  // Auto-pipeline progress: extract → select → compute
+  type Stage = "idle" | "extract" | "select" | "compute" | "done" | "error";
+  const [stage, setStage] = useState<Stage>("idle");
+  const [stageMessage, setStageMessage] = useState<string>("");
+  const stageProgress: Record<Stage, number> = {
+    idle: 0, extract: 25, select: 60, compute: 90, done: 100, error: 0,
+  };
+
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/repertory/by-complaint" } });
