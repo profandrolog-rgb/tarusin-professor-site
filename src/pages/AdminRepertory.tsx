@@ -211,8 +211,24 @@ export default function AdminRepertory() {
               <p className="text-muted-foreground">
                 {chapters.length} глав · {rubrics.length} рубрик · {remedies.length} препаратов
               </p>
+              {embedTotal > 0 && (
+                <div className="mt-2 max-w-md">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Эмбеддинги рубрик</span>
+                    <span className="font-mono">{embedDone} / {embedTotal}{embedStatus === "processing" && " · обрабатывается…"}</span>
+                  </div>
+                  <Progress value={embedTotal ? (embedDone / embedTotal) * 100 : 0} className="h-1.5" />
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button asChild className="gap-2">
+                <Link to="/admin/repertory/by-complaint"><Sparkles className="w-4 h-4"/>Поиск по жалобам</Link>
+              </Button>
+              <Button variant="outline" onClick={startEmbedding} disabled={enqueueing || embedStatus === "processing"} className="gap-2">
+                {enqueueing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Zap className="w-4 h-4"/>}
+                {embedDone >= embedTotal && embedTotal > 0 ? "Доэмбеддить новые" : "Запустить эмбеддинги"}
+              </Button>
               <Button variant="outline" asChild className="gap-2">
                 <Link to="/admin/translation-queue"><Loader2 className="w-4 h-4"/>Очередь переводов</Link>
               </Button>
@@ -224,6 +240,7 @@ export default function AdminRepertory() {
             </div>
 
           </div>
+
 
           {busy ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>
