@@ -319,11 +319,11 @@ export default function AdminRepertoryByComplaint() {
                 <CardTitle className="text-base flex items-center justify-between flex-wrap gap-2">
                   <span>3. Рубрики-кандидаты ({candidates.length}, отмечено {selectedIds.size})</span>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={runAiSelect} disabled={selecting} className="gap-2">
+                    <Button size="sm" variant="outline" onClick={() => runAiSelect()} disabled={selecting} className="gap-2">
                       {selecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                       ИИ-подсказка выбора
                     </Button>
-                    <Button size="sm" onClick={runCompute} disabled={computing || selectedIds.size === 0} className="gap-2">
+                    <Button size="sm" onClick={() => runCompute()} disabled={computing || selectedIds.size === 0} className="gap-2">
                       {computing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
                       Посчитать ранжирование
                     </Button>
