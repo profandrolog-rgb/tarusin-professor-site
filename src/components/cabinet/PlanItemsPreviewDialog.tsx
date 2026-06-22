@@ -8,7 +8,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Pill, Trash2 } from "lucide-react";
 import { SECTIONS, type TreatmentCategory } from "@/components/treatment/sections";
-import type { ParsedPlanItem } from "@/lib/protocolBridge";
+import type { ParsedPlanItem, ActivePatientContext } from "@/lib/protocolBridge";
+import { PatientConfirmationBanner } from "./PatientConfirmationBanner";
+import type { PatientSelection } from "./PatientPickerPopover";
 
 export type EditableItem = ParsedPlanItem & { _id: string; _selected: boolean };
 
@@ -19,13 +21,17 @@ interface Props {
   onItemsChange: (items: EditableItem[]) => void;
   loading?: boolean;
   patientName?: string | null;
+  boundPatient?: PatientSelection;
+  activeContext?: ActivePatientContext | null;
+  onPatientChange?: (sel: PatientSelection) => void;
   onConfirm: (selected: ParsedPlanItem[]) => void;
 }
 
 const SECTION_OPTIONS = SECTIONS.map((s) => ({ value: s.key, label: s.label }));
 
 export function PlanItemsPreviewDialog({
-  open, onOpenChange, items, onItemsChange, loading, patientName, onConfirm,
+  open, onOpenChange, items, onItemsChange, loading, patientName,
+  boundPatient, activeContext, onPatientChange, onConfirm,
 }: Props) {
   const update = (id: string, patch: Partial<EditableItem>) => {
     onItemsChange(items.map((it) => (it._id === id ? { ...it, ...patch } : it)));
