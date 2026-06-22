@@ -39,6 +39,8 @@ export default function AdminRepertoryByComplaint() {
   const [links, setLinks] = useState<Link[]>([]);
   const [computed, setComputed] = useState(false);
   const [computing, setComputing] = useState(false);
+  const [mmSections, setMmSections] = useState<Record<string, { heading: string; body: string; source_url: string | null }[]>>({});
+
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/repertory/by-complaint" } });
@@ -138,6 +140,27 @@ export default function AdminRepertoryByComplaint() {
       setComputing(false);
     }
   }
+
+  // Load Materia Medica Relationship sections for top-5 remedies
+  useEffect(() => {
+    if (!computed) { setMmSections({}); return; }
+    const top5 = ranking.slice(0, 5).map((r) => r.remedy.id);
+    if (top5.length === 0) { setMmSections({}); return; }
+    (async () => {
+      const { data, error } = await supabase
+        .from("materia_medica_sections")
+        .select("remedy_id, heading, body, source_url")
+        .in("remedy_id", top5)
+        .eq("source", "boericke");
+      if (error) return;
+      const grouped: Record<string, { heading: string; body: string; source_url: string | null }[]> = {};
+      (data || []).forEach((row: any) => {
+        (grouped[row.remedy_id] ||= []).push({ heading: row.heading, body: row.body, source_url: row.source_url });
+      });
+      setMmSections(grouped);
+    })();
+  }, [computed, ranking]);
+
 
   function removeStatement(s: string) {
     setStatements((prev) => prev.filter((x) => x !== s));
@@ -299,14 +322,52 @@ export default function AdminRepertoryByComplaint() {
                 )}
 
                 <div className="mt-6 pt-4 border-t">
-                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
-                    <Info className="w-4 h-4 text-muted-foreground" />Сочетания и сравнения (Materia Medica Бёрике)
+                  <div className="flex items-center gap-2 text-sm font-medium mb-3">
+                    <Info className="w-4 h-4 text-muted-foreground" />Сочетания и сравнения (Materia Medica Бёрике) — топ-5
                   </div>
-                  <div className="text-xs text-muted-foreground bg-muted/40 rounded p-3">
-                    Materia Medica Бёрике ещё не импортирована в базу. После импорта таблицы <code className="text-[11px]">materia_medica_sections</code> здесь
-                    появятся разделы Compare / Complementary / Antidote для топ-5 средств.
-                  </div>
+                  {(() => {
+                    const top5 = ranking.slice(0, 5);
+                    const anyData = top5.some((r) => (mmSections[r.remedy.id] || []).length > 0);
+                    if (!anyData) {
+                      return (
+                        <div className="text-xs text-muted-foreground bg-muted/40 rounded p-3">
+                          Для топ-5 средств не найдено разделов Materia Medica. Запустите импорт Бёрике на странице{" "}
+                          <Link to="/admin/repertory" className="underline">репертория</Link>.
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-3">
+                        {top5.map((row) => {
+                          const sections = mmSections[row.remedy.id] || [];
+                          if (sections.length === 0) return null;
+                          return (
+                            <div key={row.remedy.id} className="rounded-md border bg-muted/30 p-3">
+                              <div className="flex items-baseline justify-between gap-2 mb-1.5">
+                                <div className="font-medium text-sm">
+                                  {row.remedy.name_latin}
+                                  {row.remedy.name_ru && <span className="text-muted-foreground font-normal"> · {row.remedy.name_ru}</span>}
+                                </div>
+                                {sections[0]?.source_url && (
+                                  <a href={sections[0].source_url} target="_blank" rel="noreferrer" className="text-[11px] text-muted-foreground hover:text-foreground underline">
+                                    источник
+                                  </a>
+                                )}
+                              </div>
+                              {sections.map((s, i) => (
+                                <div key={i} className="text-xs leading-relaxed">
+                                  <span className="font-semibold text-foreground/80">{s.heading}. </span>
+                                  <span className="text-muted-foreground whitespace-pre-wrap">{s.body}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
+
               </CardContent>
             </Card>
           )}

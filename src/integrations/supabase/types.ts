@@ -1545,6 +1545,50 @@ export type Database = {
         }
         Relationships: []
       }
+      materia_medica_sections: {
+        Row: {
+          body: string
+          body_ru: string | null
+          created_at: string
+          heading: string
+          id: string
+          remedy_id: string
+          source: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          body_ru?: string | null
+          created_at?: string
+          heading: string
+          id?: string
+          remedy_id: string
+          source?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          body_ru?: string | null
+          created_at?: string
+          heading?: string
+          id?: string
+          remedy_id?: string
+          source?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materia_medica_sections_remedy_id_fkey"
+            columns: ["remedy_id"]
+            isOneToOne: false
+            referencedRelation: "repertory_remedies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medication_digests: {
         Row: {
           contraindications: string | null
@@ -1658,6 +1702,57 @@ export type Database = {
             referencedColumns: ["plan_id"]
           },
         ]
+      }
+      mm_import_jobs: {
+        Row: {
+          chain_log: Json
+          created_at: string
+          created_by: string | null
+          cursor_idx: number
+          error: string | null
+          failed: number
+          id: string
+          inserted_sections: number
+          processed_remedies: number
+          skipped: number
+          source: string
+          status: string
+          total_remedies: number
+          updated_at: string
+        }
+        Insert: {
+          chain_log?: Json
+          created_at?: string
+          created_by?: string | null
+          cursor_idx?: number
+          error?: string | null
+          failed?: number
+          id?: string
+          inserted_sections?: number
+          processed_remedies?: number
+          skipped?: number
+          source?: string
+          status?: string
+          total_remedies?: number
+          updated_at?: string
+        }
+        Update: {
+          chain_log?: Json
+          created_at?: string
+          created_by?: string | null
+          cursor_idx?: number
+          error?: string | null
+          failed?: number
+          id?: string
+          inserted_sections?: number
+          processed_remedies?: number
+          skipped?: number
+          source?: string
+          status?: string
+          total_remedies?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       operations_journal: {
         Row: {

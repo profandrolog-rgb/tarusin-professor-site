@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Loader2, ChevronRight, BookOpen, X, Search, Sparkles, Zap } from "lucide-react";
+import { ArrowLeft, Loader2, ChevronRight, BookOpen, X, Search, Sparkles, Zap, BookMarked } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 
@@ -120,6 +120,38 @@ export default function AdminRepertory() {
     }
   }
 
+  // Materia Medica import (Boericke)
+  const [mmJob, setMmJob] = useState<{ id: string; status: string; processed: number; total: number; inserted: number } | null>(null);
+  const [mmStarting, setMmStarting] = useState(false);
+
+  async function refreshMmJob() {
+    const { data } = await supabase.from("mm_import_jobs")
+      .select("id,status,processed_remedies,total_remedies,inserted_sections")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (data) setMmJob({ id: data.id, status: data.status, processed: data.processed_remedies, total: data.total_remedies, inserted: data.inserted_sections });
+  }
+  useEffect(() => { refreshMmJob(); }, []);
+  useEffect(() => {
+    if (mmJob?.status !== "processing") return;
+    const t = setInterval(refreshMmJob, 5000);
+    return () => clearInterval(t);
+  }, [mmJob?.status]);
+
+  async function startMmImport() {
+    setMmStarting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-boericke-mm", { body: {} });
+      if (error) throw error;
+      toast({ title: "Импорт Materia Medica запущен", description: `Всего средств: ${data?.total ?? "?"}` });
+      await refreshMmJob();
+    } catch (e: any) {
+      toast({ title: "Ошибка запуска импорта", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setMmStarting(false);
+    }
+  }
+
+
 
   const remedyById = useMemo(() => {
     const m = new Map<string, Remedy>();
@@ -220,6 +252,15 @@ export default function AdminRepertory() {
                   <Progress value={embedTotal ? (embedDone / embedTotal) * 100 : 0} className="h-1.5" />
                 </div>
               )}
+              {mmJob && mmJob.total > 0 && (
+                <div className="mt-2 max-w-md">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Materia Medica (Бёрике)</span>
+                    <span className="font-mono">{mmJob.processed} / {mmJob.total} · {mmJob.inserted} разделов{mmJob.status === "processing" && " · импорт…"}</span>
+                  </div>
+                  <Progress value={mmJob.total ? (mmJob.processed / mmJob.total) * 100 : 0} className="h-1.5" />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Button asChild className="gap-2">
@@ -229,6 +270,11 @@ export default function AdminRepertory() {
                 {enqueueing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Zap className="w-4 h-4"/>}
                 {embedDone >= embedTotal && embedTotal > 0 ? "Доэмбеддить новые" : "Запустить эмбеддинги"}
               </Button>
+              <Button variant="outline" onClick={startMmImport} disabled={mmStarting || mmJob?.status === "processing"} className="gap-2">
+                {mmStarting ? <Loader2 className="w-4 h-4 animate-spin"/> : <BookMarked className="w-4 h-4"/>}
+                Импорт Materia Medica
+              </Button>
+
               <Button variant="outline" asChild className="gap-2">
                 <Link to="/admin/translation-queue"><Loader2 className="w-4 h-4"/>Очередь переводов</Link>
               </Button>
