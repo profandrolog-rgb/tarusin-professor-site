@@ -1394,7 +1394,7 @@ export default function Cabinet() {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg font-semibold truncate">Мультимодальный ассистент профессора</h1>
             <ThreadPatientBadge value={threadPatient} onChange={updateThreadPatient} variant="header" />
-            <ActivePatientBadge />
+
 
           </div>
           <div className="flex flex-wrap items-center gap-2">
