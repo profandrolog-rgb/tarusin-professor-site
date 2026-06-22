@@ -17,12 +17,15 @@ import {
   getRecentContexts,
   sendFragmentToProtocol,
   sendPlanItemsToProtocol,
+  pushPendingRxItems,
   subscribeActiveContext,
   type ActivePatientContext,
   type ParsedPlanItem,
+  type ParsedRxItem,
 } from "@/lib/protocolBridge";
 import { supabase } from "@/integrations/supabase/client";
 import { PlanItemsPreviewDialog, type EditableItem } from "./PlanItemsPreviewDialog";
+import { RxItemsPreviewDialog, type EditableRxItem } from "./RxItemsPreviewDialog";
 
 const KIND_LABEL: Record<string, string> = {
   visit: "осмотр",
