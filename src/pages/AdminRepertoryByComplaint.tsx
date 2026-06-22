@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,9 +9,31 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Loader2, Search, Sparkles, Calculator, X, Info, CheckCircle2, Circle } from "lucide-react";
+import { ArrowLeft, Loader2, Search, Sparkles, Calculator, X, Info, CheckCircle2, Circle, Save, FileText, History, Trash2, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { PatientSelect } from "@/components/prescriptions/PatientSelect";
+import { pushRxBatch, type ParsedRxItem } from "@/lib/protocolBridge";
+import { format, parseISO } from "date-fns";
+import { ru } from "date-fns/locale";
+
+const POTENCY_OPTIONS = ["6C", "12C", "30C", "200C", "1M", "10M", "50M", "CM", "LM1", "LM2", "LM3", "LM6"];
+const DEFAULT_PRESCRIBE = { prescribe: false, potency: "30C", frequency: "1 раз в день", duration: "14 дней", quantity: 10 };
+
+interface Patient { id: string; full_name: string; birth_date: string }
+interface PrescribeRow { prescribe: boolean; potency: string; frequency: string; duration: string; quantity: number }
+interface HistoryRow {
+  id: string;
+  title: string | null;
+  complaint: string;
+  patient_id: string | null;
+  patient_name?: string | null;
+  created_at: string;
+  selected_remedies: any[];
+}
 
 interface Candidate {
   rubric_id: string;
