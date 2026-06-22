@@ -86,66 +86,110 @@ export function SelectionContextMenu({ children, fullText }: { children: ReactNo
     }
   };
 
-  const formPrescription = async () => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [previewItems, setPreviewItems] = useState<EditableItem[]>([]);
+
+  const distributeToPlan = async () => {
     const text = getFragment();
     if (!text) return toast.error("Сначала выделите фрагмент");
+    setPreviewItems([]);
+    setDialogOpen(true);
+    setParsing(true);
     try {
-      localStorage.setItem(
-        "pendingPrescriptionText",
-        JSON.stringify({ text, patientId: active?.patientId, sentAt: Date.now() }),
+      const { data, error } = await supabase.functions.invoke("parse-treatment-recommendations", {
+        body: { text },
+      });
+      if (error) throw error;
+      const items: ParsedPlanItem[] = data?.items || [];
+      setPreviewItems(
+        items.map((it, idx) => ({
+          ...it,
+          _id: `${Date.now()}-${idx}`,
+          _selected: true,
+        })),
       );
-      await navigator.clipboard.writeText(text);
-    } catch {}
-    const url = `/admin/prescriptions${active?.patientId ? `?patientId=${active.patientId}` : ""}`;
-    window.open(url, "_blank", "noopener");
-    toast.success("Открыта форма назначений (текст в буфере)");
+    } catch (e: any) {
+      toast.error("Не удалось разобрать фрагмент", { description: e?.message });
+      setDialogOpen(false);
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const confirmSendPlanItems = (selected: ParsedPlanItem[]) => {
+    if (selected.length === 0) return;
+    const target = active?.kind === "treatment_plan" ? active : undefined;
+    sendPlanItemsToProtocol(selected, target);
+    setDialogOpen(false);
+    toast.success(
+      target
+        ? `Отправлено ${selected.length} позиций в план: ${target.patientName}`
+        : `${selected.length} позиций в очереди — откройте план лечения пациента`,
+    );
   };
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-72">
-        <ContextMenuLabel className="text-xs text-muted-foreground font-normal">
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="w-72">
+          <ContextMenuLabel className="text-xs text-muted-foreground font-normal">
+            {active ? (
+              <>Активный протокол: <span className="text-foreground font-medium">{active.patientName}</span> · {KIND_LABEL[active.kind] || active.kind}</>
+            ) : (
+              "Нет активного протокола"
+            )}
+          </ContextMenuLabel>
+          <ContextMenuSeparator />
+          <ContextMenuItem onSelect={copyFragment}>
+            <Copy className="w-4 h-4 mr-2" /> Копировать фрагмент
+          </ContextMenuItem>
           {active ? (
-            <>Активный протокол: <span className="text-foreground font-medium">{active.patientName}</span> · {KIND_LABEL[active.kind] || active.kind}</>
+            <ContextMenuItem onSelect={() => sendTo(active)}>
+              <Send className="w-4 h-4 mr-2" />
+              Вставить в активный протокол
+            </ContextMenuItem>
+          ) : recent.length > 0 ? (
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>
+                <History className="w-4 h-4 mr-2" /> Вставить в недавний протокол
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="w-72">
+                {recent.map((r, i) => (
+                  <ContextMenuItem key={i} onSelect={() => sendTo(r)}>
+                    <Users className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                    <span className="truncate">
+                      {r.patientName} <span className="text-muted-foreground">· {KIND_LABEL[r.kind] || r.kind}</span>
+                    </span>
+                  </ContextMenuItem>
+                ))}
+              </ContextMenuSubContent>
+            </ContextMenuSub>
           ) : (
-            "Нет активного протокола"
+            <ContextMenuItem disabled>
+              <Send className="w-4 h-4 mr-2" /> Откройте протокол в соседней вкладке
+            </ContextMenuItem>
           )}
-        </ContextMenuLabel>
-        <ContextMenuSeparator />
-        <ContextMenuItem onSelect={copyFragment}>
-          <Copy className="w-4 h-4 mr-2" /> Копировать фрагмент
-        </ContextMenuItem>
-        {active ? (
-          <ContextMenuItem onSelect={() => sendTo(active)}>
-            <Send className="w-4 h-4 mr-2" />
-            Вставить в активный протокол
+          <ContextMenuSeparator />
+          <ContextMenuItem onSelect={distributeToPlan}>
+            <ListPlus className="w-4 h-4 mr-2" /> Распределить по плану лечения
           </ContextMenuItem>
-        ) : recent.length > 0 ? (
-          <ContextMenuSub>
-            <ContextMenuSubTrigger>
-              <History className="w-4 h-4 mr-2" /> Вставить в недавний протокол
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent className="w-72">
-              {recent.map((r, i) => (
-                <ContextMenuItem key={i} onSelect={() => sendTo(r)}>
-                  <Users className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
-                  <span className="truncate">
-                    {r.patientName} <span className="text-muted-foreground">· {KIND_LABEL[r.kind] || r.kind}</span>
-                  </span>
-                </ContextMenuItem>
-              ))}
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-        ) : (
-          <ContextMenuItem disabled>
-            <Send className="w-4 h-4 mr-2" /> Откройте протокол в соседней вкладке
+          <ContextMenuItem onSelect={formPrescription}>
+            <Pill className="w-4 h-4 mr-2" /> Сформировать рецепт
           </ContextMenuItem>
-        )}
-        <ContextMenuItem onSelect={formPrescription}>
-          <Pill className="w-4 h-4 mr-2" /> Сформировать назначения
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <PlanItemsPreviewDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        items={previewItems}
+        onItemsChange={setPreviewItems}
+        loading={parsing}
+        patientName={active?.kind === "treatment_plan" ? active.patientName : null}
+        onConfirm={confirmSendPlanItems}
+      />
+    </>
   );
 }
