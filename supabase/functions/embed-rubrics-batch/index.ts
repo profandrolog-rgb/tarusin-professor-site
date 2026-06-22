@@ -121,7 +121,7 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   }
 
   const existingPartial: any[] = Array.isArray(batch.partial_results) ? batch.partial_results : [];
-  const alreadyDone = existingPartial.some((p: any) => p && p.subbatch_index === subbatchIndex && (p.ok_count !== undefined || p.error));
+  const alreadyDone = existingPartial.some((p: any) => p && p.subbatch_index === subbatchIndex && p.ok_count !== undefined);
   if (alreadyDone) {
     await logEvent(supabase, batchId, { stage: "subbatch_skip_idempotent", subbatch_index: subbatchIndex });
   } else {
