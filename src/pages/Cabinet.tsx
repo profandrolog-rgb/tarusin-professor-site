@@ -256,7 +256,7 @@ function ConvRow({
         </DropdownMenuContent>
       </DropdownMenu>
       <button
-        className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive"
+        className="p-1 text-muted-foreground hover:text-destructive opacity-70 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Удалить"
       >
