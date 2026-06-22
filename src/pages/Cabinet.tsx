@@ -217,7 +217,7 @@ function ConvRow({
     >
       <span className="flex-1 text-sm truncate">{conv.title}</span>
       <button
-        className="opacity-0 group-hover:opacity-100 p-1"
+        className="p-1 text-muted-foreground hover:text-foreground opacity-70 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onRename(); }}
         aria-label="Переименовать"
         title="Переименовать (фамилия пациента, пометка)"
@@ -227,7 +227,7 @@ function ConvRow({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="opacity-0 group-hover:opacity-100 p-1"
+            className="p-1 text-muted-foreground hover:text-foreground opacity-70 group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
             aria-label="В папку"
             title="В папку"
@@ -256,7 +256,7 @@ function ConvRow({
         </DropdownMenuContent>
       </DropdownMenu>
       <button
-        className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive"
+        className="p-1 text-muted-foreground hover:text-destructive opacity-70 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Удалить"
       >
