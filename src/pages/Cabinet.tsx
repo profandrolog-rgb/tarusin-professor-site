@@ -659,8 +659,36 @@ export default function Cabinet() {
     setAttachments([]);
     setInput("");
     setPendingFolderId(folderId);
+    // New chat inherits the patient currently broadcast by an open protocol tab.
+    const a = getActiveContext();
+    setPendingPatient({ id: a?.patientId ?? null, name: a?.patientName ?? null });
     if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
+
+  // Derive current thread binding: persisted conv first, otherwise pending (for new chat).
+  const currentConv = conversations.find((c) => c.id === activeId) ?? null;
+  const threadPatient = activeId && currentConv
+    ? { id: currentConv.patient_id, name: currentConv.patient_name }
+    : pendingPatient;
+
+  const updateThreadPatient = async (sel: { id: string | null; name: string | null }) => {
+    if (!activeId) {
+      setPendingPatient(sel);
+      toast.success(sel.id ? `Чат привяжется к пациенту: ${sel.name}` : "Чат без привязки");
+      return;
+    }
+    const { error } = await supabase
+      .from("ai_conversations")
+      .update({ patient_id: sel.id, patient_name: sel.name })
+      .eq("id", activeId);
+    if (error) { toast.error("Не удалось обновить привязку"); return; }
+    setConversations((prev) => prev.map((c) => c.id === activeId
+      ? { ...c, patient_id: sel.id, patient_name: sel.name }
+      : c,
+    ));
+    toast.success(sel.id ? `Чат привязан: ${sel.name}` : "Чат отвязан от пациента");
+  };
+
 
   const renameConversation = async (conv: Conversation) => {
     const name = window.prompt("Название диалога (фамилия пациента, пометка):", conv.title)?.trim();
