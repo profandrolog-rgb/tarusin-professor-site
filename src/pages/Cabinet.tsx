@@ -1393,7 +1393,9 @@ export default function Cabinet() {
         <header className="border-b border-border px-4 pt-3 pb-3 flex flex-col gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg font-semibold truncate">Мультимодальный ассистент профессора</h1>
+            <ThreadPatientBadge value={threadPatient} onChange={updateThreadPatient} variant="header" />
             <ActivePatientBadge />
+
           </div>
           <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-md border border-border overflow-hidden">
