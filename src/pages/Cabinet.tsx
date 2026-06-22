@@ -1113,7 +1113,10 @@ export default function Cabinet() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Sidebar */}
-      <aside className="md:w-72 border-r border-border md:h-screen flex flex-col bg-muted/30">
+      <aside
+        className="border-r border-border md:h-screen flex flex-col bg-muted/30 w-full md:w-auto md:shrink-0 relative"
+        style={{ width: typeof window !== "undefined" && window.innerWidth >= 768 ? `${sidebarWidth}px` : undefined }}
+      >
         <div className="p-3 border-b border-border space-y-2">
           <Button onClick={() => newConversation(null)} className="w-full" size="sm">
             <Plus className="w-4 h-4 mr-2" />Новый диалог
