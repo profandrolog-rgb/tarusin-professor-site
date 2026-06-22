@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2, FileText, Download, Brain, CheckCircle2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: "Черновик", color: "bg-muted text-muted-foreground" },
@@ -42,6 +44,21 @@ const AdminConsultations = () => {
   });
 
   const selectedCase = cases.find((c: any) => c.id === selectedId);
+
+  useProtocolFragmentReceiver({ kind: "consultation" });
+
+  useEffect(() => {
+    if (!selectedCase) return;
+    const name = (selectedCase as any).patient_name || (selectedCase as any).full_name || "Консультация";
+    setActiveContext({
+      patientId: (selectedCase as any).patient_id,
+      patientName: name,
+      targetId: selectedCase.id,
+      kind: "consultation",
+      url: window.location.pathname + window.location.search,
+    });
+    return () => clearActiveContextIfMatches(selectedCase.id);
+  }, [selectedCase?.id]);
 
   const { data: rounds = [] } = useQuery({
     queryKey: ["admin-rounds", selectedId],

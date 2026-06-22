@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 
 interface Visit {
   id: string;
@@ -70,6 +72,21 @@ export default function AdminPatientVisitDetail() {
     if (!authLoading && !user) navigate("/auth");
     if (!authLoading && user && !isAdmin && !isSurgeon) navigate("/");
   }, [authLoading, user, isAdmin, isSurgeon, navigate]);
+
+  useProtocolFragmentReceiver({ patientId: visit?.patient_id, kind: "visit" });
+
+  useEffect(() => {
+    if (!visit?.patient?.full_name) return;
+    setActiveContext({
+      patientId: visit.patient.id,
+      patientName: visit.patient.full_name,
+      targetId: visit.id,
+      kind: "visit",
+      url: window.location.pathname + window.location.search,
+    });
+    return () => clearActiveContextIfMatches(visit.id);
+  }, [visit?.id, visit?.patient?.id, visit?.patient?.full_name]);
+
 
   useEffect(() => {
     if (!id) return;

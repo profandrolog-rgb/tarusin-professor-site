@@ -24,6 +24,9 @@ import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_K
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
+import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
+import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
+import { Link2 } from "lucide-react";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
@@ -104,6 +107,38 @@ type Msg = {
   fulltext?: FulltextMeta;
   batch?: { task: string; partial: BatchPartial[] };
 };
+
+function ActivePatientBadge() {
+  const [ctx, setCtx] = useState<ActivePatientContext | null>(() => getActiveContext());
+  useEffect(() => {
+    const unsub = subscribeActiveContext(setCtx);
+    const onFocus = () => setCtx(getActiveContext());
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(() => setCtx(getActiveContext()), 30000);
+    return () => { unsub(); window.removeEventListener("focus", onFocus); clearInterval(interval); };
+  }, []);
+  const KIND: Record<string, string> = { visit: "осмотр", ultrasound: "УЗИ", consultation: "консультация", treatment_plan: "план" };
+  if (!ctx) {
+    return (
+      <span className="text-xs text-muted-foreground inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-dashed">
+        <Link2 className="w-3 h-3" /> Нет активного протокола
+      </span>
+    );
+  }
+  return (
+    <a
+      href={ctx.url}
+      target="_blank"
+      rel="noopener"
+      className="text-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+      title="Открыть протокол в новой вкладке"
+    >
+      <Link2 className="w-3 h-3" />
+      <span className="font-medium truncate max-w-[180px]">{ctx.patientName}</span>
+      <span className="text-primary/70">· {KIND[ctx.kind] || ctx.kind}</span>
+    </a>
+  );
+}
 
 
 type Conversation = {
@@ -1319,7 +1354,10 @@ export default function Cabinet() {
       {/* Main chat */}
       <main className="flex-1 flex flex-col md:h-screen">
         <header className="border-b border-border px-4 pt-3 pb-3 flex flex-col gap-2">
-          <h1 className="text-lg font-semibold truncate">Мультимодальный ассистент профессора</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg font-semibold truncate">Мультимодальный ассистент профессора</h1>
+            <ActivePatientBadge />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-md border border-border overflow-hidden">
             <button
@@ -1542,9 +1580,11 @@ export default function Cabinet() {
               }`}>
                 {m.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-primary" />}
               </div>
-              <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] ${
-                m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}>
+              {(() => {
+                const bubble = (
+                  <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] ${
+                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                  }`}>
                 {m.attachments && m.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
                     {m.attachments.map((a, j) => (
@@ -1822,7 +1862,12 @@ export default function Cabinet() {
                 {m.model && m.role === "assistant" && (!m.content || streaming) && (
                   <div className="text-[10px] text-muted-foreground mt-1 opacity-60">{m.model}</div>
                 )}
-              </div>
+                  </div>
+                );
+                return m.role === "assistant"
+                  ? <SelectionContextMenu fullText={m.content}>{bubble}</SelectionContextMenu>
+                  : bubble;
+              })()}
             </div>
           ))}
         </div>

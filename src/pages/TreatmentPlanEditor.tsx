@@ -30,6 +30,8 @@ import { SendMemoDialog } from "@/components/treatment/SendMemoDialog";
 import { EditorTOC } from "@/components/treatment/EditorTOC";
 import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
+import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -88,6 +90,20 @@ export default function TreatmentPlanEditor() {
   const [activeSection, setActiveSection] = useState<TreatmentCategory>("iv_drip");
   const activeItemRef = useRef<string | null>(null);
   const isNew = !id;
+
+  useProtocolFragmentReceiver({ patientId: patient?.id, kind: "treatment_plan" });
+
+  useEffect(() => {
+    if (!patient) return;
+    setActiveContext({
+      patientId: patient.id,
+      patientName: patient.full_name,
+      targetId: id || "new",
+      kind: "treatment_plan",
+      url: window.location.pathname + window.location.search,
+    });
+    return () => clearActiveContextIfMatches(id || "new");
+  }, [patient?.id, patient?.full_name, id]);
 
   // Undo stack for items (last 10 snapshots)
   const undoStackRef = useRef<PlanItem[][]>([]);

@@ -22,6 +22,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 
 interface Patient {
   id: string;
@@ -154,6 +156,21 @@ export function UltrasoundPanel() {
 
   const [form, setForm] = useState<Record<string, any>>({});
   const update = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
+
+  useProtocolFragmentReceiver({ patientId: patient?.id, kind: "ultrasound" });
+
+  useEffect(() => {
+    if (!patient) return;
+    setActiveContext({
+      patientId: patient.id,
+      patientName: patient.full_name,
+      targetId: patient.id,
+      kind: "ultrasound",
+      url: window.location.pathname + window.location.search,
+    });
+    return () => clearActiveContextIfMatches(patient.id);
+  }, [patient?.id, patient?.full_name]);
+
   const numVal = (field: string) => form[field] ? parseFloat(form[field]) : undefined;
 
   const ageYears = patient ? calculateAge(new Date(patient.birth_date), examDate).years : 0;
