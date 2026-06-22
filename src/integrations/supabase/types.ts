@@ -1292,6 +1292,51 @@ export type Database = {
         }
         Relationships: []
       }
+      embedding_batches: {
+        Row: {
+          chain_log: Json
+          created_at: string
+          created_by: string | null
+          error: string | null
+          id: string
+          partial_results: Json
+          processed_rubrics: number
+          rubric_ids: string[]
+          status: string
+          subbatch_size: number
+          total_rubrics: number
+          updated_at: string
+        }
+        Insert: {
+          chain_log?: Json
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          id?: string
+          partial_results?: Json
+          processed_rubrics?: number
+          rubric_ids: string[]
+          status?: string
+          subbatch_size?: number
+          total_rubrics?: number
+          updated_at?: string
+        }
+        Update: {
+          chain_log?: Json
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          id?: string
+          partial_results?: Json
+          processed_rubrics?: number
+          rubric_ids?: string[]
+          status?: string
+          subbatch_size?: number
+          total_rubrics?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       extemporaneous_ingredients: {
         Row: {
           amount: string
@@ -2830,6 +2875,38 @@ export type Database = {
         }
         Relationships: []
       }
+      rubric_embeddings: {
+        Row: {
+          embedded_at: string
+          embedding: string
+          model: string
+          rubric_id: string
+          source_text: string
+        }
+        Insert: {
+          embedded_at?: string
+          embedding: string
+          model?: string
+          rubric_id: string
+          source_text: string
+        }
+        Update: {
+          embedded_at?: string
+          embedding?: string
+          model?: string
+          rubric_id?: string
+          source_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_embeddings_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: true
+            referencedRelation: "repertory_rubrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -4298,6 +4375,10 @@ export type Database = {
         Args: { _batch_id: string; _entry: Json }
         Returns: undefined
       }
+      append_embedding_batch_log: {
+        Args: { _batch_id: string; _entry: Json }
+        Returns: undefined
+      }
       append_translation_batch_log: {
         Args: { _batch_id: string; _entry: Json }
         Returns: undefined
@@ -4342,6 +4423,16 @@ export type Database = {
         }[]
       }
       refresh_treatment_plans_search: { Args: never; Returns: undefined }
+      search_rubrics_by_embedding: {
+        Args: { _limit?: number; _query: string }
+        Returns: {
+          chapter_id: string
+          name: string
+          name_ru: string
+          rubric_id: string
+          similarity: number
+        }[]
+      }
       search_treatment_plans: {
         Args: {
           _age_max?: number

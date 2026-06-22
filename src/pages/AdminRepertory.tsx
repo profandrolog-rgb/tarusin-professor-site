@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Loader2, ChevronRight, BookOpen, X, Search } from "lucide-react";
+import { ArrowLeft, Loader2, ChevronRight, BookOpen, X, Search, Sparkles, Zap } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "@/hooks/use-toast";
 
 interface Chapter { id: string; ord: number; name_en: string; name_ru: string }
 interface Rubric { id: string; chapter_id: string; parent_id: string | null; name: string; kent_page: number | null }
@@ -35,6 +37,27 @@ export default function AdminRepertory() {
     }
   }, [user, isAdmin, loading, navigate]);
 
+  // Embedding progress (independent of main load)
+  const [embedTotal, setEmbedTotal] = useState(0);
+  const [embedDone, setEmbedDone] = useState(0);
+  const [embedBatchId, setEmbedBatchId] = useState<string | null>(null);
+  const [embedStatus, setEmbedStatus] = useState<string | null>(null);
+  const [enqueueing, setEnqueueing] = useState(false);
+
+  async function refreshEmbedStats() {
+    const [{ count: totalCount }, { count: doneCount }, { data: lastBatch }] = await Promise.all([
+      supabase.from("repertory_rubrics").select("id", { count: "exact", head: true }).not("name_ru", "is", null),
+      supabase.from("rubric_embeddings").select("rubric_id", { count: "exact", head: true }),
+      supabase.from("embedding_batches").select("id,status,processed_rubrics,total_rubrics").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    setEmbedTotal(totalCount || 0);
+    setEmbedDone(doneCount || 0);
+    if (lastBatch) {
+      setEmbedBatchId(lastBatch.id);
+      setEmbedStatus(lastBatch.status);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       setBusy(true);
@@ -49,8 +72,54 @@ export default function AdminRepertory() {
       setRemedies((m.data as any) || []);
       setLinks((l.data as any) || []);
       setBusy(false);
+      await refreshEmbedStats();
     })();
   }, []);
+
+  // Poll embedding progress while a batch is processing
+  useEffect(() => {
+    if (embedStatus !== "processing") return;
+    const t = setInterval(refreshEmbedStats, 4000);
+    return () => clearInterval(t);
+  }, [embedStatus]);
+
+  async function startEmbedding() {
+    setEnqueueing(true);
+    try {
+      // Get all rubric IDs that have name_ru AND no embedding yet
+      const { data: translated, error: e1 } = await supabase
+        .from("repertory_rubrics")
+        .select("id")
+        .not("name_ru", "is", null);
+      if (e1) throw e1;
+      const { data: existing, error: e2 } = await supabase.from("rubric_embeddings").select("rubric_id");
+      if (e2) throw e2;
+      const doneSet = new Set((existing || []).map((x: any) => x.rubric_id));
+      const ids = (translated || []).map((x: any) => x.id).filter((id: string) => !doneSet.has(id));
+      if (ids.length === 0) {
+        toast({ title: "Все переведённые рубрики уже эмбеддированы" });
+        setEnqueueing(false);
+        return;
+      }
+      const { data: batch, error: e3 } = await supabase.from("embedding_batches").insert({
+        rubric_ids: ids,
+        subbatch_size: 200,
+        total_rubrics: ids.length,
+      }).select("id").single();
+      if (e3) throw e3;
+      const { error: e4 } = await supabase.functions.invoke("embed-rubrics-batch", { body: { batchId: batch.id, subbatchIndex: 0 } });
+      if (e4) throw e4;
+      toast({ title: `Запущено: ${ids.length} рубрик`, description: "Подпакеты по 200, прогресс обновляется каждые 4 сек." });
+      setEmbedBatchId(batch.id);
+      setEmbedStatus("processing");
+      await refreshEmbedStats();
+    } catch (e: any) {
+      toast({ title: "Ошибка запуска", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setEnqueueing(false);
+    }
+  }
+
 
   const remedyById = useMemo(() => {
     const m = new Map<string, Remedy>();
@@ -142,8 +211,24 @@ export default function AdminRepertory() {
               <p className="text-muted-foreground">
                 {chapters.length} глав · {rubrics.length} рубрик · {remedies.length} препаратов
               </p>
+              {embedTotal > 0 && (
+                <div className="mt-2 max-w-md">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>Эмбеддинги рубрик</span>
+                    <span className="font-mono">{embedDone} / {embedTotal}{embedStatus === "processing" && " · обрабатывается…"}</span>
+                  </div>
+                  <Progress value={embedTotal ? (embedDone / embedTotal) * 100 : 0} className="h-1.5" />
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button asChild className="gap-2">
+                <Link to="/admin/repertory/by-complaint"><Sparkles className="w-4 h-4"/>Поиск по жалобам</Link>
+              </Button>
+              <Button variant="outline" onClick={startEmbedding} disabled={enqueueing || embedStatus === "processing"} className="gap-2">
+                {enqueueing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Zap className="w-4 h-4"/>}
+                {embedDone >= embedTotal && embedTotal > 0 ? "Доэмбеддить новые" : "Запустить эмбеддинги"}
+              </Button>
               <Button variant="outline" asChild className="gap-2">
                 <Link to="/admin/translation-queue"><Loader2 className="w-4 h-4"/>Очередь переводов</Link>
               </Button>
@@ -155,6 +240,7 @@ export default function AdminRepertory() {
             </div>
 
           </div>
+
 
           {busy ? (
             <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>
