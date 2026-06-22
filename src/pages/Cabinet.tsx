@@ -476,7 +476,7 @@ export default function Cabinet() {
     if (!user) return;
     const { data, error } = await supabase
       .from("ai_conversations")
-      .select("id, title, model, updated_at, folder_id")
+      .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
       .order("updated_at", { ascending: false });
     if (error) {
       toast.error("Не удалось загрузить историю");
@@ -732,7 +732,7 @@ export default function Cabinet() {
     const { data, error } = await supabase
       .from("ai_conversations")
       .insert({ user_id: user.id, title, model: modelTag, folder_id: pendingFolderId })
-      .select("id, title, model, updated_at, folder_id")
+      .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
       .single();
     if (error || !data) { toast.error("Не удалось создать диалог"); return null; }
     setActiveId(data.id);
@@ -990,7 +990,7 @@ export default function Cabinet() {
       const { data, error } = await supabase
         .from("ai_conversations")
         .insert({ user_id: user.id, title, model, folder_id: pendingFolderId })
-        .select("id, title, model, updated_at, folder_id")
+        .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
         .single();
       if (error || !data) {
         toast.error("Не удалось создать диалог");
