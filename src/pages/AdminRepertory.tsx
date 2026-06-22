@@ -37,6 +37,27 @@ export default function AdminRepertory() {
     }
   }, [user, isAdmin, loading, navigate]);
 
+  // Embedding progress (independent of main load)
+  const [embedTotal, setEmbedTotal] = useState(0);
+  const [embedDone, setEmbedDone] = useState(0);
+  const [embedBatchId, setEmbedBatchId] = useState<string | null>(null);
+  const [embedStatus, setEmbedStatus] = useState<string | null>(null);
+  const [enqueueing, setEnqueueing] = useState(false);
+
+  async function refreshEmbedStats() {
+    const [{ count: totalCount }, { count: doneCount }, { data: lastBatch }] = await Promise.all([
+      supabase.from("repertory_rubrics").select("id", { count: "exact", head: true }).not("name_ru", "is", null),
+      supabase.from("rubric_embeddings").select("rubric_id", { count: "exact", head: true }),
+      supabase.from("embedding_batches").select("id,status,processed_rubrics,total_rubrics").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    setEmbedTotal(totalCount || 0);
+    setEmbedDone(doneCount || 0);
+    if (lastBatch) {
+      setEmbedBatchId(lastBatch.id);
+      setEmbedStatus(lastBatch.status);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       setBusy(true);
@@ -51,8 +72,54 @@ export default function AdminRepertory() {
       setRemedies((m.data as any) || []);
       setLinks((l.data as any) || []);
       setBusy(false);
+      await refreshEmbedStats();
     })();
   }, []);
+
+  // Poll embedding progress while a batch is processing
+  useEffect(() => {
+    if (embedStatus !== "processing") return;
+    const t = setInterval(refreshEmbedStats, 4000);
+    return () => clearInterval(t);
+  }, [embedStatus]);
+
+  async function startEmbedding() {
+    setEnqueueing(true);
+    try {
+      // Get all rubric IDs that have name_ru AND no embedding yet
+      const { data: translated, error: e1 } = await supabase
+        .from("repertory_rubrics")
+        .select("id")
+        .not("name_ru", "is", null);
+      if (e1) throw e1;
+      const { data: existing, error: e2 } = await supabase.from("rubric_embeddings").select("rubric_id");
+      if (e2) throw e2;
+      const doneSet = new Set((existing || []).map((x: any) => x.rubric_id));
+      const ids = (translated || []).map((x: any) => x.id).filter((id: string) => !doneSet.has(id));
+      if (ids.length === 0) {
+        toast({ title: "Все переведённые рубрики уже эмбеддированы" });
+        setEnqueueing(false);
+        return;
+      }
+      const { data: batch, error: e3 } = await supabase.from("embedding_batches").insert({
+        rubric_ids: ids,
+        subbatch_size: 200,
+        total_rubrics: ids.length,
+      }).select("id").single();
+      if (e3) throw e3;
+      const { error: e4 } = await supabase.functions.invoke("embed-rubrics-batch", { body: { batchId: batch.id, subbatchIndex: 0 } });
+      if (e4) throw e4;
+      toast({ title: `Запущено: ${ids.length} рубрик`, description: "Подпакеты по 200, прогресс обновляется каждые 4 сек." });
+      setEmbedBatchId(batch.id);
+      setEmbedStatus("processing");
+      await refreshEmbedStats();
+    } catch (e: any) {
+      toast({ title: "Ошибка запуска", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setEnqueueing(false);
+    }
+  }
+
 
   const remedyById = useMemo(() => {
     const m = new Map<string, Remedy>();
