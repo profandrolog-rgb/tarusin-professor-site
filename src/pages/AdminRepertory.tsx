@@ -120,6 +120,38 @@ export default function AdminRepertory() {
     }
   }
 
+  // Materia Medica import (Boericke)
+  const [mmJob, setMmJob] = useState<{ id: string; status: string; processed: number; total: number; inserted: number } | null>(null);
+  const [mmStarting, setMmStarting] = useState(false);
+
+  async function refreshMmJob() {
+    const { data } = await supabase.from("mm_import_jobs")
+      .select("id,status,processed_remedies,total_remedies,inserted_sections")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (data) setMmJob({ id: data.id, status: data.status, processed: data.processed_remedies, total: data.total_remedies, inserted: data.inserted_sections });
+  }
+  useEffect(() => { refreshMmJob(); }, []);
+  useEffect(() => {
+    if (mmJob?.status !== "processing") return;
+    const t = setInterval(refreshMmJob, 5000);
+    return () => clearInterval(t);
+  }, [mmJob?.status]);
+
+  async function startMmImport() {
+    setMmStarting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-boericke-mm", { body: {} });
+      if (error) throw error;
+      toast({ title: "Импорт Materia Medica запущен", description: `Всего средств: ${data?.total ?? "?"}` });
+      await refreshMmJob();
+    } catch (e: any) {
+      toast({ title: "Ошибка запуска импорта", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setMmStarting(false);
+    }
+  }
+
+
 
   const remedyById = useMemo(() => {
     const m = new Map<string, Remedy>();
