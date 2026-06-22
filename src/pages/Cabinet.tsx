@@ -672,6 +672,7 @@ export default function Cabinet() {
     setPendingFolderId(folderId);
     // New chat inherits the patient currently broadcast by an open protocol tab.
     const a = getActiveContext();
+    userTouchedPendingRef.current = false;
     setPendingPatient({ id: a?.patientId ?? null, name: a?.patientName ?? null });
     if (folderId) setOpenFolders((prev) => ({ ...prev, [folderId]: true }));
   };
