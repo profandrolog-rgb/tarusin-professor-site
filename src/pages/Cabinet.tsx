@@ -1912,6 +1912,10 @@ export default function Cabinet() {
         </div>
 
         <div className="border-t border-border p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <ThreadPatientBadge value={threadPatient} onChange={updateThreadPatient} variant="inline" />
+          </div>
+
           {pubmedMode && user && (
             <PubmedPanel
               userId={user.id}
