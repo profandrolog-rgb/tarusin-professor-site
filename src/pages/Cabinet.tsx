@@ -278,6 +278,30 @@ export default function Cabinet() {
   const [unfiledOpen, setUnfiledOpen] = useState(true);
   const [pendingFolderId, setPendingFolderId] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | "unfiled" | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return 288;
+    const saved = parseInt(window.localStorage.getItem("cabinet_sidebar_width") || "");
+    return Number.isFinite(saved) && saved >= 200 && saved <= 600 ? saved : 288;
+  });
+  const sidebarResizingRef = useRef(false);
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!sidebarResizingRef.current) return;
+      const w = Math.min(600, Math.max(200, e.clientX));
+      setSidebarWidth(w);
+    };
+    const onUp = () => {
+      if (sidebarResizingRef.current) {
+        sidebarResizingRef.current = false;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        try { window.localStorage.setItem("cabinet_sidebar_width", String(sidebarWidth)); } catch {}
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [sidebarWidth]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -1113,7 +1137,10 @@ export default function Cabinet() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Sidebar */}
-      <aside className="md:w-72 border-r border-border md:h-screen flex flex-col bg-muted/30">
+      <aside
+        className="border-r border-border md:h-screen flex flex-col bg-muted/30 w-full md:w-auto md:shrink-0 relative"
+        style={{ width: typeof window !== "undefined" && window.innerWidth >= 768 ? `${sidebarWidth}px` : undefined }}
+      >
         <div className="p-3 border-b border-border space-y-2">
           <Button onClick={() => newConversation(null)} className="w-full" size="sm">
             <Plus className="w-4 h-4 mr-2" />Новый диалог
@@ -1273,6 +1300,20 @@ export default function Cabinet() {
             })()}
           </div>
         </ScrollArea>
+        {/* Resize handle (desktop only) */}
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault();
+            sidebarResizingRef.current = true;
+            document.body.style.cursor = "col-resize";
+            document.body.style.userSelect = "none";
+          }}
+          onDoubleClick={() => setSidebarWidth(288)}
+          className="hidden md:block absolute top-0 right-0 h-full w-1.5 -mr-0.5 cursor-col-resize hover:bg-primary/40 active:bg-primary/60 transition-colors z-10"
+          title="Потяните, чтобы изменить ширину (двойной клик — сбросить)"
+          aria-label="Изменить ширину панели"
+          role="separator"
+        />
       </aside>
 
       {/* Main chat */}
