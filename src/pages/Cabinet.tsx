@@ -147,6 +147,8 @@ type Conversation = {
   model: string | null;
   updated_at: string;
   folder_id: string | null;
+  patient_id: string | null;
+  patient_name: string | null;
 };
 
 type ChatFolder = {
