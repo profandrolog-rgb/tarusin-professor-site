@@ -1904,7 +1904,7 @@ export default function Cabinet() {
                   </div>
                 );
                 return m.role === "assistant"
-                  ? <SelectionContextMenu fullText={m.content}>{bubble}</SelectionContextMenu>
+                  ? <SelectionContextMenu fullText={m.content} boundPatient={threadPatient} onBoundPatientChange={updateThreadPatient}>{bubble}</SelectionContextMenu>
                   : bubble;
               })()}
             </div>
