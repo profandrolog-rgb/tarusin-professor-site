@@ -71,6 +71,18 @@ export default function AdminPatientDetail() {
         else map.set(key, { name, section: it.section_category, count: 1 });
       }
       setTopItems([...map.values()].sort((a, b) => b.count - a.count).slice(0, 5));
+
+      const { data: repsData } = await supabase
+        .from("complaint_repertorizations")
+        .select("id, title, complaint, created_at, selected_remedies")
+        .eq("patient_id", id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setReps(((repsData as any[]) || []).map((r) => ({
+        ...r,
+        selected_remedies: Array.isArray(r.selected_remedies) ? r.selected_remedies : [],
+      })));
+
       setBusy(false);
     })();
   }, [id]);
