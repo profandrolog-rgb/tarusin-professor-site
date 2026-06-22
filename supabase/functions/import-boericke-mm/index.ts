@@ -151,10 +151,15 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (existing) { skipped++; continue; }
 
-      const url = slugToPath(slug);
-      if (!url) { skipped++; continue; }
+      const urls = slugToPaths(slug);
+      if (!urls) { skipped++; continue; }
 
-      const html = await fetchHtml(url);
+      let html = await fetchHtml(urls.primary);
+      let usedUrl = urls.primary;
+      if (!html) {
+        html = await fetchHtml(urls.fallback);
+        usedUrl = urls.fallback;
+      }
       if (!html) { failed++; continue; }
       const rel = extractRelationship(html);
       if (!rel) { skipped++; continue; }
@@ -164,7 +169,7 @@ Deno.serve(async (req) => {
         source: "boericke",
         heading: "Relationship",
         body: rel.slice(0, 8000),
-        source_url: url,
+        source_url: usedUrl,
       });
       if (insErr) failed++; else inserted++;
     }
