@@ -49,6 +49,7 @@ export default function AdminRepertoryByComplaint() {
   const stageProgress: Record<Stage, number> = {
     idle: 0, extract: 25, select: 60, compute: 90, done: 100, error: 0,
   };
+  const pipelineRunning = stage === "extract" || stage === "select" || stage === "compute";
 
 
   useEffect(() => {
