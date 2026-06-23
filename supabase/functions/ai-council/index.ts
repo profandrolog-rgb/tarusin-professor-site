@@ -108,6 +108,7 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+    const veniceKey = Deno.env.get("VENICE_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY missing" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
