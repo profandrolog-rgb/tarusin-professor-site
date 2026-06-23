@@ -108,6 +108,13 @@ type Msg = {
   pubmed?: PubmedPayload;
   fulltext?: FulltextMeta;
   batch?: { task: string; partial: BatchPartial[] };
+  image?: {
+    path: string;          // путь в бакете generated-images
+    signedUrl?: string;    // 1ч signed URL для отображения
+    model: string;
+    cost?: number | null;
+    refs?: { bucket: string; path: string }[];
+  };
 };
 
 function ActivePatientBadge() {
