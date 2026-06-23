@@ -2174,12 +2174,24 @@ export default function Cabinet() {
                       {m.image && (
                         <div className="mt-1 space-y-2">
                           {m.image.signedUrl ? (
-                            <img
-                              src={m.image.signedUrl}
-                              alt="Сгенерированное изображение"
-                              className="rounded-lg border border-border max-w-full max-h-[600px] object-contain bg-background"
-                              loading="lazy"
-                            />
+                            <div className="relative inline-block group">
+                              <img
+                                src={m.image.signedUrl}
+                                alt="Сгенерированное изображение"
+                                className="rounded-lg border border-border max-w-full max-h-[600px] object-contain bg-background cursor-zoom-in"
+                                loading="lazy"
+                                onClick={() => setZoomImage({ url: m.image!.signedUrl!, model: m.image!.model })}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setZoomImage({ url: m.image!.signedUrl!, model: m.image!.model }); }}
+                                className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 backdrop-blur border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                                title="Увеличить"
+                                aria-label="Увеличить изображение"
+                              >
+                                <ZoomIn className="w-4 h-4" />
+                              </button>
+                            </div>
                           ) : (
                             <div className="rounded-lg border border-dashed border-border h-64 flex items-center justify-center text-xs text-muted-foreground">
                               <Loader2 className="w-4 h-4 animate-spin mr-2" /> Подписываем ссылку…
