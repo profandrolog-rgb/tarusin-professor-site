@@ -971,7 +971,7 @@ export default function Cabinet() {
 
   const persistFulltextMessage = async (content: string, meta: FulltextMeta) => {
     const convId = activeId;
-    if (!convId || !user) return;
+    if (!convId || !user || isPrivateConv(convId)) return;
     const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(meta))));
     const att = { name: "__fulltext__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` };
     await supabase.from("ai_messages").insert({
