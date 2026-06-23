@@ -1491,7 +1491,7 @@ export default function Cabinet() {
             disabled={streaming || council}
             className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
             title={modelKnown
-              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive })}`
+              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive, source: model.startsWith("venice/") ? "venice" : "openrouter" })}`
               : `⚠ Слаг ${model} не найден в OpenRouter — может вернуть 404`}
           >
             <Search className="w-3.5 h-3.5" />Ещё
