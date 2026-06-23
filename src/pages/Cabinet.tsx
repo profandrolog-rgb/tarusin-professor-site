@@ -1777,6 +1777,20 @@ export default function Cabinet() {
                   </span>
                 </SelectItem>
               ))}
+              {imageModels.length > 0 && (
+                <>
+                  <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/50 pt-2">🎨 Иллюстрации</div>
+                  {imageModels.map((m) => (
+                    <SelectItem key={m.key} value={m.id} title={m.hint || m.id}>
+                      <span className="flex items-center gap-1">
+                        <span>{m.emoji}</span>
+                        <span>{m.label}</span>
+                        {m.hint && <span className="text-[10px] text-muted-foreground ml-1">· {m.hint}</span>}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
               {currentResolved == null && currentLive && (
                 <>
                   <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Расширенный выбор</div>
