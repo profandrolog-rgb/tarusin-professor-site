@@ -216,40 +216,41 @@ Deno.serve(async (req) => {
       model: resolvedModel,
       messages: finalMessages,
       stream: true,
-      // Жёсткий потолок длины ответа — защита от бесконечной генерации,
-      // которую edge-функция всё равно оборвёт по wall-clock.
       max_tokens: 8192,
-      // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
-      reasoning: { effort: effectiveEffort },
-      // Route to the fastest provider for the selected model (equivalent to :nitro)
-      provider: { sort: "throughput" },
     };
-    if (webSearch && !usePubmed) {
-      requestPayload.plugins = [{ id: "web", max_results: 5 }];
+    if (!isVenice) {
+      // OpenRouter-only: unified reasoning + throughput routing
+      requestPayload.reasoning = { effort: effectiveEffort };
+      requestPayload.provider = { sort: "throughput" };
+      if (webSearch && !usePubmed) {
+        requestPayload.plugins = [{ id: "web", max_results: 5 }];
+      }
+    } else {
+      // Venice — у уровня PAID можно отключить системные дисклеймеры
+      requestPayload.venice_parameters = { include_venice_system_prompt: false };
     }
 
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,
       origin: req.headers.get("origin"),
+      gateway: isVenice ? "venice" : "openrouter",
       original_model: body.model,
       resolved_model: resolvedModel,
       messages_count: body.messages.length,
-      messages_preview: body.messages.map((m: any) => ({
-        role: m?.role,
-        content_type: Array.isArray(m?.content) ? "array" : typeof m?.content,
-        content_len: typeof m?.content === "string"
-          ? m.content.length
-          : Array.isArray(m?.content) ? m.content.length : 0,
-      })),
     }));
 
-    const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const upstreamUrl = isVenice
+      ? "https://api.venice.ai/api/v1/chat/completions"
+      : "https://openrouter.ai/api/v1/chat/completions";
+    const orResp = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
-        "X-Title": "Tarusin Cabinet AI",
+        ...(isVenice ? {} : {
+          "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
+          "X-Title": "Tarusin Cabinet AI",
+        }),
       },
       body: JSON.stringify(requestPayload),
     });
