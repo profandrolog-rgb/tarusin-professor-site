@@ -34,6 +34,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
 const PUBMED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed`;
 const PUBMED_FULLTEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed-fulltext`;
+const GENERATE_IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 
 // Bootstrap default — replaced once live OpenRouter list resolves.
 const DEFAULT_MODEL =
