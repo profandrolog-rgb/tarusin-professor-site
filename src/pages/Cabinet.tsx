@@ -2527,6 +2527,16 @@ export default function Cabinet() {
               />
             </div>
             <div className="space-y-1.5">
+              <label className="text-sm font-medium">Описание</label>
+              <Textarea
+                value={publishDialog.description}
+                onChange={(e) => setPublishDialog((d) => ({ ...d, description: e.target.value }))}
+                placeholder="Контекст использования, детали композиции..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">Необязательно. Поможет вспомнить, зачем сохраняли.</p>
+            </div>
+            <div className="space-y-1.5">
               <label className="text-sm font-medium">Теги</label>
               <Input
                 value={publishDialog.tags}
