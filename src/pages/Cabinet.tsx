@@ -377,6 +377,7 @@ export default function Cabinet() {
   const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById, veniceModelsById));
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
+  const imageModels = resolvedModels.filter((m) => m.kind === "image");
   const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
