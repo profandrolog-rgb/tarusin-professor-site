@@ -1680,6 +1680,12 @@ export default function Cabinet() {
 
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {(isPrivateConv(activeId) || (privateMode && !activeId)) && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-3 py-2 text-xs flex items-center gap-2">
+              <Lock className="w-3.5 h-3.5" />
+              Приватный режим: переписка не сохраняется в истории и в базе. После закрытия вкладки или удаления — исчезает бесследно.
+            </div>
+          )}
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground text-sm pt-16">
               Задайте вопрос. Можно прикрепить изображения или PDF.
