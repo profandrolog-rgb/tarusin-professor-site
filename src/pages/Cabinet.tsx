@@ -1968,7 +1968,7 @@ export default function Cabinet() {
                   </div>
                 )}
                 {m.role === "assistant" ? (
-                  m.content || m.council ? (
+                  m.content || m.council || m.image ? (
                     <>
                       {m.council && m.council.length > 0 && (
                         <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
