@@ -574,6 +574,10 @@ export default function Cabinet() {
       setMessages([]);
       return;
     }
+    if (isPrivateConv(activeId)) {
+      // private convs live only in memory; don't query DB
+      return;
+    }
     (async () => {
       const { data, error } = await supabase
         .from("ai_messages")
