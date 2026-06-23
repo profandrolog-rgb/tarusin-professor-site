@@ -168,6 +168,7 @@ Deno.serve(async (req) => {
     // ── Call the model
     let b64: string | null = null;
     let costUsd: number | null = null;
+    let usedModel = model;
 
     if (isGatewayModel(model)) {
       if (!LOVABLE_API_KEY) {
@@ -203,7 +204,10 @@ Deno.serve(async (req) => {
         try { j = JSON.parse(txt); } catch { j = {}; }
         lastJson = j;
         b64 = await extractImageBase64(j);
-        if (b64) break;
+        if (b64) {
+          usedModel = attemptModel;
+          break;
+        }
       }
       if (!b64) {
         const sample = lastTxt.slice(0, 300).replace(/"b64_json":"[^"]+"/g, '"b64_json":"…"');
@@ -277,7 +281,7 @@ Deno.serve(async (req) => {
       imagePath,
       signedUrl: signed?.signedUrl ?? null,
       cost: costUsd,
-      model,
+      model: usedModel,
       savedRefs,
       refs: allRefs,
     }), {
