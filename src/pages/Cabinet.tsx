@@ -2418,6 +2418,17 @@ export default function Cabinet() {
                     >
                       <FileDown className="w-3 h-3" />
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => illustrateMessage(i, m.content)}
+                      disabled={illustratingMsgIdx !== null || streaming}
+                      className="p-1 rounded hover:bg-background/60 disabled:opacity-40"
+                      title="Иллюстрировать схемой (генерация изображения по этому ответу)"
+                    >
+                      {illustratingMsgIdx === i
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <ImageIcon className="w-3 h-3" />}
+                    </button>
                     {m.model && <span className="text-[10px] text-muted-foreground ml-auto">{m.model}</span>}
                   </div>
                 )}
