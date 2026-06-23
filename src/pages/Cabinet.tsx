@@ -1062,8 +1062,204 @@ export default function Cabinet() {
   };
 
 
+  // ─── Image generation ────────────────────────────────────────────────────
+  const addImageRefFromStorage = async (bucket: string, path: string, name?: string) => {
+    try {
+      const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+      setImageRefs((prev) => [...prev, { bucket, path, signedUrl: signed?.signedUrl, name }]);
+    } catch {
+      setImageRefs((prev) => [...prev, { bucket, path, name }]);
+    }
+  };
+
+  const handleImageRefFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const arr = Array.from(files).slice(0, 4);
+    for (const f of arr) {
+      if (!f.type.startsWith("image/")) { toast.error(`${f.name}: не картинка`); continue; }
+      if (f.size > 8 * 1024 * 1024) { toast.error(`${f.name}: больше 8 МБ`); continue; }
+      const dataUrl = await fileToDataUrl(f);
+      const b64 = dataUrl.split(",")[1] || "";
+      const preview = URL.createObjectURL(f);
+      setImageUploads((prev) => [...prev, { name: f.name, dataBase64: b64, mime: f.type, previewUrl: preview }]);
+    }
+  };
+
+  const generateImage = async (opts?: { promptOverride?: string; refsOverride?: { bucket: string; path: string }[] }) => {
+    if (!user || streaming) return;
+    const prompt = (opts?.promptOverride ?? input).trim();
+    if (!prompt) { toast.error("Опишите изображение"); return; }
+    setStreaming(true);
+    setStreamStartedAt(Date.now());
+
+    // Ensure conversation
+    let convId = activeId;
+    if (!convId) {
+      if (privateMode) {
+        convId = `private:${crypto.randomUUID()}`;
+        setActiveId(convId);
+      } else {
+        const title = prompt.slice(0, 60) || "Иллюстрация";
+        const { data, error } = await supabase
+          .from("ai_conversations")
+          .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
+          .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
+          .single();
+        if (error || !data) {
+          toast.error("Не удалось создать диалог");
+          setStreaming(false);
+          return;
+        }
+        convId = data.id;
+        setActiveId(convId);
+        setConversations((prev) => [data as Conversation, ...prev]);
+        setPendingFolderId(null);
+      }
+    }
+    const priv = isPrivateConv(convId);
+
+    // User message (prompt + reference thumbnails as attachments for display)
+    const refAttachments: Attachment[] = imageRefs.map((r) => ({
+      name: r.name || r.path.split("/").pop() || "ref",
+      type: "image/png",
+      dataUrl: r.signedUrl,
+      path: r.path,
+    }));
+    const uploadAttachments: Attachment[] = imageUploads.map((u) => ({
+      name: u.name, type: u.mime, dataUrl: u.previewUrl,
+    }));
+    const userMsg: Msg = { role: "user", content: prompt, attachments: [...refAttachments, ...uploadAttachments] };
+    setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", model }]);
+    if (!opts?.promptOverride) setInput("");
+
+    const refsForCall = opts?.refsOverride ?? imageRefs.map((r) => ({ bucket: r.bucket, path: r.path }));
+
+    if (!priv) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId,
+        user_id: user.id,
+        role: "user",
+        content: prompt,
+        attachments: (refAttachments.map((a) => ({ name: a.name, type: a.type, path: a.path })) as any),
+        model,
+      });
+    }
+
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(GENERATE_IMAGE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+        body: JSON.stringify({
+          prompt, model, conversationId: convId,
+          references: refsForCall,
+          uploadedRefs: imageUploads.map((u) => ({ name: u.name, dataBase64: u.dataBase64, mime: u.mime })),
+        }),
+      });
+      const j = await resp.json().catch(() => ({} as any));
+      if (!resp.ok) {
+        throw new Error(j?.error || `HTTP ${resp.status}`);
+      }
+      const allRefs = [...refsForCall, ...((j.savedRefs as any[]) || [])];
+      const imageMeta: Msg["image"] = {
+        path: j.imagePath,
+        signedUrl: j.signedUrl,
+        model: j.model || model,
+        cost: typeof j.cost === "number" ? j.cost : null,
+        refs: allRefs,
+      };
+
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "", model, image: imageMeta };
+        return next;
+      });
+
+      if (!priv) {
+        await supabase.from("ai_messages").insert({
+          conversation_id: convId,
+          user_id: user.id,
+          role: "assistant",
+          content: "",
+          model,
+          image_path: j.imagePath,
+          image_model: j.model || model,
+          image_cost: typeof j.cost === "number" ? j.cost : null,
+          image_refs: allRefs.map((r) => `${r.bucket}/${r.path}`),
+        } as any);
+        await supabase.from("ai_conversations").update({ model, updated_at: new Date().toISOString() }).eq("id", convId);
+        loadConversations();
+      }
+
+      // Очистить референсы/загрузки после успешной генерации
+      setImageRefs([]);
+      imageUploads.forEach((u) => URL.revokeObjectURL(u.previewUrl));
+      setImageUploads([]);
+
+      if (typeof j.cost === "number" && j.cost > 0) {
+        toast.success(`Готово · $${j.cost.toFixed(4)}`);
+      } else {
+        toast.success("Изображение готово");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось сгенерировать");
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка генерации изображения." };
+        return next;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  const downloadImage = async (signedUrl: string, filename: string) => {
+    try {
+      const r = await fetch(signedUrl);
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      window.open(signedUrl, "_blank");
+    }
+  };
+
+  const useGeneratedAsRef = async (img: NonNullable<Msg["image"]>) => {
+    await addImageRefFromStorage("generated-images", img.path, "Предыдущая генерация");
+    toast.success("Добавлено как референс — отредактируйте промпт и нажмите «Сгенерировать»");
+  };
+
+  const publishToLibrary = async (msgIdx: number, img: NonNullable<Msg["image"]>) => {
+    if (!user) return;
+    const title = window.prompt("Название (необязательно):", "") || null;
+    const tagsRaw = window.prompt("Теги через запятую (необязательно):", "") || "";
+    const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
+    setPublishingMsgIdx(msgIdx);
+    try {
+      // copy file: download from generated-images, upload to reference-library
+      const { data: blob, error: dlErr } = await supabase.storage.from("generated-images").download(img.path);
+      if (dlErr || !blob) throw new Error(dlErr?.message || "download failed");
+      const refId = crypto.randomUUID();
+      const refPath = `${user.id}/${refId}.png`;
+      const up = await supabase.storage.from("reference-library").upload(refPath, blob, { contentType: "image/png", upsert: false });
+      if (up.error) throw up.error;
+      const { error: insErr } = await supabase.from("image_references").insert({
+        user_id: user.id, path: refPath, title, tags,
+      });
+      if (insErr) throw insErr;
+      toast.success("Опубликовано в библиотеке референсов");
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось опубликовать");
+    } finally {
+      setPublishingMsgIdx(null);
+    }
+  };
 
   const sendMessage = async () => {
+    if (isImageModel) return generateImage();
     if (pubmedMode) return sendPubmedMessage();
     if (!user || streaming) return;
     const text = input.trim();
