@@ -3,18 +3,21 @@
 // picks the first one present in the live /api/v1/models response, falling back
 // to a regex family match. If nothing matches, the entry is marked unavailable
 // in the UI and the dropdown disables it so we don't ship known-404 slugs.
-export type ModelTier = "fast" | "deep";
-export type ModelSource = "openrouter" | "venice";
+export type ModelTier = "fast" | "deep" | "image";
+export type ModelSource = "openrouter" | "venice" | "lovable-gateway";
+export type ModelKind = "text" | "image";
 
 export type CuratedModel = {
   key: string;            // stable identifier (used as React key)
   label: string;          // base label without the tier emoji
   tier: ModelTier;
-  emoji?: string;         // optional override of ⚡ / 🧠
+  emoji?: string;         // optional override of ⚡ / 🧠 / 🎨
   candidates: string[];   // explicit OpenRouter slugs to try, in order
   familyRegex?: RegExp;   // fallback family pattern if no candidate exists
   source?: ModelSource;   // default: openrouter
   uncensored?: boolean;   // показывать предупреждение «без цензуры»
+  kind?: ModelKind;       // default: "text"
+  hint?: string;          // короткая подсказка под названием
 };
 
 export const CURATED_MODELS: CuratedModel[] = [
