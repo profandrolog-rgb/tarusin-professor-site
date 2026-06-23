@@ -597,7 +597,7 @@ export default function Cabinet() {
     (async () => {
       const { data, error } = await supabase
         .from("ai_messages")
-        .select("id, role, content, attachments, model")
+        .select("id, role, content, attachments, model, image_path, image_model, image_cost, image_refs")
         .eq("conversation_id", activeId)
         .order("created_at", { ascending: true });
       if (error) {
