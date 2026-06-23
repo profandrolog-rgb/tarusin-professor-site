@@ -197,10 +197,12 @@ export type ResolvedModel = {
   label: string;
   tier: ModelTier;
   emoji: string;
-  /** OpenRouter slug to actually send to the gateway. */
+  /** Gateway slug to actually send (с префиксом `venice/` для Venice-моделей). */
   id: string;
   available: boolean;
   liveInfo?: LiveModelInfo;
+  source: ModelSource;
+  uncensored?: boolean;
 };
 
 export type LiveModelInfo = {
