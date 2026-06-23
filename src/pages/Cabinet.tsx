@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles, Printer } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles, Printer, ZoomIn } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -400,6 +400,8 @@ export default function Cabinet() {
   const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
   const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
   const [illustratingMsgIdx, setIllustratingMsgIdx] = useState<number | null>(null);
+  const [illustrateModel, setIllustrateModel] = useState<string>("google/gemini-3.1-flash-image");
+  const [zoomImage, setZoomImage] = useState<{ url: string; model?: string } | null>(null);
   const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; description: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", description: "", tags: "" });
   const [printPreview, setPrintPreview] = useState<{ open: boolean; dataUrl: string | null }>({ open: false, dataUrl: null });
   const imageRefFileInputRef = useRef<HTMLInputElement>(null);
@@ -1250,9 +1252,10 @@ export default function Cabinet() {
     const clean = (text || "").trim();
     if (!clean) { toast.error("Нечего иллюстрировать"); return; }
     const imgModel =
-      imageModels.find((m) => m.key === "img-gemini-flash" && m.available)?.id
-      ?? imageModels.find((m) => m.available)?.id
-      ?? "google/gemini-3.1-flash-image";
+      illustrateModel
+      || imageModels.find((m) => m.key === "img-gemini-flash" && m.available)?.id
+      || imageModels.find((m) => m.available)?.id
+      || "google/gemini-3.1-flash-image";
 
     // Должен быть активный диалог — кнопка показывается только в открытом чате
     let convId = activeId;
@@ -2171,12 +2174,24 @@ export default function Cabinet() {
                       {m.image && (
                         <div className="mt-1 space-y-2">
                           {m.image.signedUrl ? (
-                            <img
-                              src={m.image.signedUrl}
-                              alt="Сгенерированное изображение"
-                              className="rounded-lg border border-border max-w-full max-h-[600px] object-contain bg-background"
-                              loading="lazy"
-                            />
+                            <div className="relative inline-block group">
+                              <img
+                                src={m.image.signedUrl}
+                                alt="Сгенерированное изображение"
+                                className="rounded-lg border border-border max-w-full max-h-[600px] object-contain bg-background cursor-zoom-in"
+                                loading="lazy"
+                                onClick={() => setZoomImage({ url: m.image!.signedUrl!, model: m.image!.model })}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setZoomImage({ url: m.image!.signedUrl!, model: m.image!.model }); }}
+                                className="absolute top-2 right-2 p-1.5 rounded-md bg-background/80 backdrop-blur border border-border opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                                title="Увеличить"
+                                aria-label="Увеличить изображение"
+                              >
+                                <ZoomIn className="w-4 h-4" />
+                              </button>
+                            </div>
                           ) : (
                             <div className="rounded-lg border border-dashed border-border h-64 flex items-center justify-center text-xs text-muted-foreground">
                               <Loader2 className="w-4 h-4 animate-spin mr-2" /> Подписываем ссылку…
@@ -2429,6 +2444,28 @@ export default function Cabinet() {
                         ? <Loader2 className="w-3 h-3 animate-spin" />
                         : <ImageIcon className="w-3 h-3" />}
                     </button>
+                    <select
+                      value={illustrateModel}
+                      onChange={(e) => setIllustrateModel(e.target.value)}
+                      disabled={illustratingMsgIdx !== null || streaming}
+                      className="text-[10px] bg-transparent border border-border/60 rounded px-1 py-0.5 hover:bg-background/60 disabled:opacity-40 max-w-[140px]"
+                      title="Модель для иллюстрации"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {imageModels.length > 0 ? (
+                        imageModels.map((im) => (
+                          <option key={im.key} value={im.id} disabled={!im.available}>
+                            {im.emoji} {im.label}{!im.available ? " (нет)" : ""}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="google/gemini-3.1-flash-image">⚡ Gemini Flash Image</option>
+                          <option value="google/gemini-3-pro-image">💎 Gemini Pro Image</option>
+                          <option value="openai/gpt-image-2">🎨 GPT Image 2</option>
+                        </>
+                      )}
+                    </select>
                     {m.model && <span className="text-[10px] text-muted-foreground ml-auto">{m.model}</span>}
                   </div>
                 )}
@@ -2736,6 +2773,27 @@ export default function Cabinet() {
             <Button variant="outline" onClick={() => setPrintPreview({ open: false, dataUrl: null })}>Отмена</Button>
             <Button onClick={confirmPrint}><Printer className="w-4 h-4 mr-2" /> Печать</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!zoomImage} onOpenChange={(open) => { if (!open) setZoomImage(null); }}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-2 sm:p-3 bg-background">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Просмотр изображения</DialogTitle>
+            <DialogDescription>{zoomImage?.model || "Сгенерированное изображение"}</DialogDescription>
+          </DialogHeader>
+          {zoomImage && (
+            <div className="overflow-auto max-h-[90vh] flex items-center justify-center">
+              <img
+                src={zoomImage.url}
+                alt="Увеличенное изображение"
+                className="max-w-none h-auto"
+                style={{ maxHeight: "88vh" }}
+              />
+            </div>
+          )}
+          {zoomImage?.model && (
+            <div className="text-[11px] text-muted-foreground font-mono text-center">{zoomImage.model}</div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
