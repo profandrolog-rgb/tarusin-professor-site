@@ -939,7 +939,7 @@ export default function Cabinet() {
       }
       const updated: PubmedPayload = { ...msg.pubmed, sources: merged, total_count: Number(json.total_count) || msg.pubmed.total_count };
       setMessages((prev) => prev.map((m, i) => i === msgIndex ? { ...m, pubmed: updated } : m));
-      if (msg.id) {
+      if (msg.id && !isPrivateConv(activeId)) {
         const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(updated))));
         await supabase.from("ai_messages").update({
           attachments: [{ name: "__pubmed__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
