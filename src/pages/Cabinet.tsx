@@ -2019,6 +2019,45 @@ export default function Cabinet() {
                           <Loader2 className="w-3 h-3 animate-spin" /> Сводим ответы…
                         </div>
                       )}
+                      {m.image && (
+                        <div className="mt-1 space-y-2">
+                          {m.image.signedUrl ? (
+                            <img
+                              src={m.image.signedUrl}
+                              alt="Сгенерированное изображение"
+                              className="rounded-lg border border-border max-w-full max-h-[600px] object-contain bg-background"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="rounded-lg border border-dashed border-border h-64 flex items-center justify-center text-xs text-muted-foreground">
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" /> Подписываем ссылку…
+                            </div>
+                          )}
+                          <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="font-mono">{m.image.model}</span>
+                            {typeof m.image.cost === "number" && m.image.cost > 0 && (
+                              <span>· ${m.image.cost.toFixed(4)}</span>
+                            )}
+                            {m.image.refs && m.image.refs.length > 0 && (
+                              <span>· референсов: {m.image.refs.length}</span>
+                            )}
+                          </div>
+                          {m.image.signedUrl && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button size="sm" variant="outline" onClick={() => downloadImage(m.image!.signedUrl!, `image-${Date.now()}.png`)}>
+                                <Download className="w-3.5 h-3.5 mr-1" /> Скачать
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => useGeneratedAsRef(m.image!)}>
+                                <ImageIcon className="w-3.5 h-3.5 mr-1" /> Как референс
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => publishToLibrary(i, m.image!)} disabled={publishingMsgIdx === i}>
+                                {publishingMsgIdx === i ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <BookmarkPlus className="w-3.5 h-3.5 mr-1" />}
+                                В библиотеку
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {m.council && m.council.length > 0 && (
                         <Accordion type="single" collapsible className="mt-3 border-t border-border/50 pt-2">
                           <AccordionItem value="answers" className="border-0">
