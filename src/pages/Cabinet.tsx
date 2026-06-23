@@ -1480,6 +1480,32 @@ export default function Cabinet() {
           >
             <Users className="w-3.5 h-3.5" />Консилиум
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !privateMode;
+              setPrivateMode(next);
+              if (next && activeId && !isPrivateConv(activeId)) {
+                // Start a fresh private chat to avoid writing into the saved one
+                newConversation(null);
+              }
+              if (!next && isPrivateConv(activeId)) {
+                // Leaving private mode while in a private chat: close it (no trace left)
+                setActiveId(null);
+                setMessages([]);
+              }
+              toast.success(next ? "🔒 Приватный режим включён — переписка не сохраняется" : "Приватный режим выключен");
+            }}
+            disabled={streaming}
+            className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
+              privateMode || isPrivateConv(activeId)
+                ? "bg-destructive text-destructive-foreground border-destructive"
+                : "bg-background hover:bg-accent border-border"
+            }`}
+            title="Приватный режим: переписка не сохраняется ни в истории, ни в базе. Удаляется бесследно при закрытии."
+          >
+            <Lock className="w-3.5 h-3.5" />Приватно
+          </button>
           <Select value={model} onValueChange={setModel} disabled={streaming || council}>
             <SelectTrigger className="w-[300px]">
               <SelectValue>
