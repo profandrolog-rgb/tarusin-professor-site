@@ -868,9 +868,11 @@ export default function Cabinet() {
     if (!convId) { setStreaming(false); return; }
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
     setInput("");
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId, user_id: user.id, role: "user", content: text, model,
-    });
+    if (!isPrivateConv(convId)) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId, user_id: user.id, role: "user", content: text, model,
+      });
+    }
 
     try {
       const { data: sess } = await supabase.auth.getSession();
