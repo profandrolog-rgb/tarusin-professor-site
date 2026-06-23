@@ -2508,6 +2508,40 @@ export default function Cabinet() {
           onResult={handleBatchResult}
         />
       )}
+      <Dialog open={publishDialog.open} onOpenChange={(open) => setPublishDialog((d) => ({ ...d, open }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Опубликовать в библиотеку референсов</DialogTitle>
+            <DialogDescription>
+              Изображение будет сохранено в вашу личную библиотеку — его можно будет выбирать как референс в новых генерациях.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Название</label>
+              <Input
+                value={publishDialog.title}
+                onChange={(e) => setPublishDialog((d) => ({ ...d, title: e.target.value }))}
+                placeholder="Например: лапароскопическая укладка"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Теги</label>
+              <Input
+                value={publishDialog.tags}
+                onChange={(e) => setPublishDialog((d) => ({ ...d, tags: e.target.value }))}
+                placeholder="через запятую: операционная, дети, схема"
+              />
+              <p className="text-xs text-muted-foreground">Необязательно. Помогут искать в библиотеке.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPublishDialog((d) => ({ ...d, open: false }))}>Отмена</Button>
+            <Button onClick={confirmPublishToLibrary}>Опубликовать</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
