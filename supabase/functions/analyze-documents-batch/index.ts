@@ -125,28 +125,38 @@ async function fetchSubbatchAnalysis(
     }
   }
 
-  const resp = await fetch(OPENROUTER_URL, {
+  const isVenice = model.startsWith("venice/");
+  const realModel = isVenice ? model.slice("venice/".length) : model;
+  const upstreamUrl = isVenice
+    ? "https://api.venice.ai/api/v1/chat/completions"
+    : OPENROUTER_URL;
+  const effectiveKey = isVenice ? (Deno.env.get("VENICE_API_KEY") ?? "") : apiKey;
+  if (isVenice && !effectiveKey) throw new Error("VENICE_API_KEY missing");
+
+  const payload: Record<string, unknown> = {
+    model: realModel,
+    messages: [
+      {
+        role: "system",
+        content:
+          "Ты — клинический ассистент. Анализируешь медицинские документы (анализы, выписки, заключения). " +
+          "Будь предметным, цифры приводи как есть, отмечай отклонения от референсных диапазонов. " +
+          "Если в файле явно нет медицинской информации — напиши об этом одной строкой.",
+      },
+      { role: "user", content: contentBlocks },
+    ],
+    max_tokens: 4000,
+  };
+  if (isVenice) payload.venice_parameters = { include_venice_system_prompt: false };
+
+  const resp = await fetch(upstreamUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${effectiveKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://tarusin.pro",
-      "X-Title": "Cabinet batch analyzer",
+      ...(isVenice ? {} : { "HTTP-Referer": "https://tarusin.pro", "X-Title": "Cabinet batch analyzer" }),
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: "system",
-          content:
-            "Ты — клинический ассистент. Анализируешь медицинские документы (анализы, выписки, заключения). " +
-            "Будь предметным, цифры приводи как есть, отмечай отклонения от референсных диапазонов. " +
-            "Если в файле явно нет медицинской информации — напиши об этом одной строкой.",
-        },
-        { role: "user", content: contentBlocks },
-      ],
-      max_tokens: 4000,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!resp.ok) {
