@@ -190,6 +190,41 @@ export const CURATED_MODELS: CuratedModel[] = [
     uncensored: true,
     candidates: ["venice/deepseek-r1-671b"],
   },
+
+  // ─── Иллюстрации (генерация изображений) ───────────────────────────────
+  // kind:"image" — переключает композер в режим генерации; маршрутизация в
+  // edge function generate-image (Lovable Gateway для google/* и openai/*,
+  // прямой OpenRouter для всего остального).
+  {
+    key: "img-gemini-flash",
+    label: "Gemini 3.1 Flash Image",
+    tier: "image",
+    kind: "image",
+    source: "lovable-gateway",
+    emoji: "🎨",
+    hint: "Быстрая, для серий иллюстраций",
+    candidates: ["google/gemini-3.1-flash-image"],
+  },
+  {
+    key: "img-gpt-5-4",
+    label: "GPT-5.4 Image",
+    tier: "image",
+    kind: "image",
+    source: "lovable-gateway",
+    emoji: "🎨",
+    hint: "Сложные композиции",
+    candidates: ["openai/gpt-5.4-image-2", "openai/gpt-image-2"],
+  },
+  {
+    key: "img-seedream",
+    label: "Seedream 4.5",
+    tier: "image",
+    kind: "image",
+    source: "openrouter",
+    emoji: "🎨",
+    hint: "Портреты, мелкий текст",
+    candidates: ["bytedance/seedream-4.5", "bytedance/seedream-4"],
+  },
 ];
 
 // Default model the cabinet boots with. Falls back to a candidate if needed.
