@@ -792,6 +792,11 @@ export default function Cabinet() {
   const ensureConversation = async (titleSeed: string, modelTag: string): Promise<string | null> => {
     if (!user) return null;
     if (activeId) return activeId;
+    if (privateMode) {
+      const pid = `private:${crypto.randomUUID()}`;
+      setActiveId(pid);
+      return pid;
+    }
     const title = titleSeed.slice(0, 60) || "Новый диалог";
     const { data, error } = await supabase
       .from("ai_conversations")
