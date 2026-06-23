@@ -169,7 +169,7 @@ const Header = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav className="lg:hidden py-4 border-t border-border">
+          <nav className="lg:hidden py-4 border-t border-border max-h-[calc(100vh-4rem)] md:max-h-[calc(100vh-5rem)] overflow-y-auto overscroll-contain">
             <div className="flex flex-col gap-1">
               {mainNavItems.map(item =>
                 item.isAnchor ? (
