@@ -1263,8 +1263,10 @@ export default function Cabinet() {
     const priv = isPrivateConv(convId);
 
     const prompt =
-      "Создай наглядную медицинскую схему/иллюстрацию по следующему ответу. " +
-      "Стиль: чистая понятная схема, анатомическая корректность, минимум текста, подписи на русском.\n\n" +
+      "Создай образовательную клиническую медицинскую иллюстрацию в стиле анатомического атласа/учебника " +
+      "(как Netter, Sobotta): схематично, без фотореализма, без обнажённых людей — только анатомические структуры " +
+      "(органы, сосуды, ткани в разрезе), educational medical textbook diagram, non-explicit, clinical, anatomical chart. " +
+      "Минимум текста, подписи на русском.\n\n" +
       "ВАЖНО про стороны: используй анатомическую ориентацию пациента — " +
       "правая сторона ПАЦИЕНТА находится СЛЕВА от зрителя, левая сторона ПАЦИЕНТА — СПРАВА от зрителя " +
       "(как при осмотре врачом лицом к лицу). Подписи 'правый/правая' и 'левый/левая' " +
@@ -1320,10 +1322,18 @@ export default function Cabinet() {
         toast.success("Иллюстрация готова");
       }
     } catch (e: any) {
-      toast.error(e?.message || "Не удалось проиллюстрировать");
+      const raw = e?.message || "Не удалось проиллюстрировать";
+      const isModeration = /moderation_blocked|safety_violations|safety system|content_policy/i.test(raw);
+      const isOpenAI = imgModel.startsWith("openai/");
+      const friendly = isModeration
+        ? (isOpenAI
+            ? "OpenAI заблокировал медицинский запрос (фильтр безопасности). Переключитесь на Gemini-модель — она обычно пропускает клиническую анатомию."
+            : "Модель отклонила запрос по фильтру безопасности. Попробуйте другую модель или переформулируйте.")
+        : raw;
+      toast.error(friendly, { duration: 8000 });
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка генерации иллюстрации." };
+        next[next.length - 1] = { role: "assistant", content: `⚠️ ${friendly}` };
         return next;
       });
     } finally {
