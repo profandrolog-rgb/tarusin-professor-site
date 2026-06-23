@@ -277,7 +277,6 @@ export function resolveCuratedModel(
   // 3) no match — mark unavailable but still show the entry
   return { ...base, id: c.candidates[0] ?? c.key, available: false };
 }
-}
 
 export function formatPricePerMtok(perTokenUsd?: string): string | null {
   if (!perTokenUsd) return null;
