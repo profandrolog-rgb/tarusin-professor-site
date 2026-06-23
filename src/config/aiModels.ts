@@ -234,12 +234,25 @@ const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠" };
 export function resolveCuratedModel(
   c: CuratedModel,
   liveById: Map<string, LiveModelInfo>,
+  veniceById?: Map<string, LiveModelInfo>,
 ): ResolvedModel {
   const emoji = c.emoji ?? TIER_EMOJI[c.tier];
+  const source: ModelSource = c.source ?? "openrouter";
+  // Venice — отдельный gateway, не ищем в OpenRouter, но обогащаем live-инфой если есть.
+  if (source === "venice") {
+    for (const id of c.candidates) {
+      const live = veniceById?.get(id);
+      if (live) {
+        return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source, uncensored: c.uncensored };
+      }
+    }
+    // Если live-список ещё не загружен — модель всё равно считаем доступной (curated).
+    return { key: c.key, label: c.label, tier: c.tier, emoji, id: c.candidates[0] ?? c.key, available: true, source, uncensored: c.uncensored };
+  }
   // 1) explicit candidates first
   for (const id of c.candidates) {
     const live = liveById.get(id);
-    if (live) return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live };
+    if (live) return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source };
   }
   // 2) family fallback — pick the lexicographically newest matching id
   if (c.familyRegex) {
@@ -248,7 +261,7 @@ export function resolveCuratedModel(
     if (matches.length) {
       matches.sort((a, b) => b.id.localeCompare(a.id, "en"));
       const live = matches[0];
-      return { key: c.key, label: c.label, tier: c.tier, emoji, id: live.id, available: true, liveInfo: live };
+      return { key: c.key, label: c.label, tier: c.tier, emoji, id: live.id, available: true, liveInfo: live, source };
     }
   }
   // 3) no match — mark unavailable but still show the entry
@@ -259,6 +272,7 @@ export function resolveCuratedModel(
     emoji,
     id: c.candidates[0] ?? c.key,
     available: false,
+    source,
   };
 }
 
