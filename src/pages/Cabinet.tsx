@@ -22,6 +22,7 @@ import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnaly
 import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
 import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, modelSupportsAttachments, type ResolvedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import { useVeniceModels } from "@/hooks/useVeniceModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
