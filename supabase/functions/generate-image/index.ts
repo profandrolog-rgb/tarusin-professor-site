@@ -142,6 +142,33 @@ Deno.serve(async (req) => {
       let j: any;
       try { j = JSON.parse(txt); } catch { j = {}; }
       b64 = j?.data?.[0]?.b64_json || null;
+      // Fallback: Gemini image models can also return chat-completions shape
+      if (!b64) {
+        const imgs = j?.choices?.[0]?.message?.images;
+        if (Array.isArray(imgs) && imgs.length) {
+          const u = imgs[0]?.image_url?.url ?? imgs[0]?.url;
+          if (typeof u === "string") {
+            const m = /^data:[^;]+;base64,(.+)$/.exec(u);
+            if (m) b64 = m[1];
+            else if (u.startsWith("http")) {
+              const ir = await fetch(u);
+              if (ir.ok) {
+                const ab = await ir.arrayBuffer();
+                const bytes = new Uint8Array(ab);
+                let bin = "";
+                for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+                b64 = btoa(bin);
+              }
+            }
+          }
+        }
+      }
+      if (!b64) {
+        const sample = txt.slice(0, 300).replace(/"b64_json":"[^"]+"/g, '"b64_json":"…"');
+        return new Response(JSON.stringify({ error: `no image in gateway response for ${model}: ${sample}` }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const usageCost = j?.usage?.cost ?? j?.usage?.total_cost;
       if (typeof usageCost === "number") costUsd = usageCost;
     } else {
