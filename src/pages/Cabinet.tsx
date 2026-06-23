@@ -399,6 +399,7 @@ export default function Cabinet() {
   const [imageRefs, setImageRefs] = useState<{ bucket: string; path: string; signedUrl?: string; name?: string }[]>([]);
   const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
   const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
+  const [illustratingMsgIdx, setIllustratingMsgIdx] = useState<number | null>(null);
   const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; description: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", description: "", tags: "" });
   const [printPreview, setPrintPreview] = useState<{ open: boolean; dataUrl: string | null }>({ open: false, dataUrl: null });
   const imageRefFileInputRef = useRef<HTMLInputElement>(null);
@@ -1241,6 +1242,87 @@ export default function Cabinet() {
       setStreaming(false);
     }
   };
+
+  // Иллюстрировать существующий ответ ассистента: берём его текст, отправляем в image-модель,
+  // дорисовываем картинку в конце диалога.
+  const illustrateMessage = async (msgIdx: number, text: string) => {
+    if (!user || streaming || illustratingMsgIdx !== null) return;
+    const clean = (text || "").trim();
+    if (!clean) { toast.error("Нечего иллюстрировать"); return; }
+    const imgModel =
+      imageModels.find((m) => m.key === "img-gemini-flash" && m.available)?.id
+      ?? imageModels.find((m) => m.available)?.id
+      ?? "google/gemini-3.1-flash-image";
+
+    // Должен быть активный диалог — кнопка показывается только в открытом чате
+    let convId = activeId;
+    if (!convId) { toast.error("Откройте диалог"); return; }
+    const priv = isPrivateConv(convId);
+
+    const prompt =
+      "Создай наглядную медицинскую схему/иллюстрацию по следующему ответу. " +
+      "Стиль: чистая понятная схема, анатомическая корректность, минимум текста, подписи на русском.\n\n" +
+      "Ответ:\n" + clean.slice(0, 1800);
+
+    setIllustratingMsgIdx(msgIdx);
+    // Добавляем плейсхолдер ассистента в конец
+    setMessages((prev) => [...prev, { role: "assistant", content: "", model: imgModel }]);
+
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(GENERATE_IMAGE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+        body: JSON.stringify({ prompt, model: imgModel, conversationId: convId, references: [], uploadedRefs: [] }),
+      });
+      const j = await resp.json().catch(() => ({} as any));
+      if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
+
+      const imageMeta: Msg["image"] = {
+        path: j.imagePath,
+        signedUrl: j.signedUrl,
+        model: j.model || imgModel,
+        cost: typeof j.cost === "number" ? j.cost : null,
+        refs: [],
+      };
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "", model: imgModel, image: imageMeta };
+        return next;
+      });
+
+      if (!priv) {
+        await supabase.from("ai_messages").insert({
+          conversation_id: convId,
+          user_id: user.id,
+          role: "assistant",
+          content: "",
+          model: imgModel,
+          image_path: j.imagePath,
+          image_model: j.model || imgModel,
+          image_cost: typeof j.cost === "number" ? j.cost : null,
+          image_refs: [],
+        } as any);
+        await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+      }
+
+      if (typeof j.cost === "number" && j.cost > 0) {
+        toast.success(`Иллюстрация готова · $${j.cost.toFixed(4)}`);
+      } else {
+        toast.success("Иллюстрация готова");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось проиллюстрировать");
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка генерации иллюстрации." };
+        return next;
+      });
+    } finally {
+      setIllustratingMsgIdx(null);
+    }
+  };
+
 
   const downloadImage = async (signedUrl: string, filename: string) => {
     try {
@@ -2335,6 +2417,17 @@ export default function Cabinet() {
                       title="Скачать .pdf"
                     >
                       <FileDown className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => illustrateMessage(i, m.content)}
+                      disabled={illustratingMsgIdx !== null || streaming}
+                      className="p-1 rounded hover:bg-background/60 disabled:opacity-40"
+                      title="Иллюстрировать схемой (генерация изображения по этому ответу)"
+                    >
+                      {illustratingMsgIdx === i
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <ImageIcon className="w-3 h-3" />}
                     </button>
                     {m.model && <span className="text-[10px] text-muted-foreground ml-auto">{m.model}</span>}
                   </div>
