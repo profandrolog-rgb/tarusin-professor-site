@@ -61,6 +61,20 @@ export const CURATED_MODELS: CuratedModel[] = [
     ],
     familyRegex: /^qwen\/qwen[^/]*flash(?!-image)/i,
   },
+  {
+    key: "kimi-k2",
+    label: "Kimi K2",
+    tier: "fast",
+    candidates: [
+      "moonshotai/kimi-k2.7-code",
+      "moonshotai/kimi-k2.6",
+      "moonshotai/kimi-k2.5",
+      "moonshotai/kimi-k2-0905",
+      "moonshotai/kimi-k2",
+    ],
+    familyRegex: /^moonshotai\/kimi-k2(?!-thinking)/i,
+  },
+
 
   // ─── Глубокие ─────────────────────────────────────────────────────────
   {
