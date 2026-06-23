@@ -137,6 +137,56 @@ export const CURATED_MODELS: CuratedModel[] = [
     ],
     familyRegex: /^qwen\/qwen[^/]*max/i,
   },
+
+  // ─── Venice (без цензуры) ──────────────────────────────────────────────
+  // ID совпадают с venice/api/v1/models. Префикс `venice/` нужен бэкенду
+  // (ai-chat / ai-council / analyze-documents-batch) для маршрутизации
+  // запроса в Venice вместо OpenRouter.
+  {
+    key: "venice-uncensored",
+    label: "Venice Uncensored",
+    tier: "fast",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/venice-uncensored"],
+  },
+  {
+    key: "venice-dolphin-72b",
+    label: "Dolphin-Mistral 24B (Venice)",
+    tier: "fast",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/dolphin-2.9.2-qwen2-72b", "venice/dolphin-mistral-24b-venice-edition"],
+  },
+  {
+    key: "venice-llama-405b",
+    label: "Llama 3.1 405B (Venice)",
+    tier: "deep",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/llama-3.1-405b"],
+  },
+  {
+    key: "venice-qwen3-235b",
+    label: "Qwen 3 235B (Venice)",
+    tier: "deep",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/qwen3-235b"],
+  },
+  {
+    key: "venice-deepseek-r1",
+    label: "DeepSeek R1 671B (Venice)",
+    tier: "deep",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/deepseek-r1-671b"],
+  },
 ];
 
 // Default model the cabinet boots with. Falls back to a candidate if needed.
