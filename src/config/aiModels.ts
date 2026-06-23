@@ -234,7 +234,7 @@ export function modelSupportsAttachments(li?: LiveModelInfo | null): boolean {
   return /image|file|pdf/i.test(modality);
 }
 
-const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠" };
+const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠", image: "🎨" };
 
 export function resolveCuratedModel(
   c: CuratedModel,
@@ -243,21 +243,26 @@ export function resolveCuratedModel(
 ): ResolvedModel {
   const emoji = c.emoji ?? TIER_EMOJI[c.tier];
   const source: ModelSource = c.source ?? "openrouter";
+  const kind: ModelKind = c.kind ?? (c.tier === "image" ? "image" : "text");
+  const base = { key: c.key, label: c.label, tier: c.tier, emoji, source, kind, hint: c.hint };
   // Venice — отдельный gateway, не ищем в OpenRouter, но обогащаем live-инфой если есть.
   if (source === "venice") {
     for (const id of c.candidates) {
       const live = veniceById?.get(id);
       if (live) {
-        return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source, uncensored: c.uncensored };
+        return { ...base, id, available: true, liveInfo: live, uncensored: c.uncensored };
       }
     }
-    // Если live-список ещё не загружен — модель всё равно считаем доступной (curated).
-    return { key: c.key, label: c.label, tier: c.tier, emoji, id: c.candidates[0] ?? c.key, available: true, source, uncensored: c.uncensored };
+    return { ...base, id: c.candidates[0] ?? c.key, available: true, uncensored: c.uncensored };
+  }
+  // Image-модели или явный source: lovable-gateway — не ищем live-инфо в OpenRouter.
+  if (kind === "image" || source === "lovable-gateway") {
+    return { ...base, id: c.candidates[0] ?? c.key, available: true };
   }
   // 1) explicit candidates first
   for (const id of c.candidates) {
     const live = liveById.get(id);
-    if (live) return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source };
+    if (live) return { ...base, id, available: true, liveInfo: live };
   }
   // 2) family fallback — pick the lexicographically newest matching id
   if (c.familyRegex) {
@@ -266,19 +271,12 @@ export function resolveCuratedModel(
     if (matches.length) {
       matches.sort((a, b) => b.id.localeCompare(a.id, "en"));
       const live = matches[0];
-      return { key: c.key, label: c.label, tier: c.tier, emoji, id: live.id, available: true, liveInfo: live, source };
+      return { ...base, id: live.id, available: true, liveInfo: live };
     }
   }
   // 3) no match — mark unavailable but still show the entry
-  return {
-    key: c.key,
-    label: c.label,
-    tier: c.tier,
-    emoji,
-    id: c.candidates[0] ?? c.key,
-    available: false,
-    source,
-  };
+  return { ...base, id: c.candidates[0] ?? c.key, available: false };
+}
 }
 
 export function formatPricePerMtok(perTokenUsd?: string): string | null {
