@@ -1055,22 +1055,28 @@ export default function Cabinet() {
     // Ensure conversation
     let convId = activeId;
     if (!convId) {
-      const title = text.slice(0, 60) || "Новый диалог";
-      const { data, error } = await supabase
-        .from("ai_conversations")
-        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
-        .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
-        .single();
-      if (error || !data) {
-        toast.error("Не удалось создать диалог");
-        setStreaming(false);
-        return;
+      if (privateMode) {
+        convId = `private:${crypto.randomUUID()}`;
+        setActiveId(convId);
+      } else {
+        const title = text.slice(0, 60) || "Новый диалог";
+        const { data, error } = await supabase
+          .from("ai_conversations")
+          .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
+          .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
+          .single();
+        if (error || !data) {
+          toast.error("Не удалось создать диалог");
+          setStreaming(false);
+          return;
+        }
+        convId = data.id;
+        setActiveId(convId);
+        setConversations((prev) => [data as Conversation, ...prev]);
+        setPendingFolderId(null);
       }
-      convId = data.id;
-      setActiveId(convId);
-      setConversations((prev) => [data as Conversation, ...prev]);
-      setPendingFolderId(null);
     }
+    const priv = isPrivateConv(convId);
 
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
     setInput("");
@@ -1080,14 +1086,16 @@ export default function Cabinet() {
     const persistedAtts = (userMsg.attachments || []).map((a) =>
       a.path ? { name: a.name, type: a.type, path: a.path } : a,
     );
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId,
-      user_id: user.id,
-      role: "user",
-      content: text,
-      attachments: persistedAtts as any,
-      model,
-    });
+    if (!priv) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId,
+        user_id: user.id,
+        role: "user",
+        content: text,
+        attachments: persistedAtts as any,
+        model,
+      });
+    }
 
     // Build request messages (full history)
     const historyForApi = [...messages, userMsg].map((m) => ({
