@@ -394,6 +394,13 @@ export default function Cabinet() {
   const currentResolved = resolvedModels.find((r) => r.id === model);
   const currentLive = liveModelsById.get(model) ?? veniceModelsById.get(model);
   const modelKnown = !!currentLive || !!currentResolved?.available;
+  const isImageModel = currentResolved?.kind === "image";
+  // Референсы для image-генерации: уже существующие в Storage + загруженные с компьютера
+  const [imageRefs, setImageRefs] = useState<{ bucket: string; path: string; signedUrl?: string; name?: string }[]>([]);
+  const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
+  const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
+  const imageRefFileInputRef = useRef<HTMLInputElement>(null);
+
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
