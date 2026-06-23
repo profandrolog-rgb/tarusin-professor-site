@@ -381,7 +381,7 @@ export default function Cabinet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveModelsLoading]);
   const currentResolved = resolvedModels.find((r) => r.id === model);
-  const currentLive = liveModelsById.get(model);
+  const currentLive = liveModelsById.get(model) ?? veniceModelsById.get(model);
   const modelKnown = !!currentLive || !!currentResolved?.available;
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
