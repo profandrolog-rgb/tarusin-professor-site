@@ -388,6 +388,7 @@ export default function Cabinet() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [council, setCouncil] = useState(false);
+  const [privateMode, setPrivateMode] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
