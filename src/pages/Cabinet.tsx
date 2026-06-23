@@ -2617,6 +2617,34 @@ export default function Cabinet() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={printPreview.open} onOpenChange={(open) => setPrintPreview((d) => ({ ...d, open }))}>
+        <DialogContent className="sm:max-w-2xl max-sm:inset-0 max-sm:left-0 max-sm:top-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:h-[100dvh] max-sm:max-w-none max-sm:rounded-none">
+          <DialogHeader>
+            <DialogTitle>Предпросмотр печати A4</DialogTitle>
+            <DialogDescription>
+              Проверьте компоновку перед отправкой на принтер.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-2">
+            <div
+              className="bg-white shadow-md border"
+              style={{ width: "190mm", maxWidth: "100%", aspectRatio: "210/297" }}
+            >
+              {printPreview.dataUrl && (
+                <img
+                  src={printPreview.dataUrl}
+                  alt="Предпросмотр A4"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintPreview({ open: false, dataUrl: null })}>Отмена</Button>
+            <Button onClick={confirmPrint}><Printer className="w-4 h-4 mr-2" /> Печать</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
