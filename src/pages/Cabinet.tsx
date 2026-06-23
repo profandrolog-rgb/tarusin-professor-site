@@ -1258,7 +1258,6 @@ export default function Cabinet() {
 
   const printImage = async (signedUrl: string) => {
     try {
-      // Загружаем как data URL, чтобы окно печати точно успело отрендерить картинку
       const r = await fetch(signedUrl);
       const blob = await r.blob();
       const dataUrl: string = await new Promise((resolve, reject) => {
@@ -1267,12 +1266,21 @@ export default function Cabinet() {
         fr.onerror = reject;
         fr.readAsDataURL(blob);
       });
-      const w = window.open("", "_blank", "width=900,height=1200");
-      if (!w) {
-        toast.error("Браузер заблокировал окно печати. Разрешите всплывающие окна.");
-        return;
-      }
-      w.document.write(`<!DOCTYPE html>
+      setPrintPreview({ open: true, dataUrl });
+    } catch {
+      toast.error("Не удалось загрузить изображение для предпросмотра");
+    }
+  };
+
+  const confirmPrint = () => {
+    const dataUrl = printPreview.dataUrl;
+    if (!dataUrl) return;
+    const w = window.open("", "_blank", "width=900,height=1200");
+    if (!w) {
+      toast.error("Браузер заблокировал окно печати. Разрешите всплывающие окна.");
+      return;
+    }
+    w.document.write(`<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
@@ -1305,11 +1313,8 @@ export default function Cabinet() {
   </script>
 </body>
 </html>`);
-      w.document.close();
-    } catch (e) {
-      console.error(e);
-      toast.error("Не удалось подготовить печать");
-    }
+    w.document.close();
+    setPrintPreview({ open: false, dataUrl: null });
   };
 
   const useGeneratedAsRef = async (img: NonNullable<Msg["image"]>) => {
