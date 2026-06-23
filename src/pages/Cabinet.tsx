@@ -399,7 +399,7 @@ export default function Cabinet() {
   const [imageRefs, setImageRefs] = useState<{ bucket: string; path: string; signedUrl?: string; name?: string }[]>([]);
   const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
   const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
-  const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", tags: "" });
+  const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; description: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", description: "", tags: "" });
   const imageRefFileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -1261,12 +1261,12 @@ export default function Cabinet() {
   };
 
   const publishToLibrary = (msgIdx: number, img: NonNullable<Msg["image"]>) => {
-    setPublishDialog({ open: true, msgIdx, img, title: "", tags: "" });
+    setPublishDialog({ open: true, msgIdx, img, title: "", description: "", tags: "" });
   };
 
   const confirmPublishToLibrary = async () => {
     if (!user) return;
-    const { msgIdx, img, title, tags: tagsRaw } = publishDialog;
+    const { msgIdx, img, title, description, tags: tagsRaw } = publishDialog;
     if (msgIdx === null || !img) return;
     const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
     setPublishingMsgIdx(msgIdx);
@@ -1279,7 +1279,7 @@ export default function Cabinet() {
       const up = await supabase.storage.from("reference-library").upload(refPath, blob, { contentType: "image/png", upsert: false });
       if (up.error) throw up.error;
       const { error: insErr } = await supabase.from("image_references").insert({
-        user_id: user.id, path: refPath, title: title.trim() || null, tags,
+        user_id: user.id, path: refPath, title: title.trim() || null, description: description.trim() || null, tags,
       });
       if (insErr) throw insErr;
       toast.success("Опубликовано в библиотеке референсов");
@@ -2525,6 +2525,16 @@ export default function Cabinet() {
                 placeholder="Например: лапароскопическая укладка"
                 autoFocus
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Описание</label>
+              <Textarea
+                value={publishDialog.description}
+                onChange={(e) => setPublishDialog((d) => ({ ...d, description: e.target.value }))}
+                placeholder="Контекст использования, детали композиции..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">Необязательно. Поможет вспомнить, зачем сохраняли.</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Теги</label>
