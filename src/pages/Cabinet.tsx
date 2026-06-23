@@ -725,7 +725,15 @@ export default function Cabinet() {
 
 
   const deleteConversation = async (id: string) => {
-    if (!confirm("Удалить диалог?")) return;
+    const priv = isPrivateConv(id);
+    if (!confirm(priv ? "Удалить приватный диалог без следа?" : "Удалить диалог?")) return;
+    if (priv) {
+      if (activeId === id) {
+        setActiveId(null);
+        setMessages([]);
+      }
+      return;
+    }
     const { error } = await supabase.from("ai_conversations").delete().eq("id", id);
     if (error) {
       toast.error("Не удалось удалить");
