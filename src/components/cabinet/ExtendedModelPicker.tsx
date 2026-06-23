@@ -20,18 +20,24 @@ export function ExtendedModelPicker({
   currentId?: string;
 }) {
   const { list, loading, error } = useOpenRouterModels();
+  const { list: veniceList, loading: veniceLoading } = useVeniceModels();
   const [q, setQ] = useState("");
+
+  const combined = useMemo(() => {
+    // Venice сверху, чтобы было заметно
+    return [...veniceList, ...list];
+  }, [list, veniceList]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const base = needle
-      ? list.filter((m) =>
+      ? combined.filter((m) =>
           m.id.toLowerCase().includes(needle) ||
           (m.name || "").toLowerCase().includes(needle),
         )
-      : list;
+      : combined;
     return base.slice(0, 400);
-  }, [list, q]);
+  }, [combined, q]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,7 +45,7 @@ export function ExtendedModelPicker({
         <DialogHeader>
           <DialogTitle>Расширенный выбор модели</DialogTitle>
           <DialogDescription>
-            Поиск по живому списку OpenRouter ({list.length || "—"} моделей).
+            OpenRouter: {list.length || "—"} · Venice (без цензуры): {veniceList.length || "—"}.
             Выбранная модель применится только к этому диалогу.
           </DialogDescription>
         </DialogHeader>
