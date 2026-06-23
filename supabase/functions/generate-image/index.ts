@@ -245,27 +245,9 @@ Deno.serve(async (req) => {
       }
       let j: any;
       try { j = JSON.parse(txt); } catch { j = {}; }
-      // OpenRouter returns image either via choices[0].message.images[].image_url.url (data url),
-      // or as base64 in same field. Normalize.
-      const msg = j?.choices?.[0]?.message;
-      const imgs = msg?.images;
-      if (Array.isArray(imgs) && imgs.length) {
-        const u = imgs[0]?.image_url?.url ?? imgs[0]?.url;
-        if (typeof u === "string") {
-          const m = /^data:[^;]+;base64,(.+)$/.exec(u);
-          if (m) b64 = m[1];
-          else if (u.startsWith("http")) {
-            const ir = await fetch(u);
-            if (ir.ok) {
-              const ab = await ir.arrayBuffer();
-              const bytes = new Uint8Array(ab);
-              let bin = "";
-              for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-              b64 = btoa(bin);
-            }
-          }
-        }
-      }
+      // OpenRouter returns image either via choices[0].message.images[].image_url.url
+      // or in multimodal content parts. Normalize both shapes.
+      b64 = await extractImageBase64(j);
       const usageCost = j?.usage?.cost ?? j?.usage?.total_cost;
       if (typeof usageCost === "number") costUsd = usageCost;
     }
