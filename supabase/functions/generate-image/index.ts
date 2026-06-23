@@ -175,61 +175,43 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Gemini image models: messages + modalities. OpenAI image models: prompt.
-      let payload: Record<string, unknown>;
-      if (model.startsWith("google/")) {
-        const content: any[] = [{ type: "text", text: prompt }];
-        for (const url of refUrls) content.push({ type: "image_url", image_url: { url } });
-        payload = { model, messages: [{ role: "user", content }], modalities: ["image", "text"] };
-      } else {
-        // OpenAI image models — only prompt is supported; references are ignored.
-        payload = { model, prompt, size, quality: "low", n: 1 };
-      }
-      const r = await fetch(GATEWAY_URL, {
-        method: "POST",
-        headers: {
-          "Lovable-API-Key": LOVABLE_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      const txt = await r.text();
-      if (!r.ok) {
-        return new Response(JSON.stringify({ error: `gateway ${r.status}: ${txt.slice(0, 400)}` }), {
-          status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const gatewayHeaders = {
+        "Lovable-API-Key": LOVABLE_API_KEY,
+        "Content-Type": "application/json",
+      };
+      const attemptedModels = model === "google/gemini-2.5-flash-image"
+        ? [model, GEMINI_IMAGE_FALLBACK_MODEL]
+        : [model];
+      let lastTxt = "";
+      let lastJson: any = {};
+
+      for (const attemptModel of attemptedModels) {
+        const payload = buildGatewayPayload(attemptModel, prompt, size, refUrls);
+        const r = await fetch(GATEWAY_URL, {
+          method: "POST",
+          headers: gatewayHeaders,
+          body: JSON.stringify(payload),
         });
-      }
-      let j: any;
-      try { j = JSON.parse(txt); } catch { j = {}; }
-      b64 = j?.data?.[0]?.b64_json || null;
-      // Fallback: Gemini image models can also return chat-completions shape
-      if (!b64) {
-        const imgs = j?.choices?.[0]?.message?.images;
-        if (Array.isArray(imgs) && imgs.length) {
-          const u = imgs[0]?.image_url?.url ?? imgs[0]?.url;
-          if (typeof u === "string") {
-            const m = /^data:[^;]+;base64,(.+)$/.exec(u);
-            if (m) b64 = m[1];
-            else if (u.startsWith("http")) {
-              const ir = await fetch(u);
-              if (ir.ok) {
-                const ab = await ir.arrayBuffer();
-                const bytes = new Uint8Array(ab);
-                let bin = "";
-                for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-                b64 = btoa(bin);
-              }
-            }
-          }
+        const txt = await r.text();
+        lastTxt = txt;
+        if (!r.ok) {
+          return new Response(JSON.stringify({ error: `gateway ${r.status}: ${txt.slice(0, 400)}` }), {
+            status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
+        let j: any;
+        try { j = JSON.parse(txt); } catch { j = {}; }
+        lastJson = j;
+        b64 = await extractImageBase64(j);
+        if (b64) break;
       }
       if (!b64) {
-        const sample = txt.slice(0, 300).replace(/"b64_json":"[^"]+"/g, '"b64_json":"…"');
-        return new Response(JSON.stringify({ error: `no image in gateway response for ${model}: ${sample}` }), {
+        const sample = lastTxt.slice(0, 300).replace(/"b64_json":"[^"]+"/g, '"b64_json":"…"');
+        return new Response(JSON.stringify({ error: `no image in gateway response for ${attemptedModels.join(" -> ")}: ${sample}` }), {
           status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const usageCost = j?.usage?.cost ?? j?.usage?.total_cost;
+      const usageCost = lastJson?.usage?.cost ?? lastJson?.usage?.total_cost;
       if (typeof usageCost === "number") costUsd = usageCost;
     } else {
       // Direct OpenRouter (chat-completions with image modality)
