@@ -61,6 +61,20 @@ export const CURATED_MODELS: CuratedModel[] = [
     ],
     familyRegex: /^qwen\/qwen[^/]*flash(?!-image)/i,
   },
+  {
+    key: "kimi-k2",
+    label: "Kimi K2",
+    tier: "fast",
+    candidates: [
+      "moonshotai/kimi-k2.7-code",
+      "moonshotai/kimi-k2.6",
+      "moonshotai/kimi-k2.5",
+      "moonshotai/kimi-k2-0905",
+      "moonshotai/kimi-k2",
+    ],
+    familyRegex: /^moonshotai\/kimi-k2(?!-thinking)/i,
+  },
+
 
   // ─── Глубокие ─────────────────────────────────────────────────────────
   {
@@ -88,6 +102,14 @@ export const CURATED_MODELS: CuratedModel[] = [
     tier: "deep",
     candidates: ["openai/gpt-5"],
   },
+  {
+    key: "kimi-k2-thinking",
+    label: "Kimi K2 Thinking",
+    tier: "deep",
+    candidates: ["moonshotai/kimi-k2-thinking"],
+    familyRegex: /^moonshotai\/kimi-k2-thinking/i,
+  },
+
   {
     key: "deepseek-v4-pro",
     label: "DeepSeek V4-Pro",
