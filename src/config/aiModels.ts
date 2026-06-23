@@ -103,6 +103,14 @@ export const CURATED_MODELS: CuratedModel[] = [
     candidates: ["openai/gpt-5"],
   },
   {
+    key: "kimi-k2-thinking",
+    label: "Kimi K2 Thinking",
+    tier: "deep",
+    candidates: ["moonshotai/kimi-k2-thinking"],
+    familyRegex: /^moonshotai\/kimi-k2-thinking/i,
+  },
+
+  {
     key: "deepseek-v4-pro",
     label: "DeepSeek V4-Pro",
     tier: "deep",
