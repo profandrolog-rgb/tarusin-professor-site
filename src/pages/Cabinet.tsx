@@ -2108,6 +2108,9 @@ export default function Cabinet() {
                               <Button size="sm" variant="outline" onClick={() => downloadImage(m.image!.signedUrl!, `image-${Date.now()}.png`)}>
                                 <Download className="w-3.5 h-3.5 mr-1" /> Скачать
                               </Button>
+                              <Button size="sm" variant="outline" onClick={() => printImage(m.image!.signedUrl!)}>
+                                <Printer className="w-3.5 h-3.5 mr-1" /> Печать A4
+                              </Button>
                               <Button size="sm" variant="outline" onClick={() => useGeneratedAsRef(m.image!)}>
                                 <ImageIcon className="w-3.5 h-3.5 mr-1" /> Как референс
                               </Button>
