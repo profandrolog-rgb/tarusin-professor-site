@@ -93,7 +93,8 @@ Deno.serve(async (req) => {
     ];
 
 
-    const webSearch = body.web_search === true;
+    // Venice не поддерживает наши PubMed-/web-плагины OpenRouter — отключаем.
+    const webSearch = !isVenice && body.web_search === true;
     const searchSource: "web" | "pubmed" =
       body.search_source === "pubmed" ? "pubmed" : "web";
     const usePubmed = webSearch && searchSource === "pubmed";
