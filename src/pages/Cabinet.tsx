@@ -646,6 +646,19 @@ export default function Cabinet() {
               batch = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          const image: Msg["image"] | undefined = m.image_path
+            ? {
+                path: m.image_path,
+                model: m.image_model || m.model || "",
+                cost: typeof m.image_cost === "number" ? m.image_cost : (m.image_cost ? Number(m.image_cost) : null),
+                refs: Array.isArray(m.image_refs)
+                  ? (m.image_refs as string[]).map((s) => {
+                      const slash = s.indexOf("/");
+                      return slash > 0 ? { bucket: s.slice(0, slash), path: s.slice(slash + 1) } : { bucket: "generated-images", path: s };
+                    })
+                  : undefined,
+              }
+            : undefined;
           return {
             id: m.id,
             role: m.role,
@@ -657,6 +670,7 @@ export default function Cabinet() {
             pubmed,
             fulltext,
             batch,
+            image,
           };
         });
 
@@ -673,7 +687,20 @@ export default function Cabinet() {
           m.attachments = m.attachments.map((a) => a.path && map.has(a.path) ? { ...a, dataUrl: map.get(a.path) } : a);
         }
       }
+
+      // Re-sign generated images
+      const imgPaths = loadedMessages.filter((m) => m.image?.path).map((m) => m.image!.path);
+      if (imgPaths.length) {
+        const { data: signed } = await supabase.storage.from("generated-images").createSignedUrls(imgPaths, 60 * 60);
+        const map = new Map<string, string>();
+        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(imgPaths[i], s.signedUrl); });
+        for (const m of loadedMessages) {
+          if (m.image && map.has(m.image.path)) m.image.signedUrl = map.get(m.image.path);
+        }
+      }
+
       setMessages(loadedMessages);
+
 
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model === "council") {
