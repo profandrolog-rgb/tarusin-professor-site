@@ -207,13 +207,13 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "img-gpt-5-4",
-    label: "GPT-5.4 Image",
+    label: "GPT Image 2",
     tier: "image",
     kind: "image",
     source: "lovable-gateway",
     emoji: "🎨",
     hint: "Сложные композиции",
-    candidates: ["openai/gpt-5.4-image-2", "openai/gpt-image-2"],
+    candidates: ["openai/gpt-image-2", "openai/gpt-image-1-mini"],
   },
   {
     key: "img-seedream",
