@@ -31,6 +31,7 @@ const REF_BUCKET_WHITELIST = new Set([
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/images/generations";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const GEMINI_IMAGE_FALLBACK_MODEL = "google/gemini-3.1-flash-image";
 
 function isGatewayModel(model: string): boolean {
   return model.startsWith("openai/") || model.startsWith("google/");
@@ -41,6 +42,65 @@ function extOf(mime: string): string {
   if (mime.includes("webp")) return "webp";
   if (mime.includes("jpeg") || mime.includes("jpg")) return "jpg";
   return "png";
+}
+
+function buildGatewayPayload(model: string, prompt: string, size: string, refUrls: string[]): Record<string, unknown> {
+  if (model.startsWith("google/")) {
+    const content: any[] = [{ type: "text", text: prompt }];
+    for (const url of refUrls) content.push({ type: "image_url", image_url: { url } });
+    return {
+      model,
+      messages: [{ role: "user", content }],
+      modalities: ["image", "text"],
+      max_tokens: 8192,
+    };
+  }
+
+  // OpenAI image models — only prompt is supported; references are ignored.
+  return { model, prompt, size, quality: "low", n: 1 };
+}
+
+async function urlToBase64(url: string): Promise<string | null> {
+  const dataUrl = /^data:[^;]+;base64,(.+)$/.exec(url);
+  if (dataUrl) return dataUrl[1];
+  if (!url.startsWith("http")) return null;
+
+  const ir = await fetch(url);
+  if (!ir.ok) return null;
+  const ab = await ir.arrayBuffer();
+  const bytes = new Uint8Array(ab);
+  let bin = "";
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+async function extractImageBase64(j: any): Promise<string | null> {
+  const direct = j?.data?.[0]?.b64_json;
+  if (typeof direct === "string" && direct) return direct;
+
+  const images = j?.choices?.[0]?.message?.images;
+  if (Array.isArray(images)) {
+    for (const img of images) {
+      const url = img?.image_url?.url ?? img?.url;
+      if (typeof url === "string") {
+        const b64 = await urlToBase64(url);
+        if (b64) return b64;
+      }
+    }
+  }
+
+  const content = j?.choices?.[0]?.message?.content;
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      const url = part?.image_url?.url ?? part?.url;
+      if (typeof url === "string") {
+        const b64 = await urlToBase64(url);
+        if (b64) return b64;
+      }
+    }
+  }
+
+  return null;
 }
 
 Deno.serve(async (req) => {
