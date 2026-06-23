@@ -50,14 +50,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("OPENROUTER_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const body = await req.json().catch(() => null);
     if (!body || typeof body.model !== "string" || !Array.isArray(body.messages)) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
@@ -66,8 +58,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rawModel = (body.model as string).replace(/^pubmed:/, "");
-    const resolvedModel = rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
+    const rawModelInput = (body.model as string).replace(/^pubmed:/, "");
+    const isVenice = rawModelInput.startsWith("venice/");
+    const rawModel = isVenice ? rawModelInput.slice("venice/".length) : rawModelInput;
+    const resolvedModel = !isVenice && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
+
+    const apiKey = isVenice
+      ? Deno.env.get("VENICE_API_KEY")
+      : Deno.env.get("OPENROUTER_API_KEY");
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: `${isVenice ? "VENICE_API_KEY" : "OPENROUTER_API_KEY"} not configured` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const effort: "low" | "medium" | "high" =
       body.reasoning_effort === "high" || body.reasoning_effort === "medium"
         ? body.reasoning_effort
