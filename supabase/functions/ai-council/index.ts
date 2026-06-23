@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
           results = await Promise.all(panel.map(async (model) => {
             const t0 = Date.now();
             try {
-              const content = await callOpenRouter(apiKey, origin, model, messages);
+              const content = await callOpenRouter(apiKey, origin, model, messages, veniceKey);
               console.log("[ai-council] model ok", JSON.stringify({ model, ms: Date.now() - t0, len: content.length }));
               return { model, content, error: null as string | null };
             } catch (e: any) {
