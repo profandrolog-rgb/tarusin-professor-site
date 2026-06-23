@@ -2444,6 +2444,28 @@ export default function Cabinet() {
                         ? <Loader2 className="w-3 h-3 animate-spin" />
                         : <ImageIcon className="w-3 h-3" />}
                     </button>
+                    <select
+                      value={illustrateModel}
+                      onChange={(e) => setIllustrateModel(e.target.value)}
+                      disabled={illustratingMsgIdx !== null || streaming}
+                      className="text-[10px] bg-transparent border border-border/60 rounded px-1 py-0.5 hover:bg-background/60 disabled:opacity-40 max-w-[140px]"
+                      title="Модель для иллюстрации"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {imageModels.length > 0 ? (
+                        imageModels.map((im) => (
+                          <option key={im.key} value={im.id} disabled={!im.available}>
+                            {im.emoji} {im.label}{!im.available ? " (нет)" : ""}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="google/gemini-3.1-flash-image">⚡ Gemini Flash Image</option>
+                          <option value="google/gemini-3-pro-image">💎 Gemini Pro Image</option>
+                          <option value="openai/gpt-image-2">🎨 GPT Image 2</option>
+                        </>
+                      )}
+                    </select>
                     {m.model && <span className="text-[10px] text-muted-foreground ml-auto">{m.model}</span>}
                   </div>
                 )}
