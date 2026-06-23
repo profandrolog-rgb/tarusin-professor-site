@@ -1252,9 +1252,10 @@ export default function Cabinet() {
     const clean = (text || "").trim();
     if (!clean) { toast.error("Нечего иллюстрировать"); return; }
     const imgModel =
-      imageModels.find((m) => m.key === "img-gemini-flash" && m.available)?.id
-      ?? imageModels.find((m) => m.available)?.id
-      ?? "google/gemini-3.1-flash-image";
+      illustrateModel
+      || imageModels.find((m) => m.key === "img-gemini-flash" && m.available)?.id
+      || imageModels.find((m) => m.available)?.id
+      || "google/gemini-3.1-flash-image";
 
     // Должен быть активный диалог — кнопка показывается только в открытом чате
     let convId = activeId;
