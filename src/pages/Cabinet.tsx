@@ -2201,7 +2201,7 @@ export default function Cabinet() {
                             <div className="text-[10px] leading-snug text-muted-foreground italic max-w-[600px] flex items-start gap-1.5">
                               <Copyright className="w-3 h-3 mt-0.5 flex-shrink-0" />
                               <span>
-                                Разработано интеллектуальным ассистентом профессора Тарусина Дмитрия Игоревича для пациента {ctx?.patientName || "(ФИО)"} и существует в единственном экземпляре. tarusin.pro
+                                Разработано интеллектуальным ассистентом профессора Тарусина Дмитрия Игоревича для пациента {pendingPatient.name || "(ФИО)"} и существует в единственном экземпляре. tarusin.pro
                               </span>
                             </div>
                           )}
