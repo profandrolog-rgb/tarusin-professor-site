@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles, Printer } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -1255,6 +1255,62 @@ export default function Cabinet() {
     }
   };
 
+  const printImage = async (signedUrl: string) => {
+    try {
+      // Загружаем как data URL, чтобы окно печати точно успело отрендерить картинку
+      const r = await fetch(signedUrl);
+      const blob = await r.blob();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result as string);
+        fr.onerror = reject;
+        fr.readAsDataURL(blob);
+      });
+      const w = window.open("", "_blank", "width=900,height=1200");
+      if (!w) {
+        toast.error("Браузер заблокировал окно печати. Разрешите всплывающие окна.");
+        return;
+      }
+      w.document.write(`<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Печать изображения</title>
+<style>
+  @page { size: A4; margin: 10mm; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  .sheet {
+    width: 190mm; height: 277mm;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto;
+  }
+  .sheet img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+  }
+  @media screen {
+    body { background: #2a2a2a; padding: 20px 0; }
+    .sheet { background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,.4); }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet"><img id="i" src="${dataUrl}" alt="" /></div>
+  <script>
+    const img = document.getElementById('i');
+    function go(){ setTimeout(() => { window.focus(); window.print(); }, 150); }
+    if (img.complete) go(); else img.addEventListener('load', go);
+  </script>
+</body>
+</html>`);
+      w.document.close();
+    } catch (e) {
+      console.error(e);
+      toast.error("Не удалось подготовить печать");
+    }
+  };
+
   const useGeneratedAsRef = async (img: NonNullable<Msg["image"]>) => {
     await addImageRefFromStorage("generated-images", img.path, "Предыдущая генерация");
     toast.success("Добавлено как референс — отредактируйте промпт и нажмите «Сгенерировать»");
@@ -2051,6 +2107,9 @@ export default function Cabinet() {
                             <div className="flex flex-wrap gap-2">
                               <Button size="sm" variant="outline" onClick={() => downloadImage(m.image!.signedUrl!, `image-${Date.now()}.png`)}>
                                 <Download className="w-3.5 h-3.5 mr-1" /> Скачать
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => printImage(m.image!.signedUrl!)}>
+                                <Printer className="w-3.5 h-3.5 mr-1" /> Печать A4
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => useGeneratedAsRef(m.image!)}>
                                 <ImageIcon className="w-3.5 h-3.5 mr-1" /> Как референс
