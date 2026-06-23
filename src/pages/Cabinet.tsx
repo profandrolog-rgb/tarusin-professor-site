@@ -1322,10 +1322,18 @@ export default function Cabinet() {
         toast.success("Иллюстрация готова");
       }
     } catch (e: any) {
-      toast.error(e?.message || "Не удалось проиллюстрировать");
+      const raw = e?.message || "Не удалось проиллюстрировать";
+      const isModeration = /moderation_blocked|safety_violations|safety system|content_policy/i.test(raw);
+      const isOpenAI = imgModel.startsWith("openai/");
+      const friendly = isModeration
+        ? (isOpenAI
+            ? "OpenAI заблокировал медицинский запрос (фильтр безопасности). Переключитесь на Gemini-модель — она обычно пропускает клиническую анатомию."
+            : "Модель отклонила запрос по фильтру безопасности. Попробуйте другую модель или переформулируйте.")
+        : raw;
+      toast.error(friendly, { duration: 8000 });
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка генерации иллюстрации." };
+        next[next.length - 1] = { role: "assistant", content: `⚠️ ${friendly}` };
         return next;
       });
     } finally {
