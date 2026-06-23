@@ -44,16 +44,35 @@ const DEFAULT_SUMMARIZER_PROMPT =
   "(4) В разделе расхождений указывай только РЕАЛЬНЫЕ разногласия по существу (разные дозы, разные показания, разная тактика, разная правовая квалификация). " +
   "НЕ считай расхождением рекомендацию модели «передать случай психиатру / эндокринологу / ортопеду / юристу / другому специалисту» — собеседник сам владеет этими специальностями. Такие оговорки игнорируй и в раздел расхождений не выноси.";
 
-async function callOpenRouter(apiKey: string, origin: string, model: string, messages: unknown[]) {
-  const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+async function callOpenRouter(
+  apiKey: string,
+  origin: string,
+  model: string,
+  messages: unknown[],
+  veniceKey?: string,
+) {
+  const isVenice = model.startsWith("venice/");
+  const url = isVenice
+    ? "https://api.venice.ai/api/v1/chat/completions"
+    : "https://openrouter.ai/api/v1/chat/completions";
+  const realModel = isVenice ? model.slice("venice/".length) : model;
+  const key = isVenice ? veniceKey : apiKey;
+  if (!key) throw new Error(isVenice ? "VENICE_API_KEY missing" : "OPENROUTER_API_KEY missing");
+  const payload: Record<string, unknown> = { model: realModel, messages };
+  if (!isVenice) {
+    payload.reasoning = { effort: "low" };
+    payload.provider = { sort: "throughput" };
+  } else {
+    payload.venice_parameters = { include_venice_system_prompt: false };
+  }
+  const r = await fetch(url, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
+      "Authorization": `Bearer ${key}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": origin,
-      "X-Title": "Tarusin Council",
+      ...(isVenice ? {} : { "HTTP-Referer": origin, "X-Title": "Tarusin Council" }),
     },
-    body: JSON.stringify({ model, messages, reasoning: { effort: "low" }, provider: { sort: "throughput" } }),
+    body: JSON.stringify(payload),
   });
   if (!r.ok) {
     const t = await r.text().catch(() => "");
@@ -89,6 +108,7 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+    const veniceKey = Deno.env.get("VENICE_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY missing" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -143,7 +163,7 @@ Deno.serve(async (req) => {
           results = await Promise.all(panel.map(async (model) => {
             const t0 = Date.now();
             try {
-              const content = await callOpenRouter(apiKey, origin, model, messages);
+              const content = await callOpenRouter(apiKey, origin, model, messages, veniceKey);
               console.log("[ai-council] model ok", JSON.stringify({ model, ms: Date.now() - t0, len: content.length }));
               return { model, content, error: null as string | null };
             } catch (e: any) {

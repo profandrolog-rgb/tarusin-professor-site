@@ -4,6 +4,7 @@
 // to a regex family match. If nothing matches, the entry is marked unavailable
 // in the UI and the dropdown disables it so we don't ship known-404 slugs.
 export type ModelTier = "fast" | "deep";
+export type ModelSource = "openrouter" | "venice";
 
 export type CuratedModel = {
   key: string;            // stable identifier (used as React key)
@@ -12,6 +13,8 @@ export type CuratedModel = {
   emoji?: string;         // optional override of ⚡ / 🧠
   candidates: string[];   // explicit OpenRouter slugs to try, in order
   familyRegex?: RegExp;   // fallback family pattern if no candidate exists
+  source?: ModelSource;   // default: openrouter
+  uncensored?: boolean;   // показывать предупреждение «без цензуры»
 };
 
 export const CURATED_MODELS: CuratedModel[] = [
@@ -134,6 +137,56 @@ export const CURATED_MODELS: CuratedModel[] = [
     ],
     familyRegex: /^qwen\/qwen[^/]*max/i,
   },
+
+  // ─── Venice (без цензуры) ──────────────────────────────────────────────
+  // ID совпадают с venice/api/v1/models. Префикс `venice/` нужен бэкенду
+  // (ai-chat / ai-council / analyze-documents-batch) для маршрутизации
+  // запроса в Venice вместо OpenRouter.
+  {
+    key: "venice-uncensored",
+    label: "Venice Uncensored",
+    tier: "fast",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/venice-uncensored"],
+  },
+  {
+    key: "venice-dolphin-72b",
+    label: "Dolphin-Mistral 24B (Venice)",
+    tier: "fast",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/dolphin-2.9.2-qwen2-72b", "venice/dolphin-mistral-24b-venice-edition"],
+  },
+  {
+    key: "venice-llama-405b",
+    label: "Llama 3.1 405B (Venice)",
+    tier: "deep",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/llama-3.1-405b"],
+  },
+  {
+    key: "venice-qwen3-235b",
+    label: "Qwen 3 235B (Venice)",
+    tier: "deep",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/qwen3-235b"],
+  },
+  {
+    key: "venice-deepseek-r1",
+    label: "DeepSeek R1 671B (Venice)",
+    tier: "deep",
+    emoji: "🌶",
+    source: "venice",
+    uncensored: true,
+    candidates: ["venice/deepseek-r1-671b"],
+  },
 ];
 
 // Default model the cabinet boots with. Falls back to a candidate if needed.
@@ -144,10 +197,12 @@ export type ResolvedModel = {
   label: string;
   tier: ModelTier;
   emoji: string;
-  /** OpenRouter slug to actually send to the gateway. */
+  /** Gateway slug to actually send (с префиксом `venice/` для Venice-моделей). */
   id: string;
   available: boolean;
   liveInfo?: LiveModelInfo;
+  source: ModelSource;
+  uncensored?: boolean;
 };
 
 export type LiveModelInfo = {
@@ -179,12 +234,25 @@ const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠" };
 export function resolveCuratedModel(
   c: CuratedModel,
   liveById: Map<string, LiveModelInfo>,
+  veniceById?: Map<string, LiveModelInfo>,
 ): ResolvedModel {
   const emoji = c.emoji ?? TIER_EMOJI[c.tier];
+  const source: ModelSource = c.source ?? "openrouter";
+  // Venice — отдельный gateway, не ищем в OpenRouter, но обогащаем live-инфой если есть.
+  if (source === "venice") {
+    for (const id of c.candidates) {
+      const live = veniceById?.get(id);
+      if (live) {
+        return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source, uncensored: c.uncensored };
+      }
+    }
+    // Если live-список ещё не загружен — модель всё равно считаем доступной (curated).
+    return { key: c.key, label: c.label, tier: c.tier, emoji, id: c.candidates[0] ?? c.key, available: true, source, uncensored: c.uncensored };
+  }
   // 1) explicit candidates first
   for (const id of c.candidates) {
     const live = liveById.get(id);
-    if (live) return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live };
+    if (live) return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source };
   }
   // 2) family fallback — pick the lexicographically newest matching id
   if (c.familyRegex) {
@@ -193,7 +261,7 @@ export function resolveCuratedModel(
     if (matches.length) {
       matches.sort((a, b) => b.id.localeCompare(a.id, "en"));
       const live = matches[0];
-      return { key: c.key, label: c.label, tier: c.tier, emoji, id: live.id, available: true, liveInfo: live };
+      return { key: c.key, label: c.label, tier: c.tier, emoji, id: live.id, available: true, liveInfo: live, source };
     }
   }
   // 3) no match — mark unavailable but still show the entry
@@ -204,6 +272,7 @@ export function resolveCuratedModel(
     emoji,
     id: c.candidates[0] ?? c.key,
     available: false,
+    source,
   };
 }
 

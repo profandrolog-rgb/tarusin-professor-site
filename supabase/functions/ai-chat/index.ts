@@ -50,14 +50,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("OPENROUTER_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const body = await req.json().catch(() => null);
     if (!body || typeof body.model !== "string" || !Array.isArray(body.messages)) {
       return new Response(JSON.stringify({ error: "Invalid request body" }), {
@@ -66,8 +58,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rawModel = (body.model as string).replace(/^pubmed:/, "");
-    const resolvedModel = rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
+    const rawModelInput = (body.model as string).replace(/^pubmed:/, "");
+    const isVenice = rawModelInput.startsWith("venice/");
+    const rawModel = isVenice ? rawModelInput.slice("venice/".length) : rawModelInput;
+    const resolvedModel = !isVenice && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
+
+    const apiKey = isVenice
+      ? Deno.env.get("VENICE_API_KEY")
+      : Deno.env.get("OPENROUTER_API_KEY");
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: `${isVenice ? "VENICE_API_KEY" : "OPENROUTER_API_KEY"} not configured` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const effort: "low" | "medium" | "high" =
       body.reasoning_effort === "high" || body.reasoning_effort === "medium"
         ? body.reasoning_effort
@@ -89,7 +93,8 @@ Deno.serve(async (req) => {
     ];
 
 
-    const webSearch = body.web_search === true;
+    // Venice не поддерживает наши PubMed-/web-плагины OpenRouter — отключаем.
+    const webSearch = !isVenice && body.web_search === true;
     const searchSource: "web" | "pubmed" =
       body.search_source === "pubmed" ? "pubmed" : "web";
     const usePubmed = webSearch && searchSource === "pubmed";
@@ -212,40 +217,41 @@ Deno.serve(async (req) => {
       model: resolvedModel,
       messages: finalMessages,
       stream: true,
-      // Жёсткий потолок длины ответа — защита от бесконечной генерации,
-      // которую edge-функция всё равно оборвёт по wall-clock.
       max_tokens: 8192,
-      // OpenRouter unified reasoning control — works for GPT-5, Claude, Gemini, Grok
-      reasoning: { effort: effectiveEffort },
-      // Route to the fastest provider for the selected model (equivalent to :nitro)
-      provider: { sort: "throughput" },
     };
-    if (webSearch && !usePubmed) {
-      requestPayload.plugins = [{ id: "web", max_results: 5 }];
+    if (!isVenice) {
+      // OpenRouter-only: unified reasoning + throughput routing
+      requestPayload.reasoning = { effort: effectiveEffort };
+      requestPayload.provider = { sort: "throughput" };
+      if (webSearch && !usePubmed) {
+        requestPayload.plugins = [{ id: "web", max_results: 5 }];
+      }
+    } else {
+      // Venice — у уровня PAID можно отключить системные дисклеймеры
+      requestPayload.venice_parameters = { include_venice_system_prompt: false };
     }
 
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,
       origin: req.headers.get("origin"),
+      gateway: isVenice ? "venice" : "openrouter",
       original_model: body.model,
       resolved_model: resolvedModel,
       messages_count: body.messages.length,
-      messages_preview: body.messages.map((m: any) => ({
-        role: m?.role,
-        content_type: Array.isArray(m?.content) ? "array" : typeof m?.content,
-        content_len: typeof m?.content === "string"
-          ? m.content.length
-          : Array.isArray(m?.content) ? m.content.length : 0,
-      })),
     }));
 
-    const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const upstreamUrl = isVenice
+      ? "https://api.venice.ai/api/v1/chat/completions"
+      : "https://openrouter.ai/api/v1/chat/completions";
+    const orResp = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
-        "X-Title": "Tarusin Cabinet AI",
+        ...(isVenice ? {} : {
+          "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
+          "X-Title": "Tarusin Cabinet AI",
+        }),
       },
       body: JSON.stringify(requestPayload),
     });

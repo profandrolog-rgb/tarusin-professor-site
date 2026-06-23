@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search } from "lucide-react";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import { useVeniceModels } from "@/hooks/useVeniceModels";
 import { formatPricePerMtok } from "@/config/aiModels";
 
 export function ExtendedModelPicker({
@@ -19,18 +20,24 @@ export function ExtendedModelPicker({
   currentId?: string;
 }) {
   const { list, loading, error } = useOpenRouterModels();
+  const { list: veniceList, loading: veniceLoading } = useVeniceModels();
   const [q, setQ] = useState("");
+
+  const combined = useMemo(() => {
+    // Venice сверху, чтобы было заметно
+    return [...veniceList, ...list];
+  }, [list, veniceList]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const base = needle
-      ? list.filter((m) =>
+      ? combined.filter((m) =>
           m.id.toLowerCase().includes(needle) ||
           (m.name || "").toLowerCase().includes(needle),
         )
-      : list;
+      : combined;
     return base.slice(0, 400);
-  }, [list, q]);
+  }, [combined, q]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,7 +45,7 @@ export function ExtendedModelPicker({
         <DialogHeader>
           <DialogTitle>Расширенный выбор модели</DialogTitle>
           <DialogDescription>
-            Поиск по живому списку OpenRouter ({list.length || "—"} моделей).
+            OpenRouter: {list.length || "—"} · Venice (без цензуры): {veniceList.length || "—"}.
             Выбранная модель применится только к этому диалогу.
           </DialogDescription>
         </DialogHeader>
@@ -74,7 +81,14 @@ export function ExtendedModelPicker({
                     >
                       <div className="flex items-baseline justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="text-sm font-medium truncate">{m.name || m.id}</div>
+                          <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                            {m.id.startsWith("venice/") && (
+                              <span className="text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30">
+                                Venice · 🌶
+                              </span>
+                            )}
+                            <span className="truncate">{m.name || m.id}</span>
+                          </div>
                           <div className="text-[11px] font-mono text-muted-foreground truncate">{m.id}</div>
                         </div>
                         <div className="text-[10px] text-muted-foreground text-right shrink-0">

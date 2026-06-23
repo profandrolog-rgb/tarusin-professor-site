@@ -22,6 +22,7 @@ import { PubmedFulltextAnalysis } from "@/components/cabinet/PubmedFulltextAnaly
 import { ChatMarkdown, ChatMarkdownWith } from "@/components/cabinet/ChatMarkdown";
 import { CURATED_MODELS, resolveCuratedModel, buildModelTooltip, DEFAULT_MODEL_KEY, modelSupportsAttachments, type ResolvedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import { useVeniceModels } from "@/hooks/useVeniceModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
@@ -362,7 +363,8 @@ export default function Cabinet() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [extendedPickerOpen, setExtendedPickerOpen] = useState(false);
   const { byId: liveModelsById, loading: liveModelsLoading } = useOpenRouterModels();
-  const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById));
+  const { byId: veniceModelsById } = useVeniceModels();
+  const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById, veniceModelsById));
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
   const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
@@ -379,7 +381,7 @@ export default function Cabinet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveModelsLoading]);
   const currentResolved = resolvedModels.find((r) => r.id === model);
-  const currentLive = liveModelsById.get(model);
+  const currentLive = liveModelsById.get(model) ?? veniceModelsById.get(model);
   const modelKnown = !!currentLive || !!currentResolved?.available;
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
@@ -1491,7 +1493,7 @@ export default function Cabinet() {
             disabled={streaming || council}
             className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
             title={modelKnown
-              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive })}`
+              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive, source: model.startsWith("venice/") ? "venice" : "openrouter" })}`
               : `⚠ Слаг ${model} не найден в OpenRouter — может вернуть 404`}
           >
             <Search className="w-3.5 h-3.5" />Ещё
