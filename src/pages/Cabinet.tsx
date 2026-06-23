@@ -2789,23 +2789,22 @@ export default function Cabinet() {
         </DialogContent>
       </Dialog>
       <Dialog open={!!zoomImage} onOpenChange={(open) => { if (!open) setZoomImage(null); }}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-2 sm:p-3 bg-background">
+        <DialogContent className="max-w-[98vw] sm:max-w-[95vw] w-[98vw] sm:w-[95vw] h-[95vh] p-2 sm:p-3 bg-background flex flex-col gap-2">
           <DialogHeader className="sr-only">
             <DialogTitle>Просмотр изображения</DialogTitle>
             <DialogDescription>{zoomImage?.model || "Сгенерированное изображение"}</DialogDescription>
           </DialogHeader>
           {zoomImage && (
-            <div className="overflow-auto max-h-[90vh] flex items-center justify-center">
+            <div className="flex-1 min-h-0 overflow-auto flex items-center justify-center bg-muted/30 rounded">
               <img
                 src={zoomImage.url}
                 alt="Увеличенное изображение"
-                className="max-w-none h-auto"
-                style={{ maxHeight: "88vh" }}
+                className="max-w-full max-h-full object-contain"
               />
             </div>
           )}
           {zoomImage?.model && (
-            <div className="text-[11px] text-muted-foreground font-mono text-center">{zoomImage.model}</div>
+            <div className="text-[11px] text-muted-foreground font-mono text-center flex-shrink-0">{zoomImage.model}</div>
           )}
         </DialogContent>
       </Dialog>
