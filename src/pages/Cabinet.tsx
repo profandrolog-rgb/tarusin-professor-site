@@ -815,31 +815,34 @@ export default function Cabinet() {
     const convId = await ensureConversation(`📚 ${task.slice(0, 50)}`, "anthropic/claude-sonnet-4.6");
     if (!convId) return;
     const userContent = `📚 Пакетный анализ документов: ${task}`;
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId, user_id: user.id, role: "user", content: userContent, model: "batch-input",
-    });
-    const batchJson = JSON.stringify({ task, partial });
-    const b64 = btoa(unescape(encodeURIComponent(batchJson)));
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId, user_id: user.id, role: "assistant",
-      content: final, model: "anthropic/claude-sonnet-4.6 (batch)",
-      attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
-    });
-    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    const priv = isPrivateConv(convId);
+    if (!priv) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId, user_id: user.id, role: "user", content: userContent, model: "batch-input",
+      });
+      const batchJson = JSON.stringify({ task, partial });
+      const b64 = btoa(unescape(encodeURIComponent(batchJson)));
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId, user_id: user.id, role: "assistant",
+        content: final, model: "anthropic/claude-sonnet-4.6 (batch)",
+        attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
+      });
+      await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    }
     // Append to local view
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userContent },
       { role: "assistant", content: final, model: "anthropic/claude-sonnet-4.6 (batch)", batch: { task, partial } },
     ]);
-    loadConversations();
+    if (!priv) loadConversations();
     toast.success("Анализ готов");
-  }, [user, activeId, pendingFolderId]);
+  }, [user, activeId, pendingFolderId, privateMode]);
 
   const persistPubmedAssistant = async (
     convId: string, content: string, payload: PubmedPayload,
   ) => {
-    if (!user) return;
+    if (!user || isPrivateConv(convId)) return;
     const pubmedB64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     await supabase.from("ai_messages").insert({
       conversation_id: convId,
