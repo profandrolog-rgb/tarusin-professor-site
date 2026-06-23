@@ -1197,7 +1197,7 @@ export default function Cabinet() {
 
 
       // Persist assistant message
-      if (assistantSoFar) {
+      if (assistantSoFar && !priv) {
         const persistModel = council ? "council" : model;
         const persistAtts: any[] = [];
         if (councilAnswers) {
