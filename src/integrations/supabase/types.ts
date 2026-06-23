@@ -315,6 +315,10 @@ export type Database = {
           conversation_id: string
           created_at: string
           id: string
+          image_cost: number | null
+          image_model: string | null
+          image_path: string | null
+          image_refs: string[] | null
           model: string | null
           role: string
           user_id: string
@@ -325,6 +329,10 @@ export type Database = {
           conversation_id: string
           created_at?: string
           id?: string
+          image_cost?: number | null
+          image_model?: string | null
+          image_path?: string | null
+          image_refs?: string[] | null
           model?: string | null
           role: string
           user_id: string
@@ -335,6 +343,10 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           id?: string
+          image_cost?: number | null
+          image_model?: string | null
+          image_path?: string | null
+          image_refs?: string[] | null
           model?: string | null
           role?: string
           user_id?: string
@@ -1482,6 +1494,42 @@ export type Database = {
           code?: string
           created_at?: string
           name_ru?: string
+        }
+        Relationships: []
+      }
+      image_references: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          path: string
+          source_message_id: string | null
+          tags: string[]
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          path: string
+          source_message_id?: string | null
+          tags?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          path?: string
+          source_message_id?: string | null
+          tags?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

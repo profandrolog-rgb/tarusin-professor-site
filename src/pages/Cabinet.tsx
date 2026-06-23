@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -34,6 +34,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
 const PUBMED_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed`;
 const PUBMED_FULLTEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-pubmed-fulltext`;
+const GENERATE_IMAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
 
 // Bootstrap default — replaced once live OpenRouter list resolves.
 const DEFAULT_MODEL =
@@ -108,6 +109,13 @@ type Msg = {
   pubmed?: PubmedPayload;
   fulltext?: FulltextMeta;
   batch?: { task: string; partial: BatchPartial[] };
+  image?: {
+    path: string;          // путь в бакете generated-images
+    signedUrl?: string;    // 1ч signed URL для отображения
+    model: string;
+    cost?: number | null;
+    refs?: { bucket: string; path: string }[];
+  };
 };
 
 function ActivePatientBadge() {
@@ -369,6 +377,7 @@ export default function Cabinet() {
   const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById, veniceModelsById));
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
+  const imageModels = resolvedModels.filter((m) => m.kind === "image");
   const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
@@ -385,6 +394,13 @@ export default function Cabinet() {
   const currentResolved = resolvedModels.find((r) => r.id === model);
   const currentLive = liveModelsById.get(model) ?? veniceModelsById.get(model);
   const modelKnown = !!currentLive || !!currentResolved?.available;
+  const isImageModel = currentResolved?.kind === "image";
+  // Референсы для image-генерации: уже существующие в Storage + загруженные с компьютера
+  const [imageRefs, setImageRefs] = useState<{ bucket: string; path: string; signedUrl?: string; name?: string }[]>([]);
+  const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
+  const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
+  const imageRefFileInputRef = useRef<HTMLInputElement>(null);
+
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -581,7 +597,7 @@ export default function Cabinet() {
     (async () => {
       const { data, error } = await supabase
         .from("ai_messages")
-        .select("id, role, content, attachments, model")
+        .select("id, role, content, attachments, model, image_path, image_model, image_cost, image_refs")
         .eq("conversation_id", activeId)
         .order("created_at", { ascending: true });
       if (error) {
@@ -630,6 +646,19 @@ export default function Cabinet() {
               batch = JSON.parse(decodeURIComponent(escape(atob(b64))));
             } catch { /* ignore */ }
           }
+          const image: Msg["image"] | undefined = m.image_path
+            ? {
+                path: m.image_path,
+                model: m.image_model || m.model || "",
+                cost: typeof m.image_cost === "number" ? m.image_cost : (m.image_cost ? Number(m.image_cost) : null),
+                refs: Array.isArray(m.image_refs)
+                  ? (m.image_refs as string[]).map((s) => {
+                      const slash = s.indexOf("/");
+                      return slash > 0 ? { bucket: s.slice(0, slash), path: s.slice(slash + 1) } : { bucket: "generated-images", path: s };
+                    })
+                  : undefined,
+              }
+            : undefined;
           return {
             id: m.id,
             role: m.role,
@@ -641,6 +670,7 @@ export default function Cabinet() {
             pubmed,
             fulltext,
             batch,
+            image,
           };
         });
 
@@ -657,7 +687,20 @@ export default function Cabinet() {
           m.attachments = m.attachments.map((a) => a.path && map.has(a.path) ? { ...a, dataUrl: map.get(a.path) } : a);
         }
       }
+
+      // Re-sign generated images
+      const imgPaths = loadedMessages.filter((m) => m.image?.path).map((m) => m.image!.path);
+      if (imgPaths.length) {
+        const { data: signed } = await supabase.storage.from("generated-images").createSignedUrls(imgPaths, 60 * 60);
+        const map = new Map<string, string>();
+        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(imgPaths[i], s.signedUrl); });
+        for (const m of loadedMessages) {
+          if (m.image && map.has(m.image.path)) m.image.signedUrl = map.get(m.image.path);
+        }
+      }
+
       setMessages(loadedMessages);
+
 
       const conv = conversations.find((c) => c.id === activeId);
       if (conv?.model === "council") {
@@ -1046,8 +1089,204 @@ export default function Cabinet() {
   };
 
 
+  // ─── Image generation ────────────────────────────────────────────────────
+  const addImageRefFromStorage = async (bucket: string, path: string, name?: string) => {
+    try {
+      const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60);
+      setImageRefs((prev) => [...prev, { bucket, path, signedUrl: signed?.signedUrl, name }]);
+    } catch {
+      setImageRefs((prev) => [...prev, { bucket, path, name }]);
+    }
+  };
+
+  const handleImageRefFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const arr = Array.from(files).slice(0, 4);
+    for (const f of arr) {
+      if (!f.type.startsWith("image/")) { toast.error(`${f.name}: не картинка`); continue; }
+      if (f.size > 8 * 1024 * 1024) { toast.error(`${f.name}: больше 8 МБ`); continue; }
+      const dataUrl = await fileToDataUrl(f);
+      const b64 = dataUrl.split(",")[1] || "";
+      const preview = URL.createObjectURL(f);
+      setImageUploads((prev) => [...prev, { name: f.name, dataBase64: b64, mime: f.type, previewUrl: preview }]);
+    }
+  };
+
+  const generateImage = async (opts?: { promptOverride?: string; refsOverride?: { bucket: string; path: string }[] }) => {
+    if (!user || streaming) return;
+    const prompt = (opts?.promptOverride ?? input).trim();
+    if (!prompt) { toast.error("Опишите изображение"); return; }
+    setStreaming(true);
+    setStreamStartedAt(Date.now());
+
+    // Ensure conversation
+    let convId = activeId;
+    if (!convId) {
+      if (privateMode) {
+        convId = `private:${crypto.randomUUID()}`;
+        setActiveId(convId);
+      } else {
+        const title = prompt.slice(0, 60) || "Иллюстрация";
+        const { data, error } = await supabase
+          .from("ai_conversations")
+          .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
+          .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
+          .single();
+        if (error || !data) {
+          toast.error("Не удалось создать диалог");
+          setStreaming(false);
+          return;
+        }
+        convId = data.id;
+        setActiveId(convId);
+        setConversations((prev) => [data as Conversation, ...prev]);
+        setPendingFolderId(null);
+      }
+    }
+    const priv = isPrivateConv(convId);
+
+    // User message (prompt + reference thumbnails as attachments for display)
+    const refAttachments: Attachment[] = imageRefs.map((r) => ({
+      name: r.name || r.path.split("/").pop() || "ref",
+      type: "image/png",
+      dataUrl: r.signedUrl,
+      path: r.path,
+    }));
+    const uploadAttachments: Attachment[] = imageUploads.map((u) => ({
+      name: u.name, type: u.mime, dataUrl: u.previewUrl,
+    }));
+    const userMsg: Msg = { role: "user", content: prompt, attachments: [...refAttachments, ...uploadAttachments] };
+    setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", model }]);
+    if (!opts?.promptOverride) setInput("");
+
+    const refsForCall = opts?.refsOverride ?? imageRefs.map((r) => ({ bucket: r.bucket, path: r.path }));
+
+    if (!priv) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId,
+        user_id: user.id,
+        role: "user",
+        content: prompt,
+        attachments: (refAttachments.map((a) => ({ name: a.name, type: a.type, path: a.path })) as any),
+        model,
+      });
+    }
+
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(GENERATE_IMAGE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
+        body: JSON.stringify({
+          prompt, model, conversationId: convId,
+          references: refsForCall,
+          uploadedRefs: imageUploads.map((u) => ({ name: u.name, dataBase64: u.dataBase64, mime: u.mime })),
+        }),
+      });
+      const j = await resp.json().catch(() => ({} as any));
+      if (!resp.ok) {
+        throw new Error(j?.error || `HTTP ${resp.status}`);
+      }
+      const allRefs = [...refsForCall, ...((j.savedRefs as any[]) || [])];
+      const imageMeta: Msg["image"] = {
+        path: j.imagePath,
+        signedUrl: j.signedUrl,
+        model: j.model || model,
+        cost: typeof j.cost === "number" ? j.cost : null,
+        refs: allRefs,
+      };
+
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "", model, image: imageMeta };
+        return next;
+      });
+
+      if (!priv) {
+        await supabase.from("ai_messages").insert({
+          conversation_id: convId,
+          user_id: user.id,
+          role: "assistant",
+          content: "",
+          model,
+          image_path: j.imagePath,
+          image_model: j.model || model,
+          image_cost: typeof j.cost === "number" ? j.cost : null,
+          image_refs: allRefs.map((r) => `${r.bucket}/${r.path}`),
+        } as any);
+        await supabase.from("ai_conversations").update({ model, updated_at: new Date().toISOString() }).eq("id", convId);
+        loadConversations();
+      }
+
+      // Очистить референсы/загрузки после успешной генерации
+      setImageRefs([]);
+      imageUploads.forEach((u) => URL.revokeObjectURL(u.previewUrl));
+      setImageUploads([]);
+
+      if (typeof j.cost === "number" && j.cost > 0) {
+        toast.success(`Готово · $${j.cost.toFixed(4)}`);
+      } else {
+        toast.success("Изображение готово");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось сгенерировать");
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка генерации изображения." };
+        return next;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  const downloadImage = async (signedUrl: string, filename: string) => {
+    try {
+      const r = await fetch(signedUrl);
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      window.open(signedUrl, "_blank");
+    }
+  };
+
+  const useGeneratedAsRef = async (img: NonNullable<Msg["image"]>) => {
+    await addImageRefFromStorage("generated-images", img.path, "Предыдущая генерация");
+    toast.success("Добавлено как референс — отредактируйте промпт и нажмите «Сгенерировать»");
+  };
+
+  const publishToLibrary = async (msgIdx: number, img: NonNullable<Msg["image"]>) => {
+    if (!user) return;
+    const title = window.prompt("Название (необязательно):", "") || null;
+    const tagsRaw = window.prompt("Теги через запятую (необязательно):", "") || "";
+    const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
+    setPublishingMsgIdx(msgIdx);
+    try {
+      // copy file: download from generated-images, upload to reference-library
+      const { data: blob, error: dlErr } = await supabase.storage.from("generated-images").download(img.path);
+      if (dlErr || !blob) throw new Error(dlErr?.message || "download failed");
+      const refId = crypto.randomUUID();
+      const refPath = `${user.id}/${refId}.png`;
+      const up = await supabase.storage.from("reference-library").upload(refPath, blob, { contentType: "image/png", upsert: false });
+      if (up.error) throw up.error;
+      const { error: insErr } = await supabase.from("image_references").insert({
+        user_id: user.id, path: refPath, title, tags,
+      });
+      if (insErr) throw insErr;
+      toast.success("Опубликовано в библиотеке референсов");
+    } catch (e: any) {
+      toast.error(e?.message || "Не удалось опубликовать");
+    } finally {
+      setPublishingMsgIdx(null);
+    }
+  };
 
   const sendMessage = async () => {
+    if (isImageModel) return generateImage();
     if (pubmedMode) return sendPubmedMessage();
     if (!user || streaming) return;
     const text = input.trim();
@@ -1538,6 +1777,20 @@ export default function Cabinet() {
                   </span>
                 </SelectItem>
               ))}
+              {imageModels.length > 0 && (
+                <>
+                  <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/50 pt-2">🎨 Иллюстрации</div>
+                  {imageModels.map((m) => (
+                    <SelectItem key={m.key} value={m.id} title={m.hint || m.id}>
+                      <span className="flex items-center gap-1">
+                        <span>{m.emoji}</span>
+                        <span>{m.label}</span>
+                        {m.hint && <span className="text-[10px] text-muted-foreground ml-1">· {m.hint}</span>}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
               {currentResolved == null && currentLive && (
                 <>
                   <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Расширенный выбор</div>
@@ -1552,7 +1805,7 @@ export default function Cabinet() {
             disabled={streaming || council}
             className="px-2.5 py-1.5 text-xs rounded-md border border-border bg-background hover:bg-accent flex items-center gap-1 disabled:opacity-40"
             title={modelKnown
-              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive, source: model.startsWith("venice/") ? "venice" : "openrouter" })}`
+              ? `Выбрать любую модель из живого списка OpenRouter\n\nТекущая: ${buildModelTooltip(currentResolved ?? { key: "live", label: currentLive?.name || model, tier: "fast", emoji: "🧪", id: model, available: true, liveInfo: currentLive, source: model.startsWith("venice/") ? "venice" : "openrouter", kind: "text" })}`
               : `⚠ Слаг ${model} не найден в OpenRouter — может вернуть 404`}
           >
             <Search className="w-3.5 h-3.5" />Ещё
@@ -1715,7 +1968,7 @@ export default function Cabinet() {
                   </div>
                 )}
                 {m.role === "assistant" ? (
-                  m.content || m.council ? (
+                  m.content || m.council || m.image ? (
                     <>
                       {m.council && m.council.length > 0 && (
                         <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
@@ -1764,6 +2017,45 @@ export default function Cabinet() {
                       ) : (
                         <div className="text-xs text-muted-foreground flex items-center gap-2">
                           <Loader2 className="w-3 h-3 animate-spin" /> Сводим ответы…
+                        </div>
+                      )}
+                      {m.image && (
+                        <div className="mt-1 space-y-2">
+                          {m.image.signedUrl ? (
+                            <img
+                              src={m.image.signedUrl}
+                              alt="Сгенерированное изображение"
+                              className="rounded-lg border border-border max-w-full max-h-[600px] object-contain bg-background"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="rounded-lg border border-dashed border-border h-64 flex items-center justify-center text-xs text-muted-foreground">
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" /> Подписываем ссылку…
+                            </div>
+                          )}
+                          <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="font-mono">{m.image.model}</span>
+                            {typeof m.image.cost === "number" && m.image.cost > 0 && (
+                              <span>· ${m.image.cost.toFixed(4)}</span>
+                            )}
+                            {m.image.refs && m.image.refs.length > 0 && (
+                              <span>· референсов: {m.image.refs.length}</span>
+                            )}
+                          </div>
+                          {m.image.signedUrl && (
+                            <div className="flex flex-wrap gap-2">
+                              <Button size="sm" variant="outline" onClick={() => downloadImage(m.image!.signedUrl!, `image-${Date.now()}.png`)}>
+                                <Download className="w-3.5 h-3.5 mr-1" /> Скачать
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => useGeneratedAsRef(m.image!)}>
+                                <ImageIcon className="w-3.5 h-3.5 mr-1" /> Как референс
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => publishToLibrary(i, m.image!)} disabled={publishingMsgIdx === i}>
+                                {publishingMsgIdx === i ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <BookmarkPlus className="w-3.5 h-3.5 mr-1" />}
+                                В библиотеку
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                       {m.council && m.council.length > 0 && (
@@ -2003,7 +2295,7 @@ export default function Cabinet() {
               disabled={streaming}
             />
           )}
-          {attachments.length > 0 && (
+          {attachments.length > 0 && !isImageModel && (
             <div className="flex flex-wrap gap-2">
               {attachments.map((a, i) => (
                 <div key={i} className="flex items-center gap-1 bg-muted rounded px-2 py-1 text-xs">
@@ -2020,6 +2312,82 @@ export default function Cabinet() {
               ))}
             </div>
           )}
+
+          {isImageModel && (imageRefs.length > 0 || imageUploads.length > 0) && (
+            <div className="flex flex-wrap gap-2">
+              {imageRefs.map((r, i) => (
+                <div key={`r-${i}`} className="relative group">
+                  {r.signedUrl ? (
+                    <img src={r.signedUrl} alt={r.name || r.path} className="w-16 h-16 object-cover rounded border border-border" />
+                  ) : (
+                    <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-[10px] text-muted-foreground">{r.bucket}</div>
+                  )}
+                  <button
+                    onClick={() => setImageRefs((p) => p.filter((_, j) => j !== i))}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Убрать"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {imageUploads.map((u, i) => (
+                <div key={`u-${i}`} className="relative group">
+                  <img src={u.previewUrl} alt={u.name} className="w-16 h-16 object-cover rounded border border-border" />
+                  <button
+                    onClick={() => {
+                      URL.revokeObjectURL(u.previewUrl);
+                      setImageUploads((p) => p.filter((_, j) => j !== i));
+                    }}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Убрать"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isImageModel ? (
+            <div className="flex items-end gap-2">
+              <input
+                ref={imageRefFileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => { handleImageRefFiles(e.target.files); e.target.value = ""; }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => imageRefFileInputRef.current?.click()}
+                disabled={streaming}
+                aria-label="Приложить референс"
+                title="Приложить референс с компьютера (до 4 картинок)"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder={`Опишите изображение — ${currentResolved?.label || "image-модель"} (Enter — сгенерировать)`}
+                className="flex-1 min-h-[44px] max-h-40 resize-none"
+                disabled={streaming}
+              />
+              <Button onClick={() => generateImage()} disabled={streaming || !input.trim()} size="icon" title="Сгенерировать">
+                {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              </Button>
+            </div>
+          ) : (
           <div className="flex items-end gap-2">
             <input
               ref={fileInputRef}
@@ -2123,6 +2491,7 @@ export default function Cabinet() {
               {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
+          )}
         </div>
       </main>
       {user && (

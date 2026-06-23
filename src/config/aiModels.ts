@@ -3,18 +3,21 @@
 // picks the first one present in the live /api/v1/models response, falling back
 // to a regex family match. If nothing matches, the entry is marked unavailable
 // in the UI and the dropdown disables it so we don't ship known-404 slugs.
-export type ModelTier = "fast" | "deep";
-export type ModelSource = "openrouter" | "venice";
+export type ModelTier = "fast" | "deep" | "image";
+export type ModelSource = "openrouter" | "venice" | "lovable-gateway";
+export type ModelKind = "text" | "image";
 
 export type CuratedModel = {
   key: string;            // stable identifier (used as React key)
   label: string;          // base label without the tier emoji
   tier: ModelTier;
-  emoji?: string;         // optional override of ⚡ / 🧠
+  emoji?: string;         // optional override of ⚡ / 🧠 / 🎨
   candidates: string[];   // explicit OpenRouter slugs to try, in order
   familyRegex?: RegExp;   // fallback family pattern if no candidate exists
   source?: ModelSource;   // default: openrouter
   uncensored?: boolean;   // показывать предупреждение «без цензуры»
+  kind?: ModelKind;       // default: "text"
+  hint?: string;          // короткая подсказка под названием
 };
 
 export const CURATED_MODELS: CuratedModel[] = [
@@ -187,6 +190,41 @@ export const CURATED_MODELS: CuratedModel[] = [
     uncensored: true,
     candidates: ["venice/deepseek-r1-671b"],
   },
+
+  // ─── Иллюстрации (генерация изображений) ───────────────────────────────
+  // kind:"image" — переключает композер в режим генерации; маршрутизация в
+  // edge function generate-image (Lovable Gateway для google/* и openai/*,
+  // прямой OpenRouter для всего остального).
+  {
+    key: "img-gemini-flash",
+    label: "Gemini 3.1 Flash Image",
+    tier: "image",
+    kind: "image",
+    source: "lovable-gateway",
+    emoji: "🎨",
+    hint: "Быстрая, для серий иллюстраций",
+    candidates: ["google/gemini-3.1-flash-image"],
+  },
+  {
+    key: "img-gpt-5-4",
+    label: "GPT-5.4 Image",
+    tier: "image",
+    kind: "image",
+    source: "lovable-gateway",
+    emoji: "🎨",
+    hint: "Сложные композиции",
+    candidates: ["openai/gpt-5.4-image-2", "openai/gpt-image-2"],
+  },
+  {
+    key: "img-seedream",
+    label: "Seedream 4.5",
+    tier: "image",
+    kind: "image",
+    source: "openrouter",
+    emoji: "🎨",
+    hint: "Портреты, мелкий текст",
+    candidates: ["bytedance/seedream-4.5", "bytedance/seedream-4"],
+  },
 ];
 
 // Default model the cabinet boots with. Falls back to a candidate if needed.
@@ -203,6 +241,8 @@ export type ResolvedModel = {
   liveInfo?: LiveModelInfo;
   source: ModelSource;
   uncensored?: boolean;
+  kind: ModelKind;
+  hint?: string;
 };
 
 export type LiveModelInfo = {
@@ -229,7 +269,7 @@ export function modelSupportsAttachments(li?: LiveModelInfo | null): boolean {
   return /image|file|pdf/i.test(modality);
 }
 
-const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠" };
+const TIER_EMOJI: Record<ModelTier, string> = { fast: "⚡", deep: "🧠", image: "🎨" };
 
 export function resolveCuratedModel(
   c: CuratedModel,
@@ -238,21 +278,26 @@ export function resolveCuratedModel(
 ): ResolvedModel {
   const emoji = c.emoji ?? TIER_EMOJI[c.tier];
   const source: ModelSource = c.source ?? "openrouter";
+  const kind: ModelKind = c.kind ?? (c.tier === "image" ? "image" : "text");
+  const base = { key: c.key, label: c.label, tier: c.tier, emoji, source, kind, hint: c.hint };
   // Venice — отдельный gateway, не ищем в OpenRouter, но обогащаем live-инфой если есть.
   if (source === "venice") {
     for (const id of c.candidates) {
       const live = veniceById?.get(id);
       if (live) {
-        return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source, uncensored: c.uncensored };
+        return { ...base, id, available: true, liveInfo: live, uncensored: c.uncensored };
       }
     }
-    // Если live-список ещё не загружен — модель всё равно считаем доступной (curated).
-    return { key: c.key, label: c.label, tier: c.tier, emoji, id: c.candidates[0] ?? c.key, available: true, source, uncensored: c.uncensored };
+    return { ...base, id: c.candidates[0] ?? c.key, available: true, uncensored: c.uncensored };
+  }
+  // Image-модели или явный source: lovable-gateway — не ищем live-инфо в OpenRouter.
+  if (kind === "image" || source === "lovable-gateway") {
+    return { ...base, id: c.candidates[0] ?? c.key, available: true };
   }
   // 1) explicit candidates first
   for (const id of c.candidates) {
     const live = liveById.get(id);
-    if (live) return { key: c.key, label: c.label, tier: c.tier, emoji, id, available: true, liveInfo: live, source };
+    if (live) return { ...base, id, available: true, liveInfo: live };
   }
   // 2) family fallback — pick the lexicographically newest matching id
   if (c.familyRegex) {
@@ -261,19 +306,11 @@ export function resolveCuratedModel(
     if (matches.length) {
       matches.sort((a, b) => b.id.localeCompare(a.id, "en"));
       const live = matches[0];
-      return { key: c.key, label: c.label, tier: c.tier, emoji, id: live.id, available: true, liveInfo: live, source };
+      return { ...base, id: live.id, available: true, liveInfo: live };
     }
   }
   // 3) no match — mark unavailable but still show the entry
-  return {
-    key: c.key,
-    label: c.label,
-    tier: c.tier,
-    emoji,
-    id: c.candidates[0] ?? c.key,
-    available: false,
-    source,
-  };
+  return { ...base, id: c.candidates[0] ?? c.key, available: false };
 }
 
 export function formatPricePerMtok(perTokenUsd?: string): string | null {
