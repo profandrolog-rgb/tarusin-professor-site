@@ -400,6 +400,7 @@ export default function Cabinet() {
   const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
   const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
   const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; description: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", description: "", tags: "" });
+  const [printPreview, setPrintPreview] = useState<{ open: boolean; dataUrl: string | null }>({ open: false, dataUrl: null });
   const imageRefFileInputRef = useRef<HTMLInputElement>(null);
 
 
