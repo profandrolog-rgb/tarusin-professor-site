@@ -2197,6 +2197,14 @@ export default function Cabinet() {
                               <Loader2 className="w-4 h-4 animate-spin mr-2" /> Подписываем ссылку…
                             </div>
                           )}
+                          {m.image.signedUrl && (
+                            <div className="text-[10px] leading-snug text-muted-foreground italic max-w-[600px] flex items-start gap-1.5">
+                              <Copyright className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <span>
+                                Разработано интеллектуальным ассистентом профессора Тарусина Дмитрия Игоревича для пациента {ctx?.patientName || "(ФИО)"} и существует в единственном экземпляре. tarusin.pro
+                              </span>
+                            </div>
+                          )}
                           <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
                             <span className="font-mono">{m.image.model}</span>
                             {typeof m.image.cost === "number" && m.image.cost > 0 && (
