@@ -287,32 +287,40 @@ async function processFinal(batchId: string) {
     }).join("\n\n---\n\n");
 
 
-    const finalResp = await fetch(OPENROUTER_URL, {
+    const isVeniceFinal = model.startsWith("venice/");
+    const realModelFinal = isVeniceFinal ? model.slice("venice/".length) : model;
+    const finalUrl = isVeniceFinal
+      ? "https://api.venice.ai/api/v1/chat/completions"
+      : OPENROUTER_URL;
+    const finalKey = isVeniceFinal ? (Deno.env.get("VENICE_API_KEY") ?? "") : apiKey;
+    if (isVeniceFinal && !finalKey) throw new Error("VENICE_API_KEY missing");
+    const finalPayload: Record<string, unknown> = {
+      model: realModelFinal,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Ты — клинический ассистент. На входе — структурированные разборы документов по подпакетам. " +
+            "Собери ОДИН связный итоговый ответ для врача: " +
+            "(1) сводная таблица ключевых показателей с динамикой по датам, " +
+            "(2) явные отклонения и их клиническая значимость, " +
+            "(3) противоречия между документами/заключениями (если есть), " +
+            "(4) рекомендации по дообследованию (если показано). " +
+            "Не выдумывай данные, опирайся только на присланные разборы.",
+        },
+        { role: "user", content: `Задача от врача:\n${task}\n\nРазборы по подпакетам:\n\n${combined}` },
+      ],
+      max_tokens: 6000,
+    };
+    if (isVeniceFinal) finalPayload.venice_parameters = { include_venice_system_prompt: false };
+    const finalResp = await fetch(finalUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${finalKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://tarusin.pro",
-        "X-Title": "Cabinet batch analyzer (synthesis)",
+        ...(isVeniceFinal ? {} : { "HTTP-Referer": "https://tarusin.pro", "X-Title": "Cabinet batch analyzer (synthesis)" }),
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Ты — клинический ассистент. На входе — структурированные разборы документов по подпакетам. " +
-              "Собери ОДИН связный итоговый ответ для врача: " +
-              "(1) сводная таблица ключевых показателей с динамикой по датам, " +
-              "(2) явные отклонения и их клиническая значимость, " +
-              "(3) противоречия между документами/заключениями (если есть), " +
-              "(4) рекомендации по дообследованию (если показано). " +
-              "Не выдумывай данные, опирайся только на присланные разборы.",
-          },
-          { role: "user", content: `Задача от врача:\n${task}\n\nРазборы по подпакетам:\n\n${combined}` },
-        ],
-        max_tokens: 6000,
-      }),
+      body: JSON.stringify(finalPayload),
     });
     if (!finalResp.ok) {
       const body = await finalResp.text().catch(() => "");
