@@ -2775,6 +2775,27 @@ export default function Cabinet() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={!!zoomImage} onOpenChange={(open) => { if (!open) setZoomImage(null); }}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-2 sm:p-3 bg-background">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Просмотр изображения</DialogTitle>
+            <DialogDescription>{zoomImage?.model || "Сгенерированное изображение"}</DialogDescription>
+          </DialogHeader>
+          {zoomImage && (
+            <div className="overflow-auto max-h-[90vh] flex items-center justify-center">
+              <img
+                src={zoomImage.url}
+                alt="Увеличенное изображение"
+                className="max-w-none h-auto"
+                style={{ maxHeight: "88vh" }}
+              />
+            </div>
+          )}
+          {zoomImage?.model && (
+            <div className="text-[11px] text-muted-foreground font-mono text-center">{zoomImage.model}</div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
