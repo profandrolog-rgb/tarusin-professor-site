@@ -400,6 +400,7 @@ export default function Cabinet() {
   const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
   const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
   const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; description: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", description: "", tags: "" });
+  const [printPreview, setPrintPreview] = useState<{ open: boolean; dataUrl: string | null }>({ open: false, dataUrl: null });
   const imageRefFileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -1257,7 +1258,6 @@ export default function Cabinet() {
 
   const printImage = async (signedUrl: string) => {
     try {
-      // Загружаем как data URL, чтобы окно печати точно успело отрендерить картинку
       const r = await fetch(signedUrl);
       const blob = await r.blob();
       const dataUrl: string = await new Promise((resolve, reject) => {
@@ -1266,12 +1266,21 @@ export default function Cabinet() {
         fr.onerror = reject;
         fr.readAsDataURL(blob);
       });
-      const w = window.open("", "_blank", "width=900,height=1200");
-      if (!w) {
-        toast.error("Браузер заблокировал окно печати. Разрешите всплывающие окна.");
-        return;
-      }
-      w.document.write(`<!DOCTYPE html>
+      setPrintPreview({ open: true, dataUrl });
+    } catch {
+      toast.error("Не удалось загрузить изображение для предпросмотра");
+    }
+  };
+
+  const confirmPrint = () => {
+    const dataUrl = printPreview.dataUrl;
+    if (!dataUrl) return;
+    const w = window.open("", "_blank", "width=900,height=1200");
+    if (!w) {
+      toast.error("Браузер заблокировал окно печати. Разрешите всплывающие окна.");
+      return;
+    }
+    w.document.write(`<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8" />
@@ -1304,11 +1313,8 @@ export default function Cabinet() {
   </script>
 </body>
 </html>`);
-      w.document.close();
-    } catch (e) {
-      console.error(e);
-      toast.error("Не удалось подготовить печать");
-    }
+    w.document.close();
+    setPrintPreview({ open: false, dataUrl: null });
   };
 
   const useGeneratedAsRef = async (img: NonNullable<Msg["image"]>) => {
@@ -2608,6 +2614,34 @@ export default function Cabinet() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPublishDialog((d) => ({ ...d, open: false }))}>Отмена</Button>
             <Button onClick={confirmPublishToLibrary}>Опубликовать</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={printPreview.open} onOpenChange={(open) => setPrintPreview((d) => ({ ...d, open }))}>
+        <DialogContent className="sm:max-w-2xl max-sm:inset-0 max-sm:left-0 max-sm:top-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:h-[100dvh] max-sm:max-w-none max-sm:rounded-none">
+          <DialogHeader>
+            <DialogTitle>Предпросмотр печати A4</DialogTitle>
+            <DialogDescription>
+              Проверьте компоновку перед отправкой на принтер.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-2">
+            <div
+              className="bg-white shadow-md border"
+              style={{ width: "190mm", maxWidth: "100%", aspectRatio: "210/297" }}
+            >
+              {printPreview.dataUrl && (
+                <img
+                  src={printPreview.dataUrl}
+                  alt="Предпросмотр A4"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintPreview({ open: false, dataUrl: null })}>Отмена</Button>
+            <Button onClick={confirmPrint}><Printer className="w-4 h-4 mr-2" /> Печать</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
