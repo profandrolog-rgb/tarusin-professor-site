@@ -399,8 +399,7 @@ export default function Cabinet() {
   const [imageRefs, setImageRefs] = useState<{ bucket: string; path: string; signedUrl?: string; name?: string }[]>([]);
   const [imageUploads, setImageUploads] = useState<{ name: string; dataBase64: string; mime: string; previewUrl: string }[]>([]);
   const [publishingMsgIdx, setPublishingMsgIdx] = useState<number | null>(null);
-  type Msg = ReturnType<typeof Object> & { image?: { path: string } };
-  const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: { path: string } | null; title: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", tags: "" });
+  const [publishDialog, setPublishDialog] = useState<{ open: boolean; msgIdx: number | null; img: NonNullable<Msg["image"]> | null; title: string; tags: string }>({ open: false, msgIdx: null, img: null, title: "", tags: "" });
   const imageRefFileInputRef = useRef<HTMLInputElement>(null);
 
 
