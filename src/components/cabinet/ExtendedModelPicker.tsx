@@ -81,7 +81,14 @@ export function ExtendedModelPicker({
                     >
                       <div className="flex items-baseline justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="text-sm font-medium truncate">{m.name || m.id}</div>
+                          <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                            {m.id.startsWith("venice/") && (
+                              <span className="text-[9px] uppercase font-bold tracking-wide px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30">
+                                Venice · 🌶
+                              </span>
+                            )}
+                            <span className="truncate">{m.name || m.id}</span>
+                          </div>
                           <div className="text-[11px] font-mono text-muted-foreground truncate">{m.id}</div>
                         </div>
                         <div className="text-[10px] text-muted-foreground text-right shrink-0">
