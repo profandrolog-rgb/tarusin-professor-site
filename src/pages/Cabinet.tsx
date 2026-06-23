@@ -1279,7 +1279,7 @@ export default function Cabinet() {
       const up = await supabase.storage.from("reference-library").upload(refPath, blob, { contentType: "image/png", upsert: false });
       if (up.error) throw up.error;
       const { error: insErr } = await supabase.from("image_references").insert({
-        user_id: user.id, path: refPath, title: title.trim() || null, tags,
+        user_id: user.id, path: refPath, title: title.trim() || null, description: description.trim() || null, tags,
       });
       if (insErr) throw insErr;
       toast.success("Опубликовано в библиотеке референсов");
