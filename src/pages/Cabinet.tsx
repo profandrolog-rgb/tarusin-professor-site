@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -159,6 +159,8 @@ type ChatFolder = {
 };
 
 const FOLDERS_OPEN_LS_KEY = "cabinet.foldersOpen.v1";
+
+const isPrivateConv = (id: string | null | undefined): boolean => !!id && id.startsWith("private:");
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -388,6 +390,7 @@ export default function Cabinet() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [council, setCouncil] = useState(false);
+  const [privateMode, setPrivateMode] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
@@ -571,6 +574,10 @@ export default function Cabinet() {
       setMessages([]);
       return;
     }
+    if (isPrivateConv(activeId)) {
+      // private convs live only in memory; don't query DB
+      return;
+    }
     (async () => {
       const { data, error } = await supabase
         .from("ai_messages")
@@ -718,7 +725,15 @@ export default function Cabinet() {
 
 
   const deleteConversation = async (id: string) => {
-    if (!confirm("Удалить диалог?")) return;
+    const priv = isPrivateConv(id);
+    if (!confirm(priv ? "Удалить приватный диалог без следа?" : "Удалить диалог?")) return;
+    if (priv) {
+      if (activeId === id) {
+        setActiveId(null);
+        setMessages([]);
+      }
+      return;
+    }
     const { error } = await supabase.from("ai_conversations").delete().eq("id", id);
     if (error) {
       toast.error("Не удалось удалить");
@@ -777,6 +792,11 @@ export default function Cabinet() {
   const ensureConversation = async (titleSeed: string, modelTag: string): Promise<string | null> => {
     if (!user) return null;
     if (activeId) return activeId;
+    if (privateMode) {
+      const pid = `private:${crypto.randomUUID()}`;
+      setActiveId(pid);
+      return pid;
+    }
     const title = titleSeed.slice(0, 60) || "Новый диалог";
     const { data, error } = await supabase
       .from("ai_conversations")
@@ -795,31 +815,34 @@ export default function Cabinet() {
     const convId = await ensureConversation(`📚 ${task.slice(0, 50)}`, "anthropic/claude-sonnet-4.6");
     if (!convId) return;
     const userContent = `📚 Пакетный анализ документов: ${task}`;
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId, user_id: user.id, role: "user", content: userContent, model: "batch-input",
-    });
-    const batchJson = JSON.stringify({ task, partial });
-    const b64 = btoa(unescape(encodeURIComponent(batchJson)));
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId, user_id: user.id, role: "assistant",
-      content: final, model: "anthropic/claude-sonnet-4.6 (batch)",
-      attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
-    });
-    await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    const priv = isPrivateConv(convId);
+    if (!priv) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId, user_id: user.id, role: "user", content: userContent, model: "batch-input",
+      });
+      const batchJson = JSON.stringify({ task, partial });
+      const b64 = btoa(unescape(encodeURIComponent(batchJson)));
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId, user_id: user.id, role: "assistant",
+        content: final, model: "anthropic/claude-sonnet-4.6 (batch)",
+        attachments: [{ name: "__batch__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
+      });
+      await supabase.from("ai_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
+    }
     // Append to local view
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userContent },
       { role: "assistant", content: final, model: "anthropic/claude-sonnet-4.6 (batch)", batch: { task, partial } },
     ]);
-    loadConversations();
+    if (!priv) loadConversations();
     toast.success("Анализ готов");
-  }, [user, activeId, pendingFolderId]);
+  }, [user, activeId, pendingFolderId, privateMode]);
 
   const persistPubmedAssistant = async (
     convId: string, content: string, payload: PubmedPayload,
   ) => {
-    if (!user) return;
+    if (!user || isPrivateConv(convId)) return;
     const pubmedB64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     await supabase.from("ai_messages").insert({
       conversation_id: convId,
@@ -845,9 +868,11 @@ export default function Cabinet() {
     if (!convId) { setStreaming(false); return; }
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
     setInput("");
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId, user_id: user.id, role: "user", content: text, model,
-    });
+    if (!isPrivateConv(convId)) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId, user_id: user.id, role: "user", content: text, model,
+      });
+    }
 
     try {
       const { data: sess } = await supabase.auth.getSession();
@@ -914,7 +939,7 @@ export default function Cabinet() {
       }
       const updated: PubmedPayload = { ...msg.pubmed, sources: merged, total_count: Number(json.total_count) || msg.pubmed.total_count };
       setMessages((prev) => prev.map((m, i) => i === msgIndex ? { ...m, pubmed: updated } : m));
-      if (msg.id) {
+      if (msg.id && !isPrivateConv(activeId)) {
         const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(updated))));
         await supabase.from("ai_messages").update({
           attachments: [{ name: "__pubmed__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` }] as any,
@@ -946,7 +971,7 @@ export default function Cabinet() {
 
   const persistFulltextMessage = async (content: string, meta: FulltextMeta) => {
     const convId = activeId;
-    if (!convId || !user) return;
+    if (!convId || !user || isPrivateConv(convId)) return;
     const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(meta))));
     const att = { name: "__fulltext__", type: "application/json", dataUrl: `data:application/json;base64,${b64}` };
     await supabase.from("ai_messages").insert({
@@ -992,7 +1017,7 @@ export default function Cabinet() {
     // Show the user's question in the thread for transparency
     const userMsg: Msg = { role: "user", content: userQuestion };
     setMessages((prev) => [...prev, userMsg]);
-    if (activeId) {
+    if (activeId && !isPrivateConv(activeId)) {
       await supabase.from("ai_messages").insert({
         conversation_id: activeId, user_id: user.id, role: "user", content: userQuestion, model,
       });
@@ -1035,22 +1060,28 @@ export default function Cabinet() {
     // Ensure conversation
     let convId = activeId;
     if (!convId) {
-      const title = text.slice(0, 60) || "Новый диалог";
-      const { data, error } = await supabase
-        .from("ai_conversations")
-        .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
-        .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
-        .single();
-      if (error || !data) {
-        toast.error("Не удалось создать диалог");
-        setStreaming(false);
-        return;
+      if (privateMode) {
+        convId = `private:${crypto.randomUUID()}`;
+        setActiveId(convId);
+      } else {
+        const title = text.slice(0, 60) || "Новый диалог";
+        const { data, error } = await supabase
+          .from("ai_conversations")
+          .insert({ user_id: user.id, title, model, folder_id: pendingFolderId, patient_id: pendingPatient.id, patient_name: pendingPatient.name })
+          .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
+          .single();
+        if (error || !data) {
+          toast.error("Не удалось создать диалог");
+          setStreaming(false);
+          return;
+        }
+        convId = data.id;
+        setActiveId(convId);
+        setConversations((prev) => [data as Conversation, ...prev]);
+        setPendingFolderId(null);
       }
-      convId = data.id;
-      setActiveId(convId);
-      setConversations((prev) => [data as Conversation, ...prev]);
-      setPendingFolderId(null);
     }
+    const priv = isPrivateConv(convId);
 
     setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "" }]);
     setInput("");
@@ -1060,14 +1091,16 @@ export default function Cabinet() {
     const persistedAtts = (userMsg.attachments || []).map((a) =>
       a.path ? { name: a.name, type: a.type, path: a.path } : a,
     );
-    await supabase.from("ai_messages").insert({
-      conversation_id: convId,
-      user_id: user.id,
-      role: "user",
-      content: text,
-      attachments: persistedAtts as any,
-      model,
-    });
+    if (!priv) {
+      await supabase.from("ai_messages").insert({
+        conversation_id: convId,
+        user_id: user.id,
+        role: "user",
+        content: text,
+        attachments: persistedAtts as any,
+        model,
+      });
+    }
 
     // Build request messages (full history)
     const historyForApi = [...messages, userMsg].map((m) => ({
@@ -1169,7 +1202,7 @@ export default function Cabinet() {
 
 
       // Persist assistant message
-      if (assistantSoFar) {
+      if (assistantSoFar && !priv) {
         const persistModel = council ? "council" : model;
         const persistAtts: any[] = [];
         if (councilAnswers) {
@@ -1447,6 +1480,32 @@ export default function Cabinet() {
           >
             <Users className="w-3.5 h-3.5" />Консилиум
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !privateMode;
+              setPrivateMode(next);
+              if (next && activeId && !isPrivateConv(activeId)) {
+                // Start a fresh private chat to avoid writing into the saved one
+                newConversation(null);
+              }
+              if (!next && isPrivateConv(activeId)) {
+                // Leaving private mode while in a private chat: close it (no trace left)
+                setActiveId(null);
+                setMessages([]);
+              }
+              toast.success(next ? "🔒 Приватный режим включён — переписка не сохраняется" : "Приватный режим выключен");
+            }}
+            disabled={streaming}
+            className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
+              privateMode || isPrivateConv(activeId)
+                ? "bg-destructive text-destructive-foreground border-destructive"
+                : "bg-background hover:bg-accent border-border"
+            }`}
+            title="Приватный режим: переписка не сохраняется ни в истории, ни в базе. Удаляется бесследно при закрытии."
+          >
+            <Lock className="w-3.5 h-3.5" />Приватно
+          </button>
           <Select value={model} onValueChange={setModel} disabled={streaming || council}>
             <SelectTrigger className="w-[300px]">
               <SelectValue>
@@ -1621,6 +1680,12 @@ export default function Cabinet() {
 
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {(isPrivateConv(activeId) || (privateMode && !activeId)) && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-3 py-2 text-xs flex items-center gap-2">
+              <Lock className="w-3.5 h-3.5" />
+              Приватный режим: переписка не сохраняется в истории и в базе. После закрытия вкладки или удаления — исчезает бесследно.
+            </div>
+          )}
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground text-sm pt-16">
               Задайте вопрос. Можно прикрепить изображения или PDF.
