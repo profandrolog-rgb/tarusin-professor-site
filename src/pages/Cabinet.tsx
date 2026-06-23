@@ -2295,7 +2295,7 @@ export default function Cabinet() {
               disabled={streaming}
             />
           )}
-          {attachments.length > 0 && (
+          {attachments.length > 0 && !isImageModel && (
             <div className="flex flex-wrap gap-2">
               {attachments.map((a, i) => (
                 <div key={i} className="flex items-center gap-1 bg-muted rounded px-2 py-1 text-xs">
@@ -2312,6 +2312,82 @@ export default function Cabinet() {
               ))}
             </div>
           )}
+
+          {isImageModel && (imageRefs.length > 0 || imageUploads.length > 0) && (
+            <div className="flex flex-wrap gap-2">
+              {imageRefs.map((r, i) => (
+                <div key={`r-${i}`} className="relative group">
+                  {r.signedUrl ? (
+                    <img src={r.signedUrl} alt={r.name || r.path} className="w-16 h-16 object-cover rounded border border-border" />
+                  ) : (
+                    <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-[10px] text-muted-foreground">{r.bucket}</div>
+                  )}
+                  <button
+                    onClick={() => setImageRefs((p) => p.filter((_, j) => j !== i))}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Убрать"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {imageUploads.map((u, i) => (
+                <div key={`u-${i}`} className="relative group">
+                  <img src={u.previewUrl} alt={u.name} className="w-16 h-16 object-cover rounded border border-border" />
+                  <button
+                    onClick={() => {
+                      URL.revokeObjectURL(u.previewUrl);
+                      setImageUploads((p) => p.filter((_, j) => j !== i));
+                    }}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Убрать"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isImageModel ? (
+            <div className="flex items-end gap-2">
+              <input
+                ref={imageRefFileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => { handleImageRefFiles(e.target.files); e.target.value = ""; }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => imageRefFileInputRef.current?.click()}
+                disabled={streaming}
+                aria-label="Приложить референс"
+                title="Приложить референс с компьютера (до 4 картинок)"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder={`Опишите изображение — ${currentResolved?.label || "image-модель"} (Enter — сгенерировать)`}
+                className="flex-1 min-h-[44px] max-h-40 resize-none"
+                disabled={streaming}
+              />
+              <Button onClick={() => generateImage()} disabled={streaming || !input.trim()} size="icon" title="Сгенерировать">
+                {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              </Button>
+            </div>
+          ) : (
           <div className="flex items-end gap-2">
             <input
               ref={fileInputRef}
@@ -2415,6 +2491,7 @@ export default function Cabinet() {
               {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
+          )}
         </div>
       </main>
       {user && (
