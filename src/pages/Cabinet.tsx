@@ -1260,14 +1260,18 @@ export default function Cabinet() {
     toast.success("Добавлено как референс — отредактируйте промпт и нажмите «Сгенерировать»");
   };
 
-  const publishToLibrary = async (msgIdx: number, img: NonNullable<Msg["image"]>) => {
+  const publishToLibrary = (msgIdx: number, img: NonNullable<Msg["image"]>) => {
+    setPublishDialog({ open: true, msgIdx, img, title: "", tags: "" });
+  };
+
+  const confirmPublishToLibrary = async () => {
     if (!user) return;
-    const title = window.prompt("Название (необязательно):", "") || null;
-    const tagsRaw = window.prompt("Теги через запятую (необязательно):", "") || "";
+    const { msgIdx, img, title, tags: tagsRaw } = publishDialog;
+    if (msgIdx === null || !img) return;
     const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
     setPublishingMsgIdx(msgIdx);
+    setPublishDialog((d) => ({ ...d, open: false }));
     try {
-      // copy file: download from generated-images, upload to reference-library
       const { data: blob, error: dlErr } = await supabase.storage.from("generated-images").download(img.path);
       if (dlErr || !blob) throw new Error(dlErr?.message || "download failed");
       const refId = crypto.randomUUID();
@@ -1275,7 +1279,7 @@ export default function Cabinet() {
       const up = await supabase.storage.from("reference-library").upload(refPath, blob, { contentType: "image/png", upsert: false });
       if (up.error) throw up.error;
       const { error: insErr } = await supabase.from("image_references").insert({
-        user_id: user.id, path: refPath, title, tags,
+        user_id: user.id, path: refPath, title: title.trim() || null, tags,
       });
       if (insErr) throw insErr;
       toast.success("Опубликовано в библиотеке референсов");
