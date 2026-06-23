@@ -206,6 +206,8 @@ export type ResolvedModel = {
   liveInfo?: LiveModelInfo;
   source: ModelSource;
   uncensored?: boolean;
+  kind: ModelKind;
+  hint?: string;
 };
 
 export type LiveModelInfo = {
