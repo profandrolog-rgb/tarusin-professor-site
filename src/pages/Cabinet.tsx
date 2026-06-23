@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles, Printer, ZoomIn } from "lucide-react";
+import { Send, Plus, Trash2, Paperclip, X, Bot, User, Loader2, FileText, Image as ImageIcon, Zap, Brain, Users, Settings, Copy, FileDown, FileType2, FileCode2, Download, Mic, Square, Globe, ExternalLink, Folder, FolderPlus, FolderOpen, ChevronRight, ChevronDown, MoreVertical, Pencil, FolderInput, Search, Layers, Lock, BookmarkPlus, Sparkles, Printer, ZoomIn, Copyright } from "lucide-react";
 
 import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -2195,6 +2195,14 @@ export default function Cabinet() {
                           ) : (
                             <div className="rounded-lg border border-dashed border-border h-64 flex items-center justify-center text-xs text-muted-foreground">
                               <Loader2 className="w-4 h-4 animate-spin mr-2" /> Подписываем ссылку…
+                            </div>
+                          )}
+                          {m.image.signedUrl && (
+                            <div className="text-[10px] leading-snug text-muted-foreground italic max-w-[600px] flex items-start gap-1.5">
+                              <Copyright className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <span>
+                                Разработано интеллектуальным ассистентом профессора Тарусина Дмитрия Игоревича для пациента {pendingPatient.name || "(ФИО)"} и существует в единственном экземпляре. tarusin.pro
+                              </span>
                             </div>
                           )}
                           <div className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
