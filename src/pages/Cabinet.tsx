@@ -1266,7 +1266,7 @@ export default function Cabinet() {
 
   const confirmPublishToLibrary = async () => {
     if (!user) return;
-    const { msgIdx, img, title, tags: tagsRaw } = publishDialog;
+    const { msgIdx, img, title, description, tags: tagsRaw } = publishDialog;
     if (msgIdx === null || !img) return;
     const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
     setPublishingMsgIdx(msgIdx);
