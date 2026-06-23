@@ -1255,6 +1255,62 @@ export default function Cabinet() {
     }
   };
 
+  const printImage = async (signedUrl: string) => {
+    try {
+      // Загружаем как data URL, чтобы окно печати точно успело отрендерить картинку
+      const r = await fetch(signedUrl);
+      const blob = await r.blob();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result as string);
+        fr.onerror = reject;
+        fr.readAsDataURL(blob);
+      });
+      const w = window.open("", "_blank", "width=900,height=1200");
+      if (!w) {
+        toast.error("Браузер заблокировал окно печати. Разрешите всплывающие окна.");
+        return;
+      }
+      w.document.write(`<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Печать изображения</title>
+<style>
+  @page { size: A4; margin: 10mm; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  .sheet {
+    width: 190mm; height: 277mm;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto;
+  }
+  .sheet img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    image-rendering: -webkit-optimize-contrast;
+  }
+  @media screen {
+    body { background: #2a2a2a; padding: 20px 0; }
+    .sheet { background: #fff; box-shadow: 0 4px 24px rgba(0,0,0,.4); }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet"><img id="i" src="${dataUrl}" alt="" /></div>
+  <script>
+    const img = document.getElementById('i');
+    function go(){ setTimeout(() => { window.focus(); window.print(); }, 150); }
+    if (img.complete) go(); else img.addEventListener('load', go);
+  </script>
+</body>
+</html>`);
+      w.document.close();
+    } catch (e) {
+      console.error(e);
+      toast.error("Не удалось подготовить печать");
+    }
+  };
+
   const useGeneratedAsRef = async (img: NonNullable<Msg["image"]>) => {
     await addImageRefFromStorage("generated-images", img.path, "Предыдущая генерация");
     toast.success("Добавлено как референс — отредактируйте промпт и нажмите «Сгенерировать»");
