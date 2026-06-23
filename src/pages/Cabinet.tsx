@@ -1017,7 +1017,7 @@ export default function Cabinet() {
     // Show the user's question in the thread for transparency
     const userMsg: Msg = { role: "user", content: userQuestion };
     setMessages((prev) => [...prev, userMsg]);
-    if (activeId) {
+    if (activeId && !isPrivateConv(activeId)) {
       await supabase.from("ai_messages").insert({
         conversation_id: activeId, user_id: user.id, role: "user", content: userQuestion, model,
       });
