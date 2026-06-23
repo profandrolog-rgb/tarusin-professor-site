@@ -1261,7 +1261,7 @@ export default function Cabinet() {
   };
 
   const publishToLibrary = (msgIdx: number, img: NonNullable<Msg["image"]>) => {
-    setPublishDialog({ open: true, msgIdx, img, title: "", tags: "" });
+    setPublishDialog({ open: true, msgIdx, img, title: "", description: "", tags: "" });
   };
 
   const confirmPublishToLibrary = async () => {
