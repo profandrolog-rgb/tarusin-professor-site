@@ -363,7 +363,8 @@ export default function Cabinet() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [extendedPickerOpen, setExtendedPickerOpen] = useState(false);
   const { byId: liveModelsById, loading: liveModelsLoading } = useOpenRouterModels();
-  const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById));
+  const { byId: veniceModelsById } = useVeniceModels();
+  const resolvedModels: ResolvedModel[] = CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById, veniceModelsById));
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
   const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
