@@ -160,6 +160,8 @@ type ChatFolder = {
 
 const FOLDERS_OPEN_LS_KEY = "cabinet.foldersOpen.v1";
 
+const isPrivateConv = (id: string | null | undefined): boolean => !!id && id.startsWith("private:");
+
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
