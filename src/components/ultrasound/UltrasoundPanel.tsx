@@ -89,7 +89,8 @@ function recordToForm(record: any): Record<string, any> {
   const stringFields = [
     "right_testis_echostructure", "left_testis_echostructure",
     "right_epididymis_notes", "left_epididymis_notes",
-    "prostate_echostructure", "right_inguinal_canal", "left_inguinal_canal",
+    "prostate_echostructure", "prostate_parenchyma", "prostate_capsule",
+    "right_inguinal_canal", "left_inguinal_canal",
     "right_kidney_notes", "left_kidney_notes", "conclusion", "notes",
   ];
   numericFields.forEach(k => { if (record[k] != null) f[k] = String(record[k]); });
@@ -207,6 +208,8 @@ export function UltrasoundPanel() {
     valsalva_max_velocity_left: numVal("valsalva_max_velocity_left") ?? null,
     prostate_volume: prostateVol,
     prostate_echostructure: form.prostate_echostructure || null,
+    prostate_parenchyma: form.prostate_parenchyma ?? "не изменена",
+    prostate_capsule: form.prostate_capsule ?? "не выражена",
     penile_length: numVal("penile_length") ?? null,
     penile_stretched_length: numVal("penile_stretched_length") ?? null,
     right_hydrocele: form.right_hydrocele ?? false,
@@ -566,6 +569,26 @@ export function UltrasoundPanel() {
                     <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>{ECHOSTRUCTURE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                   </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Паренхима</Label>
+                    <Input
+                      value={form.prostate_parenchyma ?? "не изменена"}
+                      onChange={(e) => update("prostate_parenchyma", e.target.value)}
+                      placeholder="не изменена"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Капсула</Label>
+                    <Input
+                      value={form.prostate_capsule ?? "не выражена"}
+                      onChange={(e) => update("prostate_capsule", e.target.value)}
+                      placeholder="не выражена"
+                      className="h-8 text-sm"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
