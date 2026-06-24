@@ -32,6 +32,7 @@ import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
 import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
+import { WritePrescriptionsButton } from "@/components/treatment/WritePrescriptionsButton";
 
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -664,6 +665,11 @@ export default function TreatmentPlanEditor() {
             <Button variant="outline" onClick={() => setPatternExportOpen(true)} className="gap-2" disabled={items.length === 0}>
               <Share2 className="w-4 h-4"/>Экспорт паттерна
             </Button>
+            <WritePrescriptionsButton
+              items={items}
+              patientId={patient?.id}
+              patientName={patient?.full_name}
+            />
             <Button
               variant="outline"
               className="gap-2"
@@ -707,6 +713,12 @@ export default function TreatmentPlanEditor() {
             {!isNew && status === "draft" && (
               <Button onClick={() => save("issued")} disabled={saving} variant="default" className="min-h-[44px]">Выписать</Button>
             )}
+            <WritePrescriptionsButton
+              items={items}
+              patientId={patient?.id}
+              patientName={patient?.full_name}
+              className="min-h-[44px]"
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] h-11 w-11" aria-label="Меню">
