@@ -280,6 +280,9 @@ export default function AdminPatientVisitDetail() {
     }
     toast({ title: "УЗДГ органов МПС создан", description: "Заполните параметры исследования." });
     navigate(`/admin/visits/${data.id}`);
+  };
+
+
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
