@@ -17,6 +17,7 @@ import {
   calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput,
 } from "@/lib/treatment/cost";
 import { fetchIrtForCatalogIds, formatIrtPointLine, type IrtCatalogMap } from "@/lib/treatment/acupunctureExpand";
+import { WritePrescriptionsButton } from "@/components/treatment/WritePrescriptionsButton";
 
 export default function TreatmentPlanMemo() {
   const { id } = useParams<{ id: string }>();
@@ -164,6 +165,11 @@ export default function TreatmentPlanMemo() {
           <Button onClick={onExportDocx} className="gap-2">
             <FileDown className="w-4 h-4"/>Скачать DOCX
           </Button>
+          <WritePrescriptionsButton
+            items={items as any}
+            patientId={patient?.id}
+            patientName={patient?.full_name}
+          />
         </div>
       </div>
 

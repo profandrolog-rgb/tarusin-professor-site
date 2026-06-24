@@ -9,6 +9,7 @@ import QRCode from "qrcode";
 import { SECTIONS, TreatmentCategory } from "@/components/treatment/sections";
 import { calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput } from "@/lib/treatment/cost";
 import { fetchIrtForCatalogIds, formatIrtPointLine, type IrtCatalogMap } from "@/lib/treatment/acupunctureExpand";
+import { WritePrescriptionsButton } from "@/components/treatment/WritePrescriptionsButton";
 
 
 interface PlanItemDB {
@@ -47,7 +48,7 @@ interface PlanDB {
   lab_control_enabled: boolean | null;
   is_public: boolean | null;
   public_hash: string | null;
-  patient: { full_name: string; birth_date: string } | null;
+  patient: { id: string; full_name: string; birth_date: string } | null;
 }
 
 interface LabControlRow {
@@ -149,7 +150,7 @@ export default function TreatmentPlanPrint() {
   useEffect(() => {
     (async () => {
       const { data: p } = await supabase.from("treatment_plans")
-        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, is_public, public_hash, patient:patients(full_name, birth_date)")
+        .select("id, issued_at, duration_days, diagnosis_short, clinical_summary, status, mode, course_number, show_cost_in_print, lab_control_enabled, is_public, public_hash, patient:patients(id, full_name, birth_date)")
         .eq("id", id!).maybeSingle();
       const { data: rows } = await supabase.from("treatment_plan_items")
         .select("*").eq("plan_id", id!).order("section_category").order("order_index");
@@ -254,6 +255,11 @@ export default function TreatmentPlanPrint() {
       `}</style>
 
       <div className="no-print max-w-[210mm] mx-auto mb-4 flex justify-end gap-2 px-4">
+        <WritePrescriptionsButton
+          items={items as any}
+          patientId={plan.patient?.id}
+          patientName={plan.patient?.full_name}
+        />
         <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4"/>Печать / PDF</Button>
       </div>
 
