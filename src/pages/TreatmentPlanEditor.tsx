@@ -32,6 +32,7 @@ import { generatePlanDocx } from "@/lib/treatment/docxExport";
 import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
 import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
+import { WritePrescriptionsButton } from "@/components/treatment/WritePrescriptionsButton";
 
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
