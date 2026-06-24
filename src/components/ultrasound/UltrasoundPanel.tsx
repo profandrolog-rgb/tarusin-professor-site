@@ -89,7 +89,8 @@ function recordToForm(record: any): Record<string, any> {
   const stringFields = [
     "right_testis_echostructure", "left_testis_echostructure",
     "right_epididymis_notes", "left_epididymis_notes",
-    "prostate_echostructure", "right_inguinal_canal", "left_inguinal_canal",
+    "prostate_echostructure", "prostate_parenchyma", "prostate_capsule",
+    "right_inguinal_canal", "left_inguinal_canal",
     "right_kidney_notes", "left_kidney_notes", "conclusion", "notes",
   ];
   numericFields.forEach(k => { if (record[k] != null) f[k] = String(record[k]); });
