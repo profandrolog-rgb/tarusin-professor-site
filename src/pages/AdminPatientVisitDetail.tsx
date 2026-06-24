@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { DEFAULT_PROTOCOL_DATA } from "@/lib/visits/protocolSchemas";
 import { ProtocolForm } from "@/components/visits/ProtocolForm";
 import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -245,6 +246,44 @@ export default function AdminPatientVisitDetail() {
     void proceed;
   };
 
+  /** Создать (или открыть существующий) протокол УЗДГ органов МПС
+   *  для того же пациента — чтобы первичная консультация + УЗИ делались за один шаг. */
+  const handleAddUziUrinary = async () => {
+    if (!visit) return;
+    if (isDirty && !window.confirm("Есть несохранённые изменения в текущем протоколе. Продолжить?")) return;
+
+    // Если у пациента уже есть сегодняшний УЗДГ МПС — открываем его, а не плодим дубль.
+    const today = format(new Date(), "yyyy-MM-dd");
+    const existing = siblings.find((s) => s.protocol_type === "uzi_urinary" && s.visit_date === today);
+    if (existing) {
+      toast({ title: "Открываю существующий УЗДГ МПС", description: "Протокол за сегодня уже создан." });
+      navigate(`/admin/visits/${existing.id}`);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("patient_visits")
+      .insert({
+        patient_id: visit.patient_id,
+        visit_date: today,
+        protocol_type: "uzi_urinary",
+        protocol_data: (DEFAULT_PROTOCOL_DATA["uzi_urinary"] as any) || {},
+        diagnosis: visit.diagnosis,
+        icd_code: visit.icd_code,
+      })
+      .select("id")
+      .single();
+
+    if (error || !data) {
+      toast({ title: "Не удалось создать УЗДГ МПС", description: error?.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "УЗДГ органов МПС создан", description: "Заполните параметры исследования." });
+    navigate(`/admin/visits/${data.id}`);
+  };
+
+
+
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
 
@@ -331,6 +370,26 @@ export default function AdminPatientVisitDetail() {
               </TooltipTrigger>
               <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
             </Tooltip>
+
+            {visit.protocol_type === "primary_short" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddUziUrinary}
+                    className="gap-1 border-primary/40 text-primary hover:bg-primary/5"
+                  >
+                    <Stethoscope className="h-4 w-4 md:mr-1" />
+                    <span className="hidden md:inline">+ УЗДГ органов МПС</span>
+                    <span className="md:hidden">+ УЗДГ</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Создать протокол УЗИ органов мочевыделительной системы для того же пациента</TooltipContent>
+              </Tooltip>
+            )}
+
+
 
             {/* Right group */}
             <div className="ml-auto flex items-center gap-2">
