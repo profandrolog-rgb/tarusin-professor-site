@@ -713,6 +713,12 @@ export default function TreatmentPlanEditor() {
             {!isNew && status === "draft" && (
               <Button onClick={() => save("issued")} disabled={saving} variant="default" className="min-h-[44px]">Выписать</Button>
             )}
+            <WritePrescriptionsButton
+              items={items}
+              patientId={patient?.id}
+              patientName={patient?.full_name}
+              className="min-h-[44px]"
+            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] h-11 w-11" aria-label="Меню">
