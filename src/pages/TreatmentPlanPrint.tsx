@@ -47,7 +47,7 @@ interface PlanDB {
   lab_control_enabled: boolean | null;
   is_public: boolean | null;
   public_hash: string | null;
-  patient: { full_name: string; birth_date: string } | null;
+  patient: { id: string; full_name: string; birth_date: string } | null;
 }
 
 interface LabControlRow {
