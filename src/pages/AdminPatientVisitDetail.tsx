@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { DEFAULT_PROTOCOL_DATA } from "@/lib/visits/protocolSchemas";
 import { ProtocolForm } from "@/components/visits/ProtocolForm";
 import { IcdAutocomplete } from "@/components/visits/IcdAutocomplete";
 import { useAutoSave } from "@/hooks/useAutoSave";
