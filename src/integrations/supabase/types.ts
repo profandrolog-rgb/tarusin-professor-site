@@ -3993,9 +3993,11 @@ export type Database = {
           patient_id: string
           penile_length: number | null
           penile_stretched_length: number | null
+          prostate_capsule: string | null
           prostate_depth: number | null
           prostate_echostructure: string | null
           prostate_length: number | null
+          prostate_parenchyma: string | null
           prostate_volume: number | null
           prostate_width: number | null
           residual_urine: number | null
@@ -4044,9 +4046,11 @@ export type Database = {
           patient_id: string
           penile_length?: number | null
           penile_stretched_length?: number | null
+          prostate_capsule?: string | null
           prostate_depth?: number | null
           prostate_echostructure?: string | null
           prostate_length?: number | null
+          prostate_parenchyma?: string | null
           prostate_volume?: number | null
           prostate_width?: number | null
           residual_urine?: number | null
@@ -4095,9 +4099,11 @@ export type Database = {
           patient_id?: string
           penile_length?: number | null
           penile_stretched_length?: number | null
+          prostate_capsule?: string | null
           prostate_depth?: number | null
           prostate_echostructure?: string | null
           prostate_length?: number | null
+          prostate_parenchyma?: string | null
           prostate_volume?: number | null
           prostate_width?: number | null
           residual_urine?: number | null
