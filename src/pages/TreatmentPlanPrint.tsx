@@ -255,6 +255,11 @@ export default function TreatmentPlanPrint() {
       `}</style>
 
       <div className="no-print max-w-[210mm] mx-auto mb-4 flex justify-end gap-2 px-4">
+        <WritePrescriptionsButton
+          items={items as any}
+          patientId={plan.patient?.id}
+          patientName={plan.patient?.full_name}
+        />
         <Button onClick={() => window.print()} className="gap-2"><Printer className="w-4 h-4"/>Печать / PDF</Button>
       </div>
 
