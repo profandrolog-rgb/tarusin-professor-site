@@ -570,6 +570,26 @@ export function UltrasoundPanel() {
                     <SelectContent>{ECHOSTRUCTURE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Паренхима</Label>
+                    <Input
+                      value={form.prostate_parenchyma ?? "не изменена"}
+                      onChange={(e) => update("prostate_parenchyma", e.target.value)}
+                      placeholder="не изменена"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Капсула</Label>
+                    <Input
+                      value={form.prostate_capsule ?? "не выражена"}
+                      onChange={(e) => update("prostate_capsule", e.target.value)}
+                      placeholder="не выражена"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
