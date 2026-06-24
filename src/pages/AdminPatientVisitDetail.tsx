@@ -371,6 +371,26 @@ export default function AdminPatientVisitDetail() {
               <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
             </Tooltip>
 
+            {visit.protocol_type === "primary_short" && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddUziUrinary}
+                    className="gap-1 border-primary/40 text-primary hover:bg-primary/5"
+                  >
+                    <Stethoscope className="h-4 w-4 md:mr-1" />
+                    <span className="hidden md:inline">+ УЗДГ органов МПС</span>
+                    <span className="md:hidden">+ УЗДГ</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Создать протокол УЗИ органов мочевыделительной системы для того же пациента</TooltipContent>
+              </Tooltip>
+            )}
+
+
+
             {/* Right group */}
             <div className="ml-auto flex items-center gap-2">
               {hasDraft() && (
