@@ -17,6 +17,7 @@ import {
   calculatePlanCost, formatRub, latestPriceDate, type CostCatalog, type CostItemInput,
 } from "@/lib/treatment/cost";
 import { fetchIrtForCatalogIds, formatIrtPointLine, type IrtCatalogMap } from "@/lib/treatment/acupunctureExpand";
+import { WritePrescriptionsButton } from "@/components/treatment/WritePrescriptionsButton";
 
 export default function TreatmentPlanMemo() {
   const { id } = useParams<{ id: string }>();
