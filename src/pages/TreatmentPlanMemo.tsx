@@ -165,6 +165,11 @@ export default function TreatmentPlanMemo() {
           <Button onClick={onExportDocx} className="gap-2">
             <FileDown className="w-4 h-4"/>Скачать DOCX
           </Button>
+          <WritePrescriptionsButton
+            items={items as any}
+            patientId={patient?.id}
+            patientName={patient?.full_name}
+          />
         </div>
       </div>
 
