@@ -208,6 +208,8 @@ export function UltrasoundPanel() {
     valsalva_max_velocity_left: numVal("valsalva_max_velocity_left") ?? null,
     prostate_volume: prostateVol,
     prostate_echostructure: form.prostate_echostructure || null,
+    prostate_parenchyma: form.prostate_parenchyma ?? "не изменена",
+    prostate_capsule: form.prostate_capsule ?? "не выражена",
     penile_length: numVal("penile_length") ?? null,
     penile_stretched_length: numVal("penile_stretched_length") ?? null,
     right_hydrocele: form.right_hydrocele ?? false,
