@@ -26,13 +26,88 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RecentVisitsWidget } from "@/components/visits/RecentVisitsWidget";
 
-const adminSections = [
+// === КЛИНИЧЕСКАЯ РАБОТА: пациенты, протоколы, ИИ, назначения ===
+const clinicalSections = [
+  {
+    title: "Карточки пациентов",
+    description: "Портал пациентов: карточки, документы, чат",
+    icon: Users,
+    href: "/admin/patient-cards",
+    color: "text-violet-500",
+  },
+  {
+    title: "Журнал визитов и протоколы",
+    description: "9 типов клинических протоколов: первичный осмотр, динамика, УЗИ, послеоп",
+    icon: ClipboardList,
+    href: "/admin/visits",
+    color: "text-cyan-600",
+  },
+  {
+    title: "Онлайн-консультации",
+    description: "Кейсы консультаций, ИИ-анализ, заключения",
+    icon: Stethoscope,
+    href: "/admin/consultations",
+    color: "text-sky-500",
+  },
+  {
+    title: "Выписка рецептов",
+    description: "Форма 107/у — рецепт на лекарственные препараты",
+    icon: Pill,
+    href: "/admin/prescriptions",
+    color: "text-red-500",
+  },
+  {
+    title: "Листы назначений",
+    description: "Комплексная терапия: в/в, в/м, БАД, пептиды, процедуры",
+    icon: ClipboardList,
+    href: "/admin/treatment-plans",
+    color: "text-fuchsia-500",
+  },
+  {
+    title: "Обследования",
+    description: "УЗИ, анализы, антропометрия",
+    icon: Stethoscope,
+    href: "/admin/prescriptions?section=examinations",
+    color: "text-indigo-500",
+  },
+  {
+    title: "Операционный журнал",
+    description: "Учёт проведённых операций",
+    icon: BookOpen,
+    href: "/admin/operations-journal",
+    color: "text-rose-500",
+  },
+  {
+    title: "🤖 Кабинет (ИИ-чат)",
+    description: "Приватный чат с моделями Claude, GPT, Gemini, Grok через OpenRouter",
+    icon: Settings,
+    href: "/cabinet",
+    color: "text-fuchsia-600",
+  },
+  {
+    title: "Шаблоны текстов протоколов",
+    description: "Универсальные и операционные шаблоны для полей форм визитов",
+    icon: ClipboardList,
+    href: "/admin/visit-templates",
+    color: "text-teal-600",
+  },
+];
+
+// === САЙТ И АДМИНИСТРИРОВАНИЕ: контент, заявки, аналитика, инфраструктура ===
+const siteSections = [
   {
     title: "Заявки на приём",
     description: "Просмотр и обработка заявок от посетителей",
     icon: ClipboardList,
     href: "/admin/requests",
     color: "text-orange-500",
+  },
+  {
+    title: "Вопросы пациентов",
+    description: "Ответы на вопросы, публикация Q&A",
+    icon: ClipboardList,
+    href: "/admin/questions",
+    color: "text-cyan-500",
   },
   {
     title: "Команда профессора",
@@ -49,6 +124,27 @@ const adminSections = [
     color: "text-green-500",
   },
   {
+    title: "Материалы о заболеваниях",
+    description: "Видео, подкасты и статьи для родителей и пациентов",
+    icon: Baby,
+    href: "/admin/disease-articles",
+    color: "text-pink-500",
+  },
+  {
+    title: "Наши исследования",
+    description: "Публикации и научные статьи",
+    icon: FileText,
+    href: "/research",
+    color: "text-emerald-500",
+  },
+  {
+    title: "Размышлизмы",
+    description: "Блог профессора — публикация заметок",
+    icon: FileText,
+    href: "/blog",
+    color: "text-teal-500",
+  },
+  {
     title: "Путевые заметки",
     description: "Управление фотогалереей путешествий",
     icon: Camera,
@@ -63,102 +159,11 @@ const adminSections = [
     color: "text-amber-500",
   },
   {
-    title: "Размышлизмы",
-    description: "Блог профессора — публикация заметок",
-    icon: FileText,
-    href: "/blog",
-    color: "text-teal-500",
-  },
-  {
-    title: "Выписка рецептов",
-    description: "Форма 107/у — рецепт на лекарственные препараты",
-    icon: Pill,
-    href: "/admin/prescriptions",
-    color: "text-red-500",
-  },
-  {
-    title: "Обследования",
-    description: "УЗИ, анализы, антропометрия",
-    icon: Stethoscope,
-    href: "/admin/prescriptions?section=examinations",
-    color: "text-indigo-500",
-  },
-  {
-    title: "Листы назначений",
-    description: "Комплексная терапия: в/в, в/м, БАД, пептиды, процедуры",
-    icon: ClipboardList,
-    href: "/admin/treatment-plans",
-    color: "text-fuchsia-500",
-  },
-  {
-    title: "Вопросы пациентов",
-    description: "Ответы на вопросы, публикация Q&A",
-    icon: ClipboardList,
-    href: "/admin/questions",
-    color: "text-cyan-500",
-  },
-  {
-    title: "Наши исследования",
-    description: "Публикации и научные статьи",
-    icon: FileText,
-    href: "/research",
-    color: "text-emerald-500",
-  },
-  {
-    title: "Материалы о заболеваниях",
-    description: "Видео, подкасты и статьи для родителей и пациентов",
-    icon: Baby,
-    href: "/admin/disease-articles",
-    color: "text-pink-500",
-  },
-  {
-    title: "Операционный журнал",
-    description: "Учёт проведённых операций",
-    icon: BookOpen,
-    href: "/admin/operations-journal",
-    color: "text-rose-500",
-  },
-  {
-    title: "Журнал визитов и протоколы",
-    description: "9 типов клинических протоколов: первичный осмотр, динамика, УЗИ, послеоп",
-    icon: ClipboardList,
-    href: "/admin/visits",
-    color: "text-cyan-600",
-  },
-  {
-    title: "Шаблоны текстов протоколов",
-    description: "Универсальные и операционные шаблоны для полей форм визитов",
-    icon: ClipboardList,
-    href: "/admin/visit-templates",
-    color: "text-teal-600",
-  },
-  {
-    title: "Карточки пациентов",
-    description: "Портал пациентов: карточки, документы, чат",
-    icon: Users,
-    href: "/admin/patient-cards",
-    color: "text-violet-500",
-  },
-  {
-    title: "Онлайн-консультации",
-    description: "Кейсы консультаций, ИИ-анализ, заключения",
-    icon: Stethoscope,
-    href: "/admin/consultations",
-    color: "text-sky-500",
-  },
-  {
     title: "Самодиагностика",
     description: "Статистика прохождений тестов самодиагностики",
     icon: ClipboardCheck,
     href: "/admin/self-check",
     color: "text-lime-500",
-  },
-  {
-    title: "Системные настройки",
-    description: "Статус cron-задач, авто-парсинг цен, лог запусков",
-    icon: Settings,
-    href: "/admin/system-settings",
-    color: "text-slate-500",
   },
   {
     title: "📊 Аналитика",
@@ -168,18 +173,18 @@ const adminSections = [
     color: "text-indigo-500",
   },
   {
+    title: "Системные настройки",
+    description: "Статус cron-задач, авто-парсинг цен, лог запусков",
+    icon: Settings,
+    href: "/admin/system-settings",
+    color: "text-slate-500",
+  },
+  {
     title: "📦 Резервное копирование",
     description: "Бэкап и восстановление данных treatment-plans, история снапшотов",
     icon: Settings,
     href: "/admin/system-backup",
     color: "text-amber-600",
-  },
-  {
-    title: "🤖 Кабинет (ИИ-чат)",
-    description: "Приватный чат с моделями Claude, GPT, Gemini, Grok через OpenRouter",
-    icon: Settings,
-    href: "/cabinet",
-    color: "text-fuchsia-600",
   },
 ];
 
