@@ -129,6 +129,13 @@ export const CURATED_MODELS: CuratedModel[] = [
     familyRegex: /^deepseek\/deepseek-(?:v4|pro|chat-v4)/i,
   },
   {
+    key: "glm-5",
+    label: "GLM-5 (Zhipu AI)",
+    tier: "deep",
+    candidates: ["z-ai/glm-5"],
+    familyRegex: /^z-ai\/glm-/i,
+  },
+  {
     key: "qwen-max",
     label: "Qwen 3.7 Max",
     tier: "deep",
