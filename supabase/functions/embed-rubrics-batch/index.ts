@@ -79,7 +79,12 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
     return;
   }
 
-  const { data: batch } = await supabase.from("embedding_batches").select("*").eq("id", batchId).single();
+  // Avoid pulling the large chain_log JSONB on every chained invocation.
+  const { data: batch } = await supabase
+    .from("embedding_batches")
+    .select("id,status,rubric_ids,subbatch_size,partial_results,total_rubrics,processed_rubrics")
+    .eq("id", batchId)
+    .single();
   if (!batch) return;
   if (!["pending", "processing"].includes(batch.status)) {
     await logEvent(supabase, batchId, { stage: "batch_skip_status", status: batch.status, subbatch_index: subbatchIndex });
