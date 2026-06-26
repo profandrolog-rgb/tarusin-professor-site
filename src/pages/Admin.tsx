@@ -334,29 +334,66 @@ const Admin = () => {
           <RecentVisitsWidget />
         </div>
 
-        {/* Content Management */}
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Управление контентом</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {adminSections.map((section) => (
-            <Link key={section.href} to={section.href}>
-              <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-secondary ${section.color}`}>
-                      <section.icon className="w-6 h-6" />
+        {/* Clinical Work — pinned to top */}
+        <section className="mb-10">
+          <div className="flex items-center gap-2 mb-1">
+            <Stethoscope className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold text-foreground">Клиническая работа</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Пациенты, протоколы, ИИ-ассистент, назначения и рецепты
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {clinicalSections.map((section) => (
+              <Link key={section.href} to={section.href}>
+                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer border-primary/20 hover:border-primary/60 bg-primary/[0.02]">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg bg-secondary ${section.color}`}>
+                        <section.icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{section.title}</CardTitle>
+                        <CardDescription className="text-xs">{section.description}</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{section.title}</CardTitle>
-                      <CardDescription>{section.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Site Content & Administration */}
+        <section>
+          <div className="flex items-center gap-2 mb-1">
+            <Settings className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-xl font-semibold text-foreground">Сайт и администрирование</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Контент, заявки, аналитика, инфраструктура
+          </p>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {siteSections.map((section) => (
+              <Link key={section.href} to={section.href}>
+                <Card className="h-full hover:shadow-md transition-shadow cursor-pointer hover:border-primary/40">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg bg-secondary ${section.color}`}>
+                        <section.icon className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{section.title}</CardTitle>
+                        <CardDescription className="text-xs">{section.description}</CardDescription>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+
 
         <div className="mt-8 p-4 bg-secondary/50 rounded-lg">
           <p className="text-sm text-muted-foreground">
