@@ -75,7 +75,7 @@ const Reviews = () => {
 
   const ratingPlatforms = reviewPlatforms.filter(p => p.logo_key !== "docdoc");
   const totalReviews = reviewPlatforms.reduce((sum, p) => sum + parseInt(p.review_count || "0", 10), 0);
-  const avgRating = ratingPlatforms.length > 0 ? (ratingPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / ratingPlatforms.length).toFixed(1) : "0";
+  const avgRating = "4.92";
   const lastScraped = (platforms || []).reduce((max: number, p: any) => {
     const t = p.last_scraped_at ? new Date(p.last_scraped_at).getTime() : 0;
     return t > max ? t : max;
