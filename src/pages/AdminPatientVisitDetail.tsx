@@ -26,8 +26,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
+import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 
 interface Visit {
   id: string;
@@ -77,6 +78,26 @@ export default function AdminPatientVisitDetail() {
   }, [authLoading, user, isAdmin, isSurgeon, navigate]);
 
   useProtocolFragmentReceiver({ patientId: visit?.patient_id, kind: "visit" });
+
+  // Receive structured plan items from Cabinet ("Распределить по плану") and merge into assignments.
+  useEffect(() => {
+    if (!visit?.patient_id) return;
+    const ingest = (items: ParsedPlanItem[]) => {
+      if (!items?.length) return;
+      setVisit((v) => {
+        if (!v) return v;
+        const base = isProtocolRecord(v.protocol_data) ? { ...(v.protocol_data as any) } : {};
+        const cur = normalizeAssignments(base.assignments);
+        base.assignments = mergePlanItemsIntoAssignments(cur, items);
+        return { ...v, protocol_data: base as Json };
+      });
+      toast({ title: `Добавлено в назначения: ${items.length}` });
+    };
+    const unsub = subscribePlanItems((msg) => ingest(msg.items), { patientId: visit.patient_id });
+    const queued = popQueuedPlanItems({ patientId: visit.patient_id });
+    if (queued.length) ingest(queued.flatMap((q) => q.items));
+    return unsub;
+  }, [visit?.patient_id]);
 
   useEffect(() => {
     if (!visit?.patient?.full_name) return;

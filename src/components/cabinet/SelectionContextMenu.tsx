@@ -183,11 +183,10 @@ export function SelectionContextMenu({
 
   const confirmSendPlanItems = (selected: ParsedPlanItem[]) => {
     if (selected.length === 0) return;
-    // Prefer the active treatment_plan tab if its patient matches the bound patient;
-    // otherwise just queue with the bound patientId.
+    // Send to any active protocol tab (treatment_plan, visit, consultation, ultrasound) if it matches the bound patient;
+    // otherwise queue with the bound patientId so the next opened protocol picks it up.
     const target =
-      active?.kind === "treatment_plan" &&
-      (!effectivePatientId || active.patientId === effectivePatientId)
+      active && (!effectivePatientId || !active.patientId || active.patientId === effectivePatientId)
         ? active
         : effectivePatientId
         ? ({
@@ -200,9 +199,13 @@ export function SelectionContextMenu({
         : undefined;
     sendPlanItemsToProtocol(selected, target);
     setDialogOpen(false);
+    const where = target?.kind === "visit" ? "в назначения визита"
+      : target?.kind === "consultation" ? "в назначения консультации"
+      : target?.kind === "ultrasound" ? "в назначения УЗИ"
+      : "в план лечения";
     toast.success(
       effectivePatientName
-        ? `${selected.length} позиций для плана: ${effectivePatientName}`
+        ? `${selected.length} позиций ${where}: ${effectivePatientName}`
         : `${selected.length} позиций в очереди — без привязки к пациенту`,
     );
   };
