@@ -163,6 +163,9 @@ export function PlanItemsPreviewDialog({
                                 ))}
                               </SelectContent>
                             </Select>
+                            <Badge variant="secondary" className="h-8 px-2 text-[10px] font-normal whitespace-nowrap shrink-0">
+                              → {VISIT_BUCKET_LABEL[bucketForPlanItem(it)]}
+                            </Badge>
                             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(it._id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
