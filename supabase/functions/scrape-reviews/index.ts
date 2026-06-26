@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Restrict to service_role callers (scheduled jobs / admin tooling)
+    // Allow either service_role (scheduled jobs) or authenticated admin users
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
@@ -88,7 +88,27 @@ Deno.serve(async (req) => {
     }
     const token = authHeader.replace("Bearer ", "");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!serviceKey || token !== serviceKey) {
+    const supabaseUrlEarly = Deno.env.get("SUPABASE_URL")!;
+    let allowed = !!serviceKey && token === serviceKey;
+    if (!allowed) {
+      // Try to validate as a user JWT and check admin role
+      const userClient = createClient(supabaseUrlEarly, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      const uid = userData?.user?.id;
+      if (uid) {
+        const admin = createClient(supabaseUrlEarly, serviceKey!);
+        const { data: roleRow } = await admin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", uid)
+          .eq("role", "admin")
+          .maybeSingle();
+        allowed = !!roleRow;
+      }
+    }
+    if (!allowed) {
       return new Response(
         JSON.stringify({ success: false, error: "Forbidden" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
