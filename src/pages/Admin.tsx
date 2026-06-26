@@ -249,6 +249,10 @@ const Admin = () => {
           </p>
         </div>
 
+        <div className="mb-10">
+          <DbHealthWidget />
+        </div>
+
         {/* Analytics Section */}
         <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
