@@ -27,6 +27,9 @@ const fallbackPlatforms = [
 const Reviews = () => {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
+  const { isAdmin } = useAuth();
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: platforms } = useQuery({
     queryKey: ["review-platforms"],
@@ -35,7 +38,36 @@ const Reviews = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000,
   });
+
+  // Auto-refresh from sources if data is older than 24h (admin-triggered or scheduled job will overwrite anyway)
+  useEffect(() => {
+    if (!platforms || platforms.length === 0) return;
+    const oldest = platforms.reduce((min, p: any) => {
+      const t = p.last_scraped_at ? new Date(p.last_scraped_at).getTime() : 0;
+      return t < min ? t : min;
+    }, Date.now());
+    const ageH = (Date.now() - oldest) / 3600000;
+    if (ageH > 24 && isAdmin && !refreshing) {
+      handleRefresh(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platforms, isAdmin]);
+
+  const handleRefresh = async (silent = false) => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-reviews", { body: {} });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["review-platforms"] });
+      if (!silent) toast({ title: "Отзывы обновлены", description: "Данные платформ перезагружены" });
+    } catch (e: any) {
+      if (!silent) toast({ title: "Не удалось обновить", description: e?.message || "Ошибка", variant: "destructive" });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const reviewPlatforms = (platforms && platforms.length > 0
     ? platforms.map(p => ({ ...p, description_ru: p.description, description_en: p.description }))
@@ -44,6 +76,10 @@ const Reviews = () => {
   const ratingPlatforms = reviewPlatforms.filter(p => p.logo_key !== "docdoc");
   const totalReviews = reviewPlatforms.reduce((sum, p) => sum + parseInt(p.review_count || "0", 10), 0);
   const avgRating = ratingPlatforms.length > 0 ? (ratingPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / ratingPlatforms.length).toFixed(1) : "0";
+  const lastScraped = (platforms || []).reduce((max: number, p: any) => {
+    const t = p.last_scraped_at ? new Date(p.last_scraped_at).getTime() : 0;
+    return t > max ? t : max;
+  }, 0);
 
   return (
     <div className="min-h-screen bg-background">
