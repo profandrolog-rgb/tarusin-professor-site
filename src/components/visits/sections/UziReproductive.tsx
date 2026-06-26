@@ -59,6 +59,8 @@ export interface ProstateExamData {
   pelvic_effusion?: string;
   prostate_volume?: string;
   middle_lobe_volume?: string;
+  parenchyma?: string;
+  capsule?: string;
   infravesical_obstruction?: string;
   urethra_internal_opening?: string;
   elastography_right?: string;
@@ -138,6 +140,8 @@ export const DEFAULT_PROSTATE: ProstateExamData = {
   position: "нормативное",
   syntopy: "не изменена",
   pelvic_effusion: "нет",
+  parenchyma: "не изменена",
+  capsule: "не выражена",
   infravesical_obstruction: "нет",
   urethra_internal_opening: "симптом скобы не отмечается",
   paraprostatic_veins: { diameter: "", reflux: "нет" },
@@ -511,6 +515,27 @@ export function UziReproductiveSection({ data, onChange }: Props) {
               <div className="space-y-1">
                 <Label className="text-xs">Средняя доля, объём (см³)</Label>
                 <Input className="h-8" value={prostate.middle_lobe_volume || ""} onChange={(e) => setProstate("middle_lobe_volume", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Паренхима</Label>
+                <Input
+                  className="h-8"
+                  value={prostate.parenchyma ?? "не изменена"}
+                  onChange={(e) => setProstate("parenchyma", e.target.value)}
+                  placeholder="не изменена"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Капсула</Label>
+                <Input
+                  className="h-8"
+                  value={prostate.capsule ?? "не выражена"}
+                  onChange={(e) => setProstate("capsule", e.target.value)}
+                  placeholder="не выражена"
+                />
               </div>
             </div>
 
