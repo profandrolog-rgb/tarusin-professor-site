@@ -3074,21 +3074,21 @@ export type Database = {
       rubric_embeddings: {
         Row: {
           embedded_at: string
-          embedding: string
+          embedding: unknown
           model: string
           rubric_id: string
           source_text: string
         }
         Insert: {
           embedded_at?: string
-          embedding: string
+          embedding: unknown
           model?: string
           rubric_id: string
           source_text: string
         }
         Update: {
           embedded_at?: string
-          embedding?: string
+          embedding?: unknown
           model?: string
           rubric_id?: string
           source_text?: string
