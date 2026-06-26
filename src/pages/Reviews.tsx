@@ -1,13 +1,16 @@
-import { ArrowLeft, Star, ExternalLink } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageMeta from "@/components/PageMeta";
 import ColleagueReviews from "@/components/ColleagueReviews";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
 import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
@@ -24,6 +27,9 @@ const fallbackPlatforms = [
 const Reviews = () => {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language === "en";
+  const { isAdmin } = useAuth();
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: platforms } = useQuery({
     queryKey: ["review-platforms"],
@@ -32,7 +38,36 @@ const Reviews = () => {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000,
   });
+
+  // Auto-refresh from sources if data is older than 24h (admin-triggered or scheduled job will overwrite anyway)
+  useEffect(() => {
+    if (!platforms || platforms.length === 0) return;
+    const oldest = platforms.reduce((min, p: any) => {
+      const t = p.last_scraped_at ? new Date(p.last_scraped_at).getTime() : 0;
+      return t < min ? t : min;
+    }, Date.now());
+    const ageH = (Date.now() - oldest) / 3600000;
+    if (ageH > 24 && isAdmin && !refreshing) {
+      handleRefresh(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platforms, isAdmin]);
+
+  const handleRefresh = async (silent = false) => {
+    setRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-reviews", { body: {} });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["review-platforms"] });
+      if (!silent) toast({ title: "Отзывы обновлены", description: "Данные платформ перезагружены" });
+    } catch (e: any) {
+      if (!silent) toast({ title: "Не удалось обновить", description: e?.message || "Ошибка", variant: "destructive" });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const reviewPlatforms = (platforms && platforms.length > 0
     ? platforms.map(p => ({ ...p, description_ru: p.description, description_en: p.description }))
@@ -41,6 +76,10 @@ const Reviews = () => {
   const ratingPlatforms = reviewPlatforms.filter(p => p.logo_key !== "docdoc");
   const totalReviews = reviewPlatforms.reduce((sum, p) => sum + parseInt(p.review_count || "0", 10), 0);
   const avgRating = ratingPlatforms.length > 0 ? (ratingPlatforms.reduce((sum, p) => sum + parseFloat(p.rating || "0"), 0) / ratingPlatforms.length).toFixed(1) : "0";
+  const lastScraped = (platforms || []).reduce((max: number, p: any) => {
+    const t = p.last_scraped_at ? new Date(p.last_scraped_at).getTime() : 0;
+    return t > max ? t : max;
+  }, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,7 +117,22 @@ const Reviews = () => {
             </div>
 
             <div className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">{isEn ? "Read Reviews on Platforms" : "Читать отзывы на платформах"}</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "Read Reviews on Platforms" : "Читать отзывы на платформах"}</h2>
+                <div className="flex items-center gap-3">
+                  {lastScraped > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {isEn ? "Updated" : "Обновлено"}: {new Date(lastScraped).toLocaleString(isEn ? "en-US" : "ru-RU", { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <Button size="sm" variant="outline" onClick={() => handleRefresh(false)} disabled={refreshing}>
+                      <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                      {refreshing ? (isEn ? "Updating…" : "Обновляю…") : (isEn ? "Refresh" : "Обновить")}
+                    </Button>
+                  )}
+                </div>
+              </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {reviewPlatforms.map((platform, index) => (
                   <Card key={index} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer" onClick={() => window.open(platform.url, "_blank")}>
