@@ -117,7 +117,22 @@ const Reviews = () => {
             </div>
 
             <div className="mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">{isEn ? "Read Reviews on Platforms" : "Читать отзывы на платформах"}</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "Read Reviews on Platforms" : "Читать отзывы на платформах"}</h2>
+                <div className="flex items-center gap-3">
+                  {lastScraped > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {isEn ? "Updated" : "Обновлено"}: {new Date(lastScraped).toLocaleString(isEn ? "en-US" : "ru-RU", { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <Button size="sm" variant="outline" onClick={() => handleRefresh(false)} disabled={refreshing}>
+                      <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                      {refreshing ? (isEn ? "Updating…" : "Обновляю…") : (isEn ? "Refresh" : "Обновить")}
+                    </Button>
+                  )}
+                </div>
+              </div>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {reviewPlatforms.map((platform, index) => (
                   <Card key={index} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer" onClick={() => window.open(platform.url, "_blank")}>
