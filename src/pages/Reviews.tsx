@@ -1,13 +1,16 @@
-import { ArrowLeft, Star, ExternalLink } from "lucide-react";
+import { ArrowLeft, Star, ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PageMeta from "@/components/PageMeta";
 import ColleagueReviews from "@/components/ColleagueReviews";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 import prodoctorovLogo from "@/assets/platforms/prodoctorov.png";
 import yandexHealthLogo from "@/assets/platforms/yandex-health.png";
