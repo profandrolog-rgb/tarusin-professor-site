@@ -254,7 +254,7 @@ export default function AdminPatientVisitDetail() {
 
     // Если у пациента уже есть сегодняшний УЗДГ МПС — открываем его, а не плодим дубль.
     const today = format(new Date(), "yyyy-MM-dd");
-    const existing = siblings.find((s) => s.protocol_type === "uzi_urinary" && s.visit_date === today);
+    const existing = siblings.find((s) => s.protocol_type === "uzi_reproductive" && s.visit_date === today);
     if (existing) {
       toast({ title: "Открываю существующий УЗДГ МПС", description: "Протокол за сегодня уже создан." });
       navigate(`/admin/visits/${existing.id}`);
@@ -266,8 +266,8 @@ export default function AdminPatientVisitDetail() {
       .insert({
         patient_id: visit.patient_id,
         visit_date: today,
-        protocol_type: "uzi_urinary",
-        protocol_data: (DEFAULT_PROTOCOL_DATA["uzi_urinary"] as any) || {},
+        protocol_type: "uzi_reproductive",
+        protocol_data: (DEFAULT_PROTOCOL_DATA["uzi_reproductive"] as any) || {},
         diagnosis: visit.diagnosis,
         icd_code: visit.icd_code,
       })
