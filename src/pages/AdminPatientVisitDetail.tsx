@@ -26,8 +26,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
+import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
+import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 
 interface Visit {
   id: string;
