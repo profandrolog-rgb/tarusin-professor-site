@@ -480,9 +480,32 @@ export default function AdminPatientVisitDetail() {
           <Card>
             <CardHeader><CardTitle className="text-base">Пациент</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-1">
-              <div><span className="text-muted-foreground">ФИО:</span> {visit.patient?.full_name}</div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">ФИО:</span> {visit.patient?.full_name}
+                {visit.patient_id && (
+                  <Link
+                    to={`/admin/patients/${visit.patient_id}/edit`}
+                    title="Редактировать карточку пациента"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
               <div><span className="text-muted-foreground">№ ИБ:</span> <span className="font-mono">{visit.patient?.history_number || "—"}</span></div>
-              <div><span className="text-muted-foreground">Дата рождения:</span> {visit.patient?.birth_date ? format(new Date(visit.patient.birth_date), "dd.MM.yyyy") : "—"}</div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Дата рождения:</span>
+                {visit.patient?.birth_date ? format(new Date(visit.patient.birth_date), "dd.MM.yyyy") : "—"}
+                {visit.patient_id && (
+                  <Link
+                    to={`/admin/patients/${visit.patient_id}/edit`}
+                    title="Исправить дату рождения в карточке"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
             </CardContent>
           </Card>
 
