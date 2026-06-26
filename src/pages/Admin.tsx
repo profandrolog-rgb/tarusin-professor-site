@@ -25,6 +25,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RecentVisitsWidget } from "@/components/visits/RecentVisitsWidget";
+import { DbHealthWidget } from "@/components/admin/DbHealthWidget";
 
 // === КЛИНИЧЕСКАЯ РАБОТА: пациенты, протоколы, ИИ, назначения ===
 const clinicalSections = [
@@ -247,6 +248,10 @@ const Admin = () => {
           <p className="text-muted-foreground">
             Управление контентом сайта
           </p>
+        </div>
+
+        <div className="mb-10">
+          <DbHealthWidget />
         </div>
 
         {/* Analytics Section */}
