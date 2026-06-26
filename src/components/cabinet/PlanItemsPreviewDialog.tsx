@@ -6,9 +6,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Pill, Trash2 } from "lucide-react";
+import { Loader2, Pill, Trash2, ArrowRight } from "lucide-react";
 import { SECTIONS, type TreatmentCategory } from "@/components/treatment/sections";
 import type { ParsedPlanItem, ActivePatientContext } from "@/lib/protocolBridge";
+import { bucketForPlanItem, VISIT_BUCKET_LABEL, type VisitBucket } from "@/lib/visits/applyPlanItemsToAssignments";
 import { PatientConfirmationBanner } from "./PatientConfirmationBanner";
 import type { PatientSelection } from "./PatientPickerPopover";
 
