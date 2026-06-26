@@ -19,6 +19,8 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { normalizeImportedProtocolData, NORMALIZATION_VERSION } from "@/lib/visits/normalizeProtocolData";
 import { ProtocolPrintLayout } from "@/components/visits/ProtocolPrintLayout";
 import { AssignmentsPanel, normalizeAssignments, AssignmentsData } from "@/components/visits/AssignmentsPanel";
+import { AiReasoningField } from "@/components/visits/AiReasoningField";
+import { WriteRxFromAssignments } from "@/components/visits/WriteRxFromAssignments";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -506,6 +508,31 @@ export default function AdminPatientVisitDetail() {
             onChange={(next: AssignmentsData) => {
               const base = isProtocolRecord(visit.protocol_data) ? { ...(visit.protocol_data as any) } : {};
               base.assignments = next;
+              update({ protocol_data: base as Json });
+            }}
+          />
+
+          {(() => {
+            const a = isProtocolRecord(visit.protocol_data)
+              ? normalizeAssignments((visit.protocol_data as any).assignments)
+              : null;
+            if (!a || a.treatments.length === 0) return null;
+            return (
+              <div className="flex justify-end">
+                <WriteRxFromAssignments
+                  treatments={a.treatments}
+                  patientId={visit.patient_id}
+                  patientName={visit.patient?.full_name}
+                />
+              </div>
+            );
+          })()}
+
+          <AiReasoningField
+            value={isProtocolRecord(visit.protocol_data) ? ((visit.protocol_data as any).ai_reasoning || "") : ""}
+            onChange={(v) => {
+              const base = isProtocolRecord(visit.protocol_data) ? { ...(visit.protocol_data as any) } : {};
+              base.ai_reasoning = v;
               update({ protocol_data: base as Json });
             }}
           />

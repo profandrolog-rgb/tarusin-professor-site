@@ -411,7 +411,8 @@ const KNOWN_KEYS = new Set([
   "interpretation","channel","duration_min","in_person_needed","in_person_urgency",
   // peptide_program
   "program_title","goal","start_date","control_date","items",
-  "_normalized_version","_normalized_at",
+  // служебные поля — никогда не печатаются
+  "ai_reasoning","_normalized","_normalized_version","_normalized_at",
 ]);
 
 function pushUnknownScalars(rows: React.ReactNode[], d: any) {
