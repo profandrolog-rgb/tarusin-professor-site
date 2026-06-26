@@ -2,9 +2,16 @@ import type { ParsedPlanItem } from "@/lib/protocolBridge";
 import type { AssignmentsData } from "@/components/visits/AssignmentsPanel";
 import { EMPTY_ASSIGNMENTS } from "@/components/visits/AssignmentsPanel";
 
-type Bucket = keyof AssignmentsData;
+export type VisitBucket = keyof AssignmentsData;
 
-function bucketFor(it: ParsedPlanItem): Bucket {
+export const VISIT_BUCKET_LABEL: Record<VisitBucket, string> = {
+  examinations: "Обследования",
+  treatments: "Медикаменты",
+  referrals: "Консультации",
+  diet: "Диета и режим",
+};
+
+export function bucketForPlanItem(it: ParsedPlanItem): VisitBucket {
   const c = (it.section_category || "").toLowerCase();
   if (/мед|лекар|препар|табл|капс|раств|инъек|мазь|свеч|сироп|капл|бад|пептид|гомеоп/.test(c))
     return "treatments";
@@ -13,6 +20,9 @@ function bucketFor(it: ParsedPlanItem): Bucket {
   if (/диет|питан|режим|образ жизни/.test(c)) return "diet";
   return "treatments";
 }
+
+const bucketFor = bucketForPlanItem;
+
 
 function formatItem(it: ParsedPlanItem): string {
   const parts: string[] = [];

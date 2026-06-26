@@ -6,9 +6,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Pill, Trash2 } from "lucide-react";
+import { Loader2, Pill, Trash2, ArrowRight } from "lucide-react";
 import { SECTIONS, type TreatmentCategory } from "@/components/treatment/sections";
 import type { ParsedPlanItem, ActivePatientContext } from "@/lib/protocolBridge";
+import { bucketForPlanItem, VISIT_BUCKET_LABEL, type VisitBucket } from "@/lib/visits/applyPlanItemsToAssignments";
 import { PatientConfirmationBanner } from "./PatientConfirmationBanner";
 import type { PatientSelection } from "./PatientPickerPopover";
 
@@ -82,6 +83,37 @@ export function PlanItemsPreviewDialog({
           </div>
         ) : (
           <>
+            {(() => {
+              const selectedItems = items.filter((i) => i._selected);
+              const counts: Record<VisitBucket, number> = {
+                examinations: 0, treatments: 0, referrals: 0, diet: 0,
+              };
+              for (const it of selectedItems) counts[bucketForPlanItem(it)]++;
+              const kind = activeContext?.kind;
+              const targetLabel =
+                kind === "visit" ? "в визит"
+                : kind === "ultrasound" ? "в УЗИ"
+                : kind === "consultation" ? "в консультацию"
+                : "в план лечения";
+              return (
+                <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs space-y-1">
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <ArrowRight className="w-3 h-3" /> Предпросмотр распределения <span className="text-foreground font-medium">{targetLabel}</span>:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(Object.keys(counts) as VisitBucket[]).map((b) => (
+                      <Badge
+                        key={b}
+                        variant={counts[b] > 0 ? "default" : "outline"}
+                        className="text-[10px] h-5 px-1.5 font-normal"
+                      >
+                        {VISIT_BUCKET_LABEL[b]}: {counts[b]}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex items-center justify-between border-b pb-2">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
@@ -91,6 +123,7 @@ export function PlanItemsPreviewDialog({
                 Выбрать все ({selectedCount}/{items.length})
               </label>
             </div>
+
             <ScrollArea className="flex-1 pr-3 -mr-3">
               <div className="space-y-4">
                 {grouped.map(({ section, rows }) => {
@@ -130,6 +163,9 @@ export function PlanItemsPreviewDialog({
                                 ))}
                               </SelectContent>
                             </Select>
+                            <Badge variant="secondary" className="h-8 px-2 text-[10px] font-normal whitespace-nowrap shrink-0">
+                              → {VISIT_BUCKET_LABEL[bucketForPlanItem(it)]}
+                            </Badge>
                             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(it._id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
