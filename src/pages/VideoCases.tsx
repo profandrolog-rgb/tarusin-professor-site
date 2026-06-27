@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import Hls from "hls.js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -348,6 +349,18 @@ const VideoCases = () => {
     return match ? decodeHtmlEntities(match[1]) : "";
   };
 
+  const getPlayableEmbedSrc = (path: string) => (isEmbedCode(path) ? extractEmbedSrc(path) : path);
+
+  const isYandexCloudVideo = (path: string) => {
+    const src = getPlayableEmbedSrc(path);
+    try {
+      const url = new URL(src);
+      return url.hostname === "runtime.video.cloud.yandex.net" && url.pathname.startsWith("/player/");
+    } catch {
+      return false;
+    }
+  };
+
   // Group cases by category
   const groupedCases = useMemo(() => {
     const groups: { category: CaseCategory; label: string; items: VideoCase[] }[] = [];
@@ -530,7 +543,14 @@ const VideoCases = () => {
                   <DialogTitle>{selectedVideo.title}</DialogTitle>
                   <DialogDescription>{selectedVideo.description || "Просмотр видео-кейса"}</DialogDescription>
                 </DialogHeader>
-                {isEmbedCode(selectedVideo.video_path) ? (
+                {isYandexCloudVideo(selectedVideo.video_path) ? (
+                  <YandexCloudVideoPlayer
+                    key={selectedVideo.id}
+                    playerUrl={getPlayableEmbedSrc(selectedVideo.video_path)}
+                    title={selectedVideo.title}
+                    onContextMenu={handleContextMenu}
+                  />
+                ) : isEmbedCode(selectedVideo.video_path) ? (
                   <iframe
                     key={selectedVideo.id}
                     title={selectedVideo.title}
@@ -538,7 +558,7 @@ const VideoCases = () => {
                     className="w-full aspect-[9/16] max-h-[80vh] bg-black mx-auto"
                     allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
-                    allow="autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture; encrypted-media; screen-wake-lock"
+                    allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
                     frameBorder="0"
                   />
                 ) : (
@@ -570,12 +590,12 @@ const VideoCases = () => {
                   {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
                   <div className="flex flex-wrap items-center gap-3">
                     <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
-                    {isEmbedCode(selectedVideo.video_path) && extractEmbedSrc(selectedVideo.video_path) && (
+                    {isEmbedCode(selectedVideo.video_path) && getPlayableEmbedSrc(selectedVideo.video_path) && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(extractEmbedSrc(selectedVideo.video_path), "_blank", "noopener,noreferrer")}
+                        onClick={() => window.open(getPlayableEmbedSrc(selectedVideo.video_path), "_blank", "noopener,noreferrer")}
                       >
                         <Link2 className="w-4 h-4 mr-2" />
                         Открыть отдельно
