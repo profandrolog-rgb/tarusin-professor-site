@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Sparkles, Stethoscope, FileText, Video, BookOpen, Microscope } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Stethoscope, FileText, Video, BookOpen, Microscope, Headphones, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loadTrail, type SmartTrail, type SmartTrailItem } from "@/lib/smartSearchTrail";
 
@@ -10,6 +10,8 @@ const KIND_ICON = {
   video: Video,
   clinical: BookOpen,
   research: Microscope,
+  podcast: Headphones,
+  video_file: Film,
 } as const;
 
 const KIND_LABEL = {
@@ -18,6 +20,8 @@ const KIND_LABEL = {
   video: "Видео",
   clinical: "Клинический случай",
   research: "Исследование",
+  podcast: "Подкаст",
+  video_file: "Видео",
 } as const;
 
 function matchIndex(items: SmartTrailItem[], pathname: string): number {
