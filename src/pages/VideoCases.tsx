@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import Hls from "hls.js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -704,25 +703,33 @@ function YandexCloudVideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !hlsUrl) return;
+    let hls: { destroy: () => void } | null = null;
+    let cancelled = false;
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = hlsUrl;
       return;
     }
 
-    if (!Hls.isSupported()) {
-      setError("Этот браузер не поддерживает HLS-воспроизведение внутри сайта.");
-      return;
-    }
+    import("hls.js").then(({ default: Hls }) => {
+      if (cancelled || !videoRef.current) return;
+      if (!Hls.isSupported()) {
+        setError("Этот браузер не поддерживает HLS-воспроизведение внутри сайта.");
+        return;
+      }
 
-    const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-    hls.loadSource(hlsUrl);
-    hls.attachMedia(video);
-    hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (data.fatal) setError("Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.");
+      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      hls.loadSource(hlsUrl);
+      hls.attachMedia(videoRef.current);
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) setError("Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.");
+      });
     });
 
-    return () => hls.destroy();
+    return () => {
+      cancelled = true;
+      hls?.destroy();
+    };
   }, [hlsUrl]);
 
   if (loading) {
