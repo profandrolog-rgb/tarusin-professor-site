@@ -68,6 +68,7 @@ const AdminPatientEdit = () => <AdminPatientForm mode="edit" />;
 import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
 import PublicTreatmentPlan from "./pages/PublicTreatmentPlan";
 import Cabinet from "./pages/Cabinet";
+import CabinetAgent from "./pages/CabinetAgent";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 
