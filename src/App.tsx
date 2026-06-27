@@ -197,6 +197,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/treatment-plans/compare", Component: TreatmentPlanCompare, entry: "src/pages/TreatmentPlanCompare.tsx" },
       { path: "p/:hash", Component: PublicTreatmentPlan, entry: "src/pages/PublicTreatmentPlan.tsx" },
       { path: "cabinet", Component: Cabinet, entry: "src/pages/Cabinet.tsx" },
+      { path: "cabinet/agent", Component: CabinetAgent, entry: "src/pages/CabinetAgent.tsx" },
 
       { path: "*", Component: NotFound },
     ],
