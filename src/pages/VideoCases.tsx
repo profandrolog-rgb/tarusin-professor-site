@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import type { Database } from "@/integrations/supabase/types";
+import { useHashOpen } from "@/hooks/useHashOpen";
 
 type CaseCategory = Database["public"]["Enums"]["case_category"];
 
