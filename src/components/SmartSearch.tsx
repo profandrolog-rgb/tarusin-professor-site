@@ -69,10 +69,11 @@ const SmartSearch = () => {
     const handle = setTimeout(async () => {
       try {
         const term = `%${q}%`;
+        const sb = supabase as any;
         const [diseases, blogs, videos] = await Promise.all([
-          supabase.from("disease_articles").select("id, title, slug").ilike("title", term).eq("published", true).limit(4),
-          supabase.from("blog_posts").select("id, title, slug").ilike("title", term).limit(4),
-          supabase.from("video_cases").select("id, title").ilike("title", term).limit(3),
+          sb.from("disease_articles").select("id, title, slug").ilike("title", term).eq("published", true).limit(4),
+          sb.from("blog_posts").select("id, title, slug").ilike("title", term).limit(4),
+          sb.from("video_cases").select("id, title").ilike("title", term).limit(3),
         ]);
         const items: Suggestion[] = [];
         (diseases.data ?? []).forEach((r: any) => items.push({ kind: "disease", title: r.title, url: `/for-parents/${r.slug}` }));
