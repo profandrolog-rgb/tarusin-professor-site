@@ -98,7 +98,7 @@ const VideoCases = () => {
   const [formThumbnail, setFormThumbnail] = useState<File | null>(null);
   const [formThumbnailPreview, setFormThumbnailPreview] = useState<string | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const playerRef = useRef<HTMLDivElement>(null);
+  
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -117,11 +117,8 @@ const VideoCases = () => {
     fetchCases();
   }, [user]);
 
-  useEffect(() => {
-    if (selectedVideo && playerRef.current) {
-      playerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [selectedVideo]);
+
+
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
