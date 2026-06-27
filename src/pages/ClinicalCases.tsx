@@ -518,7 +518,7 @@ const ClinicalCases = () => {
                 
                 <div className="space-y-3">
                   {categoryCases.map((clinicalCase) => (
-                    <Card key={clinicalCase.id} className="overflow-hidden">
+                    <Card key={clinicalCase.id} id={`case-${clinicalCase.id}`} className="overflow-hidden scroll-mt-24">
                       <Collapsible
                         open={expandedCases.has(clinicalCase.id)}
                         onOpenChange={() => toggleCase(clinicalCase.id)}
