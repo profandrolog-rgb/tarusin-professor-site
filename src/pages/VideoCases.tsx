@@ -720,8 +720,10 @@ function YandexCloudVideoPlayer({
       }
 
       hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-      hls.loadSource(hlsUrl);
       hls.attachMedia(videoRef.current);
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        hls?.loadSource(hlsUrl);
+      });
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         hls?.startLoad();
         videoRef.current?.play().catch(() => undefined);
