@@ -4255,6 +4255,63 @@ export type Database = {
           },
         ]
       }
+      vault_note_attachments: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          mode: string
+          note_id: string
+          patient_id: string | null
+          position: number
+          ref_id: string | null
+          snapshot: Json | null
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          mode?: string
+          note_id: string
+          patient_id?: string | null
+          position?: number
+          ref_id?: string | null
+          snapshot?: Json | null
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          mode?: string
+          note_id?: string
+          patient_id?: string | null
+          position?: number
+          ref_id?: string | null
+          snapshot?: Json | null
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_note_attachments_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "vault_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_note_attachments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vault_note_embeddings: {
         Row: {
           content_hash: string
@@ -4283,6 +4340,39 @@ export type Database = {
             columns: ["note_id"]
             isOneToOne: true
             referencedRelation: "vault_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vault_note_patients: {
+        Row: {
+          created_at: string
+          note_id: string
+          patient_id: string
+        }
+        Insert: {
+          created_at?: string
+          note_id: string
+          patient_id: string
+        }
+        Update: {
+          created_at?: string
+          note_id?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_note_patients_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "vault_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_note_patients_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]

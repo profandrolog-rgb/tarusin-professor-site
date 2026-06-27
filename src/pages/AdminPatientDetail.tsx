@@ -13,6 +13,7 @@ import { ArrowLeft, Plus, Loader2, Printer, BookMarked, FileText, GitCompare } f
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
+import { PatientVaultNotes } from "@/components/vault/PatientVaultNotes";
 
 interface Patient { id: string; full_name: string; birth_date: string; phone: string | null; history_number: string | null }
 interface Plan {
@@ -176,6 +177,8 @@ export default function AdminPatientDetail() {
             <div className="text-2xl font-bold">{stats.avgInterval ?? "—"}</div>
           </CardContent></Card>
         </div>
+
+        <PatientVaultNotes patientId={patient.id} patientName={patient.full_name} />
 
         {/* Timeline */}
         {plans.length > 0 && (
