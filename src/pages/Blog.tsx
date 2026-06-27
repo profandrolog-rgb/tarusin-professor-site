@@ -474,6 +474,15 @@ const Blog = () => {
 
   const visiblePosts = isAdmin ? posts : posts.filter((p) => p.is_published);
 
+  // Open a specific post when arriving via #post-{id} from smart search.
+  useHashOpen("post", visiblePosts.length > 0, useCallback((id: string) => {
+    setExpandedPosts((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []));
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
