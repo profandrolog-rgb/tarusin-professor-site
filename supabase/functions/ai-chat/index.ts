@@ -60,14 +60,22 @@ Deno.serve(async (req) => {
 
     const rawModelInput = (body.model as string).replace(/^pubmed:/, "");
     const isVenice = rawModelInput.startsWith("venice/");
-    const rawModel = isVenice ? rawModelInput.slice("venice/".length) : rawModelInput;
-    const resolvedModel = !isVenice && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
+    const isPerplexity = rawModelInput.startsWith("perplexity/");
+    const rawModel = isVenice
+      ? rawModelInput.slice("venice/".length)
+      : isPerplexity
+        ? rawModelInput.slice("perplexity/".length)
+        : rawModelInput;
+    const resolvedModel = !isVenice && !isPerplexity && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
 
     const apiKey = isVenice
       ? Deno.env.get("VENICE_API_KEY")
-      : Deno.env.get("OPENROUTER_API_KEY");
+      : isPerplexity
+        ? Deno.env.get("PERPLEXITY_API_KEY")
+        : Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: `${isVenice ? "VENICE_API_KEY" : "OPENROUTER_API_KEY"} not configured` }), {
+      const keyName = isVenice ? "VENICE_API_KEY" : isPerplexity ? "PERPLEXITY_API_KEY" : "OPENROUTER_API_KEY";
+      return new Response(JSON.stringify({ error: `${keyName} not configured` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
