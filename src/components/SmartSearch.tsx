@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Search, Loader2, BookOpen, Video, Stethoscope, FileText, Microscope, ArrowRight, TrendingUp } from "lucide-react";
+import { Sparkles, Search, Loader2, BookOpen, Video, Stethoscope, FileText, Microscope, ArrowRight, TrendingUp, Headphones, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
