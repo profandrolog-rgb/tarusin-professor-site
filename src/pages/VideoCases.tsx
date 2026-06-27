@@ -536,7 +536,7 @@ const VideoCases = () => {
 
         {/* Selected Video Player (Modal) */}
         <Dialog open={!!selectedVideo} onOpenChange={(open) => !open && setSelectedVideo(null)}>
-          <DialogContent className="max-w-5xl p-0 overflow-hidden" onContextMenu={handleContextMenu}>
+          <DialogContent className="w-auto max-w-[95vw] sm:max-w-none p-0 overflow-hidden bg-background" onContextMenu={handleContextMenu}>
             {selectedVideo && (
               <>
                 <DialogHeader className="sr-only">
@@ -555,7 +555,7 @@ const VideoCases = () => {
                     key={selectedVideo.id}
                     title={selectedVideo.title}
                     src={extractEmbedSrc(selectedVideo.video_path)}
-                    className="w-full aspect-[9/16] max-h-[80vh] bg-black mx-auto"
+                    className="block h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-black mx-auto"
                     allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
                     allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
@@ -573,13 +573,14 @@ const VideoCases = () => {
                     disableRemotePlayback
                     onContextMenu={handleContextMenu}
                     onDragStart={(e) => e.preventDefault()}
-                    className="w-full max-h-[80vh] bg-black mx-auto"
+                    className="block h-[min(85vh,820px)] max-w-[95vw] bg-black mx-auto object-contain"
                   >
                     <source src={selectedVideo.video_path} type={getVideoType(selectedVideo.video_path)} />
                     <source src={selectedVideo.video_path} type="video/mp4" />
                     Ваш браузер не поддерживает воспроизведение этого видео.
                   </video>
                 )}
+
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
@@ -784,7 +785,7 @@ function YandexCloudVideoPlayer({
 
   if (loading) {
     return (
-      <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex items-center justify-center">
+      <div className="h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-muted mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -795,7 +796,7 @@ function YandexCloudVideoPlayer({
       <iframe
         title={title}
         src={playerUrl}
-        className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
+        className="block h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-muted mx-auto"
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"
         allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
@@ -807,29 +808,30 @@ function YandexCloudVideoPlayer({
   if (manifestUrl) {
     return (
       <div
-        className="relative w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto overflow-hidden [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr--video]:bg-muted [&_.plyr__video-wrapper]:h-full [&_.plyr__video-wrapper]:bg-muted [&_.plyr__control--overlaid]:bg-accent [&_.plyr__control--overlaid]:text-accent-foreground [&_.plyr--full-ui_input[type=range]]:text-primary [&_.plyr__control:hover]:bg-accent [&_.plyr__control:hover]:text-accent-foreground"
+        className="relative h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-black mx-auto overflow-hidden [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr--video]:bg-black [&_.plyr__video-wrapper]:h-full [&_.plyr__video-wrapper]:bg-black [&_.plyr__control--overlaid]:bg-accent [&_.plyr__control--overlaid]:text-accent-foreground [&_.plyr--full-ui_input[type=range]]:text-primary [&_.plyr__control:hover]:bg-accent [&_.plyr__control:hover]:text-accent-foreground"
         onContextMenu={onContextMenu}
       >
         <video
           ref={videoRef}
           autoPlay
-          muted
           playsInline
+
           preload="auto"
           poster={resolved?.thumbnail || undefined}
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture
           disableRemotePlayback
           onDragStart={(e) => e.preventDefault()}
-          className="h-full w-full bg-muted object-contain"
+          className="h-full w-full bg-black object-contain"
         />
         <span className="sr-only">{title}</span>
       </div>
     );
   }
 
+
   return (
-    <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
+    <div className="h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
       <Video className="w-12 h-12 text-muted-foreground" />
       <div>
         <p className="font-medium text-foreground">Не удалось подготовить встроенный плеер.</p>
