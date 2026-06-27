@@ -122,6 +122,18 @@ const TOOLS = [
   {
     type: "function",
     function: {
+      name: "vault_search",
+      description: "Семантический поиск по личному Vault профессора (заметки в Obsidian-подобной базе). Используй когда вопрос может касаться ранее записанных мыслей, наблюдений, выводов.",
+      parameters: {
+        type: "object",
+        properties: { query: { type: "string", description: "Запрос по смыслу" } },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "draft_assignment",
       description: "ОПАСНО: создаёт черновик назначения (препарат + потенция/доза + длительность) для визита. Требует подтверждения врача.",
       parameters: {
