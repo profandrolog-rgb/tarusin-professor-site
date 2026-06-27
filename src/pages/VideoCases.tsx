@@ -785,7 +785,7 @@ function YandexCloudVideoPlayer({
 
   if (loading) {
     return (
-      <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex items-center justify-center">
+      <div className="h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-muted mx-auto flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -796,7 +796,7 @@ function YandexCloudVideoPlayer({
       <iframe
         title={title}
         src={playerUrl}
-        className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
+        className="block h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-muted mx-auto"
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"
         allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
@@ -808,13 +808,11 @@ function YandexCloudVideoPlayer({
   if (manifestUrl) {
     return (
       <div
-        className="relative w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto overflow-hidden [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr--video]:bg-muted [&_.plyr__video-wrapper]:h-full [&_.plyr__video-wrapper]:bg-muted [&_.plyr__control--overlaid]:bg-accent [&_.plyr__control--overlaid]:text-accent-foreground [&_.plyr--full-ui_input[type=range]]:text-primary [&_.plyr__control:hover]:bg-accent [&_.plyr__control:hover]:text-accent-foreground"
+        className="relative h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-black mx-auto overflow-hidden [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr--video]:bg-black [&_.plyr__video-wrapper]:h-full [&_.plyr__video-wrapper]:bg-black [&_.plyr__control--overlaid]:bg-accent [&_.plyr__control--overlaid]:text-accent-foreground [&_.plyr--full-ui_input[type=range]]:text-primary [&_.plyr__control:hover]:bg-accent [&_.plyr__control:hover]:text-accent-foreground"
         onContextMenu={onContextMenu}
       >
         <video
           ref={videoRef}
-          autoPlay
-          muted
           playsInline
           preload="auto"
           poster={resolved?.thumbnail || undefined}
@@ -822,12 +820,13 @@ function YandexCloudVideoPlayer({
           disablePictureInPicture
           disableRemotePlayback
           onDragStart={(e) => e.preventDefault()}
-          className="h-full w-full bg-muted object-contain"
+          className="h-full w-full bg-black object-contain"
         />
         <span className="sr-only">{title}</span>
       </div>
     );
   }
+
 
   return (
     <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
