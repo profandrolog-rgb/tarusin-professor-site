@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -537,6 +537,12 @@ const VideoCases = () => {
         {/* Selected Video Player (Modal) */}
         <Dialog open={!!selectedVideo} onOpenChange={(open) => !open && setSelectedVideo(null)}>
           <DialogContent className="w-auto max-w-[95vw] sm:max-w-none p-0 overflow-hidden bg-background" onContextMenu={handleContextMenu}>
+            <DialogClose asChild>
+              <button className="absolute right-3 top-3 z-[60] rounded-full bg-black/70 text-white p-2 hover:bg-black/90 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50">
+                <X className="h-5 w-5" />
+                <span className="sr-only">Закрыть</span>
+              </button>
+            </DialogClose>
             {selectedVideo && (
               <>
                 <DialogHeader className="sr-only">
