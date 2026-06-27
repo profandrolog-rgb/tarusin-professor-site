@@ -706,6 +706,8 @@ function YandexCloudVideoPlayer({
     if (!video || !hlsUrl) return;
     let hls: HlsType | null = null;
     let cancelled = false;
+    let mediaRecoverTries = 0;
+    let networkRecoverTries = 0;
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = hlsUrl;
@@ -715,11 +717,18 @@ function YandexCloudVideoPlayer({
     import("hls.js").then(({ default: Hls }) => {
       if (cancelled || !videoRef.current) return;
       if (!Hls.isSupported()) {
-        setError("Этот браузер не поддерживает HLS-воспроизведение внутри сайта.");
+        setError("Этот браузер не поддерживает HLS внутри сайта. Откройте стандартный плеер.");
         return;
       }
 
-      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        maxBufferLength: 30,
+        manifestLoadingMaxRetry: 4,
+        levelLoadingMaxRetry: 4,
+        fragLoadingMaxRetry: 6,
+      });
       hls.attachMedia(videoRef.current);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
         hls?.loadSource(hlsUrl);
@@ -729,8 +738,24 @@ function YandexCloudVideoPlayer({
         videoRef.current?.play().catch(() => undefined);
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        console.warn("[HLS]", data.type, data.details, data.fatal, data.reason || "", data.response?.code || "");
-        if (data.fatal) setError("Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.");
+        if (!data.fatal) return;
+        console.warn("[HLS fatal]", data.type, data.details);
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoverTries < 2) {
+          networkRecoverTries += 1;
+          hls?.startLoad();
+          return;
+        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoverTries < 2) {
+          mediaRecoverTries += 1;
+          if (mediaRecoverTries === 1) hls?.recoverMediaError();
+          else hls?.swapAudioCodec();
+          return;
+        }
+        setError(
+          data.details === "manifestIncompatibleCodecsError"
+            ? "Видео-кодек не поддерживается этим браузером. Откройте стандартный плеер."
+            : "Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.",
+        );
       });
     });
 
@@ -758,12 +783,16 @@ function YandexCloudVideoPlayer({
         playsInline
         preload="auto"
         poster={resolved?.thumbnail || undefined}
-        controlsList="nodownload nofullscreen noremoteplayback"
+        controlsList="nodownload noremoteplayback"
         disablePictureInPicture
-        disableRemotePlayback
         onContextMenu={onContextMenu}
         onDragStart={(e) => e.preventDefault()}
-        onError={() => setError("Видеопоток временно недоступен. Попробуйте стандартный плеер.")}
+        onError={() => {
+          const v = videoRef.current;
+          if (v && v.error && v.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+            setError("Видео-кодек не поддерживается этим браузером. Откройте стандартный плеер.");
+          }
+        }}
         className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
       />
     );
