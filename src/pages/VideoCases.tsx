@@ -98,7 +98,7 @@ const VideoCases = () => {
   const [formThumbnail, setFormThumbnail] = useState<File | null>(null);
   const [formThumbnailPreview, setFormThumbnailPreview] = useState<string | null>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const playerRef = useRef<HTMLDivElement>(null);
+  
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
