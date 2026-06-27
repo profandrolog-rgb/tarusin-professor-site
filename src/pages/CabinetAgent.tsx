@@ -239,7 +239,7 @@ function EventCard({ ev }: { ev: Step }) {
         <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-green-700 dark:text-green-400">
           <CheckCircle2 className="w-4 h-4" />Итоговый ответ
         </div>
-        <ChatMarkdown content={ev.content} />
+        <ChatMarkdown>{ev.content}</ChatMarkdown>
       </div>
     );
   }
