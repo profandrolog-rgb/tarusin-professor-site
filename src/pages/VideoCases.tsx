@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import "plyr/dist/plyr.css";
-import { MediaPlayer, type MediaPlayerClass } from "dashjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -709,7 +708,7 @@ function YandexCloudVideoPlayer({
 
     let cancelled = false;
     let plyr: any = null;
-    let dash: MediaPlayerClass | null = null;
+    let dash: any = null;
 
     import("plyr").then((module) => {
       if (cancelled || !videoRef.current) return;
@@ -752,21 +751,24 @@ function YandexCloudVideoPlayer({
     video.addEventListener("error", failToNative, { once: true });
 
     if (dashUrl) {
-      try {
-        dash = MediaPlayer().create();
-        dash.updateSettings({
-          streaming: {
-            buffer: { stableBufferTime: 30, bufferTimeAtTopQuality: 30 },
-            retryIntervals: { MPD: 800, Fragment: 800 },
-            retryAttempts: { MPD: 5, Fragment: 5 },
-          },
-        } as any);
-        dash.on(MediaPlayer.events.ERROR, failToNative);
-        dash.initialize(video, dashUrl, true);
-      } catch (err) {
-        console.warn("[DASH player failed]", err);
-        failToNative();
-      }
+      import("dashjs").then(({ MediaPlayer }) => {
+        if (cancelled || !videoRef.current) return;
+        try {
+          dash = MediaPlayer().create();
+          dash.updateSettings({
+            streaming: {
+              buffer: { stableBufferTime: 30, bufferTimeAtTopQuality: 30 },
+              retryIntervals: { MPD: 800, Fragment: 800 },
+              retryAttempts: { MPD: 5, Fragment: 5 },
+            },
+          });
+          dash.on(MediaPlayer.events.ERROR, failToNative);
+          dash.initialize(videoRef.current, dashUrl, true);
+        } catch (err) {
+          console.warn("[DASH player failed]", err);
+          failToNative();
+        }
+      }).catch(() => failToNative());
     } else if (hlsUrl) {
       video.src = hlsUrl;
       video.play().catch(() => undefined);
