@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import type HlsType from "hls.js";
+import "plyr/dist/plyr.css";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -672,14 +672,15 @@ function YandexCloudVideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [resolved, setResolved] = useState<ResolvedYandexVideo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [useNativePlayer, setUseNativePlayer] = useState(false);
   const hlsUrl = resolved?.streams.find((stream) => stream.type === "hls")?.url;
   const dashUrl = resolved?.streams.find((stream) => stream.type === "dash")?.url;
+  const manifestUrl = dashUrl || hlsUrl;
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setUseNativePlayer(false);
     setResolved(null);
 
     supabase.functions
@@ -690,7 +691,7 @@ function YandexCloudVideoPlayer({
         setResolved(data as ResolvedYandexVideo);
       })
       .catch(() => {
-        if (!cancelled) setError("Не удалось подготовить видеопоток. Можно открыть стандартный плеер отдельно.");
+        if (!cancelled) setUseNativePlayer(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -703,67 +704,83 @@ function YandexCloudVideoPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !hlsUrl) return;
-    let hls: HlsType | null = null;
+    if (!video || !manifestUrl || useNativePlayer) return;
+
     let cancelled = false;
-    let mediaRecoverTries = 0;
-    let networkRecoverTries = 0;
+    let plyr: any = null;
+    let dash: any = null;
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = hlsUrl;
-      return;
-    }
-
-    import("hls.js").then(({ default: Hls }) => {
+    import("plyr").then((module) => {
       if (cancelled || !videoRef.current) return;
-      if (!Hls.isSupported()) {
-        setError("Этот браузер не поддерживает HLS внутри сайта. Откройте стандартный плеер.");
-        return;
-      }
+      const PlyrCtor = (module as any).default ?? module;
+      plyr = new PlyrCtor(videoRef.current, {
+        controls: ["play-large", "play", "progress", "current-time", "duration", "mute", "volume", "settings", "fullscreen"],
+        settings: ["quality", "speed"],
+        speed: { selected: 1, options: [0.75, 1, 1.25, 1.5, 2] },
+        ratio: "9:16",
+        clickToPlay: true,
+        hideControls: false,
+        invertTime: false,
+        i18n: {
+          restart: "Сначала",
+          rewind: "Назад {seektime} сек",
+          play: "Воспроизвести",
+          pause: "Пауза",
+          fastForward: "Вперёд {seektime} сек",
+          seek: "Перемотка",
+          played: "Просмотрено",
+          buffered: "Загружено",
+          currentTime: "Текущее время",
+          duration: "Длительность",
+          volume: "Громкость",
+          mute: "Выключить звук",
+          unmute: "Включить звук",
+          enableCaptions: "Включить субтитры",
+          disableCaptions: "Выключить субтитры",
+          enterFullscreen: "На весь экран",
+          exitFullscreen: "Выйти из полноэкранного режима",
+          settings: "Настройки",
+          speed: "Скорость",
+          normal: "Обычная",
+          quality: "Качество",
+        },
+      });
+    }).catch(() => undefined);
 
-      hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        maxBufferLength: 30,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingMaxRetry: 4,
-        fragLoadingMaxRetry: 6,
-      });
-      hls.attachMedia(videoRef.current);
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        hls?.loadSource(hlsUrl);
-      });
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        hls?.startLoad();
-        videoRef.current?.play().catch(() => undefined);
-      });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
-        console.warn("[HLS fatal]", data.type, data.details);
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoverTries < 2) {
-          networkRecoverTries += 1;
-          hls?.startLoad();
-          return;
+    const failToNative = () => setUseNativePlayer(true);
+    video.addEventListener("error", failToNative, { once: true });
+
+    if (dashUrl) {
+      import("dashjs").then(({ MediaPlayer }) => {
+        if (cancelled || !videoRef.current) return;
+        try {
+          dash = MediaPlayer().create();
+          dash.updateSettings({
+            streaming: {
+              buffer: { stableBufferTime: 30, bufferTimeAtTopQuality: 30 },
+              retryIntervals: { MPD: 800, Fragment: 800 },
+              retryAttempts: { MPD: 5, Fragment: 5 },
+            },
+          });
+          dash.on(MediaPlayer.events.ERROR, failToNative);
+          dash.initialize(videoRef.current, dashUrl, true);
+        } catch (err) {
+          console.warn("[DASH player failed]", err);
+          failToNative();
         }
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoverTries < 2) {
-          mediaRecoverTries += 1;
-          if (mediaRecoverTries === 1) hls?.recoverMediaError();
-          else hls?.swapAudioCodec();
-          return;
-        }
-        setError(
-          data.details === "manifestIncompatibleCodecsError"
-            ? "Видео-кодек не поддерживается этим браузером. Откройте стандартный плеер."
-            : "Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.",
-        );
-      });
-    });
+      }).catch(() => failToNative());
+    } else if (hlsUrl) {
+      video.src = hlsUrl;
+      video.play().catch(() => undefined);
+    }
 
     return () => {
       cancelled = true;
-      hls?.destroy();
+      video.removeEventListener("error", failToNative);
+      dash?.reset();
+      plyr?.destroy();
     };
-  }, [hlsUrl]);
+  }, [dashUrl, hlsUrl, manifestUrl, useNativePlayer]);
 
   if (loading) {
     return (
@@ -773,28 +790,41 @@ function YandexCloudVideoPlayer({
     );
   }
 
-  if (hlsUrl && !error) {
+  if (useNativePlayer) {
     return (
-      <video
-        ref={videoRef}
-        controls
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        poster={resolved?.thumbnail || undefined}
-        controlsList="nodownload noremoteplayback"
-        disablePictureInPicture
-        onContextMenu={onContextMenu}
-        onDragStart={(e) => e.preventDefault()}
-        onError={() => {
-          const v = videoRef.current;
-          if (v && v.error && v.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-            setError("Видео-кодек не поддерживается этим браузером. Откройте стандартный плеер.");
-          }
-        }}
+      <iframe
+        title={title}
+        src={playerUrl}
         className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+        allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
+        frameBorder="0"
       />
+    );
+  }
+
+  if (manifestUrl) {
+    return (
+      <div
+        className="relative w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto overflow-hidden [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr--video]:bg-muted [&_.plyr__video-wrapper]:h-full [&_.plyr__video-wrapper]:bg-muted [&_.plyr__control--overlaid]:bg-accent [&_.plyr__control--overlaid]:text-accent-foreground [&_.plyr--full-ui_input[type=range]]:text-primary [&_.plyr__control:hover]:bg-accent [&_.plyr__control:hover]:text-accent-foreground"
+        onContextMenu={onContextMenu}
+      >
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          poster={resolved?.thumbnail || undefined}
+          controlsList="nodownload noremoteplayback"
+          disablePictureInPicture
+          disableRemotePlayback
+          onDragStart={(e) => e.preventDefault()}
+          className="h-full w-full bg-muted object-contain"
+        />
+        <span className="sr-only">{title}</span>
+      </div>
     );
   }
 
@@ -802,12 +832,12 @@ function YandexCloudVideoPlayer({
     <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
       <Video className="w-12 h-12 text-muted-foreground" />
       <div>
-        <p className="font-medium text-foreground">{error || "Не удалось найти совместимый видеопоток."}</p>
-        {dashUrl && <p className="text-sm text-muted-foreground mt-2">Найден DASH-поток; для него используйте стандартный плеер.</p>}
+        <p className="font-medium text-foreground">Не удалось подготовить встроенный плеер.</p>
+        <p className="text-sm text-muted-foreground mt-2">Откройте видео отдельно.</p>
       </div>
       <Button type="button" variant="outline" onClick={() => window.open(playerUrl, "_blank", "noopener,noreferrer")}>
         <Link2 className="w-4 h-4 mr-2" />
-        Открыть стандартный плеер
+        Открыть видео отдельно
       </Button>
       <span className="sr-only">{title}</span>
     </div>
