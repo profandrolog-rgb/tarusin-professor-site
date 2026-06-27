@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Menu } from "lucide-react";
 import SmartSearchTrail from "@/components/SmartSearchTrail";
+import SmartSearchEndCTA from "@/components/SmartSearchEndCTA";
 
 const PatientChatbot = lazy(() => import("@/components/PatientChatbot"));
 
