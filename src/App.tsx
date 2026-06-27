@@ -60,6 +60,7 @@ import AdminSystemSettings from "./pages/AdminSystemSettings";
 import AdminVisitTemplates from "./pages/AdminVisitTemplates";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminPodcastSources from "./pages/AdminPodcastSources";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
 import AdminPatients from "./pages/AdminPatients";
 import AdminPatientForm from "./pages/AdminPatientForm";
