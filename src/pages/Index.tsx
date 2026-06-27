@@ -18,6 +18,7 @@ import DiagnosticChecklist from "@/components/DiagnosticChecklist";
 import ResultsCTA from "@/components/ResultsCTA";
 import PatientJourney from "@/components/PatientJourney";
 import ExitIntentPopup from "@/components/ExitIntentPopup";
+import SmartSearch from "@/components/SmartSearch";
 // JSON-LD: Physician + worksFor MedicalClinics + AggregateRating
 const jsonLd = {
   "@context": "https://schema.org",
@@ -106,6 +107,7 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection />
+        <SmartSearch />
         <AboutSection />
         <PioneersSection />
         <ProfessorMessageSection />
