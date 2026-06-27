@@ -19,6 +19,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { toast as sonnerToast } from "sonner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useHashOpen } from "@/hooks/useHashOpen";
 
 interface BlogPost {
   id: string;
