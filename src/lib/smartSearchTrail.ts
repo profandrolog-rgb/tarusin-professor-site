@@ -2,7 +2,7 @@
 // Persisted in sessionStorage so it survives navigation but not a new tab/visit.
 
 export type SmartTrailItem = {
-  kind: "disease" | "blog" | "video" | "clinical" | "research";
+  kind: "disease" | "blog" | "video" | "clinical" | "research" | "podcast" | "video_file";
   id: string;
   title: string;
   url: string;

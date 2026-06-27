@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Search, Loader2, BookOpen, Video, Stethoscope, FileText, Microscope, ArrowRight, TrendingUp } from "lucide-react";
+import { Sparkles, Search, Loader2, BookOpen, Video, Stethoscope, FileText, Microscope, ArrowRight, TrendingUp, Headphones, Film } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { saveTrail, loadTrail } from "@/lib/smartSearchTrail";
 
 type SmartResult = {
-  kind: "disease" | "blog" | "video" | "clinical" | "research";
+  kind: "disease" | "blog" | "video" | "clinical" | "research" | "podcast" | "video_file";
   id: string;
   title: string;
   excerpt: string;
@@ -28,6 +28,8 @@ const KIND_META: Record<SmartResult["kind"], { label: string; icon: typeof BookO
   video: { label: "Видео", icon: Video },
   clinical: { label: "Клинический случай", icon: BookOpen },
   research: { label: "Исследование", icon: Microscope },
+  podcast: { label: "Подкаст", icon: Headphones },
+  video_file: { label: "Видео", icon: Film },
 };
 
 const POPULAR = [

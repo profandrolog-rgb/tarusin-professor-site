@@ -13,7 +13,7 @@ const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 type Candidate = {
-  kind: "disease" | "blog" | "video" | "clinical" | "research";
+  kind: "disease" | "blog" | "video" | "clinical" | "research" | "podcast" | "video_file";
   id: string;
   title: string;
   excerpt: string;
@@ -68,12 +68,28 @@ Deno.serve(async (req) => {
       return data ?? [];
     };
 
-    const [diseases, blogs, videos, clinical, research] = await Promise.all([
+    // Storage videos: filenames only (no metadata table). Filter by token match on the name.
+    const fetchStorageVideos = async () => {
+      try {
+        const { data } = await sb.storage.from("videos").list("", { limit: 200, sortBy: { column: "name", order: "asc" } });
+        const files = (data ?? []).filter((f: any) => f.name && f.name !== ".emptyFolderPlaceholder");
+        const nameMatches = (n: string) => {
+          if (tokens.length === 0) return true;
+          const low = n.toLowerCase();
+          return tokens.some((t) => low.includes(t));
+        };
+        return files.filter((f: any) => nameMatches(f.name)).slice(0, 30);
+      } catch { return []; }
+    };
+
+    const [diseases, blogs, videos, clinical, research, podcasts, videoFiles] = await Promise.all([
       fetchKw("disease_articles", "id, slug, title, description, category", ["title", "description"], 60),
       fetchKw("blog_posts", "id, title, excerpt, content", ["title", "excerpt", "content"], 40),
       fetchKw("video_cases", "id, title, description, category", ["title", "description"], 40),
       fetchKw("clinical_cases", "id, title, category, history, conclusions, recommendations", ["title", "history", "conclusions", "recommendations"], 40),
       fetchKw("research_articles", "id, title, excerpt, content, category", ["title", "excerpt", "content"], 40),
+      fetchKw("podcasts", "id, title, description, source, category, external_url", ["title", "description", "source"], 40),
+      fetchStorageVideos(),
     ]);
 
     const candidates: Candidate[] = [];
@@ -128,6 +144,27 @@ Deno.serve(async (req) => {
         url: `/research#article-${r.id}`,
       }),
     );
+    (podcasts ?? []).forEach((r: any) =>
+      candidates.push({
+        kind: "podcast",
+        id: r.id,
+        title: r.title,
+        excerpt: trunc([r.source, r.description].filter(Boolean).join(" — "), 300),
+        category: r.category,
+        url: r.external_url ? r.external_url : `/media#podcast-${r.id}`,
+      }),
+    );
+    (videoFiles ?? []).forEach((f: any) => {
+      // Pretty title from filename: drop extension, replace separators.
+      const pretty = String(f.name).replace(/\.[a-z0-9]+$/i, "").replace(/[_\-]+/g, " ").trim();
+      candidates.push({
+        kind: "video_file",
+        id: f.name,
+        title: pretty || f.name,
+        excerpt: "Видео из библиотеки клиники",
+        url: `/videos`,
+      });
+    });
 
     if (candidates.length === 0) {
       return new Response(JSON.stringify({ results: [] }), {
