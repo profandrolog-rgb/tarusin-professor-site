@@ -829,7 +829,7 @@ function YandexCloudVideoPlayer({
 
 
   return (
-    <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
+    <div className="h-[min(85vh,820px)] aspect-[9/16] max-w-[95vw] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
       <Video className="w-12 h-12 text-muted-foreground" />
       <div>
         <p className="font-medium text-foreground">Не удалось подготовить встроенный плеер.</p>
