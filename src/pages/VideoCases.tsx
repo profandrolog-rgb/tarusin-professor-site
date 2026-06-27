@@ -798,7 +798,7 @@ function VideoCaseCard({
   getVideoType: (u: string) => string;
 }) {
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-shadow" onContextMenu={onContextMenu}>
+    <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col" onContextMenu={onContextMenu}>
       <div
         className="aspect-[3/4] bg-black relative cursor-pointer overflow-hidden"
         onClick={() => onSelect(c)}
@@ -837,10 +837,10 @@ function VideoCaseCard({
           </div>
         </div>
       </div>
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{c.title}</h3>
-        {c.description && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{c.description}</p>}
-        <div className="flex items-center justify-between">
+      <CardContent className="p-4 flex flex-col flex-1">
+        <h3 className="font-semibold text-foreground mb-1 line-clamp-2 min-h-[3rem]">{c.title}</h3>
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2 min-h-[2.5rem]">{c.description || ""}</p>
+        <div className="flex items-center justify-between mt-auto">
           <ReactionButtons caseItem={c} onReaction={onReaction} compact />
           {isAdmin && (
             <div className="flex items-center gap-1">
