@@ -725,7 +725,8 @@ const Blog = () => {
             return (
               <Card
                 key={post.id}
-                className="p-6 lg:p-8 transition-shadow"
+                id={`post-${post.id}`}
+                className="p-6 lg:p-8 transition-shadow scroll-mt-24"
               >
                 {/* Admin controls */}
                 {isAdmin && (
