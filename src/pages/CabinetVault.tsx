@@ -17,6 +17,7 @@ import {
 import { ChatMarkdown } from "@/components/cabinet/ChatMarkdown";
 import { parseWikiLinks, parseTags, renderWikiLinksToAnchors } from "@/lib/vault/parseWikiLinks";
 import ForceGraph2D from "react-force-graph-2d";
+import { VaultContextPanel } from "@/components/vault/VaultContextPanel";
 
 interface Note {
   id: string;
