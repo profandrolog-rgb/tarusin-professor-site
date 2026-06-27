@@ -28,6 +28,8 @@ const KIND_META: Record<SmartResult["kind"], { label: string; icon: typeof BookO
   video: { label: "Видео", icon: Video },
   clinical: { label: "Клинический случай", icon: BookOpen },
   research: { label: "Исследование", icon: Microscope },
+  podcast: { label: "Подкаст", icon: Headphones },
+  video_file: { label: "Видео", icon: Film },
 };
 
 const POPULAR = [
