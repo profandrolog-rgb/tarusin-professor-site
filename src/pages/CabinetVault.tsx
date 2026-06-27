@@ -491,6 +491,8 @@ export default function CabinetVault() {
             <aside className="col-span-12 md:col-span-3 border rounded-lg bg-card p-3 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
               {active ? (
                 <>
+                  <VaultContextPanel noteId={active.id} />
+
                   {active.tags.length > 0 && (
                     <div>
                       <div className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 flex items-center gap-1">
