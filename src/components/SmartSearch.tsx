@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveTrail, loadTrail } from "@/lib/smartSearchTrail";
 
 type SmartResult = {
-  kind: "disease" | "blog" | "video" | "clinical" | "research";
+  kind: "disease" | "blog" | "video" | "clinical" | "research" | "podcast" | "video_file";
   id: string;
   title: string;
   excerpt: string;
