@@ -68,12 +68,28 @@ Deno.serve(async (req) => {
       return data ?? [];
     };
 
-    const [diseases, blogs, videos, clinical, research] = await Promise.all([
+    // Storage videos: filenames only (no metadata table). Filter by token match on the name.
+    const fetchStorageVideos = async () => {
+      try {
+        const { data } = await sb.storage.from("videos").list("", { limit: 200, sortBy: { column: "name", order: "asc" } });
+        const files = (data ?? []).filter((f: any) => f.name && f.name !== ".emptyFolderPlaceholder");
+        const nameMatches = (n: string) => {
+          if (tokens.length === 0) return true;
+          const low = n.toLowerCase();
+          return tokens.some((t) => low.includes(t));
+        };
+        return files.filter((f: any) => nameMatches(f.name)).slice(0, 30);
+      } catch { return []; }
+    };
+
+    const [diseases, blogs, videos, clinical, research, podcasts, videoFiles] = await Promise.all([
       fetchKw("disease_articles", "id, slug, title, description, category", ["title", "description"], 60),
       fetchKw("blog_posts", "id, title, excerpt, content", ["title", "excerpt", "content"], 40),
       fetchKw("video_cases", "id, title, description, category", ["title", "description"], 40),
       fetchKw("clinical_cases", "id, title, category, history, conclusions, recommendations", ["title", "history", "conclusions", "recommendations"], 40),
       fetchKw("research_articles", "id, title, excerpt, content, category", ["title", "excerpt", "content"], 40),
+      fetchKw("podcasts", "id, title, description, source, category, external_url", ["title", "description", "source"], 40),
+      fetchStorageVideos(),
     ]);
 
     const candidates: Candidate[] = [];
