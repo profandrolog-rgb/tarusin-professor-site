@@ -813,7 +813,9 @@ function YandexCloudVideoPlayer({
       >
         <video
           ref={videoRef}
+          autoPlay
           playsInline
+
           preload="auto"
           poster={resolved?.thumbnail || undefined}
           controlsList="nodownload noremoteplayback"
