@@ -285,6 +285,11 @@ export default function CabinetVault() {
     }
   }, []);
 
+  const renderedBody = useMemo(
+    () => renderWikiLinksToAnchors(draftBody, resolver),
+    [draftBody, resolver]
+  );
+
   // ---------- Guards ----------
   if (authLoading) return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
   if (!user || !isAdmin) {
@@ -296,11 +301,6 @@ export default function CabinetVault() {
     );
   }
 
-  // ---------- Render ----------
-  const renderedBody = useMemo(
-    () => renderWikiLinksToAnchors(draftBody, resolver),
-    [draftBody, resolver]
-  );
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 max-w-[1600px]">
