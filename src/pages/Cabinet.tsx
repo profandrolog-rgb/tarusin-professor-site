@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -1912,6 +1912,12 @@ export default function Cabinet() {
           >
             <Lock className="w-3.5 h-3.5" />Приватно
           </button>
+          <Link
+            to="/cabinet/agent"
+            className="px-3 py-1.5 text-xs rounded-md border bg-gradient-to-r from-primary/90 to-purple-600 text-primary-foreground border-primary hover:opacity-90 flex items-center gap-1 transition-opacity"
+            title="Агентный режим: ИИ автономно ищет, анализирует, готовит назначения"
+          >
+            <Bot className="w-3.5 h-3.5" />🤖 Агент</Link>
           <Select value={model} onValueChange={setModel} disabled={streaming || council}>
             <SelectTrigger className="w-[300px]">
               <SelectValue>
