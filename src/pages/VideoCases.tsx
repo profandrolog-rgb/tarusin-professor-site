@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -336,9 +336,16 @@ const VideoCases = () => {
     return "video/mp4";
   };
 
+  const decodeHtmlEntities = (value: string) =>
+    value
+      .replace(/&amp;/g, "&")
+      .replace(/&#38;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+
   const extractEmbedSrc = (embed: string) => {
-    const match = embed.match(/src=["']([^"']+)["']/);
-    return match ? match[1] : "";
+    const match = embed.match(/src=["']([^"']+)["']/i);
+    return match ? decodeHtmlEntities(match[1]) : "";
   };
 
   // Group cases by category
@@ -519,13 +526,19 @@ const VideoCases = () => {
           <DialogContent className="max-w-5xl p-0 overflow-hidden" onContextMenu={handleContextMenu}>
             {selectedVideo && (
               <>
+                <DialogHeader className="sr-only">
+                  <DialogTitle>{selectedVideo.title}</DialogTitle>
+                  <DialogDescription>{selectedVideo.description || "Просмотр видео-кейса"}</DialogDescription>
+                </DialogHeader>
                 {isEmbedCode(selectedVideo.video_path) ? (
                   <iframe
                     key={selectedVideo.id}
+                    title={selectedVideo.title}
                     src={extractEmbedSrc(selectedVideo.video_path)}
                     className="w-full aspect-[9/16] max-h-[80vh] bg-black mx-auto"
                     allowFullScreen
-                    allow="autoplay; encrypted-media"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allow="autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture; encrypted-media; screen-wake-lock"
                     frameBorder="0"
                   />
                 ) : (
@@ -555,7 +568,20 @@ const VideoCases = () => {
                   </div>
                   <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
                   {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
-                  <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
+                    {isEmbedCode(selectedVideo.video_path) && extractEmbedSrc(selectedVideo.video_path) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(extractEmbedSrc(selectedVideo.video_path), "_blank", "noopener,noreferrer")}
+                      >
+                        <Link2 className="w-4 h-4 mr-2" />
+                        Открыть отдельно
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </>
             )}
