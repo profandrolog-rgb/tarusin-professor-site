@@ -19,6 +19,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { toast as sonnerToast } from "sonner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useHashOpen } from "@/hooks/useHashOpen";
 
 interface BlogPost {
   id: string;
@@ -473,6 +474,15 @@ const Blog = () => {
 
   const visiblePosts = isAdmin ? posts : posts.filter((p) => p.is_published);
 
+  // Open a specific post when arriving via #post-{id} from smart search.
+  useHashOpen("post", visiblePosts.length > 0, useCallback((id: string) => {
+    setExpandedPosts((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []));
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -715,7 +725,8 @@ const Blog = () => {
             return (
               <Card
                 key={post.id}
-                className="p-6 lg:p-8 transition-shadow"
+                id={`post-${post.id}`}
+                className="p-6 lg:p-8 transition-shadow scroll-mt-24"
               >
                 {/* Admin controls */}
                 {isAdmin && (

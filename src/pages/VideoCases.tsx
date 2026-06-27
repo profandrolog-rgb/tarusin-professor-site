@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import type { Database } from "@/integrations/supabase/types";
+import { useHashOpen } from "@/hooks/useHashOpen";
 
 type CaseCategory = Database["public"]["Enums"]["case_category"];
 
@@ -355,6 +356,12 @@ const VideoCases = () => {
     return groups;
   }, [cases]);
 
+  // Open the targeted video when arriving via #video-{id}.
+  useHashOpen("video", cases.length > 0, useCallback((id: string) => {
+    const v = cases.find((c) => c.id === id);
+    if (v) setSelectedVideo(v);
+  }, [cases]));
+
   const CategorySelect = ({ value, onChange }: { value: CaseCategory; onChange: (v: CaseCategory) => void }) => (
     <Select value={value} onValueChange={(v) => onChange(v as CaseCategory)}>
       <SelectTrigger>
@@ -586,18 +593,19 @@ const VideoCases = () => {
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {items.map((c) => (
-                    <VideoCaseCard
-                      key={c.id}
-                      c={c}
-                      isAdmin={isAdmin}
-                      onSelect={setSelectedVideo}
-                      onEdit={openEditDialog}
-                      onDelete={handleDelete}
-                      onReaction={handleReaction}
-                      onContextMenu={handleContextMenu}
-                      isEmbedCode={isEmbedCode}
-                      getVideoType={getVideoType}
-                    />
+                    <div key={c.id} id={`video-${c.id}`} className="scroll-mt-24 rounded-xl">
+                      <VideoCaseCard
+                        c={c}
+                        isAdmin={isAdmin}
+                        onSelect={setSelectedVideo}
+                        onEdit={openEditDialog}
+                        onDelete={handleDelete}
+                        onReaction={handleReaction}
+                        onContextMenu={handleContextMenu}
+                        isEmbedCode={isEmbedCode}
+                        getVideoType={getVideoType}
+                      />
+                    </div>
                   ))}
                 </div>
               </section>

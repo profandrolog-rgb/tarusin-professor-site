@@ -12,6 +12,7 @@ import ResearchPostDetail from "@/components/research/ResearchPostDetail";
 import ResearchPostForm from "@/components/research/ResearchPostForm";
 import SortableResearchCard from "@/components/research/SortableResearchCard";
 import RESEARCH_CATEGORIES, { getCategoryLabel, AGE_GROUPS } from "@/components/research/ResearchCategories";
+import { useHashOpen } from "@/hooks/useHashOpen";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Grid3X3, List, Loader2, ArrowUpDown, Check } from "lucide-react";
@@ -137,6 +138,12 @@ const Research = () => {
       refetch();
     }
   }, [filtered, queryClient, refetch]);
+
+  // Open the targeted article when arriving via #article-{id} from smart search.
+  useHashOpen("article", articles.length > 0, useCallback((id: string) => {
+    setSelectedId(id);
+  }, []));
+
 
   if (selectedId) {
     return (
