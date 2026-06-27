@@ -180,7 +180,7 @@ const TOOLS = [
 const APPROVAL_REQUIRED = new Set(["draft_assignment", "draft_prescription"]);
 
 // ============ TOOL EXECUTORS ============
-async function runTool(name: string, args: any, sb: any): Promise<any> {
+async function runTool(name: string, args: any, sb: any, jwt?: string): Promise<any> {
   try {
     switch (name) {
       case "perplexity_search": {
@@ -260,6 +260,20 @@ async function runTool(name: string, args: any, sb: any): Promise<any> {
           .order("study_date", { ascending: false })
           .limit(5);
         return { visits: visits ?? [], ultrasound: us ?? [] };
+      }
+      case "vault_search": {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/vault-search`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${jwt ?? SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ query: args.query, limit: 10 }),
+        });
+        if (!r.ok) return { error: `vault-search: ${r.status}` };
+        const data = await r.json();
+        return { notes: data.results ?? [] };
       }
       default:
         return { error: `unknown tool ${name}` };
