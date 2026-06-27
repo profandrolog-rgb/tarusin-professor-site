@@ -407,7 +407,7 @@ Deno.serve(async (req) => {
             break;
           }
 
-          const result = await runTool(name, args, sbSvc);
+          const result = await runTool(name, args, sbSvc, jwt);
           messages.push({
             role: "tool",
             tool_call_id: tc.id,
