@@ -236,6 +236,59 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_runs: {
+        Row: {
+          created_at: string
+          final_answer: string | null
+          id: string
+          model: string
+          patient_id: string | null
+          pending_approval: Json | null
+          status: string
+          steps: Json
+          task: string
+          total_steps: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          final_answer?: string | null
+          id?: string
+          model?: string
+          patient_id?: string | null
+          pending_approval?: Json | null
+          status?: string
+          steps?: Json
+          task: string
+          total_steps?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          final_answer?: string | null
+          id?: string
+          model?: string
+          patient_id?: string | null
+          pending_approval?: Json | null
+          status?: string
+          steps?: Json
+          task?: string
+          total_steps?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_runs_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_conversation_folders: {
         Row: {
           created_at: string
