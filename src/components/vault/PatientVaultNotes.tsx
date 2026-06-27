@@ -41,7 +41,7 @@ export function PatientVaultNotes({ patientId, patientName }: { patientId: strin
     if (!u.user) { toast.error("Нужна авторизация"); setCreating(false); return; }
     const title = `Заметка по ${patientName}`;
     const { data: note, error } = await supabase.from("vault_notes").insert({
-      user_id: u.user.id,
+      owner_id: u.user.id,
       title,
       slug: slugify(title) + "-" + Date.now().toString(36),
       folder_path: "/Пациенты",
