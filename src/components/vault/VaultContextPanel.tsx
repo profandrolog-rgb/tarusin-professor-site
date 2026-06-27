@@ -278,62 +278,63 @@ function AttachmentPicker({
     let rows: any[] = [];
     if (kind === "ai_run") {
       const { data } = await supabase.from("agent_runs")
-        .select("id, task, summary, created_at").eq("patient_id", patientId)
+        .select("id, task, final_answer, created_at").eq("patient_id", patientId)
         .order("created_at", { ascending: false }).limit(50);
       rows = (data ?? []).map((r: any) => ({
         id: r.id,
         title: (r.task ?? "Разбор ИИ").slice(0, 80),
-        summary: r.summary?.slice(0, 200),
+        summary: r.final_answer?.slice(0, 200),
         data: r,
       }));
     } else if (kind === "treatment_plan") {
       const { data } = await supabase.from("treatment_plans")
-        .select("id, title, diagnosis, created_at").eq("patient_id", patientId)
+        .select("id, diagnosis_short, clinical_summary, course_number, issued_at, created_at")
+        .eq("patient_id", patientId)
         .order("created_at", { ascending: false }).limit(50);
       rows = (data ?? []).map((r: any) => ({
         id: r.id,
-        title: r.title || `План от ${new Date(r.created_at).toLocaleDateString("ru")}`,
-        summary: r.diagnosis,
+        title: `Курс №${r.course_number ?? "—"} от ${new Date(r.issued_at || r.created_at).toLocaleDateString("ru")}`,
+        summary: r.diagnosis_short || r.clinical_summary?.slice(0, 200),
         data: r,
       }));
     } else if (kind === "ultrasound") {
       const { data } = await supabase.from("ultrasound_results")
-        .select("id, study_type, study_date, conclusion").eq("patient_id", patientId)
-        .order("study_date", { ascending: false }).limit(50);
+        .select("id, exam_date").eq("patient_id", patientId)
+        .order("exam_date", { ascending: false }).limit(50);
       rows = (data ?? []).map((r: any) => ({
         id: r.id,
-        title: `${r.study_type || "УЗИ"} — ${r.study_date ?? ""}`,
-        summary: r.conclusion?.slice(0, 200),
+        title: `УЗИ от ${r.exam_date ? new Date(r.exam_date).toLocaleDateString("ru") : "—"}`,
+        summary: "",
         data: r,
       }));
     } else if (kind === "visit") {
       const { data } = await supabase.from("patient_visits")
-        .select("id, visit_date, visit_type, complaints").eq("patient_id", patientId)
+        .select("id, visit_date, protocol_type, diagnosis").eq("patient_id", patientId)
         .order("visit_date", { ascending: false }).limit(50);
       rows = (data ?? []).map((r: any) => ({
         id: r.id,
-        title: `${r.visit_type || "Визит"} — ${r.visit_date ?? ""}`,
-        summary: r.complaints?.slice(0, 200),
+        title: `${r.protocol_type || "Визит"} — ${r.visit_date ? new Date(r.visit_date).toLocaleDateString("ru") : ""}`,
+        summary: r.diagnosis?.slice(0, 200),
         data: r,
       }));
     } else if (kind === "lab") {
       const { data } = await supabase.from("lab_results")
-        .select("id, test_name, study_date, result_value, result_unit").eq("patient_id", patientId)
-        .order("study_date", { ascending: false }).limit(50);
+        .select("id, test_name, test_date, value, unit").eq("patient_id", patientId)
+        .order("test_date", { ascending: false }).limit(50);
       rows = (data ?? []).map((r: any) => ({
         id: r.id,
-        title: `${r.test_name} — ${r.study_date ?? ""}`,
-        summary: r.result_value ? `${r.result_value} ${r.result_unit ?? ""}` : "",
+        title: `${r.test_name} — ${r.test_date ? new Date(r.test_date).toLocaleDateString("ru") : ""}`,
+        summary: r.value ? `${r.value} ${r.unit ?? ""}` : "",
         data: r,
       }));
     } else if (kind === "prescription") {
       const { data } = await supabase.from("prescriptions")
-        .select("id, prescription_number, issued_date, diagnosis").eq("patient_id", patientId)
-        .order("issued_date", { ascending: false }).limit(50);
+        .select("id, prescription_type, prescription_date, signa").eq("patient_id", patientId)
+        .order("prescription_date", { ascending: false }).limit(50);
       rows = (data ?? []).map((r: any) => ({
         id: r.id,
-        title: `Рецепт ${r.prescription_number ?? ""} — ${r.issued_date ?? ""}`,
-        summary: r.diagnosis,
+        title: `Рецепт (${r.prescription_type ?? "—"}) — ${r.prescription_date ? new Date(r.prescription_date).toLocaleDateString("ru") : ""}`,
+        summary: r.signa,
         data: r,
       }));
     }
