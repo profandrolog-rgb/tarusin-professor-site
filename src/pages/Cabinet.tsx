@@ -1918,6 +1918,13 @@ export default function Cabinet() {
             title="Агентный режим: ИИ автономно ищет, анализирует, готовит назначения"
           >
             <Bot className="w-3.5 h-3.5" />🤖 Агент</Link>
+          <Link
+            to="/cabinet/vault"
+            className="px-3 py-1.5 text-xs rounded-md border bg-card hover:bg-muted flex items-center gap-1"
+            title="Vault — заметки, [[wiki-ссылки]], граф связей (как Obsidian)"
+          >
+            🗂 Vault
+          </Link>
           <Select value={model} onValueChange={setModel} disabled={streaming || council}>
             <SelectTrigger className="w-[300px]">
               <SelectValue>

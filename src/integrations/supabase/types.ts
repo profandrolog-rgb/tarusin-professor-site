@@ -4210,6 +4210,139 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_links: {
+        Row: {
+          context_snippet: string | null
+          created_at: string
+          from_note_id: string
+          id: string
+          owner_id: string
+          to_note_id: string | null
+          to_title: string
+        }
+        Insert: {
+          context_snippet?: string | null
+          created_at?: string
+          from_note_id: string
+          id?: string
+          owner_id: string
+          to_note_id?: string | null
+          to_title: string
+        }
+        Update: {
+          context_snippet?: string | null
+          created_at?: string
+          from_note_id?: string
+          id?: string
+          owner_id?: string
+          to_note_id?: string | null
+          to_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_links_from_note_id_fkey"
+            columns: ["from_note_id"]
+            isOneToOne: false
+            referencedRelation: "vault_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vault_links_to_note_id_fkey"
+            columns: ["to_note_id"]
+            isOneToOne: false
+            referencedRelation: "vault_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vault_note_embeddings: {
+        Row: {
+          content_hash: string
+          embedding: unknown
+          note_id: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          content_hash: string
+          embedding: unknown
+          note_id: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          content_hash?: string
+          embedding?: unknown
+          note_id?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_note_embeddings_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: true
+            referencedRelation: "vault_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vault_notes: {
+        Row: {
+          content_md: string
+          created_at: string
+          daily_date: string | null
+          folder_path: string
+          id: string
+          is_daily: boolean
+          owner_id: string
+          patient_id: string | null
+          search_text: string | null
+          slug: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_md?: string
+          created_at?: string
+          daily_date?: string | null
+          folder_path?: string
+          id?: string
+          is_daily?: boolean
+          owner_id: string
+          patient_id?: string | null
+          search_text?: string | null
+          slug: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content_md?: string
+          created_at?: string
+          daily_date?: string | null
+          folder_path?: string
+          id?: string
+          is_daily?: boolean
+          owner_id?: string
+          patient_id?: string | null
+          search_text?: string | null
+          slug?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_case_reactions: {
         Row: {
           created_at: string
@@ -4710,6 +4843,16 @@ export type Database = {
           _to?: string
         }
         Returns: Json
+      }
+      search_vault_by_embedding: {
+        Args: { _limit?: number; _owner_id: string; _query: string }
+        Returns: {
+          folder_path: string
+          note_id: string
+          similarity: number
+          snippet: string
+          title: string
+        }[]
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

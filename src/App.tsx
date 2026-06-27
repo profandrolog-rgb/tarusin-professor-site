@@ -69,6 +69,7 @@ import TreatmentPlanCompare from "./pages/TreatmentPlanCompare";
 import PublicTreatmentPlan from "./pages/PublicTreatmentPlan";
 import Cabinet from "./pages/Cabinet";
 import CabinetAgent from "./pages/CabinetAgent";
+import CabinetVault from "./pages/CabinetVault";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 
@@ -198,6 +199,7 @@ export const routes: RouteRecord[] = [
       { path: "p/:hash", Component: PublicTreatmentPlan, entry: "src/pages/PublicTreatmentPlan.tsx" },
       { path: "cabinet", Component: Cabinet, entry: "src/pages/Cabinet.tsx" },
       { path: "cabinet/agent", Component: CabinetAgent, entry: "src/pages/CabinetAgent.tsx" },
+     { path: "cabinet/vault", Component: CabinetVault, entry: "src/pages/CabinetVault.tsx" },
 
       { path: "*", Component: NotFound },
     ],
