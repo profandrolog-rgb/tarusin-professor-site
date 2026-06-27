@@ -514,19 +514,11 @@ const VideoCases = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Selected Video Player */}
-        {selectedVideo && (
-          <div className="mb-12" onContextMenu={handleContextMenu} ref={playerRef}>
-            <Card className="overflow-hidden">
-              <CardContent className="p-0 relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 z-10 bg-black/50 text-white hover:bg-black/70"
-                  onClick={() => setSelectedVideo(null)}
-                >
-                  <X className="w-5 h-5" />
-                </Button>
+        {/* Selected Video Player (Modal) */}
+        <Dialog open={!!selectedVideo} onOpenChange={(open) => !open && setSelectedVideo(null)}>
+          <DialogContent className="max-w-5xl p-0 overflow-hidden" onContextMenu={handleContextMenu}>
+            {selectedVideo && (
+              <>
                 {isEmbedCode(selectedVideo.video_path) ? (
                   <iframe
                     key={selectedVideo.id}
@@ -555,20 +547,21 @@ const VideoCases = () => {
                     Ваш браузер не поддерживает воспроизведение этого видео.
                   </video>
                 )}
-              </CardContent>
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
-                    {CATEGORY_LABELS[selectedVideo.category]}
-                  </span>
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">
+                      {CATEGORY_LABELS[selectedVideo.category]}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
+                  {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
+                  <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">{selectedVideo.title}</h3>
-                {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
-                <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
-              </div>
-            </Card>
-          </div>
-        )}
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
 
         {/* Grouped sections */}
         {loading ? (
