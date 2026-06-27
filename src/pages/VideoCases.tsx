@@ -729,6 +729,7 @@ function YandexCloudVideoPlayer({
         videoRef.current?.play().catch(() => undefined);
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.warn("[HLS]", data.type, data.details, data.fatal, data.reason || "", data.response?.code || "");
         if (data.fatal) setError("Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.");
       });
     });
