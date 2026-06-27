@@ -178,6 +178,8 @@ export default function AdminPatientDetail() {
           </CardContent></Card>
         </div>
 
+        <PatientVaultNotes patientId={patient.id} patientName={patient.full_name} />
+
         {/* Timeline */}
         {plans.length > 0 && (
           <Card>
