@@ -722,6 +722,10 @@ function YandexCloudVideoPlayer({
       hls = new Hls({ enableWorker: true, lowLatencyMode: false });
       hls.loadSource(hlsUrl);
       hls.attachMedia(videoRef.current);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        hls?.startLoad();
+        videoRef.current?.play().catch(() => undefined);
+      });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) setError("Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.");
       });
@@ -747,6 +751,7 @@ function YandexCloudVideoPlayer({
         ref={videoRef}
         controls
         autoPlay
+        muted
         playsInline
         preload="auto"
         poster={resolved?.thumbnail || undefined}
