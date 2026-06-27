@@ -111,6 +111,15 @@ const ClinicalCases = () => {
     fetchCases();
   }, []);
 
+  // Open the case targeted by #case-{id} (from smart search).
+  useHashOpen("case", cases.length > 0, useCallback((id: string) => {
+    setExpandedCases((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []));
+
   const fetchCases = async () => {
     try {
       const { data, error } = await supabase
