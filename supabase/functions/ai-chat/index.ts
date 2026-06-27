@@ -60,14 +60,22 @@ Deno.serve(async (req) => {
 
     const rawModelInput = (body.model as string).replace(/^pubmed:/, "");
     const isVenice = rawModelInput.startsWith("venice/");
-    const rawModel = isVenice ? rawModelInput.slice("venice/".length) : rawModelInput;
-    const resolvedModel = !isVenice && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
+    const isPerplexity = rawModelInput.startsWith("perplexity/");
+    const rawModel = isVenice
+      ? rawModelInput.slice("venice/".length)
+      : isPerplexity
+        ? rawModelInput.slice("perplexity/".length)
+        : rawModelInput;
+    const resolvedModel = !isVenice && !isPerplexity && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
 
     const apiKey = isVenice
       ? Deno.env.get("VENICE_API_KEY")
-      : Deno.env.get("OPENROUTER_API_KEY");
+      : isPerplexity
+        ? Deno.env.get("PERPLEXITY_API_KEY")
+        : Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: `${isVenice ? "VENICE_API_KEY" : "OPENROUTER_API_KEY"} not configured` }), {
+      const keyName = isVenice ? "VENICE_API_KEY" : isPerplexity ? "PERPLEXITY_API_KEY" : "OPENROUTER_API_KEY";
+      return new Response(JSON.stringify({ error: `${keyName} not configured` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -94,10 +102,10 @@ Deno.serve(async (req) => {
 
 
     // Venice не поддерживает наши PubMed-/web-плагины OpenRouter — отключаем.
-    const webSearch = !isVenice && body.web_search === true;
+    const webSearch = !isVenice && !isPerplexity && body.web_search === true;
     const searchSource: "web" | "pubmed" =
       body.search_source === "pubmed" ? "pubmed" : "web";
-    const usePubmed = webSearch && searchSource === "pubmed";
+    const usePubmed = webSearch && searchSource === "pubmed" && !isPerplexity;
 
     // PubMed mode: fetch citations and inject them as context
     let pubmedSources: Array<{ url: string; title: string; content: string }> = [];
@@ -219,7 +227,10 @@ Deno.serve(async (req) => {
       stream: true,
       max_tokens: 8192,
     };
-    if (!isVenice) {
+    if (isPerplexity) {
+      // Perplexity — встроенный web-поиск, поля reasoning/provider не нужны.
+      // Опционально можно прокинуть фильтры; пока — дефолты.
+    } else if (!isVenice) {
       // OpenRouter-only: unified reasoning + throughput routing
       requestPayload.reasoning = { effort: effectiveEffort };
       requestPayload.provider = { sort: "throughput" };
@@ -234,7 +245,7 @@ Deno.serve(async (req) => {
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,
       origin: req.headers.get("origin"),
-      gateway: isVenice ? "venice" : "openrouter",
+      gateway: isVenice ? "venice" : isPerplexity ? "perplexity" : "openrouter",
       original_model: body.model,
       resolved_model: resolvedModel,
       messages_count: body.messages.length,
@@ -242,13 +253,15 @@ Deno.serve(async (req) => {
 
     const upstreamUrl = isVenice
       ? "https://api.venice.ai/api/v1/chat/completions"
-      : "https://openrouter.ai/api/v1/chat/completions";
+      : isPerplexity
+        ? "https://api.perplexity.ai/chat/completions"
+        : "https://openrouter.ai/api/v1/chat/completions";
     const orResp = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        ...(isVenice ? {} : {
+        ...(isVenice || isPerplexity ? {} : {
           "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
           "X-Title": "Tarusin Cabinet AI",
         }),

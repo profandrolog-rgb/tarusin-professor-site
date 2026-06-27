@@ -161,6 +161,45 @@ export const CURATED_MODELS: CuratedModel[] = [
     uncensored: true,
     candidates: ["venice/venice-uncensored-1-2", "venice/venice-uncensored"],
   },
+
+  // ─── Perplexity (поиск + цитаты в реальном времени) ────────────────────
+  // Префикс `perplexity/` маршрутизирует запрос в Perplexity API.
+  {
+    key: "pplx-sonar",
+    label: "Perplexity Sonar",
+    tier: "fast",
+    emoji: "🔎",
+    source: "lovable-gateway",
+    hint: "Быстрый поиск с цитатами",
+    candidates: ["perplexity/sonar"],
+  },
+  {
+    key: "pplx-sonar-pro",
+    label: "Perplexity Sonar Pro",
+    tier: "deep",
+    emoji: "🔎",
+    source: "lovable-gateway",
+    hint: "2× больше источников, многошаговый поиск",
+    candidates: ["perplexity/sonar-pro"],
+  },
+  {
+    key: "pplx-sonar-reasoning",
+    label: "Perplexity Sonar Reasoning",
+    tier: "deep",
+    emoji: "🔎",
+    source: "lovable-gateway",
+    hint: "Chain-of-thought + поиск",
+    candidates: ["perplexity/sonar-reasoning-pro", "perplexity/sonar-reasoning"],
+  },
+  {
+    key: "pplx-deep-research",
+    label: "Perplexity Deep Research",
+    tier: "deep",
+    emoji: "🔬",
+    source: "lovable-gateway",
+    hint: "Глубокое исследование (медленно, дорого)",
+    candidates: ["perplexity/sonar-deep-research"],
+  },
   {
     key: "venice-gemma-uncensored",
     label: "Gemma 4 Uncensored (Venice)",
