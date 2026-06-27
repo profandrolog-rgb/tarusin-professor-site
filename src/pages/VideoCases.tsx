@@ -798,7 +798,7 @@ function VideoCaseCard({
   getVideoType: (u: string) => string;
 }) {
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-shadow" onContextMenu={onContextMenu}>
+    <Card className="group overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col" onContextMenu={onContextMenu}>
       <div
         className="aspect-[3/4] bg-black relative cursor-pointer overflow-hidden"
         onClick={() => onSelect(c)}
