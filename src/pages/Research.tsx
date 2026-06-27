@@ -139,6 +139,12 @@ const Research = () => {
     }
   }, [filtered, queryClient, refetch]);
 
+  // Open the targeted article when arriving via #article-{id} from smart search.
+  useHashOpen("article", articles.length > 0, useCallback((id: string) => {
+    setSelectedId(id);
+  }, []));
+
+
   if (selectedId) {
     return (
       <div className="min-h-screen bg-background pb-14">
