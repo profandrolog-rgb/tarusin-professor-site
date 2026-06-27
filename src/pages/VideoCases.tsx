@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import "shaka-player/dist/controls.css";
+import Plyr from "plyr";
+import "plyr/dist/plyr.css";
+import { MediaPlayer, type MediaPlayerClass } from "dashjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -670,10 +672,9 @@ function YandexCloudVideoPlayer({
   onContextMenu: (e: React.MouseEvent) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [resolved, setResolved] = useState<ResolvedYandexVideo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [useNativePlayer, setUseNativePlayer] = useState(false);
   const hlsUrl = resolved?.streams.find((stream) => stream.type === "hls")?.url;
   const dashUrl = resolved?.streams.find((stream) => stream.type === "dash")?.url;
   const manifestUrl = dashUrl || hlsUrl;
@@ -681,7 +682,7 @@ function YandexCloudVideoPlayer({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setUseNativePlayer(false);
     setResolved(null);
 
     supabase.functions
@@ -692,7 +693,7 @@ function YandexCloudVideoPlayer({
         setResolved(data as ResolvedYandexVideo);
       })
       .catch(() => {
-        if (!cancelled) setError("Не удалось подготовить видеопоток. Можно открыть стандартный плеер отдельно.");
+        if (!cancelled) setUseNativePlayer(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -705,95 +706,74 @@ function YandexCloudVideoPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    const container = containerRef.current;
-    if (!video || !container || !manifestUrl) return;
+    if (!video || !manifestUrl || useNativePlayer) return;
 
-    let cancelled = false;
-    let player: any = null;
-    let ui: any = null;
+    let plyr: Plyr | null = null;
+    let dash: MediaPlayerClass | null = null;
 
-    const initPlayer = async () => {
+    plyr = new Plyr(video, {
+      controls: ["play-large", "play", "progress", "current-time", "duration", "mute", "volume", "settings", "fullscreen"],
+      settings: ["quality", "speed"],
+      speed: { selected: 1, options: [0.75, 1, 1.25, 1.5, 2] },
+      ratio: "9:16",
+      clickToPlay: true,
+      hideControls: false,
+      invertTime: false,
+      i18n: {
+        restart: "Сначала",
+        rewind: "Назад {seektime} сек",
+        play: "Воспроизвести",
+        pause: "Пауза",
+        fastForward: "Вперёд {seektime} сек",
+        seek: "Перемотка",
+        played: "Просмотрено",
+        buffered: "Загружено",
+        currentTime: "Текущее время",
+        duration: "Длительность",
+        volume: "Громкость",
+        mute: "Выключить звук",
+        unmute: "Включить звук",
+        enableCaptions: "Включить субтитры",
+        disableCaptions: "Выключить субтитры",
+        enterFullscreen: "На весь экран",
+        exitFullscreen: "Выйти из полноэкранного режима",
+        settings: "Настройки",
+        speed: "Скорость",
+        normal: "Обычная",
+        quality: "Качество",
+      },
+    });
+
+    const failToNative = () => setUseNativePlayer(true);
+    video.addEventListener("error", failToNative, { once: true });
+
+    if (dashUrl) {
       try {
-        const shakaModule = await import("shaka-player/dist/shaka-player.ui.js");
-        if (cancelled || !videoRef.current || !containerRef.current) return;
-
-        const shaka = (shakaModule as any).default ?? (shakaModule as any).shaka ?? (window as any).shaka;
-        shaka.polyfill.installAll();
-
-        if (!shaka.Player.isBrowserSupported()) {
-          setError("Браузер не поддерживает современный встроенный видеоплеер.");
-          return;
-        }
-
-        player = new shaka.Player(videoRef.current);
-        ui = new shaka.ui.Overlay(player, containerRef.current, videoRef.current);
-
-        player.configure({
+        dash = MediaPlayer().create();
+        dash.updateSettings({
           streaming: {
-            bufferingGoal: 30,
-            rebufferingGoal: 3,
-            retryParameters: {
-              maxAttempts: 5,
-              baseDelay: 700,
-              backoffFactor: 1.6,
-              fuzzFactor: 0.3,
-              timeout: 30000,
-            },
+            buffer: { stableBufferTime: 30, bufferTimeAtTopQuality: 30 },
+            retryIntervals: { MPD: 800, Fragment: 800 },
+            retryAttempts: { MPD: 5, Fragment: 5 },
           },
-          manifest: {
-            retryParameters: {
-              maxAttempts: 5,
-              baseDelay: 700,
-              backoffFactor: 1.6,
-              fuzzFactor: 0.3,
-              timeout: 30000,
-            },
-          },
-          abr: { enabled: true },
-        });
-
-        ui.configure({
-          addSeekBar: true,
-          doubleClickForFullscreen: true,
-          enableKeyboardPlaybackControls: true,
-          enableTooltips: true,
-          seekOnTaps: true,
-          controlPanelElements: [
-            "play_pause",
-            "time_and_duration",
-            "spacer",
-            "mute",
-            "volume",
-            "fullscreen",
-            "overflow_menu",
-          ],
-          overflowMenuButtons: ["quality", "playback_rate", "captions"],
-          playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
-        });
-
-        player.addEventListener("error", (event: any) => {
-          console.warn("[Shaka player error]", event.detail);
-          setError("Плеер не смог загрузить поток. Можно открыть видео отдельно.");
-        });
-
-        await player.load(manifestUrl);
-        if (!cancelled) {
-          await videoRef.current?.play().catch(() => undefined);
-        }
+        } as any);
+        dash.on(MediaPlayer.events.ERROR, failToNative);
+        dash.initialize(video, dashUrl, true);
       } catch (err) {
-        console.warn("[Shaka init failed]", err);
-        if (!cancelled) setError("Плеер не смог запустить видео. Можно открыть видео отдельно.");
+        console.warn("[DASH player failed]", err);
+        failToNative();
       }
-    };
-
-    initPlayer();
+    } else if (hlsUrl) {
+      video.src = hlsUrl;
+      video.play().catch(() => undefined);
+    }
 
     return () => {
-      cancelled = true;
-      Promise.resolve(ui?.destroy?.()).catch(() => undefined);
-      Promise.resolve(player?.destroy?.()).catch(() => undefined);
+      video.removeEventListener("error", failToNative);
+      dash?.reset();
+      plyr?.destroy();
     };
-  }, [manifestUrl]);
+  }, [dashUrl, hlsUrl, manifestUrl, useNativePlayer]);
 
   if (loading) {
     return (
@@ -803,11 +783,24 @@ function YandexCloudVideoPlayer({
     );
   }
 
-  if (manifestUrl && !error) {
+  if (useNativePlayer) {
+    return (
+      <iframe
+        title={title}
+        src={playerUrl}
+        className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+        allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
+        frameBorder="0"
+      />
+    );
+  }
+
+  if (manifestUrl) {
     return (
       <div
-        ref={containerRef}
-        className="group relative w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto overflow-hidden [&_.shaka-controls-container]:font-sans [&_.shaka-overflow-menu]:text-foreground [&_.shaka-settings-menu]:text-foreground"
+        className="relative w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto overflow-hidden [&_.plyr]:h-full [&_.plyr]:w-full [&_.plyr--video]:bg-muted [&_.plyr__video-wrapper]:h-full [&_.plyr__video-wrapper]:bg-muted [&_.plyr__control--overlaid]:bg-accent [&_.plyr__control--overlaid]:text-accent-foreground [&_.plyr--full-ui_input[type=range]]:text-primary [&_.plyr__control:hover]:bg-accent [&_.plyr__control:hover]:text-accent-foreground"
         onContextMenu={onContextMenu}
       >
         <video
@@ -821,7 +814,7 @@ function YandexCloudVideoPlayer({
           disablePictureInPicture
           disableRemotePlayback
           onDragStart={(e) => e.preventDefault()}
-          className="absolute inset-0 h-full w-full bg-muted object-contain"
+          className="h-full w-full bg-muted object-contain"
         />
         <span className="sr-only">{title}</span>
       </div>
@@ -832,8 +825,8 @@ function YandexCloudVideoPlayer({
     <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
       <Video className="w-12 h-12 text-muted-foreground" />
       <div>
-        <p className="font-medium text-foreground">{error || "Не удалось найти совместимый видеопоток."}</p>
-        {(dashUrl || hlsUrl) && <p className="text-sm text-muted-foreground mt-2">Поток найден, но встроенный плеер не смог его открыть в этом браузере.</p>}
+        <p className="font-medium text-foreground">Не удалось подготовить встроенный плеер.</p>
+        <p className="text-sm text-muted-foreground mt-2">Откройте видео отдельно.</p>
       </div>
       <Button type="button" variant="outline" onClick={() => window.open(playerUrl, "_blank", "noopener,noreferrer")}>
         <Link2 className="w-4 h-4 mr-2" />
