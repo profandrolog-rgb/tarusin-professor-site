@@ -3,6 +3,7 @@ import { ClientOnly } from "vite-react-ssg";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Menu } from "lucide-react";
+import SmartSearchTrail from "@/components/SmartSearchTrail";
 
 const PatientChatbot = lazy(() => import("@/components/PatientChatbot"));
 
@@ -20,6 +21,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       </SidebarTrigger>
 
       <main className="w-full min-h-screen">{children}</main>
+
+      <ClientOnly>{() => <SmartSearchTrail />}</ClientOnly>
+
 
       {/* Chatbot — клиент-онли: использует fetch к edge function и DOM-рефы */}
       <ClientOnly>

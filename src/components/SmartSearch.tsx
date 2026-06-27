@@ -4,6 +4,7 @@ import { Sparkles, Search, Loader2, BookOpen, Video, Stethoscope, FileText, Micr
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { saveTrail, loadTrail } from "@/lib/smartSearchTrail";
 
 type SmartResult = {
   kind: "disease" | "blog" | "video" | "clinical" | "research";
@@ -96,13 +97,39 @@ const SmartSearch = () => {
     try {
       const { data, error } = await supabase.functions.invoke("smart-search", { body: { query: q } });
       if (error) throw error;
-      setResults((data?.results ?? []) as SmartResult[]);
+      const list = (data?.results ?? []) as SmartResult[];
+      setResults(list);
+      if (list.length) {
+        saveTrail({
+          query: q.trim(),
+          results: list.map((r) => ({ kind: r.kind, id: r.id, title: r.title, url: r.url, category: r.category, reason: r.reason })),
+        });
+      }
     } catch (e: any) {
       setError("Не удалось выполнить поиск. Попробуйте чуть позже.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Restore the most recent search when the visitor returns to the homepage.
+  useEffect(() => {
+    if (results) return;
+    const trail = loadTrail();
+    if (!trail) return;
+    setQuery(trail.query);
+    setResults(trail.results.map((r) => ({
+      kind: r.kind, id: r.id, title: r.title, url: r.url, excerpt: "", reason: r.reason, category: r.category,
+    })));
+    // If user explicitly asked to return, scroll into view.
+    if (typeof window !== "undefined" && window.location.search.includes("smart=restore")) {
+      setTimeout(() => {
+        document.getElementById("smart-search")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -149,7 +176,7 @@ const SmartSearch = () => {
   };
 
   return (
-    <section className="container mx-auto px-4 py-10 md:py-14">
+    <section id="smart-search" className="container mx-auto px-4 py-10 md:py-14 scroll-mt-24">
       <div className="relative max-w-4xl mx-auto">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-2xl opacity-60" aria-hidden />
 
