@@ -107,6 +107,7 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection />
+        <SmartSearch />
         <AboutSection />
         <PioneersSection />
         <ProfessorMessageSection />
