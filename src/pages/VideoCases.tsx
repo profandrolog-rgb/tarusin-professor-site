@@ -356,6 +356,12 @@ const VideoCases = () => {
     return groups;
   }, [cases]);
 
+  // Open the targeted video when arriving via #video-{id}.
+  useHashOpen("video", cases.length > 0, useCallback((id: string) => {
+    const v = cases.find((c) => c.id === id);
+    if (v) setSelectedVideo(v);
+  }, [cases]));
+
   const CategorySelect = ({ value, onChange }: { value: CaseCategory; onChange: (v: CaseCategory) => void }) => (
     <Select value={value} onValueChange={(v) => onChange(v as CaseCategory)}>
       <SelectTrigger>
