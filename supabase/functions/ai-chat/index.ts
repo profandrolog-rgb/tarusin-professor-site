@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        ...(isVenice ? {} : {
+        ...(isVenice || isPerplexity ? {} : {
           "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
           "X-Title": "Tarusin Cabinet AI",
         }),
