@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import type HlsType from "hls.js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -348,6 +349,18 @@ const VideoCases = () => {
     return match ? decodeHtmlEntities(match[1]) : "";
   };
 
+  const getPlayableEmbedSrc = (path: string) => (isEmbedCode(path) ? extractEmbedSrc(path) : path);
+
+  const isYandexCloudVideo = (path: string) => {
+    const src = getPlayableEmbedSrc(path);
+    try {
+      const url = new URL(src);
+      return url.hostname === "runtime.video.cloud.yandex.net" && url.pathname.startsWith("/player/");
+    } catch {
+      return false;
+    }
+  };
+
   // Group cases by category
   const groupedCases = useMemo(() => {
     const groups: { category: CaseCategory; label: string; items: VideoCase[] }[] = [];
@@ -530,7 +543,14 @@ const VideoCases = () => {
                   <DialogTitle>{selectedVideo.title}</DialogTitle>
                   <DialogDescription>{selectedVideo.description || "Просмотр видео-кейса"}</DialogDescription>
                 </DialogHeader>
-                {isEmbedCode(selectedVideo.video_path) ? (
+                {isYandexCloudVideo(selectedVideo.video_path) ? (
+                  <YandexCloudVideoPlayer
+                    key={selectedVideo.id}
+                    playerUrl={getPlayableEmbedSrc(selectedVideo.video_path)}
+                    title={selectedVideo.title}
+                    onContextMenu={handleContextMenu}
+                  />
+                ) : isEmbedCode(selectedVideo.video_path) ? (
                   <iframe
                     key={selectedVideo.id}
                     title={selectedVideo.title}
@@ -538,7 +558,7 @@ const VideoCases = () => {
                     className="w-full aspect-[9/16] max-h-[80vh] bg-black mx-auto"
                     allowFullScreen
                     referrerPolicy="strict-origin-when-cross-origin"
-                    allow="autoplay; fullscreen; accelerometer; gyroscope; picture-in-picture; encrypted-media; screen-wake-lock"
+                    allow="autoplay; fullscreen; encrypted-media; accelerometer; gyroscope; picture-in-picture; clipboard-write; web-share; screen-wake-lock"
                     frameBorder="0"
                   />
                 ) : (
@@ -570,12 +590,12 @@ const VideoCases = () => {
                   {selectedVideo.description && <p className="text-muted-foreground mb-4">{selectedVideo.description}</p>}
                   <div className="flex flex-wrap items-center gap-3">
                     <ReactionButtons caseItem={selectedVideo} onReaction={handleReaction} />
-                    {isEmbedCode(selectedVideo.video_path) && extractEmbedSrc(selectedVideo.video_path) && (
+                    {isEmbedCode(selectedVideo.video_path) && getPlayableEmbedSrc(selectedVideo.video_path) && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(extractEmbedSrc(selectedVideo.video_path), "_blank", "noopener,noreferrer")}
+                        onClick={() => window.open(getPlayableEmbedSrc(selectedVideo.video_path), "_blank", "noopener,noreferrer")}
                       >
                         <Link2 className="w-4 h-4 mr-2" />
                         Открыть отдельно
@@ -634,7 +654,136 @@ const VideoCases = () => {
   );
 };
 
+type ResolvedYandexVideo = {
+  thumbnail: string | null;
+  streams: Array<{ url: string; type: string; thumbnail: string | null }>;
+};
+
 // Extracted card component
+function YandexCloudVideoPlayer({
+  playerUrl,
+  title,
+  onContextMenu,
+}: {
+  playerUrl: string;
+  title: string;
+  onContextMenu: (e: React.MouseEvent) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [resolved, setResolved] = useState<ResolvedYandexVideo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const hlsUrl = resolved?.streams.find((stream) => stream.type === "hls")?.url;
+  const dashUrl = resolved?.streams.find((stream) => stream.type === "dash")?.url;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setResolved(null);
+
+    supabase.functions
+      .invoke("resolve-yandex-video", { body: { playerUrl } })
+      .then(({ data, error: invokeError }) => {
+        if (cancelled) return;
+        if (invokeError) throw invokeError;
+        setResolved(data as ResolvedYandexVideo);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Не удалось подготовить видеопоток. Можно открыть стандартный плеер отдельно.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [playerUrl]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !hlsUrl) return;
+    let hls: HlsType | null = null;
+    let cancelled = false;
+
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = hlsUrl;
+      return;
+    }
+
+    import("hls.js").then(({ default: Hls }) => {
+      if (cancelled || !videoRef.current) return;
+      if (!Hls.isSupported()) {
+        setError("Этот браузер не поддерживает HLS-воспроизведение внутри сайта.");
+        return;
+      }
+
+      hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      hls.attachMedia(videoRef.current);
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        hls?.loadSource(hlsUrl);
+      });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        hls?.startLoad();
+        videoRef.current?.play().catch(() => undefined);
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) setError("Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.");
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      hls?.destroy();
+    };
+  }, [hlsUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (hlsUrl && !error) {
+    return (
+      <video
+        ref={videoRef}
+        controls
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        poster={resolved?.thumbnail || undefined}
+        controlsList="nodownload nofullscreen noremoteplayback"
+        disablePictureInPicture
+        disableRemotePlayback
+        onContextMenu={onContextMenu}
+        onDragStart={(e) => e.preventDefault()}
+        onError={() => setError("Видеопоток временно недоступен. Попробуйте стандартный плеер.")}
+        className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
+      />
+    );
+  }
+
+  return (
+    <div className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto flex flex-col items-center justify-center gap-4 p-6 text-center">
+      <Video className="w-12 h-12 text-muted-foreground" />
+      <div>
+        <p className="font-medium text-foreground">{error || "Не удалось найти совместимый видеопоток."}</p>
+        {dashUrl && <p className="text-sm text-muted-foreground mt-2">Найден DASH-поток; для него используйте стандартный плеер.</p>}
+      </div>
+      <Button type="button" variant="outline" onClick={() => window.open(playerUrl, "_blank", "noopener,noreferrer")}>
+        <Link2 className="w-4 h-4 mr-2" />
+        Открыть стандартный плеер
+      </Button>
+      <span className="sr-only">{title}</span>
+    </div>
+  );
+}
+
 function VideoCaseCard({
   c, isAdmin, onSelect, onEdit, onDelete, onReaction, onContextMenu, isEmbedCode, getVideoType,
 }: {
