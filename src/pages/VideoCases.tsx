@@ -747,7 +747,7 @@ function YandexCloudVideoPlayer({
     );
   }
 
-  if (hlsUrl) {
+  if (hlsUrl && !error) {
     return (
       <video
         ref={videoRef}
