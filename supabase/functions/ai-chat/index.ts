@@ -227,7 +227,10 @@ Deno.serve(async (req) => {
       stream: true,
       max_tokens: 8192,
     };
-    if (!isVenice) {
+    if (isPerplexity) {
+      // Perplexity — встроенный web-поиск, поля reasoning/provider не нужны.
+      // Опционально можно прокинуть фильтры; пока — дефолты.
+    } else if (!isVenice) {
       // OpenRouter-only: unified reasoning + throughput routing
       requestPayload.reasoning = { effort: effectiveEffort };
       requestPayload.provider = { sort: "throughput" };
@@ -242,7 +245,7 @@ Deno.serve(async (req) => {
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,
       origin: req.headers.get("origin"),
-      gateway: isVenice ? "venice" : "openrouter",
+      gateway: isVenice ? "venice" : isPerplexity ? "perplexity" : "openrouter",
       original_model: body.model,
       resolved_model: resolvedModel,
       messages_count: body.messages.length,
@@ -250,7 +253,9 @@ Deno.serve(async (req) => {
 
     const upstreamUrl = isVenice
       ? "https://api.venice.ai/api/v1/chat/completions"
-      : "https://openrouter.ai/api/v1/chat/completions";
+      : isPerplexity
+        ? "https://api.perplexity.ai/chat/completions"
+        : "https://openrouter.ai/api/v1/chat/completions";
     const orResp = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
