@@ -144,6 +144,27 @@ Deno.serve(async (req) => {
         url: `/research#article-${r.id}`,
       }),
     );
+    (podcasts ?? []).forEach((r: any) =>
+      candidates.push({
+        kind: "podcast",
+        id: r.id,
+        title: r.title,
+        excerpt: trunc([r.source, r.description].filter(Boolean).join(" — "), 300),
+        category: r.category,
+        url: r.external_url ? r.external_url : `/media#podcast-${r.id}`,
+      }),
+    );
+    (videoFiles ?? []).forEach((f: any) => {
+      // Pretty title from filename: drop extension, replace separators.
+      const pretty = String(f.name).replace(/\.[a-z0-9]+$/i, "").replace(/[_\-]+/g, " ").trim();
+      candidates.push({
+        kind: "video_file",
+        id: f.name,
+        title: pretty || f.name,
+        excerpt: "Видео из библиотеки клиники",
+        url: `/videos`,
+      });
+    });
 
     if (candidates.length === 0) {
       return new Response(JSON.stringify({ results: [] }), {
