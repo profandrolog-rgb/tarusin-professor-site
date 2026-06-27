@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import type HlsType from "hls.js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -703,7 +704,7 @@ function YandexCloudVideoPlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !hlsUrl) return;
-    let hls: { destroy: () => void } | null = null;
+    let hls: HlsType | null = null;
     let cancelled = false;
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
