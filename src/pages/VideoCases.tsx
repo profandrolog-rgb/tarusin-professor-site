@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import Plyr from "plyr";
+import Plyr = require("plyr");
 import "plyr/dist/plyr.css";
 import { MediaPlayer, type MediaPlayerClass } from "dashjs";
 import { Button } from "@/components/ui/button";
