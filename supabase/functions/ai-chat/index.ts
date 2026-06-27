@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     const webSearch = !isVenice && body.web_search === true;
     const searchSource: "web" | "pubmed" =
       body.search_source === "pubmed" ? "pubmed" : "web";
-    const usePubmed = webSearch && searchSource === "pubmed";
+    const usePubmed = webSearch && searchSource === "pubmed" && !isPerplexity;
 
     // PubMed mode: fetch citations and inject them as context
     let pubmedSources: Array<{ url: string; title: string; content: string }> = [];
