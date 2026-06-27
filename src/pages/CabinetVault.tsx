@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   FolderTree, FileText, Plus, Save, Trash2, Search, Calendar, Network, Hash,
   Link as LinkIcon, ChevronLeft, ArrowLeft, Loader2, Sparkles, FolderPlus,
+  Upload, Download,
 } from "lucide-react";
 import { ChatMarkdown } from "@/components/cabinet/ChatMarkdown";
 import { parseWikiLinks, parseTags, renderWikiLinksToAnchors } from "@/lib/vault/parseWikiLinks";
@@ -313,6 +314,27 @@ export default function CabinetVault() {
           <span className="text-xs text-muted-foreground font-normal">{notes.length} заметок · {links.length} связей</span>
         </h1>
         <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={async () => {
+            const t = toast.loading("Push → GitHub…");
+            try {
+              const { data, error } = await supabase.functions.invoke("vault-sync", { body: { action: "push" } });
+              if (error) throw error;
+              toast.success(`Push: создано ${data.created}, обновлено ${data.updated}, без изм. ${data.skipped}`, { id: t });
+            } catch (e: any) { toast.error("Push: " + (e.message || e), { id: t }); }
+          }}>
+            <Upload className="w-4 h-4 mr-1" /> Push
+          </Button>
+          <Button size="sm" variant="outline" onClick={async () => {
+            const t = toast.loading("Pull ← GitHub…");
+            try {
+              const { data, error } = await supabase.functions.invoke("vault-sync", { body: { action: "pull" } });
+              if (error) throw error;
+              toast.success(`Pull: новых ${data.imported}, обновлено ${data.updated}, без изм. ${data.skipped}`, { id: t });
+              await loadAll();
+            } catch (e: any) { toast.error("Pull: " + (e.message || e), { id: t }); }
+          }}>
+            <Download className="w-4 h-4 mr-1" /> Pull
+          </Button>
           <Button size="sm" variant="outline" onClick={() => createNote({ isDaily: true })}>
             <Calendar className="w-4 h-4 mr-1" /> Дневник
           </Button>
