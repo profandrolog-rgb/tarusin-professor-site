@@ -21,7 +21,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         <Menu className="h-5 w-5" />
       </SidebarTrigger>
 
-      <main className="w-full min-h-screen">{children}</main>
+      <main className="w-full min-h-screen">
+        {children}
+        <ClientOnly>{() => <SmartSearchEndCTA />}</ClientOnly>
+      </main>
 
       <ClientOnly>{() => <SmartSearchTrail />}</ClientOnly>
 
