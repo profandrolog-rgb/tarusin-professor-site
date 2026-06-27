@@ -13,7 +13,7 @@ const SVC = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 type Candidate = {
-  kind: "disease" | "blog" | "video" | "clinical" | "research";
+  kind: "disease" | "blog" | "video" | "clinical" | "research" | "podcast" | "video_file";
   id: string;
   title: string;
   excerpt: string;
