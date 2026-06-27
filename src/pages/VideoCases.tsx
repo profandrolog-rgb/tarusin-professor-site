@@ -4,7 +4,6 @@ import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, 
 import { Link, useNavigate } from "react-router-dom";
 import "plyr/dist/plyr.css";
 import { MediaPlayer, type MediaPlayerClass } from "dashjs";
-import type Plyr from "plyr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -708,41 +707,46 @@ function YandexCloudVideoPlayer({
     const video = videoRef.current;
     if (!video || !manifestUrl || useNativePlayer) return;
 
-    let plyr: Plyr | null = null;
+    let cancelled = false;
+    let plyr: any = null;
     let dash: MediaPlayerClass | null = null;
 
-    plyr = new Plyr(video, {
-      controls: ["play-large", "play", "progress", "current-time", "duration", "mute", "volume", "settings", "fullscreen"],
-      settings: ["quality", "speed"],
-      speed: { selected: 1, options: [0.75, 1, 1.25, 1.5, 2] },
-      ratio: "9:16",
-      clickToPlay: true,
-      hideControls: false,
-      invertTime: false,
-      i18n: {
-        restart: "Сначала",
-        rewind: "Назад {seektime} сек",
-        play: "Воспроизвести",
-        pause: "Пауза",
-        fastForward: "Вперёд {seektime} сек",
-        seek: "Перемотка",
-        played: "Просмотрено",
-        buffered: "Загружено",
-        currentTime: "Текущее время",
-        duration: "Длительность",
-        volume: "Громкость",
-        mute: "Выключить звук",
-        unmute: "Включить звук",
-        enableCaptions: "Включить субтитры",
-        disableCaptions: "Выключить субтитры",
-        enterFullscreen: "На весь экран",
-        exitFullscreen: "Выйти из полноэкранного режима",
-        settings: "Настройки",
-        speed: "Скорость",
-        normal: "Обычная",
-        quality: "Качество",
-      },
-    });
+    import("plyr").then((module) => {
+      if (cancelled || !videoRef.current) return;
+      const PlyrCtor = (module as any).default ?? module;
+      plyr = new PlyrCtor(videoRef.current, {
+        controls: ["play-large", "play", "progress", "current-time", "duration", "mute", "volume", "settings", "fullscreen"],
+        settings: ["quality", "speed"],
+        speed: { selected: 1, options: [0.75, 1, 1.25, 1.5, 2] },
+        ratio: "9:16",
+        clickToPlay: true,
+        hideControls: false,
+        invertTime: false,
+        i18n: {
+          restart: "Сначала",
+          rewind: "Назад {seektime} сек",
+          play: "Воспроизвести",
+          pause: "Пауза",
+          fastForward: "Вперёд {seektime} сек",
+          seek: "Перемотка",
+          played: "Просмотрено",
+          buffered: "Загружено",
+          currentTime: "Текущее время",
+          duration: "Длительность",
+          volume: "Громкость",
+          mute: "Выключить звук",
+          unmute: "Включить звук",
+          enableCaptions: "Включить субтитры",
+          disableCaptions: "Выключить субтитры",
+          enterFullscreen: "На весь экран",
+          exitFullscreen: "Выйти из полноэкранного режима",
+          settings: "Настройки",
+          speed: "Скорость",
+          normal: "Обычная",
+          quality: "Качество",
+        },
+      });
+    }).catch(() => undefined);
 
     const failToNative = () => setUseNativePlayer(true);
     video.addEventListener("error", failToNative, { once: true });
@@ -769,6 +773,7 @@ function YandexCloudVideoPlayer({
     }
 
     return () => {
+      cancelled = true;
       video.removeEventListener("error", failToNative);
       dash?.reset();
       plyr?.destroy();
