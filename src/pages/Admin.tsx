@@ -147,6 +147,13 @@ const siteSections = [
     color: "text-teal-500",
   },
   {
+    title: "🎙️ Исходники для подкастов",
+    description: "Скачать тексты блога, статей, исследований и кейсов для NotebookLM",
+    icon: Headphones,
+    href: "/admin/podcast-sources",
+    color: "text-fuchsia-600",
+  },
+  {
     title: "Путевые заметки",
     description: "Управление фотогалереей путешествий",
     icon: Camera,
