@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Play, Video, Trash2, Loader2, Shield, ThumbsUp, ThumbsDown, Plus, Link2, Pencil, X, ImagePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import type HlsType from "hls.js";
+import "shaka-player/dist/controls.css";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -670,11 +670,13 @@ function YandexCloudVideoPlayer({
   onContextMenu: (e: React.MouseEvent) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [resolved, setResolved] = useState<ResolvedYandexVideo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hlsUrl = resolved?.streams.find((stream) => stream.type === "hls")?.url;
   const dashUrl = resolved?.streams.find((stream) => stream.type === "dash")?.url;
+  const manifestUrl = dashUrl || hlsUrl;
 
   useEffect(() => {
     let cancelled = false;
@@ -703,67 +705,95 @@ function YandexCloudVideoPlayer({
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !hlsUrl) return;
-    let hls: HlsType | null = null;
+    const container = containerRef.current;
+    if (!video || !container || !manifestUrl) return;
+
     let cancelled = false;
-    let mediaRecoverTries = 0;
-    let networkRecoverTries = 0;
+    let player: any = null;
+    let ui: any = null;
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = hlsUrl;
-      return;
-    }
+    const initPlayer = async () => {
+      try {
+        const shakaModule = await import("shaka-player/dist/shaka-player.ui.js");
+        if (cancelled || !videoRef.current || !containerRef.current) return;
 
-    import("hls.js").then(({ default: Hls }) => {
-      if (cancelled || !videoRef.current) return;
-      if (!Hls.isSupported()) {
-        setError("Этот браузер не поддерживает HLS внутри сайта. Откройте стандартный плеер.");
-        return;
+        const shaka = (shakaModule as any).default ?? (shakaModule as any).shaka ?? (window as any).shaka;
+        shaka.polyfill.installAll();
+
+        if (!shaka.Player.isBrowserSupported()) {
+          setError("Браузер не поддерживает современный встроенный видеоплеер.");
+          return;
+        }
+
+        player = new shaka.Player(videoRef.current);
+        ui = new shaka.ui.Overlay(player, containerRef.current, videoRef.current);
+
+        player.configure({
+          streaming: {
+            bufferingGoal: 30,
+            rebufferingGoal: 3,
+            retryParameters: {
+              maxAttempts: 5,
+              baseDelay: 700,
+              backoffFactor: 1.6,
+              fuzzFactor: 0.3,
+              timeout: 30000,
+            },
+          },
+          manifest: {
+            retryParameters: {
+              maxAttempts: 5,
+              baseDelay: 700,
+              backoffFactor: 1.6,
+              fuzzFactor: 0.3,
+              timeout: 30000,
+            },
+          },
+          abr: { enabled: true },
+        });
+
+        ui.configure({
+          addSeekBar: true,
+          doubleClickForFullscreen: true,
+          enableKeyboardPlaybackControls: true,
+          enableTooltips: true,
+          seekOnTaps: true,
+          controlPanelElements: [
+            "play_pause",
+            "time_and_duration",
+            "spacer",
+            "mute",
+            "volume",
+            "fullscreen",
+            "overflow_menu",
+          ],
+          overflowMenuButtons: ["quality", "playback_rate", "captions"],
+          playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+        });
+
+        player.addEventListener("error", (event: any) => {
+          console.warn("[Shaka player error]", event.detail);
+          setError("Плеер не смог загрузить поток. Можно открыть видео отдельно.");
+        });
+
+        await player.load(manifestUrl);
+        if (!cancelled) {
+          await videoRef.current?.play().catch(() => undefined);
+        }
+      } catch (err) {
+        console.warn("[Shaka init failed]", err);
+        if (!cancelled) setError("Плеер не смог запустить видео. Можно открыть видео отдельно.");
       }
+    };
 
-      hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        maxBufferLength: 30,
-        manifestLoadingMaxRetry: 4,
-        levelLoadingMaxRetry: 4,
-        fragLoadingMaxRetry: 6,
-      });
-      hls.attachMedia(videoRef.current);
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        hls?.loadSource(hlsUrl);
-      });
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        hls?.startLoad();
-        videoRef.current?.play().catch(() => undefined);
-      });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
-        console.warn("[HLS fatal]", data.type, data.details);
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoverTries < 2) {
-          networkRecoverTries += 1;
-          hls?.startLoad();
-          return;
-        }
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoverTries < 2) {
-          mediaRecoverTries += 1;
-          if (mediaRecoverTries === 1) hls?.recoverMediaError();
-          else hls?.swapAudioCodec();
-          return;
-        }
-        setError(
-          data.details === "manifestIncompatibleCodecsError"
-            ? "Видео-кодек не поддерживается этим браузером. Откройте стандартный плеер."
-            : "Видеопоток временно недоступен. Попробуйте открыть стандартный плеер.",
-        );
-      });
-    });
+    initPlayer();
 
     return () => {
       cancelled = true;
-      hls?.destroy();
+      Promise.resolve(ui?.destroy?.()).catch(() => undefined);
+      Promise.resolve(player?.destroy?.()).catch(() => undefined);
     };
-  }, [hlsUrl]);
+  }, [manifestUrl]);
 
   if (loading) {
     return (
@@ -773,28 +803,28 @@ function YandexCloudVideoPlayer({
     );
   }
 
-  if (hlsUrl && !error) {
+  if (manifestUrl && !error) {
     return (
-      <video
-        ref={videoRef}
-        controls
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        poster={resolved?.thumbnail || undefined}
-        controlsList="nodownload noremoteplayback"
-        disablePictureInPicture
+      <div
+        ref={containerRef}
+        className="group relative w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto overflow-hidden [&_.shaka-controls-container]:font-sans [&_.shaka-overflow-menu]:text-foreground [&_.shaka-settings-menu]:text-foreground"
         onContextMenu={onContextMenu}
-        onDragStart={(e) => e.preventDefault()}
-        onError={() => {
-          const v = videoRef.current;
-          if (v && v.error && v.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-            setError("Видео-кодек не поддерживается этим браузером. Откройте стандартный плеер.");
-          }
-        }}
-        className="w-full aspect-[9/16] max-h-[80vh] bg-muted mx-auto"
-      />
+      >
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          preload="auto"
+          poster={resolved?.thumbnail || undefined}
+          controlsList="nodownload noremoteplayback"
+          disablePictureInPicture
+          disableRemotePlayback
+          onDragStart={(e) => e.preventDefault()}
+          className="absolute inset-0 h-full w-full bg-muted object-contain"
+        />
+        <span className="sr-only">{title}</span>
+      </div>
     );
   }
 
@@ -803,11 +833,11 @@ function YandexCloudVideoPlayer({
       <Video className="w-12 h-12 text-muted-foreground" />
       <div>
         <p className="font-medium text-foreground">{error || "Не удалось найти совместимый видеопоток."}</p>
-        {dashUrl && <p className="text-sm text-muted-foreground mt-2">Найден DASH-поток; для него используйте стандартный плеер.</p>}
+        {(dashUrl || hlsUrl) && <p className="text-sm text-muted-foreground mt-2">Поток найден, но встроенный плеер не смог его открыть в этом браузере.</p>}
       </div>
       <Button type="button" variant="outline" onClick={() => window.open(playerUrl, "_blank", "noopener,noreferrer")}>
         <Link2 className="w-4 h-4 mr-2" />
-        Открыть стандартный плеер
+        Открыть видео отдельно
       </Button>
       <span className="sr-only">{title}</span>
     </div>
