@@ -117,11 +117,8 @@ const VideoCases = () => {
     fetchCases();
   }, [user]);
 
-  useEffect(() => {
-    if (selectedVideo && playerRef.current) {
-      playerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [selectedVideo]);
+
+
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
