@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useHashOpen } from "@/hooks/useHashOpen";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Plus, Loader2, Shield, ChevronDown, ChevronRight, Trash2, Edit, Image } from "lucide-react";
 import { Link } from "react-router-dom";
