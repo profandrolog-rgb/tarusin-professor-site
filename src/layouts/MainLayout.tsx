@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Menu } from "lucide-react";
 import SmartSearchTrail from "@/components/SmartSearchTrail";
+import SmartSearchEndCTA from "@/components/SmartSearchEndCTA";
 
 const PatientChatbot = lazy(() => import("@/components/PatientChatbot"));
 
@@ -20,7 +21,10 @@ export function MainLayout({ children }: MainLayoutProps) {
         <Menu className="h-5 w-5" />
       </SidebarTrigger>
 
-      <main className="w-full min-h-screen">{children}</main>
+      <main className="w-full min-h-screen">
+        {children}
+        <ClientOnly>{() => <SmartSearchEndCTA />}</ClientOnly>
+      </main>
 
       <ClientOnly>{() => <SmartSearchTrail />}</ClientOnly>
 
