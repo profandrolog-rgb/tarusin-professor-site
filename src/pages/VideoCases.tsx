@@ -593,18 +593,19 @@ const VideoCases = () => {
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {items.map((c) => (
-                    <VideoCaseCard
-                      key={c.id}
-                      c={c}
-                      isAdmin={isAdmin}
-                      onSelect={setSelectedVideo}
-                      onEdit={openEditDialog}
-                      onDelete={handleDelete}
-                      onReaction={handleReaction}
-                      onContextMenu={handleContextMenu}
-                      isEmbedCode={isEmbedCode}
-                      getVideoType={getVideoType}
-                    />
+                    <div key={c.id} id={`video-${c.id}`} className="scroll-mt-24 rounded-xl">
+                      <VideoCaseCard
+                        c={c}
+                        isAdmin={isAdmin}
+                        onSelect={setSelectedVideo}
+                        onEdit={openEditDialog}
+                        onDelete={handleDelete}
+                        onReaction={handleReaction}
+                        onContextMenu={handleContextMenu}
+                        isEmbedCode={isEmbedCode}
+                        getVideoType={getVideoType}
+                      />
+                    </div>
                   ))}
                 </div>
               </section>
