@@ -225,6 +225,18 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     uzi: DEFAULT_UZI_URINARY,
     recommendations: "Контрольное УЗИ через 6–12 месяцев.",
   } as UziUrinaryOnlyData,
+  uzi_bladder: {
+    indications: "Оценка функции мочеиспускания, определение остаточной мочи.",
+    device: "УЗ-сканер с конвексным датчиком 3,5–5 МГц",
+    print_enabled: true,
+    bladder_walls: "Не утолщены, контуры ровные.",
+    bladder_contents: "Содержимое однородное, эхо-негативное.",
+    micturition_urge: "Позыв на микцию выраженный.",
+    residual_urine: "Клинически незначимая.",
+    conclusion: "УЗ-признаков патологии мочевого пузыря не выявлено, остаточной мочи нет.",
+    recommendations: "Контроль по показаниям.",
+  } as UziBladderData,
+
   dynamic_with_uzi: {
     complaints: "Жалоб нет.",
     local_status: DEFAULT_LOCAL_STATUS,
