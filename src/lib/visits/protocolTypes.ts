@@ -57,6 +57,8 @@ const PROTOCOL_SHORT: Record<string, string> = {
   postop_day10: "П/о 10 сут",
   uzi_reproductive: "УЗИ репродуктивной",
   uzi_urinary: "УЗИ мочевыделительной",
+  uzi_bladder: "УЗИ мочевого пузыря",
+
   ultrashort: "Краткий",
   online_consult: "ONLINE",
   peptide_program: "Пептидная программа",
