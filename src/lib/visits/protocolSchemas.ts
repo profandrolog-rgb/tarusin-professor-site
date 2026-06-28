@@ -94,6 +94,22 @@ export interface UziUrinaryOnlyData {
   recommendations?: string;
 }
 
+export interface UziBladderData {
+  indications?: string;
+  device?: string;
+  /** Включать ли блок УЗИ в печатный бланк (по умолчанию true). */
+  print_enabled?: boolean;
+  bladder_volume?: string;
+  bladder_walls?: string;
+  bladder_contents?: string;
+  residual_urine?: string;
+  residual_urine_percent?: string;
+  micturition_urge?: string;
+  conclusion?: string;
+  recommendations?: string;
+}
+
+
 export interface DynamicWithUziData extends PsychStatusData {
   complaints?: string;
   anamnesis?: string;
