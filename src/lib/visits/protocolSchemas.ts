@@ -165,6 +165,8 @@ export type AnyProtocolData =
   | RepeatWithLabsData
   | UziReproductiveOnlyData
   | UziUrinaryOnlyData
+  | UziBladderData
+
   | DynamicWithUziData
   | RepeatWithUziData
   | OnlineConsultData
