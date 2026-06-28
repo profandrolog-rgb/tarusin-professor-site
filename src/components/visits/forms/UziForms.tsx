@@ -1,6 +1,10 @@
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UziReproductiveOnlyData, UziUrinaryOnlyData, DynamicWithUziData, RepeatWithUziData } from "@/lib/visits/protocolSchemas";
+import { UziReproductiveOnlyData, UziUrinaryOnlyData, UziBladderData, DynamicWithUziData, RepeatWithUziData } from "@/lib/visits/protocolSchemas";
+
 import { UziReproductiveSection } from "../sections/UziReproductive";
 import { UziUrinarySection } from "../sections/UziUrinary";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
