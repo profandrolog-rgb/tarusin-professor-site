@@ -668,6 +668,23 @@ export default function AdminPatientVisitDetail() {
                   >
                     <Printer className="h-4 w-4 mr-1" /> Печать
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const src = document.getElementById("protocol-print-content") as HTMLElement | null;
+                      if (!src) return;
+                      try {
+                        const name = (visit as any)?.patient?.full_name?.replace(/\s+/g, "_") || "protocol";
+                        const date = (visit as any)?.visit_date ? String((visit as any).visit_date).slice(0, 10) : "";
+                        await exportNodeToPdf(src, `${name}_${date}.pdf`);
+                      } catch (e: any) {
+                        toast({ title: "Не удалось создать PDF", description: e?.message || String(e), variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <FileDown className="h-4 w-4 mr-1" /> PDF
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => setPreviewOpen(false)}>
                     <X className="h-4 w-4 mr-1" /> Закрыть
                   </Button>
