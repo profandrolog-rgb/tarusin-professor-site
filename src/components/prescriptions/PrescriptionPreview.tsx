@@ -49,6 +49,16 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
           <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" /> Печать
           </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              if (!printRef.current) return;
+              const name = prescription?.patient_name?.replace(/\s+/g, "_") || "prescription";
+              await exportNodeToPdf(printRef.current, `${name}_рецепт.pdf`);
+            }}
+          >
+            <FileDown className="h-4 w-4 mr-2" /> Скачать PDF
+          </Button>
         </div>
         <div ref={printRef} className="flex justify-center">
           <PrescriptionPrint prescription={prescription} />
