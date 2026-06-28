@@ -69,8 +69,8 @@ export function LocalStatusAndrologySection({ data, onChange }: Props) {
           </table>
         </div>
       ) : null}
-      {data.external_genitalia ? <div className="space-y-1"><SmartFieldLabel fieldKey="local_status" value={data.external_genitalia || ""} onSet={(v) => onChange({ external_genitalia: v })}>Наружные половые органы</SmartFieldLabel><Textarea rows={2} value={data.external_genitalia || ""} onChange={(e) => onChange({ external_genitalia: e.target.value })} /></div> : null}
-      {data.penis ? <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_penis" value={data.penis || ""} onSet={(v) => onChange({ penis: v })}>Половой член</SmartFieldLabel><Textarea rows={3} value={data.penis || ""} onChange={(e) => onChange({ penis: e.target.value })} /></div> : null}
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status" value={data.external_genitalia || ""} onSet={(v) => onChange({ external_genitalia: v })}>Наружные половые органы</SmartFieldLabel><Textarea rows={2} value={data.external_genitalia || ""} onChange={(e) => onChange({ external_genitalia: e.target.value })} /></div>
+      <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_penis" value={data.penis || ""} onSet={(v) => onChange({ penis: v })}>Половой член</SmartFieldLabel><Textarea rows={3} value={data.penis || ""} onChange={(e) => onChange({ penis: e.target.value })} /></div>
       <div className="space-y-1"><SmartFieldLabel fieldKey="local_status_scrotum" value={data.scrotum || ""} onSet={(v) => onChange({ scrotum: v })}>Мошонка</SmartFieldLabel><Textarea rows={2} value={data.scrotum || ""} onChange={(e) => onChange({ scrotum: e.target.value })} /></div>
       <div className="grid md:grid-cols-2 gap-3">
         <div className="space-y-1">
