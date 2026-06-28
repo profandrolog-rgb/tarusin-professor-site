@@ -694,6 +694,12 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     });
   }
 
+  // Универсальный опциональный блок: УЗДГ органов МПС, прикрепленный к любому протоколу
+  if (d.extra_uzi_mps && isPlainObject(d.extra_uzi_mps) && d.extra_uzi_mps.enabled === true) {
+    const { enabled: _en, ...uziData } = d.extra_uzi_mps;
+    rows.push(<UziRenderer key="extra-uzi-mps" uzi={uziData} title="УЗДГ органов МПС" />);
+  }
+
   // Catch-all: render any extra scalar fields in protocol_data not yet output
   pushUnknownScalars(rows, d);
 
