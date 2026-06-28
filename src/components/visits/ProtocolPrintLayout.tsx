@@ -253,7 +253,7 @@ const UZI_FIELD_ORDER = [
 ];
 
 // Поля-флаги в данных УЗИ, которые управляют видимостью разделов и не должны печататься
-const UZI_HIDDEN_KEYS = new Set(["show_penis_exam", "show_prostate"]);
+const UZI_HIDDEN_KEYS = new Set(["show_penis_exam", "show_prostate", "enabled"]);
 
 function orderedEntries(obj: Record<string, any>): [string, any][] {
   const keys = Object.keys(obj);
