@@ -41,6 +41,9 @@ export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
         return <UziReproductiveForm data={data || {}} onChange={patch} />;
       case "uzi_urinary":
         return <UziUrinaryForm data={data || {}} onChange={patch} />;
+      case "uzi_bladder":
+        return <UziBladderForm data={data || {}} onChange={patch} />;
+
       case "dynamic_with_uzi":
         return <DynamicWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
       case "repeat_with_uzi":
