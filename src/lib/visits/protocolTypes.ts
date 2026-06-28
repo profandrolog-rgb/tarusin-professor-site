@@ -5,11 +5,13 @@ export type ProtocolType =
   | "repeat_with_labs"
   | "uzi_reproductive"
   | "uzi_urinary"
+  | "uzi_bladder"
   | "postop_day3"
   | "postop_day7"
   | "repeat_with_uzi"
   | "online_consult"
   | "peptide_program";
+
 
 export interface ProtocolDef {
   key: ProtocolType;
