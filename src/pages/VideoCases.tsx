@@ -757,6 +757,15 @@ function YandexCloudVideoPlayer({
     const failToNative = () => setUseNativePlayer(true);
     video.addEventListener("error", failToNative, { once: true });
 
+    // Watchdog: if metadata doesn't arrive within 8s, fall back to iframe
+    const watchdog = window.setTimeout(() => {
+      if (!cancelled && (!video.readyState || video.readyState < 1)) {
+        failToNative();
+      }
+    }, 8000);
+    const clearWatchdog = () => window.clearTimeout(watchdog);
+    video.addEventListener("loadedmetadata", clearWatchdog, { once: true });
+
     if (dashUrl) {
       import("dashjs").then(({ MediaPlayer }) => {
         if (cancelled || !videoRef.current) return;
@@ -770,6 +779,7 @@ function YandexCloudVideoPlayer({
             },
           });
           dash.on(MediaPlayer.events.ERROR, failToNative);
+          dash.on(MediaPlayer.events.PLAYBACK_ERROR, failToNative);
           dash.initialize(videoRef.current, dashUrl, true);
         } catch (err) {
           console.warn("[DASH player failed]", err);
@@ -783,11 +793,14 @@ function YandexCloudVideoPlayer({
 
     return () => {
       cancelled = true;
+      window.clearTimeout(watchdog);
       video.removeEventListener("error", failToNative);
-      dash?.reset();
-      plyr?.destroy();
+      video.removeEventListener("loadedmetadata", clearWatchdog);
+      try { dash?.reset(); } catch { /* noop */ }
+      try { plyr?.destroy(); } catch { /* noop */ }
     };
   }, [dashUrl, hlsUrl, manifestUrl, useNativePlayer]);
+
 
   if (loading) {
     return (
