@@ -78,6 +78,14 @@ export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
         </div>
         <OperationTemplateBanner />
         {renderForm()}
+        {/* Универсальный опциональный блок УЗДГ органов МПС — доступен в любом протоколе.
+            Не показываем для типов, которые уже содержат полный УЗИ-блок. */}
+        {!["uzi_reproductive", "uzi_urinary", "uzi_bladder", "dynamic_with_uzi", "repeat_with_uzi"].includes(type) ? (
+          <ExtraUziMpsSection
+            data={data?.extra_uzi_mps}
+            onChange={(p) => patch({ extra_uzi_mps: { ...(data?.extra_uzi_mps || {}), ...p } })}
+          />
+        ) : null}
       </div>
     </SmartTemplatesProvider>
   );
