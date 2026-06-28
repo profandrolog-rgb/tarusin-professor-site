@@ -14,6 +14,7 @@ import {
   OperationTemplateBanner,
 } from "./SmartTemplates";
 import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
+import { ExtraUziMpsSection } from "./sections/ExtraUziMps";
 
 interface Props {
   type: ProtocolType;
