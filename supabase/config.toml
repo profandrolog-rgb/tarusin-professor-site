@@ -5,3 +5,5 @@ verify_jwt = true
 
 [functions.notify-telegram-appointment]
 verify_jwt = false
+[functions.apply-sql-once]
+verify_jwt = false
