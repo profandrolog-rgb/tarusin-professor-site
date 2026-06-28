@@ -253,7 +253,7 @@ const UZI_FIELD_ORDER = [
 ];
 
 // Поля-флаги в данных УЗИ, которые управляют видимостью разделов и не должны печататься
-const UZI_HIDDEN_KEYS = new Set(["show_penis_exam", "show_prostate"]);
+const UZI_HIDDEN_KEYS = new Set(["show_penis_exam", "show_prostate", "enabled"]);
 
 function orderedEntries(obj: Record<string, any>): [string, any][] {
   const keys = Object.keys(obj);
@@ -692,6 +692,12 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
         rows.push(<Field key={k} label={k} value={v as any} />);
       }
     });
+  }
+
+  // Универсальный опциональный блок: УЗДГ органов МПС, прикрепленный к любому протоколу
+  if (d.extra_uzi_mps && isPlainObject(d.extra_uzi_mps) && d.extra_uzi_mps.enabled === true) {
+    const { enabled: _en, ...uziData } = d.extra_uzi_mps;
+    rows.push(<UziRenderer key="extra-uzi-mps" uzi={uziData} title="УЗДГ органов МПС" />);
   }
 
   // Catch-all: render any extra scalar fields in protocol_data not yet output
