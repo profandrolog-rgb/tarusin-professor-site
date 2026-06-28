@@ -527,6 +527,31 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
 
+  if (t === "uzi_bladder") {
+    if (d.print_enabled === false) {
+      rows.push(
+        <div key="bladder-skip" className="text-xs italic text-gray-500 print:hidden">
+          Протокол УЗИ мочевого пузыря сохранён, но отключён от печати.
+        </div>
+      );
+    } else {
+      rows.push(<Field key="i" label="Показания" value={d.indications} />);
+      rows.push(<Field key="dev" label="Аппарат / датчик" value={d.device} />);
+      const bladderRows: React.ReactNode[] = [];
+      if (d.bladder_volume) bladderRows.push(<Field key="bv" label="Объём до микции" value={`${d.bladder_volume} мл`} />);
+      if (d.micturition_urge) bladderRows.push(<Field key="mu" label="Позыв на микцию" value={d.micturition_urge} />);
+      if (d.bladder_walls) bladderRows.push(<Field key="bw" label="Стенки" value={d.bladder_walls} />);
+      if (d.bladder_contents) bladderRows.push(<Field key="bc" label="Содержимое" value={d.bladder_contents} />);
+      if (d.residual_urine) bladderRows.push(<Field key="ru" label="Остаточная моча" value={d.residual_urine} />);
+      if (d.residual_urine_percent) bladderRows.push(<Field key="rup" label="Остаточная моча, %" value={d.residual_urine_percent} />);
+      if (bladderRows.length > 0) {
+        rows.push(<Section key="bl" title="УЗИ мочевого пузыря с определением остаточной мочи">{bladderRows}</Section>);
+      }
+      rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
+    }
+  }
+
+
   if (t === "online_consult") {
     // Сведения о консультации
     const infoRows: React.ReactNode[] = [];

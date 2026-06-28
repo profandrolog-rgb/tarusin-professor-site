@@ -94,6 +94,22 @@ export interface UziUrinaryOnlyData {
   recommendations?: string;
 }
 
+export interface UziBladderData {
+  indications?: string;
+  device?: string;
+  /** Включать ли блок УЗИ в печатный бланк (по умолчанию true). */
+  print_enabled?: boolean;
+  bladder_volume?: string;
+  bladder_walls?: string;
+  bladder_contents?: string;
+  residual_urine?: string;
+  residual_urine_percent?: string;
+  micturition_urge?: string;
+  conclusion?: string;
+  recommendations?: string;
+}
+
+
 export interface DynamicWithUziData extends PsychStatusData {
   complaints?: string;
   anamnesis?: string;
@@ -149,6 +165,8 @@ export type AnyProtocolData =
   | RepeatWithLabsData
   | UziReproductiveOnlyData
   | UziUrinaryOnlyData
+  | UziBladderData
+
   | DynamicWithUziData
   | RepeatWithUziData
   | OnlineConsultData
@@ -207,6 +225,18 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     uzi: DEFAULT_UZI_URINARY,
     recommendations: "Контрольное УЗИ через 6–12 месяцев.",
   } as UziUrinaryOnlyData,
+  uzi_bladder: {
+    indications: "Оценка функции мочеиспускания, определение остаточной мочи.",
+    device: "УЗ-сканер с конвексным датчиком 3,5–5 МГц",
+    print_enabled: true,
+    bladder_walls: "Не утолщены, контуры ровные.",
+    bladder_contents: "Содержимое однородное, эхо-негативное.",
+    micturition_urge: "Позыв на микцию выраженный.",
+    residual_urine: "Клинически незначимая.",
+    conclusion: "УЗ-признаков патологии мочевого пузыря не выявлено, остаточной мочи нет.",
+    recommendations: "Контроль по показаниям.",
+  } as UziBladderData,
+
   dynamic_with_uzi: {
     complaints: "Жалоб нет.",
     local_status: DEFAULT_LOCAL_STATUS,

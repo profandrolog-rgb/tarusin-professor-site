@@ -5,11 +5,13 @@ export type ProtocolType =
   | "repeat_with_labs"
   | "uzi_reproductive"
   | "uzi_urinary"
+  | "uzi_bladder"
   | "postop_day3"
   | "postop_day7"
   | "repeat_with_uzi"
   | "online_consult"
   | "peptide_program";
+
 
 export interface ProtocolDef {
   key: ProtocolType;
@@ -32,6 +34,8 @@ export const PROTOCOL_LABELS: Record<string, string> = {
   postop_day10: "Контрольный осмотр на 10 сутки после операции",
   uzi_reproductive: "Комплексное ультразвуковое исследование органов репродуктивной системы",
   uzi_urinary: "Ультразвуковое исследование органов мочевыделительной системы",
+  uzi_bladder: "Ультразвуковое исследование мочевого пузыря с определением остаточной мочи",
+
   ultrashort: "Краткий осмотр",
   online_consult: "ONLINE консультация",
   peptide_program: "Пептидная программа",
@@ -53,6 +57,8 @@ const PROTOCOL_SHORT: Record<string, string> = {
   postop_day10: "П/о 10 сут",
   uzi_reproductive: "УЗИ репродуктивной",
   uzi_urinary: "УЗИ мочевыделительной",
+  uzi_bladder: "УЗИ мочевого пузыря",
+
   ultrashort: "Краткий",
   online_consult: "ONLINE",
   peptide_program: "Пептидная программа",
@@ -68,6 +74,8 @@ export const PROTOCOL_TYPES: ProtocolDef[] = [
   "repeat_with_labs",
   "uzi_reproductive",
   "uzi_urinary",
+  "uzi_bladder",
+
   "postop_day3",
   "postop_day7",
   "repeat_with_uzi",

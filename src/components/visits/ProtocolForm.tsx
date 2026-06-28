@@ -4,7 +4,7 @@ import { PostOpDay3Form } from "./forms/PostOpDay3Form";
 import { PostOpDay7Form } from "./forms/PostOpDay7Form";
 import { PrimaryShortForm } from "./forms/PrimaryShortForm";
 import { RepeatWithLabsForm } from "./forms/RepeatWithLabsForm";
-import { UziReproductiveForm, UziUrinaryForm, DynamicWithUziForm, RepeatWithUziForm } from "./forms/UziForms";
+import { UziReproductiveForm, UziUrinaryForm, UziBladderForm, DynamicWithUziForm, RepeatWithUziForm } from "./forms/UziForms";
 import { GenericFieldsForm } from "./forms/GenericFieldsForm";
 import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import { PeptideProgramForm } from "./forms/PeptideProgramForm";
@@ -41,6 +41,9 @@ export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
         return <UziReproductiveForm data={data || {}} onChange={patch} />;
       case "uzi_urinary":
         return <UziUrinaryForm data={data || {}} onChange={patch} />;
+      case "uzi_bladder":
+        return <UziBladderForm data={data || {}} onChange={patch} />;
+
       case "dynamic_with_uzi":
         return <DynamicWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
       case "repeat_with_uzi":
