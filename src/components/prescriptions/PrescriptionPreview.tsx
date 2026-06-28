@@ -1,8 +1,9 @@
 import { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Eye, Printer } from "lucide-react";
+import { Eye, Printer, FileDown } from "lucide-react";
 import { PrescriptionPrint } from "./PrescriptionPrint";
+import { exportNodeToPdf } from "@/lib/exportPdf";
 
 interface PrescriptionPreviewProps {
   prescription: any;
