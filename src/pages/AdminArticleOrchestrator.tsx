@@ -43,9 +43,9 @@ const PANEL = [
   { id: "z-ai/glm-5", label: "GLM-5", default: true },
   { id: "moonshotai/kimi-k2", label: "Kimi K2", default: true },
   { id: "perplexity/sonar-pro", label: "Perplexity Sonar Pro (фактчек)", default: true },
-  { id: "venice/venice-uncensored-1-2", label: "Venice (без цензуры)", default: false },
-  { id: "x-ai/grok-4.3", label: "Grok 4", default: false },
-  { id: "deepseek/deepseek-v4-pro", label: "DeepSeek V4-Pro", default: false },
+  { id: "venice/venice-uncensored-1-2", label: "Venice (без цензуры)", default: true },
+  { id: "x-ai/grok-4.3", label: "Grok 4", default: true },
+  { id: "deepseek/deepseek-v4-pro", label: "DeepSeek V4-Pro", default: true },
 ];
 
 const ARBITERS = [
