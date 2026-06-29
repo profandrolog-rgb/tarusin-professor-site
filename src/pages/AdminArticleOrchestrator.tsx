@@ -533,13 +533,29 @@ export default function AdminArticleOrchestrator() {
             <CardTitle>3. Мнения моделей ({reviews.length})</CardTitle>
             <div className="flex gap-2 flex-wrap">
               <Button
-                onClick={() => rewriteWithVoice(Array.from(directAccepted.values()))}
+                onClick={() => {
+                  const fresh = Array.from(directAccepted.entries()).map(([key, e]) => ({
+                    ...e,
+                    suggested: getSuggested(key, e.suggested),
+                  }));
+                  rewriteWithVoice(fresh);
+                }}
                 disabled={!directAccepted.size || rewriting}
                 variant="default"
               >
                 {rewriting
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю…</>
                   : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать с принятыми ({directAccepted.size})</>}
+              </Button>
+              <Button
+                onClick={runReview}
+                disabled={reviewing}
+                variant="outline"
+                title="Запустить ревью ещё раз с теми же моделями"
+              >
+                {reviewing
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Идёт…</>
+                  : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью</>}
               </Button>
               <Button
                 onClick={runConsolidation}
