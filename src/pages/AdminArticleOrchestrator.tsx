@@ -438,8 +438,10 @@ export default function AdminArticleOrchestrator() {
               ))}
             </div>
 
-            <Button onClick={applyEdits} disabled={!acceptedCount} className="w-full" size="lg">
-              <FileCheck2 className="w-4 h-4 mr-2" /> Применить выбранные правки ({acceptedCount})
+            <Button onClick={rewriteWithVoice} disabled={!acceptedCount || rewriting} className="w-full" size="lg">
+              {rewriting
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю с сохранением вашего голоса…</>
+                : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать статью с моим голосом ({acceptedCount} правок)</>}
             </Button>
           </CardContent>
         </Card>
