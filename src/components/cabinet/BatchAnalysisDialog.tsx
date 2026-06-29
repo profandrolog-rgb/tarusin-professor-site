@@ -27,6 +27,7 @@ type BatchRow = {
   error: string | null;
   chain_log?: ChainLogEntry[] | null;
   updated_at?: string;
+  user_id?: string;
 };
 
 
@@ -76,6 +77,9 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "analysis_batches", filter: `id=eq.${activeBatch.id}` },
         (payload) => {
           const row = payload.new as BatchRow;
+          // Defense-in-depth: RLS уже ограничивает выдачу по user_id, но дополнительно
+          // отбрасываем чужие апдейты на клиенте, если они почему-то прошли.
+          if (activeBatch.user_id && row.user_id && row.user_id !== activeBatch.user_id) return;
           setActiveBatch(row);
           if (row.status === "done") setPhase("done");
           else if (row.status === "error") setPhase("error");
