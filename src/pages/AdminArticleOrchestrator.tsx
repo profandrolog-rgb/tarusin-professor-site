@@ -169,13 +169,31 @@ export default function AdminArticleOrchestrator() {
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
   // Прямой приём правок из мнения каждой модели (ключ: `${model}::${index}`)
   const [directAccepted, setDirectAccepted] = useState<Map<string, EditItem>>(new Map());
+  // Inline-редактирование текста правок: ключ `${model}::${index}` или `cons::${i}`
+  const [editedSuggested, setEditedSuggested] = useState<Map<string, string>>(new Map());
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
+
+  const getSuggested = (key: string, fallback: string) =>
+    editedSuggested.has(key) ? editedSuggested.get(key)! : fallback;
+
+  const setSuggested = (key: string, val: string) => {
+    setEditedSuggested((cur) => {
+      const n = new Map(cur);
+      n.set(key, val);
+      return n;
+    });
+  };
 
   const toggleDirect = (model: string, i: number, edit: EditItem) => {
     const key = `${model}::${i}`;
     setDirectAccepted((cur) => {
       const n = new Map(cur);
-      if (n.has(key)) n.delete(key); else n.set(key, edit);
+      if (n.has(key)) {
+        n.delete(key);
+      } else {
+        n.set(key, { ...edit, suggested: getSuggested(key, edit.suggested) });
+      }
       return n;
     });
   };
