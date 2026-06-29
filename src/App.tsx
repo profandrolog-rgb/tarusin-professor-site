@@ -76,6 +76,7 @@ import CabinetAgent from "./pages/CabinetAgent";
 import CabinetVault from "./pages/CabinetVault";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
+import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 
 // Обёртки для синхронной установки языка до рендера контента.
 const RuRoot = () => (
