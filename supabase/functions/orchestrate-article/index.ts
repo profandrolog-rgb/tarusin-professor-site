@@ -203,6 +203,43 @@ Deno.serve(async (req) => {
     }
     const origin = req.headers.get("origin") ?? "https://tarusin.pro";
 
+    // --- Образцы авторского голоса: подгружаем опубликованные статьи как style reference ---
+    const stripHtml = (s: string) => String(s || "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&[a-z]+;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    async function loadStyleSamples(limit = 3, perSampleChars = 1800): Promise<string> {
+      try {
+        const { data } = await supabase
+          .from("disease_articles")
+          .select("title, article_content, updated_at")
+          .eq("is_published", true)
+          .order("updated_at", { ascending: false })
+          .limit(limit);
+        const items = (data || [])
+          .map((r: any) => ({ title: r.title || "", text: stripHtml(r.article_content || "") }))
+          .filter((r) => r.text.length > 400);
+        if (!items.length) return "";
+        return items.map((r, i) => (
+          `--- ОБРАЗЕЦ #${i + 1}: «${r.title}» ---\n${r.text.slice(0, perSampleChars)}`
+        )).join("\n\n");
+      } catch (e) {
+        console.warn("loadStyleSamples failed", e);
+        return "";
+      }
+    }
+    const styleSamples = (body.action === "review" || body.action === "rewrite")
+      ? await loadStyleSamples()
+      : "";
+    const styleBlock = styleSamples
+      ? `\n\nЭТАЛОННЫЕ ОБРАЗЦЫ АВТОРСКОГО ГОЛОСА (опубликованные статьи профессора — используй как референс лексики, ритма, оборотов; НЕ копируй содержание):\n${styleSamples}`
+      : "";
+
     if (body.action === "review") {
       const text: string = String(body.text || "").trim();
       const title: string = String(body.title || "").trim();
@@ -220,8 +257,9 @@ Deno.serve(async (req) => {
 
       const userMsg = [
         title ? `ЗАГОЛОВОК: ${title}` : "",
-        "СТАТЬЯ:",
+        "СТАТЬЯ (на ревью):",
         text,
+        styleBlock,
       ].filter(Boolean).join("\n\n");
 
       const messages = [
@@ -335,7 +373,8 @@ Deno.serve(async (req) => {
         "",
         "ОДОБРЕННЫЕ ПРАВКИ (применить и переплавить в авторский стиль):",
         editsBlock,
-      ].join("\n");
+        styleBlock,
+      ].filter(Boolean).join("\n");
       try {
         const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
           { role: "system", content: REWRITE_SYSTEM },
