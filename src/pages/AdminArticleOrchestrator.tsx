@@ -510,17 +510,28 @@ export default function AdminArticleOrchestrator() {
       {/* PER-MODEL REVIEWS */}
       {reviews.length > 0 && (
         <Card className="mt-6">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle>3. Мнения моделей ({reviews.length})</CardTitle>
-            <Button
-              onClick={runConsolidation}
-              disabled={consolidating || successReviews.length < 1}
-              variant="default"
-            >
-              {consolidating
-                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Арбитр работает…</>
-                : <><GitMerge className="w-4 h-4 mr-2" /> Сформировать сводку</>}
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={() => rewriteWithVoice(Array.from(directAccepted.values()))}
+                disabled={!directAccepted.size || rewriting}
+                variant="default"
+              >
+                {rewriting
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю…</>
+                  : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать с принятыми ({directAccepted.size})</>}
+              </Button>
+              <Button
+                onClick={runConsolidation}
+                disabled={consolidating || successReviews.length < 1}
+                variant="outline"
+              >
+                {consolidating
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Арбитр работает…</>
+                  : <><GitMerge className="w-4 h-4 mr-2" /> Сформировать сводку</>}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue={reviews[0]?.model}>
