@@ -257,8 +257,9 @@ Deno.serve(async (req) => {
 
       const userMsg = [
         title ? `ЗАГОЛОВОК: ${title}` : "",
-        "СТАТЬЯ:",
+        "СТАТЬЯ (на ревью):",
         text,
+        styleBlock,
       ].filter(Boolean).join("\n\n");
 
       const messages = [
