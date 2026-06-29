@@ -82,6 +82,7 @@ export default function AdminArticleOrchestrator() {
   const [text, setText] = useState("");
   const [models, setModels] = useState<string[]>(PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(ARBITERS[0].id);
+  const [rewriter, setRewriter] = useState(REWRITERS[0].id);
 
   const [reviews, setReviews] = useState<ModelReview[]>([]);
   const [reviewing, setReviewing] = useState(false);
