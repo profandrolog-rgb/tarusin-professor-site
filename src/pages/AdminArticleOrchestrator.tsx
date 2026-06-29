@@ -166,7 +166,18 @@ export default function AdminArticleOrchestrator() {
   const [consolidating, setConsolidating] = useState(false);
 
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
+  // Прямой приём правок из мнения каждой модели (ключ: `${model}::${index}`)
+  const [directAccepted, setDirectAccepted] = useState<Map<string, EditItem>>(new Map());
   const [finalText, setFinalText] = useState("");
+
+  const toggleDirect = (model: string, i: number, edit: EditItem) => {
+    const key = `${model}::${i}`;
+    setDirectAccepted((cur) => {
+      const n = new Map(cur);
+      if (n.has(key)) n.delete(key); else n.set(key, edit);
+      return n;
+    });
+  };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
   if (!user || !isAdmin) { navigate("/auth"); return null; }
@@ -301,9 +312,8 @@ export default function AdminArticleOrchestrator() {
 
   const [rewriting, setRewriting] = useState(false);
 
-  async function rewriteWithVoice() {
-    if (!consolidated) return;
-    const editsAccepted = consolidated.edits.filter((_, i) => accepted.has(i));
+  async function rewriteWithVoice(editsArg?: EditItem[]) {
+    const editsAccepted = editsArg ?? (consolidated ? consolidated.edits.filter((_, i) => accepted.has(i)) : []);
     if (!editsAccepted.length) {
       toast({ title: "Не выбраны правки", variant: "destructive" });
       return;
@@ -500,17 +510,28 @@ export default function AdminArticleOrchestrator() {
       {/* PER-MODEL REVIEWS */}
       {reviews.length > 0 && (
         <Card className="mt-6">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
             <CardTitle>3. Мнения моделей ({reviews.length})</CardTitle>
-            <Button
-              onClick={runConsolidation}
-              disabled={consolidating || successReviews.length < 1}
-              variant="default"
-            >
-              {consolidating
-                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Арбитр работает…</>
-                : <><GitMerge className="w-4 h-4 mr-2" /> Сформировать сводку</>}
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={() => rewriteWithVoice(Array.from(directAccepted.values()))}
+                disabled={!directAccepted.size || rewriting}
+                variant="default"
+              >
+                {rewriting
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю…</>
+                  : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать с принятыми ({directAccepted.size})</>}
+              </Button>
+              <Button
+                onClick={runConsolidation}
+                disabled={consolidating || successReviews.length < 1}
+                variant="outline"
+              >
+                {consolidating
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Арбитр работает…</>
+                  : <><GitMerge className="w-4 h-4 mr-2" /> Сформировать сводку</>}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue={reviews[0]?.model}>
@@ -539,17 +560,36 @@ export default function AdminArticleOrchestrator() {
                         <div className="text-sm text-muted-foreground">Правок не предложено.</div>
                       ) : (
                         <div className="space-y-2">
-                          {r.edits.map((e, i) => (
-                            <div key={i} className="p-3 rounded-md border border-border text-sm space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline">{e.category}</Badge>
-                                {e.severity && <Badge className={SEVERITY_COLOR[e.severity] || ""} variant="outline">{e.severity}</Badge>}
+                          {r.edits.map((e, i) => {
+                            const key = `${r.model}::${i}`;
+                            const isAcc = directAccepted.has(key);
+                            return (
+                              <div
+                                key={i}
+                                className={`p-3 rounded-md border text-sm space-y-2 transition-colors ${
+                                  isAcc ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="outline">{e.category}</Badge>
+                                  {e.severity && <Badge className={SEVERITY_COLOR[e.severity] || ""} variant="outline">{e.severity}</Badge>}
+                                  <div className="ml-auto">
+                                    <Button
+                                      size="sm"
+                                      variant={isAcc ? "default" : "outline"}
+                                      onClick={() => toggleDirect(r.model, i, e)}
+                                      className={isAcc ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                                    >
+                                      {isAcc ? "✓ Принято" : "Принять"}
+                                    </Button>
+                                  </div>
+                                </div>
+                                {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
+                                <div><span className="text-xs font-semibold">→ </span>{e.suggested}</div>
+                                {e.rationale && <div className="text-xs text-muted-foreground">{e.rationale}</div>}
                               </div>
-                              {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
-                              <div><span className="text-xs font-semibold">→ </span>{e.suggested}</div>
-                              <div className="text-xs text-muted-foreground">{e.rationale}</div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -679,7 +719,7 @@ export default function AdminArticleOrchestrator() {
               })}
             </div>
 
-            <Button onClick={rewriteWithVoice} disabled={!acceptedCount || rewriting} className="w-full" size="lg">
+            <Button onClick={() => rewriteWithVoice()} disabled={!acceptedCount || rewriting} className="w-full" size="lg">
               {rewriting
                 ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю с сохранением вашего голоса…</>
                 : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать статью с моим голосом ({acceptedCount} правок)</>}
