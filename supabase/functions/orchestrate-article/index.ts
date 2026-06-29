@@ -243,17 +243,20 @@ Deno.serve(async (req) => {
 
           await Promise.all(models.map(async (model) => {
             const t0 = Date.now();
+            send(`event: model_start\ndata: ${JSON.stringify({ model, started_at: t0 })}\n\n`);
             try {
               const raw = await callModel(openrouterKey, veniceKey, origin, model, messages, 0.3);
               const parsed = tryParseJson(raw);
+              const ms = Date.now() - t0;
               const payload = parsed && typeof parsed === "object"
-                ? { model, free_review: String(parsed.free_review || ""), edits: Array.isArray(parsed.edits) ? parsed.edits : [], raw: undefined }
-                : { model, free_review: raw.slice(0, 2000), edits: [], parse_error: true };
-              console.log("[orchestrator] ok", JSON.stringify({ model, ms: Date.now() - t0, edits: payload.edits.length }));
+                ? { model, free_review: String(parsed.free_review || ""), edits: Array.isArray(parsed.edits) ? parsed.edits : [], ms }
+                : { model, free_review: raw.slice(0, 2000), edits: [], parse_error: true, ms };
+              console.log("[orchestrator] ok", JSON.stringify({ model, ms, edits: payload.edits.length }));
               send(`event: model_done\ndata: ${JSON.stringify(payload)}\n\n`);
             } catch (e: any) {
+              const ms = Date.now() - t0;
               console.error("[orchestrator] fail", JSON.stringify({ model, err: e?.message || String(e) }));
-              send(`event: model_done\ndata: ${JSON.stringify({ model, free_review: "", edits: [], error: e?.message || String(e) })}\n\n`);
+              send(`event: model_done\ndata: ${JSON.stringify({ model, free_review: "", edits: [], error: e?.message || String(e), ms })}\n\n`);
             }
           }));
 
