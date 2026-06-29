@@ -367,6 +367,83 @@ export default function AdminArticleOrchestrator() {
 
   const acceptedCount = accepted.size;
 
+  // ===== Тест связи + форматирование Claude =====
+  const [testingConn, setTestingConn] = useState(false);
+  const [formatting, setFormatting] = useState(false);
+  const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
+
+  async function testClaudeConnection() {
+    setTestingConn(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/test-claude-connection`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${session?.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
+      sonnerToast.success("Связь с Claude в порядке", { description: j?.model || "ok" });
+    } catch (e: any) {
+      sonnerToast.error("Нет связи с Claude", { description: e?.message || String(e) });
+    } finally {
+      setTestingConn(false);
+    }
+  }
+
+  async function formatFinal() {
+    if (!finalText.trim()) return;
+    setFormatting(true);
+    setFormatProgress(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/format-disease-article`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${session?.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ text: finalText }),
+      });
+      if (!resp.ok || !resp.body) {
+        const t = await resp.text().catch(() => "");
+        throw new Error(`HTTP ${resp.status}: ${t.slice(0, 200)}`);
+      }
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let result = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === "progress" && evt.stage === "chunk") {
+              setFormatProgress({ index: evt.index, total: evt.total });
+            } else if (evt.type === "result") {
+              result = evt.formatted || "";
+            } else if (evt.type === "error") {
+              throw new Error(evt.error || "format error");
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      if (result) {
+        setFinalText(result);
+        sonnerToast.success("Форматирование завершено", { description: "Текст обновлён в итоговой статье" });
+      } else {
+        throw new Error("Пустой ответ форматера");
+      }
+    } catch (e: any) {
+      sonnerToast.error("Ошибка форматирования", { description: e?.message || String(e) });
+    } finally {
+      setFormatting(false);
+      setFormatProgress(null);
+    }
+  }
+
   const successReviews = useMemo(() => reviews.filter((r) => !r.error), [reviews]);
 
   return (
