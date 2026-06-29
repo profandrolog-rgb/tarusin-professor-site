@@ -335,7 +335,6 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
-  const [rewriting, setRewriting] = useState(false);
 
   async function rewriteWithVoice(editsArg?: EditItem[]) {
     const editsAccepted = editsArg ?? (consolidated
@@ -374,9 +373,6 @@ export default function AdminArticleOrchestrator() {
   const acceptedCount = accepted.size;
 
   // ===== Тест связи + форматирование Claude =====
-  const [testingConn, setTestingConn] = useState(false);
-  const [formatting, setFormatting] = useState(false);
-  const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
 
   async function testClaudeConnection() {
     setTestingConn(true);
@@ -450,7 +446,6 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
-  const successReviews = useMemo(() => reviews.filter((r) => !r.error), [reviews]);
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
