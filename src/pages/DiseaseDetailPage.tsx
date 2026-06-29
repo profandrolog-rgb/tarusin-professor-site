@@ -113,8 +113,26 @@ const DiseaseDetailPage = () => {
 
   if (!article) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Загрузка...</p>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-12 max-w-3xl">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 w-32 bg-muted rounded" />
+            <div className="h-10 w-3/4 bg-muted rounded" />
+            <div className="h-4 w-full bg-muted rounded" />
+            <div className="h-4 w-5/6 bg-muted rounded" />
+            <div className="h-64 w-full bg-muted rounded-xl mt-6" />
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            Загружаем материал профессора… Если страница не открылась за несколько секунд,{" "}
+            <button
+              onClick={() => navigate("/for-parents")}
+              className="underline text-primary hover:text-primary/80"
+            >
+              вернуться в каталог
+            </button>
+            .
+          </p>
+        </div>
       </div>
     );
   }
