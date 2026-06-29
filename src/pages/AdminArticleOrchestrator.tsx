@@ -1,7 +1,7 @@
 // AI Article Orchestrator
 // Админ-инструмент: статья → параллельное ревью N моделей → консолидация арбитром → применение правок.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square } from "lucide-react";
+
 
 type EditItem = {
   id?: string;
@@ -83,6 +84,59 @@ export default function AdminArticleOrchestrator() {
   const [models, setModels] = useState<string[]>(PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(ARBITERS[0].id);
   const [rewriter, setRewriter] = useState(REWRITERS[0].id);
+
+  // --- Диктовка ---
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startDictation = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mime });
+        if (blob.size < 2048) {
+          toast({ title: "Запись пустая", description: "Попробуйте ещё раз", variant: "destructive" });
+          return;
+        }
+        setTranscribing(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const fd = new FormData();
+          fd.append("file", blob, `dict.${mime === "audio/webm" ? "webm" : "mp4"}`);
+          const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/ai-transcribe`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+            body: fd,
+          });
+          const json = await resp.json();
+          if (!resp.ok) throw new Error(json?.error || `HTTP ${resp.status}`);
+          const t = String(json.text || "").trim();
+          if (t) setText((prev) => (prev ? prev + (prev.endsWith("\n") ? "" : "\n") : "") + t);
+        } catch (e: any) {
+          toast({ title: "Ошибка диктовки", description: e.message, variant: "destructive" });
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      rec.start();
+      recorderRef.current = rec;
+      setRecording(true);
+    } catch (e: any) {
+      toast({ title: "Нет доступа к микрофону", description: e.message, variant: "destructive" });
+    }
+  };
+  const stopDictation = () => {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  };
 
   const [reviews, setReviews] = useState<ModelReview[]>([]);
   const [reviewing, setReviewing] = useState(false);
@@ -278,8 +332,20 @@ export default function AdminArticleOrchestrator() {
               onChange={(e) => setText(e.target.value)}
               className="min-h-[360px] font-serif text-[15px] leading-relaxed"
             />
-            <div className="text-xs text-muted-foreground">
-              Символов: {text.length.toLocaleString("ru-RU")} · Слов: {text.trim() ? text.trim().split(/\s+/).length.toLocaleString("ru-RU") : 0}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-xs text-muted-foreground">
+                Символов: {text.length.toLocaleString("ru-RU")} · Слов: {text.trim() ? text.trim().split(/\s+/).length.toLocaleString("ru-RU") : 0}
+              </div>
+              {!recording ? (
+                <Button size="sm" variant="outline" onClick={startDictation} disabled={transcribing}>
+                  {transcribing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mic className="w-4 h-4 mr-1" />}
+                  {transcribing ? "Распознаю…" : "Диктовка"}
+                </Button>
+              ) : (
+                <Button size="sm" variant="destructive" onClick={stopDictation}>
+                  <Square className="w-4 h-4 mr-1" /> Остановить
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
