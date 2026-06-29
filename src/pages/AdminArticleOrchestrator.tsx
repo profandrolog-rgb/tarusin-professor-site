@@ -707,7 +707,8 @@ export default function AdminArticleOrchestrator() {
                                   <Textarea
                                     value={getSuggested(key, e.suggested)}
                                     onChange={(ev) => setSuggested(key, ev.target.value)}
-                                    onBlur={() => setEditingKey(null)}
+                                    onClick={(ev) => ev.stopPropagation()}
+                                    onMouseDown={(ev) => ev.stopPropagation()}
                                     autoFocus
                                     className="min-h-[80px] text-sm font-serif leading-relaxed border-amber-500/50 focus-visible:ring-amber-500/40"
                                   />
@@ -845,8 +846,9 @@ export default function AdminArticleOrchestrator() {
                               <Textarea
                                 value={getSuggested(`cons::${i}`, e.suggested)}
                                 onChange={(ev) => setSuggested(`cons::${i}`, ev.target.value)}
-                                onBlur={() => setEditingKey(null)}
-                                onClick={(ev) => ev.preventDefault()}
+                                onClick={(ev) => ev.stopPropagation()}
+                                onMouseDown={(ev) => ev.stopPropagation()}
+                                onKeyDown={(ev) => ev.stopPropagation()}
                                 autoFocus
                                 className="min-h-[90px] text-xs font-serif leading-relaxed bg-background"
                               />

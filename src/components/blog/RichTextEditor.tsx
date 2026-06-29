@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false, blockquote: false }),
+      StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false }),
       Underline,
       Image.configure({ inline: false, allowBase64: false }),
     ],
@@ -78,8 +78,11 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   }, [handleScroll]);
 
   useEffect(() => {
-    if (editor && content === "") {
-      editor.commands.setContent("");
+    if (!editor) return;
+    // Sync external content changes (e.g. when arriving from Orchestrator)
+    // without disrupting user typing — only update if the HTML differs.
+    if (content !== editor.getHTML()) {
+      editor.commands.setContent(content || "");
     }
   }, [content, editor]);
 
@@ -182,6 +185,17 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         title="Нумерованный список"
       >
         <ListOrdered className="w-4 h-4" />
+      </Button>
+
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("blockquote") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        title="Цитата"
+      >
+        <Quote className="w-4 h-4" />
       </Button>
 
       <div className="w-px h-6 bg-border mx-1" />
