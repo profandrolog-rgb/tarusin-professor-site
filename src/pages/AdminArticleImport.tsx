@@ -60,6 +60,7 @@ const AdminArticleImport = () => {
   const [content, setContent] = useState("");
   const [isPublished, setIsPublished] = useState(false);
   const [filename, setFilename] = useState("");
+  const [aiReview, setAiReview] = useState<any>(null);
 
   const location = useLocation();
   const incoming = (location.state || null) as { title?: string; text?: string; source?: string } | null;
