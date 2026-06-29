@@ -158,13 +158,29 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
 
         {/* Articles grid */}
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Загрузка...</div>
+          <DiseaseCardsSkeleton count={4} />
+        ) : loadError ? (
+          <FriendlyFallback
+            variant="error"
+            onRetry={fetchArticles}
+            description="Не удалось загрузить список заболеваний. Проверьте интернет — данные не потеряны, можно повторить попытку."
+          />
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchQuery ? "Ничего не найдено. Попробуйте другой запрос." : "Материалы скоро появятся."}
-            </p>
-          </div>
+          searchQuery || selectedCategory ? (
+            <FriendlyFallback
+              variant="empty"
+              title="Ничего не нашлось"
+              description="Попробуйте изменить поисковый запрос или сбросить фильтр по разделу."
+            />
+          ) : (
+            <FriendlyFallback
+              variant="empty"
+              title={ageGroup === "children" ? "Материалы для детей скоро появятся" : "Материалы для взрослых скоро появятся"}
+              description="Раздел сейчас пополняется. Загляните позже — или посмотрите другие материалы профессора."
+              primaryHref="/for-parents?tab=useful"
+              primaryLabel="Полезные материалы"
+            />
+          )
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filtered.map((article) => (
