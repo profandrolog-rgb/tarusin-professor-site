@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send } from "lucide-react";
 
 type EditItem = {
   id?: string;
