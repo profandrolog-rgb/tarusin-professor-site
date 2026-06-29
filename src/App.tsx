@@ -62,6 +62,7 @@ import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPodcastSources from "./pages/AdminPodcastSources";
 import AdminArticleOrchestrator from "./pages/AdminArticleOrchestrator";
+import AdminArticleImport from "./pages/AdminArticleImport";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
 import AdminPatients from "./pages/AdminPatients";
 import AdminPatientForm from "./pages/AdminPatientForm";
