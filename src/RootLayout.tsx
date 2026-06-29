@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthProvider } from "@/hooks/useAuth";
+import { AppErrorBoundary } from "@/components/RouteErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -13,7 +14,9 @@ const RootLayout = () => (
     <AuthProvider>
       <TooltipProvider>
         <MainLayout>
-          <Outlet />
+          <AppErrorBoundary>
+            <Outlet />
+          </AppErrorBoundary>
         </MainLayout>
         <Toaster />
         <Sonner />
@@ -23,3 +26,4 @@ const RootLayout = () => (
 );
 
 export default RootLayout;
+
