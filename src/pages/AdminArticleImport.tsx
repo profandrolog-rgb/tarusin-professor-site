@@ -61,6 +61,45 @@ const AdminArticleImport = () => {
   const [isPublished, setIsPublished] = useState(false);
   const [filename, setFilename] = useState("");
 
+  const location = useLocation();
+  const incoming = (location.state || null) as { title?: string; text?: string; source?: string } | null;
+
+  // Auto-prefill when arriving from the Orchestrator with a finished article
+  useEffect(() => {
+    if (!incoming?.text) return;
+    const plain = incoming.text;
+    const html = plain
+      .split(/\n{2,}/)
+      .map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+      .join("");
+    setContent(html);
+    if (incoming.title) {
+      setTitle(incoming.title);
+      setSlug(slugifyRu(incoming.title));
+    }
+    setFilename(incoming.source === "orchestrator" ? "Из оркестратора" : "");
+    setSeoLoading(true);
+    toast({ title: "Анализирую статью…", description: "ИИ заполняет SEO-поля" });
+    supabase.functions
+      .invoke("import-article-meta", { body: { text: plain, filename: incoming.title || "article" } })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        if (data.title && !incoming.title) setTitle(data.title);
+        if (data.slug) setSlug(data.slug);
+        if (data.excerpt) setExcerpt(data.excerpt);
+        if (Array.isArray(data.keywords)) setKeywords(data.keywords);
+        if (data.category && categoryLabels[data.category]) setCategory(data.category);
+        if (data.age_group === "adults" || data.age_group === "children") setAgeGroup(data.age_group);
+        toast({ title: "Готово", description: "Осталось только Форматировать и Сохранить" });
+      })
+      .catch((err) => toast({ title: "SEO не получен", description: err.message, variant: "destructive" }))
+      .finally(() => setSeoLoading(false));
+    // run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   if (authLoading) return <div className="p-8 text-center">Загрузка…</div>;
   if (!isAdmin) {
     return <div className="p-8 text-center text-destructive">Доступ только для администраторов</div>;
