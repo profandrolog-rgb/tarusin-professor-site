@@ -303,13 +303,23 @@ export default function AdminArticleOrchestrator() {
               ))}
             </div>
             <div>
-              <div className="text-sm font-medium mb-1">Арбитр (для консолидации)</div>
+              <div className="text-sm font-medium mb-1">Арбитр (для консолидации мнений)</div>
               <select
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
                 value={arbiter}
                 onChange={(e) => setArbiter(e.target.value)}
               >
                 {ARBITERS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="text-sm font-medium mb-1">Переписчик (создаёт финальную статью с вашим голосом)</div>
+              <select
+                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+                value={rewriter}
+                onChange={(e) => setRewriter(e.target.value)}
+              >
+                {REWRITERS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
               </select>
             </div>
             <Button
