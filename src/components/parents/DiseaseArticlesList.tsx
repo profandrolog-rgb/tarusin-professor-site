@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DiseaseArticleCard from "./DiseaseArticleCard";
+import FriendlyFallback, { DiseaseCardsSkeleton } from "./FriendlyFallback";
 
 interface DiseaseArticlesListProps {
   ageGroup: "children" | "adults";
@@ -16,18 +17,25 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
   const seeded = (initialArticles || []).filter((a) => a.age_group === ageGroup);
   const [articles, setArticles] = useState<any[]>(seeded);
   const [loading, setLoading] = useState(seeded.length === 0);
+  const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    setLoadError(false);
+    const { data, error } = await supabase
       .from("disease_articles")
       .select("*")
       .eq("age_group", ageGroup)
       .eq("is_published", true)
       .order("sort_order", { ascending: true });
-    setArticles(data || []);
+    if (error) {
+      setLoadError(true);
+      setArticles([]);
+    } else {
+      setArticles(data || []);
+    }
     setLoading(false);
   }, [ageGroup]);
 
