@@ -154,6 +154,7 @@ export const routes: RouteRecord[] = [
   {
     path: "/",
     element: <RuRoot />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       ...ruPublicChildren,
 
