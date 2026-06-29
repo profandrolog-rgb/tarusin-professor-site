@@ -187,6 +187,17 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         <ListOrdered className="w-4 h-4" />
       </Button>
 
+      <Button
+        type="button"
+        size="icon"
+        variant={editor.isActive("blockquote") ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        title="Цитата"
+      >
+        <Quote className="w-4 h-4" />
+      </Button>
+
       <div className="w-px h-6 bg-border mx-1" />
 
       <Button
