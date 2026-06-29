@@ -154,6 +154,13 @@ const siteSections = [
     color: "text-fuchsia-600",
   },
   {
+    title: "📥 Импорт статьи",
+    description: "Загрузить Word — ИИ заполнит заголовок, slug, ключевые слова и аннотацию",
+    icon: FileText,
+    href: "/admin/article-import",
+    color: "text-cyan-600",
+  },
+  {
     title: "✨ Оркестратор статей",
     description: "Параллельное ревью текста несколькими ИИ, голосование, арбитраж и автоприменение правок",
     icon: FileText,
