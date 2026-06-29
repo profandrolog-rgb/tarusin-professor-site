@@ -373,7 +373,8 @@ Deno.serve(async (req) => {
         "",
         "ОДОБРЕННЫЕ ПРАВКИ (применить и переплавить в авторский стиль):",
         editsBlock,
-      ].join("\n");
+        styleBlock,
+      ].filter(Boolean).join("\n");
       try {
         const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
           { role: "system", content: REWRITE_SYSTEM },
