@@ -14,7 +14,22 @@ export interface ParentsLoaderData {
   articles: any[];
 }
 
+/**
+ * Безопасный JSON-парсинг. Если ответ — HTML (DOCTYPE), возвращаем null,
+ * чтобы не падать с "Unexpected token '<'" в loader-е React Router.
+ */
+async function safeJson(res: Response): Promise<any | null> {
+  try {
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("json")) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function parentsLoader(): Promise<ParentsLoaderData> {
+  if (!SUPABASE_URL || !SUPABASE_ANON) return { articles: [] };
   try {
     const url = `${SUPABASE_URL}/rest/v1/disease_articles?is_published=eq.true&select=*&order=sort_order.asc`;
     const res = await fetch(url, { headers: HEADERS });
@@ -22,8 +37,8 @@ export async function parentsLoader(): Promise<ParentsLoaderData> {
       console.warn("[SSG] Failed to fetch disease list:", res.status);
       return { articles: [] };
     }
-    const articles = (await res.json()) as any[];
-    return { articles };
+    const articles = (await safeJson(res)) as any[] | null;
+    return { articles: Array.isArray(articles) ? articles : [] };
   } catch (e) {
     console.warn("[SSG] parentsLoader error:", e);
     return { articles: [] };

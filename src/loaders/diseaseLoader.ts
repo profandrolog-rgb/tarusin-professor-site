@@ -14,22 +14,45 @@ export interface DiseaseLoaderData {
   related: any[];
 }
 
+/**
+ * Безопасный JSON-парсинг ответа. Если сервер вернул HTML (например, прокси/SPA
+ * отдал index.html вместо REST-ответа), не падаем с "Unexpected token '<'",
+ * а возвращаем null — компонент догрузит данные клиентским supabase-клиентом.
+ */
+async function safeJson(res: Response): Promise<any | null> {
+  try {
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("json")) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export async function diseaseLoader({ params }: { params: { slug?: string } }): Promise<DiseaseLoaderData> {
   const slug = params.slug;
-  if (!slug) throw new Response("Not Found", { status: 404 });
+  const empty: DiseaseLoaderData = { article: null, related: [] };
+  if (!slug) return empty;
+  if (!SUPABASE_URL || !SUPABASE_ANON) return empty;
 
-  const articleUrl = `${SUPABASE_URL}/rest/v1/disease_articles?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=*&limit=1`;
-  const articleRes = await fetch(articleUrl, { headers: HEADERS });
-  if (!articleRes.ok) throw new Response("DB error", { status: 500 });
-  const articles = (await articleRes.json()) as any[];
-  if (!articles[0]) throw new Response("Not Found", { status: 404 });
+  try {
+    const articleUrl = `${SUPABASE_URL}/rest/v1/disease_articles?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=*&limit=1`;
+    const articleRes = await fetch(articleUrl, { headers: HEADERS });
+    if (!articleRes.ok) return empty;
+    const articles = (await safeJson(articleRes)) as any[] | null;
+    const article = Array.isArray(articles) ? articles[0] : null;
+    if (!article) return empty;
 
-  const article = articles[0];
-  const relUrl = `${SUPABASE_URL}/rest/v1/disease_articles?category=eq.${encodeURIComponent(article.category)}&is_published=eq.true&id=neq.${article.id}&select=id,slug,title,description,category&limit=3`;
-  const relRes = await fetch(relUrl, { headers: HEADERS });
-  const related = relRes.ok ? ((await relRes.json()) as any[]) : [];
+    const relUrl = `${SUPABASE_URL}/rest/v1/disease_articles?category=eq.${encodeURIComponent(article.category)}&is_published=eq.true&id=neq.${article.id}&select=id,slug,title,description,category&limit=3`;
+    const relRes = await fetch(relUrl, { headers: HEADERS });
+    const relatedRaw = relRes.ok ? await safeJson(relRes) : null;
+    const related = Array.isArray(relatedRaw) ? relatedRaw : [];
 
-  return { article, related };
+    return { article, related };
+  } catch (e) {
+    console.warn("[diseaseLoader] fallback to client-side fetch:", e);
+    return empty;
+  }
 }
 
 // getStaticPaths: вызывается только при сборке. Возвращает список путей для пре-рендеринга
@@ -42,7 +65,8 @@ export async function diseaseStaticPaths(): Promise<string[]> {
       console.warn("[SSG] Failed to fetch disease slugs:", res.status);
       return [];
     }
-    const rows = (await res.json()) as { slug: string }[];
+    const rows = (await safeJson(res)) as { slug: string }[] | null;
+    if (!Array.isArray(rows)) return [];
     return rows.filter((r) => r.slug).map((r) => `/for-parents/${r.slug}/`);
   } catch (e) {
     console.warn("[SSG] diseaseStaticPaths error:", e);
