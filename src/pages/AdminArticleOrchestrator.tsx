@@ -53,6 +53,14 @@ const ARBITERS = [
   { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
 ];
 
+const REWRITERS = [
+  { id: "anthropic/claude-opus-4-8", label: "Claude Opus 4.8 (рекомендуется — лучше держит авторский стиль)" },
+  { id: "anthropic/claude-sonnet-4-8", label: "Claude Sonnet 4.8 (быстрее)" },
+  { id: "openai/gpt-5.5", label: "GPT-5.5" },
+  { id: "openai/gpt-5.4-pro", label: "GPT-5.4 Pro" },
+  { id: "x-ai/grok-4.3", label: "Grok 4" },
+];
+
 const SEVERITY_COLOR: Record<string, string> = {
   high: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
   medium: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
