@@ -832,7 +832,7 @@ export default function AdminArticleOrchestrator() {
             <CardTitle className="flex items-center gap-2">
               <FileCheck2 className="w-5 h-5 text-emerald-500" /> 5. Итоговая статья
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="outline"
@@ -842,6 +842,28 @@ export default function AdminArticleOrchestrator() {
                 }}
               >
                 <Copy className="w-4 h-4 mr-2" /> Копировать
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={testClaudeConnection}
+                disabled={testingConn}
+                title="Проверить связь с Claude (формат-функция)"
+              >
+                {testingConn
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Тест…</>
+                  : <><Plug className="w-4 h-4 mr-2" /> Тест связи</>}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={formatFinal}
+                disabled={formatting || !finalText}
+                title="Форматирование через Claude (постранично, под сайт)"
+              >
+                {formatting
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Форматирую {formatProgress ? `${formatProgress.index}/${formatProgress.total}` : "…"}</>
+                  : <><Wand2 className="w-4 h-4 mr-2" /> Форматировать</>}
               </Button>
               <Button
                 size="sm"
