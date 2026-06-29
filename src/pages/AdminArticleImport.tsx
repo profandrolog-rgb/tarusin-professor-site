@@ -240,6 +240,21 @@ const AdminArticleImport = () => {
         <div className="w-24" />
       </div>
 
+      <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 flex items-start gap-3">
+        <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+        <div className="flex-1 text-sm">
+          <div className="font-semibold mb-1">Это финальная форма сохранения.</div>
+          <div className="text-muted-foreground">
+            Для ИИ-ревью статьи несколькими моделями, выбора правок галочками и переписывания
+            с сохранением вашего голоса — начните с <b>Оркестратора статей</b>. Оттуда по кнопке
+            «Разместить» текст и SEO-поля придут сюда автоматически.
+          </div>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => navigate("/admin/article-orchestrator")} className="shrink-0">
+          Открыть оркестратор
+        </Button>
+      </div>
+
       <div className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-6 text-center space-y-3">
         <p className="text-sm text-muted-foreground">
           Загрузите готовый Word-документ — я извлеку текст, подберу заголовок, slug, ключевые слова и аннотацию.
