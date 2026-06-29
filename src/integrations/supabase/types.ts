@@ -646,6 +646,48 @@ export type Database = {
         }
         Relationships: []
       }
+      article_dictations: {
+        Row: {
+          audio_paths: string[]
+          cleaned_dictation: string | null
+          cleaning_model: string | null
+          created_at: string
+          fragments: Json
+          id: string
+          raw_dictation: string
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audio_paths?: string[]
+          cleaned_dictation?: string | null
+          cleaning_model?: string | null
+          created_at?: string
+          fragments?: Json
+          id?: string
+          raw_dictation?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audio_paths?: string[]
+          cleaned_dictation?: string | null
+          cleaning_model?: string | null
+          created_at?: string
+          fragments?: Json
+          id?: string
+          raw_dictation?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blog_comments: {
         Row: {
           author_email: string
