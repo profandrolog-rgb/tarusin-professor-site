@@ -78,9 +78,11 @@ export default function AdminArticleOrchestrator() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation();
+  const incoming = (location.state || {}) as { text?: string; title?: string };
 
-  const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
+  const [title, setTitle] = useState(incoming.title ?? "");
+  const [text, setText] = useState(incoming.text ?? "");
   const [models, setModels] = useState<string[]>(PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(ARBITERS[0].id);
   const [rewriter, setRewriter] = useState(REWRITERS[0].id);
