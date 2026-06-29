@@ -438,6 +438,65 @@ export default function AdminArticleOrchestrator() {
         </Card>
       </div>
 
+      {/* PER-MODEL PROGRESS */}
+      {Object.keys(progress).length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Прогресс ревью ({Object.values(progress).filter(p => p.status === "done" || p.status === "error").length}/{Object.keys(progress).length})</span>
+              {reviewing && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {Object.entries(progress).map(([modelId, p]) => {
+                const label = PANEL.find((m) => m.id === modelId)?.label || modelId;
+                const now = Date.now();
+                const elapsedMs = p.status === "running" && p.startedAt
+                  ? now - p.startedAt
+                  : p.ms ?? 0;
+                const secs = (elapsedMs / 1000).toFixed(1);
+                const statusBadge = {
+                  queued: <Badge variant="outline" className="text-muted-foreground">В очереди</Badge>,
+                  running: <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"><Loader2 className="w-3 h-3 mr-1 animate-spin inline" />Анализирует</Badge>,
+                  done: <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20">Готово</Badge>,
+                  error: <Badge variant="destructive">Ошибка</Badge>,
+                }[p.status];
+                return (
+                  <div key={modelId} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-accent/30 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{label}</div>
+                      {p.error && <div className="text-xs text-destructive truncate" title={p.error}>{p.error}</div>}
+                    </div>
+                    {(p.status === "done" || p.status === "running") && (
+                      <div className="text-xs font-mono text-muted-foreground tabular-nums w-14 text-right">
+                        {secs}s
+                      </div>
+                    )}
+                    {p.status === "done" && typeof p.edits === "number" && (
+                      <div className="text-xs text-muted-foreground w-20 text-right">
+                        правок: <span className="font-semibold text-foreground">{p.edits}</span>
+                      </div>
+                    )}
+                    <div className="w-32 flex justify-end">{statusBadge}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {reviewing && (
+              <div className="mt-3 h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 transition-all duration-300"
+                  style={{
+                    width: `${(Object.values(progress).filter(p => p.status === "done" || p.status === "error").length / Object.keys(progress).length) * 100}%`,
+                  }}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* PER-MODEL REVIEWS */}
       {reviews.length > 0 && (
         <Card className="mt-6">
