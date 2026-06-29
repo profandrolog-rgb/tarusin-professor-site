@@ -116,7 +116,12 @@ function callModel(
   if (!isVenice) {
     payload.reasoning = { effort: "low" };
     payload.provider = { sort: "throughput" };
-    payload.response_format = { type: "json_object" };
+    // response_format: json_object поддерживают не все провайдеры через OpenRouter.
+    // Perplexity требует json_schema, Moonshot (Kimi) и DeepSeek отдают INVALID_REQUEST_BODY.
+    const supportsJsonObject = !/^(perplexity|moonshotai|deepseek|x-ai|z-ai)\//.test(realModel);
+    if (supportsJsonObject) {
+      payload.response_format = { type: "json_object" };
+    }
   } else {
     payload.venice_parameters = { include_venice_system_prompt: false };
   }
