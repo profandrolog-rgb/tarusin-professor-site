@@ -82,7 +82,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     // Sync external content changes (e.g. when arriving from Orchestrator)
     // without disrupting user typing — only update if the HTML differs.
     if (content !== editor.getHTML()) {
-      editor.commands.setContent(content || "", false);
+      editor.commands.setContent(content || "");
     }
   }, [content, editor]);
 
