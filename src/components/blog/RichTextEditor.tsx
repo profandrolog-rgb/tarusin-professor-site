@@ -25,7 +25,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false, blockquote: false }),
+      StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false }),
       Underline,
       Image.configure({ inline: false, allowBase64: false }),
     ],
