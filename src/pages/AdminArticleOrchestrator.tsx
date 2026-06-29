@@ -439,16 +439,29 @@ export default function AdminArticleOrchestrator() {
             <CardTitle className="flex items-center gap-2">
               <FileCheck2 className="w-5 h-5 text-emerald-500" /> 5. Итоговая статья
             </CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(finalText);
-                toast({ title: "Скопировано в буфер" });
-              }}
-            >
-              <Copy className="w-4 h-4 mr-2" /> Копировать
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(finalText);
+                  toast({ title: "Скопировано в буфер" });
+                }}
+              >
+                <Copy className="w-4 h-4 mr-2" /> Копировать
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  navigate("/admin/article-import", {
+                    state: { title, text: finalText, source: "orchestrator" },
+                  });
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Send className="w-4 h-4 mr-2" /> Разместить
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Textarea
