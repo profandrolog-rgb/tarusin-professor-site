@@ -34,6 +34,15 @@ type ModelReview = {
   edits: EditItem[];
   error?: string;
   parse_error?: boolean;
+  ms?: number;
+};
+
+type ModelProgress = {
+  status: "queued" | "running" | "done" | "error";
+  startedAt?: number;
+  ms?: number;
+  edits?: number;
+  error?: string;
 };
 
 const PANEL = [
