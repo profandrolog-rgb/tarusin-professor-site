@@ -166,7 +166,18 @@ export default function AdminArticleOrchestrator() {
   const [consolidating, setConsolidating] = useState(false);
 
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
+  // Прямой приём правок из мнения каждой модели (ключ: `${model}::${index}`)
+  const [directAccepted, setDirectAccepted] = useState<Map<string, EditItem>>(new Map());
   const [finalText, setFinalText] = useState("");
+
+  const toggleDirect = (model: string, i: number, edit: EditItem) => {
+    const key = `${model}::${i}`;
+    setDirectAccepted((cur) => {
+      const n = new Map(cur);
+      if (n.has(key)) n.delete(key); else n.set(key, edit);
+      return n;
+    });
+  };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
   if (!user || !isAdmin) { navigate("/auth"); return null; }
