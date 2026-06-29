@@ -707,7 +707,8 @@ export default function AdminArticleOrchestrator() {
                                   <Textarea
                                     value={getSuggested(key, e.suggested)}
                                     onChange={(ev) => setSuggested(key, ev.target.value)}
-                                    onBlur={() => setEditingKey(null)}
+                                    onClick={(ev) => ev.stopPropagation()}
+                                    onMouseDown={(ev) => ev.stopPropagation()}
                                     autoFocus
                                     className="min-h-[80px] text-sm font-serif leading-relaxed border-amber-500/50 focus-visible:ring-amber-500/40"
                                   />
