@@ -560,17 +560,36 @@ export default function AdminArticleOrchestrator() {
                         <div className="text-sm text-muted-foreground">Правок не предложено.</div>
                       ) : (
                         <div className="space-y-2">
-                          {r.edits.map((e, i) => (
-                            <div key={i} className="p-3 rounded-md border border-border text-sm space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline">{e.category}</Badge>
-                                {e.severity && <Badge className={SEVERITY_COLOR[e.severity] || ""} variant="outline">{e.severity}</Badge>}
+                          {r.edits.map((e, i) => {
+                            const key = `${r.model}::${i}`;
+                            const isAcc = directAccepted.has(key);
+                            return (
+                              <div
+                                key={i}
+                                className={`p-3 rounded-md border text-sm space-y-2 transition-colors ${
+                                  isAcc ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="outline">{e.category}</Badge>
+                                  {e.severity && <Badge className={SEVERITY_COLOR[e.severity] || ""} variant="outline">{e.severity}</Badge>}
+                                  <div className="ml-auto">
+                                    <Button
+                                      size="sm"
+                                      variant={isAcc ? "default" : "outline"}
+                                      onClick={() => toggleDirect(r.model, i, e)}
+                                      className={isAcc ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                                    >
+                                      {isAcc ? "✓ Принято" : "Принять"}
+                                    </Button>
+                                  </div>
+                                </div>
+                                {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
+                                <div><span className="text-xs font-semibold">→ </span>{e.suggested}</div>
+                                {e.rationale && <div className="text-xs text-muted-foreground">{e.rationale}</div>}
                               </div>
-                              {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
-                              <div><span className="text-xs font-semibold">→ </span>{e.suggested}</div>
-                              <div className="text-xs text-muted-foreground">{e.rationale}</div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </>
