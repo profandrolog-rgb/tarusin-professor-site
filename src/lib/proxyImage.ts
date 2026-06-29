@@ -1,13 +1,12 @@
-// Прокси api.tarusin.pro временно отключён (502). Возвращаем оригинальные URL.
-// Если URL уже был переписан на прокси — разворачиваем обратно на источник.
-const REVERSE: Array<[string, string]> = [
-  ['https://api.tarusin.pro/unsplash/', 'https://images.unsplash.com/'],
-  ['https://api.tarusin.pro/ytimg/', 'https://i.ytimg.com/'],
+// Прокси api.tarusin.pro переадресует Unsplash и YouTube CDN (заблокированы в РФ).
+const MAP: Array<[string, string]> = [
+  ['https://images.unsplash.com/', 'https://api.tarusin.pro/unsplash/'],
+  ['https://i.ytimg.com/', 'https://api.tarusin.pro/ytimg/'],
 ];
 
 export function proxyImage(url: string | null | undefined): string {
   if (!url) return '';
-  for (const [from, to] of REVERSE) {
+  for (const [from, to] of MAP) {
     if (url.startsWith(from)) return url.replace(from, to);
   }
   return url;
