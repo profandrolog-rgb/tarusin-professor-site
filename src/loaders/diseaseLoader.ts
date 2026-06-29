@@ -7,6 +7,7 @@ const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 const HEADERS = {
   apikey: SUPABASE_ANON,
   Authorization: `Bearer ${SUPABASE_ANON}`,
+  Accept: "application/json",
 };
 
 export interface DiseaseLoaderData {
@@ -15,16 +16,57 @@ export interface DiseaseLoaderData {
 }
 
 /**
- * Безопасный JSON-парсинг ответа. Если сервер вернул HTML (например, прокси/SPA
- * отдал index.html вместо REST-ответа), не падаем с "Unexpected token '<'",
- * а возвращаем null — компонент догрузит данные клиентским supabase-клиентом.
+ * Безопасный fetch + JSON-парсинг.
+ * - Проверяет HTTP-статус (4xx/5xx → null + лог причины).
+ * - Проверяет Content-Type: только `application/json` парсится.
+ *   Если прокси/SPA вернул HTML (DOCTYPE), 502 от gateway или text/plain —
+ *   возвращаем null с подробным логом, чтобы страница догрузилась клиентом.
  */
-async function safeJson(res: Response): Promise<any | null> {
+async function fetchJson(
+  tag: string,
+  url: string,
+  init?: RequestInit,
+): Promise<any | null> {
+  let res: Response;
   try {
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("json")) return null;
+    res = await fetch(url, { ...init, headers: { ...HEADERS, ...(init?.headers || {}) } });
+  } catch (e) {
+    console.warn(`[diseaseLoader:${tag}] network error:`, (e as Error)?.message || e);
+    return null;
+  }
+
+  const ct = res.headers.get("content-type") || "";
+
+  if (!res.ok) {
+    let bodyPreview = "";
+    try {
+      bodyPreview = (await res.text()).slice(0, 200);
+    } catch {
+      /* ignore */
+    }
+    console.warn(
+      `[diseaseLoader:${tag}] HTTP ${res.status} ${res.statusText} (ct=${ct || "n/a"}) — ${bodyPreview}`,
+    );
+    return null;
+  }
+
+  if (!ct.toLowerCase().includes("application/json")) {
+    let bodyPreview = "";
+    try {
+      bodyPreview = (await res.text()).slice(0, 120);
+    } catch {
+      /* ignore */
+    }
+    console.warn(
+      `[diseaseLoader:${tag}] non-JSON response (ct=${ct || "empty"}) — likely proxy/HTML fallback. Preview: ${bodyPreview}`,
+    );
+    return null;
+  }
+
+  try {
     return await res.json();
-  } catch {
+  } catch (e) {
+    console.warn(`[diseaseLoader:${tag}] JSON parse error:`, (e as Error)?.message || e);
     return null;
   }
 }
@@ -33,43 +75,28 @@ export async function diseaseLoader({ params }: { params: { slug?: string } }): 
   const slug = params.slug;
   const empty: DiseaseLoaderData = { article: null, related: [] };
   if (!slug) return empty;
-  if (!SUPABASE_URL || !SUPABASE_ANON) return empty;
-
-  try {
-    const articleUrl = `${SUPABASE_URL}/rest/v1/disease_articles?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=*&limit=1`;
-    const articleRes = await fetch(articleUrl, { headers: HEADERS });
-    if (!articleRes.ok) return empty;
-    const articles = (await safeJson(articleRes)) as any[] | null;
-    const article = Array.isArray(articles) ? articles[0] : null;
-    if (!article) return empty;
-
-    const relUrl = `${SUPABASE_URL}/rest/v1/disease_articles?category=eq.${encodeURIComponent(article.category)}&is_published=eq.true&id=neq.${article.id}&select=id,slug,title,description,category&limit=3`;
-    const relRes = await fetch(relUrl, { headers: HEADERS });
-    const relatedRaw = relRes.ok ? await safeJson(relRes) : null;
-    const related = Array.isArray(relatedRaw) ? relatedRaw : [];
-
-    return { article, related };
-  } catch (e) {
-    console.warn("[diseaseLoader] fallback to client-side fetch:", e);
+  if (!SUPABASE_URL || !SUPABASE_ANON) {
+    console.warn("[diseaseLoader] missing SUPABASE env vars — skipping prefetch");
     return empty;
   }
+
+  const articleUrl = `${SUPABASE_URL}/rest/v1/disease_articles?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=*&limit=1`;
+  const articles = (await fetchJson("article", articleUrl)) as any[] | null;
+  const article = Array.isArray(articles) ? articles[0] : null;
+  if (!article) return empty;
+
+  const relUrl = `${SUPABASE_URL}/rest/v1/disease_articles?category=eq.${encodeURIComponent(article.category)}&is_published=eq.true&id=neq.${article.id}&select=id,slug,title,description,category&limit=3`;
+  const relatedRaw = await fetchJson("related", relUrl);
+  const related = Array.isArray(relatedRaw) ? relatedRaw : [];
+
+  return { article, related };
 }
 
 // getStaticPaths: вызывается только при сборке. Возвращает список путей для пре-рендеринга
 // всех опубликованных статей. Запускается в Node при `vite-react-ssg build`.
 export async function diseaseStaticPaths(): Promise<string[]> {
-  try {
-    const url = `${SUPABASE_URL}/rest/v1/disease_articles?is_published=eq.true&select=slug`;
-    const res = await fetch(url, { headers: HEADERS });
-    if (!res.ok) {
-      console.warn("[SSG] Failed to fetch disease slugs:", res.status);
-      return [];
-    }
-    const rows = (await safeJson(res)) as { slug: string }[] | null;
-    if (!Array.isArray(rows)) return [];
-    return rows.filter((r) => r.slug).map((r) => `/for-parents/${r.slug}/`);
-  } catch (e) {
-    console.warn("[SSG] diseaseStaticPaths error:", e);
-    return [];
-  }
+  const url = `${SUPABASE_URL}/rest/v1/disease_articles?is_published=eq.true&select=slug`;
+  const rows = (await fetchJson("static-paths", url)) as { slug: string }[] | null;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((r) => r.slug).map((r) => `/for-parents/${r.slug}/`);
 }
