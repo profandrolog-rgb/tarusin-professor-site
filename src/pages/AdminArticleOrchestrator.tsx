@@ -2,7 +2,7 @@
 // Админ-инструмент: статья → параллельное ревью N моделей → консолидация арбитром → применение правок.
 
 import { useMemo, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -43,9 +43,9 @@ const PANEL = [
   { id: "z-ai/glm-5", label: "GLM-5", default: true },
   { id: "moonshotai/kimi-k2", label: "Kimi K2", default: true },
   { id: "perplexity/sonar-pro", label: "Perplexity Sonar Pro (фактчек)", default: true },
-  { id: "venice/venice-uncensored-1-2", label: "Venice (без цензуры)", default: false },
-  { id: "x-ai/grok-4.3", label: "Grok 4", default: false },
-  { id: "deepseek/deepseek-v4-pro", label: "DeepSeek V4-Pro", default: false },
+  { id: "venice/venice-uncensored-1-2", label: "Venice (без цензуры)", default: true },
+  { id: "x-ai/grok-4.3", label: "Grok 4", default: true },
+  { id: "deepseek/deepseek-v4-pro", label: "DeepSeek V4-Pro", default: true },
 ];
 
 const ARBITERS = [
@@ -78,9 +78,11 @@ export default function AdminArticleOrchestrator() {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation();
+  const incoming = (location.state || {}) as { text?: string; title?: string };
 
-  const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
+  const [title, setTitle] = useState(incoming.title ?? "");
+  const [text, setText] = useState(incoming.text ?? "");
   const [models, setModels] = useState<string[]>(PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(ARBITERS[0].id);
   const [rewriter, setRewriter] = useState(REWRITERS[0].id);
