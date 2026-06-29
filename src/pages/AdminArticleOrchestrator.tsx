@@ -608,7 +608,15 @@ export default function AdminArticleOrchestrator() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Badge variant="outline">{e.category}</Badge>
                                   {e.severity && <Badge className={SEVERITY_COLOR[e.severity] || ""} variant="outline">{e.severity}</Badge>}
-                                  <div className="ml-auto">
+                                  <div className="ml-auto flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingKey(editingKey === key ? null : key)}
+                                      title="Править текст правки вручную"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </Button>
                                     <Button
                                       size="sm"
                                       variant={isAcc ? "default" : "outline"}
@@ -620,7 +628,29 @@ export default function AdminArticleOrchestrator() {
                                   </div>
                                 </div>
                                 {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
-                                <div><span className="text-xs font-semibold">→ </span>{e.suggested}</div>
+                                {editingKey === key ? (
+                                  <Textarea
+                                    value={getSuggested(key, e.suggested)}
+                                    onChange={(ev) => setSuggested(key, ev.target.value)}
+                                    onBlur={() => setEditingKey(null)}
+                                    autoFocus
+                                    className="min-h-[80px] text-sm font-serif leading-relaxed border-amber-500/50 focus-visible:ring-amber-500/40"
+                                  />
+                                ) : (
+                                  <div
+                                    className="cursor-text rounded px-1 -mx-1 hover:bg-amber-500/10"
+                                    onClick={() => setEditingKey(key)}
+                                    title="Нажмите, чтобы править"
+                                  >
+                                    <span className="text-xs font-semibold">→ </span>
+                                    {getSuggested(key, e.suggested)}
+                                    {editedSuggested.has(key) && (
+                                      <Badge variant="outline" className="ml-2 text-[10px] bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                                        отредактировано
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
                                 {e.rationale && <div className="text-xs text-muted-foreground">{e.rationale}</div>}
                               </div>
                             );
