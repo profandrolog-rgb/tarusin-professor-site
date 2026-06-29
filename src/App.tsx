@@ -61,6 +61,7 @@ import AdminVisitTemplates from "./pages/AdminVisitTemplates";
 import AdminSystemBackup from "./pages/AdminSystemBackup";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminPodcastSources from "./pages/AdminPodcastSources";
+import AdminArticleOrchestrator from "./pages/AdminArticleOrchestrator";
 import AdminPatientDetail from "./pages/AdminPatientDetail";
 import AdminPatients from "./pages/AdminPatients";
 import AdminPatientForm from "./pages/AdminPatientForm";
@@ -193,6 +194,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/system-backup", Component: AdminSystemBackup, entry: "src/pages/AdminSystemBackup.tsx" },
       { path: "admin/analytics", Component: AdminAnalytics, entry: "src/pages/AdminAnalytics.tsx" },
       { path: "admin/podcast-sources", Component: AdminPodcastSources, entry: "src/pages/AdminPodcastSources.tsx" },
+      { path: "admin/article-orchestrator", Component: AdminArticleOrchestrator, entry: "src/pages/AdminArticleOrchestrator.tsx" },
       { path: "admin/patients", Component: AdminPatients, entry: "src/pages/AdminPatients.tsx" },
       { path: "admin/patients/new", Component: AdminPatientNew, entry: "src/pages/AdminPatientForm.tsx" },
       { path: "admin/patients/:id/edit", Component: AdminPatientEdit, entry: "src/pages/AdminPatientForm.tsx" },
