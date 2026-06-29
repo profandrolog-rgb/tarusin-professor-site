@@ -312,9 +312,8 @@ export default function AdminArticleOrchestrator() {
 
   const [rewriting, setRewriting] = useState(false);
 
-  async function rewriteWithVoice() {
-    if (!consolidated) return;
-    const editsAccepted = consolidated.edits.filter((_, i) => accepted.has(i));
+  async function rewriteWithVoice(editsArg?: EditItem[]) {
+    const editsAccepted = editsArg ?? (consolidated ? consolidated.edits.filter((_, i) => accepted.has(i)) : []);
     if (!editsAccepted.length) {
       toast({ title: "Не выбраны правки", variant: "destructive" });
       return;
