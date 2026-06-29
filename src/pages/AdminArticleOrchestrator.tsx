@@ -14,7 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 
 
 type EditItem = {
@@ -168,13 +169,31 @@ export default function AdminArticleOrchestrator() {
   const [accepted, setAccepted] = useState<Set<number>>(new Set());
   // Прямой приём правок из мнения каждой модели (ключ: `${model}::${index}`)
   const [directAccepted, setDirectAccepted] = useState<Map<string, EditItem>>(new Map());
+  // Inline-редактирование текста правок: ключ `${model}::${index}` или `cons::${i}`
+  const [editedSuggested, setEditedSuggested] = useState<Map<string, string>>(new Map());
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
+
+  const getSuggested = (key: string, fallback: string) =>
+    editedSuggested.has(key) ? editedSuggested.get(key)! : fallback;
+
+  const setSuggested = (key: string, val: string) => {
+    setEditedSuggested((cur) => {
+      const n = new Map(cur);
+      n.set(key, val);
+      return n;
+    });
+  };
 
   const toggleDirect = (model: string, i: number, edit: EditItem) => {
     const key = `${model}::${i}`;
     setDirectAccepted((cur) => {
       const n = new Map(cur);
-      if (n.has(key)) n.delete(key); else n.set(key, edit);
+      if (n.has(key)) {
+        n.delete(key);
+      } else {
+        n.set(key, { ...edit, suggested: getSuggested(key, edit.suggested) });
+      }
       return n;
     });
   };
@@ -313,7 +332,12 @@ export default function AdminArticleOrchestrator() {
   const [rewriting, setRewriting] = useState(false);
 
   async function rewriteWithVoice(editsArg?: EditItem[]) {
-    const editsAccepted = editsArg ?? (consolidated ? consolidated.edits.filter((_, i) => accepted.has(i)) : []);
+    const editsAccepted = editsArg ?? (consolidated
+      ? consolidated.edits
+          .map((e, i) => ({ ...e, suggested: getSuggested(`cons::${i}`, e.suggested), _i: i }))
+          .filter((e) => accepted.has((e as any)._i))
+          .map(({ _i, ...rest }: any) => rest)
+      : []);
     if (!editsAccepted.length) {
       toast({ title: "Не выбраны правки", variant: "destructive" });
       return;
@@ -342,6 +366,83 @@ export default function AdminArticleOrchestrator() {
   }
 
   const acceptedCount = accepted.size;
+
+  // ===== Тест связи + форматирование Claude =====
+  const [testingConn, setTestingConn] = useState(false);
+  const [formatting, setFormatting] = useState(false);
+  const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
+
+  async function testClaudeConnection() {
+    setTestingConn(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/test-claude-connection`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${session?.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
+      sonnerToast.success("Связь с Claude в порядке", { description: j?.model || "ok" });
+    } catch (e: any) {
+      sonnerToast.error("Нет связи с Claude", { description: e?.message || String(e) });
+    } finally {
+      setTestingConn(false);
+    }
+  }
+
+  async function formatFinal() {
+    if (!finalText.trim()) return;
+    setFormatting(true);
+    setFormatProgress(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/format-disease-article`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${session?.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ text: finalText }),
+      });
+      if (!resp.ok || !resp.body) {
+        const t = await resp.text().catch(() => "");
+        throw new Error(`HTTP ${resp.status}: ${t.slice(0, 200)}`);
+      }
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let result = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.type === "progress" && evt.stage === "chunk") {
+              setFormatProgress({ index: evt.index, total: evt.total });
+            } else if (evt.type === "result") {
+              result = evt.formatted || "";
+            } else if (evt.type === "error") {
+              throw new Error(evt.error || "format error");
+            }
+          } catch { /* ignore */ }
+        }
+      }
+      if (result) {
+        setFinalText(result);
+        sonnerToast.success("Форматирование завершено", { description: "Текст обновлён в итоговой статье" });
+      } else {
+        throw new Error("Пустой ответ форматера");
+      }
+    } catch (e: any) {
+      sonnerToast.error("Ошибка форматирования", { description: e?.message || String(e) });
+    } finally {
+      setFormatting(false);
+      setFormatProgress(null);
+    }
+  }
 
   const successReviews = useMemo(() => reviews.filter((r) => !r.error), [reviews]);
 
@@ -514,13 +615,29 @@ export default function AdminArticleOrchestrator() {
             <CardTitle>3. Мнения моделей ({reviews.length})</CardTitle>
             <div className="flex gap-2 flex-wrap">
               <Button
-                onClick={() => rewriteWithVoice(Array.from(directAccepted.values()))}
+                onClick={() => {
+                  const fresh = Array.from(directAccepted.entries()).map(([key, e]) => ({
+                    ...e,
+                    suggested: getSuggested(key, e.suggested),
+                  }));
+                  rewriteWithVoice(fresh);
+                }}
                 disabled={!directAccepted.size || rewriting}
                 variant="default"
               >
                 {rewriting
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю…</>
                   : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать с принятыми ({directAccepted.size})</>}
+              </Button>
+              <Button
+                onClick={runReview}
+                disabled={reviewing}
+                variant="outline"
+                title="Запустить ревью ещё раз с теми же моделями"
+              >
+                {reviewing
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Идёт…</>
+                  : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью</>}
               </Button>
               <Button
                 onClick={runConsolidation}
@@ -573,7 +690,15 @@ export default function AdminArticleOrchestrator() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <Badge variant="outline">{e.category}</Badge>
                                   {e.severity && <Badge className={SEVERITY_COLOR[e.severity] || ""} variant="outline">{e.severity}</Badge>}
-                                  <div className="ml-auto">
+                                  <div className="ml-auto flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setEditingKey(editingKey === key ? null : key)}
+                                      title="Править текст правки вручную"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </Button>
                                     <Button
                                       size="sm"
                                       variant={isAcc ? "default" : "outline"}
@@ -585,7 +710,29 @@ export default function AdminArticleOrchestrator() {
                                   </div>
                                 </div>
                                 {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
-                                <div><span className="text-xs font-semibold">→ </span>{e.suggested}</div>
+                                {editingKey === key ? (
+                                  <Textarea
+                                    value={getSuggested(key, e.suggested)}
+                                    onChange={(ev) => setSuggested(key, ev.target.value)}
+                                    onBlur={() => setEditingKey(null)}
+                                    autoFocus
+                                    className="min-h-[80px] text-sm font-serif leading-relaxed border-amber-500/50 focus-visible:ring-amber-500/40"
+                                  />
+                                ) : (
+                                  <div
+                                    className="cursor-text rounded px-1 -mx-1 hover:bg-amber-500/10"
+                                    onClick={() => setEditingKey(key)}
+                                    title="Нажмите, чтобы править"
+                                  >
+                                    <span className="text-xs font-semibold">→ </span>
+                                    {getSuggested(key, e.suggested)}
+                                    {editedSuggested.has(key) && (
+                                      <Badge variant="outline" className="ml-2 text-[10px] bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                                        отредактировано
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
                                 {e.rationale && <div className="text-xs text-muted-foreground">{e.rationale}</div>}
                               </div>
                             );
@@ -690,20 +837,47 @@ export default function AdminArticleOrchestrator() {
                             )}
                           </div>
                           <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2 text-xs">
-                            <div className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
-                              + После
+                            <div className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center justify-between gap-1">
+                              <span>+ После</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => { ev.preventDefault(); setEditingKey(editingKey === `cons::${i}` ? null : `cons::${i}`); }}
+                                className="text-[10px] opacity-70 hover:opacity-100 inline-flex items-center gap-1"
+                                title="Править вручную"
+                              >
+                                <Pencil className="w-3 h-3" /> править
+                              </button>
                             </div>
-                            <div className="font-serif leading-relaxed">
-                              {context && e.original && (
-                                <span className="text-muted-foreground">…{context.before}</span>
-                              )}
-                              <span className="bg-emerald-500/20 px-0.5 rounded">
-                                {e.suggested}
-                              </span>
-                              {context && e.original && (
-                                <span className="text-muted-foreground">{context.after}…</span>
-                              )}
-                            </div>
+                            {editingKey === `cons::${i}` ? (
+                              <Textarea
+                                value={getSuggested(`cons::${i}`, e.suggested)}
+                                onChange={(ev) => setSuggested(`cons::${i}`, ev.target.value)}
+                                onBlur={() => setEditingKey(null)}
+                                onClick={(ev) => ev.preventDefault()}
+                                autoFocus
+                                className="min-h-[90px] text-xs font-serif leading-relaxed bg-background"
+                              />
+                            ) : (
+                              <div
+                                className="font-serif leading-relaxed cursor-text"
+                                onClick={(ev) => { ev.preventDefault(); setEditingKey(`cons::${i}`); }}
+                              >
+                                {context && e.original && (
+                                  <span className="text-muted-foreground">…{context.before}</span>
+                                )}
+                                <span className="bg-emerald-500/20 px-0.5 rounded">
+                                  {getSuggested(`cons::${i}`, e.suggested)}
+                                </span>
+                                {context && e.original && (
+                                  <span className="text-muted-foreground">{context.after}…</span>
+                                )}
+                                {editedSuggested.has(`cons::${i}`) && (
+                                  <Badge variant="outline" className="ml-2 text-[10px] bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                                    отредактировано
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -735,7 +909,7 @@ export default function AdminArticleOrchestrator() {
             <CardTitle className="flex items-center gap-2">
               <FileCheck2 className="w-5 h-5 text-emerald-500" /> 5. Итоговая статья
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="outline"
@@ -745,6 +919,28 @@ export default function AdminArticleOrchestrator() {
                 }}
               >
                 <Copy className="w-4 h-4 mr-2" /> Копировать
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={testClaudeConnection}
+                disabled={testingConn}
+                title="Проверить связь с Claude (формат-функция)"
+              >
+                {testingConn
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Тест…</>
+                  : <><Plug className="w-4 h-4 mr-2" /> Тест связи</>}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={formatFinal}
+                disabled={formatting || !finalText}
+                title="Форматирование через Claude (постранично, под сайт)"
+              >
+                {formatting
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Форматирую {formatProgress ? `${formatProgress.index}/${formatProgress.total}` : "…"}</>
+                  : <><Wand2 className="w-4 h-4 mr-2" /> Форматировать</>}
               </Button>
               <Button
                 size="sm"
