@@ -174,6 +174,11 @@ export default function AdminArticleOrchestrator() {
   const [editedSuggested, setEditedSuggested] = useState<Map<string, string>>(new Map());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
+  const [rewriting, setRewriting] = useState(false);
+  const [testingConn, setTestingConn] = useState(false);
+  const [formatting, setFormatting] = useState(false);
+  const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
+  const successReviews = useMemo(() => reviews.filter((r) => !r.error), [reviews]);
 
   const getSuggested = (key: string, fallback: string) =>
     editedSuggested.has(key) ? editedSuggested.get(key)! : fallback;
