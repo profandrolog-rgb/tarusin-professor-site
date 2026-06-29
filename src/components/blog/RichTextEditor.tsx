@@ -78,8 +78,11 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   }, [handleScroll]);
 
   useEffect(() => {
-    if (editor && content === "") {
-      editor.commands.setContent("");
+    if (!editor) return;
+    // Sync external content changes (e.g. when arriving from Orchestrator)
+    // without disrupting user typing — only update if the HTML differs.
+    if (content !== editor.getHTML()) {
+      editor.commands.setContent(content || "", false);
     }
   }, [content, editor]);
 
