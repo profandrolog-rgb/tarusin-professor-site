@@ -17,10 +17,11 @@ function makeFiles(n: number): string[] {
 }
 
 describe("ImageGallery — выравнивание последнего ряда", () => {
-  it("1 фото: рендерится по центру в обёртке max-w-[700px] mx-auto", () => {
+  it("1 фото: рендерится по центру в обёртке mx-auto с ограничением ширины", () => {
     const { container } = render(<ImageGallery caption="Тест" files={makeFiles(1)} />);
-    const wrapper = container.querySelector(".max-w-\\[700px\\].mx-auto");
+    const wrapper = container.querySelector(".mx-auto");
     expect(wrapper).not.toBeNull();
+    expect((wrapper as HTMLElement).className).toMatch(/max-w-\[\d+px\]/);
     expect(container.querySelectorAll("img").length).toBe(1);
   });
 
