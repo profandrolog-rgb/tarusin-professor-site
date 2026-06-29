@@ -314,6 +314,50 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (body.action === "rewrite") {
+      const text: string = String(body.text || "").trim();
+      const editsAccepted = Array.isArray(body.edits) ? body.edits : [];
+      const rewriter: string = String(body.rewriter || "anthropic/claude-opus-4-8");
+      if (!text || !editsAccepted.length) {
+        return new Response(JSON.stringify({ error: "text and accepted edits required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const editsBlock = editsAccepted.map((e: any, i: number) => (
+        `[${i + 1}] (${e.category || "edit"}${e.severity ? ", " + e.severity : ""})\n` +
+        (e.original ? `   ORIGINAL: «${e.original}»\n` : `   (глобальная правка)\n`) +
+        `   ПРАВКА: ${e.suggested || ""}\n` +
+        (e.rationale ? `   ОБОСНОВАНИЕ: ${e.rationale}` : "")
+      )).join("\n\n");
+      const userMsg = [
+        "ИСХОДНАЯ СТАТЬЯ (сохраняем голос автора):",
+        text,
+        "",
+        "ОДОБРЕННЫЕ ПРАВКИ (применить и переплавить в авторский стиль):",
+        editsBlock,
+      ].join("\n");
+      try {
+        const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
+          { role: "system", content: REWRITE_SYSTEM },
+          { role: "user", content: userMsg },
+        ], 0.4);
+        const parsed = tryParseJson(raw);
+        const rewritten = parsed && typeof parsed.rewritten === "string" ? parsed.rewritten : null;
+        if (!rewritten) {
+          return new Response(JSON.stringify({ error: "rewriter returned non-JSON or empty", raw: raw.slice(0, 1000) }), {
+            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ rewritten, rewriter, applied: editsAccepted.length }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e?.message || String(e) }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
