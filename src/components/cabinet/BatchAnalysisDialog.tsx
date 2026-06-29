@@ -27,6 +27,7 @@ type BatchRow = {
   error: string | null;
   chain_log?: ChainLogEntry[] | null;
   updated_at?: string;
+  user_id?: string;
 };
 
 
