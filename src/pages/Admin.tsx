@@ -154,6 +154,13 @@ const siteSections = [
     color: "text-fuchsia-600",
   },
   {
+    title: "✨ Оркестратор статей",
+    description: "Параллельное ревью текста несколькими ИИ, голосование, арбитраж и автоприменение правок",
+    icon: FileText,
+    href: "/admin/article-orchestrator",
+    color: "text-amber-600",
+  },
+  {
     title: "Путевые заметки",
     description: "Управление фотогалереей путешествий",
     icon: Camera,
