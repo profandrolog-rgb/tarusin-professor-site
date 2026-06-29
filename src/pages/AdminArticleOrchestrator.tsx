@@ -228,7 +228,7 @@ export default function AdminArticleOrchestrator() {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "rewrite", text, edits: editsAccepted, rewriter: arbiter }),
+        body: JSON.stringify({ action: "rewrite", text, edits: editsAccepted, rewriter }),
       });
       const j = await resp.json();
       if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
