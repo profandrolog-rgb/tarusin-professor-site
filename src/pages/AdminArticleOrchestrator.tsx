@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import ArticleDiffEditor from "@/components/admin/ArticleDiffEditor";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -464,11 +465,7 @@ export default function AdminArticleOrchestrator() {
             </div>
           </CardHeader>
           <CardContent>
-            <Textarea
-              value={finalText}
-              onChange={(e) => setFinalText(e.target.value)}
-              className="min-h-[400px] font-serif text-[15px] leading-relaxed"
-            />
+            <ArticleDiffEditor original={text} value={finalText} onChange={setFinalText} />
           </CardContent>
         </Card>
       )}
