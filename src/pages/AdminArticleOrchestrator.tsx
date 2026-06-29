@@ -332,8 +332,20 @@ export default function AdminArticleOrchestrator() {
               onChange={(e) => setText(e.target.value)}
               className="min-h-[360px] font-serif text-[15px] leading-relaxed"
             />
-            <div className="text-xs text-muted-foreground">
-              Символов: {text.length.toLocaleString("ru-RU")} · Слов: {text.trim() ? text.trim().split(/\s+/).length.toLocaleString("ru-RU") : 0}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-xs text-muted-foreground">
+                Символов: {text.length.toLocaleString("ru-RU")} · Слов: {text.trim() ? text.trim().split(/\s+/).length.toLocaleString("ru-RU") : 0}
+              </div>
+              {!recording ? (
+                <Button size="sm" variant="outline" onClick={startDictation} disabled={transcribing}>
+                  {transcribing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mic className="w-4 h-4 mr-1" />}
+                  {transcribing ? "Распознаю…" : "Диктовка"}
+                </Button>
+              ) : (
+                <Button size="sm" variant="destructive" onClick={stopDictation}>
+                  <Square className="w-4 h-4 mr-1" /> Остановить
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
