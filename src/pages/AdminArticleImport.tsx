@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import RichTextEditor from "@/components/blog/RichTextEditor";
-import { Upload, Loader2, Eye, EyeOff, Save, Sparkles, X, ArrowLeft } from "lucide-react";
+import { Upload, Loader2, Eye, EyeOff, Save, Sparkles, X, ArrowLeft, Wand2, CheckCircle2 } from "lucide-react";
 
 const categoryLabels: Record<string, string> = {
   general: "Общее",
@@ -60,6 +60,7 @@ const AdminArticleImport = () => {
   const [content, setContent] = useState("");
   const [isPublished, setIsPublished] = useState(false);
   const [filename, setFilename] = useState("");
+  const [aiReview, setAiReview] = useState<any>(null);
 
   const location = useLocation();
   const incoming = (location.state || null) as { title?: string; text?: string; source?: string } | null;
@@ -160,6 +161,40 @@ const AdminArticleImport = () => {
     }
   };
 
+  const runAiAnalysis = async () => {
+    // Strip HTML to plain text for the model
+    const tmp = document.createElement("div");
+    tmp.innerHTML = content;
+    const plain = (tmp.textContent || tmp.innerText || "").trim();
+    if (plain.length < 50) {
+      toast({ title: "Слишком мало текста", description: "Загрузите Word или вставьте содержимое в редактор", variant: "destructive" });
+      return;
+    }
+    setSeoLoading(true);
+    setAiReview(null);
+    toast({ title: "ИИ-анализ запущен…", description: "Подбираю заголовок, slug, ключевые слова, аннотацию" });
+    try {
+      const { data, error } = await supabase.functions.invoke("import-article-meta", {
+        body: { text: plain, filename: filename || title || "article" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data.title) setTitle(data.title);
+      if (data.slug) setSlug(data.slug);
+      else if (data.title) setSlug(slugifyRu(data.title));
+      if (data.excerpt) setExcerpt(data.excerpt);
+      if (Array.isArray(data.keywords)) setKeywords(data.keywords);
+      if (data.category && categoryLabels[data.category]) setCategory(data.category);
+      if (data.age_group === "adults" || data.age_group === "children") setAgeGroup(data.age_group);
+      setAiReview({ ...data, _words: plain.split(/\s+/).filter(Boolean).length });
+      toast({ title: "Готово", description: "ИИ заполнил SEO-поля — проверьте ревью ниже" });
+    } catch (err: any) {
+      toast({ title: "Ошибка ИИ-анализа", description: err.message, variant: "destructive" });
+    } finally {
+      setSeoLoading(false);
+    }
+  };
+
   const addKeyword = () => {
     const k = keywordInput.trim();
     if (k && !keywords.includes(k)) setKeywords([...keywords, k]);
@@ -234,6 +269,45 @@ const AdminArticleImport = () => {
           </p>
         )}
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
+        <div className="text-sm">
+          <div className="font-medium flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-primary" /> Ручной ИИ-анализ статьи
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Запустите, если правили текст в редакторе — ИИ перечитает и обновит заголовок, slug, ключевые слова, аннотацию и категорию.
+          </div>
+        </div>
+        <Button onClick={runAiAnalysis} disabled={seoLoading || !content} className="gap-2">
+          {seoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          Запустить ИИ-анализ
+        </Button>
+      </div>
+
+      {aiReview && (
+        <div className="rounded-lg border-2 border-green-500/40 bg-green-500/5 p-4 space-y-2">
+          <div className="flex items-center gap-2 font-medium text-green-700 dark:text-green-400">
+            <CheckCircle2 className="w-5 h-5" /> Ревью ИИ
+          </div>
+          <div className="grid gap-2 text-sm md:grid-cols-2">
+            <div><span className="text-muted-foreground">Заголовок:</span> {aiReview.title || "—"}</div>
+            <div><span className="text-muted-foreground">Slug:</span> <code className="text-xs">{aiReview.slug || "—"}</code></div>
+            <div><span className="text-muted-foreground">Категория:</span> {categoryLabels[aiReview.category] || aiReview.category || "—"}</div>
+            <div><span className="text-muted-foreground">Возраст:</span> {aiReview.age_group === "adults" ? "Взрослые" : "Дети"}</div>
+            <div className="md:col-span-2"><span className="text-muted-foreground">Аннотация:</span> {aiReview.excerpt || "—"}</div>
+            <div className="md:col-span-2">
+              <span className="text-muted-foreground">Ключевые слова:</span>{" "}
+              {Array.isArray(aiReview.keywords) && aiReview.keywords.length
+                ? aiReview.keywords.join(", ")
+                : "—"}
+            </div>
+            <div className="md:col-span-2 text-xs text-muted-foreground">
+              Объём текста: {aiReview._words} слов. Все поля уже подставлены в форму — можете править вручную.
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
