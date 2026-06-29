@@ -760,20 +760,47 @@ export default function AdminArticleOrchestrator() {
                             )}
                           </div>
                           <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2 text-xs">
-                            <div className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
-                              + После
+                            <div className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center justify-between gap-1">
+                              <span>+ После</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => { ev.preventDefault(); setEditingKey(editingKey === `cons::${i}` ? null : `cons::${i}`); }}
+                                className="text-[10px] opacity-70 hover:opacity-100 inline-flex items-center gap-1"
+                                title="Править вручную"
+                              >
+                                <Pencil className="w-3 h-3" /> править
+                              </button>
                             </div>
-                            <div className="font-serif leading-relaxed">
-                              {context && e.original && (
-                                <span className="text-muted-foreground">…{context.before}</span>
-                              )}
-                              <span className="bg-emerald-500/20 px-0.5 rounded">
-                                {e.suggested}
-                              </span>
-                              {context && e.original && (
-                                <span className="text-muted-foreground">{context.after}…</span>
-                              )}
-                            </div>
+                            {editingKey === `cons::${i}` ? (
+                              <Textarea
+                                value={getSuggested(`cons::${i}`, e.suggested)}
+                                onChange={(ev) => setSuggested(`cons::${i}`, ev.target.value)}
+                                onBlur={() => setEditingKey(null)}
+                                onClick={(ev) => ev.preventDefault()}
+                                autoFocus
+                                className="min-h-[90px] text-xs font-serif leading-relaxed bg-background"
+                              />
+                            ) : (
+                              <div
+                                className="font-serif leading-relaxed cursor-text"
+                                onClick={(ev) => { ev.preventDefault(); setEditingKey(`cons::${i}`); }}
+                              >
+                                {context && e.original && (
+                                  <span className="text-muted-foreground">…{context.before}</span>
+                                )}
+                                <span className="bg-emerald-500/20 px-0.5 rounded">
+                                  {getSuggested(`cons::${i}`, e.suggested)}
+                                </span>
+                                {context && e.original && (
+                                  <span className="text-muted-foreground">{context.after}…</span>
+                                )}
+                                {editedSuggested.has(`cons::${i}`) && (
+                                  <Badge variant="outline" className="ml-2 text-[10px] bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400">
+                                    отредактировано
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
