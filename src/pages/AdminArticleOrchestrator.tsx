@@ -586,36 +586,97 @@ export default function AdminArticleOrchestrator() {
                   </Button>
                 </div>
               </div>
-              {consolidated.edits.map((e, i) => (
-                <label key={i} className="flex gap-3 p-3 rounded-md border border-border cursor-pointer hover:bg-accent/40">
-                  <Checkbox
-                    checked={accepted.has(i)}
-                    onCheckedChange={() => {
-                      setAccepted((cur) => {
-                        const n = new Set(cur);
-                        n.has(i) ? n.delete(i) : n.add(i);
-                        return n;
-                      });
-                    }}
-                    className="mt-0.5"
-                  />
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline">{e.category}</Badge>
-                      {e.severity && <Badge variant="outline" className={SEVERITY_COLOR[e.severity] || ""}>{e.severity}</Badge>}
-                      {e.status && <Badge variant="secondary">{STATUS_LABEL[e.status] || e.status}</Badge>}
-                      {e.supporting_models?.length ? (
-                        <span className="text-[10px] text-muted-foreground">
-                          {e.supporting_models.map((m) => m.split("/")[1] || m).join(", ")}
-                        </span>
-                      ) : null}
-                    </div>
-                    {e.original && <div className="text-xs italic text-muted-foreground">«{e.original}»</div>}
-                    <div className="text-sm"><span className="font-semibold">→ </span>{e.suggested}</div>
-                    <div className="text-xs text-muted-foreground">{e.rationale}</div>
+              {consolidated.edits.map((e, i) => {
+                const isAccepted = accepted.has(i);
+                // ищем контекст (абзац) вокруг original в исходном тексте
+                let context: { before: string; after: string } | null = null;
+                if (e.original && text.includes(e.original)) {
+                  const idx = text.indexOf(e.original);
+                  const before = text.slice(Math.max(0, idx - 120), idx);
+                  const after = text.slice(idx + e.original.length, idx + e.original.length + 120);
+                  context = { before, after };
+                }
+                return (
+                  <div
+                    key={i}
+                    className={`p-3 rounded-md border transition-colors ${isAccepted ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}
+                  >
+                    <label className="flex gap-3 cursor-pointer">
+                      <Checkbox
+                        checked={isAccepted}
+                        onCheckedChange={() => {
+                          setAccepted((cur) => {
+                            const n = new Set(cur);
+                            n.has(i) ? n.delete(i) : n.add(i);
+                            return n;
+                          });
+                        }}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge variant="outline">{e.category}</Badge>
+                          {e.severity && <Badge variant="outline" className={SEVERITY_COLOR[e.severity] || ""}>{e.severity}</Badge>}
+                          {e.status && <Badge variant="secondary">{STATUS_LABEL[e.status] || e.status}</Badge>}
+                          {e.supporting_models?.length ? (
+                            <span className="text-[10px] text-muted-foreground">
+                              {e.supporting_models.map((m) => m.split("/")[1] || m).join(", ")}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        {/* DIFF: до / после */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs">
+                            <div className="font-semibold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1">
+                              − До
+                            </div>
+                            {e.original ? (
+                              <div className="font-serif leading-relaxed">
+                                {context && (
+                                  <span className="text-muted-foreground">…{context.before}</span>
+                                )}
+                                <span className="bg-red-500/20 line-through decoration-red-500/60 px-0.5 rounded">
+                                  {e.original}
+                                </span>
+                                {context && (
+                                  <span className="text-muted-foreground">{context.after}…</span>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="italic text-muted-foreground">
+                                (глобальная правка — фрагмент в тексте не указан)
+                              </div>
+                            )}
+                          </div>
+                          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2 text-xs">
+                            <div className="font-semibold text-emerald-700 dark:text-emerald-400 mb-1 flex items-center gap-1">
+                              + После
+                            </div>
+                            <div className="font-serif leading-relaxed">
+                              {context && e.original && (
+                                <span className="text-muted-foreground">…{context.before}</span>
+                              )}
+                              <span className="bg-emerald-500/20 px-0.5 rounded">
+                                {e.suggested}
+                              </span>
+                              {context && e.original && (
+                                <span className="text-muted-foreground">{context.after}…</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {e.rationale && (
+                          <div className="text-xs text-muted-foreground italic border-l-2 border-muted pl-2">
+                            {e.rationale}
+                          </div>
+                        )}
+                      </div>
+                    </label>
                   </div>
-                </label>
-              ))}
+                );
+              })}
             </div>
 
             <Button onClick={rewriteWithVoice} disabled={!acceptedCount || rewriting} className="w-full" size="lg">
