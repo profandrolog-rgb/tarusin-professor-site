@@ -6,14 +6,6 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const articles = [
   {
-    title: "Как гарантированно стать дедушкой",
-    description: "О долгосрочной заботе о мужском здоровье. Что нужно знать родителям мальчиков, чтобы в будущем их сыновья стали здоровыми отцами.",
-    url: "https://caprice-lifestyle.com/health-beauty/dmitriy-tarusin",
-    source: "Caprice Lifestyle",
-    preview: "https://images.unsplash.com/photo-1491013516836-7db643ee125a?w=600&h=400&fit=crop",
-    emoji: "👴",
-  },
-  {
     title: "Баланопостит у детей: актуальное решение",
     description: "Статья о применении Balaneks Kids — современного средства для лечения и профилактики воспалительных заболеваний крайней плоти у мальчиков.",
     url: "https://www.uroweb.ru/article/reshenie-problemi-balanopostita-u-detey-aktualnoe-novoe-balaneks-kids",
