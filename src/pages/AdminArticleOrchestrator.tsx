@@ -152,6 +152,15 @@ export default function AdminArticleOrchestrator() {
   const [reviews, setReviews] = useState<ModelReview[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [pending, setPending] = useState<Set<string>>(new Set());
+  const [progress, setProgress] = useState<Record<string, ModelProgress>>({});
+  const [tick, setTick] = useState(0);
+
+  // живой таймер для running моделей
+  useEffect(() => {
+    if (!reviewing) return;
+    const id = setInterval(() => setTick((t) => t + 1), 500);
+    return () => clearInterval(id);
+  }, [reviewing]);
 
   const [consolidated, setConsolidated] = useState<{ summary: string; edits: EditItem[] } | null>(null);
   const [consolidating, setConsolidating] = useState(false);
