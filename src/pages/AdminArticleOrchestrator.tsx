@@ -85,6 +85,59 @@ export default function AdminArticleOrchestrator() {
   const [arbiter, setArbiter] = useState(ARBITERS[0].id);
   const [rewriter, setRewriter] = useState(REWRITERS[0].id);
 
+  // --- Диктовка ---
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  const startDictation = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      chunksRef.current = [];
+      rec.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: mime });
+        if (blob.size < 2048) {
+          toast({ title: "Запись пустая", description: "Попробуйте ещё раз", variant: "destructive" });
+          return;
+        }
+        setTranscribing(true);
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const fd = new FormData();
+          fd.append("file", blob, `dict.${mime === "audio/webm" ? "webm" : "mp4"}`);
+          const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/ai-transcribe`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+            body: fd,
+          });
+          const json = await resp.json();
+          if (!resp.ok) throw new Error(json?.error || `HTTP ${resp.status}`);
+          const t = String(json.text || "").trim();
+          if (t) setText((prev) => (prev ? prev + (prev.endsWith("\n") ? "" : "\n") : "") + t);
+        } catch (e: any) {
+          toast({ title: "Ошибка диктовки", description: e.message, variant: "destructive" });
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      rec.start();
+      recorderRef.current = rec;
+      setRecording(true);
+    } catch (e: any) {
+      toast({ title: "Нет доступа к микрофону", description: e.message, variant: "destructive" });
+    }
+  };
+  const stopDictation = () => {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  };
+
   const [reviews, setReviews] = useState<ModelReview[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [pending, setPending] = useState<Set<string>>(new Set());
