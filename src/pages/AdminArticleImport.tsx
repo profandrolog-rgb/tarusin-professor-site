@@ -270,6 +270,45 @@ const AdminArticleImport = () => {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
+        <div className="text-sm">
+          <div className="font-medium flex items-center gap-2">
+            <Wand2 className="w-4 h-4 text-primary" /> Ручной ИИ-анализ статьи
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Запустите, если правили текст в редакторе — ИИ перечитает и обновит заголовок, slug, ключевые слова, аннотацию и категорию.
+          </div>
+        </div>
+        <Button onClick={runAiAnalysis} disabled={seoLoading || !content} className="gap-2">
+          {seoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+          Запустить ИИ-анализ
+        </Button>
+      </div>
+
+      {aiReview && (
+        <div className="rounded-lg border-2 border-green-500/40 bg-green-500/5 p-4 space-y-2">
+          <div className="flex items-center gap-2 font-medium text-green-700 dark:text-green-400">
+            <CheckCircle2 className="w-5 h-5" /> Ревью ИИ
+          </div>
+          <div className="grid gap-2 text-sm md:grid-cols-2">
+            <div><span className="text-muted-foreground">Заголовок:</span> {aiReview.title || "—"}</div>
+            <div><span className="text-muted-foreground">Slug:</span> <code className="text-xs">{aiReview.slug || "—"}</code></div>
+            <div><span className="text-muted-foreground">Категория:</span> {categoryLabels[aiReview.category] || aiReview.category || "—"}</div>
+            <div><span className="text-muted-foreground">Возраст:</span> {aiReview.age_group === "adults" ? "Взрослые" : "Дети"}</div>
+            <div className="md:col-span-2"><span className="text-muted-foreground">Аннотация:</span> {aiReview.excerpt || "—"}</div>
+            <div className="md:col-span-2">
+              <span className="text-muted-foreground">Ключевые слова:</span>{" "}
+              {Array.isArray(aiReview.keywords) && aiReview.keywords.length
+                ? aiReview.keywords.join(", ")
+                : "—"}
+            </div>
+            <div className="md:col-span-2 text-xs text-muted-foreground">
+              Объём текста: {aiReview._words} слов. Все поля уже подставлены в форму — можете править вручную.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
           <Label>Заголовок *</Label>
