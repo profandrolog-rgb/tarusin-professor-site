@@ -45,6 +45,27 @@ const REVIEW_SYSTEM = `Ты — рецензент медицинских/нау
 - Не добавляй дисклеймеров «обратитесь к врачу» — это статья профессора.
 - Если статья хороша — верни 1-3 минимальные правки и честный free_review.`;
 
+const REWRITE_SYSTEM = `Ты — литературный редактор, который переписывает медицинскую статью профессора Д.И. Тарусина с учётом одобренных правок. ТВОЯ ГЛАВНАЯ ЗАДАЧА — сохранить АВТОРСКИЙ ГОЛОС профессора.
+
+Голос профессора Тарусина:
+- 1-е лицо ("я", "мой опыт", "в моей практике"), уверенный тон руководителя клиники.
+- Сдержанный академический стиль, без популизма и инфостиля, без эмодзи, без восклицательных знаков.
+- Точная медицинская терминология (русская + латинская в скобках при первом упоминании).
+- Спокойные авторские обороты: "по моим наблюдениям", "на собственном материале", "представляется целесообразным", "следует подчеркнуть", "в практике детского уролога-андролога".
+- Никаких дисклеймеров «обратитесь к врачу», никаких "важно понимать", "давайте разберёмся", "в этой статье мы рассмотрим".
+- Короткие плотные абзацы 3-6 предложений, иногда нумерованные перечисления; заголовки H2/H3 разрешены.
+
+Что делать:
+1. Возьми ИСХОДНУЮ статью как основу — это голос автора, его сохраняем.
+2. Применяй ТОЛЬКО одобренные правки (список ниже). Не вноси других изменений.
+3. Если правка точечная (есть original) — замени фрагмент аккуратно, переплавив формулировку в авторский голос, а не вставляя её механически.
+4. Если правка глобальная (original пуст) — внеси изменение в подходящем месте, сохранив стиль.
+5. Сохраняй структуру и порядок изложения автора; не переставляй разделы без явной правки на это.
+6. Не сокращай и не «упрощай для читателя» — пиши как профессор.
+
+ВЕРНИ СТРОГО JSON без markdown:
+{ "rewritten": "полный текст переписанной статьи с сохранёнными абзацами через \\n\\n" }`;
+
 const ARBITER_SYSTEM = `Ты — главный редактор-арбитр. Получи исходную статью и несколько рецензий разных моделей с предлагаемыми правками. 
 Сведи всё в КОНСОЛИДИРОВАННЫЙ список правок.
 
@@ -284,6 +305,50 @@ Deno.serve(async (req) => {
           });
         }
         return new Response(JSON.stringify({ consolidated: parsed, arbiter }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        return new Response(JSON.stringify({ error: e?.message || String(e) }), {
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    if (body.action === "rewrite") {
+      const text: string = String(body.text || "").trim();
+      const editsAccepted = Array.isArray(body.edits) ? body.edits : [];
+      const rewriter: string = String(body.rewriter || "anthropic/claude-opus-4-8");
+      if (!text || !editsAccepted.length) {
+        return new Response(JSON.stringify({ error: "text and accepted edits required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const editsBlock = editsAccepted.map((e: any, i: number) => (
+        `[${i + 1}] (${e.category || "edit"}${e.severity ? ", " + e.severity : ""})\n` +
+        (e.original ? `   ORIGINAL: «${e.original}»\n` : `   (глобальная правка)\n`) +
+        `   ПРАВКА: ${e.suggested || ""}\n` +
+        (e.rationale ? `   ОБОСНОВАНИЕ: ${e.rationale}` : "")
+      )).join("\n\n");
+      const userMsg = [
+        "ИСХОДНАЯ СТАТЬЯ (сохраняем голос автора):",
+        text,
+        "",
+        "ОДОБРЕННЫЕ ПРАВКИ (применить и переплавить в авторский стиль):",
+        editsBlock,
+      ].join("\n");
+      try {
+        const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
+          { role: "system", content: REWRITE_SYSTEM },
+          { role: "user", content: userMsg },
+        ], 0.4);
+        const parsed = tryParseJson(raw);
+        const rewritten = parsed && typeof parsed.rewritten === "string" ? parsed.rewritten : null;
+        if (!rewritten) {
+          return new Response(JSON.stringify({ error: "rewriter returned non-JSON or empty", raw: raw.slice(0, 1000) }), {
+            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ rewritten, rewriter, applied: editsAccepted.length }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {

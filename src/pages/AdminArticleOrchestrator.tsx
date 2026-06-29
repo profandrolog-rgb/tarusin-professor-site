@@ -200,24 +200,36 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
-  function applyEdits() {
+  const [rewriting, setRewriting] = useState(false);
+
+  async function rewriteWithVoice() {
     if (!consolidated) return;
-    let out = text;
-    let applied = 0;
-    let missed = 0;
-    consolidated.edits.forEach((e, i) => {
-      if (!accepted.has(i)) return;
-      if (!e.original) return; // глобальная правка — пропускаем при автоприменении
-      const idx = out.indexOf(e.original);
-      if (idx === -1) { missed++; return; }
-      out = out.slice(0, idx) + e.suggested + out.slice(idx + e.original.length);
-      applied++;
-    });
-    setFinalText(out);
-    toast({
-      title: "Правки применены",
-      description: `Применено ${applied}, не найдено в тексте ${missed} (применить вручную).`,
-    });
+    const editsAccepted = consolidated.edits.filter((_, i) => accepted.has(i));
+    if (!editsAccepted.length) {
+      toast({ title: "Не выбраны правки", variant: "destructive" });
+      return;
+    }
+    setRewriting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "rewrite", text, edits: editsAccepted, rewriter: arbiter }),
+      });
+      const j = await resp.json();
+      if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
+      setFinalText(String(j.rewritten || ""));
+      toast({ title: "Статья переписана", description: `Применено правок: ${j.applied}. Голос автора сохранён.` });
+    } catch (e: any) {
+      toast({ title: "Ошибка переписывания", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setRewriting(false);
+    }
   }
 
   const acceptedCount = accepted.size;
@@ -426,8 +438,10 @@ export default function AdminArticleOrchestrator() {
               ))}
             </div>
 
-            <Button onClick={applyEdits} disabled={!acceptedCount} className="w-full" size="lg">
-              <FileCheck2 className="w-4 h-4 mr-2" /> Применить выбранные правки ({acceptedCount})
+            <Button onClick={rewriteWithVoice} disabled={!acceptedCount || rewriting} className="w-full" size="lg">
+              {rewriting
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Переписываю с сохранением вашего голоса…</>
+                : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать статью с моим голосом ({acceptedCount} правок)</>}
             </Button>
           </CardContent>
         </Card>
