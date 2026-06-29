@@ -225,11 +225,26 @@ export default function AdminArticleOrchestrator() {
             else if (line.startsWith("data:")) data += line.slice(5).trim();
           }
           if (!data) continue;
-          if (evType === "model_done") {
+          if (evType === "model_start") {
+            try {
+              const r = JSON.parse(data) as { model: string; started_at: number };
+              setProgress((cur) => ({ ...cur, [r.model]: { status: "running", startedAt: r.started_at } }));
+            } catch { /* ignore */ }
+          } else if (evType === "model_done") {
             try {
               const r = JSON.parse(data) as ModelReview;
               setReviews((cur) => [...cur, r]);
               setPending((cur) => { const n = new Set(cur); n.delete(r.model); return n; });
+              setProgress((cur) => ({
+                ...cur,
+                [r.model]: {
+                  status: r.error ? "error" : "done",
+                  startedAt: cur[r.model]?.startedAt,
+                  ms: r.ms,
+                  edits: r.edits?.length ?? 0,
+                  error: r.error,
+                },
+              }));
             } catch { /* ignore */ }
           } else if (evType === "done") {
             // finished
