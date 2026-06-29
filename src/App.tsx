@@ -217,6 +217,7 @@ export const routes: RouteRecord[] = [
   {
     path: "/en",
     element: <EnRoot />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       ...enPublicChildren,
       { path: "*", Component: NotFound, entry: "src/pages/NotFound.tsx" },
