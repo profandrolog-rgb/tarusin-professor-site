@@ -1,7 +1,7 @@
 // AI Article Orchestrator
 // Админ-инструмент: статья → параллельное ревью N моделей → консолидация арбитром → применение правок.
 
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
