@@ -190,6 +190,7 @@ export default function AdminArticleOrchestrator() {
     setFinalText("");
     setReviewing(true);
     setPending(new Set(models));
+    setProgress(Object.fromEntries(models.map((m) => [m, { status: "queued" as const }])));
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
