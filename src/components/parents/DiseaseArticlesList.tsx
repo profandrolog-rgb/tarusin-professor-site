@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DiseaseArticleCard from "./DiseaseArticleCard";
+import FriendlyFallback, { DiseaseCardsSkeleton } from "./FriendlyFallback";
 
 interface DiseaseArticlesListProps {
   ageGroup: "children" | "adults";
@@ -16,18 +17,25 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
   const seeded = (initialArticles || []).filter((a) => a.age_group === ageGroup);
   const [articles, setArticles] = useState<any[]>(seeded);
   const [loading, setLoading] = useState(seeded.length === 0);
+  const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    setLoadError(false);
+    const { data, error } = await supabase
       .from("disease_articles")
       .select("*")
       .eq("age_group", ageGroup)
       .eq("is_published", true)
       .order("sort_order", { ascending: true });
-    setArticles(data || []);
+    if (error) {
+      setLoadError(true);
+      setArticles([]);
+    } else {
+      setArticles(data || []);
+    }
     setLoading(false);
   }, [ageGroup]);
 
@@ -150,13 +158,29 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
 
         {/* Articles grid */}
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Загрузка...</div>
+          <DiseaseCardsSkeleton count={4} />
+        ) : loadError ? (
+          <FriendlyFallback
+            variant="error"
+            onRetry={fetchArticles}
+            description="Не удалось загрузить список заболеваний. Проверьте интернет — данные не потеряны, можно повторить попытку."
+          />
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchQuery ? "Ничего не найдено. Попробуйте другой запрос." : "Материалы скоро появятся."}
-            </p>
-          </div>
+          searchQuery || selectedCategory ? (
+            <FriendlyFallback
+              variant="empty"
+              title="Ничего не нашлось"
+              description="Попробуйте изменить поисковый запрос или сбросить фильтр по разделу."
+            />
+          ) : (
+            <FriendlyFallback
+              variant="empty"
+              title={ageGroup === "children" ? "Материалы для детей скоро появятся" : "Материалы для взрослых скоро появятся"}
+              description="Раздел сейчас пополняется. Загляните позже — или посмотрите другие материалы профессора."
+              primaryHref="/for-parents?tab=useful"
+              primaryLabel="Полезные материалы"
+            />
+          )
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filtered.map((article) => (
