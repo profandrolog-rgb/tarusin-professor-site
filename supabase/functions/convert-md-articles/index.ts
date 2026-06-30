@@ -18,9 +18,27 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function unwrapMarkdownInParagraphs(html: string): string {
+  // Случай: текст уже обёрнут в <p>…</p>, но внутри markdown (## …, **…**, - …).
+  // Разворачиваем такие <p> в чистый markdown, чтобы marked корректно их обработал.
+  return html.replace(/<p>([\s\S]*?)<\/p>/g, (full, inner: string) => {
+    const trimmed = inner.trim();
+    if (/^#{1,6}\s+\S/.test(trimmed) || /^[-*]\s+\S/.test(trimmed)) {
+      return `\n\n${trimmed}\n\n`;
+    }
+    // Параграф содержит **жирный** markdown — оставляем как параграф, но переводим **…** в <strong>
+    if (/\*\*[^*\n]+\*\*/.test(trimmed)) {
+      const converted = trimmed.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+      return `<p>${converted}</p>`;
+    }
+    return full;
+  });
+}
+
 function markdownToHtml(md: string): string {
   if (!md) return "";
-  const prepared = md.replace(
+  const unwrapped = unwrapMarkdownInParagraphs(md);
+  const prepared = unwrapped.replace(
     GALLERY_RE,
     (_m, caption: string, files: string) =>
       `\n\n<div data-gallery-placeholder data-caption="${escapeHtml(caption)}" data-files="${escapeHtml((files || "").replace(/^\|/, "").trim())}">Галерея</div>\n\n`,
@@ -30,12 +48,16 @@ function markdownToHtml(md: string): string {
 
 function looksLikeMarkdown(body: string): boolean {
   if (!body) return false;
-  // Сигнал markdown — заголовки на отдельной строке (## ...). Это надёжный
-  // индикатор; одиночные **жирные** внутри уже отрендеренного HTML — нет.
+  // Заголовки/списки на отдельной строке — надёжный признак markdown.
   const hasMdHeading = /(^|\n)#{1,6} \S/.test(body);
   const hasMdList = /(^|\n)[-*] \S/.test(body) && !/<(ul|ol)\b/i.test(body);
   const hasBoldNoHtml = /\*\*[^*\n]+\*\*/.test(body) && !/<(p|h[1-6])\b/i.test(body);
-  return hasMdHeading || hasMdList || hasBoldNoHtml;
+  // Спец-случай: markdown-заголовки/списки/жирный обёрнуты в <p>…</p>.
+  const hasWrappedMd =
+    /<p>\s*#{1,6}\s+\S/i.test(body) ||
+    /<p>\s*[-*]\s+\S/i.test(body) ||
+    /<p>[^<]*\*\*[^*\n]+\*\*[^<]*<\/p>/i.test(body);
+  return hasMdHeading || hasMdList || hasBoldNoHtml || hasWrappedMd;
 }
 
 const TABLES: Array<{ table: string; column: string }> = [
