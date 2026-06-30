@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isEditor, setIsEditor] = useState(false);
   const [isSurgeon, setIsSurgeon] = useState(false);
   const [loading, setLoading] = useState(true);
+  const rolesPromiseRef = useRef<{ userId: string; promise: Promise<[boolean, boolean, boolean]> } | null>(null);
 
   const checkRole = async (userId: string, role: string) => {
     try {
@@ -41,24 +42,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loadRoles = (userId: string) => {
+    if (rolesPromiseRef.current?.userId === userId) {
+      return rolesPromiseRef.current.promise;
+    }
+    const promise = Promise.all([
+      checkRole(userId, "admin"),
+      checkRole(userId, "editor"),
+      checkRole(userId, "surgeon"),
+    ]);
+    rolesPromiseRef.current = { userId, promise };
+    return promise;
+  };
+
+  const applyRoles = ([admin, editor, surgeon]: [boolean, boolean, boolean]) => {
+    setIsAdmin(admin);
+    setIsEditor(editor);
+    setIsSurgeon(surgeon);
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === "INITIAL_SESSION") return;
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Defer admin check with setTimeout to avoid deadlock
         if (session?.user) {
-          setTimeout(() => {
-            checkRole(session.user.id, "admin").then(setIsAdmin);
-            checkRole(session.user.id, "editor").then(setIsEditor);
-            checkRole(session.user.id, "surgeon").then(setIsSurgeon);
-          }, 0);
+          loadRoles(session.user.id).then(applyRoles).finally(() => setLoading(false));
         } else {
           setIsAdmin(false);
           setIsEditor(false);
           setIsSurgeon(false);
+          rolesPromiseRef.current = null;
+          setLoading(false);
         }
       }
     );
@@ -69,14 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        Promise.all([
-          checkRole(session.user.id, "admin"),
-          checkRole(session.user.id, "editor"),
-          checkRole(session.user.id, "surgeon"),
-        ]).then(([admin, editor, surgeon]) => {
-          setIsAdmin(admin);
-          setIsEditor(editor);
-          setIsSurgeon(surgeon);
+        loadRoles(session.user.id).then((roles) => {
+          applyRoles(roles);
           setLoading(false);
         });
       } else {
