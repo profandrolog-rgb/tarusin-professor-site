@@ -53,8 +53,16 @@ const AdminDiseaseArticles = () => {
   const [saving, setSaving] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [cardBgFile, setCardBgFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"list" | "cards">(() => {
+    if (typeof window === "undefined") return "list";
+    return (localStorage.getItem("disease-articles-view-mode") as "list" | "cards") || "list";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("disease-articles-view-mode", viewMode);
+  }, [viewMode]);
   const articleEditorRef = useRef<ArticleMarkdownEditorHandle>(null);
 
   useEffect(() => {
