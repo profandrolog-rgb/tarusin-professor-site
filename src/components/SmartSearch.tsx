@@ -68,13 +68,13 @@ const SmartSearch = () => {
   // Debounced autocomplete: titles from disease_articles + blog_posts
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setAutocomplete([]); return; }
+    if (q.length < 3) { setAutocomplete([]); return; }
     const handle = setTimeout(async () => {
       try {
         const term = `%${q}%`;
         const sb = supabase as any;
         const [diseases, blogs, videos] = await Promise.all([
-          sb.from("disease_articles").select("id, title, slug").ilike("title", term).eq("published", true).limit(4),
+          sb.from("disease_articles").select("id, title, slug").ilike("title", term).eq("is_published", true).limit(4),
           sb.from("blog_posts").select("id, title, slug").ilike("title", term).limit(4),
           sb.from("video_cases").select("id, title").ilike("title", term).limit(3),
         ]);
@@ -86,7 +86,7 @@ const SmartSearch = () => {
       } catch {
         setAutocomplete([]);
       }
-    }, 220);
+    }, 400);
     return () => clearTimeout(handle);
   }, [query]);
 

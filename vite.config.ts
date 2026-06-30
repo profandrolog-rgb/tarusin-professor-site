@@ -3,24 +3,19 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// Публичные пути, которые НЕ нужно пре-рендерить (приватные/админ-страницы).
-// Список держим в синхроне с src/App.tsx.
-const EXCLUDED_FROM_SSG = new Set([
-  "/auth",
-  "/portal",
-  "/cabinet",
-  "/admin",
-  "/admin/requests",
-  "/admin/certificates",
-  "/admin/prescriptions",
-  "/admin/questions",
-  "/admin/operations-journal",
-  "/admin/disease-articles",
-  "/admin/patient-cards",
-  "/admin/consultations",
-  "/admin/self-check",
-  "/admin/system-settings",
-]);
+// Пути, которые НЕ нужно пре-рендерить: приватные разделы, SPA-страницы,
+// динамические ссылки и английская ветка. Это резко сокращает работу SSG
+// на Timeweb и не влияет на публичные SEO-страницы русского сайта.
+const isExcludedFromSsg = (pathName: string) =>
+  pathName === "/auth" ||
+  pathName === "/portal" ||
+  pathName === "/admin" ||
+  pathName.startsWith("/admin/") ||
+  pathName === "/cabinet" ||
+  pathName.startsWith("/cabinet/") ||
+  pathName.startsWith("/p/") ||
+  pathName === "/en" ||
+  pathName.startsWith("/en/");
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -51,7 +46,7 @@ export default defineConfig(({ mode }) => ({
     concurrency: 5,
     mock: true,
     includedRoutes(paths: string[]) {
-      return paths.filter((p) => !EXCLUDED_FROM_SSG.has(p));
+      return paths.filter((p) => !isExcludedFromSsg(p));
     },
   },
 }));

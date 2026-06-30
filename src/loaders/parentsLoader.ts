@@ -71,7 +71,21 @@ export async function parentsLoader(): Promise<ParentsLoaderData> {
     console.warn("[parentsLoader] missing SUPABASE env vars — skipping prefetch");
     return { articles: [] };
   }
-  const url = `${SUPABASE_URL}/rest/v1/disease_articles?is_published=eq.true&select=*&order=sort_order.asc`;
+  const columns = [
+    "id",
+    "slug",
+    "title",
+    "description",
+    "category",
+    "sort_order",
+    "age_group",
+    "keywords",
+    "video_path",
+    "audio_path",
+    "thumbnail_path",
+    "article_content",
+  ].join(",");
+  const url = `${SUPABASE_URL}/rest/v1/disease_articles?is_published=eq.true&select=${columns}&order=sort_order.asc`;
   const articles = (await fetchJson("list", url)) as any[] | null;
   return { articles: Array.isArray(articles) ? articles : [] };
 }

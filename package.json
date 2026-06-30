@@ -6,7 +6,6 @@
   "scripts": {
     "predev": "npx tsx scripts/generate-sitemap.ts",
     "dev": "vite",
-    "prebuild": "npx tsx scripts/generate-sitemap.ts",
     "build": "vite-react-ssg build",
     "postbuild": "npx tsx scripts/generate-sitemap.ts",
     "build:dev": "vite build --mode development",

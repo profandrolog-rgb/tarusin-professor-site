@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Award, Syringe, Stethoscope, Users, Phone } from "lucide-react";
-import professorPhoto from "@/assets/professor-photo.png";
+import professorPhoto from "@/assets/professor-photo.webp";
 import { useTranslation } from "react-i18next";
 
 const HeroSection = () => {

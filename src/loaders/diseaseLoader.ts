@@ -80,7 +80,20 @@ export async function diseaseLoader({ params }: { params: { slug?: string } }): 
     return empty;
   }
 
-  const articleUrl = `${SUPABASE_URL}/rest/v1/disease_articles?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=*&limit=1`;
+  const columns = [
+    "id",
+    "slug",
+    "title",
+    "description",
+    "category",
+    "age_group",
+    "article_content",
+    "video_path",
+    "audio_path",
+    "thumbnail_path",
+    "keywords",
+  ].join(",");
+  const articleUrl = `${SUPABASE_URL}/rest/v1/disease_articles?slug=eq.${encodeURIComponent(slug)}&is_published=eq.true&select=${columns}&limit=1`;
   const articles = (await fetchJson("article", articleUrl)) as any[] | null;
   const article = Array.isArray(articles) ? articles[0] : null;
   if (!article) return empty;

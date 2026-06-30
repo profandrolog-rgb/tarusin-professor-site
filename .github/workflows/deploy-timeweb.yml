@@ -18,7 +18,7 @@ jobs:
         run: |
           URL="https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/trigger-timeweb-deploy"
           echo "POST $URL (commit $COMMIT_SHA)"
-          http_code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" \
+          http_code=$(curl --fail-with-body --retry 3 --retry-delay 5 --connect-timeout 15 --max-time 120 -s -o /tmp/resp.txt -w "%{http_code}" \
             -X POST "$URL" \
             -H "Content-Type: application/json" \
             -d "{\"commit_sha\":\"$COMMIT_SHA\"}")

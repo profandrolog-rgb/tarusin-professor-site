@@ -40,8 +40,9 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
   }, [ageGroup]);
 
   useEffect(() => {
+    if (seeded.length > 0 && !isAdmin) return;
     fetchArticles();
-  }, [fetchArticles]);
+  }, [fetchArticles, isAdmin, seeded.length]);
 
   const categories = useMemo(() => {
     const cats = new Set(articles.map((a) => a.category));

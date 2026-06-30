@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Menu, X, ChevronDown, LogIn, LogOut, Settings, UserPlus, User } from "lucide-react";
-import headerPhoto from "@/assets/header-photo.png";
+import headerPhoto from "@/assets/header-photo.webp";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -62,7 +62,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link to="/" className="flex items-center gap-3">
-            <img src={headerPhoto} alt="Professor Tarusin D.I." className="w-10 h-10 rounded-full object-cover" />
+            <img src={headerPhoto} alt="Professor Tarusin D.I." width={40} height={40} decoding="async" className="w-10 h-10 rounded-full object-cover" />
             <div className="hidden sm:block">
               <p className="font-semibold text-foreground">
                 {t("lang") === "en" ? "Professor Tarusin D.I." : "Профессор Тарусин Д.И."}

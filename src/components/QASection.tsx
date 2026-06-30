@@ -14,6 +14,7 @@ const QASection = () => {
 
   const { data: questions = [] } = useQuery({
     queryKey: ["published-questions-preview"],
+    staleTime: 1000 * 60 * 10,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("questions_public" as any)
