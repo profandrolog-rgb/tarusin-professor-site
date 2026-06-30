@@ -64,7 +64,13 @@ const AdminArticleImport = () => {
   const [aiReview, setAiReview] = useState<any>(null);
 
   const location = useLocation();
-  const incoming = (location.state || null) as { title?: string; text?: string; source?: string } | null;
+  const incoming = (location.state || null) as {
+    title?: string;
+    text?: string;
+    source?: string;
+    existingRef?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" } | null;
+  } | null;
+  const existingRef = incoming?.existingRef ?? null;
 
   // Auto-prefill when arriving from the Orchestrator with a finished article
   useEffect(() => {
