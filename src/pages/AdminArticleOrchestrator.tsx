@@ -179,6 +179,37 @@ export default function AdminArticleOrchestrator() {
   const [testingConn, setTestingConn] = useState(false);
   const [formatting, setFormatting] = useState(false);
   const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translation, setTranslation] = useState<null | {
+    title: string;
+    slug: string;
+    description: string;
+    card_annotation: string;
+    content: string;
+    keywords: string[];
+    seo_title: string;
+    seo_description: string;
+  }>(null);
+
+  async function translateFinal() {
+    if (!finalText.trim()) return;
+    setTranslating(true);
+    setTranslation(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("translate-content", {
+        body: { text: finalText, title, description: "" },
+      });
+      if (error) throw error;
+      if (!data?.translation) throw new Error("Empty response");
+      setTranslation(data.translation);
+      sonnerToast.success("Перевод готов — проверьте и скопируйте поля");
+    } catch (e: any) {
+      sonnerToast.error("Перевод не удался", { description: e?.message || String(e) });
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   const successReviews = useMemo(() => reviews.filter((r) => !r.error), [reviews]);
 
   const getSuggested = (key: string, fallback: string) =>
