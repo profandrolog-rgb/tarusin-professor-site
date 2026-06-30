@@ -679,14 +679,14 @@ export default function AdminArticleOrchestrator() {
                   : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать с принятыми ({directAccepted.size})</>}
               </Button>
               <Button
-                onClick={runReview}
-                disabled={reviewing}
+                onClick={() => runReview({ reReview: true })}
+                disabled={reviewing || (!finalText.trim() && !appliedEdits.length && !directAccepted.size && !accepted.size)}
                 variant="outline"
-                title="Запустить ревью ещё раз с теми же моделями"
+                title="Передать моделям уже переписанную статью и исключить принятые правки"
               >
                 {reviewing
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Идёт…</>
-                  : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью</>}
+                  : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью {reviewRound > 1 ? `(раунд ${reviewRound + 1})` : "(с правками)"}</>}
               </Button>
               <Button
                 onClick={runConsolidation}
