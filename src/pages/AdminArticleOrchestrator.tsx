@@ -15,10 +15,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
+import MarkdownArticle from "@/components/parents/MarkdownArticle";
+
 
 
 type EditItem = {
@@ -93,13 +95,19 @@ export default function AdminArticleOrchestrator() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const location = useLocation();
-  const incoming = (location.state || {}) as { text?: string; title?: string };
+  const incoming = (location.state || {}) as {
+    text?: string;
+    title?: string;
+    recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title?: string };
+  };
 
   const [title, setTitle] = useState(incoming.title ?? "");
   const [text, setText] = useState(incoming.text ?? "");
   const [models, setModels] = useState<string[]>(PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(ARBITERS[0].id);
   const [rewriter, setRewriter] = useState(REWRITERS[0].id);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
 
   // --- Диктовка ---
   const [recording, setRecording] = useState(false);
@@ -246,6 +254,34 @@ export default function AdminArticleOrchestrator() {
       sonnerToast.error("Ошибка загрузки", { description: e?.message || String(e) });
     }
   }
+
+  // Авто-загрузка опубликованной статьи, если пришли по кнопке «В оркестратор»
+  useEffect(() => {
+    if (!incoming.recheck) return;
+    loadForRecheck({
+      id: incoming.recheck.id,
+      kind: incoming.recheck.kind,
+      title: incoming.recheck.title || "",
+      updated_at: "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function insertGalleryMarker(target: "text" | "final") {
+    const caption = window.prompt("Подпись к галерее (можно пустую):", "");
+    if (caption === null) return;
+    const marker = `\n\n[[GALLERY: caption="${(caption || "").replace(/"/g, "'")}"]]\n\n`;
+    if (target === "final") {
+      setFinalText((cur) => (cur || "") + marker);
+    } else {
+      setText((cur) => (cur || "") + marker);
+    }
+    sonnerToast.success("Блок галереи вставлен", {
+      description: "Файлы можно прикрепить на странице «Разместить»",
+    });
+  }
+
+
 
 
   async function translateFinal() {
@@ -1072,6 +1108,24 @@ export default function AdminArticleOrchestrator() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={() => insertGalleryMarker("final")}
+                disabled={!finalText}
+                title="Вставить блок галереи в конец итогового текста"
+              >
+                <ImagePlus className="w-4 h-4 mr-2" /> + Галерея
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!finalText}
+                title="Просмотреть как у пациентов — с форматированием и галереями"
+              >
+                <Eye className="w-4 h-4 mr-2" /> Превью
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => {
                   navigate("/admin/article-import", {
                     state: { title, text: finalText, source: "orchestrator", existingRef },
@@ -1079,8 +1133,9 @@ export default function AdminArticleOrchestrator() {
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                <Send className="w-4 h-4 mr-2" /> Разместить
+                <Send className="w-4 h-4 mr-2" /> {existingRef ? "Переопубликовать" : "Разместить"}
               </Button>
+
             </div>
           </CardHeader>
           <CardContent>
@@ -1168,7 +1223,28 @@ export default function AdminArticleOrchestrator() {
         </Card>
       )}
 
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" /> Превью — как увидит пациент
+            </DialogTitle>
+          </DialogHeader>
+          <div className="prose dark:prose-invert max-w-none">
+            {title && <h1>{title}</h1>}
+            <MarkdownArticle
+              content={finalText}
+              articleId={existingRef?.id || "preview"}
+              articleSlug="preview"
+              isAdmin={false}
+              title={title}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Перепроверить опубликованную статью</DialogTitle>

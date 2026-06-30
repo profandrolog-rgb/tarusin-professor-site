@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff, LayoutGrid, List as ListIcon, Image as ImageIcon, X, Languages } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff, LayoutGrid, List as ListIcon, Image as ImageIcon, X, Languages, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -342,10 +342,25 @@ const AdminDiseaseArticles = () => {
                     </div>
                   </div>
                   <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="h-7 w-7"
+                      title="Отправить в Оркестратор для повторного ревью"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate("/admin/article-orchestrator", {
+                          state: { recheck: { id: article.id, kind: "disease_articles", title: article.title } },
+                        });
+                      }}
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                    </Button>
                     <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); togglePublish(article); }}>
                       {article.is_published ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                     </Button>
                   </div>
+
                 </Card>
               );
             })}
@@ -380,9 +395,20 @@ const AdminDiseaseArticles = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="В Оркестратор (полный цикл ИИ-ревью и переопубликация)"
+                      onClick={() => navigate("/admin/article-orchestrator", {
+                        state: { recheck: { id: article.id, kind: "disease_articles", title: article.title } },
+                      })}
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => togglePublish(article)} title={article.is_published ? "Снять с публикации" : "Опубликовать"}>
                       {article.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </Button>
+
                     <Button variant="ghost" size="icon" onClick={() => openEdit(article)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
