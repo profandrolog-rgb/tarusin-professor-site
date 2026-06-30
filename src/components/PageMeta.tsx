@@ -48,7 +48,11 @@ const PageMeta = ({ title, description, path, image, type = "website", lang, key
     <Helmet htmlAttributes={{ lang: currentLang }}>
       <title>{title}</title>
       <meta name="description" content={description} />
+      {keywords && keywords.length > 0 && (
+        <meta name="keywords" content={keywords.join(", ")} />
+      )}
       <link rel="canonical" href={url} />
+
 
       {/* hreflang */}
       <link rel="alternate" hrefLang="ru" href={alts.ru} />
