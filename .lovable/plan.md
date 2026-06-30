@@ -1,69 +1,40 @@
-# Генерация изображений в Кабинете
+# Текущий флоу статьи: от загрузки до публикации
 
-## 1. Хранилище и БД
+Да, в целом верно. Вот полная цепочка по шагам, как она реализована сейчас:
 
-**Новые бакеты Storage (приватные):**
-- `generated-images` — результаты генерации (`{user_id}/{conv_id}/{timestamp}.png`)
-- `reference-library` — пользовательская библиотека удачных референсов (`{user_id}/{ref_id}.png`)
+## 1. Загрузка статьи
+- Страница: **«Загрузка статей»** (`/admin/article-upload`) или **«Импорт статьи»** (`/admin/article-import`).
+- Загружается файл (DOCX/PDF/MD) или вставляется текст + метаданные (заголовок, рубрика, теги).
+- Черновик сохраняется в `disease_article_drafts` (или `blog_posts` со статусом draft).
 
-**Новая таблица `image_references`:**
-- `user_id`, `path` (в reference-library), `title`, `description`, `tags text[]`, `source_message_id` (откуда «опубликовано»), `created_at`
-- RLS: пользователь видит/редактирует только свои; admin — всё. GRANT authenticated/service_role.
+## 2. Автоотправка в Оркестратор
+- После сохранения черновика появляется кнопка **«Отправить в Оркестратор»** (или авто-переход по флагу).
+- Переход на `/admin/article-orchestrator?draftId=…` с подгруженным текстом.
 
-**Расширение `ai_messages`:** добавить опциональные колонки `image_path text`, `image_model text`, `image_cost numeric`, `image_refs text[]` (массив input-референсов для воспроизводимости). Контент остаётся текстовым (промпт или подпись).
+## 3. Параллельное ревью моделями
+- Оркестратор рассылает текст по подключённым моделям (Claude, GPT, Gemini Pro, DeepSeek, MiMo, Kimi и т.д.) через `orchestrate-article`.
+- Каждая модель возвращает: оценку, замечания, предложения.
+- Замечания можно править вручную inline или нажать **«Повторное ревью»**.
 
-## 2. Модели (src/config/aiModels.ts)
+## 4. Финальная сборка
+- Кнопка **«Собрать статью»** (первичное редактирование) или **«Голос профессора Тарусина»** (итоговое переписывание).
+- Результат — финальный текст + (опционально) перевод на английский через `translate-content`.
 
-Ввести новый тип `kind: 'text' | 'image'` в `CuratedModel`. Текстовые работают как сейчас. Image-модели:
+## 5. Возврат в публикатор
+- Кнопка **«Вернуть в публикатор»** / **«Сохранить в черновик»**.
+- Поля исходного черновика перезаписываются финальной версией: заголовок, тело, SEO-описание, ключевые слова (RU + EN), аннотация.
+- Открывается редактор `/admin/disease-articles/:id` (или `/admin/blog/:id`) с уже заполненными полями.
 
-- `google/gemini-3.1-flash-image` — быстрая, серии иллюстраций → через **Lovable AI Gateway** `/v1/images/generations`
-- `openai/gpt-5.4-image-2` — сложные композиции → через **Lovable AI Gateway** (если ID не в catalog — fallback на `openai/gpt-image-2`, предупредить пользователя)
-- `bytedance/seedream-4.5` — портреты, мелкий текст → через **прямой OpenRouter** `/api/v1/chat/completions` с `modalities:['image','text']`
+## 6. Финальная правка и публикация
+- Профессор правит вручную: обложка, картинка-фон карточки, короткая аннотация, режим отображения (список/карточка), даты.
+- Кнопка **«Опубликовать»** → статус `published`, статья появляется на сайте (`/for-parents/:slug` или `/blog/:slug`), а английская версия — на `/en/...`.
 
-В `ExtendedModelPicker` и в основном дропдауне — отдельная секция «🎨 Иллюстрации», визуально отбита от текстовых.
+---
 
-## 3. Edge Function `generate-image`
+## Где сейчас узкие места (для справки)
 
-Вход:
-```ts
-{ prompt: string, model: string, conversationId: string,
-  references?: { bucket: string, path: string }[],
-  uploadedRefs?: { name: string, dataBase64: string }[] }
-```
+- Шаг 2 → 3: иногда Gemini Pro возвращает пустой ответ (правил недавно — теперь fallback из `reasoning`).
+- Шаг 5: возврат работает только если черновик создан в `article-upload`; при ручной вставке текста в оркестратор нужно явно указать `draftId`.
+- Шаг 6: карточка с фоновым изображением и аннотацией — настройки уже есть на форме редактора.
 
-Логика:
-1. Auth via JWT (verify user).
-2. Для каждого `references[i]` — создать signed URL (1 час) из указанного бакета (whitelist: `chat-attachments`, `patient-documents`, `disease-media`, `reference-library`, `generated-images`).
-3. Загруженные с компьютера — сохранить в `chat-attachments/{user_id}/uploads/{uuid}` и тоже подписать.
-4. Маршрутизация:
-   - Префикс `google/` или `openai/` → Lovable AI Gateway `POST /v1/images/generations` (для Gemini — `messages`+`modalities`, для OpenAI — `prompt`). Референсы как `image_url` в content.
-   - Иначе (`bytedance/...`) → `POST openrouter.ai/api/v1/chat/completions` с `Bearer $OPENROUTER_API_KEY`, `modalities:['image','text']`, референсы в messages.
-5. Извлечь base64 PNG, залить в `generated-images/{user_id}/{conversationId}/{timestamp}.png`.
-6. Извлечь `usage.cost` (Gateway/OpenRouter возвращает в response).
-7. Вернуть `{ imagePath, signedUrl, cost, model }`. Запись в `ai_messages` делает клиент (как с обычными сообщениями) — с `image_path`, `image_cost`, `image_refs`.
-
-## 4. UI композер (src/pages/Cabinet.tsx)
-
-При выборе image-модели:
-- Композер переключается в режим «Иллюстрация»: textarea «Опишите изображение», ряд thumbnails выбранных референсов с крестиком удаления, кнопки **«📎 Приложить референс»** (popover: «Из чата» / «Из библиотеки» / «Загрузить с компьютера») и **«🎨 Сгенерировать»**.
-- При генерации показываем skeleton-сообщение «Генерируется…» в ленте.
-- Готовое изображение — сообщение ассистента с `<img>` (signed URL), под ним: подпись с моделью и стоимостью (`$0.0034`), кнопки:
-  - **Скачать** (прямая ссылка на signed URL с `download`).
-  - **Использовать как референс** — переоткрывает композер с этим изображением в `references`.
-  - **Опубликовать в библиотеку** — диалог с полями title/tags → копирует файл в `reference-library`, вставляет строку в `image_references`.
-- Обычный текстовый чат под картинкой работает дальше, ассистент видит описание сгенерированного (передаём в контекст как текст «[Сгенерировано изображение: <prompt>]»).
-
-## 5. Технические детали (для разработчика)
-
-- `OPENROUTER_API_KEY` уже есть в проекте (используется в `ai-chat`); `LOVABLE_API_KEY` — проверим/добавим.
-- Тип `ai_messages.image_path` — путь в бакете, **не** base64. Клиент сам делает signed URL (1 час) при рендере, кэшируем в state.
-- В `ExtendedModelPicker` секция Venice уже есть — добавим аналогичную «Иллюстрации» с собственным бейджем.
-- Приватный режим (privateMode) — для image тоже работает: файл всё равно нужен в Storage (иначе никак), но без записи в `ai_messages`; при выходе из приватного диалога — фоновое удаление файлов из `generated-images/{user_id}/private/`.
-- Размер по умолчанию `1024x1024`, `quality:'low'`, без streaming (для простоты v1; стриминг превью можно добавить позже).
-
-## 6. Объём работы
-
-- Новые файлы: миграция, edge function `generate-image`, `src/components/cabinet/ImageComposer.tsx`, `src/components/cabinet/GeneratedImageMessage.tsx`, `src/components/cabinet/PublishToLibraryDialog.tsx`, `src/hooks/useImageGeneration.ts`.
-- Правки: `aiModels.ts` (+ kind), `ExtendedModelPicker.tsx` (секция), `Cabinet.tsx` (роутинг композера, рендер image-сообщений), `useVeniceModels` остаётся как есть.
-
-Подтвердите план — приступаю.
+Если флоу должен работать иначе (например, автопубликация после оркестратора без ручной правки, или другая последовательность) — скажите, и я скорректирую.
