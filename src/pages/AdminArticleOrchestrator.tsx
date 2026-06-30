@@ -1223,7 +1223,28 @@ export default function AdminArticleOrchestrator() {
         </Card>
       )}
 
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5" /> Превью — как увидит пациент
+            </DialogTitle>
+          </DialogHeader>
+          <div className="prose dark:prose-invert max-w-none">
+            {title && <h1>{title}</h1>}
+            <MarkdownArticle
+              content={finalText}
+              articleId={existingRef?.id || "preview"}
+              articleSlug="preview"
+              isAdmin={false}
+              title={title}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Перепроверить опубликованную статью</DialogTitle>
