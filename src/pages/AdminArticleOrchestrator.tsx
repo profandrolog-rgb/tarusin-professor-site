@@ -585,7 +585,7 @@ export default function AdminArticleOrchestrator() {
               </select>
             </div>
             <Button
-              onClick={runReview}
+              onClick={() => runReview()}
               disabled={reviewing || !text.trim() || !models.length}
               className="w-full"
               size="lg"
