@@ -69,14 +69,19 @@ const AdminArticleImport = () => {
   useEffect(() => {
     if (!incoming?.text) return;
     const plain = incoming.text;
-    const html = plain
-      .split(/\n{2,}/)
-      .map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
-      .join("");
-    setContent(html);
+    // From orchestrator we receive Markdown — keep it as-is so MarkdownArticle
+    // renders headings, lists and [[GALLERY:...]] markers correctly.
+    // (Previously we wrapped lines in <p> with escaped <>, which left literal # on the page.)
+    setContent(plain);
     if (incoming.title) {
-      setTitle(incoming.title);
-      setSlug(slugifyRu(incoming.title));
+      // Clean filename-style titles: "name_with_underscores.docx" -> "Name with underscores"
+      const cleaned = incoming.title
+        .replace(/\.(docx?|txt|md|rtf)$/i, "")
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      setTitle(cleaned);
+      setSlug(slugifyRu(cleaned));
     }
     setFilename(incoming.source === "orchestrator" ? "Из оркестратора" : "");
     setSeoLoading(true);
