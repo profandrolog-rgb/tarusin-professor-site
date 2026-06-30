@@ -226,13 +226,37 @@ const AdminSystemSettings = () => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Деплой на Timeweb</CardTitle>
+            <CardTitle className="flex items-center gap-3">
+              {(() => {
+                const app = deployStatus?.app;
+                const last = deployStatus?.deploys?.[0];
+                const s = String(last?.status || app?.status || "").toLowerCase();
+                let color = "bg-gray-400";
+                let label = "нет данных";
+                let pulse = "";
+                if (["deploy", "building", "pending"].includes(s)) {
+                  color = "bg-amber-400"; label = "деплой идёт"; pulse = "animate-pulse";
+                } else if (["failed", "stopped", "error"].includes(s)) {
+                  color = "bg-red-500"; label = "ошибка — нужен ручной запуск";
+                } else if (s === "deployed" && app?.status === "deployed") {
+                  color = "bg-emerald-500"; label = "сайт активен";
+                }
+                return (
+                  <span className="flex items-center gap-2" title={`Статус: ${label}`}>
+                    <span className={`inline-block w-3.5 h-3.5 rounded-full ${color} ${pulse} shadow-[0_0_8px_currentColor]`} style={{ color: color.includes("emerald") ? "#10b981" : color.includes("amber") ? "#f59e0b" : color.includes("red") ? "#ef4444" : "#9ca3af" }} />
+                    <span className="text-xs font-normal text-muted-foreground">{label}</span>
+                  </span>
+                );
+              })()}
+              <span>Деплой на Timeweb</span>
+            </CardTitle>
             <CardDescription>
               Обычно деплой запускается автоматически после Publish из Lovable. Эта кнопка — на случай,
               если автодеплой не сработал.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+
             <Button onClick={triggerTimewebDeploy} disabled={deploying} className="gap-2">
               {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
               🚀 Запустить деплой вручную
