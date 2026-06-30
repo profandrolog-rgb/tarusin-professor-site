@@ -499,6 +499,62 @@ const AdminDiseaseArticles = () => {
                     placeholder="варикоцеле, яичко, боль, подросток"
                   />
                 </div>
+
+                {/* Card view settings */}
+                <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/30">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <LayoutGrid className="w-4 h-4" /> Настройки карточки (вид «карточками»)
+                  </div>
+                  <div>
+                    <Label className="text-xs">Короткая аннотация под карточкой</Label>
+                    <Input
+                      value={form.card_annotation}
+                      onChange={(e) => setForm({ ...form, card_annotation: e.target.value })}
+                      placeholder="1–2 предложения, видны под названием на карточке"
+                      maxLength={180}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(cardBgFile || form.card_background_path) && (
+                      <div className="relative w-20 h-14 rounded overflow-hidden border border-border flex-shrink-0">
+                        <img
+                          src={cardBgFile ? URL.createObjectURL(cardBgFile) : getMediaUrl(form.card_background_path)!}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                      <ImageIcon className="w-4 h-4" />
+                      <span>{cardBgFile || form.card_background_path ? "Заменить фон карточки" : "Загрузить фон карточки"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) setCardBgFile(f);
+                        }}
+                      />
+                    </label>
+                    {(cardBgFile || form.card_background_path) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCardBgFile(null);
+                          setForm({ ...form, card_background_path: null });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Изображение отображается полупрозрачным фоном карточки, текст — поверх.
+                  </p>
+                </div>
               </div>
 
               {/* Content tabs */}
