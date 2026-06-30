@@ -246,8 +246,11 @@ export default function AdminArticleOrchestrator() {
     setModels((cur) => cur.includes(id) ? cur.filter((m) => m !== id) : [...cur, id]);
   };
 
-  async function runReview() {
-    if (text.trim().length < 100) {
+  async function runReview(opts?: { reReview?: boolean }) {
+    const reReview = !!opts?.reReview;
+    // База для повторного ревью — переписанная статья (если есть) или текущий text.
+    const baseText = reReview ? (finalText.trim() || text) : text;
+    if (baseText.trim().length < 100) {
       toast({ title: "Статья слишком короткая", description: "Минимум 100 символов.", variant: "destructive" });
       return;
     }
@@ -255,10 +258,22 @@ export default function AdminArticleOrchestrator() {
       toast({ title: "Выберите хотя бы одну модель", variant: "destructive" });
       return;
     }
+    // При повторном ревью обновляем основной текст, чтобы и UI, и последующие правки шли уже от него.
+    if (reReview && finalText.trim() && baseText !== text) {
+      setText(baseText);
+    }
     setReviews([]);
     setConsolidated(null);
     setAccepted(new Set());
-    setFinalText("");
+    setDirectAccepted(new Map());
+    setEditedSuggested(new Map());
+    if (!reReview) {
+      setAppliedEdits([]);
+      setReviewRound(1);
+      setFinalText("");
+    } else {
+      setReviewRound((r) => r + 1);
+    }
     setReviewing(true);
     setPending(new Set(models));
     setProgress(Object.fromEntries(models.map((m) => [m, { status: "queued" as const }])));
@@ -272,7 +287,13 @@ export default function AdminArticleOrchestrator() {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "review", title, text, models }),
+        body: JSON.stringify({
+          action: "review",
+          title,
+          text: baseText,
+          models,
+          applied_edits: reReview ? appliedEdits : [],
+        }),
       });
       if (!resp.ok || !resp.body) {
         const t = await resp.text().catch(() => "");
