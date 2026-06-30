@@ -1,0 +1,2 @@
+GRANT SELECT ON public.questions_public TO anon, authenticated;
+GRANT SELECT (id, author_name, question_text, answer_text, answered_at, is_published, created_at) ON public.questions TO anon, authenticated;
