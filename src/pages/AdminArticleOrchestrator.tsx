@@ -1168,6 +1168,43 @@ export default function AdminArticleOrchestrator() {
         </Card>
       )}
 
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Перепроверить опубликованную статью</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Поиск по заголовку…"
+            value={pickerQuery}
+            onChange={(e) => setPickerQuery(e.target.value)}
+          />
+          <div className="max-h-[60vh] overflow-y-auto space-y-1 mt-2">
+            {pickerLoading ? (
+              <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
+            ) : pickerItems.filter((i) => i.title.toLowerCase().includes(pickerQuery.toLowerCase())).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Ничего не найдено</p>
+            ) : (
+              pickerItems
+                .filter((i) => i.title.toLowerCase().includes(pickerQuery.toLowerCase()))
+                .map((i) => (
+                  <button
+                    key={`${i.kind}:${i.id}`}
+                    onClick={() => loadForRecheck(i)}
+                    className="w-full text-left p-2 rounded hover:bg-accent border border-transparent hover:border-border transition-colors"
+                  >
+                    <div className="text-sm font-medium truncate">{i.title}</div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        {i.kind === "disease_articles" ? "Заболевания" : i.kind === "blog_posts" ? "Блог" : "Исследования"}
+                      </Badge>
+                      <span>Обновлено: {new Date(i.updated_at).toLocaleDateString("ru-RU")}</span>
+                    </div>
+                  </button>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
