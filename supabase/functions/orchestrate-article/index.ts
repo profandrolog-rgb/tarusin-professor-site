@@ -114,7 +114,13 @@ function callModel(
     temperature,
   };
   if (!isVenice) {
-    payload.reasoning = { effort: "low" };
+    // Gemini 2.5 Pro через OpenRouter с reasoning.effort=low часто возвращает
+    // пустой content (весь ответ уходит в reasoning tokens). Для gemini-pro
+    // отключаем принудительный low-reasoning.
+    const isGeminiPro = /^google\/gemini-.*-pro/.test(realModel);
+    if (!isGeminiPro) {
+      payload.reasoning = { effort: "low" };
+    }
     payload.provider = { sort: "throughput" };
     // response_format: json_object поддерживают не все провайдеры через OpenRouter.
     // Perplexity требует json_schema, Moonshot (Kimi) и DeepSeek отдают INVALID_REQUEST_BODY.
@@ -139,8 +145,20 @@ function callModel(
       throw new Error(`HTTP ${r.status}: ${t.slice(0, 400)}`);
     }
     const j = await r.json();
-    const content = j?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") throw new Error("empty content");
+    const msg = j?.choices?.[0]?.message ?? {};
+    let content: unknown = msg.content;
+    // Некоторые модели (Gemini Pro через OpenRouter) кладут текст в reasoning
+    // или в массив content-частей. Соберём строку из доступных полей.
+    if (Array.isArray(content)) {
+      content = content.map((p: any) => p?.text ?? "").join("").trim();
+    }
+    if ((typeof content !== "string" || !content.trim()) && typeof msg.reasoning === "string") {
+      content = msg.reasoning;
+    }
+    if (typeof content !== "string" || !content.trim()) {
+      const finish = j?.choices?.[0]?.finish_reason ?? "unknown";
+      throw new Error(`empty content (finish_reason=${finish})`);
+    }
     return content;
   });
 }
