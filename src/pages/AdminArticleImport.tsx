@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import RichTextEditor from "@/components/blog/RichTextEditor";
+import { markdownToHtml } from "@/lib/markdown/galleryMarkers";
 import { Upload, Loader2, Eye, EyeOff, Save, Sparkles, X, ArrowLeft, Wand2, CheckCircle2 } from "lucide-react";
 
 const categoryLabels: Record<string, string> = {
