@@ -93,13 +93,14 @@ const ARBITER_SYSTEM = `Ты — главный редактор-арбитр. �
 - НЕ выдумывай правок, которых не было ни в одной рецензии.
 - Если рецензии пустые/мусорные — верни edits:[] и summary с объяснением.`;
 
-function callModel(
+function callModelOnce(
   openrouterKey: string,
   veniceKey: string | undefined,
   origin: string,
   model: string,
   messages: unknown[],
-  temperature = 0.3,
+  temperature: number,
+  opts: { useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean },
 ): Promise<string> {
   const isVenice = model.startsWith("venice/");
   const url = isVenice
@@ -108,24 +109,18 @@ function callModel(
   const realModel = isVenice ? model.slice("venice/".length) : model;
   const key = isVenice ? veniceKey : openrouterKey;
   if (!key) throw new Error(isVenice ? "VENICE_API_KEY missing" : "OPENROUTER_API_KEY missing");
-  const payload: Record<string, unknown> = {
-    model: realModel,
-    messages,
-    temperature,
-  };
+  const payload: Record<string, unknown> = { model: realModel, messages, temperature };
   if (!isVenice) {
-    // Gemini 2.5 Pro через OpenRouter с reasoning.effort=low часто возвращает
-    // пустой content (весь ответ уходит в reasoning tokens). Для gemini-pro
-    // отключаем принудительный low-reasoning.
-    const isGeminiPro = /^google\/gemini-.*-pro/.test(realModel);
-    if (!isGeminiPro) {
+    // Многие reasoning-модели при effort=low уводят ответ в reasoning tokens
+    // и отдают пустой content. Для известных проблемных семейств не форсируем.
+    const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4)/.test(realModel);
+    if (opts.useReasoning && !skipReasoning) {
       payload.reasoning = { effort: "low" };
     }
-    payload.provider = { sort: "throughput" };
-    // response_format: json_object поддерживают не все провайдеры через OpenRouter.
-    // Perplexity требует json_schema, Moonshot (Kimi) и DeepSeek отдают INVALID_REQUEST_BODY.
-    const supportsJsonObject = !/^(perplexity|moonshotai|deepseek|x-ai|z-ai)\//.test(realModel);
-    if (supportsJsonObject) {
+    if (opts.useThroughput) payload.provider = { sort: "throughput" };
+    const supportsJsonObject =
+      !/^(perplexity|moonshotai|deepseek|x-ai|z-ai|xiaomi)\//.test(realModel);
+    if (opts.useJsonObject && supportsJsonObject) {
       payload.response_format = { type: "json_object" };
     }
   } else {
@@ -147,8 +142,6 @@ function callModel(
     const j = await r.json();
     const msg = j?.choices?.[0]?.message ?? {};
     let content: unknown = msg.content;
-    // Некоторые модели (Gemini Pro через OpenRouter) кладут текст в reasoning
-    // или в массив content-частей. Соберём строку из доступных полей.
     if (Array.isArray(content)) {
       content = content.map((p: any) => p?.text ?? "").join("").trim();
     }
@@ -161,6 +154,35 @@ function callModel(
     }
     return content;
   });
+}
+
+async function callModel(
+  openrouterKey: string,
+  veniceKey: string | undefined,
+  origin: string,
+  model: string,
+  messages: unknown[],
+  temperature = 0.3,
+): Promise<string> {
+  // Постепенно ослабляем параметры — особенно для DeepSeek/MiMo/Grok,
+  // которые часто падают на reasoning / json_object / throughput-роутинге.
+  const attempts: Array<{ useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean }> = [
+    { useReasoning: true,  useJsonObject: true,  useThroughput: true  },
+    { useReasoning: false, useJsonObject: true,  useThroughput: false },
+    { useReasoning: false, useJsonObject: false, useThroughput: false },
+  ];
+  let lastErr: any = null;
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      return await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      if (!/empty content|HTTP 4\d\d|INVALID_REQUEST_BODY/i.test(msg)) break;
+      console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);
+    }
+  }
+  throw lastErr ?? new Error("callModel failed");
 }
 
 function tryParseJson(s: string): any {
@@ -245,10 +267,19 @@ Deno.serve(async (req) => {
         });
       }
 
+      const appliedEdits: any[] = Array.isArray(body.applied_edits) ? body.applied_edits.slice(0, 50) : [];
+      const appliedBlock = appliedEdits.length
+        ? "УЖЕ ПРИНЯТЫЕ И ВНЕСЁННЫЕ В СТАТЬЮ ПРАВКИ (НЕ ПРЕДЛАГАЙ ИХ ПОВТОРНО, не критикуй их формулировки):\n" +
+          appliedEdits.map((e: any, i: number) =>
+            `${i + 1}. [${e.category || "edit"}] ${e.original ? `«${String(e.original).slice(0,120)}» → ` : ""}${String(e.suggested || "").slice(0,200)}`
+          ).join("\n")
+        : "";
+
       const userMsg = [
         title ? `ЗАГОЛОВОК: ${title}` : "",
         "СТАТЬЯ (на ревью):",
         text,
+        appliedBlock,
         styleBlock,
       ].filter(Boolean).join("\n\n");
 

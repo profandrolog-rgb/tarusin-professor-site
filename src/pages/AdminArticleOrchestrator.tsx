@@ -175,6 +175,9 @@ export default function AdminArticleOrchestrator() {
   const [editedSuggested, setEditedSuggested] = useState<Map<string, string>>(new Map());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
+  // Накопленные применённые правки между раундами (чтобы исключать из повторного ревью)
+  const [appliedEdits, setAppliedEdits] = useState<EditItem[]>([]);
+  const [reviewRound, setReviewRound] = useState(1);
   const [rewriting, setRewriting] = useState(false);
   const [testingConn, setTestingConn] = useState(false);
   const [formatting, setFormatting] = useState(false);
@@ -243,8 +246,11 @@ export default function AdminArticleOrchestrator() {
     setModels((cur) => cur.includes(id) ? cur.filter((m) => m !== id) : [...cur, id]);
   };
 
-  async function runReview() {
-    if (text.trim().length < 100) {
+  async function runReview(opts?: { reReview?: boolean }) {
+    const reReview = !!opts?.reReview;
+    // База для повторного ревью — переписанная статья (если есть) или текущий text.
+    const baseText = reReview ? (finalText.trim() || text) : text;
+    if (baseText.trim().length < 100) {
       toast({ title: "Статья слишком короткая", description: "Минимум 100 символов.", variant: "destructive" });
       return;
     }
@@ -252,10 +258,22 @@ export default function AdminArticleOrchestrator() {
       toast({ title: "Выберите хотя бы одну модель", variant: "destructive" });
       return;
     }
+    // При повторном ревью обновляем основной текст, чтобы и UI, и последующие правки шли уже от него.
+    if (reReview && finalText.trim() && baseText !== text) {
+      setText(baseText);
+    }
     setReviews([]);
     setConsolidated(null);
     setAccepted(new Set());
-    setFinalText("");
+    setDirectAccepted(new Map());
+    setEditedSuggested(new Map());
+    if (!reReview) {
+      setAppliedEdits([]);
+      setReviewRound(1);
+      setFinalText("");
+    } else {
+      setReviewRound((r) => r + 1);
+    }
     setReviewing(true);
     setPending(new Set(models));
     setProgress(Object.fromEntries(models.map((m) => [m, { status: "queued" as const }])));
@@ -269,7 +287,13 @@ export default function AdminArticleOrchestrator() {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "review", title, text, models }),
+        body: JSON.stringify({
+          action: "review",
+          title,
+          text: baseText,
+          models,
+          applied_edits: reReview ? appliedEdits : [],
+        }),
       });
       if (!resp.ok || !resp.body) {
         const t = await resp.text().catch(() => "");
@@ -394,7 +418,9 @@ export default function AdminArticleOrchestrator() {
       const j = await resp.json();
       if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
       setFinalText(String(j.rewritten || ""));
-      toast({ title: "Статья переписана", description: `Применено правок: ${j.applied}. Голос автора сохранён.` });
+      // Запоминаем применённые правки — чтобы исключить их при повторном ревью
+      setAppliedEdits((cur) => [...cur, ...editsAccepted]);
+      toast({ title: "Статья переписана", description: `Применено правок: ${j.applied}. Голос автора сохранён. Можно запустить повторное ревью.` });
     } catch (e: any) {
       toast({ title: "Ошибка переписывания", description: e?.message || String(e), variant: "destructive" });
     } finally {
@@ -561,7 +587,7 @@ export default function AdminArticleOrchestrator() {
               </select>
             </div>
             <Button
-              onClick={runReview}
+              onClick={() => runReview()}
               disabled={reviewing || !text.trim() || !models.length}
               className="w-full"
               size="lg"
@@ -655,14 +681,14 @@ export default function AdminArticleOrchestrator() {
                   : <><FileCheck2 className="w-4 h-4 mr-2" /> Переписать с принятыми ({directAccepted.size})</>}
               </Button>
               <Button
-                onClick={runReview}
-                disabled={reviewing}
+                onClick={() => runReview({ reReview: true })}
+                disabled={reviewing || (!finalText.trim() && !appliedEdits.length && !directAccepted.size && !accepted.size)}
                 variant="outline"
-                title="Запустить ревью ещё раз с теми же моделями"
+                title="Передать моделям уже переписанную статью и исключить принятые правки"
               >
                 {reviewing
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Идёт…</>
-                  : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью</>}
+                  : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью {reviewRound > 1 ? `(раунд ${reviewRound + 1})` : "(с правками)"}</>}
               </Button>
               <Button
                 onClick={runConsolidation}
