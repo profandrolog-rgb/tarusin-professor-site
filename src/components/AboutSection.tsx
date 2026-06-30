@@ -66,13 +66,19 @@ const AboutSection = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const getImageUrl = (imagePath: string) => {
-    const { data } = supabase.storage.from("certificates").getPublicUrl(imagePath);
+  const getImageUrl = (imagePath: string, size: "thumb" | "full" = "full") => {
+    const transform =
+      size === "thumb"
+        ? { width: 480, height: 360, resize: "contain" as const, quality: 70 }
+        : { width: 1600, quality: 80 };
+    const { data } = supabase.storage
+      .from("certificates")
+      .getPublicUrl(imagePath, { transform });
     return data.publicUrl;
   };
 
   const certImages = React.useMemo(
-    () => certificates.map((c) => ({ id: c.id, title: c.title, url: getImageUrl(c.image_path) })),
+    () => certificates.map((c) => ({ id: c.id, title: c.title, url: getImageUrl(c.image_path, "full") })),
     [certificates]
   );
 
