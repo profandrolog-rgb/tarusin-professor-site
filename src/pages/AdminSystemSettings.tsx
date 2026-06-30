@@ -62,13 +62,27 @@ const AdminSystemSettings = () => {
   const [deploying, setDeploying] = useState(false);
   const [deployStatus, setDeployStatus] = useState<{ app: any; deploys: any[] } | null>(null);
   const [deployStatusLoading, setDeployStatusLoading] = useState(false);
+  const [githubHead, setGithubHead] = useState<{ sha: string; message: string; date: string } | null>(null);
 
   const loadDeployStatus = async () => {
     setDeployStatusLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("timeweb-deploy-status", { method: "GET" });
+      const [{ data, error }, ghRes] = await Promise.all([
+        supabase.functions.invoke("timeweb-deploy-status", { method: "GET" }),
+        fetch("https://api.github.com/repos/profandrolog-rgb/tarusin-professor-site/commits/main", {
+          headers: { Accept: "application/vnd.github+json" },
+        }).catch(() => null),
+      ]);
       if (error) throw error;
       setDeployStatus(data as any);
+      if (ghRes && ghRes.ok) {
+        const gh = await ghRes.json();
+        setGithubHead({
+          sha: gh.sha,
+          message: (gh.commit?.message || "").split("\n")[0],
+          date: gh.commit?.author?.date,
+        });
+      }
     } catch (e: any) {
       console.error("deploy status error", e);
     } finally {
@@ -270,9 +284,28 @@ const AdminSystemSettings = () => {
                               <span className="text-xs text-muted-foreground truncate max-w-[300px]" title={last.commit_msg}>
                                 {(last.commit_msg || "").split("\n")[0]}
                               </span>
-                            </div>
                           </div>
-                        )}
+                          {githubHead && (
+                            <div className="flex items-center gap-2 pt-1 border-t mt-1.5">
+                              <span className="text-muted-foreground text-xs">GitHub main:</span>
+                              <code className="text-xs bg-background px-1.5 py-0.5 rounded border">{githubHead.sha.slice(0, 7)}</code>
+                              <span className="text-xs text-muted-foreground truncate max-w-[260px]" title={githubHead.message}>
+                                {githubHead.message}
+                              </span>
+                              {last.commit_sha && last.commit_sha !== githubHead.sha && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">
+                                  рассинхрон — нажмите «Запустить деплой»
+                                </span>
+                              )}
+                              {last.commit_sha === githubHead.sha && last.status === "deployed" && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700">
+                                  синхронизировано
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                         {app?.domains?.[0]?.fqdn && (
                           <a
                             href={`https://${app.domains[0].fqdn}`}
