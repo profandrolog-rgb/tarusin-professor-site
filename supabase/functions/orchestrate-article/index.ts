@@ -267,10 +267,19 @@ Deno.serve(async (req) => {
         });
       }
 
+      const appliedEdits: any[] = Array.isArray(body.applied_edits) ? body.applied_edits.slice(0, 50) : [];
+      const appliedBlock = appliedEdits.length
+        ? "УЖЕ ПРИНЯТЫЕ И ВНЕСЁННЫЕ В СТАТЬЮ ПРАВКИ (НЕ ПРЕДЛАГАЙ ИХ ПОВТОРНО, не критикуй их формулировки):\n" +
+          appliedEdits.map((e: any, i: number) =>
+            `${i + 1}. [${e.category || "edit"}] ${e.original ? `«${String(e.original).slice(0,120)}» → ` : ""}${String(e.suggested || "").slice(0,200)}`
+          ).join("\n")
+        : "";
+
       const userMsg = [
         title ? `ЗАГОЛОВОК: ${title}` : "",
         "СТАТЬЯ (на ревью):",
         text,
+        appliedBlock,
         styleBlock,
       ].filter(Boolean).join("\n\n");
 
