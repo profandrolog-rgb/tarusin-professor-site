@@ -1176,6 +1176,69 @@ export type Database = {
           },
         ]
       }
+      content_translations: {
+        Row: {
+          auto_generated: boolean
+          card_annotation: string | null
+          content: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          keywords: string[]
+          locale: string
+          seo_description: string | null
+          seo_title: string | null
+          slug: string | null
+          source_hash: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_generated?: boolean
+          card_annotation?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          keywords?: string[]
+          locale?: string
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string | null
+          source_hash?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_generated?: boolean
+          card_annotation?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          keywords?: string[]
+          locale?: string
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string | null
+          source_hash?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       diagnosis_recommendations: {
         Row: {
           category: string
