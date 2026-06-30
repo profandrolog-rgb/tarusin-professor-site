@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import RichTextEditor from "@/components/blog/RichTextEditor";
+import { markdownToHtml } from "@/lib/markdown/galleryMarkers";
 import { Upload, Loader2, Eye, EyeOff, Save, Sparkles, X, ArrowLeft, Wand2, CheckCircle2 } from "lucide-react";
 
 const categoryLabels: Record<string, string> = {
@@ -63,20 +64,31 @@ const AdminArticleImport = () => {
   const [aiReview, setAiReview] = useState<any>(null);
 
   const location = useLocation();
-  const incoming = (location.state || null) as { title?: string; text?: string; source?: string } | null;
+  const incoming = (location.state || null) as {
+    title?: string;
+    text?: string;
+    source?: string;
+    existingRef?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" } | null;
+  } | null;
+  const existingRef = incoming?.existingRef ?? null;
 
   // Auto-prefill when arriving from the Orchestrator with a finished article
   useEffect(() => {
     if (!incoming?.text) return;
     const plain = incoming.text;
-    const html = plain
-      .split(/\n{2,}/)
-      .map((p) => `<p>${p.replace(/\n/g, "<br/>").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
-      .join("");
-    setContent(html);
+    // From orchestrator we receive Markdown — keep it as-is so MarkdownArticle
+    // renders headings, lists and [[GALLERY:...]] markers correctly.
+    // (Previously we wrapped lines in <p> with escaped <>, which left literal # on the page.)
+    setContent(markdownToHtml(plain));
     if (incoming.title) {
-      setTitle(incoming.title);
-      setSlug(slugifyRu(incoming.title));
+      // Clean filename-style titles: "name_with_underscores.docx" -> "Name with underscores"
+      const cleaned = incoming.title
+        .replace(/\.(docx?|txt|md|rtf)$/i, "")
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      setTitle(cleaned);
+      setSlug(slugifyRu(cleaned));
     }
     setFilename(incoming.source === "orchestrator" ? "Из оркестратора" : "");
     setSeoLoading(true);
@@ -210,19 +222,44 @@ const AdminArticleImport = () => {
     }
     setSaving(true);
     try {
-      const { error } = await supabase.from("disease_articles").insert({
-        title: title.trim(),
-        slug: slug.trim(),
-        description: excerpt.trim() || null,
-        keywords: keywords.length ? keywords : null,
-        category,
-        age_group: ageGroup,
-        article_content: content,
-        is_published: isPublished,
-      } as any);
-      if (error) throw error;
-      toast({ title: "Статья сохранена", description: isPublished ? "Опубликована" : "В черновиках" });
-      navigate("/admin/disease-articles");
+      if (existingRef) {
+        const contentField = existingRef.kind === "disease_articles" ? "article_content" : "content";
+        const payload: any = {
+          title: title.trim(),
+          slug: slug.trim(),
+          [contentField]: content,
+          is_published: isPublished,
+        };
+        if (existingRef.kind === "disease_articles") {
+          payload.description = excerpt.trim() || null;
+          payload.keywords = keywords.length ? keywords : null;
+          payload.category = category;
+          payload.age_group = ageGroup;
+        } else {
+          payload.excerpt = excerpt.trim() || null;
+        }
+        const { error } = await supabase.from(existingRef.kind).update(payload).eq("id", existingRef.id);
+        if (error) throw error;
+        toast({ title: "Статья обновлена", description: "Изменения сохранены" });
+        const back =
+          existingRef.kind === "disease_articles" ? "/admin/disease-articles" :
+          existingRef.kind === "blog_posts" ? "/admin" : "/admin";
+        navigate(back);
+      } else {
+        const { error } = await supabase.from("disease_articles").insert({
+          title: title.trim(),
+          slug: slug.trim(),
+          description: excerpt.trim() || null,
+          keywords: keywords.length ? keywords : null,
+          category,
+          age_group: ageGroup,
+          article_content: content,
+          is_published: isPublished,
+        } as any);
+        if (error) throw error;
+        toast({ title: "Статья сохранена", description: isPublished ? "Опубликована" : "В черновиках" });
+        navigate("/admin/disease-articles");
+      }
     } catch (err: any) {
       toast({ title: "Ошибка сохранения", description: err.message, variant: "destructive" });
     } finally {

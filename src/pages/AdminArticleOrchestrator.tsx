@@ -15,8 +15,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
 
 
 type EditItem = {
@@ -193,6 +195,58 @@ export default function AdminArticleOrchestrator() {
     seo_title: string;
     seo_description: string;
   }>(null);
+
+  // --- Перепроверка опубликованного ---
+  type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title: string; updated_at: string };
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerItems, setPickerItems] = useState<PubItem[]>([]);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const [existingRef, setExistingRef] = useState<{ id: string; kind: PubItem["kind"] } | null>(null);
+
+  async function openRecheckPicker() {
+    setPickerOpen(true);
+    setPickerLoading(true);
+    try {
+      const [d, b, r] = await Promise.all([
+        supabase.from("disease_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("blog_posts").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("research_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+      ]);
+      const items: PubItem[] = [
+        ...((d.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "disease_articles" as const, title: x.title, updated_at: x.updated_at })),
+        ...((b.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "blog_posts" as const, title: x.title, updated_at: x.updated_at })),
+        ...((r.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "research_articles" as const, title: x.title, updated_at: x.updated_at })),
+      ];
+      setPickerItems(items);
+    } catch (e: any) {
+      sonnerToast.error("Не удалось загрузить список", { description: e?.message || String(e) });
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
+  async function loadForRecheck(item: PubItem) {
+    try {
+      const field = item.kind === "disease_articles" ? "article_content" : "content";
+      const { data, error } = await supabase.from(item.kind).select(`title, ${field}`).eq("id", item.id).maybeSingle();
+      if (error) throw error;
+      const html = (data as any)?.[field] || "";
+      // если в БД уже markdown — htmlToMarkdown вернёт его почти без изменений
+      const md = /<[a-z][\s\S]*>/i.test(html) ? htmlToMarkdown(html) : html;
+      setTitle((data as any)?.title || item.title);
+      setText(md);
+      setExistingRef({ id: item.id, kind: item.kind });
+      setPickerOpen(false);
+      // сброс предыдущих результатов
+      setReviews([]); setConsolidated(null); setAccepted(new Set()); setDirectAccepted(new Map());
+      setEditedSuggested(new Map()); setFinalText(""); setAppliedEdits([]); setReviewRound(1);
+      sonnerToast.success("Статья загружена", { description: "Можно запускать ревью" });
+    } catch (e: any) {
+      sonnerToast.error("Ошибка загрузки", { description: e?.message || String(e) });
+    }
+  }
+
 
   async function translateFinal() {
     if (!finalText.trim()) return;
@@ -523,10 +577,20 @@ export default function AdminArticleOrchestrator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* INPUT */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle>1. Статья</CardTitle>
+            <Button size="sm" variant="outline" onClick={openRecheckPicker} className="gap-1">
+              <FileSearch className="w-4 h-4" /> Перепроверить опубликованное
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
+            {existingRef && (
+              <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300">
+                <RefreshCw className="w-3 h-3" />
+                Режим перепроверки опубликованной статьи · при «Разместить» обновится существующая запись
+                <button className="ml-auto underline" onClick={() => setExistingRef(null)}>отменить</button>
+              </div>
+            )}
             <Input
               placeholder="Заголовок (опционально)"
               value={title}
@@ -1010,7 +1074,7 @@ export default function AdminArticleOrchestrator() {
                 size="sm"
                 onClick={() => {
                   navigate("/admin/article-import", {
-                    state: { title, text: finalText, source: "orchestrator" },
+                    state: { title, text: finalText, source: "orchestrator", existingRef },
                   });
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -1104,6 +1168,43 @@ export default function AdminArticleOrchestrator() {
         </Card>
       )}
 
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Перепроверить опубликованную статью</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Поиск по заголовку…"
+            value={pickerQuery}
+            onChange={(e) => setPickerQuery(e.target.value)}
+          />
+          <div className="max-h-[60vh] overflow-y-auto space-y-1 mt-2">
+            {pickerLoading ? (
+              <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 animate-spin" /></div>
+            ) : pickerItems.filter((i) => i.title.toLowerCase().includes(pickerQuery.toLowerCase())).length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Ничего не найдено</p>
+            ) : (
+              pickerItems
+                .filter((i) => i.title.toLowerCase().includes(pickerQuery.toLowerCase()))
+                .map((i) => (
+                  <button
+                    key={`${i.kind}:${i.id}`}
+                    onClick={() => loadForRecheck(i)}
+                    className="w-full text-left p-2 rounded hover:bg-accent border border-transparent hover:border-border transition-colors"
+                  >
+                    <div className="text-sm font-medium truncate">{i.title}</div>
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        {i.kind === "disease_articles" ? "Заболевания" : i.kind === "blog_posts" ? "Блог" : "Исследования"}
+                      </Badge>
+                      <span>Обновлено: {new Date(i.updated_at).toLocaleDateString("ru-RU")}</span>
+                    </div>
+                  </button>
+                ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
