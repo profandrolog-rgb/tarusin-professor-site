@@ -255,7 +255,12 @@ Deno.serve(async (req) => {
     if (body.action === "review") {
       const text: string = String(body.text || "").trim();
       const title: string = String(body.title || "").trim();
-      const models: string[] = Array.isArray(body.models) ? body.models.slice(0, 8) : [];
+      const models: string[] = Array.isArray(body.models)
+        ? body.models
+            .map((m: unknown) => String(m || "").trim())
+            .filter(Boolean)
+            .slice(0, 12)
+        : [];
       if (!text || text.length < 50) {
         return new Response(JSON.stringify({ error: "text too short" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
