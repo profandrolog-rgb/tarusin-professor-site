@@ -364,8 +364,9 @@ const Blog = () => {
   });
 
   const openCreate = () => {
-    setPostForm({ title: "", content: "", excerpt: "" });
+    setPostForm({ title: "", content: "", excerpt: "", card_annotation: "", card_background_path: null });
     setImageFiles([]);
+    setCardBgFile(null);
     setEditingPost(null);
     setIsCreating(true);
     // Check for draft
@@ -375,7 +376,13 @@ const Blog = () => {
         sonnerToast("Найден черновик", {
           description: "Восстановить несохранённые изменения?",
           action: { label: "Восстановить", onClick: () => {
-            setPostForm({ title: draft.title || "", content: draft.content || "", excerpt: draft.excerpt || "" });
+            setPostForm({
+              title: draft.title || "",
+              content: draft.content || "",
+              excerpt: draft.excerpt || "",
+              card_annotation: draft.card_annotation || "",
+              card_background_path: draft.card_background_path || null,
+            });
             sonnerToast.success("Черновик восстановлен");
           }},
           cancel: { label: "Отклонить", onClick: () => clearBlogDraft() },
@@ -386,8 +393,15 @@ const Blog = () => {
   };
 
   const openEdit = (post: BlogPost) => {
-    setPostForm({ title: post.title, content: post.content, excerpt: post.excerpt || "" });
+    setPostForm({
+      title: post.title,
+      content: post.content,
+      excerpt: post.excerpt || "",
+      card_annotation: post.card_annotation || "",
+      card_background_path: post.card_background_path || null,
+    });
     setImageFiles([]);
+    setCardBgFile(null);
     setEditingPost(post);
     setIsCreating(true);
   };
