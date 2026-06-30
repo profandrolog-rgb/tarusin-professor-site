@@ -11,11 +11,14 @@ interface PageMetaProps {
   type?: "website" | "article";
   /** Принудительно задать язык страницы. Иначе определяется из URL. */
   lang?: "ru" | "en";
+  /** SEO-ключи (выводятся как <meta name="keywords">), опционально. */
+  keywords?: string[];
 }
 
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
-const PageMeta = ({ title, description, path, image, type = "website", lang }: PageMetaProps) => {
+const PageMeta = ({ title, description, path, image, type = "website", lang, keywords }: PageMetaProps) => {
+
   // Определяем язык — либо явно передан, либо вычислен из текущего URL.
   let pathname = "/";
   try {
