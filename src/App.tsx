@@ -2,33 +2,46 @@ import type { RouteRecord } from "vite-react-ssg";
 import { lazy } from "react";
 import RootLayout from "./RootLayout";
 import LangBoundary from "./components/LangBoundary";
+// Index страница оставлена eager — это LCP/главная.
 import Index from "./pages/Index";
-import DiseaseDetailPage from "./pages/DiseaseDetailPage";
-import ForParents from "./pages/ForParents";
-import ForDoctors from "./pages/ForDoctors";
-import Media from "./pages/Media";
-import Reviews from "./pages/Reviews";
-import Contacts from "./pages/Contacts";
-import Videos from "./pages/Videos";
-import VideoCasesPage from "./pages/VideoCases";
-import Publications from "./pages/Publications";
-import Methodologies from "./pages/Methodologies";
-import TravelNotes from "./pages/TravelNotes";
-import Masterclasses from "./pages/Masterclasses";
-import ClinicalCases from "./pages/ClinicalCases";
-import Blog from "./pages/Blog";
-import Team from "./pages/Team";
-import QA from "./pages/QA";
-import Research from "./pages/Research";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Consent from "./pages/Consent";
-import Results from "./pages/Results";
 import NotFound from "./pages/NotFound";
-import SelfCheck from "./pages/SelfCheck";
-import SelfCheckDetail from "./pages/SelfCheckDetail";
 import { diseaseLoader, diseaseStaticPaths } from "./loaders/diseaseLoader";
 import { parentsLoader } from "./loaders/parentsLoader";
 import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
+
+// ---------------------------------------------------------------------------
+// Хелпер: ленивая загрузка страницы с `default` экспортом для vite-react-ssg.
+// Формат `{ Component }` совместим и с SSG prerender, и с клиентским SPA.
+// ---------------------------------------------------------------------------
+const page = (loader: () => Promise<{ default: React.ComponentType<any> }>) =>
+  async () => {
+    const mod = await loader();
+    return { Component: mod.default };
+  };
+
+// Публичные страницы — ленивые (каждая в своём чанке).
+const lazyForParents = page(() => import("./pages/ForParents"));
+const lazyDiseaseDetail = page(() => import("./pages/DiseaseDetailPage"));
+const lazyForDoctors = page(() => import("./pages/ForDoctors"));
+const lazyMedia = page(() => import("./pages/Media"));
+const lazyVideos = page(() => import("./pages/Videos"));
+const lazyReviews = page(() => import("./pages/Reviews"));
+const lazyContacts = page(() => import("./pages/Contacts"));
+const lazyPublications = page(() => import("./pages/Publications"));
+const lazyMethodologies = page(() => import("./pages/Methodologies"));
+const lazyTravelNotes = page(() => import("./pages/TravelNotes"));
+const lazyMasterclasses = page(() => import("./pages/Masterclasses"));
+const lazyClinicalCases = page(() => import("./pages/ClinicalCases"));
+const lazyBlog = page(() => import("./pages/Blog"));
+const lazyVideoCases = page(() => import("./pages/VideoCases"));
+const lazyTeam = page(() => import("./pages/Team"));
+const lazyQA = page(() => import("./pages/QA"));
+const lazyResearch = page(() => import("./pages/Research"));
+const lazyPrivacy = page(() => import("./pages/PrivacyPolicy"));
+const lazyConsent = page(() => import("./pages/Consent"));
+const lazyResults = page(() => import("./pages/Results"));
+const lazySelfCheck = page(() => import("./pages/SelfCheck"));
+const lazySelfCheckDetail = page(() => import("./pages/SelfCheckDetail"));
 
 const Auth = lazy(() => import("./pages/Auth"));
 const PatientPortal = lazy(() => import("./pages/PatientPortal"));
@@ -102,63 +115,65 @@ const EnRoot = () => (
 );
 
 // Русские публичные роуты — пре-рендерятся для SEO.
-const ruPublicChildren = [
+// Index остаётся eager (LCP), остальные — lazy + entry (каждая в своём чанке).
+const ruPublicChildren: RouteRecord[] = [
   { index: true, Component: Index },
-  { path: "for-parents", Component: ForParents, loader: parentsLoader as any },
+  { path: "for-parents", lazy: lazyForParents, entry: "src/pages/ForParents.tsx", loader: parentsLoader as any },
   {
     path: "for-parents/:slug",
-    Component: DiseaseDetailPage,
+    lazy: lazyDiseaseDetail,
+    entry: "src/pages/DiseaseDetailPage.tsx",
     loader: diseaseLoader as any,
     getStaticPaths: diseaseStaticPaths,
   },
-  { path: "for-doctors", Component: ForDoctors },
-  { path: "media", Component: Media },
-  { path: "videos", Component: Videos },
-  { path: "reviews", Component: Reviews },
-  { path: "contacts", Component: Contacts },
-  { path: "publications", Component: Publications },
-  { path: "methodologies", Component: Methodologies },
-  { path: "travel-notes", Component: TravelNotes },
-  { path: "masterclasses", Component: Masterclasses },
-  { path: "clinical-cases", Component: ClinicalCases },
-  { path: "blog", Component: Blog },
-  { path: "video-cases", Component: VideoCasesPage },
-  { path: "team", Component: Team },
-  { path: "qa", Component: QA },
-  { path: "research", Component: Research },
-  { path: "privacy-policy", Component: PrivacyPolicy },
-  { path: "consent", Component: Consent },
-  { path: "results", Component: Results },
-  { path: "self-check", Component: SelfCheck },
-  { path: "self-check/:slug", Component: SelfCheckDetail },
+  { path: "for-doctors", lazy: lazyForDoctors, entry: "src/pages/ForDoctors.tsx" },
+  { path: "media", lazy: lazyMedia, entry: "src/pages/Media.tsx" },
+  { path: "videos", lazy: lazyVideos, entry: "src/pages/Videos.tsx" },
+  { path: "reviews", lazy: lazyReviews, entry: "src/pages/Reviews.tsx" },
+  { path: "contacts", lazy: lazyContacts, entry: "src/pages/Contacts.tsx" },
+  { path: "publications", lazy: lazyPublications, entry: "src/pages/Publications.tsx" },
+  { path: "methodologies", lazy: lazyMethodologies, entry: "src/pages/Methodologies.tsx" },
+  { path: "travel-notes", lazy: lazyTravelNotes, entry: "src/pages/TravelNotes.tsx" },
+  { path: "masterclasses", lazy: lazyMasterclasses, entry: "src/pages/Masterclasses.tsx" },
+  { path: "clinical-cases", lazy: lazyClinicalCases, entry: "src/pages/ClinicalCases.tsx" },
+  { path: "blog", lazy: lazyBlog, entry: "src/pages/Blog.tsx" },
+  { path: "video-cases", lazy: lazyVideoCases, entry: "src/pages/VideoCases.tsx" },
+  { path: "team", lazy: lazyTeam, entry: "src/pages/Team.tsx" },
+  { path: "qa", lazy: lazyQA, entry: "src/pages/QA.tsx" },
+  { path: "research", lazy: lazyResearch, entry: "src/pages/Research.tsx" },
+  { path: "privacy-policy", lazy: lazyPrivacy, entry: "src/pages/PrivacyPolicy.tsx" },
+  { path: "consent", lazy: lazyConsent, entry: "src/pages/Consent.tsx" },
+  { path: "results", lazy: lazyResults, entry: "src/pages/Results.tsx" },
+  { path: "self-check", lazy: lazySelfCheck, entry: "src/pages/SelfCheck.tsx" },
+  { path: "self-check/:slug", lazy: lazySelfCheckDetail, entry: "src/pages/SelfCheckDetail.tsx" },
 ];
 
 // Английские роуты — обслуживаются как SPA (без SSG-пре-рендеринга),
-// чтобы не дублировать 70+ страниц. Поэтому каждый помечен `entry`.
-const enPublicChildren = [
+// чтобы не дублировать 70+ страниц. Тоже ленивые.
+const enPublicChildren: RouteRecord[] = [
   { index: true, Component: Index, entry: "src/pages/Index.tsx" },
-  { path: "for-parents", Component: ForParents, entry: "src/pages/ForParents.tsx" },
-  { path: "for-parents/:slug", Component: DiseaseDetailPage, entry: "src/pages/DiseaseDetailPage.tsx" },
-  { path: "for-doctors", Component: ForDoctors, entry: "src/pages/ForDoctors.tsx" },
-  { path: "media", Component: Media, entry: "src/pages/Media.tsx" },
-  { path: "videos", Component: Videos, entry: "src/pages/Videos.tsx" },
-  { path: "reviews", Component: Reviews, entry: "src/pages/Reviews.tsx" },
-  { path: "contacts", Component: Contacts, entry: "src/pages/Contacts.tsx" },
-  { path: "publications", Component: Publications, entry: "src/pages/Publications.tsx" },
-  { path: "methodologies", Component: Methodologies, entry: "src/pages/Methodologies.tsx" },
-  { path: "travel-notes", Component: TravelNotes, entry: "src/pages/TravelNotes.tsx" },
-  { path: "masterclasses", Component: Masterclasses, entry: "src/pages/Masterclasses.tsx" },
-  { path: "clinical-cases", Component: ClinicalCases, entry: "src/pages/ClinicalCases.tsx" },
-  { path: "blog", Component: Blog, entry: "src/pages/Blog.tsx" },
-  { path: "video-cases", Component: VideoCasesPage, entry: "src/pages/VideoCases.tsx" },
-  { path: "team", Component: Team, entry: "src/pages/Team.tsx" },
-  { path: "qa", Component: QA, entry: "src/pages/QA.tsx" },
-  { path: "research", Component: Research, entry: "src/pages/Research.tsx" },
-  { path: "privacy-policy", Component: PrivacyPolicy, entry: "src/pages/PrivacyPolicy.tsx" },
-  { path: "consent", Component: Consent, entry: "src/pages/Consent.tsx" },
-  { path: "results", Component: Results, entry: "src/pages/Results.tsx" },
-  { path: "self-check", Component: SelfCheck, entry: "src/pages/SelfCheck.tsx" },
-  { path: "self-check/:slug", Component: SelfCheckDetail, entry: "src/pages/SelfCheckDetail.tsx" },
+  { path: "for-parents", lazy: lazyForParents, entry: "src/pages/ForParents.tsx" },
+  { path: "for-parents/:slug", lazy: lazyDiseaseDetail, entry: "src/pages/DiseaseDetailPage.tsx" },
+  { path: "for-doctors", lazy: lazyForDoctors, entry: "src/pages/ForDoctors.tsx" },
+  { path: "media", lazy: lazyMedia, entry: "src/pages/Media.tsx" },
+  { path: "videos", lazy: lazyVideos, entry: "src/pages/Videos.tsx" },
+  { path: "reviews", lazy: lazyReviews, entry: "src/pages/Reviews.tsx" },
+  { path: "contacts", lazy: lazyContacts, entry: "src/pages/Contacts.tsx" },
+  { path: "publications", lazy: lazyPublications, entry: "src/pages/Publications.tsx" },
+  { path: "methodologies", lazy: lazyMethodologies, entry: "src/pages/Methodologies.tsx" },
+  { path: "travel-notes", lazy: lazyTravelNotes, entry: "src/pages/TravelNotes.tsx" },
+  { path: "masterclasses", lazy: lazyMasterclasses, entry: "src/pages/Masterclasses.tsx" },
+  { path: "clinical-cases", lazy: lazyClinicalCases, entry: "src/pages/ClinicalCases.tsx" },
+  { path: "blog", lazy: lazyBlog, entry: "src/pages/Blog.tsx" },
+  { path: "video-cases", lazy: lazyVideoCases, entry: "src/pages/VideoCases.tsx" },
+  { path: "team", lazy: lazyTeam, entry: "src/pages/Team.tsx" },
+  { path: "qa", lazy: lazyQA, entry: "src/pages/QA.tsx" },
+  { path: "research", lazy: lazyResearch, entry: "src/pages/Research.tsx" },
+  { path: "privacy-policy", lazy: lazyPrivacy, entry: "src/pages/PrivacyPolicy.tsx" },
+  { path: "consent", lazy: lazyConsent, entry: "src/pages/Consent.tsx" },
+  { path: "results", lazy: lazyResults, entry: "src/pages/Results.tsx" },
+  { path: "self-check", lazy: lazySelfCheck, entry: "src/pages/SelfCheck.tsx" },
+  { path: "self-check/:slug", lazy: lazySelfCheckDetail, entry: "src/pages/SelfCheckDetail.tsx" },
 ];
 
 export const routes: RouteRecord[] = [
