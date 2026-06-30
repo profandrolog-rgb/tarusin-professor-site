@@ -30,18 +30,12 @@ function markdownToHtml(md: string): string {
 
 function looksLikeMarkdown(body: string): boolean {
   if (!body) return false;
-  // Если уже выглядит как полноценный HTML-документ статьи (есть <p>...</p>
-  // вокруг текста), но при этом markdown-маркеры отсутствуют — пропускаем.
-  const hasMarkdown =
-    /(^|\n)#{1,6} /.test(body) ||
-    /\*\*[^*]+\*\*/.test(body) ||
-    /(^|\n)\* /.test(body) ||
-    /(^|\n)- \S/.test(body) ||
-    /(^|\n)\d+\. \S/.test(body);
-  if (!hasMarkdown) return false;
-  // Если markdown-маркеры есть — конвертируем, даже если в теле уже встречается
-  // HTML (marked корректно сохраняет inline-HTML блоки).
-  return true;
+  // Сигнал markdown — заголовки на отдельной строке (## ...). Это надёжный
+  // индикатор; одиночные **жирные** внутри уже отрендеренного HTML — нет.
+  const hasMdHeading = /(^|\n)#{1,6} \S/.test(body);
+  const hasMdList = /(^|\n)[-*] \S/.test(body) && !/<(ul|ol)\b/i.test(body);
+  const hasBoldNoHtml = /\*\*[^*\n]+\*\*/.test(body) && !/<(p|h[1-6])\b/i.test(body);
+  return hasMdHeading || hasMdList || hasBoldNoHtml;
 }
 
 const TABLES: Array<{ table: string; column: string }> = [
