@@ -105,9 +105,12 @@ const AdminDiseaseArticles = () => {
       description: article.description || "",
       article_content: article.article_content || "",
       is_published: article.is_published,
+      card_annotation: article.card_annotation || "",
+      card_background_path: article.card_background_path || null,
     });
     setVideoFile(null);
     setAudioFile(null);
+    setCardBgFile(null);
     setDialogOpen(true);
   };
 
