@@ -825,6 +825,65 @@ const Blog = () => {
           <p className="text-center text-muted-foreground py-16">{isEn ? "No posts yet" : "Записей пока нет"}</p>
         )}
 
+        {viewMode === "cards" && visiblePosts.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            {visiblePosts.map((post) => {
+              const bgUrl = post.card_background_path ? getImageUrl(post.card_background_path) : null;
+              const postImages = allPostImages.filter((i) => i.post_id === post.id);
+              const fallbackImg = postImages.length > 0
+                ? getImageUrl(postImages[0].image_path)
+                : (post.image_path ? getImageUrl(post.image_path) : null);
+              const cardImg = bgUrl || fallbackImg;
+              return (
+                <Card
+                  key={`card-${post.id}`}
+                  className="relative overflow-hidden cursor-pointer group h-56 flex flex-col justify-end border border-border hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setViewMode("list");
+                    setExpandedPosts((prev) => new Set(prev).add(post.id));
+                    setTimeout(() => {
+                      const el = document.getElementById(`post-${post.id}`);
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
+                  }}
+                >
+                  {cardImg && (
+                    <>
+                      <img
+                        src={cardImg}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
+                    </>
+                  )}
+                  <div className="relative p-4 z-10">
+                    <h3 className="text-lg font-semibold text-foreground leading-snug line-clamp-3 mb-2">
+                      {post.title}
+                    </h3>
+                    {(post.card_annotation || post.excerpt) && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                        {post.card_annotation || post.excerpt}
+                      </p>
+                    )}
+                    {isAdmin && !post.is_published && (
+                      <Badge variant="secondary" className="mt-2">Черновик</Badge>
+                    )}
+                  </div>
+                  {isAdmin && (
+                    <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="secondary" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(post); }}>
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {viewMode === "list" && (
         <div className="space-y-6">
           {visiblePosts.map((post) => {
             const postImages = allPostImages.filter((i) => i.post_id === post.id);
