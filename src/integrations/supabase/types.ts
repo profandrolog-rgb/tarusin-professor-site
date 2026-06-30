@@ -795,6 +795,8 @@ export type Database = {
       }
       blog_posts: {
         Row: {
+          card_annotation: string | null
+          card_background_path: string | null
           content: string
           created_at: string
           excerpt: string | null
@@ -806,6 +808,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          card_annotation?: string | null
+          card_background_path?: string | null
           content: string
           created_at?: string
           excerpt?: string | null
@@ -817,6 +821,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          card_annotation?: string | null
+          card_background_path?: string | null
           content?: string
           created_at?: string
           excerpt?: string | null
@@ -1316,6 +1322,8 @@ export type Database = {
           age_group: string
           article_content: string | null
           audio_path: string | null
+          card_annotation: string | null
+          card_background_path: string | null
           category: string
           created_at: string
           description: string | null
@@ -1333,6 +1341,8 @@ export type Database = {
           age_group?: string
           article_content?: string | null
           audio_path?: string | null
+          card_annotation?: string | null
+          card_background_path?: string | null
           category?: string
           created_at?: string
           description?: string | null
@@ -1350,6 +1360,8 @@ export type Database = {
           age_group?: string
           article_content?: string | null
           audio_path?: string | null
+          card_annotation?: string | null
+          card_background_path?: string | null
           category?: string
           created_at?: string
           description?: string | null
