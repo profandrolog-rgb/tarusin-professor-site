@@ -93,7 +93,7 @@ const AdminSystemSettings = () => {
   useEffect(() => {
     if (user && isAdmin) {
       loadDeployStatus();
-      const t = setInterval(loadDeployStatus, 15000);
+      const t = setInterval(loadDeployStatus, 10000);
       return () => clearInterval(t);
     }
   }, [user, isAdmin]);
