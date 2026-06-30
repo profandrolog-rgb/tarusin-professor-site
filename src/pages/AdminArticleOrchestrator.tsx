@@ -57,7 +57,7 @@ const PANEL = [
   { id: "venice/venice-uncensored-1-2", label: "Venice (без цензуры)", default: true },
   { id: "x-ai/grok-4.3", label: "Grok 4", default: true },
   { id: "deepseek/deepseek-v4-pro", label: "DeepSeek V4-Pro", default: true },
-  { id: "xiaomi/mimo-v2.5-pro", label: "MiMo 2.5 Pro (Xiaomi)", default: false },
+  { id: "xiaomi/mimo-v2.5-pro", label: "MiMo 2.5 Pro (Xiaomi)", default: true },
 ];
 
 const ARBITERS = [
