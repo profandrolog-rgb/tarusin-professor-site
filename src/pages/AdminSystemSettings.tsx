@@ -315,6 +315,31 @@ const AdminSystemSettings = () => {
                             {app.domains[0].fqdn} <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
+
+                        {deployStatus.deploys && deployStatus.deploys.length > 0 && (
+                          <div className="pt-3 mt-2 border-t">
+                            <div className="text-xs font-medium text-muted-foreground mb-2">
+                              История деплоев (как в Timeweb)
+                            </div>
+                            <div className="space-y-1.5">
+                              {deployStatus.deploys.slice(0, 5).map((d: any) => {
+                                const s = statusMap[d.status] || { label: d.status, cls: "bg-gray-100 text-gray-700" };
+                                return (
+                                  <div key={d.id} className="flex items-center gap-2 text-xs">
+                                    <span className={`px-2 py-0.5 rounded-full font-medium ${s.cls}`}>{s.label}</span>
+                                    <code className="bg-background px-1.5 py-0.5 rounded border">{d.commit_sha?.slice(0, 7) || "—"}</code>
+                                    <span className="text-muted-foreground truncate flex-1" title={d.commit_msg}>
+                                      {(d.commit_msg || "").split("\n")[0]}
+                                    </span>
+                                    <span className="text-muted-foreground whitespace-nowrap">
+                                      {d.started_at ? format(new Date(d.started_at + (d.started_at.endsWith("Z") ? "" : "Z")), "d MMM HH:mm", { locale: ru }) : ""}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </>
                     );
                   })()}
