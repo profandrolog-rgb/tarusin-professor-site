@@ -38,6 +38,8 @@ const emptyForm = {
   description: "",
   article_content: "",
   is_published: false,
+  card_annotation: "",
+  card_background_path: null as string | null,
 };
 
 const AdminDiseaseArticles = () => {
