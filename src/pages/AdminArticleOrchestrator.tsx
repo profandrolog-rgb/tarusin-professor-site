@@ -1108,6 +1108,24 @@ export default function AdminArticleOrchestrator() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={() => insertGalleryMarker("final")}
+                disabled={!finalText}
+                title="Вставить блок галереи в конец итогового текста"
+              >
+                <ImagePlus className="w-4 h-4 mr-2" /> + Галерея
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPreviewOpen(true)}
+                disabled={!finalText}
+                title="Просмотреть как у пациентов — с форматированием и галереями"
+              >
+                <Eye className="w-4 h-4 mr-2" /> Превью
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => {
                   navigate("/admin/article-import", {
                     state: { title, text: finalText, source: "orchestrator", existingRef },
@@ -1115,8 +1133,9 @@ export default function AdminArticleOrchestrator() {
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                <Send className="w-4 h-4 mr-2" /> Разместить
+                <Send className="w-4 h-4 mr-2" /> {existingRef ? "Переопубликовать" : "Разместить"}
               </Button>
+
             </div>
           </CardHeader>
           <CardContent>
