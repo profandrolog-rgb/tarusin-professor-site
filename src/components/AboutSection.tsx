@@ -66,13 +66,19 @@ const AboutSection = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const getImageUrl = (imagePath: string) => {
-    const { data } = supabase.storage.from("certificates").getPublicUrl(imagePath);
+  const getImageUrl = (imagePath: string, size: "thumb" | "full" = "full") => {
+    const transform =
+      size === "thumb"
+        ? { width: 480, height: 360, resize: "contain" as const, quality: 70 }
+        : { width: 1600, quality: 80 };
+    const { data } = supabase.storage
+      .from("certificates")
+      .getPublicUrl(imagePath, { transform });
     return data.publicUrl;
   };
 
   const certImages = React.useMemo(
-    () => certificates.map((c) => ({ id: c.id, title: c.title, url: getImageUrl(c.image_path) })),
+    () => certificates.map((c) => ({ id: c.id, title: c.title, url: getImageUrl(c.image_path, "full") })),
     [certificates]
   );
 
@@ -173,7 +179,7 @@ const AboutSection = () => {
                 >
                   <CardContent className="p-0">
                     <div className="aspect-[4/3] bg-muted flex items-center justify-center overflow-hidden">
-                      <img src={getImageUrl(cert.image_path)} alt={cert.title} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                      <img src={getImageUrl(cert.image_path, "thumb")} alt={cert.title} loading="lazy" decoding="async" width={480} height={360} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <div className="p-3 text-center">
                       <p className="text-sm font-medium text-foreground truncate">{cert.title}</p>
