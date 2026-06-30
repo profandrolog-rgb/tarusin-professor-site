@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 
 
@@ -179,6 +179,37 @@ export default function AdminArticleOrchestrator() {
   const [testingConn, setTestingConn] = useState(false);
   const [formatting, setFormatting] = useState(false);
   const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [translation, setTranslation] = useState<null | {
+    title: string;
+    slug: string;
+    description: string;
+    card_annotation: string;
+    content: string;
+    keywords: string[];
+    seo_title: string;
+    seo_description: string;
+  }>(null);
+
+  async function translateFinal() {
+    if (!finalText.trim()) return;
+    setTranslating(true);
+    setTranslation(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("translate-content", {
+        body: { text: finalText, title, description: "" },
+      });
+      if (error) throw error;
+      if (!data?.translation) throw new Error("Empty response");
+      setTranslation(data.translation);
+      sonnerToast.success("Перевод готов — проверьте и скопируйте поля");
+    } catch (e: any) {
+      sonnerToast.error("Перевод не удался", { description: e?.message || String(e) });
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   const successReviews = useMemo(() => reviews.filter((r) => !r.error), [reviews]);
 
   const getSuggested = (key: string, fallback: string) =>
@@ -940,6 +971,17 @@ export default function AdminArticleOrchestrator() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={translateFinal}
+                disabled={translating || !finalText}
+                title="Перевести итоговую статью на английский (Gemini)"
+              >
+                {translating
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Перевод…</>
+                  : <><Languages className="w-4 h-4 mr-2" /> Перевести EN</>}
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => {
                   navigate("/admin/article-import", {
                     state: { title, text: finalText, source: "orchestrator" },
@@ -953,9 +995,89 @@ export default function AdminArticleOrchestrator() {
           </CardHeader>
           <CardContent>
             <ArticleDiffEditor original={text} value={finalText} onChange={setFinalText} />
+
+            {translation && (
+              <div className="mt-6 border-t pt-6 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Languages className="w-5 h-5 text-emerald-600" /> English version
+                  </h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const blob = [
+                        `# ${translation.title}`,
+                        `slug: ${translation.slug}`,
+                        `description: ${translation.description}`,
+                        `card_annotation: ${translation.card_annotation}`,
+                        `seo_title: ${translation.seo_title}`,
+                        `seo_description: ${translation.seo_description}`,
+                        `keywords: ${translation.keywords.join(", ")}`,
+                        ``,
+                        translation.content,
+                      ].join("\n");
+                      navigator.clipboard.writeText(blob);
+                      sonnerToast.success("Английская версия скопирована целиком");
+                    }}
+                  >
+                    <Copy className="w-4 h-4 mr-2" /> Копировать всё
+                  </Button>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">EN title</label>
+                    <Input value={translation.title} onChange={(e) => setTranslation({ ...translation, title: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">EN slug</label>
+                    <Input value={translation.slug} onChange={(e) => setTranslation({ ...translation, slug: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">SEO title (&lt;60)</label>
+                    <Input value={translation.seo_title} onChange={(e) => setTranslation({ ...translation, seo_title: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">SEO description (&lt;155)</label>
+                    <Textarea rows={2} value={translation.seo_description} onChange={(e) => setTranslation({ ...translation, seo_description: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Keywords (comma-separated)</label>
+                    <Input
+                      value={translation.keywords.join(", ")}
+                      onChange={(e) =>
+                        setTranslation({
+                          ...translation,
+                          keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Card annotation</label>
+                    <Textarea rows={2} value={translation.card_annotation} onChange={(e) => setTranslation({ ...translation, card_annotation: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">EN content (markdown)</label>
+                    <Textarea
+                      rows={14}
+                      className="font-mono text-sm"
+                      value={translation.content}
+                      onChange={(e) => setTranslation({ ...translation, content: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Перевод не сохранён в БД автоматически — скопируйте поля во вкладку «EN» в редакторе
+                  статьи, либо разместите русскую версию и нажмите «Перевести» там, чтобы записать в
+                  таблицу <code>content_translations</code>.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }

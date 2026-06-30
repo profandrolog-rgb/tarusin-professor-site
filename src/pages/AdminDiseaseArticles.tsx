@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff, LayoutGrid, List as ListIcon, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff, LayoutGrid, List as ListIcon, Image as ImageIcon, X, Languages } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ArticleMarkdownEditor, { type ArticleMarkdownEditorHandle } from "@/components/parents/ArticleMarkdownEditor";
+import EnTranslationPanel from "@/components/admin/EnTranslationPanel";
+
 import { mergePersistedGalleryFiles } from "@/lib/markdown/galleryMarkers";
 
 const categoryLabels: Record<string, string> = {
@@ -559,7 +561,7 @@ const AdminDiseaseArticles = () => {
 
               {/* Content tabs */}
               <Tabs defaultValue="video">
-                <TabsList className="w-full grid grid-cols-3">
+                <TabsList className="w-full grid grid-cols-4">
                   <TabsTrigger value="video" className="gap-1.5">
                     <Video className="w-3.5 h-3.5" /> Видео
                   </TabsTrigger>
@@ -569,7 +571,11 @@ const AdminDiseaseArticles = () => {
                   <TabsTrigger value="text" className="gap-1.5">
                     <FileText className="w-3.5 h-3.5" /> Статья
                   </TabsTrigger>
+                  <TabsTrigger value="en" className="gap-1.5">
+                    <Languages className="w-3.5 h-3.5" /> EN
+                  </TabsTrigger>
                 </TabsList>
+
 
                 <TabsContent value="video" className="space-y-3 mt-4">
                   <div>
@@ -632,7 +638,12 @@ const AdminDiseaseArticles = () => {
                     </p>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="en" className="space-y-3 mt-4">
+                  <EnTranslationPanel entity_type="disease_article" entity_id={editing?.id ?? null} />
+                </TabsContent>
               </Tabs>
+
 
               {/* Publish toggle */}
               <div className="flex items-center justify-between border-t pt-4">

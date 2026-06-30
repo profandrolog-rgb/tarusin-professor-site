@@ -11,11 +11,14 @@ interface PageMetaProps {
   type?: "website" | "article";
   /** Принудительно задать язык страницы. Иначе определяется из URL. */
   lang?: "ru" | "en";
+  /** SEO-ключи (выводятся как <meta name="keywords">), опционально. */
+  keywords?: string[];
 }
 
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
-const PageMeta = ({ title, description, path, image, type = "website", lang }: PageMetaProps) => {
+const PageMeta = ({ title, description, path, image, type = "website", lang, keywords }: PageMetaProps) => {
+
   // Определяем язык — либо явно передан, либо вычислен из текущего URL.
   let pathname = "/";
   try {
@@ -45,7 +48,11 @@ const PageMeta = ({ title, description, path, image, type = "website", lang }: P
     <Helmet htmlAttributes={{ lang: currentLang }}>
       <title>{title}</title>
       <meta name="description" content={description} />
+      {keywords && keywords.length > 0 && (
+        <meta name="keywords" content={keywords.join(", ")} />
+      )}
       <link rel="canonical" href={url} />
+
 
       {/* hreflang */}
       <link rel="alternate" hrefLang="ru" href={alts.ru} />
