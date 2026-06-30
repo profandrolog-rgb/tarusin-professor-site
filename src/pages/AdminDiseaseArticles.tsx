@@ -561,7 +561,7 @@ const AdminDiseaseArticles = () => {
 
               {/* Content tabs */}
               <Tabs defaultValue="video">
-                <TabsList className="w-full grid grid-cols-3">
+                <TabsList className="w-full grid grid-cols-4">
                   <TabsTrigger value="video" className="gap-1.5">
                     <Video className="w-3.5 h-3.5" /> Видео
                   </TabsTrigger>
@@ -571,7 +571,11 @@ const AdminDiseaseArticles = () => {
                   <TabsTrigger value="text" className="gap-1.5">
                     <FileText className="w-3.5 h-3.5" /> Статья
                   </TabsTrigger>
+                  <TabsTrigger value="en" className="gap-1.5">
+                    <Languages className="w-3.5 h-3.5" /> EN
+                  </TabsTrigger>
                 </TabsList>
+
 
                 <TabsContent value="video" className="space-y-3 mt-4">
                   <div>
