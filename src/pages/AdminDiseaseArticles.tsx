@@ -395,9 +395,20 @@ const AdminDiseaseArticles = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="В Оркестратор (полный цикл ИИ-ревью и переопубликация)"
+                      onClick={() => navigate("/admin/article-orchestrator", {
+                        state: { recheck: { id: article.id, kind: "disease_articles", title: article.title } },
+                      })}
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => togglePublish(article)} title={article.is_published ? "Снять с публикации" : "Опубликовать"}>
                       {article.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </Button>
+
                     <Button variant="ghost" size="icon" onClick={() => openEdit(article)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
