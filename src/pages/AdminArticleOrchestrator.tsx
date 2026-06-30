@@ -577,10 +577,20 @@ export default function AdminArticleOrchestrator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* INPUT */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle>1. Статья</CardTitle>
+            <Button size="sm" variant="outline" onClick={openRecheckPicker} className="gap-1">
+              <FileSearch className="w-4 h-4" /> Перепроверить опубликованное
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
+            {existingRef && (
+              <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300">
+                <RefreshCw className="w-3 h-3" />
+                Режим перепроверки опубликованной статьи · при «Разместить» обновится существующая запись
+                <button className="ml-auto underline" onClick={() => setExistingRef(null)}>отменить</button>
+              </div>
+            )}
             <Input
               placeholder="Заголовок (опционально)"
               value={title}
