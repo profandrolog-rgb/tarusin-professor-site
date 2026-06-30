@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff, LayoutGrid, List as ListIcon, Image as ImageIcon, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
