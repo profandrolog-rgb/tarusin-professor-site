@@ -248,6 +248,11 @@ const Admin = () => {
     }
   }, [user, isAdmin, loading, navigate]);
 
+  // Прогреваем чанки админ-страниц, чтобы клики по карточкам открывались мгновенно.
+  useEffect(() => {
+    if (user && isAdmin) warmAdminChunks();
+  }, [user, isAdmin]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
