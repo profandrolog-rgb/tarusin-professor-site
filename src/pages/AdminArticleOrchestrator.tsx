@@ -418,7 +418,9 @@ export default function AdminArticleOrchestrator() {
       const j = await resp.json();
       if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
       setFinalText(String(j.rewritten || ""));
-      toast({ title: "Статья переписана", description: `Применено правок: ${j.applied}. Голос автора сохранён.` });
+      // Запоминаем применённые правки — чтобы исключить их при повторном ревью
+      setAppliedEdits((cur) => [...cur, ...editsAccepted]);
+      toast({ title: "Статья переписана", description: `Применено правок: ${j.applied}. Голос автора сохранён. Можно запустить повторное ревью.` });
     } catch (e: any) {
       toast({ title: "Ошибка переписывания", description: e?.message || String(e), variant: "destructive" });
     } finally {
