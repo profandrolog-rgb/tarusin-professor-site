@@ -638,7 +638,12 @@ const AdminDiseaseArticles = () => {
                     </p>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="en" className="space-y-3 mt-4">
+                  <EnTranslationPanel entity_type="disease_article" entity_id={editing?.id ?? null} />
+                </TabsContent>
               </Tabs>
+
 
               {/* Publish toggle */}
               <div className="flex items-center justify-between border-t pt-4">
