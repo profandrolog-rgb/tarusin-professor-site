@@ -99,6 +99,7 @@ const AdminDiseaseArticles = () => {
     setForm(emptyForm);
     setVideoFile(null);
     setAudioFile(null);
+    setCardBgFile(null);
     setDialogOpen(true);
   };
 
