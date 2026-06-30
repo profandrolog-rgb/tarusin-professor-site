@@ -79,7 +79,7 @@ const Blog = () => {
 
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "" });
+  const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "", card_annotation: "", card_background_path: null as string | null });
   const blogAutoSaveKey = useMemo(() => editingPost ? `blog_edit_${editingPost.id}` : "blog_new", [editingPost]);
   const { save: saveBlogDraft, loadDraft: loadBlogDraft, clearDraft: clearBlogDraft } = useAutoSave({
     key: blogAutoSaveKey,
@@ -87,6 +87,7 @@ const Blog = () => {
     enabled: isCreating,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [cardBgFile, setCardBgFile] = useState<File | null>(null);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
@@ -95,6 +96,13 @@ const Blog = () => {
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "cards">(() => {
+    if (typeof window === "undefined") return "list";
+    return (localStorage.getItem("blog-view-mode") as "list" | "cards") || "list";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("blog-view-mode", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
