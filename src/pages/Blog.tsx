@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, Move } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, Move, LayoutGrid, List as ListIcon, Image as ImageIcon } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,8 @@ interface BlogPost {
   content: string;
   excerpt: string | null;
   image_path: string | null;
+  card_background_path: string | null;
+  card_annotation: string | null;
   is_published: boolean;
   sort_order: number | null;
   created_at: string;
@@ -77,7 +79,7 @@ const Blog = () => {
 
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "" });
+  const [postForm, setPostForm] = useState({ title: "", content: "", excerpt: "", card_annotation: "", card_background_path: null as string | null });
   const blogAutoSaveKey = useMemo(() => editingPost ? `blog_edit_${editingPost.id}` : "blog_new", [editingPost]);
   const { save: saveBlogDraft, loadDraft: loadBlogDraft, clearDraft: clearBlogDraft } = useAutoSave({
     key: blogAutoSaveKey,
@@ -85,6 +87,7 @@ const Blog = () => {
     enabled: isCreating,
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [cardBgFile, setCardBgFile] = useState<File | null>(null);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
@@ -93,6 +96,13 @@ const Blog = () => {
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [draggingImageId, setDraggingImageId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "cards">(() => {
+    if (typeof window === "undefined") return "list";
+    return (localStorage.getItem("blog-view-mode") as "list" | "cards") || "list";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("blog-view-mode", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -167,19 +177,32 @@ const Blog = () => {
     setSavingPost(true);
     try {
       let imagePath = editingPost?.image_path || null;
+      let cardBgPath: string | null = postForm.card_background_path;
+      if (cardBgFile) {
+        cardBgPath = await uploadImage(cardBgFile);
+      }
+
+      const payload = {
+        title: postForm.title,
+        content: postForm.content,
+        excerpt: postForm.excerpt || null,
+        image_path: imagePath,
+        card_background_path: cardBgPath,
+        card_annotation: postForm.card_annotation?.trim() || null,
+      };
 
       let postId: string;
       if (editingPost) {
         const { error } = await supabase
           .from("blog_posts")
-          .update({ title: postForm.title, content: postForm.content, excerpt: postForm.excerpt || null, image_path: imagePath })
+          .update(payload)
           .eq("id", editingPost.id);
         if (error) throw error;
         postId = editingPost.id;
       } else {
         const { data, error } = await supabase
           .from("blog_posts")
-          .insert({ title: postForm.title, content: postForm.content, excerpt: postForm.excerpt || null, image_path: imagePath, sort_order: posts.length })
+          .insert({ ...payload, sort_order: posts.length })
           .select("id")
           .single();
         if (error) throw error;
@@ -202,8 +225,9 @@ const Blog = () => {
       queryClient.invalidateQueries({ queryKey: ["blog-post-images"] });
       setEditingPost(null);
       setIsCreating(false);
-      setPostForm({ title: "", content: "", excerpt: "" });
+      setPostForm({ title: "", content: "", excerpt: "", card_annotation: "", card_background_path: null });
       setImageFiles([]);
+      setCardBgFile(null);
       clearBlogDraft();
       toast({ title: editingPost ? "Запись обновлена" : "Запись создана" });
     } catch (err: any) {
@@ -340,8 +364,9 @@ const Blog = () => {
   });
 
   const openCreate = () => {
-    setPostForm({ title: "", content: "", excerpt: "" });
+    setPostForm({ title: "", content: "", excerpt: "", card_annotation: "", card_background_path: null });
     setImageFiles([]);
+    setCardBgFile(null);
     setEditingPost(null);
     setIsCreating(true);
     // Check for draft
@@ -351,7 +376,13 @@ const Blog = () => {
         sonnerToast("Найден черновик", {
           description: "Восстановить несохранённые изменения?",
           action: { label: "Восстановить", onClick: () => {
-            setPostForm({ title: draft.title || "", content: draft.content || "", excerpt: draft.excerpt || "" });
+            setPostForm({
+              title: draft.title || "",
+              content: draft.content || "",
+              excerpt: draft.excerpt || "",
+              card_annotation: draft.card_annotation || "",
+              card_background_path: draft.card_background_path || null,
+            });
             sonnerToast.success("Черновик восстановлен");
           }},
           cancel: { label: "Отклонить", onClick: () => clearBlogDraft() },
@@ -362,8 +393,15 @@ const Blog = () => {
   };
 
   const openEdit = (post: BlogPost) => {
-    setPostForm({ title: post.title, content: post.content, excerpt: post.excerpt || "" });
+    setPostForm({
+      title: post.title,
+      content: post.content,
+      excerpt: post.excerpt || "",
+      card_annotation: post.card_annotation || "",
+      card_background_path: post.card_background_path || null,
+    });
     setImageFiles([]);
+    setCardBgFile(null);
     setEditingPost(post);
     setIsCreating(true);
   };
@@ -518,16 +556,40 @@ const Blog = () => {
           <p><strong>Контакты для претензий.</strong> Для обращений правообладателей, государственных органов и лиц, считающих, что материал нарушает их права, доступен канал связи через форму обратной связи на сайте. Обращения рассматриваются в разумный срок; при необходимости материал может быть временно ограничен до уточнения обстоятельств.</p>
         </div>
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">{isEn ? "Reflections" : "Размышлизмы"}</h1>
             <p className="text-muted-foreground">{isEn ? "My personal blog" : "Мой личный блог"}</p>
           </div>
-          {isAdmin && (
-            <Button onClick={openCreate} className="gap-2">
-              <Plus className="w-4 h-4" /> {isEn ? "New Post" : "Новая запись"}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-border overflow-hidden">
+              <Button
+                type="button"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none gap-1"
+                onClick={() => setViewMode("list")}
+                title={isEn ? "List view" : "Списком"}
+              >
+                <ListIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none gap-1"
+                onClick={() => setViewMode("cards")}
+                title={isEn ? "Card view" : "Карточками"}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </div>
+            {isAdmin && (
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="w-4 h-4" /> {isEn ? "New Post" : "Новая запись"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Post editor dialog */}
@@ -554,6 +616,59 @@ const Blog = () => {
                 onChange={(html) => setPostForm((p) => ({ ...p, content: html }))}
                 placeholder="Текст..."
               />
+
+              {/* Card view settings */}
+              <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/30">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <LayoutGrid className="w-4 h-4" /> Настройки карточки (вид «карточками»)
+                </div>
+                <Input
+                  placeholder="Короткая аннотация под карточкой (1–2 предложения)"
+                  value={postForm.card_annotation}
+                  onChange={(e) => setPostForm((p) => ({ ...p, card_annotation: e.target.value }))}
+                  maxLength={180}
+                />
+                <div className="flex items-center gap-3">
+                  {(cardBgFile || postForm.card_background_path) && (
+                    <div className="relative w-20 h-14 rounded overflow-hidden border border-border flex-shrink-0">
+                      <img
+                        src={cardBgFile ? URL.createObjectURL(cardBgFile) : getImageUrl(postForm.card_background_path)!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                    <ImageIcon className="w-4 h-4" />
+                    <span>{cardBgFile || postForm.card_background_path ? "Заменить фон карточки" : "Загрузить фон карточки"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) setCardBgFile(f);
+                      }}
+                    />
+                  </label>
+                  {(cardBgFile || postForm.card_background_path) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setCardBgFile(null);
+                        setPostForm((p) => ({ ...p, card_background_path: null }));
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Изображение будет показано полупрозрачным фоном карточки, текст — поверх.
+                </p>
+              </div>
 
               {/* Image slots info */}
               <div className="text-sm text-muted-foreground">
@@ -710,6 +825,65 @@ const Blog = () => {
           <p className="text-center text-muted-foreground py-16">{isEn ? "No posts yet" : "Записей пока нет"}</p>
         )}
 
+        {viewMode === "cards" && visiblePosts.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            {visiblePosts.map((post) => {
+              const bgUrl = post.card_background_path ? getImageUrl(post.card_background_path) : null;
+              const postImages = allPostImages.filter((i) => i.post_id === post.id);
+              const fallbackImg = postImages.length > 0
+                ? getImageUrl(postImages[0].image_path)
+                : (post.image_path ? getImageUrl(post.image_path) : null);
+              const cardImg = bgUrl || fallbackImg;
+              return (
+                <Card
+                  key={`card-${post.id}`}
+                  className="relative overflow-hidden cursor-pointer group h-56 flex flex-col justify-end border border-border hover:shadow-lg transition-shadow"
+                  onClick={() => {
+                    setViewMode("list");
+                    setExpandedPosts((prev) => new Set(prev).add(post.id));
+                    setTimeout(() => {
+                      const el = document.getElementById(`post-${post.id}`);
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
+                  }}
+                >
+                  {cardImg && (
+                    <>
+                      <img
+                        src={cardImg}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
+                    </>
+                  )}
+                  <div className="relative p-4 z-10">
+                    <h3 className="text-lg font-semibold text-foreground leading-snug line-clamp-3 mb-2">
+                      {post.title}
+                    </h3>
+                    {(post.card_annotation || post.excerpt) && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                        {post.card_annotation || post.excerpt}
+                      </p>
+                    )}
+                    {isAdmin && !post.is_published && (
+                      <Badge variant="secondary" className="mt-2">Черновик</Badge>
+                    )}
+                  </div>
+                  {isAdmin && (
+                    <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="icon" variant="secondary" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(post); }}>
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {viewMode === "list" && (
         <div className="space-y-6">
           {visiblePosts.map((post) => {
             const postImages = allPostImages.filter((i) => i.post_id === post.id);
@@ -966,6 +1140,7 @@ const Blog = () => {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

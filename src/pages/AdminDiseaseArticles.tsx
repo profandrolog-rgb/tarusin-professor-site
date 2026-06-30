@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Loader2, Video, Headphones, FileText, Eye, EyeOff, LayoutGrid, List as ListIcon, Image as ImageIcon, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,8 @@ const emptyForm = {
   description: "",
   article_content: "",
   is_published: false,
+  card_annotation: "",
+  card_background_path: null as string | null,
 };
 
 const AdminDiseaseArticles = () => {
@@ -51,8 +53,16 @@ const AdminDiseaseArticles = () => {
   const [saving, setSaving] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [cardBgFile, setCardBgFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"list" | "cards">(() => {
+    if (typeof window === "undefined") return "list";
+    return (localStorage.getItem("disease-articles-view-mode") as "list" | "cards") || "list";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem("disease-articles-view-mode", viewMode);
+  }, [viewMode]);
   const articleEditorRef = useRef<ArticleMarkdownEditorHandle>(null);
 
   useEffect(() => {
@@ -89,6 +99,7 @@ const AdminDiseaseArticles = () => {
     setForm(emptyForm);
     setVideoFile(null);
     setAudioFile(null);
+    setCardBgFile(null);
     setDialogOpen(true);
   };
 
@@ -103,9 +114,12 @@ const AdminDiseaseArticles = () => {
       description: article.description || "",
       article_content: article.article_content || "",
       is_published: article.is_published,
+      card_annotation: article.card_annotation || "",
+      card_background_path: article.card_background_path || null,
     });
     setVideoFile(null);
     setAudioFile(null);
+    setCardBgFile(null);
     setDialogOpen(true);
   };
 
@@ -115,6 +129,11 @@ const AdminDiseaseArticles = () => {
     const { error } = await supabase.storage.from("disease-media").upload(path, file);
     if (error) throw error;
     return path;
+  };
+
+  const getMediaUrl = (path: string | null) => {
+    if (!path) return null;
+    return supabase.storage.from("disease-media").getPublicUrl(path).data.publicUrl;
   };
 
   const handleSave = async () => {
@@ -135,6 +154,10 @@ const AdminDiseaseArticles = () => {
       }
       if (audioFile) {
         audio_path = await uploadFile(audioFile, "audio");
+      }
+      let card_background_path: string | null = form.card_background_path;
+      if (cardBgFile) {
+        card_background_path = await uploadFile(cardBgFile, "card-bg");
       }
 
       const slug = form.slug.trim() || generateSlug(form.title);
@@ -165,6 +188,8 @@ const AdminDiseaseArticles = () => {
         video_path,
         audio_path,
         is_published: form.is_published,
+        card_annotation: form.card_annotation?.trim() || null,
+        card_background_path,
       };
 
       if (editing) {
@@ -230,15 +255,39 @@ const AdminDiseaseArticles = () => {
           Панель управления
         </Link>
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Материалы о заболеваниях</h1>
             <p className="text-muted-foreground">Управление контентом для раздела «Для родителей и пациентов»</p>
           </div>
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Добавить материал
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-border overflow-hidden">
+              <Button
+                type="button"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none"
+                onClick={() => setViewMode("list")}
+                title="Списком"
+              >
+                <ListIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none"
+                onClick={() => setViewMode("cards")}
+                title="Карточками"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Добавить материал
+            </Button>
+          </div>
         </div>
 
         {/* Filter */}
@@ -252,6 +301,53 @@ const AdminDiseaseArticles = () => {
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">Нет материалов. Нажмите «Добавить материал».</div>
+        ) : viewMode === "cards" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((article) => {
+              const bg = getMediaUrl(article.card_background_path);
+              return (
+                <Card
+                  key={article.id}
+                  className="relative overflow-hidden h-56 flex flex-col justify-end border border-border hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => openEdit(article)}
+                >
+                  {bg && (
+                    <>
+                      <img src={bg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
+                    </>
+                  )}
+                  <div className="relative z-10 p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {article.video_path && <Video className="w-3.5 h-3.5 text-blue-500" />}
+                      {article.audio_path && <Headphones className="w-3.5 h-3.5 text-purple-500" />}
+                      {article.article_content && <FileText className="w-3.5 h-3.5 text-green-500" />}
+                      {!article.is_published && <Badge variant="outline" className="text-[10px] text-orange-500 border-orange-300 ml-auto">Черновик</Badge>}
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground line-clamp-2 mb-1">{article.title}</h3>
+                    {(article.card_annotation || article.description) && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                        {article.card_annotation || article.description}
+                      </p>
+                    )}
+                    <div className="flex gap-1 mt-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        {article.age_group === "children" ? "Детские" : "Взрослые"}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {categoryLabels[article.category] || article.category}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); togglePublish(article); }}>
+                      {article.is_published ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         ) : (
           <div className="grid gap-4 min-w-0">
             {filtered.map((article) => (
@@ -402,6 +498,62 @@ const AdminDiseaseArticles = () => {
                     onChange={(e) => setForm({ ...form, keywords: e.target.value })}
                     placeholder="варикоцеле, яичко, боль, подросток"
                   />
+                </div>
+
+                {/* Card view settings */}
+                <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/30">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <LayoutGrid className="w-4 h-4" /> Настройки карточки (вид «карточками»)
+                  </div>
+                  <div>
+                    <Label className="text-xs">Короткая аннотация под карточкой</Label>
+                    <Input
+                      value={form.card_annotation}
+                      onChange={(e) => setForm({ ...form, card_annotation: e.target.value })}
+                      placeholder="1–2 предложения, видны под названием на карточке"
+                      maxLength={180}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {(cardBgFile || form.card_background_path) && (
+                      <div className="relative w-20 h-14 rounded overflow-hidden border border-border flex-shrink-0">
+                        <img
+                          src={cardBgFile ? URL.createObjectURL(cardBgFile) : getMediaUrl(form.card_background_path)!}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                      <ImageIcon className="w-4 h-4" />
+                      <span>{cardBgFile || form.card_background_path ? "Заменить фон карточки" : "Загрузить фон карточки"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) setCardBgFile(f);
+                        }}
+                      />
+                    </label>
+                    {(cardBgFile || form.card_background_path) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCardBgFile(null);
+                          setForm({ ...form, card_background_path: null });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Изображение отображается полупрозрачным фоном карточки, текст — поверх.
+                  </p>
                 </div>
               </div>
 
