@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RecentVisitsWidget } from "@/components/visits/RecentVisitsWidget";
 import { DbHealthWidget } from "@/components/admin/DbHealthWidget";
+import { warmAdminChunks } from "@/lib/prefetchAdmin";
 
 // === КЛИНИЧЕСКАЯ РАБОТА: пациенты, протоколы, ИИ, назначения ===
 const clinicalSections = [
@@ -246,6 +247,11 @@ const Admin = () => {
       navigate("/auth", { state: { from: "/admin" } });
     }
   }, [user, isAdmin, loading, navigate]);
+
+  // Прогреваем чанки админ-страниц, чтобы клики по карточкам открывались мгновенно.
+  useEffect(() => {
+    if (user && isAdmin) warmAdminChunks();
+  }, [user, isAdmin]);
 
   if (loading) {
     return (
