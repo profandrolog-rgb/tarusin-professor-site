@@ -73,7 +73,7 @@ const AdminArticleImport = () => {
     // From orchestrator we receive Markdown — keep it as-is so MarkdownArticle
     // renders headings, lists and [[GALLERY:...]] markers correctly.
     // (Previously we wrapped lines in <p> with escaped <>, which left literal # on the page.)
-    setContent(plain);
+    setContent(markdownToHtml(plain));
     if (incoming.title) {
       // Clean filename-style titles: "name_with_underscores.docx" -> "Name with underscores"
       const cleaned = incoming.title
