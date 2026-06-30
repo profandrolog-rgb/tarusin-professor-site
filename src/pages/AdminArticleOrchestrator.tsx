@@ -255,6 +255,34 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
+  // Авто-загрузка опубликованной статьи, если пришли по кнопке «В оркестратор»
+  useEffect(() => {
+    if (!incoming.recheck) return;
+    loadForRecheck({
+      id: incoming.recheck.id,
+      kind: incoming.recheck.kind,
+      title: incoming.recheck.title || "",
+      updated_at: "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function insertGalleryMarker(target: "text" | "final") {
+    const caption = window.prompt("Подпись к галерее (можно пустую):", "");
+    if (caption === null) return;
+    const marker = `\n\n[[GALLERY: caption="${(caption || "").replace(/"/g, "'")}"]]\n\n`;
+    if (target === "final") {
+      setFinalText((cur) => (cur || "") + marker);
+    } else {
+      setText((cur) => (cur || "") + marker);
+    }
+    sonnerToast.success("Блок галереи вставлен", {
+      description: "Файлы можно прикрепить на странице «Разместить»",
+    });
+  }
+
+
+
 
   async function translateFinal() {
     if (!finalText.trim()) return;
