@@ -158,9 +158,15 @@ const DiseaseDetailPage = () => {
   }
 
   const rawDesc =
-    article.description ||
-    (article.article_content ? stripHtml(article.article_content) : article.title);
-  const metaDesc = rawDesc.length > 160 ? rawDesc.slice(0, 157) + "..." : rawDesc;
+    displayDescription ||
+    (displayContent ? stripHtml(displayContent) : displayTitle);
+  const metaDesc = (rawDesc || "").length > 160 ? (rawDesc || "").slice(0, 157) + "..." : rawDesc;
+
+  const pageTitle = isEn
+    ? `${translation?.seo_title || displayTitle} | Prof. Tarusin D.I.`
+    : `${displayTitle} | проф. Тарусин Д.И.`;
+  const pageDesc = isEn ? translation?.seo_description || metaDesc : metaDesc;
+  const path = isEn ? `/en/for-parents/${article.slug}` : `/for-parents/${article.slug}`;
 
   return (
     <AgeConfirmationModal>
@@ -170,28 +176,35 @@ const DiseaseDetailPage = () => {
         onCopy={(e) => e.preventDefault()}
       >
         <PageMeta
-          title={`${article.title} | проф. Тарусин Д.И.`}
-          description={metaDesc}
-          path={`/for-parents/${article.slug}`}
+          title={pageTitle}
+          description={pageDesc}
+          path={path}
           type="article"
+          keywords={isEn ? translation?.keywords || undefined : undefined}
         />
 
         {(() => {
           const catalogTab = article.age_group === "adults" ? "adults" : "children";
-          const catalogHref = `/for-parents?tab=${catalogTab}`;
+          const catalogHref = isEn
+            ? `/en/for-parents?tab=${catalogTab}`
+            : `/for-parents?tab=${catalogTab}`;
           return (
         <header className="bg-primary text-primary-foreground py-10 md:py-16">
           <div className="container mx-auto px-4">
             <nav className="flex items-center flex-wrap gap-1 text-sm text-primary-foreground/80 mb-6">
-              <Link to="/" className="hover:text-primary-foreground transition-colors">Главная</Link>
+              <Link to={isEn ? "/en/" : "/"} className="hover:text-primary-foreground transition-colors">
+                {isEn ? "Home" : "Главная"}
+              </Link>
               <ChevronRight className="w-3 h-3" />
-              <Link to={catalogHref} className="hover:text-primary-foreground transition-colors">Каталог болезней</Link>
+              <Link to={catalogHref} className="hover:text-primary-foreground transition-colors">
+                {isEn ? "Conditions catalog" : "Каталог болезней"}
+              </Link>
               <ChevronRight className="w-3 h-3" />
-              <span className="text-primary-foreground">{article.title}</span>
+              <span className="text-primary-foreground">{displayTitle}</span>
             </nav>
-            <h1 className="text-3xl md:text-5xl font-bold mb-4">{article.title}</h1>
-            {article.description && (
-              <p className="text-lg text-primary-foreground/80 max-w-3xl">{article.description}</p>
+            <h1 className="text-3xl md:text-5xl font-bold mb-4">{displayTitle}</h1>
+            {displayDescription && (
+              <p className="text-lg text-primary-foreground/80 max-w-3xl">{displayDescription}</p>
             )}
           </div>
         </header>
@@ -199,36 +212,70 @@ const DiseaseDetailPage = () => {
         })()}
 
         <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl overflow-x-visible">
-          {article.article_content ? (
-            isMarkdownContent(article.article_content) ? (
+          {enMissing ? (
+            <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+              <CardContent className="p-10 text-center">
+                <Languages className="w-10 h-10 text-primary mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  English translation coming soon
+                </h2>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  This article has not been translated yet. You can read the Russian
+                  original or browse our growing English library.
+                </p>
+                <div className="flex gap-3 justify-center flex-wrap">
+                  <Button
+                    onClick={() =>
+                      navigate(`/for-parents/${article.slug}` + location.search + location.hash)
+                    }
+                    variant="default"
+                  >
+                    Read in Russian
+                  </Button>
+                  <Button onClick={() => navigate("/en/for-parents")} variant="outline">
+                    English catalog
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : displayContent ? (
+            isMarkdownContent(displayContent) ? (
               <MarkdownArticle
-                content={article.article_content}
+                content={displayContent}
                 articleId={article.id}
                 articleSlug={article.slug}
-                isAdmin={!!isAdmin}
-                title={article.title}
-                onContentChange={(c) => setArticle({ ...article, article_content: c })}
+                isAdmin={!!isAdmin && !isEn}
+                title={displayTitle}
+                onContentChange={(c) => !isEn && setArticle({ ...article, article_content: c })}
               />
             ) : (
               <HtmlArticle
-                content={article.article_content}
+                content={displayContent}
                 articleId={article.id}
                 articleSlug={article.slug}
-                isAdmin={!!isAdmin}
-                title={article.title}
-                onContentChange={(c) => setArticle({ ...article, article_content: c })}
+                isAdmin={!!isAdmin && !isEn}
+                title={displayTitle}
+                onContentChange={(c) => !isEn && setArticle({ ...article, article_content: c })}
               />
             )
           ) : (
-            <p className="text-muted-foreground">Полный текст статьи скоро появится.</p>
+            <p className="text-muted-foreground">
+              {isEn ? "Full text coming soon." : "Полный текст статьи скоро появится."}
+            </p>
           )}
 
-          {related.length > 0 && (
+          {!enMissing && related.length > 0 && (
             <section className="mt-16">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Смотрите также</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-6">
+                {isEn ? "See also" : "Смотрите также"}
+              </h2>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {related.map((r: any) => (
-                  <Link key={r.id} to={`/for-parents/${r.slug}/`} className="block group">
+                  <Link
+                    key={r.id}
+                    to={`${isEn ? "/en" : ""}/for-parents/${r.slug}/`}
+                    className="block group"
+                  >
                     <Card className="h-full hover:shadow-lg transition-shadow">
                       <CardContent className="p-5">
                         <div className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
@@ -250,13 +297,15 @@ const DiseaseDetailPage = () => {
 
           <div className="mt-12 pt-8 border-t">
             <Link
-              to={`/for-parents?tab=${article.age_group === "adults" ? "adults" : "children"}`}
+              to={`${isEn ? "/en" : ""}/for-parents?tab=${article.age_group === "adults" ? "adults" : "children"}`}
               className="inline-flex items-center gap-2 text-primary hover:underline"
             >
-              <ArrowLeft className="w-4 h-4" /> Назад к каталогу болезней
+              <ArrowLeft className="w-4 h-4" />{" "}
+              {isEn ? "Back to catalog" : "Назад к каталогу болезней"}
             </Link>
           </div>
         </main>
+
       </div>
     </AgeConfirmationModal>
   );
