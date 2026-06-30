@@ -147,6 +147,15 @@ export const CURATED_MODELS: CuratedModel[] = [
     ],
     familyRegex: /^qwen\/qwen[^/]*max/i,
   },
+  {
+    key: "mimo-v25-pro",
+    label: "MiMo 2.5 Pro (Xiaomi)",
+    tier: "deep",
+    candidates: ["xiaomi/mimo-v2.5-pro", "xiaomi/mimo-2.5-pro", "xiaomi/mimo-pro"],
+    familyRegex: /^xiaomi\/mimo-/i,
+  },
+
+
 
   // ─── Venice (без цензуры) ──────────────────────────────────────────────
   // ID совпадают с venice/api/v1/models. Префикс `venice/` нужен бэкенду
