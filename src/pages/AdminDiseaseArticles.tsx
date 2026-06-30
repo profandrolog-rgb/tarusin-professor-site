@@ -16,6 +16,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ArticleMarkdownEditor, { type ArticleMarkdownEditorHandle } from "@/components/parents/ArticleMarkdownEditor";
+import EnTranslationPanel from "@/components/admin/EnTranslationPanel";
+
 import { mergePersistedGalleryFiles } from "@/lib/markdown/galleryMarkers";
 
 const categoryLabels: Record<string, string> = {
