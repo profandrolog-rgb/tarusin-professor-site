@@ -255,15 +255,39 @@ const AdminDiseaseArticles = () => {
           Панель управления
         </Link>
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Материалы о заболеваниях</h1>
             <p className="text-muted-foreground">Управление контентом для раздела «Для родителей и пациентов»</p>
           </div>
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Добавить материал
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-border overflow-hidden">
+              <Button
+                type="button"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none"
+                onClick={() => setViewMode("list")}
+                title="Списком"
+              >
+                <ListIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none"
+                onClick={() => setViewMode("cards")}
+                title="Карточками"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Добавить материал
+            </Button>
+          </div>
         </div>
 
         {/* Filter */}
