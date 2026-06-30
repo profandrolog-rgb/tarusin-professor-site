@@ -1,4 +1,4 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const TIMEWEB_APP_ID = "189038";
 // Репозиторий для получения последнего коммита при ручном запуске
@@ -9,7 +9,7 @@ async function fetchLatestCommitSha(): Promise<string | null> {
   try {
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/commits/${GITHUB_BRANCH}`,
-      { headers: { Accept: "application/vnd.github+json" } },
+      { headers: { Accept: "application/vnd.github+json", "User-Agent": "tarusin-site-deploy" } },
     );
     if (!res.ok) {
       console.error("GitHub API failed", res.status, await res.text());

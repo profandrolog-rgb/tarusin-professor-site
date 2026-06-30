@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.notify-telegram-appointment]
 verify_jwt = false
+
+[functions.trigger-timeweb-deploy]
+verify_jwt = false
+
+[functions.timeweb-deploy-status]
+verify_jwt = true
