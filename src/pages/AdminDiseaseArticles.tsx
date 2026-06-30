@@ -131,6 +131,11 @@ const AdminDiseaseArticles = () => {
     return path;
   };
 
+  const getMediaUrl = (path: string | null) => {
+    if (!path) return null;
+    return supabase.storage.from("disease-media").getPublicUrl(path).data.publicUrl;
+  };
+
   const handleSave = async () => {
     if (!form.title.trim()) {
       toast({ title: "Введите название", variant: "destructive" });
