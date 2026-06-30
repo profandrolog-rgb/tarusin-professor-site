@@ -175,6 +175,9 @@ export default function AdminArticleOrchestrator() {
   const [editedSuggested, setEditedSuggested] = useState<Map<string, string>>(new Map());
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
+  // Накопленные применённые правки между раундами (чтобы исключать из повторного ревью)
+  const [appliedEdits, setAppliedEdits] = useState<EditItem[]>([]);
+  const [reviewRound, setReviewRound] = useState(1);
   const [rewriting, setRewriting] = useState(false);
   const [testingConn, setTestingConn] = useState(false);
   const [formatting, setFormatting] = useState(false);
