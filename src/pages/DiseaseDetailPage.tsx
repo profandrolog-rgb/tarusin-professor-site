@@ -51,13 +51,30 @@ function useLoaderDataSafe(): DiseaseLoaderData | undefined {
 const DiseaseDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const loaderData = useLoaderDataSafe();
 
   const { isAdmin } = useAuth();
+  const isEn = getLangFromPath(location.pathname) === "en";
 
   const [article, setArticle] = useState<any>(loaderData?.article ?? null);
   const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
   const [notFound, setNotFound] = useState(false);
+
+  const { translation, loading: trLoading } = useContentTranslation(
+    "disease_article",
+    article?.id,
+    isEn,
+  );
+  const enMissing = isEn && !trLoading && !translation && !!article;
+
+  // English view uses translation fields when present; falls back to RU title only when missing.
+  const displayTitle = isEn && translation?.title ? translation.title : article?.title;
+  const displayDescription =
+    isEn && translation?.description ? translation.description : article?.description;
+  const displayContent =
+    isEn && translation?.content ? translation.content : article?.article_content;
+
 
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
