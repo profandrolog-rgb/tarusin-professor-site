@@ -177,19 +177,32 @@ const Blog = () => {
     setSavingPost(true);
     try {
       let imagePath = editingPost?.image_path || null;
+      let cardBgPath: string | null = postForm.card_background_path;
+      if (cardBgFile) {
+        cardBgPath = await uploadImage(cardBgFile);
+      }
+
+      const payload = {
+        title: postForm.title,
+        content: postForm.content,
+        excerpt: postForm.excerpt || null,
+        image_path: imagePath,
+        card_background_path: cardBgPath,
+        card_annotation: postForm.card_annotation?.trim() || null,
+      };
 
       let postId: string;
       if (editingPost) {
         const { error } = await supabase
           .from("blog_posts")
-          .update({ title: postForm.title, content: postForm.content, excerpt: postForm.excerpt || null, image_path: imagePath })
+          .update(payload)
           .eq("id", editingPost.id);
         if (error) throw error;
         postId = editingPost.id;
       } else {
         const { data, error } = await supabase
           .from("blog_posts")
-          .insert({ title: postForm.title, content: postForm.content, excerpt: postForm.excerpt || null, image_path: imagePath, sort_order: posts.length })
+          .insert({ ...payload, sort_order: posts.length })
           .select("id")
           .single();
         if (error) throw error;
@@ -212,8 +225,9 @@ const Blog = () => {
       queryClient.invalidateQueries({ queryKey: ["blog-post-images"] });
       setEditingPost(null);
       setIsCreating(false);
-      setPostForm({ title: "", content: "", excerpt: "" });
+      setPostForm({ title: "", content: "", excerpt: "", card_annotation: "", card_background_path: null });
       setImageFiles([]);
+      setCardBgFile(null);
       clearBlogDraft();
       toast({ title: editingPost ? "Запись обновлена" : "Запись создана" });
     } catch (err: any) {
