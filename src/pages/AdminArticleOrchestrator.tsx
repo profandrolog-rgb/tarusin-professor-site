@@ -1074,7 +1074,7 @@ export default function AdminArticleOrchestrator() {
                 size="sm"
                 onClick={() => {
                   navigate("/admin/article-import", {
-                    state: { title, text: finalText, source: "orchestrator" },
+                    state: { title, text: finalText, source: "orchestrator", existingRef },
                   });
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
