@@ -178,6 +178,37 @@ video::-webkit-media-controls-overflow-button {
   background-color: #EBF5FF;
 }
 
+/* Dark theme: переопределяем фиксированные цвета заголовков статей,
+   чтобы подзаголовки не «проваливались» в тёмный фон */
+.dark .article-markdown h1,
+.dark .article-markdown h2 {
+  color: hsl(210, 90%, 72%) !important;
+}
+.dark .article-markdown h3,
+.dark .article-markdown h4,
+.dark .article-markdown h5,
+.dark .article-markdown h6 {
+  color: hsl(210, 25%, 92%) !important;
+}
+.dark .article-markdown hr {
+  border-top-color: hsl(210, 30%, 25%) !important;
+}
+.dark .article-markdown table {
+  border-color: hsl(210, 30%, 22%);
+}
+.dark .article-markdown table td,
+.dark .article-markdown table th {
+  border-color: hsl(210, 30%, 22%);
+}
+.dark .article-markdown table tbody tr:nth-child(even) {
+  background-color: hsl(210, 35%, 12%);
+}
+.dark .article-markdown table tbody tr:hover {
+  background-color: hsl(210, 40%, 18%);
+}
+
+
+
 
 /* Chat answer tables (Cabinet, PatientPortal, PubMed fulltext) */
 @layer components {
