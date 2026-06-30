@@ -30,14 +30,18 @@ function markdownToHtml(md: string): string {
 
 function looksLikeMarkdown(body: string): boolean {
   if (!body) return false;
-  const hasHtmlBlock = /<(p|h[1-6]|ul|ol|li|table|div|figure)\b/i.test(body);
-  if (hasHtmlBlock) return false;
-  return (
+  // Если уже выглядит как полноценный HTML-документ статьи (есть <p>...</p>
+  // вокруг текста), но при этом markdown-маркеры отсутствуют — пропускаем.
+  const hasMarkdown =
     /(^|\n)#{1,6} /.test(body) ||
     /\*\*[^*]+\*\*/.test(body) ||
     /(^|\n)\* /.test(body) ||
-    /(^|\n)- /.test(body)
-  );
+    /(^|\n)- \S/.test(body) ||
+    /(^|\n)\d+\. \S/.test(body);
+  if (!hasMarkdown) return false;
+  // Если markdown-маркеры есть — конвертируем, даже если в теле уже встречается
+  // HTML (marked корректно сохраняет inline-HTML блоки).
+  return true;
 }
 
 const TABLES: Array<{ table: string; column: string }> = [
