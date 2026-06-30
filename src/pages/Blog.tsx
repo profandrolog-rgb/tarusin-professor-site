@@ -27,6 +27,8 @@ interface BlogPost {
   content: string;
   excerpt: string | null;
   image_path: string | null;
+  card_background_path: string | null;
+  card_annotation: string | null;
   is_published: boolean;
   sort_order: number | null;
   created_at: string;
