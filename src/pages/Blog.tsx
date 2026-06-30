@@ -556,16 +556,40 @@ const Blog = () => {
           <p><strong>Контакты для претензий.</strong> Для обращений правообладателей, государственных органов и лиц, считающих, что материал нарушает их права, доступен канал связи через форму обратной связи на сайте. Обращения рассматриваются в разумный срок; при необходимости материал может быть временно ограничен до уточнения обстоятельств.</p>
         </div>
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">{isEn ? "Reflections" : "Размышлизмы"}</h1>
             <p className="text-muted-foreground">{isEn ? "My personal blog" : "Мой личный блог"}</p>
           </div>
-          {isAdmin && (
-            <Button onClick={openCreate} className="gap-2">
-              <Plus className="w-4 h-4" /> {isEn ? "New Post" : "Новая запись"}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-md border border-border overflow-hidden">
+              <Button
+                type="button"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none gap-1"
+                onClick={() => setViewMode("list")}
+                title={isEn ? "List view" : "Списком"}
+              >
+                <ListIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                type="button"
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none gap-1"
+                onClick={() => setViewMode("cards")}
+                title={isEn ? "Card view" : "Карточками"}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </div>
+            {isAdmin && (
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="w-4 h-4" /> {isEn ? "New Post" : "Новая запись"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Post editor dialog */}
