@@ -222,19 +222,44 @@ const AdminArticleImport = () => {
     }
     setSaving(true);
     try {
-      const { error } = await supabase.from("disease_articles").insert({
-        title: title.trim(),
-        slug: slug.trim(),
-        description: excerpt.trim() || null,
-        keywords: keywords.length ? keywords : null,
-        category,
-        age_group: ageGroup,
-        article_content: content,
-        is_published: isPublished,
-      } as any);
-      if (error) throw error;
-      toast({ title: "Статья сохранена", description: isPublished ? "Опубликована" : "В черновиках" });
-      navigate("/admin/disease-articles");
+      if (existingRef) {
+        const contentField = existingRef.kind === "disease_articles" ? "article_content" : "content";
+        const payload: any = {
+          title: title.trim(),
+          slug: slug.trim(),
+          [contentField]: content,
+          is_published: isPublished,
+        };
+        if (existingRef.kind === "disease_articles") {
+          payload.description = excerpt.trim() || null;
+          payload.keywords = keywords.length ? keywords : null;
+          payload.category = category;
+          payload.age_group = ageGroup;
+        } else {
+          payload.excerpt = excerpt.trim() || null;
+        }
+        const { error } = await supabase.from(existingRef.kind).update(payload).eq("id", existingRef.id);
+        if (error) throw error;
+        toast({ title: "Статья обновлена", description: "Изменения сохранены" });
+        const back =
+          existingRef.kind === "disease_articles" ? "/admin/disease-articles" :
+          existingRef.kind === "blog_posts" ? "/admin" : "/admin";
+        navigate(back);
+      } else {
+        const { error } = await supabase.from("disease_articles").insert({
+          title: title.trim(),
+          slug: slug.trim(),
+          description: excerpt.trim() || null,
+          keywords: keywords.length ? keywords : null,
+          category,
+          age_group: ageGroup,
+          article_content: content,
+          is_published: isPublished,
+        } as any);
+        if (error) throw error;
+        toast({ title: "Статья сохранена", description: isPublished ? "Опубликована" : "В черновиках" });
+        navigate("/admin/disease-articles");
+      }
     } catch (err: any) {
       toast({ title: "Ошибка сохранения", description: err.message, variant: "destructive" });
     } finally {
