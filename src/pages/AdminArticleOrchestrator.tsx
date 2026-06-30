@@ -196,6 +196,58 @@ export default function AdminArticleOrchestrator() {
     seo_description: string;
   }>(null);
 
+  // --- Перепроверка опубликованного ---
+  type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title: string; updated_at: string };
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerItems, setPickerItems] = useState<PubItem[]>([]);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const [existingRef, setExistingRef] = useState<{ id: string; kind: PubItem["kind"] } | null>(null);
+
+  async function openRecheckPicker() {
+    setPickerOpen(true);
+    setPickerLoading(true);
+    try {
+      const [d, b, r] = await Promise.all([
+        supabase.from("disease_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("blog_posts").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("research_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+      ]);
+      const items: PubItem[] = [
+        ...((d.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "disease_articles" as const, title: x.title, updated_at: x.updated_at })),
+        ...((b.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "blog_posts" as const, title: x.title, updated_at: x.updated_at })),
+        ...((r.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "research_articles" as const, title: x.title, updated_at: x.updated_at })),
+      ];
+      setPickerItems(items);
+    } catch (e: any) {
+      sonnerToast.error("Не удалось загрузить список", { description: e?.message || String(e) });
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
+  async function loadForRecheck(item: PubItem) {
+    try {
+      const field = item.kind === "disease_articles" ? "article_content" : "content";
+      const { data, error } = await supabase.from(item.kind).select(`title, ${field}`).eq("id", item.id).maybeSingle();
+      if (error) throw error;
+      const html = (data as any)?.[field] || "";
+      // если в БД уже markdown — htmlToMarkdown вернёт его почти без изменений
+      const md = /<[a-z][\s\S]*>/i.test(html) ? htmlToMarkdown(html) : html;
+      setTitle((data as any)?.title || item.title);
+      setText(md);
+      setExistingRef({ id: item.id, kind: item.kind });
+      setPickerOpen(false);
+      // сброс предыдущих результатов
+      setReviews([]); setConsolidated(null); setAccepted(new Set()); setDirectAccepted(new Map());
+      setEditedSuggested(new Map()); setFinalText(""); setAppliedEdits([]); setReviewRound(1);
+      sonnerToast.success("Статья загружена", { description: "Можно запускать ревью" });
+    } catch (e: any) {
+      sonnerToast.error("Ошибка загрузки", { description: e?.message || String(e) });
+    }
+  }
+
+
   async function translateFinal() {
     if (!finalText.trim()) return;
     setTranslating(true);
