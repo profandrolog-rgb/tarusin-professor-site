@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RecentVisitsWidget } from "@/components/visits/RecentVisitsWidget";
 import { DbHealthWidget } from "@/components/admin/DbHealthWidget";
+import { warmAdminChunks } from "@/lib/prefetchAdmin";
 
 // === КЛИНИЧЕСКАЯ РАБОТА: пациенты, протоколы, ИИ, назначения ===
 const clinicalSections = [
