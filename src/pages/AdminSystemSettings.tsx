@@ -62,13 +62,27 @@ const AdminSystemSettings = () => {
   const [deploying, setDeploying] = useState(false);
   const [deployStatus, setDeployStatus] = useState<{ app: any; deploys: any[] } | null>(null);
   const [deployStatusLoading, setDeployStatusLoading] = useState(false);
+  const [githubHead, setGithubHead] = useState<{ sha: string; message: string; date: string } | null>(null);
 
   const loadDeployStatus = async () => {
     setDeployStatusLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("timeweb-deploy-status", { method: "GET" });
+      const [{ data, error }, ghRes] = await Promise.all([
+        supabase.functions.invoke("timeweb-deploy-status", { method: "GET" }),
+        fetch("https://api.github.com/repos/profandrolog-rgb/tarusin-professor-site/commits/main", {
+          headers: { Accept: "application/vnd.github+json" },
+        }).catch(() => null),
+      ]);
       if (error) throw error;
       setDeployStatus(data as any);
+      if (ghRes && ghRes.ok) {
+        const gh = await ghRes.json();
+        setGithubHead({
+          sha: gh.sha,
+          message: (gh.commit?.message || "").split("\n")[0],
+          date: gh.commit?.author?.date,
+        });
+      }
     } catch (e: any) {
       console.error("deploy status error", e);
     } finally {
