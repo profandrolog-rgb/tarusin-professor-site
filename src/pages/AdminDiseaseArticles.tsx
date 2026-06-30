@@ -150,6 +150,10 @@ const AdminDiseaseArticles = () => {
       if (audioFile) {
         audio_path = await uploadFile(audioFile, "audio");
       }
+      let card_background_path: string | null = form.card_background_path;
+      if (cardBgFile) {
+        card_background_path = await uploadFile(cardBgFile, "card-bg");
+      }
 
       const slug = form.slug.trim() || generateSlug(form.title);
       const keywords = form.keywords.split(",").map(k => k.trim()).filter(Boolean);
@@ -179,6 +183,8 @@ const AdminDiseaseArticles = () => {
         video_path,
         audio_path,
         is_published: form.is_published,
+        card_annotation: form.card_annotation?.trim() || null,
+        card_background_path,
       };
 
       if (editing) {
