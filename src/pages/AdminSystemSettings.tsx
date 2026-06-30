@@ -230,24 +230,41 @@ const AdminSystemSettings = () => {
               {(() => {
                 const app = deployStatus?.app;
                 const last = deployStatus?.deploys?.[0];
-                const s = String(last?.status || app?.status || "").toLowerCase();
+                const appS = String(app?.status || "").toLowerCase();
+                const lastS = String(last?.status || "").toLowerCase();
+                const OK = ["deployed", "success", "active", "online", "running", "ok", "ready"];
+                const PROGRESS = ["deploy", "deploying", "building", "build", "pending", "queued", "in_progress", "processing"];
+                const FAIL = ["failed", "failure", "stopped", "error", "cancelled", "canceled", "timeout"];
+
                 let color = "bg-gray-400";
                 let label = "нет данных";
                 let pulse = "";
-                if (["deploy", "building", "pending"].includes(s)) {
-                  color = "bg-amber-400"; label = "деплой идёт"; pulse = "animate-pulse";
-                } else if (["failed", "stopped", "error"].includes(s)) {
-                  color = "bg-red-500"; label = "ошибка — нужен ручной запуск";
-                } else if (s === "deployed" && app?.status === "deployed") {
-                  color = "bg-emerald-500"; label = "сайт активен";
+                let glow = "#9ca3af";
+
+                if (!deployStatus) {
+                  if (deployStatusLoading) { label = "загрузка…"; }
+                  else { label = "нет связи с Timeweb"; }
+                } else if (PROGRESS.includes(lastS) || PROGRESS.includes(appS)) {
+                  color = "bg-amber-400"; glow = "#f59e0b"; label = "деплой идёт"; pulse = "animate-pulse";
+                } else if (FAIL.includes(lastS) || FAIL.includes(appS)) {
+                  color = "bg-red-500"; glow = "#ef4444"; label = "ошибка — нужен ручной запуск";
+                } else if (OK.includes(lastS) || OK.includes(appS)) {
+                  color = "bg-emerald-500"; glow = "#10b981"; label = "сайт активен";
+                } else {
+                  // данные пришли, но статус неизвестен — показываем сырое значение
+                  color = "bg-amber-400"; glow = "#f59e0b";
+                  label = `статус: ${lastS || appS || "неизвестно"}`;
                 }
+
+                const title = `app.status="${appS || "—"}", last.status="${lastS || "—"}"`;
                 return (
-                  <span className="flex items-center gap-2" title={`Статус: ${label}`}>
-                    <span className={`inline-block w-3.5 h-3.5 rounded-full ${color} ${pulse} shadow-[0_0_8px_currentColor]`} style={{ color: color.includes("emerald") ? "#10b981" : color.includes("amber") ? "#f59e0b" : color.includes("red") ? "#ef4444" : "#9ca3af" }} />
+                  <span className="flex items-center gap-2" title={title}>
+                    <span className={`inline-block w-3.5 h-3.5 rounded-full ${color} ${pulse} shadow-[0_0_8px_currentColor]`} style={{ color: glow }} />
                     <span className="text-xs font-normal text-muted-foreground">{label}</span>
                   </span>
                 );
               })()}
+
               <span>Деплой на Timeweb</span>
             </CardTitle>
             <CardDescription>
