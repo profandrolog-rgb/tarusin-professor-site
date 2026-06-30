@@ -301,6 +301,53 @@ const AdminDiseaseArticles = () => {
           <div className="text-center py-12"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">Нет материалов. Нажмите «Добавить материал».</div>
+        ) : viewMode === "cards" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((article) => {
+              const bg = getMediaUrl(article.card_background_path);
+              return (
+                <Card
+                  key={article.id}
+                  className="relative overflow-hidden h-56 flex flex-col justify-end border border-border hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => openEdit(article)}
+                >
+                  {bg && (
+                    <>
+                      <img src={bg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
+                    </>
+                  )}
+                  <div className="relative z-10 p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {article.video_path && <Video className="w-3.5 h-3.5 text-blue-500" />}
+                      {article.audio_path && <Headphones className="w-3.5 h-3.5 text-purple-500" />}
+                      {article.article_content && <FileText className="w-3.5 h-3.5 text-green-500" />}
+                      {!article.is_published && <Badge variant="outline" className="text-[10px] text-orange-500 border-orange-300 ml-auto">Черновик</Badge>}
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground line-clamp-2 mb-1">{article.title}</h3>
+                    {(article.card_annotation || article.description) && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                        {article.card_annotation || article.description}
+                      </p>
+                    )}
+                    <div className="flex gap-1 mt-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        {article.age_group === "children" ? "Детские" : "Взрослые"}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {categoryLabels[article.category] || article.category}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2 z-20 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="secondary" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); togglePublish(article); }}>
+                      {article.is_published ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         ) : (
           <div className="grid gap-4 min-w-0">
             {filtered.map((article) => (
