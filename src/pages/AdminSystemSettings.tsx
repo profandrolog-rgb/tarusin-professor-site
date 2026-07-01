@@ -127,10 +127,30 @@ const AdminSystemSettings = () => {
   useEffect(() => {
     if (user && isAdmin) {
       loadDeployStatus();
+      fetchLatestSmokeChecks(10).then(setSmokeHistory).catch(() => {});
       const t = setInterval(loadDeployStatus, 10000);
       return () => clearInterval(t);
     }
   }, [user, isAdmin]);
+
+  // Автозапуск smoke-проверки при успешном завершении нового деплоя
+  useEffect(() => {
+    const last = deployStatus?.deploys?.[0];
+    if (!last) return;
+    const status = String(last.status || "").toLowerCase();
+    const deployId = String(last.id ?? last.deploy_id ?? last.commit_sha ?? "");
+    if (!deployId) return;
+    if (!OK_STATUSES.includes(status)) return;
+    if (lastAutoDeployIdRef.current === deployId) return;
+    // Первое наблюдение — просто запомним, чтобы не запускать проверку задним числом при загрузке страницы
+    if (lastAutoDeployIdRef.current === null) {
+      lastAutoDeployIdRef.current = deployId;
+      return;
+    }
+    lastAutoDeployIdRef.current = deployId;
+    runSmoke({ deployId, deployStatus: status, silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deployStatus]);
 
   const triggerTimewebDeploy = async () => {
     setDeploying(true);
