@@ -86,7 +86,9 @@ export default function AdminPatientVisitNew() {
           <CardHeader>
             <CardTitle className="text-base">2. Выберите тип протокола</CardTitle>
             <CardDescription>
-              {patient ? `Будет создан протокол для пациента: ${patient.full_name}` : "Сначала выберите пациента выше"}
+              {patient
+                ? `Будет создан протокол для пациента: ${patient.full_name}`
+                : "Сначала выберите пациента выше (или заполните форму нового пациента и нажмите «Создать»)"}
             </CardDescription>
           </CardHeader>
           <CardContent>

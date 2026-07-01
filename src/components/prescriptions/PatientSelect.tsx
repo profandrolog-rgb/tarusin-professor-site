@@ -64,22 +64,38 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
       .from("patients")
       .insert({ full_name: newName.trim(), birth_date: birthDate })
       .select("id, full_name, birth_date")
-      .single();
+      .maybeSingle();
     setCreatingPatient(false);
     if (error) {
+      console.error("[PatientSelect] insert error", error);
       toast.error("Не удалось создать пациента", { description: error.message });
       return;
     }
-    if (data) {
-      onSelect(data);
-      setIsCreating(false);
-      setNewName("");
-      setNewBirthDay("");
-      setNewBirthMonth("");
-      setNewBirthYear("");
-      setSearch("");
-      toast.success("Пациент создан");
+    // Fallback: если RLS-select после insert вернул пусто — ищем по ФИО+ДР
+    let patient = data as Patient | null;
+    if (!patient) {
+      const { data: found } = await supabase
+        .from("patients")
+        .select("id, full_name, birth_date")
+        .eq("full_name", newName.trim())
+        .eq("birth_date", birthDate)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      patient = (found as Patient | null) ?? null;
     }
+    if (!patient) {
+      toast.error("Пациент создан, но не удалось его прочитать. Обновите список и выберите вручную.");
+      return;
+    }
+    onSelect(patient);
+    setIsCreating(false);
+    setNewName("");
+    setNewBirthDay("");
+    setNewBirthMonth("");
+    setNewBirthYear("");
+    setSearch("");
+    toast.success("Пациент создан");
   };
 
   if (selectedPatient) {
