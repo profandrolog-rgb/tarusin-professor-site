@@ -34,7 +34,7 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
       const fetchPatients = async () => {
         const { data } = await supabase
           .from("patients")
-          .select("*")
+          .select("id, full_name, birth_date")
           .ilike("full_name", `%${search}%`)
           .limit(10);
         setPatients(data || []);
