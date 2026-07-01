@@ -115,7 +115,7 @@ export default function AdminPatientVisits() {
           <CardContent className="p-0">
             {loading ? (
               <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
-            ) : filtered.length === 0 ? (
+            ) : displayRows.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground">Визитов пока нет. Создайте первый протокол.</div>
             ) : (
               <Table>
