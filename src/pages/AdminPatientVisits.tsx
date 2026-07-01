@@ -131,7 +131,7 @@ export default function AdminPatientVisits() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {displayRows.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="font-mono">{format(new Date(r.visit_date), "dd.MM.yyyy")}</TableCell>
                       <TableCell className="font-mono">{r.patient?.history_number || "—"}</TableCell>
