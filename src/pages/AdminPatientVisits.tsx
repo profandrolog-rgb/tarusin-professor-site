@@ -51,16 +51,25 @@ export default function AdminPatientVisits() {
     if (user && (isAdmin || isSurgeon)) load();
   }, [user, isAdmin, isSurgeon, typeFilter]);
 
-  const filtered = rows.filter((r) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      r.patient?.full_name?.toLowerCase().includes(s) ||
-      r.patient?.history_number?.toLowerCase().includes(s) ||
-      r.diagnosis?.toLowerCase().includes(s) ||
-      r.icd_code?.toLowerCase().includes(s)
-    );
-  });
+  const displayRows = useMemo(() => {
+    let data = rows.filter((r) => {
+      const s = search.toLowerCase();
+      const matchesSearch = !search || (
+        r.patient?.full_name?.toLowerCase().includes(s) ||
+        r.patient?.history_number?.toLowerCase().includes(s) ||
+        r.diagnosis?.toLowerCase().includes(s) ||
+        r.icd_code?.toLowerCase().includes(s)
+      );
+      const matchesDate = !dateSearch || format(new Date(r.visit_date), "yyyy-MM-dd") === dateSearch;
+      return matchesSearch && matchesDate;
+    });
+    data.sort((a, b) => {
+      const da = new Date(a.visit_date).getTime();
+      const db = new Date(b.visit_date).getTime();
+      return dateSortDir === "asc" ? da - db : db - da;
+    });
+    return data;
+  }, [rows, search, dateSearch, dateSortDir]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
