@@ -105,7 +105,6 @@ export default function AdminPatientVisitNew() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium leading-tight">{p.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{p.description}</div>
                     </div>
                   </div>
                 </button>
