@@ -446,6 +446,88 @@ const AdminSystemSettings = () => {
 
         <Card className="mb-6">
           <CardHeader>
+            <CardTitle className="flex items-center justify-between text-base">
+              <span className="flex items-center gap-2"><Activity className="w-4 h-4" /> Проверка разделов админки</span>
+              <Button onClick={() => runSmoke()} disabled={smokeRunning} size="sm" variant="outline" className="gap-2">
+                {smokeRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
+                Проверить сейчас
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Автоматически запускается после каждого успешного деплоя. Проверяет доступ ко всем ключевым разделам и записывает время ответа и ошибки.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {smokeResults && (
+              <div className="rounded-md border">
+                <div className="px-3 py-2 text-xs font-medium bg-muted/50 border-b">Последний прогон</div>
+                <div className="divide-y">
+                  {smokeResults.map((r) => (
+                    <div key={r.route} className="flex items-center gap-3 px-3 py-2 text-sm">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${r.status === "ok" ? "bg-green-500" : "bg-red-500"}`}
+                        aria-hidden
+                      />
+                      <span className="font-medium min-w-[180px]">{r.label}</span>
+                      <code className="text-xs text-muted-foreground">{r.route}</code>
+                      <span className="ml-auto text-xs tabular-nums text-muted-foreground">{r.latency_ms} мс</span>
+                      {r.error && (
+                        <span className="text-xs text-red-600 truncate max-w-[280px]" title={r.error}>
+                          {r.error}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {smokeHistory.length > 0 && (
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-2">История проверок (последние {smokeHistory.length})</div>
+                <div className="space-y-1.5">
+                  {smokeHistory.map((g, i) => {
+                    const ok = g.results.filter((r) => r.status === "ok").length;
+                    const total = g.results.length;
+                    const avg = Math.round(
+                      g.results.reduce((s, r) => s + (r.latency_ms || 0), 0) / Math.max(total, 1),
+                    );
+                    const allOk = ok === total;
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-medium ${
+                            allOk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {ok}/{total}
+                        </span>
+                        <span className="text-muted-foreground">avg {avg} мс</span>
+                        {g.deploy_id && (
+                          <code className="bg-background px-1.5 py-0.5 rounded border text-[10px]">
+                            {String(g.deploy_id).slice(0, 10)}
+                          </code>
+                        )}
+                        <span className="ml-auto text-muted-foreground">
+                          {format(new Date(g.created_at), "d MMM HH:mm", { locale: ru })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!smokeResults && smokeHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground">Проверок ещё не было. Нажмите «Проверить сейчас».</p>
+            )}
+          </CardContent>
+        </Card>
+
+
+
+        <Card className="mb-6">
+          <CardHeader>
             <CardTitle>Экспорт базы данных</CardTitle>
             <CardDescription>Резервная выгрузка пациентов и визитов в CSV. Рекомендуется делать еженедельно.</CardDescription>
           </CardHeader>
