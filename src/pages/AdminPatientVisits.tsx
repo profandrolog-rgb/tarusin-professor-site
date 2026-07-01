@@ -92,13 +92,22 @@ export default function AdminPatientVisits() {
           <CardHeader>
             <CardTitle className="text-base">Фильтры</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
+          <CardContent className="flex flex-wrap gap-3 items-end">
             <Input
               placeholder="Поиск по ФИО, ИБ, диагнозу, МКБ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-md"
             />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Дата визита</label>
+              <Input
+                type="date"
+                value={dateSearch}
+                onChange={(e) => setDateSearch(e.target.value)}
+                className="w-44"
+              />
+            </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
