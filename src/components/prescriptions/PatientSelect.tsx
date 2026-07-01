@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Plus, Search } from "lucide-react";
+import { toast } from "sonner";
+import { Loader2, Plus, Search } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -26,13 +27,14 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
   const [newBirthDay, setNewBirthDay] = useState("");
   const [newBirthMonth, setNewBirthMonth] = useState("");
   const [newBirthYear, setNewBirthYear] = useState("");
+  const [creatingPatient, setCreatingPatient] = useState(false);
 
   useEffect(() => {
     if (search.length >= 2) {
       const fetchPatients = async () => {
         const { data } = await supabase
           .from("patients")
-          .select("*")
+          .select("id, full_name, birth_date")
           .ilike("full_name", `%${search}%`)
           .limit(10);
         setPatients(data || []);
@@ -57,11 +59,17 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
       year >= 1920 && year <= currentYear;
     if (!valid) return;
     const birthDate = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const { data } = await supabase
+    setCreatingPatient(true);
+    const { data, error } = await supabase
       .from("patients")
-      .insert({ full_name: newName, birth_date: birthDate })
-      .select()
+      .insert({ full_name: newName.trim(), birth_date: birthDate })
+      .select("id, full_name, birth_date")
       .single();
+    setCreatingPatient(false);
+    if (error) {
+      toast.error("Не удалось создать пациента", { description: error.message });
+      return;
+    }
     if (data) {
       onSelect(data);
       setIsCreating(false);
@@ -70,6 +78,7 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
       setNewBirthMonth("");
       setNewBirthYear("");
       setSearch("");
+      toast.success("Пациент создан");
     }
   };
 
@@ -140,7 +149,10 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleCreatePatient} disabled={!newName || !birthValid}>Создать</Button>
+          <Button onClick={handleCreatePatient} disabled={!newName || !birthValid || creatingPatient}>
+            {creatingPatient ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Создать
+          </Button>
           <Button variant="outline" onClick={() => setIsCreating(false)}>Отмена</Button>
         </div>
       </div>
