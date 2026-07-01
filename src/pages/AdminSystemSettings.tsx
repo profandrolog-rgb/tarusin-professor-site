@@ -64,6 +64,39 @@ const AdminSystemSettings = () => {
   const [deployStatus, setDeployStatus] = useState<{ app: any; deploys: any[] } | null>(null);
   const [deployStatusLoading, setDeployStatusLoading] = useState(false);
   const [githubHead, setGithubHead] = useState<{ sha: string; message: string; date: string } | null>(null);
+  const [smokeRunning, setSmokeRunning] = useState(false);
+  const [smokeResults, setSmokeResults] = useState<SmokeResult[] | null>(null);
+  const [smokeHistory, setSmokeHistory] = useState<Awaited<ReturnType<typeof fetchLatestSmokeChecks>>>([]);
+  const lastAutoDeployIdRef = useRef<string | null>(null);
+
+  const OK_STATUSES = ["deployed", "success", "active", "online", "running", "ok", "ready"];
+
+  const runSmoke = async (opts?: { deployId?: string | null; deployStatus?: string | null; silent?: boolean }) => {
+    if (smokeRunning) return;
+    setSmokeRunning(true);
+    try {
+      if (!opts?.silent) toast.info("Проверяю разделы админки…");
+      const results = await runAdminSmokeCheck({
+        deployId: opts?.deployId ?? null,
+        deployStatus: opts?.deployStatus ?? null,
+        userId: user?.id ?? null,
+      });
+      setSmokeResults(results);
+      const failed = results.filter((r) => r.status === "error");
+      if (failed.length === 0) {
+        if (!opts?.silent) toast.success(`Все разделы отвечают (${results.length}/${results.length})`);
+      } else {
+        toast.error(`Проблемы в ${failed.length} из ${results.length} разделов: ${failed.map((f) => f.label).join(", ")}`);
+      }
+      try {
+        setSmokeHistory(await fetchLatestSmokeChecks(10));
+      } catch {}
+    } catch (e: any) {
+      toast.error(`Не удалось выполнить проверку: ${e?.message || "ошибка"}`);
+    } finally {
+      setSmokeRunning(false);
+    }
+  };
 
   const loadDeployStatus = async () => {
     setDeployStatusLoading(true);
