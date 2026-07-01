@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, ArrowUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +27,8 @@ export default function AdminPatientVisits() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [dateSortDir, setDateSortDir] = useState<"asc" | "desc">("desc");
+  const [dateSearch, setDateSearch] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -49,16 +51,25 @@ export default function AdminPatientVisits() {
     if (user && (isAdmin || isSurgeon)) load();
   }, [user, isAdmin, isSurgeon, typeFilter]);
 
-  const filtered = rows.filter((r) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      r.patient?.full_name?.toLowerCase().includes(s) ||
-      r.patient?.history_number?.toLowerCase().includes(s) ||
-      r.diagnosis?.toLowerCase().includes(s) ||
-      r.icd_code?.toLowerCase().includes(s)
-    );
-  });
+  const displayRows = useMemo(() => {
+    let data = rows.filter((r) => {
+      const s = search.toLowerCase();
+      const matchesSearch = !search || (
+        r.patient?.full_name?.toLowerCase().includes(s) ||
+        r.patient?.history_number?.toLowerCase().includes(s) ||
+        r.diagnosis?.toLowerCase().includes(s) ||
+        r.icd_code?.toLowerCase().includes(s)
+      );
+      const matchesDate = !dateSearch || format(new Date(r.visit_date), "yyyy-MM-dd") === dateSearch;
+      return matchesSearch && matchesDate;
+    });
+    data.sort((a, b) => {
+      const da = new Date(a.visit_date).getTime();
+      const db = new Date(b.visit_date).getTime();
+      return dateSortDir === "asc" ? da - db : db - da;
+    });
+    return data;
+  }, [rows, search, dateSearch, dateSortDir]);
 
   if (authLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
@@ -81,13 +92,22 @@ export default function AdminPatientVisits() {
           <CardHeader>
             <CardTitle className="text-base">Фильтры</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
+          <CardContent className="flex flex-wrap gap-3 items-end">
             <Input
               placeholder="Поиск по ФИО, ИБ, диагнозу, МКБ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-md"
             />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-muted-foreground">Дата визита</label>
+              <Input
+                type="date"
+                value={dateSearch}
+                onChange={(e) => setDateSearch(e.target.value)}
+                className="w-44"
+              />
+            </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -104,13 +124,21 @@ export default function AdminPatientVisits() {
           <CardContent className="p-0">
             {loading ? (
               <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
-            ) : filtered.length === 0 ? (
+            ) : displayRows.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground">Визитов пока нет. Создайте первый протокол.</div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Дата</TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none"
+                      onClick={() => setDateSortDir((d) => d === "desc" ? "asc" : "desc")}
+                    >
+                      <div className="flex items-center gap-1">
+                        Дата
+                        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </TableHead>
                     <TableHead>№ ИБ</TableHead>
                     <TableHead>Пациент</TableHead>
                     <TableHead>Тип протокола</TableHead>
@@ -120,7 +148,7 @@ export default function AdminPatientVisits() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {displayRows.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="font-mono">{format(new Date(r.visit_date), "dd.MM.yyyy")}</TableCell>
                       <TableCell className="font-mono">{r.patient?.history_number || "—"}</TableCell>
