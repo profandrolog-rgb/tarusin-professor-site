@@ -130,7 +130,15 @@ export default function AdminPatientVisits() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Дата</TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none"
+                      onClick={() => setDateSortDir((d) => d === "desc" ? "asc" : "desc")}
+                    >
+                      <div className="flex items-center gap-1">
+                        Дата
+                        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </TableHead>
                     <TableHead>№ ИБ</TableHead>
                     <TableHead>Пациент</TableHead>
                     <TableHead>Тип протокола</TableHead>
