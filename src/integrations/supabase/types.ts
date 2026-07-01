@@ -236,6 +236,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_smoke_checks: {
+        Row: {
+          created_at: string
+          deploy_id: string | null
+          deploy_status: string | null
+          error: string | null
+          id: string
+          label: string
+          latency_ms: number | null
+          route: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          deploy_id?: string | null
+          deploy_status?: string | null
+          error?: string | null
+          id?: string
+          label: string
+          latency_ms?: number | null
+          route: string
+          status: string
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          deploy_id?: string | null
+          deploy_status?: string | null
+          error?: string | null
+          id?: string
+          label?: string
+          latency_ms?: number | null
+          route?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       agent_runs: {
         Row: {
           created_at: string

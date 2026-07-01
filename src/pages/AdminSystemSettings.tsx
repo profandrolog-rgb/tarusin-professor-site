@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle, Download, Rocket, GitCommit } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle, Download, Rocket, GitCommit, Activity, PlayCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { runAdminSmokeCheck, fetchLatestSmokeChecks, type SmokeResult } from "@/lib/adminSmokeCheck";
 
 const LAST_EXPORT_KEY = "admin:last_db_export_at";
 
@@ -63,6 +64,39 @@ const AdminSystemSettings = () => {
   const [deployStatus, setDeployStatus] = useState<{ app: any; deploys: any[] } | null>(null);
   const [deployStatusLoading, setDeployStatusLoading] = useState(false);
   const [githubHead, setGithubHead] = useState<{ sha: string; message: string; date: string } | null>(null);
+  const [smokeRunning, setSmokeRunning] = useState(false);
+  const [smokeResults, setSmokeResults] = useState<SmokeResult[] | null>(null);
+  const [smokeHistory, setSmokeHistory] = useState<Awaited<ReturnType<typeof fetchLatestSmokeChecks>>>([]);
+  const lastAutoDeployIdRef = useRef<string | null>(null);
+
+  const OK_STATUSES = ["deployed", "success", "active", "online", "running", "ok", "ready"];
+
+  const runSmoke = async (opts?: { deployId?: string | null; deployStatus?: string | null; silent?: boolean }) => {
+    if (smokeRunning) return;
+    setSmokeRunning(true);
+    try {
+      if (!opts?.silent) toast.info("Проверяю разделы админки…");
+      const results = await runAdminSmokeCheck({
+        deployId: opts?.deployId ?? null,
+        deployStatus: opts?.deployStatus ?? null,
+        userId: user?.id ?? null,
+      });
+      setSmokeResults(results);
+      const failed = results.filter((r) => r.status === "error");
+      if (failed.length === 0) {
+        if (!opts?.silent) toast.success(`Все разделы отвечают (${results.length}/${results.length})`);
+      } else {
+        toast.error(`Проблемы в ${failed.length} из ${results.length} разделов: ${failed.map((f) => f.label).join(", ")}`);
+      }
+      try {
+        setSmokeHistory(await fetchLatestSmokeChecks(10));
+      } catch {}
+    } catch (e: any) {
+      toast.error(`Не удалось выполнить проверку: ${e?.message || "ошибка"}`);
+    } finally {
+      setSmokeRunning(false);
+    }
+  };
 
   const loadDeployStatus = async () => {
     setDeployStatusLoading(true);
@@ -93,10 +127,30 @@ const AdminSystemSettings = () => {
   useEffect(() => {
     if (user && isAdmin) {
       loadDeployStatus();
+      fetchLatestSmokeChecks(10).then(setSmokeHistory).catch(() => {});
       const t = setInterval(loadDeployStatus, 10000);
       return () => clearInterval(t);
     }
   }, [user, isAdmin]);
+
+  // Автозапуск smoke-проверки при успешном завершении нового деплоя
+  useEffect(() => {
+    const last = deployStatus?.deploys?.[0];
+    if (!last) return;
+    const status = String(last.status || "").toLowerCase();
+    const deployId = String(last.id ?? last.deploy_id ?? last.commit_sha ?? "");
+    if (!deployId) return;
+    if (!OK_STATUSES.includes(status)) return;
+    if (lastAutoDeployIdRef.current === deployId) return;
+    // Первое наблюдение — просто запомним, чтобы не запускать проверку задним числом при загрузке страницы
+    if (lastAutoDeployIdRef.current === null) {
+      lastAutoDeployIdRef.current = deployId;
+      return;
+    }
+    lastAutoDeployIdRef.current = deployId;
+    runSmoke({ deployId, deployStatus: status, silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deployStatus]);
 
   const triggerTimewebDeploy = async () => {
     setDeploying(true);
@@ -389,6 +443,88 @@ const AdminSystemSettings = () => {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between text-base">
+              <span className="flex items-center gap-2"><Activity className="w-4 h-4" /> Проверка разделов админки</span>
+              <Button onClick={() => runSmoke()} disabled={smokeRunning} size="sm" variant="outline" className="gap-2">
+                {smokeRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
+                Проверить сейчас
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Автоматически запускается после каждого успешного деплоя. Проверяет доступ ко всем ключевым разделам и записывает время ответа и ошибки.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {smokeResults && (
+              <div className="rounded-md border">
+                <div className="px-3 py-2 text-xs font-medium bg-muted/50 border-b">Последний прогон</div>
+                <div className="divide-y">
+                  {smokeResults.map((r) => (
+                    <div key={r.route} className="flex items-center gap-3 px-3 py-2 text-sm">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${r.status === "ok" ? "bg-green-500" : "bg-red-500"}`}
+                        aria-hidden
+                      />
+                      <span className="font-medium min-w-[180px]">{r.label}</span>
+                      <code className="text-xs text-muted-foreground">{r.route}</code>
+                      <span className="ml-auto text-xs tabular-nums text-muted-foreground">{r.latency_ms} мс</span>
+                      {r.error && (
+                        <span className="text-xs text-red-600 truncate max-w-[280px]" title={r.error}>
+                          {r.error}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {smokeHistory.length > 0 && (
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-2">История проверок (последние {smokeHistory.length})</div>
+                <div className="space-y-1.5">
+                  {smokeHistory.map((g, i) => {
+                    const ok = g.results.filter((r) => r.status === "ok").length;
+                    const total = g.results.length;
+                    const avg = Math.round(
+                      g.results.reduce((s, r) => s + (r.latency_ms || 0), 0) / Math.max(total, 1),
+                    );
+                    const allOk = ok === total;
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-medium ${
+                            allOk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {ok}/{total}
+                        </span>
+                        <span className="text-muted-foreground">avg {avg} мс</span>
+                        {g.deploy_id && (
+                          <code className="bg-background px-1.5 py-0.5 rounded border text-[10px]">
+                            {String(g.deploy_id).slice(0, 10)}
+                          </code>
+                        )}
+                        <span className="ml-auto text-muted-foreground">
+                          {format(new Date(g.created_at), "d MMM HH:mm", { locale: ru })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!smokeResults && smokeHistory.length === 0 && (
+              <p className="text-sm text-muted-foreground">Проверок ещё не было. Нажмите «Проверить сейчас».</p>
+            )}
+          </CardContent>
+        </Card>
+
+
 
         <Card className="mb-6">
           <CardHeader>
