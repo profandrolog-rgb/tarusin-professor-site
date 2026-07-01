@@ -32,7 +32,7 @@ const probes: Probe[] = [
     route: "/admin/repertory",
     label: "Реперторий",
     run: async () => {
-      const { error } = await supabase.from("rubrics").select("id", { count: "exact", head: true }).limit(1);
+      const { error } = await supabase.from("repertory_rubrics").select("id", { count: "exact", head: true }).limit(1);
       if (error) throw error;
     },
   },
@@ -40,7 +40,7 @@ const probes: Probe[] = [
     route: "/admin/article-orchestrator",
     label: "Оркестратор статей",
     run: async () => {
-      const { error } = await supabase.from("articles").select("id", { count: "exact", head: true }).limit(1);
+      const { error } = await supabase.from("disease_articles").select("id", { count: "exact", head: true }).limit(1);
       if (error) throw error;
     },
   },
@@ -56,7 +56,7 @@ const probes: Probe[] = [
     route: "/cabinet",
     label: "Кабинет",
     run: async () => {
-      const { error } = await supabase.from("chat_sessions").select("id", { count: "exact", head: true }).limit(1);
+      const { error } = await supabase.from("patient_chat_messages").select("id", { count: "exact", head: true }).limit(1);
       if (error) throw error;
     },
   },
