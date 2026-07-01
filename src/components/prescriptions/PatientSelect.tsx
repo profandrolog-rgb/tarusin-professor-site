@@ -160,12 +160,13 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
             className="pl-9"
           />
           {showDropdown && patients.length > 0 && (
-            <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+            <div className="absolute z-[80] w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
               {patients.map((p) => (
                 <button
                   key={p.id}
+                  type="button"
                   className="w-full text-left px-4 py-2 hover:bg-secondary/50 transition-colors"
-                  onClick={() => { onSelect(p); setShowDropdown(false); setSearch(""); }}
+                  onMouseDown={(e) => { e.preventDefault(); onSelect(p); setShowDropdown(false); setSearch(""); }}
                 >
                   <span className="font-medium">{p.full_name}</span>
                   <span className="text-sm text-muted-foreground ml-2">
@@ -176,7 +177,7 @@ export function PatientSelect({ selectedPatient, onSelect }: PatientSelectProps)
             </div>
           )}
           {showDropdown && patients.length === 0 && search.length >= 2 && (
-            <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg p-4 text-center text-muted-foreground">
+            <div className="absolute z-[80] w-full mt-1 bg-background border rounded-md shadow-lg p-4 text-center text-muted-foreground">
               Пациент не найден
             </div>
           )}
