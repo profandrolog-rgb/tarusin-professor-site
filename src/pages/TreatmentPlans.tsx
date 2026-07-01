@@ -17,6 +17,7 @@ import { DuplicatePlanDialog } from "@/components/treatment/DuplicatePlanDialog"
 import type { DateRange } from "react-day-picker";
 import { parseSearchQuery } from "@/lib/treatment/searchParser";
 import { toast } from "sonner";
+import DOMPurify from "dompurify";
 
 interface PlanRow {
   id: string;
@@ -331,7 +332,7 @@ export default function TreatmentPlans() {
                         {r.snippet && (
                           <div
                             className="text-sm mt-2 text-muted-foreground [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800/60 [&_mark]:text-foreground [&_mark]:rounded [&_mark]:px-0.5"
-                            dangerouslySetInnerHTML={{ __html: r.snippet }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(r.snippet ?? "", { ALLOWED_TAGS: ["mark", "b", "strong", "em", "i"], ALLOWED_ATTR: [] }) }}
                           />
                         )}
                       </div>

@@ -12,6 +12,15 @@ const TARGET_FN = "embed-rubrics-batch";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const cronKey = Deno.env.get("CRON_INVOKE_KEY");
+  const serviceKey0 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const providedCron = req.headers.get("x-cron-key");
+  const auth = req.headers.get("Authorization") || "";
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const ok = (cronKey && providedCron === cronKey) || (serviceKey0 && bearer === serviceKey0);
+  if (!ok) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,

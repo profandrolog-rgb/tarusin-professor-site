@@ -226,8 +226,35 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
   EdgeRuntime.waitUntil(selfInvoke({ batchId, subbatchIndex: nextIndex }));
 }
 
+async function authorize(req: Request): Promise<Response | null> {
+  const cronKey = Deno.env.get("CRON_INVOKE_KEY");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const providedCron = req.headers.get("x-cron-key");
+  if (cronKey && providedCron && providedCron === cronKey) return null;
+  const auth = req.headers.get("Authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (token && serviceKey && token === serviceKey) return null;
+  if (token) {
+    try {
+      const sb = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: `Bearer ${token}` } } },
+      );
+      const { data: claims } = await sb.auth.getClaims(token);
+      if (claims?.claims?.sub) {
+        const { data: isAdmin } = await sb.rpc("has_role", { _user_id: claims.claims.sub, _role: "admin" });
+        if (isAdmin) return null;
+      }
+    } catch (_) { /* fall through */ }
+  }
+  return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const denied = await authorize(req);
+  if (denied) return denied;
   try {
     const body = await req.json().catch(() => ({}));
     const batchId: string = body.batchId;
