@@ -98,17 +98,11 @@ const AdminSystemSettings = () => {
     }
   };
 
-  const loadDeployStatus = async () => {
-    setDeployStatusLoading(true);
+  const loadGithubHead = async () => {
     try {
-      const [{ data, error }, ghRes] = await Promise.all([
-        supabase.functions.invoke("timeweb-deploy-status", { method: "GET" }),
-        fetch("https://api.github.com/repos/profandrolog-rgb/tarusin-professor-site/commits/main", {
-          headers: { Accept: "application/vnd.github+json" },
-        }).catch(() => null),
-      ]);
-      if (error) throw error;
-      setDeployStatus(data as any);
+      const ghRes = await fetch("https://api.github.com/repos/profandrolog-rgb/tarusin-professor-site/commits/main", {
+        headers: { Accept: "application/vnd.github+json" },
+      }).catch(() => null);
       if (ghRes && ghRes.ok) {
         const gh = await ghRes.json();
         setGithubHead({
@@ -117,6 +111,17 @@ const AdminSystemSettings = () => {
           date: gh.commit?.author?.date,
         });
       }
+    } catch (e: any) {
+      console.error("github head error", e);
+    }
+  };
+
+  const loadDeployStatus = async () => {
+    setDeployStatusLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("timeweb-deploy-status", { method: "GET" });
+      if (error) throw error;
+      setDeployStatus(data as any);
     } catch (e: any) {
       console.error("deploy status error", e);
     } finally {
@@ -127,6 +132,7 @@ const AdminSystemSettings = () => {
   useEffect(() => {
     if (user && isAdmin) {
       loadDeployStatus();
+      loadGithubHead();
       fetchLatestSmokeChecks(10).then(setSmokeHistory).catch(() => {});
       const t = setInterval(loadDeployStatus, 10000);
       return () => clearInterval(t);
