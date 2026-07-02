@@ -495,15 +495,28 @@ export default function AdminPatientMetabolicMap() {
                       )}
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
-                      {pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
-                        <PathwaySceneSVG
-                          scene={pw.svg_scene}
-                          highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
-                          maxHeight={260}
-                        />
-                      ) : (
-                        <PathwaySVG pathway={pw} highlight={affectedNodes} />
-                      )}
+                      {(() => {
+                        const pwRecs = recsByPathway.get(pw.id) || [];
+                        const rxNodes = new Set<string>(pwRecs.map((r) => r.target_node_id || "").filter(Boolean));
+                        const rxLabelByNode = new Map<string, string>();
+                        for (const r of pwRecs) {
+                          if (!r.target_node_id) continue;
+                          const prev = rxLabelByNode.get(r.target_node_id);
+                          const name = r.catalog?.name || "";
+                          rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
+                        }
+                        return pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
+                          <PathwaySceneSVG
+                            scene={pw.svg_scene}
+                            highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                            rxNodes={rxNodes}
+                            rxLabelByNode={rxLabelByNode}
+                            maxHeight={260}
+                          />
+                        ) : (
+                          <PathwaySVG pathway={pw} highlight={affectedNodes} rxNodes={rxNodes} />
+                        );
+                      })()}
                       {pwFindings.length > 0 && (
                         <ul className="space-y-1 text-xs">
                           {pwFindings.map((f) => {
