@@ -41,6 +41,7 @@ type Pathway = {
   description: string | null;
   nodes: Array<{ id: string; label: string; x?: number; y?: number; kind?: string }>;
   edges: Array<{ from: string; to: string; label?: string }>;
+  svg_scene: SceneJson | null;
 };
 type Finding = {
   id: string;
