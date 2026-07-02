@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Plus, Loader2, Printer, BookMarked, FileText, GitCompare } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Printer, BookMarked, FileText, GitCompare, Activity } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
@@ -148,7 +148,10 @@ export default function AdminPatientDetail() {
               {" · "}№ ИБ: {patient.history_number || "—"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Link to={`/admin/patients/${patient.id}/metabolic-map`}>
+              <Button variant="outline" className="gap-2"><Activity className="w-4 h-4"/>Метаболическая карта</Button>
+            </Link>
             <Link to={`/admin/patients/${patient.id}/edit`}>
               <Button variant="outline" className="gap-2">Редактировать</Button>
             </Link>
