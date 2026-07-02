@@ -201,6 +201,9 @@ const AdminDiseaseArticles = () => {
         is_published: form.is_published,
         card_annotation: form.card_annotation?.trim() || null,
         card_background_path,
+        bento_image_1: form.bento_image_1 as any,
+        bento_image_2: form.bento_image_2 as any,
+        bento_image_3: form.bento_image_3 as any,
       };
 
       if (editing) {
