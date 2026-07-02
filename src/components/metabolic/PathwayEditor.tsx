@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SceneJson } from "./PathwaySceneSVG";
 
 // Ленивая загрузка тяжёлого редактора Excalidraw
-const ExcalidrawLazy = lazy(async () => {
+const ExcalidrawLazy: any = lazy(async () => {
   const mod: any = await import("@excalidraw/excalidraw");
   try { await import("@excalidraw/excalidraw/index.css"); } catch {}
   return { default: mod.Excalidraw };
