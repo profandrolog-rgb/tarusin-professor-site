@@ -55,15 +55,16 @@ type Finding = {
   source_ref: any;
   created_at: string;
 };
-type Recommendation = {
-  id: string;
-  catalog_id: string | null;
-  target_node_id: string | null;
-  application_point: string | null;
-  rationale: string | null;
-  priority: number;
-  is_accepted: boolean | null;
-  catalog?: { name: string; subcategory: string | null } | null;
+type Recommendation = RxRec & {
+  catalog?: {
+    name: string;
+    subcategory: string | null;
+    category: string | null;
+    default_dose: number | null;
+    dose_unit: string | null;
+    default_route_label: string | null;
+    default_frequency: string | null;
+  } | null;
 };
 type VisitRow = { id: string; visit_date: string; protocol_type: string; diagnosis: string | null };
 
