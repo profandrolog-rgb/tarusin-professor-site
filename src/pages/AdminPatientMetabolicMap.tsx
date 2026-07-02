@@ -124,7 +124,7 @@ export default function AdminPatientMetabolicMap() {
       (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true).order("name"),
       (supabase as any)
         .from("metabolic_maps")
-        .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary")
+        .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary, meta")
         .eq("patient_id", id)
         .maybeSingle(),
       supabase
