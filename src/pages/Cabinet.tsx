@@ -28,7 +28,7 @@ import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
 import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
-import { Link2 } from "lucide-react";
+import { Link2, Activity } from "lucide-react";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 const COUNCIL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-council`;
