@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ArrowLeft, BookOpen, Baby, User, FileText, ClipboardList } from "lucide-react";
 import { Link, useLoaderData, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,15 +12,25 @@ import PublicationsList from "@/components/parents/PublicationsList";
 import PatientGuide from "@/components/parents/PatientGuide";
 import type { ParentsLoaderData } from "@/loaders/parentsLoader";
 
+const VALID_TABS = ["useful", "children", "adults", "guide", "publications"] as const;
+
 const ForParents = () => {
   const { i18n } = useTranslation();
   const isEn = i18n.language === "en";
   const loaderData = useLoaderData() as ParentsLoaderData | undefined;
   const initialArticles = loaderData?.articles || [];
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const validTabs = ["useful", "children", "adults", "guide", "publications"];
-  const activeTab = validTabs.includes(tabParam || "") ? (tabParam as string) : "useful";
+  // Первый рендер (в т.ч. SSG-гидратация) всегда рисует "useful", чтобы
+  // серверный HTML совпал с клиентским. После монтирования переключаемся
+  // на вкладку из ?tab= — это устраняет hydration mismatch (React #418/#422)
+  // и вторичный вылет в AppErrorBoundary.
+  const [activeTab, setActiveTab] = useState<string>("useful");
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && (VALID_TABS as readonly string[]).includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   return (
     <AgeConfirmationModal>
