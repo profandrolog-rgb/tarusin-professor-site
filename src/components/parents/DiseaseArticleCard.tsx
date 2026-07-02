@@ -184,6 +184,19 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
                 <p className="text-muted-foreground text-sm mb-4">{article.description}</p>
               )}
 
+              {(article.bento_image_1?.path || article.bento_image_2?.path || article.bento_image_3?.path) && (
+                <div className="grid grid-cols-3 gap-2 mb-4 max-w-md">
+                  {[article.bento_image_1, article.bento_image_2, article.bento_image_3].map((c, i) => (
+                    <BentoImageCell
+                      key={i}
+                      image={c}
+                      className="aspect-square shadow-sm ring-1 ring-border/70"
+                      rounded="rounded-lg"
+                    />
+                  ))}
+                </div>
+              )}
+
               {/* Video player */}
               {activeTab === "video" && hasVideo && (
                 <div
