@@ -237,6 +237,29 @@ export default function AdminPatientMetabolicMap() {
               {aggregating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Пересчитать отклонения
             </Button>
+            <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
+              {(["simple", "pro"] as Register[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRegister(r)}
+                  className={`px-3 py-1.5 transition-colors ${register === r ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"}`}
+                >
+                  {REGISTER_LABEL[r]}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={selectedSlugs.size === 0}
+              onClick={() => {
+                const slugs = [...selectedSlugs].join(",");
+                window.open(`/admin/patients/${patient.id}/metabolic-map/print?paths=${encodeURIComponent(slugs)}&register=${register}${selectedVisit !== "all" ? `&visit=${selectedVisit}` : ""}`, "_blank");
+              }}
+            >
+              <Printer className="w-4 h-4" />Печать выбранных ({selectedSlugs.size})
+            </Button>
             {lastAggregatedAt && (
               <div className="text-xs text-muted-foreground">
                 Последний пересчёт: {new Date(lastAggregatedAt).toLocaleString("ru-RU")}
