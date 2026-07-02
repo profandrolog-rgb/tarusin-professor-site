@@ -106,6 +106,7 @@ export default function AdminPatientMetabolicMap() {
   const [aiBusy, setAiBusy] = useState(false);
   const [deidentified, setDeidentified] = useState(true);
   const [ai, setAi] = useState<any | null>(null);
+  const [rxBusy, setRxBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
