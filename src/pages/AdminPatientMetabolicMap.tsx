@@ -635,6 +635,21 @@ export default function AdminPatientMetabolicMap() {
           </Card>
         ) : null}
 
+        <div className="grid gap-4 md:grid-cols-2">
+          <DynamicsPanel
+            patientId={patient.id}
+            currentSummary={summary.map((s) => ({ pathway_id: s.pathway_id, slug: s.slug, status: s.status }))}
+            currentPathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
+            visitId={selectedVisit === "all" ? null : selectedVisit}
+          />
+          <GuardianManager
+            patientId={patient.id}
+            shareSimpleOnly={patient.share_simple_only ?? true}
+            onShareChange={(v) => setPatient((prev) => (prev ? { ...prev, share_simple_only: v } : prev))}
+          />
+        </div>
+
+
         <section className="space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-xl font-semibold flex items-center gap-2"><Pill className="w-5 h-5" />
