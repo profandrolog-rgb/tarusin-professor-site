@@ -471,6 +471,20 @@ export default function AdminPatientMetabolicMap() {
           если по пути нет данных — статус «нет данных».
         </div>
       </div>
+
+      {editorPathway && (
+        <PathwayEditor
+          open={!!editorPathway}
+          onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
+          pathwayId={editorPathway.id}
+          pathwayName={editorPathway.name}
+          initialScene={editorPathway.svg_scene}
+          onSaved={(scene) => {
+            setPathways((prev) => prev.map((p) => p.id === editorPathway.id ? { ...p, svg_scene: scene } : p));
+            setEditorPathway(null);
+          }}
+        />
+      )}
     </div>
   );
 }
