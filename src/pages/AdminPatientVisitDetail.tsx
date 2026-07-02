@@ -30,6 +30,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
+import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 
 interface Visit {
   id: string;
@@ -547,6 +548,9 @@ export default function AdminPatientVisitDetail() {
 
             </CardContent>
           </Card>
+
+          <PdfBatchUpload patientId={visit.patient_id} />
+
 
           <AssignmentsPanel
             value={isProtocolRecord(visit.protocol_data) ? normalizeAssignments((visit.protocol_data as any).assignments) : undefined}

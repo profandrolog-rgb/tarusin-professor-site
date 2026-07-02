@@ -1,0 +1,206 @@
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const EXTRACTION_SYSTEM = `Ты — медицинский парсер PDF. Извлекай ТОЛЬКО то, что явно присутствует в тексте. Никогда не выдумывай значения. Если значение нечитаемое или сомнительное — ставь needs_review=true. Верни строго JSON-объект по схеме:
+{
+  "document_type": "lab" | "ultrasound" | "consultation" | "other",
+  "document_date": "YYYY-MM-DD" | null,
+  "lab_results": [
+    { "analyte": string, "value": number, "unit": string | null,
+      "ref_low": number | null, "ref_high": number | null,
+      "confidence": number, "needs_review": boolean }
+  ],
+  "diagnoses": [
+    { "text": string, "icd10": string | null, "date": "YYYY-MM-DD" | null,
+      "confidence": number, "needs_review": boolean }
+  ],
+  "conclusion_text": string | null
+}
+Никаких пояснений вне JSON.`;
+
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '').trim();
+}
+
+async function extractWithGemini(fileDataUrl: string, fileName: string) {
+  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3-flash-preview',
+      messages: [
+        { role: 'system', content: EXTRACTION_SYSTEM },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: `Файл: ${fileName}. Извлеки данные согласно схеме.` },
+            { type: 'file', file: { filename: fileName, file_data: fileDataUrl } },
+          ],
+        },
+      ],
+      response_format: { type: 'json_object' },
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`AI gateway ${resp.status}: ${t.slice(0, 300)}`);
+  }
+  const j = await resp.json();
+  const content = j.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Empty AI response');
+  try {
+    return JSON.parse(content);
+  } catch {
+    const m = content.match(/\{[\s\S]*\}/);
+    if (m) return JSON.parse(m[0]);
+    throw new Error('Failed to parse AI JSON');
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  try {
+    const body = await req.json();
+    const {
+      file_data,
+      file_name,
+      patient_id,
+      consultation_case_id,
+    }: {
+      file_data: string;
+      file_name: string;
+      patient_id?: string;
+      consultation_case_id?: string;
+    } = body;
+
+    if (!file_data || !file_name) {
+      return new Response(JSON.stringify({ error: 'file_data and file_name required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!patient_id && !consultation_case_id) {
+      return new Response(JSON.stringify({ error: 'patient_id or consultation_case_id required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: 'AI not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // AI extraction
+    const parsed = await extractWithGemini(file_data, file_name);
+    const docDate: string | null = parsed.document_date || null;
+    const testDate = docDate || new Date().toISOString().slice(0, 10);
+
+    // Load catalog for synonym matching
+    const { data: catalog } = await supabase
+      .from('lab_tests_catalog')
+      .select('id, name, short_name, unit')
+      .eq('is_active', true);
+
+    const cat = (catalog || []).map((c: any) => ({
+      ...c,
+      _norm: [normalize(c.name), normalize(c.short_name || '')].filter(Boolean),
+    }));
+
+    const inserted_labs: any[] = [];
+    const queued_unknown: any[] = [];
+
+    for (const lr of parsed.lab_results || []) {
+      if (typeof lr.value !== 'number' || !lr.analyte) continue;
+      const target = normalize(lr.analyte);
+      const match = cat.find((c: any) => c._norm.some((n: string) => n && (n === target || (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target)))));
+
+      const row: any = {
+        patient_id: patient_id || null,
+        consultation_case_id: consultation_case_id || null,
+        test_group: match?.name?.split(' ')[0] || 'Загружено',
+        test_name: match?.name || lr.analyte,
+        test_code: null,
+        value: lr.value,
+        unit: lr.unit || match?.unit || '',
+        reference_min: lr.ref_low ?? null,
+        reference_max: lr.ref_high ?? null,
+        test_date: testDate,
+        source_document: file_name,
+        confidence: lr.confidence ?? null,
+        needs_review: !!lr.needs_review || !match,
+      };
+      const { data: ins, error } = await supabase.from('lab_results').insert(row).select().single();
+      if (!error) inserted_labs.push(ins);
+
+      if (!match) {
+        const { data: q } = await supabase
+          .from('lab_synonyms_queue')
+          .insert({
+            raw_name: lr.analyte,
+            raw_unit: lr.unit || null,
+            suggested_test_id: null,
+            suggested_test_name: null,
+            source_document: file_name,
+            patient_id: patient_id || null,
+            consultation_case_id: consultation_case_id || null,
+            status: 'pending',
+          })
+          .select()
+          .single();
+        if (q) queued_unknown.push(q);
+      }
+    }
+
+    const inserted_diagnoses: any[] = [];
+    for (const d of parsed.diagnoses || []) {
+      if (!d.text) continue;
+      const { data: ins } = await supabase
+        .from('patient_diagnosis_timeline')
+        .insert({
+          patient_id: patient_id || null,
+          consultation_case_id: consultation_case_id || null,
+          diagnosis_text: d.text,
+          icd10: d.icd10 || null,
+          source_date: d.date || docDate || null,
+          source_document: file_name,
+          source_type: parsed.document_type || null,
+          confidence: d.confidence ?? null,
+          needs_review: !!d.needs_review,
+        })
+        .select()
+        .single();
+      if (ins) inserted_diagnoses.push(ins);
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        file_name,
+        document_type: parsed.document_type,
+        document_date: docDate,
+        conclusion_text: parsed.conclusion_text || null,
+        inserted_labs_count: inserted_labs.length,
+        inserted_diagnoses_count: inserted_diagnoses.length,
+        queued_unknown_count: queued_unknown.length,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  } catch (err: any) {
+    console.error('parse-medical-pdf error', err);
+    return new Response(JSON.stringify({ error: err.message || 'Unknown error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
