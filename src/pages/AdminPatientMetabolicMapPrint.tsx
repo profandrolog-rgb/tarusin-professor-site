@@ -50,6 +50,7 @@ export default function AdminPatientMetabolicMapPrint() {
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [texts, setTexts] = useState<PathwayText[]>([]);
+  const [recs, setRecs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -67,11 +68,23 @@ export default function AdminPatientMetabolicMapPrint() {
       setSummary((m?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(txs);
       if (m?.id) {
-        const { data: f } = await (supabase as any)
-          .from("map_findings")
-          .select("id, pathway_id, node_id, severity, label, detail, source_ref")
-          .eq("map_id", m.id);
+        const [{ data: f }, { data: r }] = await Promise.all([
+          (supabase as any)
+            .from("map_findings")
+            .select("id, pathway_id, node_id, severity, label, detail, source_ref")
+            .eq("map_id", m.id),
+          (supabase as any)
+            .from("map_recommendations")
+            .select(
+              "id, catalog_id, pathway_id, target_node_id, application_point, rationale, priority, evidence_level, age_warning, contra_warning, include_in_print, is_manual, catalog:treatment_catalog(name, subcategory, category, default_dose, dose_unit, default_route_label, default_frequency)",
+            )
+            .eq("map_id", m.id)
+            .eq("include_in_print", true)
+            .order("priority", { ascending: false })
+            .order("evidence_level", { ascending: false }),
+        ]);
         setFindings((f as Finding[]) || []);
+        setRecs((r as any[]) || []);
       }
       setLoading(false);
     })();
