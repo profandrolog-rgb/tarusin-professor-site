@@ -53,7 +53,7 @@ const ForParents = () => {
         </header>
 
         <main className="container mx-auto px-4 py-12 md:py-16">
-          <Tabs value={activeTab} onValueChange={(v) => { const sp = new URLSearchParams(searchParams); sp.set("tab", v); setSearchParams(sp, { replace: true }); }} className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); const sp = new URLSearchParams(searchParams); sp.set("tab", v); setSearchParams(sp, { replace: true }); }} className="w-full">
             <TabsList className="w-full grid grid-cols-5 h-auto mb-10">
               <TabsTrigger value="useful" className="flex items-center gap-2 py-3 text-xs md:text-base"><BookOpen className="w-4 h-4 hidden sm:block" />{isEn ? "Useful Materials" : "Полезные материалы"}</TabsTrigger>
               <TabsTrigger value="children" className="flex items-center gap-2 py-3 text-xs md:text-base"><Baby className="w-4 h-4 hidden sm:block" />{isEn ? "Pediatric Conditions" : "О детских болезнях"}</TabsTrigger>
