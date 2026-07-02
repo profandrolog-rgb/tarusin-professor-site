@@ -288,6 +288,30 @@ export default function AdminPatientMetabolicMap() {
         )}
 
         <section className="space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-xl font-semibold">Обзорная карта путей</h2>
+            <SeverityLegend />
+          </div>
+          <Card>
+            <CardContent className="p-3">
+              <MetroOverview
+                pathways={pathways.map((pw) => ({
+                  id: pw.id,
+                  slug: pw.slug,
+                  name: pw.name,
+                  status: (summaryByPathway.get(pw.id)?.status ||
+                    ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity,
+                }))}
+                onSelect={(slug) => {
+                  const el = document.getElementById(`pw-${slug}`);
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              />
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="space-y-3">
           <h2 className="text-xl font-semibold">Метаболические пути</h2>
           {pathways.length === 0 ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
