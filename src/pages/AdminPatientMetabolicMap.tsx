@@ -25,6 +25,9 @@ import {
   type Severity,
   type PathwaySummary,
 } from "@/lib/metabolic/aggregator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
+import { Printer } from "lucide-react";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
@@ -88,10 +91,21 @@ export default function AdminPatientMetabolicMap() {
   const [selectedVisit, setSelectedVisit] = useState<string>("all");
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
+  const [texts, setTexts] = useState<PathwayText[]>([]);
+  const [register, setRegister] = useState<Register>("simple");
+  const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
   }, [user, isAdmin, loading, navigate]);
+
+  useEffect(() => { fetchPathwayTexts().then(setTexts); }, []);
+
+  useEffect(() => {
+    // Auto-select affected pathways for print
+    const affected = summary.filter((s) => s.status === "mild" || s.status === "moderate" || s.status === "severe").map((s) => s.slug);
+    if (affected.length) setSelectedSlugs(new Set(affected));
+  }, [summary]);
 
   const reload = useCallback(async () => {
     if (!id) return;
@@ -229,6 +243,29 @@ export default function AdminPatientMetabolicMap() {
               {aggregating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Пересчитать отклонения
             </Button>
+            <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
+              {(["simple", "pro"] as Register[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRegister(r)}
+                  className={`px-3 py-1.5 transition-colors ${register === r ? "bg-primary text-primary-foreground" : "bg-background hover:bg-accent"}`}
+                >
+                  {REGISTER_LABEL[r]}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={selectedSlugs.size === 0}
+              onClick={() => {
+                const slugs = [...selectedSlugs].join(",");
+                window.open(`/admin/patients/${patient.id}/metabolic-map/print?paths=${encodeURIComponent(slugs)}&register=${register}${selectedVisit !== "all" ? `&visit=${selectedVisit}` : ""}`, "_blank");
+              }}
+            >
+              <Printer className="w-4 h-4" />Печать выбранных ({selectedSlugs.size})
+            </Button>
             {lastAggregatedAt && (
               <div className="text-xs text-muted-foreground">
                 Последний пересчёт: {new Date(lastAggregatedAt).toLocaleString("ru-RU")}
@@ -258,11 +295,27 @@ export default function AdminPatientMetabolicMap() {
                   ...((savedSummary?.affected_nodes) || []),
                 ]);
                 const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
+                const text = pickText(texts, pw.id, register);
+                const isSelected = selectedSlugs.has(pw.slug);
+                const isAffected = status === "mild" || status === "moderate" || status === "severe";
                 return (
-                  <Card key={pw.id} className="overflow-hidden">
+                  <Card key={pw.id} className={`overflow-hidden ${isAffected ? "border-primary/40" : ""}`}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center justify-between gap-2">
-                        <span>{pw.name}</span>
+                        <span className="flex items-center gap-2">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(v) => {
+                              setSelectedSlugs((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(pw.slug); else next.delete(pw.slug);
+                                return next;
+                              });
+                            }}
+                            aria-label={`Выбрать «${pw.name}» для печати`}
+                          />
+                          {pw.name}
+                        </span>
                         <Badge variant="outline" className={STATUS_BADGE[status]}>
                           {SEVERITY_LABEL[status]}
                         </Badge>
@@ -297,6 +350,16 @@ export default function AdminPatientMetabolicMap() {
                       {savedSummary && savedSummary.matched_markers === 0 && (
                         <div className="text-[11px] italic text-muted-foreground px-2 py-1">
                           Нет лабораторных данных для оценки этого пути.
+                        </div>
+                      )}
+                      {text && (
+                        <div className="text-xs space-y-1.5 pt-2 border-t">
+                          {text.summary && <p><span className="font-medium">Кратко:</span> {text.summary}</p>}
+                          {text.what_broken && <p><span className="font-medium">Что нарушено:</span> {text.what_broken}</p>}
+                          {text.evidence && <p><span className="font-medium">По каким показателям:</span> {text.evidence}</p>}
+                          {text.risks && <p><span className="font-medium">Чем грозит:</span> {text.risks}</p>}
+                          {text.connections && <p><span className="font-medium">Связи:</span> {text.connections}</p>}
+                          {text.actions && <p><span className="font-medium">Что делать:</span> {text.actions}</p>}
                         </div>
                       )}
                     </CardContent>
