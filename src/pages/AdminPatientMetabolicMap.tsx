@@ -101,6 +101,12 @@ export default function AdminPatientMetabolicMap() {
 
   useEffect(() => { fetchPathwayTexts().then(setTexts); }, []);
 
+  useEffect(() => {
+    // Auto-select affected pathways for print
+    const affected = summary.filter((s) => s.status === "mild" || s.status === "moderate" || s.status === "severe").map((s) => s.slug);
+    if (affected.length) setSelectedSlugs(new Set(affected));
+  }, [summary]);
+
   const reload = useCallback(async () => {
     if (!id) return;
     setBusy(true);
