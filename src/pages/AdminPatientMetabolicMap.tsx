@@ -37,6 +37,7 @@ import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
 import { buildAutoScene } from "@/lib/metabolic/autoLayout";
 import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
+import { AuditPanel } from "@/components/metabolic/AuditPanel";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean };
 type Pathway = {
