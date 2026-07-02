@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
@@ -6,7 +6,43 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { SceneJson } from "./PathwaySceneSVG";
 
-// Модальный редактор сцены Excalidraw. Сохраняет JSON в pathways.svg_scene.
+// Ленивая загрузка тяжёлого редактора Excalidraw
+const ExcalidrawLazy = lazy(async () => {
+  const mod: any = await import("@excalidraw/excalidraw");
+  try { await import("@excalidraw/excalidraw/index.css"); } catch {}
+  return { default: mod.Excalidraw };
+});
+
+function EditorInner({
+  initialScene,
+  onApi,
+}: {
+  initialScene: SceneJson | null | undefined;
+  onApi: (api: any) => void;
+}) {
+  return (
+    <ExcalidrawLazy
+      initialData={{
+        elements: (initialScene?.elements as any) || [],
+        appState: {
+          ...(initialScene?.appState || {}),
+          viewBackgroundColor: "#ffffff",
+        } as any,
+        files: initialScene?.files || null,
+        scrollToContent: true,
+      }}
+      excalidrawAPI={onApi}
+      UIOptions={{
+        canvasActions: {
+          loadScene: false,
+          saveToActiveFile: false,
+          export: false,
+        },
+      }}
+    />
+  );
+}
+
 export function PathwayEditor({
   open,
   onOpenChange,
@@ -22,69 +58,11 @@ export function PathwayEditor({
   initialScene: SceneJson | null | undefined;
   onSaved?: (scene: SceneJson) => void;
 }) {
-  const hostRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<any>(null);
-  const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [ExcalidrawComp, setExcalidrawComp] = useState<any>(null);
-  const [ReactDomClient, setReactDomClient] = useState<any>(null);
-  const rootRef = useRef<any>(null);
+  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    (async () => {
-      const [{ Excalidraw }, rdc] = await Promise.all([
-        import("@excalidraw/excalidraw"),
-        import("react-dom/client"),
-      ]);
-      // Подтягиваем стили один раз
-      await import("@excalidraw/excalidraw/index.css").catch(() => {});
-      if (cancelled) return;
-      setExcalidrawComp(() => Excalidraw);
-      setReactDomClient(() => rdc);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open || !ExcalidrawComp || !ReactDomClient || !hostRef.current) return;
-    const React = require("react");
-    const root = ReactDomClient.createRoot(hostRef.current);
-    rootRef.current = root;
-    root.render(
-      React.createElement(ExcalidrawComp, {
-        initialData: {
-          elements: initialScene?.elements || [],
-          appState: {
-            ...(initialScene?.appState || {}),
-            viewBackgroundColor: "#ffffff",
-          },
-          files: initialScene?.files || null,
-          scrollToContent: true,
-        },
-        excalidrawAPI: (api: any) => {
-          apiRef.current = api;
-          setReady(true);
-        },
-        UIOptions: {
-          canvasActions: {
-            loadScene: false,
-            saveToActiveFile: false,
-            export: false,
-          },
-        },
-      })
-    );
-    return () => {
-      try { root.unmount(); } catch {}
-      rootRef.current = null;
-      apiRef.current = null;
-      setReady(false);
-    };
-  }, [open, ExcalidrawComp, ReactDomClient, initialScene]);
+  useEffect(() => { if (!open) { apiRef.current = null; setReady(false); } }, [open]);
 
   const handleSave = async () => {
     if (!apiRef.current) return;
@@ -93,7 +71,6 @@ export function PathwayEditor({
       const elements = apiRef.current.getSceneElements();
       const appState = apiRef.current.getAppState();
       const files = apiRef.current.getFiles();
-      // Убираем runtime-поля appState, оставляем только сериализуемое
       const cleanAppState = {
         viewBackgroundColor: appState.viewBackgroundColor,
         gridSize: appState.gridSize,
@@ -128,12 +105,14 @@ export function PathwayEditor({
           </p>
         </DialogHeader>
         <div className="flex-1 min-h-0 relative">
-          {!ready && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          )}
-          <div ref={hostRef} className="w-full h-full" />
+          <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+            {open && (
+              <EditorInner
+                initialScene={initialScene}
+                onApi={(api) => { apiRef.current = api; setReady(true); }}
+              />
+            )}
+          </Suspense>
         </div>
         <DialogFooter className="p-3 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Отмена</Button>
