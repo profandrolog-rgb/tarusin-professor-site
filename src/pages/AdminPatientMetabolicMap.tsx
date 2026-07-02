@@ -508,16 +508,17 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
-                        return pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
+                        const sceneToRender = pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
+                          ? pw.svg_scene
+                          : buildAutoScene(pw.nodes || [], pw.edges || []);
+                        return (
                           <PathwaySceneSVG
-                            scene={pw.svg_scene}
+                            scene={sceneToRender}
                             highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
                             rxNodes={rxNodes}
                             rxLabelByNode={rxLabelByNode}
                             maxHeight={260}
                           />
-                        ) : (
-                          <PathwaySVG pathway={pw} highlight={affectedNodes} rxNodes={rxNodes} />
                         );
                       })()}
                       {pwFindings.length > 0 && (
