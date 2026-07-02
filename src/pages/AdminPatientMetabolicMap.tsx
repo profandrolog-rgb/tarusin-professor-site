@@ -142,6 +142,7 @@ export default function AdminPatientMetabolicMap() {
     setLastAggregatedAt((m as any)?.last_aggregated_at || null);
     const savedSummary = ((m as any)?.aggregate_summary?.pathways as PathwaySummary[]) || [];
     setSummary(savedSummary);
+    setAi(((m as any)?.meta?.ai) || null);
 
     if (m?.id) {
       const [{ data: f }, { data: r }] = await Promise.all([
