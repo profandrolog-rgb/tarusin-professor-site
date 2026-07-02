@@ -1753,13 +1753,17 @@ export type Database = {
       }
       lab_results: {
         Row: {
+          confidence: number | null
+          consultation_case_id: string | null
           created_at: string
           id: string
           is_abnormal: boolean | null
+          needs_review: boolean
           notes: string | null
-          patient_id: string
+          patient_id: string | null
           reference_max: number | null
           reference_min: number | null
+          source_document: string | null
           test_code: string | null
           test_date: string
           test_group: string
@@ -1769,13 +1773,17 @@ export type Database = {
           value: number
         }
         Insert: {
+          confidence?: number | null
+          consultation_case_id?: string | null
           created_at?: string
           id?: string
           is_abnormal?: boolean | null
+          needs_review?: boolean
           notes?: string | null
-          patient_id: string
+          patient_id?: string | null
           reference_max?: number | null
           reference_min?: number | null
+          source_document?: string | null
           test_code?: string | null
           test_date?: string
           test_group: string
@@ -1785,13 +1793,17 @@ export type Database = {
           value: number
         }
         Update: {
+          confidence?: number | null
+          consultation_case_id?: string | null
           created_at?: string
           id?: string
           is_abnormal?: boolean | null
+          needs_review?: boolean
           notes?: string | null
-          patient_id?: string
+          patient_id?: string | null
           reference_max?: number | null
           reference_min?: number | null
+          source_document?: string | null
           test_code?: string | null
           test_date?: string
           test_group?: string
@@ -1802,10 +1814,87 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "lab_results_consultation_case_id_fkey"
+            columns: ["consultation_case_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_cases"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "lab_results_patient_id_fkey"
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_synonyms_queue: {
+        Row: {
+          consultation_case_id: string | null
+          created_at: string
+          id: string
+          patient_id: string | null
+          raw_name: string
+          raw_unit: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_document: string | null
+          status: string
+          suggested_test_id: string | null
+          suggested_test_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          consultation_case_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id?: string | null
+          raw_name: string
+          raw_unit?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_document?: string | null
+          status?: string
+          suggested_test_id?: string | null
+          suggested_test_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consultation_case_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id?: string | null
+          raw_name?: string
+          raw_unit?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_document?: string | null
+          status?: string
+          suggested_test_id?: string | null
+          suggested_test_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_synonyms_queue_consultation_case_id_fkey"
+            columns: ["consultation_case_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_synonyms_queue_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_synonyms_queue_suggested_test_id_fkey"
+            columns: ["suggested_test_id"]
+            isOneToOne: false
+            referencedRelation: "lab_tests_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -2416,6 +2505,69 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      patient_diagnosis_timeline: {
+        Row: {
+          confidence: number | null
+          consultation_case_id: string | null
+          created_at: string
+          created_by: string | null
+          diagnosis_text: string
+          icd10: string | null
+          id: string
+          needs_review: boolean
+          patient_id: string | null
+          source_date: string | null
+          source_document: string | null
+          source_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          consultation_case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnosis_text: string
+          icd10?: string | null
+          id?: string
+          needs_review?: boolean
+          patient_id?: string | null
+          source_date?: string | null
+          source_document?: string | null
+          source_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          consultation_case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnosis_text?: string
+          icd10?: string | null
+          id?: string
+          needs_review?: boolean
+          patient_id?: string | null
+          source_date?: string | null
+          source_document?: string | null
+          source_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_diagnosis_timeline_consultation_case_id_fkey"
+            columns: ["consultation_case_id"]
+            isOneToOne: false
+            referencedRelation: "consultation_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_diagnosis_timeline_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patient_documents: {
         Row: {
