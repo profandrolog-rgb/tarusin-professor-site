@@ -45,6 +45,9 @@ const emptyForm = {
   is_published: false,
   card_annotation: "",
   card_background_path: null as string | null,
+  bento_image_1: null as BentoImageData | null,
+  bento_image_2: null as BentoImageData | null,
+  bento_image_3: null as BentoImageData | null,
 };
 
 const AdminDiseaseArticles = () => {
