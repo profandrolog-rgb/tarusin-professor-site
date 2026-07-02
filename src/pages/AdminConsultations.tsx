@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2, FileText, Download, Brain, CheckCircle2, Eye } from
 import { useToast } from "@/hooks/use-toast";
 import { setActiveContext, clearActiveContextIfMatches } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
+import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   draft: { label: "Черновик", color: "bg-muted text-muted-foreground" },
