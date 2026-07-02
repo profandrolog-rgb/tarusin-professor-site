@@ -37,6 +37,7 @@ import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
 import { buildAutoScene } from "@/lib/metabolic/autoLayout";
 import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
+import { AuditPanel } from "@/components/metabolic/AuditPanel";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean };
 type Pathway = {
@@ -648,6 +649,14 @@ export default function AdminPatientMetabolicMap() {
             onShareChange={(v) => setPatient((prev) => (prev ? { ...prev, share_simple_only: v } : prev))}
           />
         </div>
+
+        <AuditPanel
+          pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
+          summary={summary}
+          findings={findings as any}
+          ai={ai}
+        />
+
 
 
         <section className="space-y-3">
