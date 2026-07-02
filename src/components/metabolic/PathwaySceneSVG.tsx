@@ -154,7 +154,7 @@ export function PathwaySceneSVG({
     return () => {
       cancelled = true;
     };
-  }, [scene, highlights, maxHeight]);
+  }, [scene, highlights, maxHeight, rxNodes, rxLabelByNode]);
 
   if (empty) {
     return (
