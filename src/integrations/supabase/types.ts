@@ -2435,6 +2435,7 @@ export type Database = {
           nodes: Json
           rules: Json
           slug: string
+          svg_scene: Json | null
           svg_template: string | null
           updated_at: string
         }
@@ -2448,6 +2449,7 @@ export type Database = {
           nodes?: Json
           rules?: Json
           slug: string
+          svg_scene?: Json | null
           svg_template?: string | null
           updated_at?: string
         }
@@ -2461,6 +2463,7 @@ export type Database = {
           nodes?: Json
           rules?: Json
           slug?: string
+          svg_scene?: Json | null
           svg_template?: string | null
           updated_at?: string
         }

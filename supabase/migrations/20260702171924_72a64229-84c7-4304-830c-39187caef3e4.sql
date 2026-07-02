@@ -1,0 +1,1 @@
+ALTER TABLE public.pathways ADD COLUMN IF NOT EXISTS svg_scene jsonb;
