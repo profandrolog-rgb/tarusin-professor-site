@@ -313,6 +313,7 @@ function PrintPathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; hi
       </defs>
       {positioned.map((n) => {
         const hot = highlight.has(n.id);
+        const rx = rxNodes?.has(n.id);
         return (
           <g key={n.id}>
             <circle
@@ -322,6 +323,12 @@ function PrintPathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; hi
               strokeWidth={hot ? 2.5 : 1.5}
             />
             <text x={n.x} y={n.y + 34} textAnchor="middle" fontSize="12" fill="#0f172a">{n.label}</text>
+            {rx && (
+              <g transform={`translate(${n.x + 14}, ${n.y - 14})`}>
+                <circle r={10} fill="#10b981" stroke="#065f46" strokeWidth={1.2} />
+                <text textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight={700} fill="#fff">℞</text>
+              </g>
+            )}
           </g>
         );
       })}
