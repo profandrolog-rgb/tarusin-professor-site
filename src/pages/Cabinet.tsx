@@ -1847,8 +1847,15 @@ export default function Cabinet() {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg font-semibold truncate">Мультимодальный ассистент профессора</h1>
             <ThreadPatientBadge value={threadPatient} onChange={updateThreadPatient} variant="header" />
-
-
+            {threadPatient?.id && (
+              <a
+                href={`/admin/patients/${threadPatient.id}/metabolic-map`}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-border hover:bg-accent transition-colors"
+                title="Метаболическая карта пациента"
+              >
+                <Activity className="w-3.5 h-3.5" />Метаб. карта
+              </a>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-md border border-border overflow-hidden">
