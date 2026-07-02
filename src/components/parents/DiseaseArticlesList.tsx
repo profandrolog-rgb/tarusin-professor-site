@@ -1,16 +1,24 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, LayoutGrid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DiseaseArticleCard from "./DiseaseArticleCard";
+import DiseaseBentoCard from "./DiseaseBentoCard";
 import FriendlyFallback, { DiseaseCardsSkeleton } from "./FriendlyFallback";
 
 interface DiseaseArticlesListProps {
   ageGroup: "children" | "adults";
   initialArticles?: any[];
 }
+
+const FEATURED_KEYWORDS = ["крипторхиз", "варикоцел", "гинекомасти", "сперматоцел", "пупочн"];
+const isFeatured = (a: { title: string; slug: string }) => {
+  const hay = `${a.title} ${a.slug}`.toLowerCase();
+  return FEATURED_KEYWORDS.some((k) => hay.includes(k));
+};
 
 const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListProps) => {
   const { isAdmin } = useAuth();
@@ -20,6 +28,7 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
   const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "bento">("list");
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -155,6 +164,31 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
               ))}
             </div>
           )}
+
+          {/* View mode toggle */}
+          <div className="flex items-center justify-end gap-1">
+            <span className="text-xs text-muted-foreground mr-2">Вид:</span>
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "list" ? "default" : "outline"}
+              onClick={() => setViewMode("list")}
+              className="h-8 px-2"
+              aria-label="Список"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "bento" ? "default" : "outline"}
+              onClick={() => setViewMode("bento")}
+              className="h-8 px-2"
+              aria-label="Плитка"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Articles grid */}
@@ -182,6 +216,17 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
               primaryLabel="Полезные материалы"
             />
           )
+        ) : viewMode === "bento" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 auto-rows-[minmax(140px,auto)]">
+            {filtered.map((article) => (
+              <DiseaseBentoCard
+                key={article.id}
+                article={article}
+                featured={isFeatured(article)}
+                categoryLabel={categoryLabels[article.category] || article.category}
+              />
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
             {filtered.map((article) => (
