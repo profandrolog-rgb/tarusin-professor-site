@@ -28,7 +28,7 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
   const [loadError, setLoadError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "bento">("list");
+  const [viewMode, setViewMode] = useState<"list" | "bento">("bento");
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
