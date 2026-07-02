@@ -2453,6 +2453,44 @@ export type Database = {
         }
         Relationships: []
       }
+      pathway_severity_texts: {
+        Row: {
+          created_at: string
+          id: string
+          pathway_id: string
+          severity: string
+          text_plain: string | null
+          text_pro: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pathway_id: string
+          severity: string
+          text_plain?: string | null
+          text_pro?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pathway_id?: string
+          severity?: string
+          text_plain?: string | null
+          text_pro?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pathway_severity_texts_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pathway_texts: {
         Row: {
           actions: string | null
@@ -3426,6 +3464,51 @@ export type Database = {
           is_published?: boolean
           question_text?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reference_ranges: {
+        Row: {
+          age_max_years: number
+          age_min_years: number
+          analyte_code: string
+          created_at: string
+          id: string
+          method: string | null
+          ref_high: number | null
+          ref_low: number | null
+          sex: string
+          source: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_max_years?: number
+          age_min_years?: number
+          analyte_code: string
+          created_at?: string
+          id?: string
+          method?: string | null
+          ref_high?: number | null
+          ref_low?: number | null
+          sex: string
+          source?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_max_years?: number
+          age_min_years?: number
+          analyte_code?: string
+          created_at?: string
+          id?: string
+          method?: string | null
+          ref_high?: number | null
+          ref_low?: number | null
+          sex?: string
+          source?: string | null
+          unit?: string | null
           updated_at?: string
         }
         Relationships: []
