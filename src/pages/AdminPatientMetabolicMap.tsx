@@ -224,6 +224,48 @@ export default function AdminPatientMetabolicMap() {
     }
   };
 
+  const handleRebuildRx = async () => {
+    if (!id || !mapId) {
+      toast({ title: "Сначала пересчитайте отклонения", description: "Точки приложения строятся поверх findings.", variant: "destructive" });
+      return;
+    }
+    setRxBusy(true);
+    try {
+      const res = await rebuildMapRecommendations({ mapId, patientId: id });
+      toast({
+        title: "Точки приложения подобраны",
+        description: `Строк из каталога: ${res.inserted}. Узлов без средства: ${res.affectedNodesWithoutMatch.length}.`,
+      });
+      await reload();
+    } catch (e: any) {
+      toast({ title: "Ошибка подбора", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setRxBusy(false);
+    }
+  };
+
+  const togglePrint = async (recId: string, v: boolean) => {
+    setRecs((prev) => prev.map((r) => (r.id === recId ? { ...r, include_in_print: v } : r)));
+    const { error } = await (supabase as any)
+      .from("map_recommendations")
+      .update({ include_in_print: v })
+      .eq("id", recId);
+    if (error) {
+      toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
+      await reload();
+    }
+  };
+
+  const recsByPathway = useMemo(() => {
+    const m = new Map<string, Recommendation[]>();
+    for (const r of recs) {
+      const k = r.pathway_id || "_";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(r);
+    }
+    return m;
+  }, [recs]);
+
   const findingsByPathway = useMemo(() => {
     const map = new Map<string, Finding[]>();
     for (const f of findings) {
