@@ -100,6 +100,9 @@ export default function AdminPatientMetabolicMap() {
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [deidentified, setDeidentified] = useState(true);
+  const [ai, setAi] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
