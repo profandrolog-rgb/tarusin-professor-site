@@ -165,8 +165,8 @@ export function AuditPanel({ pathways, summary, findings, ai }: AuditPanelProps)
                 const open = openId === r.pw.id;
                 const A = AGREEMENT_META[r.agree];
                 return (
-                  <>
-                    <tr key={r.pw.id} className="border-b last:border-0 hover:bg-muted/40">
+                  <Fragment key={r.pw.id}>
+                    <tr className="border-b last:border-0 hover:bg-muted/40">
                       <td className="py-2 pr-1">
                         <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setOpenId(open ? null : r.pw.id)}>
                           {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
