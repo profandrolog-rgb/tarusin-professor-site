@@ -127,7 +127,7 @@ export default function AdminPatientMetabolicMap() {
     if (!id) return;
     setBusy(true);
     const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
-      supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
+      supabase.from("patients").select("id, full_name, birth_date, history_number, share_simple_only").eq("id", id).maybeSingle(),
       (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true).order("name"),
       (supabase as any)
         .from("metabolic_maps")
