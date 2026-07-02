@@ -124,6 +124,9 @@ const AdminDiseaseArticles = () => {
       is_published: article.is_published,
       card_annotation: article.card_annotation || "",
       card_background_path: article.card_background_path || null,
+      bento_image_1: (article.bento_image_1 as BentoImageData) || null,
+      bento_image_2: (article.bento_image_2 as BentoImageData) || null,
+      bento_image_3: (article.bento_image_3 as BentoImageData) || null,
     });
     setVideoFile(null);
     setAudioFile(null);
