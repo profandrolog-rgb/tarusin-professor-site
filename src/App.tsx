@@ -85,6 +85,8 @@ const AdminArticleUpload = lazy(() => import("./pages/AdminArticleUpload"));
 const AdminPatientDetail = lazy(() => import("./pages/AdminPatientDetail"));
 const AdminPatientMetabolicMap = lazy(() => import("./pages/AdminPatientMetabolicMap"));
 const AdminPatientMetabolicMapPrint = lazy(() => import("./pages/AdminPatientMetabolicMapPrint"));
+const AdminMetabolicCohort = lazy(() => import("./pages/AdminMetabolicCohort"));
+const ParentMetabolicMap = lazy(() => import("./pages/ParentMetabolicMap"));
 const AdminPatients = lazy(() => import("./pages/AdminPatients"));
 const AdminPatientNew = lazy(() =>
   import("./pages/AdminPatientForm").then((mod) => {
@@ -235,6 +237,8 @@ export const routes: RouteRecord[] = [
       { path: "admin/patients/:id", Component: AdminPatientDetail, entry: "src/pages/AdminPatientDetail.tsx" },
       { path: "admin/patients/:id/metabolic-map", Component: AdminPatientMetabolicMap, entry: "src/pages/AdminPatientMetabolicMap.tsx" },
       { path: "admin/patients/:id/metabolic-map/print", Component: AdminPatientMetabolicMapPrint, entry: "src/pages/AdminPatientMetabolicMapPrint.tsx" },
+      { path: "admin/research/metabolic-cohort", Component: AdminMetabolicCohort, entry: "src/pages/AdminMetabolicCohort.tsx" },
+      { path: "parent/patients/:id/metabolic-map", Component: ParentMetabolicMap, entry: "src/pages/ParentMetabolicMap.tsx" },
       { path: "admin/treatment-plans/compare", Component: TreatmentPlanCompare, entry: "src/pages/TreatmentPlanCompare.tsx" },
       { path: "p/:hash", Component: PublicTreatmentPlan, entry: "src/pages/PublicTreatmentPlan.tsx" },
       { path: "cabinet", Component: Cabinet, entry: "src/pages/Cabinet.tsx" },

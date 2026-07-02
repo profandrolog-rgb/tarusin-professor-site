@@ -34,8 +34,11 @@ import { MetroOverview } from "@/components/metabolic/MetroOverview";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
+import { buildAutoScene } from "@/lib/metabolic/autoLayout";
+import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
+import { GuardianManager } from "@/components/metabolic/GuardianManager";
 
-type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
+type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean };
 type Pathway = {
   id: string;
   slug: string;
@@ -124,7 +127,7 @@ export default function AdminPatientMetabolicMap() {
     if (!id) return;
     setBusy(true);
     const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
-      supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
+      supabase.from("patients").select("id, full_name, birth_date, history_number, share_simple_only").eq("id", id).maybeSingle(),
       (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true).order("name"),
       (supabase as any)
         .from("metabolic_maps")
@@ -505,16 +508,17 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
-                        return pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
+                        const sceneToRender = pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
+                          ? pw.svg_scene
+                          : buildAutoScene(pw.nodes || [], pw.edges || []);
+                        return (
                           <PathwaySceneSVG
-                            scene={pw.svg_scene}
+                            scene={sceneToRender}
                             highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
                             rxNodes={rxNodes}
                             rxLabelByNode={rxLabelByNode}
                             maxHeight={260}
                           />
-                        ) : (
-                          <PathwaySVG pathway={pw} highlight={affectedNodes} rxNodes={rxNodes} />
                         );
                       })()}
                       {pwFindings.length > 0 && (
@@ -630,6 +634,21 @@ export default function AdminPatientMetabolicMap() {
             </CardContent>
           </Card>
         ) : null}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <DynamicsPanel
+            patientId={patient.id}
+            currentSummary={summary.map((s) => ({ pathway_id: s.pathway_id, slug: s.slug, status: s.status }))}
+            currentPathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
+            visitId={selectedVisit === "all" ? null : selectedVisit}
+          />
+          <GuardianManager
+            patientId={patient.id}
+            shareSimpleOnly={patient.share_simple_only ?? true}
+            onShareChange={(v) => setPatient((prev) => (prev ? { ...prev, share_simple_only: v } : prev))}
+          />
+        </div>
+
 
         <section className="space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
