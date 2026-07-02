@@ -282,6 +282,18 @@ export default function AdminPatientMetabolicMap() {
               {aggregating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Пересчитать отклонения
             </Button>
+            <Button onClick={handleAiBuild} disabled={aiBusy || !mapId} variant="secondary" className="gap-2">
+              {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              ИИ-интерпретация
+            </Button>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+              <Checkbox
+                checked={deidentified}
+                onCheckedChange={(v) => setDeidentified(!!v)}
+                aria-label="Отправлять деперсонализированно"
+              />
+              Отправлять деперсонализированно
+            </label>
             <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
               {(["simple", "pro"] as Register[]).map((r) => (
                 <button
