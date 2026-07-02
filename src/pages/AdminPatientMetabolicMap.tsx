@@ -91,10 +91,15 @@ export default function AdminPatientMetabolicMap() {
   const [selectedVisit, setSelectedVisit] = useState<string>("all");
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
+  const [texts, setTexts] = useState<PathwayText[]>([]);
+  const [register, setRegister] = useState<Register>("simple");
+  const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
   }, [user, isAdmin, loading, navigate]);
+
+  useEffect(() => { fetchPathwayTexts().then(setTexts); }, []);
 
   const reload = useCallback(async () => {
     if (!id) return;
