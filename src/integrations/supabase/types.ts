@@ -1916,6 +1916,7 @@ export type Database = {
           ref_range_male: string | null
           reference_ranges: Json
           short_name: string | null
+          synonyms: Json
           unit: string | null
           updated_at: string
         }
@@ -1935,6 +1936,7 @@ export type Database = {
           ref_range_male?: string | null
           reference_ranges?: Json
           short_name?: string | null
+          synonyms?: Json
           unit?: string | null
           updated_at?: string
         }
@@ -1954,6 +1956,7 @@ export type Database = {
           ref_range_male?: string | null
           reference_ranges?: Json
           short_name?: string | null
+          synonyms?: Json
           unit?: string | null
           updated_at?: string
         }
