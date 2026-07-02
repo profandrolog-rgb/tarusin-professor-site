@@ -100,6 +100,9 @@ export default function AdminPatientMetabolicMap() {
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [deidentified, setDeidentified] = useState(true);
+  const [ai, setAi] = useState<any | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
@@ -121,7 +124,7 @@ export default function AdminPatientMetabolicMap() {
       (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true).order("name"),
       (supabase as any)
         .from("metabolic_maps")
-        .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary")
+        .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary, meta")
         .eq("patient_id", id)
         .maybeSingle(),
       supabase
@@ -139,6 +142,7 @@ export default function AdminPatientMetabolicMap() {
     setLastAggregatedAt((m as any)?.last_aggregated_at || null);
     const savedSummary = ((m as any)?.aggregate_summary?.pathways as PathwaySummary[]) || [];
     setSummary(savedSummary);
+    setAi(((m as any)?.meta?.ai) || null);
 
     if (m?.id) {
       const [{ data: f }, { data: r }] = await Promise.all([
@@ -181,6 +185,35 @@ export default function AdminPatientMetabolicMap() {
       toast({ title: "Ошибка агрегации", description: e?.message || String(e), variant: "destructive" });
     } finally {
       setAggregating(false);
+    }
+  };
+
+  const handleAiBuild = async () => {
+    if (!id) return;
+    if (!mapId) {
+      toast({ title: "Сначала пересчитайте отклонения", description: "ИИ работает поверх детерминированного слоя.", variant: "destructive" });
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("metabolic-map-build", {
+        body: {
+          patient_id: id,
+          visit_id: selectedVisit === "all" ? null : selectedVisit,
+          deidentified,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({
+        title: "ИИ-интерпретация готова",
+        description: `Путей: ${(data as any)?.ai?.pathways?.length ?? 0} · подсветок: ${(data as any)?.findings_inserted ?? 0}`,
+      });
+      await reload();
+    } catch (e: any) {
+      toast({ title: "Ошибка ИИ-интерпретации", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setAiBusy(false);
     }
   };
 
@@ -249,6 +282,18 @@ export default function AdminPatientMetabolicMap() {
               {aggregating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Пересчитать отклонения
             </Button>
+            <Button onClick={handleAiBuild} disabled={aiBusy || !mapId} variant="secondary" className="gap-2">
+              {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              ИИ-интерпретация
+            </Button>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+              <Checkbox
+                checked={deidentified}
+                onCheckedChange={(v) => setDeidentified(!!v)}
+                aria-label="Отправлять деперсонализированно"
+              />
+              Отправлять деперсонализированно
+            </label>
             <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
               {(["simple", "pro"] as Register[]).map((r) => (
                 <button
@@ -284,6 +329,38 @@ export default function AdminPatientMetabolicMap() {
           <Card>
             <CardHeader><CardTitle className="text-base">Заметки</CardTitle></CardHeader>
             <CardContent><p className="whitespace-pre-wrap text-sm">{mapNotes}</p></CardContent>
+          </Card>
+        )}
+
+        {ai && (
+          <Card className="border-primary/40">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                ИИ-интерпретация
+                {typeof ai.overall_confidence === "number" && (
+                  <Badge variant="outline" className="ml-2">confidence {(ai.overall_confidence * 100).toFixed(0)}%</Badge>
+                )}
+                {ai.deidentified && <Badge variant="secondary">деперсонализированно</Badge>}
+              </CardTitle>
+              <p className="text-[11px] text-muted-foreground">
+                Модель: {ai.model} · {ai.computed_at ? new Date(ai.computed_at).toLocaleString("ru-RU") : ""}
+              </p>
+            </CardHeader>
+            {Array.isArray(ai.cross_links) && ai.cross_links.length > 0 && (
+              <CardContent className="pt-0">
+                <div className="text-xs font-medium mb-1">Связи между путями:</div>
+                <ul className="text-xs space-y-1">
+                  {ai.cross_links.map((l: any, i: number) => (
+                    <li key={i}>
+                      <Badge variant="outline" className="mr-1">{l.from}</Badge>→
+                      <Badge variant="outline" className="mx-1">{l.to}</Badge>
+                      <span className="text-muted-foreground">{l.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            )}
           </Card>
         )}
 
@@ -326,6 +403,7 @@ export default function AdminPatientMetabolicMap() {
                 ]);
                 const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
                 const text = pickText(texts, pw.id, register);
+                const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
                 return (
@@ -403,6 +481,53 @@ export default function AdminPatientMetabolicMap() {
                           {text.risks && <p><span className="font-medium">Чем грозит:</span> {text.risks}</p>}
                           {text.connections && <p><span className="font-medium">Связи:</span> {text.connections}</p>}
                           {text.actions && <p><span className="font-medium">Что делать:</span> {text.actions}</p>}
+                        </div>
+                      )}
+                      {aiForPath && (
+                        <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-primary" />
+                            <span className="font-medium">ИИ · {aiForPath.status}</span>
+                            {typeof aiForPath.confidence === "number" && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                {(aiForPath.confidence * 100).toFixed(0)}%
+                              </Badge>
+                            )}
+                          </div>
+                          <p><span className="font-medium">{REGISTER_LABEL[register]}:</span>{" "}
+                            {register === "simple" ? aiForPath.text_plain : aiForPath.text_pro}
+                          </p>
+                          {Array.isArray(aiForPath.markers) && aiForPath.markers.length > 0 && (
+                            <div>
+                              <div className="font-medium">Маркеры:</div>
+                              <ul className="ml-3 list-disc">
+                                {aiForPath.markers.slice(0, 8).map((m: any, i: number) => (
+                                  <li key={i}>
+                                    {m.code || m.name}: {String(m.value)}{m.unit ? ` ${m.unit}` : ""}
+                                    {m.flag && m.flag !== "normal" && <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">{m.flag}</Badge>}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {Array.isArray(aiForPath.recommendations) && aiForPath.recommendations.length > 0 && (
+                            <div>
+                              <div className="font-medium">Рекомендации ИИ:</div>
+                              <ul className="ml-3 list-disc">
+                                {aiForPath.recommendations.map((r: any, i: number) => (
+                                  <li key={i}>
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 mr-1">{r.kind}</Badge>
+                                    {r.text}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {Array.isArray(aiForPath.links) && aiForPath.links.length > 0 && (
+                            <div className="text-muted-foreground">
+                              Связи: {aiForPath.links.join(", ")}
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>
