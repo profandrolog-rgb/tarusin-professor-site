@@ -27,11 +27,13 @@ import {
 } from "@/lib/metabolic/aggregator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
-import { Printer, Pencil } from "lucide-react";
+import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { MetroOverview } from "@/components/metabolic/MetroOverview";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
+import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
+import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
