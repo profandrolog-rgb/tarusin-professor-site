@@ -27,11 +27,13 @@ import {
 } from "@/lib/metabolic/aggregator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
-import { Printer, Pencil } from "lucide-react";
+import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { MetroOverview } from "@/components/metabolic/MetroOverview";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
+import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
+import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
@@ -53,15 +55,16 @@ type Finding = {
   source_ref: any;
   created_at: string;
 };
-type Recommendation = {
-  id: string;
-  catalog_id: string | null;
-  target_node_id: string | null;
-  application_point: string | null;
-  rationale: string | null;
-  priority: number;
-  is_accepted: boolean | null;
-  catalog?: { name: string; subcategory: string | null } | null;
+type Recommendation = RxRec & {
+  catalog?: {
+    name: string;
+    subcategory: string | null;
+    category: string | null;
+    default_dose: number | null;
+    dose_unit: string | null;
+    default_route_label: string | null;
+    default_frequency: string | null;
+  } | null;
 };
 type VisitRow = { id: string; visit_date: string; protocol_type: string; diagnosis: string | null };
 
@@ -103,6 +106,7 @@ export default function AdminPatientMetabolicMap() {
   const [aiBusy, setAiBusy] = useState(false);
   const [deidentified, setDeidentified] = useState(true);
   const [ai, setAi] = useState<any | null>(null);
+  const [rxBusy, setRxBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
@@ -153,9 +157,12 @@ export default function AdminPatientMetabolicMap() {
           .order("created_at", { ascending: false }),
         (supabase as any)
           .from("map_recommendations")
-          .select("id, catalog_id, target_node_id, application_point, rationale, priority, is_accepted, catalog:treatment_catalog(name, subcategory)")
+          .select(
+            "id, catalog_id, pathway_id, target_node_id, application_point, rationale, priority, evidence_level, age_warning, contra_warning, include_in_print, is_manual, finding_ids, catalog:treatment_catalog(name, subcategory, category, default_dose, dose_unit, default_route_label, default_frequency)",
+          )
           .eq("map_id", m.id)
-          .order("priority", { ascending: false }),
+          .order("priority", { ascending: false })
+          .order("evidence_level", { ascending: false }),
       ]);
       setFindings((f as any) || []);
       setRecs((r as any) || []);
@@ -216,6 +223,48 @@ export default function AdminPatientMetabolicMap() {
       setAiBusy(false);
     }
   };
+
+  const handleRebuildRx = async () => {
+    if (!id || !mapId) {
+      toast({ title: "Сначала пересчитайте отклонения", description: "Точки приложения строятся поверх findings.", variant: "destructive" });
+      return;
+    }
+    setRxBusy(true);
+    try {
+      const res = await rebuildMapRecommendations({ mapId, patientId: id });
+      toast({
+        title: "Точки приложения подобраны",
+        description: `Строк из каталога: ${res.inserted}. Узлов без средства: ${res.affectedNodesWithoutMatch.length}.`,
+      });
+      await reload();
+    } catch (e: any) {
+      toast({ title: "Ошибка подбора", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setRxBusy(false);
+    }
+  };
+
+  const togglePrint = async (recId: string, v: boolean) => {
+    setRecs((prev) => prev.map((r) => (r.id === recId ? { ...r, include_in_print: v } : r)));
+    const { error } = await (supabase as any)
+      .from("map_recommendations")
+      .update({ include_in_print: v })
+      .eq("id", recId);
+    if (error) {
+      toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
+      await reload();
+    }
+  };
+
+  const recsByPathway = useMemo(() => {
+    const m = new Map<string, Recommendation[]>();
+    for (const r of recs) {
+      const k = r.pathway_id || "_";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(r);
+    }
+    return m;
+  }, [recs]);
 
   const findingsByPathway = useMemo(() => {
     const map = new Map<string, Finding[]>();
@@ -285,6 +334,10 @@ export default function AdminPatientMetabolicMap() {
             <Button onClick={handleAiBuild} disabled={aiBusy || !mapId} variant="secondary" className="gap-2">
               {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               ИИ-интерпретация
+            </Button>
+            <Button onClick={handleRebuildRx} disabled={rxBusy || !mapId} variant="secondary" className="gap-2">
+              {rxBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Beaker className="w-4 h-4" />}
+              Подобрать ℞ из каталога
             </Button>
             <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
               <Checkbox
@@ -442,15 +495,28 @@ export default function AdminPatientMetabolicMap() {
                       )}
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
-                      {pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
-                        <PathwaySceneSVG
-                          scene={pw.svg_scene}
-                          highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
-                          maxHeight={260}
-                        />
-                      ) : (
-                        <PathwaySVG pathway={pw} highlight={affectedNodes} />
-                      )}
+                      {(() => {
+                        const pwRecs = recsByPathway.get(pw.id) || [];
+                        const rxNodes = new Set<string>(pwRecs.map((r) => r.target_node_id || "").filter(Boolean));
+                        const rxLabelByNode = new Map<string, string>();
+                        for (const r of pwRecs) {
+                          if (!r.target_node_id) continue;
+                          const prev = rxLabelByNode.get(r.target_node_id);
+                          const name = r.catalog?.name || "";
+                          rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
+                        }
+                        return pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
+                          <PathwaySceneSVG
+                            scene={pw.svg_scene}
+                            highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                            rxNodes={rxNodes}
+                            rxLabelByNode={rxLabelByNode}
+                            maxHeight={260}
+                          />
+                        ) : (
+                          <PathwaySVG pathway={pw} highlight={affectedNodes} rxNodes={rxNodes} />
+                        );
+                      })()}
                       {pwFindings.length > 0 && (
                         <ul className="space-y-1 text-xs">
                           {pwFindings.map((f) => {
@@ -530,6 +596,13 @@ export default function AdminPatientMetabolicMap() {
                           )}
                         </div>
                       )}
+                      <RxBlock
+                        recs={recsByPathway.get(pw.id) || []}
+                        affectedNodes={[...affectedNodes]}
+                        onTogglePrint={togglePrint}
+                        compact
+                        showEmpty={isAffected}
+                      />
                     </CardContent>
                   </Card>
                 );
@@ -559,32 +632,23 @@ export default function AdminPatientMetabolicMap() {
         ) : null}
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold flex items-center gap-2"><Pill className="w-5 h-5" />Рекомендации</h2>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2"><Pill className="w-5 h-5" />
+              ℞ Точки приложения терапии (из каталога)
+            </h2>
+            <div className="text-xs text-muted-foreground">
+              Отмечены на печать: {recs.filter((r) => r.include_in_print).length} из {recs.length}
+            </div>
+          </div>
           {recs.length === 0 ? (
-            <Card><CardContent className="p-6 text-sm text-muted-foreground">Рекомендаций пока нет.</CardContent></Card>
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">
+              Нажмите «Подобрать из каталога», чтобы связать сработавшие показатели со средствами каталога лечения.
+              Ничего вне каталога предложено не будет.
+            </CardContent></Card>
           ) : (
             <Card>
-              <CardContent className="p-0">
-                <ul className="divide-y">
-                  {recs.map((r) => (
-                    <li key={r.id} className="p-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-medium text-sm">{r.catalog?.name || "—"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {r.catalog?.subcategory && <span>{r.catalog.subcategory}</span>}
-                          {r.application_point && <span> · точка приложения: {r.application_point}</span>}
-                          {r.target_node_id && <span> · узел: {r.target_node_id}</span>}
-                        </div>
-                        {r.rationale && <div className="text-xs mt-1">{r.rationale}</div>}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="outline">P{r.priority}</Badge>
-                        {r.is_accepted === true && <Badge>принято</Badge>}
-                        {r.is_accepted === false && <Badge variant="secondary">отклонено</Badge>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              <CardContent className="p-4">
+                <RxBlock recs={recs} onTogglePrint={togglePrint} />
               </CardContent>
             </Card>
           )}
@@ -614,7 +678,7 @@ export default function AdminPatientMetabolicMap() {
   );
 }
 
-function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<string> }) {
+function PathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; highlight: Set<string>; rxNodes?: Set<string> }) {
   const nodes = pathway.nodes || [];
   if (nodes.length === 0) {
     return <div className="text-xs text-muted-foreground italic px-2 py-4">Схема пути пока не задана</div>;
@@ -648,6 +712,7 @@ function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<s
       </defs>
       {positioned.map((n) => {
         const hot = highlight.has(n.id);
+        const rx = rxNodes?.has(n.id);
         return (
           <g key={n.id}>
             <circle
@@ -657,6 +722,12 @@ function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<s
               strokeWidth={hot ? 2.5 : 1.5}
             />
             <text x={n.x} y={n.y + 30} textAnchor="middle" fontSize="11" fill="hsl(var(--foreground))">{n.label}</text>
+            {rx && (
+              <g transform={`translate(${n.x + 12}, ${n.y - 12})`}>
+                <circle r={9} fill="#10b981" stroke="#065f46" strokeWidth={1.2} />
+                <text textAnchor="middle" dominantBaseline="central" fontSize="11" fontWeight={700} fill="#fff">℞</text>
+              </g>
+            )}
           </g>
         );
       })}

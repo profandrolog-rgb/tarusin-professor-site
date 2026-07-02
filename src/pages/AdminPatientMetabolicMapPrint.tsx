@@ -11,6 +11,7 @@ import {
 } from "@/lib/metabolic/aggregator";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { exportNodeToPdf } from "@/lib/exportPdf";
+import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
@@ -50,6 +51,7 @@ export default function AdminPatientMetabolicMapPrint() {
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [texts, setTexts] = useState<PathwayText[]>([]);
+  const [recs, setRecs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -67,11 +69,23 @@ export default function AdminPatientMetabolicMapPrint() {
       setSummary((m?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(txs);
       if (m?.id) {
-        const { data: f } = await (supabase as any)
-          .from("map_findings")
-          .select("id, pathway_id, node_id, severity, label, detail, source_ref")
-          .eq("map_id", m.id);
+        const [{ data: f }, { data: r }] = await Promise.all([
+          (supabase as any)
+            .from("map_findings")
+            .select("id, pathway_id, node_id, severity, label, detail, source_ref")
+            .eq("map_id", m.id),
+          (supabase as any)
+            .from("map_recommendations")
+            .select(
+              "id, catalog_id, pathway_id, target_node_id, application_point, rationale, priority, evidence_level, age_warning, contra_warning, include_in_print, is_manual, catalog:treatment_catalog(name, subcategory, category, default_dose, dose_unit, default_route_label, default_frequency)",
+            )
+            .eq("map_id", m.id)
+            .eq("include_in_print", true)
+            .order("priority", { ascending: false })
+            .order("evidence_level", { ascending: false }),
+        ]);
         setFindings((f as Finding[]) || []);
+        setRecs((r as any[]) || []);
       }
       setLoading(false);
     })();
@@ -203,7 +217,11 @@ export default function AdminPatientMetabolicMapPrint() {
 
               {/* Схема сверху */}
               <div className="mb-4">
-                <PrintPathwaySVG pathway={pw} highlight={affectedNodes} />
+                <PrintPathwaySVG
+                  pathway={pw}
+                  highlight={affectedNodes}
+                  rxNodes={new Set(recs.filter((r) => r.pathway_id === pw.id).map((r) => r.target_node_id).filter(Boolean) as string[])}
+                />
               </div>
 
               {/* Объяснение */}
@@ -216,6 +234,17 @@ export default function AdminPatientMetabolicMapPrint() {
                   {t.actions && <p><strong>Что делать. </strong>{t.actions}</p>}
                 </div>
               )}
+
+              {/* ℞ Точки приложения терапии (только с галочкой «Включить в печать») */}
+              {(() => {
+                const pwRecs = recs.filter((r) => r.pathway_id === pw.id) as RxRec[];
+                if (pwRecs.length === 0 && affectedNodes.size === 0) return null;
+                return (
+                  <div className="mt-4">
+                    <RxBlock recs={pwRecs} affectedNodes={[...affectedNodes]} />
+                  </div>
+                );
+              })()}
 
               {/* Таблица показателей */}
               {pwFindings.length > 0 && (
@@ -253,7 +282,7 @@ export default function AdminPatientMetabolicMapPrint() {
   );
 }
 
-function PrintPathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<string> }) {
+function PrintPathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; highlight: Set<string>; rxNodes?: Set<string> }) {
   const nodes = pathway.nodes || [];
   if (!nodes.length) {
     return <div className="border rounded p-4 text-xs text-neutral-500 italic text-center bg-neutral-50 min-h-[120px] flex items-center justify-center">Схема пути пока не задана</div>;
@@ -284,6 +313,7 @@ function PrintPathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: 
       </defs>
       {positioned.map((n) => {
         const hot = highlight.has(n.id);
+        const rx = rxNodes?.has(n.id);
         return (
           <g key={n.id}>
             <circle
@@ -293,6 +323,12 @@ function PrintPathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: 
               strokeWidth={hot ? 2.5 : 1.5}
             />
             <text x={n.x} y={n.y + 34} textAnchor="middle" fontSize="12" fill="#0f172a">{n.label}</text>
+            {rx && (
+              <g transform={`translate(${n.x + 14}, ${n.y - 14})`}>
+                <circle r={10} fill="#10b981" stroke="#065f46" strokeWidth={1.2} />
+                <text textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight={700} fill="#fff">℞</text>
+              </g>
+            )}
           </g>
         );
       })}

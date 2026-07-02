@@ -15,12 +15,18 @@ export type SceneJson = {
 export function PathwaySceneSVG({
   scene,
   highlights,
+  rxNodes,
+  rxLabelByNode,
   className = "",
   fallback,
   maxHeight,
 }: {
   scene: SceneJson | null | undefined;
   highlights?: Map<string, Severity>;
+  /** Узлы, к которым в каталоге привязано хотя бы одно средство — рисуем зелёный ℞ */
+  rxNodes?: Set<string>;
+  /** Подписи ℞: nodeId → "Метод 1 · Метод 2" */
+  rxLabelByNode?: Map<string, string>;
   className?: string;
   fallback?: React.ReactNode;
   maxHeight?: number;
@@ -90,6 +96,47 @@ export function PathwaySceneSVG({
         svg.style.maxWidth = "100%";
         if (maxHeight) svg.style.maxHeight = `${maxHeight}px`;
 
+        // Наложение ℞ маркеров рядом с узлами (по customData.nodeId)
+        if (rxNodes && rxNodes.size > 0) {
+          const svgNS = "http://www.w3.org/2000/svg";
+          for (const el of scene.elements as any[]) {
+            const nodeId: string | undefined = el?.customData?.nodeId;
+            if (!nodeId || !rxNodes.has(nodeId)) continue;
+            const w = Number(el.width) || 0;
+            const h = Number(el.height) || 0;
+            const cx = Number(el.x) + w;
+            const cy = Number(el.y);
+            const g = document.createElementNS(svgNS, "g");
+            g.setAttribute("transform", `translate(${cx - 10}, ${cy - 10})`);
+            const c = document.createElementNS(svgNS, "circle");
+            c.setAttribute("r", "12");
+            c.setAttribute("fill", "#10b981");
+            c.setAttribute("stroke", "#065f46");
+            c.setAttribute("stroke-width", "1.5");
+            const t = document.createElementNS(svgNS, "text");
+            t.setAttribute("text-anchor", "middle");
+            t.setAttribute("dominant-baseline", "central");
+            t.setAttribute("font-size", "13");
+            t.setAttribute("font-weight", "700");
+            t.setAttribute("fill", "white");
+            t.textContent = "℞";
+            g.appendChild(c);
+            g.appendChild(t);
+            const label = rxLabelByNode?.get(nodeId);
+            if (label) {
+              const lt = document.createElementNS(svgNS, "text");
+              lt.setAttribute("text-anchor", "start");
+              lt.setAttribute("x", "16");
+              lt.setAttribute("y", "4");
+              lt.setAttribute("font-size", "11");
+              lt.setAttribute("fill", "#065f46");
+              lt.textContent = label.length > 40 ? label.slice(0, 40) + "…" : label;
+              g.appendChild(lt);
+            }
+            svg.appendChild(g);
+          }
+        }
+
         if (cancelled) return;
         const host = containerRef.current;
         if (host) {
@@ -107,7 +154,7 @@ export function PathwaySceneSVG({
     return () => {
       cancelled = true;
     };
-  }, [scene, highlights, maxHeight]);
+  }, [scene, highlights, maxHeight, rxNodes, rxLabelByNode]);
 
   if (empty) {
     return (

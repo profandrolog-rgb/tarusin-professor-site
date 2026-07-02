@@ -2012,37 +2012,61 @@ export type Database = {
       }
       map_recommendations: {
         Row: {
+          age_warning: string | null
           application_point: string | null
           catalog_id: string | null
+          contra_warning: string | null
           created_at: string
+          evidence_level: number
+          finding_ids: string[]
           id: string
+          include_in_print: boolean
           is_accepted: boolean | null
+          is_manual: boolean
           map_id: string
+          pathway_id: string | null
           priority: number
           rationale: string | null
           target_node_id: string | null
+          updated_at: string
         }
         Insert: {
+          age_warning?: string | null
           application_point?: string | null
           catalog_id?: string | null
+          contra_warning?: string | null
           created_at?: string
+          evidence_level?: number
+          finding_ids?: string[]
           id?: string
+          include_in_print?: boolean
           is_accepted?: boolean | null
+          is_manual?: boolean
           map_id: string
+          pathway_id?: string | null
           priority?: number
           rationale?: string | null
           target_node_id?: string | null
+          updated_at?: string
         }
         Update: {
+          age_warning?: string | null
           application_point?: string | null
           catalog_id?: string | null
+          contra_warning?: string | null
           created_at?: string
+          evidence_level?: number
+          finding_ids?: string[]
           id?: string
+          include_in_print?: boolean
           is_accepted?: boolean | null
+          is_manual?: boolean
           map_id?: string
+          pathway_id?: string | null
           priority?: number
           rationale?: string | null
           target_node_id?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -2057,6 +2081,13 @@ export type Database = {
             columns: ["map_id"]
             isOneToOne: false
             referencedRelation: "metabolic_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_recommendations_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "pathways"
             referencedColumns: ["id"]
           },
         ]
@@ -3935,7 +3966,10 @@ export type Database = {
       treatment_catalog: {
         Row: {
           acupuncture_protocol_id: string | null
+          age_max_years: number | null
+          age_min_years: number | null
           application_point: string | null
+          catalog_priority: number
           category: Database["public"]["Enums"]["treatment_category"]
           contraindications: string | null
           created_at: string
@@ -3949,6 +3983,7 @@ export type Database = {
           dose_range_max: number | null
           dose_range_min: number | null
           dose_unit: string | null
+          evidence_level: number
           form: string | null
           glucose_only: boolean
           id: string
@@ -3984,7 +4019,10 @@ export type Database = {
         }
         Insert: {
           acupuncture_protocol_id?: string | null
+          age_max_years?: number | null
+          age_min_years?: number | null
           application_point?: string | null
+          catalog_priority?: number
           category: Database["public"]["Enums"]["treatment_category"]
           contraindications?: string | null
           created_at?: string
@@ -3998,6 +4036,7 @@ export type Database = {
           dose_range_max?: number | null
           dose_range_min?: number | null
           dose_unit?: string | null
+          evidence_level?: number
           form?: string | null
           glucose_only?: boolean
           id?: string
@@ -4033,7 +4072,10 @@ export type Database = {
         }
         Update: {
           acupuncture_protocol_id?: string | null
+          age_max_years?: number | null
+          age_min_years?: number | null
           application_point?: string | null
+          catalog_priority?: number
           category?: Database["public"]["Enums"]["treatment_category"]
           contraindications?: string | null
           created_at?: string
@@ -4047,6 +4089,7 @@ export type Database = {
           dose_range_max?: number | null
           dose_range_min?: number | null
           dose_unit?: string | null
+          evidence_level?: number
           form?: string | null
           glucose_only?: boolean
           id?: string
