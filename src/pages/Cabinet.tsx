@@ -25,6 +25,7 @@ import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { useVeniceModels } from "@/hooks/useVeniceModels";
 import { ExtendedModelPicker } from "@/components/cabinet/ExtendedModelPicker";
 import { BatchAnalysisDialog } from "@/components/cabinet/BatchAnalysisDialog";
+import MetabolicMapMiniCard from "@/components/metabolic/MetabolicMapMiniCard";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
 import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
@@ -1857,6 +1858,9 @@ export default function Cabinet() {
               </a>
             )}
           </div>
+          {threadPatient?.id && (
+            <MetabolicMapMiniCard patientId={threadPatient.id} patientName={threadPatient.name} />
+          )}
           <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-md border border-border overflow-hidden">
             <button
