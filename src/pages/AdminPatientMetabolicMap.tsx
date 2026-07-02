@@ -332,6 +332,38 @@ export default function AdminPatientMetabolicMap() {
           </Card>
         )}
 
+        {ai && (
+          <Card className="border-primary/40">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                ИИ-интерпретация
+                {typeof ai.overall_confidence === "number" && (
+                  <Badge variant="outline" className="ml-2">confidence {(ai.overall_confidence * 100).toFixed(0)}%</Badge>
+                )}
+                {ai.deidentified && <Badge variant="secondary">деперсонализированно</Badge>}
+              </CardTitle>
+              <p className="text-[11px] text-muted-foreground">
+                Модель: {ai.model} · {ai.computed_at ? new Date(ai.computed_at).toLocaleString("ru-RU") : ""}
+              </p>
+            </CardHeader>
+            {Array.isArray(ai.cross_links) && ai.cross_links.length > 0 && (
+              <CardContent className="pt-0">
+                <div className="text-xs font-medium mb-1">Связи между путями:</div>
+                <ul className="text-xs space-y-1">
+                  {ai.cross_links.map((l: any, i: number) => (
+                    <li key={i}>
+                      <Badge variant="outline" className="mr-1">{l.from}</Badge>→
+                      <Badge variant="outline" className="mx-1">{l.to}</Badge>
+                      <span className="text-muted-foreground">{l.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         <section className="space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-xl font-semibold">Обзорная карта путей</h2>
