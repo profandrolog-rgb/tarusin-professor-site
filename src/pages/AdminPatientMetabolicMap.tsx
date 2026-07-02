@@ -403,6 +403,7 @@ export default function AdminPatientMetabolicMap() {
                 ]);
                 const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
                 const text = pickText(texts, pw.id, register);
+                const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
                 return (
