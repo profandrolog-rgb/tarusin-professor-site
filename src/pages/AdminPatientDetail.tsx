@@ -148,7 +148,10 @@ export default function AdminPatientDetail() {
               {" · "}№ ИБ: {patient.history_number || "—"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Link to={`/admin/patients/${patient.id}/metabolic-map`}>
+              <Button variant="outline" className="gap-2"><Activity className="w-4 h-4"/>Метаболическая карта</Button>
+            </Link>
             <Link to={`/admin/patients/${patient.id}/edit`}>
               <Button variant="outline" className="gap-2">Редактировать</Button>
             </Link>
