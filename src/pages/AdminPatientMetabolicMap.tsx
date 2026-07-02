@@ -329,7 +329,7 @@ export default function AdminPatientMetabolicMap() {
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
                 return (
-                  <Card key={pw.id} className={`overflow-hidden ${isAffected ? "border-primary/40" : ""}`}>
+                  <Card key={pw.id} id={`pw-${pw.slug}`} className={`overflow-hidden ${isAffected ? "border-primary/40" : ""}`}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center justify-between gap-2">
                         <span className="flex items-center gap-2">
@@ -346,9 +346,14 @@ export default function AdminPatientMetabolicMap() {
                           />
                           {pw.name}
                         </span>
-                        <Badge variant="outline" className={STATUS_BADGE[status]}>
-                          {SEVERITY_LABEL[status]}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={STATUS_BADGE[status]}>
+                            {SEVERITY_LABEL[status]}
+                          </Badge>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setEditorPathway(pw)}>
+                            <Pencil className="w-3.5 h-3.5" />Схема
+                          </Button>
+                        </div>
                       </CardTitle>
                       {pw.description && <p className="text-xs text-muted-foreground">{pw.description}</p>}
                       {savedSummary && (
@@ -359,7 +364,15 @@ export default function AdminPatientMetabolicMap() {
                       )}
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
-                      <PathwaySVG pathway={pw} highlight={affectedNodes} />
+                      {pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
+                        <PathwaySceneSVG
+                          scene={pw.svg_scene}
+                          highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                          maxHeight={260}
+                        />
+                      ) : (
+                        <PathwaySVG pathway={pw} highlight={affectedNodes} />
+                      )}
                       {pwFindings.length > 0 && (
                         <ul className="space-y-1 text-xs">
                           {pwFindings.map((f) => {
