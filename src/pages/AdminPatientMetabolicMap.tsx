@@ -671,7 +671,7 @@ export default function AdminPatientMetabolicMap() {
   );
 }
 
-function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<string> }) {
+function PathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; highlight: Set<string>; rxNodes?: Set<string> }) {
   const nodes = pathway.nodes || [];
   if (nodes.length === 0) {
     return <div className="text-xs text-muted-foreground italic px-2 py-4">Схема пути пока не задана</div>;
@@ -705,6 +705,7 @@ function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<s
       </defs>
       {positioned.map((n) => {
         const hot = highlight.has(n.id);
+        const rx = rxNodes?.has(n.id);
         return (
           <g key={n.id}>
             <circle
@@ -714,6 +715,12 @@ function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<s
               strokeWidth={hot ? 2.5 : 1.5}
             />
             <text x={n.x} y={n.y + 30} textAnchor="middle" fontSize="11" fill="hsl(var(--foreground))">{n.label}</text>
+            {rx && (
+              <g transform={`translate(${n.x + 12}, ${n.y - 12})`}>
+                <circle r={9} fill="#10b981" stroke="#065f46" strokeWidth={1.2} />
+                <text textAnchor="middle" dominantBaseline="central" fontSize="11" fontWeight={700} fill="#fff">℞</text>
+              </g>
+            )}
           </g>
         );
       })}
