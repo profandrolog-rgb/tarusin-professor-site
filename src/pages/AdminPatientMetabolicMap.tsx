@@ -596,6 +596,13 @@ export default function AdminPatientMetabolicMap() {
                           )}
                         </div>
                       )}
+                      <RxBlock
+                        recs={recsByPathway.get(pw.id) || []}
+                        affectedNodes={[...affectedNodes]}
+                        onTogglePrint={togglePrint}
+                        compact
+                        showEmpty={isAffected}
+                      />
                     </CardContent>
                   </Card>
                 );
