@@ -27,7 +27,11 @@ import {
 } from "@/lib/metabolic/aggregator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
-import { Printer } from "lucide-react";
+import { Printer, Pencil } from "lucide-react";
+import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
+import { MetroOverview } from "@/components/metabolic/MetroOverview";
+import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
@@ -37,6 +41,7 @@ type Pathway = {
   description: string | null;
   nodes: Array<{ id: string; label: string; x?: number; y?: number; kind?: string }>;
   edges: Array<{ from: string; to: string; label?: string }>;
+  svg_scene: SceneJson | null;
 };
 type Finding = {
   id: string;
@@ -94,6 +99,7 @@ export default function AdminPatientMetabolicMap() {
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
+  const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
@@ -112,7 +118,7 @@ export default function AdminPatientMetabolicMap() {
     setBusy(true);
     const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
       supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
-      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges").eq("is_active", true).order("name"),
+      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true).order("name"),
       (supabase as any)
         .from("metabolic_maps")
         .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary")
@@ -282,6 +288,30 @@ export default function AdminPatientMetabolicMap() {
         )}
 
         <section className="space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-xl font-semibold">Обзорная карта путей</h2>
+            <SeverityLegend />
+          </div>
+          <Card>
+            <CardContent className="p-3">
+              <MetroOverview
+                pathways={pathways.map((pw) => ({
+                  id: pw.id,
+                  slug: pw.slug,
+                  name: pw.name,
+                  status: (summaryByPathway.get(pw.id)?.status ||
+                    ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity,
+                }))}
+                onSelect={(slug) => {
+                  const el = document.getElementById(`pw-${slug}`);
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              />
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="space-y-3">
           <h2 className="text-xl font-semibold">Метаболические пути</h2>
           {pathways.length === 0 ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
@@ -299,7 +329,7 @@ export default function AdminPatientMetabolicMap() {
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
                 return (
-                  <Card key={pw.id} className={`overflow-hidden ${isAffected ? "border-primary/40" : ""}`}>
+                  <Card key={pw.id} id={`pw-${pw.slug}`} className={`overflow-hidden ${isAffected ? "border-primary/40" : ""}`}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center justify-between gap-2">
                         <span className="flex items-center gap-2">
@@ -316,9 +346,14 @@ export default function AdminPatientMetabolicMap() {
                           />
                           {pw.name}
                         </span>
-                        <Badge variant="outline" className={STATUS_BADGE[status]}>
-                          {SEVERITY_LABEL[status]}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={STATUS_BADGE[status]}>
+                            {SEVERITY_LABEL[status]}
+                          </Badge>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setEditorPathway(pw)}>
+                            <Pencil className="w-3.5 h-3.5" />Схема
+                          </Button>
+                        </div>
                       </CardTitle>
                       {pw.description && <p className="text-xs text-muted-foreground">{pw.description}</p>}
                       {savedSummary && (
@@ -329,7 +364,15 @@ export default function AdminPatientMetabolicMap() {
                       )}
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
-                      <PathwaySVG pathway={pw} highlight={affectedNodes} />
+                      {pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0 ? (
+                        <PathwaySceneSVG
+                          scene={pw.svg_scene}
+                          highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                          maxHeight={260}
+                        />
+                      ) : (
+                        <PathwaySVG pathway={pw} highlight={affectedNodes} />
+                      )}
                       {pwFindings.length > 0 && (
                         <ul className="space-y-1 text-xs">
                           {pwFindings.map((f) => {
@@ -428,6 +471,20 @@ export default function AdminPatientMetabolicMap() {
           если по пути нет данных — статус «нет данных».
         </div>
       </div>
+
+      {editorPathway && (
+        <PathwayEditor
+          open={!!editorPathway}
+          onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
+          pathwayId={editorPathway.id}
+          pathwayName={editorPathway.name}
+          initialScene={editorPathway.svg_scene}
+          onSaved={(scene) => {
+            setPathways((prev) => prev.map((p) => p.id === editorPathway.id ? { ...p, svg_scene: scene } : p));
+            setEditorPathway(null);
+          }}
+        />
+      )}
     </div>
   );
 }
