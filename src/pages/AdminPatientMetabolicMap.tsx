@@ -483,6 +483,53 @@ export default function AdminPatientMetabolicMap() {
                           {text.actions && <p><span className="font-medium">Что делать:</span> {text.actions}</p>}
                         </div>
                       )}
+                      {aiForPath && (
+                        <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-primary" />
+                            <span className="font-medium">ИИ · {aiForPath.status}</span>
+                            {typeof aiForPath.confidence === "number" && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                {(aiForPath.confidence * 100).toFixed(0)}%
+                              </Badge>
+                            )}
+                          </div>
+                          <p><span className="font-medium">{REGISTER_LABEL[register]}:</span>{" "}
+                            {register === "simple" ? aiForPath.text_plain : aiForPath.text_pro}
+                          </p>
+                          {Array.isArray(aiForPath.markers) && aiForPath.markers.length > 0 && (
+                            <div>
+                              <div className="font-medium">Маркеры:</div>
+                              <ul className="ml-3 list-disc">
+                                {aiForPath.markers.slice(0, 8).map((m: any, i: number) => (
+                                  <li key={i}>
+                                    {m.code || m.name}: {String(m.value)}{m.unit ? ` ${m.unit}` : ""}
+                                    {m.flag && m.flag !== "normal" && <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">{m.flag}</Badge>}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {Array.isArray(aiForPath.recommendations) && aiForPath.recommendations.length > 0 && (
+                            <div>
+                              <div className="font-medium">Рекомендации ИИ:</div>
+                              <ul className="ml-3 list-disc">
+                                {aiForPath.recommendations.map((r: any, i: number) => (
+                                  <li key={i}>
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 mr-1">{r.kind}</Badge>
+                                    {r.text}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {Array.isArray(aiForPath.links) && aiForPath.links.length > 0 && (
+                            <div className="text-muted-foreground">
+                              Связи: {aiForPath.links.join(", ")}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
