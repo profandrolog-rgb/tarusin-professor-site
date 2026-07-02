@@ -188,6 +188,35 @@ export default function AdminPatientMetabolicMap() {
     }
   };
 
+  const handleAiBuild = async () => {
+    if (!id) return;
+    if (!mapId) {
+      toast({ title: "Сначала пересчитайте отклонения", description: "ИИ работает поверх детерминированного слоя.", variant: "destructive" });
+      return;
+    }
+    setAiBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("metabolic-map-build", {
+        body: {
+          patient_id: id,
+          visit_id: selectedVisit === "all" ? null : selectedVisit,
+          deidentified,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({
+        title: "ИИ-интерпретация готова",
+        description: `Путей: ${(data as any)?.ai?.pathways?.length ?? 0} · подсветок: ${(data as any)?.findings_inserted ?? 0}`,
+      });
+      await reload();
+    } catch (e: any) {
+      toast({ title: "Ошибка ИИ-интерпретации", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const findingsByPathway = useMemo(() => {
     const map = new Map<string, Finding[]>();
     for (const f of findings) {
