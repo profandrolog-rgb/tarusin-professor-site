@@ -1819,11 +1819,13 @@ export type Database = {
           kdl_slug: string | null
           name: string
           notes: string | null
+          pathway_node_refs: Json
           price_auto: number | null
           price_auto_sources: Json | null
           price_auto_updated_at: string | null
           price_avg: number | null
           ref_range_male: string | null
+          reference_ranges: Json
           short_name: string | null
           unit: string | null
           updated_at: string
@@ -1836,11 +1838,13 @@ export type Database = {
           kdl_slug?: string | null
           name: string
           notes?: string | null
+          pathway_node_refs?: Json
           price_auto?: number | null
           price_auto_sources?: Json | null
           price_auto_updated_at?: string | null
           price_avg?: number | null
           ref_range_male?: string | null
+          reference_ranges?: Json
           short_name?: string | null
           unit?: string | null
           updated_at?: string
@@ -1853,16 +1857,120 @@ export type Database = {
           kdl_slug?: string | null
           name?: string
           notes?: string | null
+          pathway_node_refs?: Json
           price_auto?: number | null
           price_auto_sources?: Json | null
           price_auto_updated_at?: string | null
           price_avg?: number | null
           ref_range_male?: string | null
+          reference_ranges?: Json
           short_name?: string | null
           unit?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      map_findings: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          label: string
+          map_id: string
+          node_id: string | null
+          pathway_id: string | null
+          severity: string
+          source_ref: Json
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          label: string
+          map_id: string
+          node_id?: string | null
+          pathway_id?: string | null
+          severity?: string
+          source_ref?: Json
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          label?: string
+          map_id?: string
+          node_id?: string | null
+          pathway_id?: string | null
+          severity?: string
+          source_ref?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_findings_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "metabolic_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_findings_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      map_recommendations: {
+        Row: {
+          application_point: string | null
+          catalog_id: string | null
+          created_at: string
+          id: string
+          is_accepted: boolean | null
+          map_id: string
+          priority: number
+          rationale: string | null
+          target_node_id: string | null
+        }
+        Insert: {
+          application_point?: string | null
+          catalog_id?: string | null
+          created_at?: string
+          id?: string
+          is_accepted?: boolean | null
+          map_id: string
+          priority?: number
+          rationale?: string | null
+          target_node_id?: string | null
+        }
+        Update: {
+          application_point?: string | null
+          catalog_id?: string | null
+          created_at?: string
+          id?: string
+          is_accepted?: boolean | null
+          map_id?: string
+          priority?: number
+          rationale?: string | null
+          target_node_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_recommendations_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_recommendations_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "metabolic_maps"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       materia_medica_sections: {
         Row: {
@@ -2022,6 +2130,44 @@ export type Database = {
           },
         ]
       }
+      metabolic_maps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          meta: Json
+          notes: string | null
+          patient_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meta?: Json
+          notes?: string | null
+          patient_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meta?: Json
+          notes?: string | null
+          patient_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metabolic_maps_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mm_import_jobs: {
         Row: {
           chain_log: Json
@@ -2126,6 +2272,45 @@ export type Database = {
           postop_course?: string | null
           protocol_notes?: string | null
           surgeon_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pathways: {
+        Row: {
+          created_at: string
+          description: string | null
+          edges: Json
+          id: string
+          is_active: boolean
+          name: string
+          nodes: Json
+          slug: string
+          svg_template: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          nodes?: Json
+          slug: string
+          svg_template?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          edges?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          nodes?: Json
+          slug?: string
+          svg_template?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3533,6 +3718,7 @@ export type Database = {
       treatment_catalog: {
         Row: {
           acupuncture_protocol_id: string | null
+          application_point: string | null
           category: Database["public"]["Enums"]["treatment_category"]
           contraindications: string | null
           created_at: string
@@ -3574,12 +3760,14 @@ export type Database = {
           search_vector: unknown
           subcategory: string | null
           tags: string[] | null
+          targets: string[]
           time_of_day_default: string[] | null
           units_per_dose_num: number | null
           updated_at: string
         }
         Insert: {
           acupuncture_protocol_id?: string | null
+          application_point?: string | null
           category: Database["public"]["Enums"]["treatment_category"]
           contraindications?: string | null
           created_at?: string
@@ -3621,12 +3809,14 @@ export type Database = {
           search_vector?: unknown
           subcategory?: string | null
           tags?: string[] | null
+          targets?: string[]
           time_of_day_default?: string[] | null
           units_per_dose_num?: number | null
           updated_at?: string
         }
         Update: {
           acupuncture_protocol_id?: string | null
+          application_point?: string | null
           category?: Database["public"]["Enums"]["treatment_category"]
           contraindications?: string | null
           created_at?: string
@@ -3668,6 +3858,7 @@ export type Database = {
           search_vector?: unknown
           subcategory?: string | null
           tags?: string[] | null
+          targets?: string[]
           time_of_day_default?: string[] | null
           units_per_dose_num?: number | null
           updated_at?: string
