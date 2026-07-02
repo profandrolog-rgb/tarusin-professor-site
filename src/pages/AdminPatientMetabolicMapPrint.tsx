@@ -217,7 +217,11 @@ export default function AdminPatientMetabolicMapPrint() {
 
               {/* Схема сверху */}
               <div className="mb-4">
-                <PrintPathwaySVG pathway={pw} highlight={affectedNodes} />
+                <PrintPathwaySVG
+                  pathway={pw}
+                  highlight={affectedNodes}
+                  rxNodes={new Set(recs.filter((r) => r.pathway_id === pw.id).map((r) => r.target_node_id).filter(Boolean) as string[])}
+                />
               </div>
 
               {/* Объяснение */}
@@ -230,6 +234,17 @@ export default function AdminPatientMetabolicMapPrint() {
                   {t.actions && <p><strong>Что делать. </strong>{t.actions}</p>}
                 </div>
               )}
+
+              {/* ℞ Точки приложения терапии (только с галочкой «Включить в печать») */}
+              {(() => {
+                const pwRecs = recs.filter((r) => r.pathway_id === pw.id) as RxRec[];
+                if (pwRecs.length === 0 && affectedNodes.size === 0) return null;
+                return (
+                  <div className="mt-4">
+                    <RxBlock recs={pwRecs} affectedNodes={[...affectedNodes]} />
+                  </div>
+                );
+              })()}
 
               {/* Таблица показателей */}
               {pwFindings.length > 0 && (
