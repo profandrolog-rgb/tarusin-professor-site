@@ -289,11 +289,27 @@ export default function AdminPatientMetabolicMap() {
                   ...((savedSummary?.affected_nodes) || []),
                 ]);
                 const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
+                const text = pickText(texts, pw.id, register);
+                const isSelected = selectedSlugs.has(pw.slug);
+                const isAffected = status === "mild" || status === "moderate" || status === "severe";
                 return (
-                  <Card key={pw.id} className="overflow-hidden">
+                  <Card key={pw.id} className={`overflow-hidden ${isAffected ? "border-primary/40" : ""}`}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center justify-between gap-2">
-                        <span>{pw.name}</span>
+                        <span className="flex items-center gap-2">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(v) => {
+                              setSelectedSlugs((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(pw.slug); else next.delete(pw.slug);
+                                return next;
+                              });
+                            }}
+                            aria-label={`Выбрать «${pw.name}» для печати`}
+                          />
+                          {pw.name}
+                        </span>
                         <Badge variant="outline" className={STATUS_BADGE[status]}>
                           {SEVERITY_LABEL[status]}
                         </Badge>
@@ -328,6 +344,16 @@ export default function AdminPatientMetabolicMap() {
                       {savedSummary && savedSummary.matched_markers === 0 && (
                         <div className="text-[11px] italic text-muted-foreground px-2 py-1">
                           Нет лабораторных данных для оценки этого пути.
+                        </div>
+                      )}
+                      {text && (
+                        <div className="text-xs space-y-1.5 pt-2 border-t">
+                          {text.summary && <p><span className="font-medium">Кратко:</span> {text.summary}</p>}
+                          {text.what_broken && <p><span className="font-medium">Что нарушено:</span> {text.what_broken}</p>}
+                          {text.evidence && <p><span className="font-medium">По каким показателям:</span> {text.evidence}</p>}
+                          {text.risks && <p><span className="font-medium">Чем грозит:</span> {text.risks}</p>}
+                          {text.connections && <p><span className="font-medium">Связи:</span> {text.connections}</p>}
+                          {text.actions && <p><span className="font-medium">Что делать:</span> {text.actions}</p>}
                         </div>
                       )}
                     </CardContent>
