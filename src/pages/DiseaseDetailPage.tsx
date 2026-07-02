@@ -77,6 +77,12 @@ const DiseaseDetailPage = () => {
 
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [slug]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
     let cancelled = false;
 
@@ -276,7 +282,7 @@ const DiseaseDetailPage = () => {
                     to={`${isEn ? "/en" : ""}/for-parents/${r.slug}/`}
                     className="block group"
                   >
-                    <Card className="h-full hover:shadow-lg transition-shadow">
+                    <Card className="h-full transition-all duration-300 ease-out will-change-transform group-hover:-translate-y-1 group-hover:scale-[1.03] group-hover:shadow-xl">
                       <CardContent className="p-5">
                         <div className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
                           {categoryLabels[r.category] || r.category}
