@@ -83,6 +83,7 @@ const AdminArticleOrchestrator = lazy(() => import("./pages/AdminArticleOrchestr
 const AdminArticleImport = lazy(() => import("./pages/AdminArticleImport"));
 const AdminArticleUpload = lazy(() => import("./pages/AdminArticleUpload"));
 const AdminPatientDetail = lazy(() => import("./pages/AdminPatientDetail"));
+const AdminPatientMetabolicMap = lazy(() => import("./pages/AdminPatientMetabolicMap"));
 const AdminPatients = lazy(() => import("./pages/AdminPatients"));
 const AdminPatientNew = lazy(() =>
   import("./pages/AdminPatientForm").then((mod) => {
