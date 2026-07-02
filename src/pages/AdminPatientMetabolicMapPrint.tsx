@@ -282,7 +282,7 @@ export default function AdminPatientMetabolicMapPrint() {
   );
 }
 
-function PrintPathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<string> }) {
+function PrintPathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; highlight: Set<string>; rxNodes?: Set<string> }) {
   const nodes = pathway.nodes || [];
   if (!nodes.length) {
     return <div className="border rounded p-4 text-xs text-neutral-500 italic text-center bg-neutral-50 min-h-[120px] flex items-center justify-center">Схема пути пока не задана</div>;
