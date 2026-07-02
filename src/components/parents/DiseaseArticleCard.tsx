@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import RichTextEditor from "@/components/blog/RichTextEditor";
+import BentoImageCell, { type BentoImageData } from "./BentoImageCell";
 
 interface DiseaseArticle {
   id: string;
@@ -21,6 +22,9 @@ interface DiseaseArticle {
   article_content: string | null;
   thumbnail_path: string | null;
   category: string;
+  bento_image_1?: BentoImageData | null;
+  bento_image_2?: BentoImageData | null;
+  bento_image_3?: BentoImageData | null;
 }
 
 interface DiseaseArticleCardProps {
