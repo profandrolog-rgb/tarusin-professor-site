@@ -99,6 +99,7 @@ export default function AdminPatientMetabolicMap() {
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
+  const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
