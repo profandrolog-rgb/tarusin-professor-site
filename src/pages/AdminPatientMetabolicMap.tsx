@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,7 +6,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Activity, AlertTriangle, Info, ShieldAlert, Pill, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import {
+  ArrowLeft,
+  Loader2,
+  Activity,
+  AlertTriangle,
+  Info,
+  ShieldAlert,
+  Pill,
+  Sparkles,
+  RefreshCw,
+} from "lucide-react";
+import {
+  runAggregation,
+  SEVERITY_LABEL,
+  type Severity,
+  type PathwaySummary,
+} from "@/lib/metabolic/aggregator";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
@@ -37,11 +55,20 @@ type Recommendation = {
   is_accepted: boolean | null;
   catalog?: { name: string; subcategory: string | null } | null;
 };
+type VisitRow = { id: string; visit_date: string; protocol_type: string; diagnosis: string | null };
 
 const SEVERITY_META: Record<string, { label: string; icon: any; cls: string }> = {
   critical: { label: "Критично", icon: ShieldAlert, cls: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 border-red-300" },
   warn: { label: "Внимание", icon: AlertTriangle, cls: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300" },
   info: { label: "Инфо", icon: Info, cls: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border-blue-300" },
+};
+
+const STATUS_BADGE: Record<Severity, string> = {
+  no_data: "bg-muted text-muted-foreground border-border",
+  norm: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-300",
+  mild: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border-blue-300",
+  moderate: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300",
+  severe: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 border-red-300",
 };
 
 export default function AdminPatientMetabolicMap() {
@@ -50,51 +77,92 @@ export default function AdminPatientMetabolicMap() {
   const { user, isAdmin, loading } = useAuth();
 
   const [busy, setBusy] = useState(true);
+  const [aggregating, setAggregating] = useState(false);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [pathways, setPathways] = useState<Pathway[]>([]);
   const [mapId, setMapId] = useState<string | null>(null);
   const [mapNotes, setMapNotes] = useState<string | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [visits, setVisits] = useState<VisitRow[]>([]);
+  const [selectedVisit, setSelectedVisit] = useState<string>("all");
+  const [summary, setSummary] = useState<PathwaySummary[]>([]);
+  const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
   }, [user, isAdmin, loading, navigate]);
 
-  useEffect(() => {
+  const reload = useCallback(async () => {
     if (!id) return;
-    (async () => {
-      setBusy(true);
-      const [{ data: p }, { data: pw }, { data: m }] = await Promise.all([
-        supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
-        (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges").eq("is_active", true).order("name"),
-        (supabase as any).from("metabolic_maps").select("id, notes").eq("patient_id", id).maybeSingle(),
-      ]);
-      setPatient(p as any);
-      setPathways((pw as any) || []);
-      setMapId(m?.id || null);
-      setMapNotes(m?.notes || null);
+    setBusy(true);
+    const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
+      supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
+      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges").eq("is_active", true).order("name"),
+      (supabase as any)
+        .from("metabolic_maps")
+        .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary")
+        .eq("patient_id", id)
+        .maybeSingle(),
+      supabase
+        .from("patient_visits")
+        .select("id, visit_date, protocol_type, diagnosis")
+        .eq("patient_id", id)
+        .order("visit_date", { ascending: false }),
+    ]);
+    setPatient(p as any);
+    setPathways((pw as any) || []);
+    setMapId(m?.id || null);
+    setMapNotes(m?.notes || null);
+    setVisits((vs as any) || []);
+    setSelectedVisit((m as any)?.source_visit_id || "all");
+    setLastAggregatedAt((m as any)?.last_aggregated_at || null);
+    const savedSummary = ((m as any)?.aggregate_summary?.pathways as PathwaySummary[]) || [];
+    setSummary(savedSummary);
 
-      if (m?.id) {
-        const [{ data: f }, { data: r }] = await Promise.all([
-          (supabase as any).from("map_findings")
-            .select("id, pathway_id, node_id, severity, label, detail, source_ref, created_at")
-            .eq("map_id", m.id)
-            .order("created_at", { ascending: false }),
-          (supabase as any).from("map_recommendations")
-            .select("id, catalog_id, target_node_id, application_point, rationale, priority, is_accepted, catalog:treatment_catalog(name, subcategory)")
-            .eq("map_id", m.id)
-            .order("priority", { ascending: false }),
-        ]);
-        setFindings((f as any) || []);
-        setRecs((r as any) || []);
-      } else {
-        setFindings([]);
-        setRecs([]);
-      }
-      setBusy(false);
-    })();
+    if (m?.id) {
+      const [{ data: f }, { data: r }] = await Promise.all([
+        (supabase as any)
+          .from("map_findings")
+          .select("id, pathway_id, node_id, severity, label, detail, source_ref, created_at")
+          .eq("map_id", m.id)
+          .order("created_at", { ascending: false }),
+        (supabase as any)
+          .from("map_recommendations")
+          .select("id, catalog_id, target_node_id, application_point, rationale, priority, is_accepted, catalog:treatment_catalog(name, subcategory)")
+          .eq("map_id", m.id)
+          .order("priority", { ascending: false }),
+      ]);
+      setFindings((f as any) || []);
+      setRecs((r as any) || []);
+    } else {
+      setFindings([]);
+      setRecs([]);
+    }
+    setBusy(false);
   }, [id]);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const handleAggregate = async () => {
+    if (!id) return;
+    setAggregating(true);
+    try {
+      const result = await runAggregation({
+        patientId: id,
+        visitId: selectedVisit === "all" ? null : selectedVisit,
+      });
+      toast({
+        title: "Пересчёт выполнен",
+        description: `Отклонений: ${result.findings.length}. Путей проанализировано: ${result.summary.length}.`,
+      });
+      await reload();
+    } catch (e: any) {
+      toast({ title: "Ошибка агрегации", description: e?.message || String(e), variant: "destructive" });
+    } finally {
+      setAggregating(false);
+    }
+  };
 
   const findingsByPathway = useMemo(() => {
     const map = new Map<string, Finding[]>();
@@ -105,6 +173,12 @@ export default function AdminPatientMetabolicMap() {
     }
     return map;
   }, [findings]);
+
+  const summaryByPathway = useMemo(() => {
+    const m = new Map<string, PathwaySummary>();
+    for (const s of summary) m.set(s.pathway_id, s);
+    return m;
+  }, [summary]);
 
   if (loading || busy) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -132,17 +206,36 @@ export default function AdminPatientMetabolicMap() {
               {patient.full_name}{patient.history_number ? ` · № ИБ ${patient.history_number}` : ""}
             </p>
           </div>
-          <Badge variant="secondary" className="gap-1"><Sparkles className="w-3 h-3" />Этап 1 · просмотр</Badge>
+          <Badge variant="secondary" className="gap-1"><Sparkles className="w-3 h-3" />Автоагрегатор</Badge>
         </header>
 
-        {!mapId && (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              <p>Карта для этого пациента ещё не создана.</p>
-              <p className="text-xs mt-2">Редактор карты появится на следующем этапе.</p>
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardContent className="p-4 flex flex-wrap items-end gap-3">
+            <div className="min-w-[240px] flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">Источник данных (визит)</label>
+              <Select value={selectedVisit} onValueChange={setSelectedVisit}>
+                <SelectTrigger><SelectValue placeholder="Все данные" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все данные пациента</SelectItem>
+                  {visits.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.visit_date} · {v.protocol_type}{v.diagnosis ? ` · ${v.diagnosis}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleAggregate} disabled={aggregating} className="gap-2">
+              {aggregating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Пересчитать отклонения
+            </Button>
+            {lastAggregatedAt && (
+              <div className="text-xs text-muted-foreground">
+                Последний пересчёт: {new Date(lastAggregatedAt).toLocaleString("ru-RU")}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {mapNotes && (
           <Card>
@@ -157,25 +250,36 @@ export default function AdminPatientMetabolicMap() {
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
-              {pathways.map(pw => {
+              {pathways.map((pw) => {
                 const pwFindings = findingsByPathway.get(pw.id) || [];
-                const affectedNodes = new Set(pwFindings.map(f => f.node_id).filter(Boolean) as string[]);
+                const savedSummary = summaryByPathway.get(pw.id);
+                const affectedNodes = new Set<string>([
+                  ...pwFindings.map((f) => f.node_id).filter(Boolean) as string[],
+                  ...((savedSummary?.affected_nodes) || []),
+                ]);
+                const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
                 return (
                   <Card key={pw.id} className="overflow-hidden">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-base flex items-center justify-between gap-2">
                         <span>{pw.name}</span>
-                        {pwFindings.length > 0 && (
-                          <Badge variant="destructive" className="text-xs">{pwFindings.length}</Badge>
-                        )}
+                        <Badge variant="outline" className={STATUS_BADGE[status]}>
+                          {SEVERITY_LABEL[status]}
+                        </Badge>
                       </CardTitle>
                       {pw.description && <p className="text-xs text-muted-foreground">{pw.description}</p>}
+                      {savedSummary && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Маркеров сопоставлено: {savedSummary.matched_markers}
+                          {pwFindings.length > 0 && ` · отклонений: ${pwFindings.length}`}
+                        </p>
+                      )}
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
                       <PathwaySVG pathway={pw} highlight={affectedNodes} />
                       {pwFindings.length > 0 && (
                         <ul className="space-y-1 text-xs">
-                          {pwFindings.map(f => {
+                          {pwFindings.map((f) => {
                             const meta = SEVERITY_META[f.severity] || SEVERITY_META.info;
                             const Icon = meta.icon;
                             return (
@@ -190,6 +294,11 @@ export default function AdminPatientMetabolicMap() {
                           })}
                         </ul>
                       )}
+                      {savedSummary && savedSummary.matched_markers === 0 && (
+                        <div className="text-[11px] italic text-muted-foreground px-2 py-1">
+                          Нет лабораторных данных для оценки этого пути.
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -203,7 +312,7 @@ export default function AdminPatientMetabolicMap() {
             <CardHeader><CardTitle className="text-base">Отклонения вне путей</CardTitle></CardHeader>
             <CardContent>
               <ul className="space-y-1 text-sm">
-                {findingsByPathway.get("_unbound")!.map(f => {
+                {findingsByPathway.get("_unbound")!.map((f) => {
                   const meta = SEVERITY_META[f.severity] || SEVERITY_META.info;
                   const Icon = meta.icon;
                   return (
@@ -226,7 +335,7 @@ export default function AdminPatientMetabolicMap() {
             <Card>
               <CardContent className="p-0">
                 <ul className="divide-y">
-                  {recs.map(r => (
+                  {recs.map((r) => (
                     <li key={r.id} className="p-3 flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-medium text-sm">{r.catalog?.name || "—"}</div>
@@ -251,18 +360,15 @@ export default function AdminPatientMetabolicMap() {
         </section>
 
         <div className="pt-6 text-xs text-muted-foreground border-t">
-          Модуль в разработке. Этап 1 — только просмотр. Редактор путей, автоагрегация анализов и отправка во внешний ИИ появятся на следующих этапах.
+          Автоагрегатор сравнивает измеренные значения с референсами по полу и возрасту (из lab_results)
+          и детерминированно выставляет статус: норма / лёгкое / умеренное / тяжёлое. Значения не выдумываются:
+          если по пути нет данных — статус «нет данных».
         </div>
       </div>
     </div>
   );
 }
 
-/**
- * Простая SVG-визуализация пути.
- * Если у узлов заданы x/y — расставляем по ним, иначе укладываем по горизонтали.
- * Подсвечиваем узлы из highlight (id узла) красной обводкой.
- */
 function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<string> }) {
   const nodes = pathway.nodes || [];
   if (nodes.length === 0) {
@@ -274,7 +380,7 @@ function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<s
     const y = typeof n.y === "number" ? n.y : H / 2;
     return { ...n, x, y };
   });
-  const byId = new Map(positioned.map(n => [n.id, n]));
+  const byId = new Map(positioned.map((n) => [n.id, n]));
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto rounded bg-muted/30">
@@ -295,7 +401,7 @@ function PathwaySVG({ pathway, highlight }: { pathway: Pathway; highlight: Set<s
           <path d="M 0 0 L 10 5 L 0 10 z" fill="hsl(var(--muted-foreground))" />
         </marker>
       </defs>
-      {positioned.map(n => {
+      {positioned.map((n) => {
         const hot = highlight.has(n.id);
         return (
           <g key={n.id}>
