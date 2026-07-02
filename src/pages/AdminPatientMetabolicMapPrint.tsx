@@ -11,6 +11,7 @@ import {
 } from "@/lib/metabolic/aggregator";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { exportNodeToPdf } from "@/lib/exportPdf";
+import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
