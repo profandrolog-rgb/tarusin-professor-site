@@ -266,7 +266,7 @@ export function AuditPanel({ pathways, summary, findings, ai }: AuditPanelProps)
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
