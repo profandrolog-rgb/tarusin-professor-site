@@ -565,32 +565,23 @@ export default function AdminPatientMetabolicMap() {
         ) : null}
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold flex items-center gap-2"><Pill className="w-5 h-5" />Рекомендации</h2>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2"><Pill className="w-5 h-5" />
+              ℞ Точки приложения терапии (из каталога)
+            </h2>
+            <div className="text-xs text-muted-foreground">
+              Отмечены на печать: {recs.filter((r) => r.include_in_print).length} из {recs.length}
+            </div>
+          </div>
           {recs.length === 0 ? (
-            <Card><CardContent className="p-6 text-sm text-muted-foreground">Рекомендаций пока нет.</CardContent></Card>
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">
+              Нажмите «Подобрать из каталога», чтобы связать сработавшие показатели со средствами каталога лечения.
+              Ничего вне каталога предложено не будет.
+            </CardContent></Card>
           ) : (
             <Card>
-              <CardContent className="p-0">
-                <ul className="divide-y">
-                  {recs.map((r) => (
-                    <li key={r.id} className="p-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="font-medium text-sm">{r.catalog?.name || "—"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {r.catalog?.subcategory && <span>{r.catalog.subcategory}</span>}
-                          {r.application_point && <span> · точка приложения: {r.application_point}</span>}
-                          {r.target_node_id && <span> · узел: {r.target_node_id}</span>}
-                        </div>
-                        {r.rationale && <div className="text-xs mt-1">{r.rationale}</div>}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Badge variant="outline">P{r.priority}</Badge>
-                        {r.is_accepted === true && <Badge>принято</Badge>}
-                        {r.is_accepted === false && <Badge variant="secondary">отклонено</Badge>}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              <CardContent className="p-4">
+                <RxBlock recs={recs} onTogglePrint={togglePrint} />
               </CardContent>
             </Card>
           )}
