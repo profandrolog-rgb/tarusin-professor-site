@@ -15,12 +15,18 @@ export type SceneJson = {
 export function PathwaySceneSVG({
   scene,
   highlights,
+  rxNodes,
+  rxLabelByNode,
   className = "",
   fallback,
   maxHeight,
 }: {
   scene: SceneJson | null | undefined;
   highlights?: Map<string, Severity>;
+  /** Узлы, к которым в каталоге привязано хотя бы одно средство — рисуем зелёный ℞ */
+  rxNodes?: Set<string>;
+  /** Подписи ℞: nodeId → "Метод 1 · Метод 2" */
+  rxLabelByNode?: Map<string, string>;
   className?: string;
   fallback?: React.ReactNode;
   maxHeight?: number;
