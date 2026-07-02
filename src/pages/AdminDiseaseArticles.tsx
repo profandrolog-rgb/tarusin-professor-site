@@ -595,6 +595,56 @@ const AdminDiseaseArticles = () => {
                     Изображение отображается полупрозрачным фоном карточки, текст — поверх.
                   </p>
                 </div>
+
+                {/* Bento 3-image strip */}
+                <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/30">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <ImageIcon className="w-4 h-4" /> Три изображения для бенто-карточки
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Показываются только на большой (featured) карточке в режиме «Плитка» и тонкой полосой под текстом в режиме «Список». Перетащите точку внутри рамки — центр кадра, ползунком отрегулируйте масштаб.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <BentoImageEditor
+                      label="Изображение 1"
+                      value={form.bento_image_1}
+                      onChange={(v) => setForm({ ...form, bento_image_1: v })}
+                    />
+                    <BentoImageEditor
+                      label="Изображение 2"
+                      value={form.bento_image_2}
+                      onChange={(v) => setForm({ ...form, bento_image_2: v })}
+                    />
+                    <BentoImageEditor
+                      label="Изображение 3"
+                      value={form.bento_image_3}
+                      onChange={(v) => setForm({ ...form, bento_image_3: v })}
+                    />
+                  </div>
+
+                  {(form.title || form.bento_image_1?.path || form.bento_image_2?.path || form.bento_image_3?.path) && (
+                    <div className="pt-3 border-t border-border/60">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">Предпросмотр большой карточки</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ gridAutoRows: "minmax(140px, auto)" }}>
+                        <DiseaseBentoCard
+                          featured
+                          categoryLabel={categoryLabels[form.category] || form.category}
+                          article={{
+                            id: editing?.id || "preview",
+                            slug: form.slug || "preview",
+                            title: form.title || "Название заболевания",
+                            description: form.description || null,
+                            thumbnail_path: form.card_background_path,
+                            category: form.category,
+                            bento_image_1: form.bento_image_1,
+                            bento_image_2: form.bento_image_2,
+                            bento_image_3: form.bento_image_3,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Content tabs */}
