@@ -335,6 +335,10 @@ export default function AdminPatientMetabolicMap() {
               {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               ИИ-интерпретация
             </Button>
+            <Button onClick={handleRebuildRx} disabled={rxBusy || !mapId} variant="secondary" className="gap-2">
+              {rxBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Beaker className="w-4 h-4" />}
+              Подобрать ℞ из каталога
+            </Button>
             <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer">
               <Checkbox
                 checked={deidentified}
