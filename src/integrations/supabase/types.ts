@@ -2132,30 +2132,39 @@ export type Database = {
       }
       metabolic_maps: {
         Row: {
+          aggregate_summary: Json
           created_at: string
           created_by: string | null
           id: string
+          last_aggregated_at: string | null
           meta: Json
           notes: string | null
           patient_id: string
+          source_visit_id: string | null
           updated_at: string
         }
         Insert: {
+          aggregate_summary?: Json
           created_at?: string
           created_by?: string | null
           id?: string
+          last_aggregated_at?: string | null
           meta?: Json
           notes?: string | null
           patient_id: string
+          source_visit_id?: string | null
           updated_at?: string
         }
         Update: {
+          aggregate_summary?: Json
           created_at?: string
           created_by?: string | null
           id?: string
+          last_aggregated_at?: string | null
           meta?: Json
           notes?: string | null
           patient_id?: string
+          source_visit_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2285,6 +2294,7 @@ export type Database = {
           is_active: boolean
           name: string
           nodes: Json
+          rules: Json
           slug: string
           svg_template: string | null
           updated_at: string
@@ -2297,6 +2307,7 @@ export type Database = {
           is_active?: boolean
           name: string
           nodes?: Json
+          rules?: Json
           slug: string
           svg_template?: string | null
           updated_at?: string
@@ -2309,6 +2320,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           nodes?: Json
+          rules?: Json
           slug?: string
           svg_template?: string | null
           updated_at?: string
