@@ -38,7 +38,7 @@ import { buildAutoScene } from "@/lib/metabolic/autoLayout";
 import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
 
-type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
+type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean };
 type Pathway = {
   id: string;
   slug: string;
