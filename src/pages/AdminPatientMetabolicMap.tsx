@@ -25,6 +25,9 @@ import {
   type Severity,
   type PathwaySummary,
 } from "@/lib/metabolic/aggregator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
+import { Printer } from "lucide-react";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
