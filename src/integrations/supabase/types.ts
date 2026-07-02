@@ -2374,6 +2374,56 @@ export type Database = {
         }
         Relationships: []
       }
+      pathway_texts: {
+        Row: {
+          actions: string | null
+          connections: string | null
+          created_at: string
+          evidence: string | null
+          id: string
+          pathway_id: string
+          register: string
+          risks: string | null
+          summary: string | null
+          updated_at: string
+          what_broken: string | null
+        }
+        Insert: {
+          actions?: string | null
+          connections?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          pathway_id: string
+          register: string
+          risks?: string | null
+          summary?: string | null
+          updated_at?: string
+          what_broken?: string | null
+        }
+        Update: {
+          actions?: string | null
+          connections?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          pathway_id?: string
+          register?: string
+          risks?: string | null
+          summary?: string | null
+          updated_at?: string
+          what_broken?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pathway_texts_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pathways: {
         Row: {
           created_at: string
