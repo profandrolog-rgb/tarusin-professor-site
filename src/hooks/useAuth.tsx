@@ -8,11 +8,13 @@ interface AuthContextType {
   isAdmin: boolean;
   isEditor: boolean;
   isSurgeon: boolean;
+  isParent: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -22,8 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
   const [isSurgeon, setIsSurgeon] = useState(false);
+  const [isParent, setIsParent] = useState(false);
   const [loading, setLoading] = useState(true);
-  const rolesPromiseRef = useRef<{ userId: string; promise: Promise<[boolean, boolean, boolean]> } | null>(null);
+  const rolesPromiseRef = useRef<{ userId: string; promise: Promise<[boolean, boolean, boolean, boolean]> } | null>(null);
 
   const checkRole = async (userId: string, role: string) => {
     try {
@@ -50,16 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       checkRole(userId, "admin"),
       checkRole(userId, "editor"),
       checkRole(userId, "surgeon"),
-    ]);
+      checkRole(userId, "parent"),
+    ]) as Promise<[boolean, boolean, boolean, boolean]>;
     rolesPromiseRef.current = { userId, promise };
     return promise;
   };
 
-  const applyRoles = ([admin, editor, surgeon]: [boolean, boolean, boolean]) => {
+  const applyRoles = ([admin, editor, surgeon, parent]: [boolean, boolean, boolean, boolean]) => {
     setIsAdmin(admin);
     setIsEditor(editor);
     setIsSurgeon(surgeon);
+    setIsParent(parent);
   };
+
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -75,9 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsAdmin(false);
           setIsEditor(false);
           setIsSurgeon(false);
+          setIsParent(false);
           rolesPromiseRef.current = null;
           setLoading(false);
         }
+
       }
     );
 
@@ -131,12 +139,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isEditor,
         isSurgeon,
+        isParent,
         loading,
         signIn,
         signUp,
         signOut,
       }}
     >
+
       {children}
     </AuthContext.Provider>
   );

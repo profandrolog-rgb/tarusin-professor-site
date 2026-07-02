@@ -2250,6 +2250,54 @@ export type Database = {
           },
         ]
       }
+      metabolic_map_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          findings: Json
+          id: string
+          pathway_status: Json
+          patient_id: string
+          snapshot_date: string
+          visit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          findings?: Json
+          id?: string
+          pathway_status?: Json
+          patient_id: string
+          snapshot_date?: string
+          visit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          findings?: Json
+          id?: string
+          pathway_status?: Json
+          patient_id?: string
+          snapshot_date?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metabolic_map_snapshots_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metabolic_map_snapshots_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "patient_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       metabolic_maps: {
         Row: {
           aggregate_summary: Json
@@ -2694,6 +2742,38 @@ export type Database = {
           },
         ]
       }
+      patient_guardians: {
+        Row: {
+          created_at: string
+          id: string
+          patient_id: string
+          relation: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_id: string
+          relation?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_id?: string
+          relation?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_guardians_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_visits: {
         Row: {
           created_at: string
@@ -2757,6 +2837,7 @@ export type Database = {
           parent_name: string | null
           patronymic: string | null
           phone: string | null
+          share_simple_only: boolean
           telegram_username: string | null
           updated_at: string
         }
@@ -2772,6 +2853,7 @@ export type Database = {
           parent_name?: string | null
           patronymic?: string | null
           phone?: string | null
+          share_simple_only?: boolean
           telegram_username?: string | null
           updated_at?: string
         }
@@ -2787,6 +2869,7 @@ export type Database = {
           parent_name?: string | null
           patronymic?: string | null
           phone?: string | null
+          share_simple_only?: boolean
           telegram_username?: string | null
           updated_at?: string
         }
@@ -5522,6 +5605,23 @@ export type Database = {
         Args: { _batch_id: string; _entry: Json }
         Returns: undefined
       }
+      cohort_pathway_stats: {
+        Args: {
+          _age_max?: number
+          _age_min?: number
+          _icd10?: string
+          _sex?: string
+        }
+        Returns: {
+          pathway_name: string
+          pathway_slug: string
+          patients_affected: number
+          patients_total: number
+          severity_mild: number
+          severity_moderate: number
+          severity_severe: number
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -5554,6 +5654,7 @@ export type Database = {
         Args: { _hash: string }
         Returns: undefined
       }
+      is_guardian_of: { Args: { _patient_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -5610,7 +5711,7 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      app_role: "admin" | "user" | "editor" | "surgeon"
+      app_role: "admin" | "user" | "editor" | "surgeon" | "parent"
       case_category:
         | "hydrocele"
         | "cryptorchidism"
@@ -5802,7 +5903,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "editor", "surgeon"],
+      app_role: ["admin", "user", "editor", "surgeon", "parent"],
       case_category: [
         "hydrocele",
         "cryptorchidism",
