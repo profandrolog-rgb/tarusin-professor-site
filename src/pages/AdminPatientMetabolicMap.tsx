@@ -650,6 +650,14 @@ export default function AdminPatientMetabolicMap() {
           />
         </div>
 
+        <AuditPanel
+          pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
+          summary={summary}
+          findings={findings as any}
+          ai={ai}
+        />
+
+
 
         <section className="space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
