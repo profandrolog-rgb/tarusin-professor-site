@@ -1424,6 +1424,9 @@ export type Database = {
           age_group: string
           article_content: string | null
           audio_path: string | null
+          bento_image_1: Json | null
+          bento_image_2: Json | null
+          bento_image_3: Json | null
           card_annotation: string | null
           card_background_path: string | null
           category: string
@@ -1443,6 +1446,9 @@ export type Database = {
           age_group?: string
           article_content?: string | null
           audio_path?: string | null
+          bento_image_1?: Json | null
+          bento_image_2?: Json | null
+          bento_image_3?: Json | null
           card_annotation?: string | null
           card_background_path?: string | null
           category?: string
@@ -1462,6 +1468,9 @@ export type Database = {
           age_group?: string
           article_content?: string | null
           audio_path?: string | null
+          bento_image_1?: Json | null
+          bento_image_2?: Json | null
+          bento_image_3?: Json | null
           card_annotation?: string | null
           card_background_path?: string | null
           category?: string

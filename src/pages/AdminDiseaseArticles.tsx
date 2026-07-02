@@ -17,6 +17,9 @@ import { toast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ArticleMarkdownEditor, { type ArticleMarkdownEditorHandle } from "@/components/parents/ArticleMarkdownEditor";
 import EnTranslationPanel from "@/components/admin/EnTranslationPanel";
+import BentoImageEditor from "@/components/parents/BentoImageEditor";
+import DiseaseBentoCard from "@/components/parents/DiseaseBentoCard";
+import type { BentoImageData } from "@/components/parents/BentoImageCell";
 
 import { mergePersistedGalleryFiles } from "@/lib/markdown/galleryMarkers";
 
@@ -42,6 +45,9 @@ const emptyForm = {
   is_published: false,
   card_annotation: "",
   card_background_path: null as string | null,
+  bento_image_1: null as BentoImageData | null,
+  bento_image_2: null as BentoImageData | null,
+  bento_image_3: null as BentoImageData | null,
 };
 
 const AdminDiseaseArticles = () => {
@@ -118,6 +124,9 @@ const AdminDiseaseArticles = () => {
       is_published: article.is_published,
       card_annotation: article.card_annotation || "",
       card_background_path: article.card_background_path || null,
+      bento_image_1: (article.bento_image_1 as BentoImageData) || null,
+      bento_image_2: (article.bento_image_2 as BentoImageData) || null,
+      bento_image_3: (article.bento_image_3 as BentoImageData) || null,
     });
     setVideoFile(null);
     setAudioFile(null);
@@ -192,6 +201,9 @@ const AdminDiseaseArticles = () => {
         is_published: form.is_published,
         card_annotation: form.card_annotation?.trim() || null,
         card_background_path,
+        bento_image_1: form.bento_image_1 as any,
+        bento_image_2: form.bento_image_2 as any,
+        bento_image_3: form.bento_image_3 as any,
       };
 
       if (editing) {
@@ -582,6 +594,56 @@ const AdminDiseaseArticles = () => {
                   <p className="text-xs text-muted-foreground">
                     Изображение отображается полупрозрачным фоном карточки, текст — поверх.
                   </p>
+                </div>
+
+                {/* Bento 3-image strip */}
+                <div className="border border-border rounded-lg p-3 space-y-3 bg-muted/30">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <ImageIcon className="w-4 h-4" /> Три изображения для бенто-карточки
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Показываются только на большой (featured) карточке в режиме «Плитка» и тонкой полосой под текстом в режиме «Список». Перетащите точку внутри рамки — центр кадра, ползунком отрегулируйте масштаб.
+                  </p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <BentoImageEditor
+                      label="Изображение 1"
+                      value={form.bento_image_1}
+                      onChange={(v) => setForm({ ...form, bento_image_1: v })}
+                    />
+                    <BentoImageEditor
+                      label="Изображение 2"
+                      value={form.bento_image_2}
+                      onChange={(v) => setForm({ ...form, bento_image_2: v })}
+                    />
+                    <BentoImageEditor
+                      label="Изображение 3"
+                      value={form.bento_image_3}
+                      onChange={(v) => setForm({ ...form, bento_image_3: v })}
+                    />
+                  </div>
+
+                  {(form.title || form.bento_image_1?.path || form.bento_image_2?.path || form.bento_image_3?.path) && (
+                    <div className="pt-3 border-t border-border/60">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">Предпросмотр большой карточки</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ gridAutoRows: "minmax(140px, auto)" }}>
+                        <DiseaseBentoCard
+                          featured
+                          categoryLabel={categoryLabels[form.category] || form.category}
+                          article={{
+                            id: editing?.id || "preview",
+                            slug: form.slug || "preview",
+                            title: form.title || "Название заболевания",
+                            description: form.description || null,
+                            thumbnail_path: form.card_background_path,
+                            category: form.category,
+                            bento_image_1: form.bento_image_1,
+                            bento_image_2: form.bento_image_2,
+                            bento_image_3: form.bento_image_3,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
