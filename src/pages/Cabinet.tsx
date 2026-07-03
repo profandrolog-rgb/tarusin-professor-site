@@ -1685,6 +1685,7 @@ export default function Cabinet() {
       let buf = "";
       let pendingEvent: string | null = null;
       let firstTokenSeen = false;
+      let fatalStreamError: Error | null = null;
       const mergeAnnotations = (anns: any) => {
         if (!Array.isArray(anns)) return;
         for (const a of anns) {
@@ -1729,7 +1730,9 @@ export default function Cabinet() {
               continue;
             }
             if (pendingEvent === "error") {
-              throw new Error(parsed?.message || parsed?.error || "Модель оборвала поток без ответа");
+              fatalStreamError = new Error(parsed?.message || parsed?.error || "Модель оборвала поток без ответа");
+              pendingEvent = null;
+              break;
             }
             if (council) {
               if (pendingEvent === "progress") {
@@ -1788,7 +1791,10 @@ export default function Cabinet() {
           } catch { /* partial */ }
           pendingEvent = null;
         }
+        if (fatalStreamError) break;
       }
+
+      if (fatalStreamError) throw fatalStreamError;
 
       if (noTokenTimer) {
         clearTimeout(noTokenTimer);
