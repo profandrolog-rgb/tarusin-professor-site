@@ -1777,6 +1777,7 @@ export default function Cabinet() {
       });
     } finally {
       setStreaming(false);
+      setStreamPhase("idle");
     }
   };
 
