@@ -2571,8 +2571,12 @@ export default function Cabinet() {
                             ? councilProgress.stage === "summarizing"
                               ? `Сборка сводного ответа консилиума… ${elapsedSec}s`
                               : `Опрос моделей консилиума: ${councilProgress.done}/${councilProgress.total} · ${elapsedSec}s`
-                            : <>Думаю… {elapsedSec}s
-                                {elapsedSec >= 60 && elapsedSec < 240 && (
+                            : <>
+                                {streamPhase === "connecting" && <>🔌 Соединяюсь с моделью <span className="opacity-70">({model})</span>… {elapsedSec}s</>}
+                                {streamPhase === "waiting" && <>✅ Соединение установлено · ⏳ Жду первый токен… {elapsedSec}s</>}
+                                {streamPhase === "streaming" && <>📡 Стрим идёт · {elapsedSec}s · {(streamBytes/1024).toFixed(1)} KB · {streamChunks} чанков{ttftMs !== null && <> · TTFT {(ttftMs/1000).toFixed(1)}s</>}</>}
+                                {streamPhase === "idle" && <>Думаю… {elapsedSec}s</>}
+                                {elapsedSec >= 60 && elapsedSec < 240 && streamPhase !== "streaming" && (
                                   <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
                                 )}
                                 {elapsedSec >= 240 && (
