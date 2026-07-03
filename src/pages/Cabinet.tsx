@@ -1105,6 +1105,7 @@ export default function Cabinet() {
         throw new Error(err || `HTTP ${resp.status}`);
       }
       const json = await resp.json();
+      const answerText = String(json.answer || "").trim();
       const payload: PubmedPayload = {
         used_query: json.used_query || "",
         english_query: json.english_query || "",
@@ -1112,12 +1113,19 @@ export default function Cabinet() {
         retstart: Number(json.retstart) || 0,
         sources: (json.sources || []) as PubmedSource[],
       };
+      if (!answerText) {
+        throw new Error(
+          payload.sources.length === 0
+            ? `PubMed по запросу «${payload.english_query || text}» не нашёл источников — модель нечего было анализировать.`
+            : `PubMed вернул ${payload.sources.length} источников, но модель не сформировала текст ответа. Смените модель или повторите.`
+        );
+      }
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = { role: "assistant", content: json.answer || "", model: `pubmed:${model}`, pubmed: payload };
+        next[next.length - 1] = { role: "assistant", content: answerText, model: `pubmed:${model}`, pubmed: payload };
         return next;
       });
-      await persistPubmedAssistant(convId, json.answer || "", payload);
+      await persistPubmedAssistant(convId, answerText, payload);
     } catch (e: any) {
       toast.error("PubMed-поиск не удался: " + (e?.message || ""));
       setMessages((prev) => {
