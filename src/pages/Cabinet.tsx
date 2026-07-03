@@ -425,7 +425,11 @@ export default function Cabinet() {
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
   const [pubmedFilters, setPubmedFilters] = useState<PubmedFilters>(PUBMED_DEFAULT_FILTERS);
 
-  const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive);
+  const curatedAttachmentCapable = !!currentResolved?.available && (
+    modelSupportsAttachments(currentResolved.liveInfo) ||
+    /gemini|claude|gpt-5|gpt-4o|vision|image|file|pdf/i.test(currentResolved.id)
+  );
+  const attachmentsSupported = council ? true : modelSupportsAttachments(currentLive) || curatedAttachmentCapable;
   const visionCapableLabels = resolvedModels
     .filter((r) => r.available && modelSupportsAttachments(r.liveInfo))
     .map((r) => r.label);
@@ -854,12 +858,14 @@ export default function Cabinet() {
         toast.error(`${f.name}: не удалось загрузить (${up.error.message})`);
         continue;
       }
-      const signed = await supabase.storage.from("chat-attachments").createSignedUrl(path, 60 * 60);
-      if (signed.error || !signed.data?.signedUrl) {
-        toast.error(`${f.name}: не удалось получить ссылку`);
+      let dataUrl = "";
+      try {
+        dataUrl = await fileToDataUrl(f);
+      } catch {
+        toast.error(`${f.name}: файл загружен, но не удалось подготовить его для модели`);
         continue;
       }
-      out.push({ name: f.name, type: f.type, path, dataUrl: signed.data.signedUrl });
+      out.push({ name: f.name, type: f.type, path, dataUrl });
     }
     setAttachments((prev) => [...prev, ...out]);
     if (fileInputRef.current) fileInputRef.current.value = "";
