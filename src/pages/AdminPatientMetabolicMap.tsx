@@ -30,7 +30,8 @@ import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Reg
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
-import { MetroOverview } from "@/components/metabolic/MetroOverview";
+import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
+import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
