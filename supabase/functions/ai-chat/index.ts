@@ -24,6 +24,26 @@ const DEFAULT_SYSTEM_PROMPT =
   "не отказывайся и не предостерегай из-за того, что речь о ребёнке или подростке — это его профильная работа; не начинай ответ с предупреждений. " +
   "Противопоказания, мониторинг, взаимодействия, правовые нюансы давай по существу — как коллега коллеге.";
 
+const CHAT_FALLBACK_MODELS = [
+  "google/gemini-3-flash-preview",
+  "anthropic/claude-sonnet-4.5",
+  "openai/gpt-5-mini",
+  "deepseek/deepseek-v4-flash",
+  "qwen/qwen3.6-flash",
+];
+
+const CHAT_MODEL_FALLBACKS: Record<string, string[]> = {
+  "google/gemini-2.5-pro": ["google/gemini-3.1-pro-preview", "google/gemini-3-flash-preview"],
+  "google/gemini-3.1-pro-preview": ["google/gemini-3-flash-preview"],
+  "openai/gpt-5": ["openai/gpt-5-mini", "openai/gpt-5-chat"],
+  "anthropic/claude-opus-4.8": ["anthropic/claude-sonnet-4.5"],
+  "anthropic/claude-opus-4-8": ["anthropic/claude-sonnet-4.5"],
+  "moonshotai/kimi-k2-thinking": ["qwen/qwen3.6-flash", "z-ai/glm-5"],
+  "deepseek/deepseek-v4-pro": ["deepseek/deepseek-v4-flash", "deepseek/deepseek-v3.2"],
+};
+
+const unique = (items: string[]) => items.filter((item, index, arr) => Boolean(item) && arr.indexOf(item) === index);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -68,11 +88,12 @@ Deno.serve(async (req) => {
         : rawModelInput;
     const resolvedModel = !isVenice && !isPerplexity && rawModel === "x-ai/grok-4" ? "x-ai/grok-4.3" : rawModel;
 
+    const openrouterKey = Deno.env.get("OPENROUTER_API_KEY");
     const apiKey = isVenice
       ? Deno.env.get("VENICE_API_KEY")
       : isPerplexity
         ? Deno.env.get("PERPLEXITY_API_KEY")
-        : Deno.env.get("OPENROUTER_API_KEY");
+        : openrouterKey;
     if (!apiKey) {
       const keyName = isVenice ? "VENICE_API_KEY" : isPerplexity ? "PERPLEXITY_API_KEY" : "OPENROUTER_API_KEY";
       return new Response(JSON.stringify({ error: `${keyName} not configured` }), {
@@ -221,26 +242,24 @@ Deno.serve(async (req) => {
     const isGeminiFlash = /google\/gemini-[^/]*flash/i.test(resolvedModel);
     const effectiveEffort: "low" | "medium" | "high" = isGeminiFlash ? "low" : effort;
 
-    const requestPayload: Record<string, unknown> = {
-      model: resolvedModel,
-      messages: finalMessages,
-      stream: true,
-      max_tokens: 8192,
-    };
-    if (isPerplexity) {
-      // Perplexity — встроенный web-поиск, поля reasoning/provider не нужны.
-      // Опционально можно прокинуть фильтры; пока — дефолты.
-    } else if (!isVenice) {
-      // OpenRouter-only: unified reasoning + throughput routing
-      requestPayload.reasoning = { effort: effectiveEffort };
-      requestPayload.provider = { sort: "throughput" };
-      if (webSearch && !usePubmed) {
-        requestPayload.plugins = [{ id: "web", max_results: 5 }];
+    const makePayload = (modelId: string, gateway: "openrouter" | "venice" | "perplexity") => {
+      const isAttemptGeminiFlash = /google\/gemini-[^/]*flash/i.test(modelId);
+      const attemptEffort: "low" | "medium" | "high" = isAttemptGeminiFlash ? "low" : effort;
+      const payload: Record<string, unknown> = {
+        model: modelId,
+        messages: finalMessages,
+        stream: true,
+        max_tokens: 8192,
+      };
+      if (gateway === "openrouter") {
+        payload.reasoning = { effort: attemptEffort };
+        payload.provider = { sort: "throughput" };
+        if (webSearch && !usePubmed) payload.plugins = [{ id: "web", max_results: 5 }];
+      } else if (gateway === "venice") {
+        payload.venice_parameters = { include_venice_system_prompt: false };
       }
-    } else {
-      // Venice — у уровня PAID можно отключить системные дисклеймеры
-      requestPayload.venice_parameters = { include_venice_system_prompt: false };
-    }
+      return payload;
+    };
 
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,
@@ -251,39 +270,86 @@ Deno.serve(async (req) => {
       messages_count: body.messages.length,
     }));
 
-    const upstreamUrl = isVenice
-      ? "https://api.venice.ai/api/v1/chat/completions"
-      : isPerplexity
-        ? "https://api.perplexity.ai/chat/completions"
-        : "https://openrouter.ai/api/v1/chat/completions";
-    const orResp = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        ...(isVenice || isPerplexity ? {} : {
-          "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
-          "X-Title": "Tarusin Cabinet AI",
-        }),
-      },
-      body: JSON.stringify(requestPayload),
-    });
+    const selectedAttempt = {
+      gateway: (isVenice ? "venice" : isPerplexity ? "perplexity" : "openrouter") as "openrouter" | "venice" | "perplexity",
+      model: resolvedModel,
+      key: apiKey,
+    };
+    const fallbackModels = openrouterKey
+      ? unique([...(CHAT_MODEL_FALLBACKS[resolvedModel] ?? []), ...CHAT_FALLBACK_MODELS]).filter((m) => m !== resolvedModel)
+      : [];
+    const attempts = [
+      selectedAttempt,
+      ...fallbackModels.map((m) => ({ gateway: "openrouter" as const, model: m, key: openrouterKey! })),
+    ];
+
+    let orResp: Response | null = null;
+    let usedAttempt = selectedAttempt;
+    let lastErrText = "";
+    for (const attempt of attempts) {
+      const upstreamUrl = attempt.gateway === "venice"
+        ? "https://api.venice.ai/api/v1/chat/completions"
+        : attempt.gateway === "perplexity"
+          ? "https://api.perplexity.ai/chat/completions"
+          : "https://openrouter.ai/api/v1/chat/completions";
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(new Error("timeout 45000ms")), 45_000);
+      try {
+        const resp = await fetch(upstreamUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${attempt.key}`,
+            "Content-Type": "application/json",
+            ...(attempt.gateway === "openrouter" ? {
+              "HTTP-Referer": req.headers.get("origin") ?? "https://lovable.app",
+              "X-Title": "Tarusin Cabinet AI",
+            } : {}),
+          },
+          body: JSON.stringify(makePayload(attempt.model, attempt.gateway)),
+          signal: controller.signal,
+        });
+        if (resp.ok && resp.body) {
+          orResp = resp;
+          usedAttempt = attempt;
+          break;
+        }
+        lastErrText = await resp.text().catch(() => "");
+        console.error("[ai-chat] upstream attempt failed", JSON.stringify({ status: resp.status, model: attempt.model, gateway: attempt.gateway, body_preview: lastErrText.slice(0, 500) }));
+      } catch (e: any) {
+        lastErrText = e?.message || String(e);
+        console.error("[ai-chat] upstream attempt failed", JSON.stringify({ model: attempt.model, gateway: attempt.gateway, error: lastErrText }));
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    if (!orResp) {
+      return new Response(JSON.stringify({
+        error: "All model attempts failed",
+        details: lastErrText.slice(0, 1000),
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log("[ai-chat] openrouter response", JSON.stringify({
       status: orResp.status,
       ok: orResp.ok,
       content_type: orResp.headers.get("content-type"),
       has_body: !!orResp.body,
+      used_model: usedAttempt.model,
+      used_gateway: usedAttempt.gateway,
     }));
 
     if (!orResp.ok || !orResp.body) {
       const text = await orResp.text().catch(() => "");
       console.error("[ai-chat] OpenRouter error", JSON.stringify({
         status: orResp.status,
-        model: resolvedModel,
+        model: usedAttempt.model,
         body_preview: text.slice(0, 2000),
         request_payload: {
-          model: resolvedModel,
+          model: usedAttempt.model,
           messages_count: body.messages.length,
         },
       }));
