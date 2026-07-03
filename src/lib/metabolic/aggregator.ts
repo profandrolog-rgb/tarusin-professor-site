@@ -357,12 +357,13 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   if (upErr) throw upErr;
   const mapId: string = mapUpsert!.id;
 
-  // удаляем только автоматические findings (source_ref->>'rule_id' задан)
+  // удаляем автоматические findings текущего пересчёта
+  // (маркер: source_ref содержит rule_code или lab_result_id)
   await (supabase as any)
     .from("map_findings")
     .delete()
     .eq("map_id", mapId)
-    .not("source_ref->rule_id", "is", null);
+    .not("source_ref->lab_result_id", "is", null);
 
   if (findings.length) {
     const sevToStored: Record<string, string> = {
