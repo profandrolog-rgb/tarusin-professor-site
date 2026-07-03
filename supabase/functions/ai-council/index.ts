@@ -157,25 +157,41 @@ Deno.serve(async (req) => {
         send(`: council-start\n\n`);
         const keepalive = setInterval(() => send(`: ping\n\n`), 5000);
 
-        // 1. Fan out in parallel
+        // 1. Fan out in parallel with a per-model timeout so a single slow/hung
+        // model can't block the whole council. Emit progress as each finishes.
+        const total = panel.length;
+        let doneCount = 0;
+        send(`event: progress\ndata: ${JSON.stringify({ stage: "fanout", done: 0, total })}\n\n`);
+        const MODEL_TIMEOUT_MS = 90_000;
         let results: { model: string; content: string; error: string | null }[] = [];
         try {
           results = await Promise.all(panel.map(async (model) => {
             const t0 = Date.now();
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`timeout ${MODEL_TIMEOUT_MS}ms`)), MODEL_TIMEOUT_MS),
+            );
+            let res: { model: string; content: string; error: string | null };
             try {
-              const content = await callOpenRouter(apiKey, origin, model, messages, veniceKey);
+              const content = await Promise.race([
+                callOpenRouter(apiKey, origin, model, messages, veniceKey),
+                timeoutPromise,
+              ]);
               console.log("[ai-council] model ok", JSON.stringify({ model, ms: Date.now() - t0, len: content.length }));
-              return { model, content, error: null as string | null };
+              res = { model, content, error: null };
             } catch (e: any) {
               console.error("[ai-council] model fail", JSON.stringify({ model, ms: Date.now() - t0, err: e?.message || String(e) }));
-              return { model, content: "", error: e?.message || String(e) };
+              res = { model, content: "", error: e?.message || String(e) };
             }
+            doneCount++;
+            send(`event: progress\ndata: ${JSON.stringify({ stage: "fanout", done: doneCount, total, model, ok: !res.error })}\n\n`);
+            return res;
           }));
         } finally {
           clearInterval(keepalive);
         }
 
         send(`event: answers\ndata: ${JSON.stringify(results)}\n\n`);
+        send(`event: progress\ndata: ${JSON.stringify({ stage: "summarizing", done: total, total })}\n\n`);
 
 
         // 2. Summarize via SSE streaming
