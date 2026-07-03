@@ -439,6 +439,11 @@ export default function Cabinet() {
   const [streaming, setStreaming] = useState(false);
   const [streamStartedAt, setStreamStartedAt] = useState<number | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
+  // Наглядные индикаторы стрима: статус соединения, байты, чанки, ttft
+  const [streamPhase, setStreamPhase] = useState<"idle" | "connecting" | "waiting" | "streaming" | "done">("idle");
+  const [streamBytes, setStreamBytes] = useState(0);
+  const [streamChunks, setStreamChunks] = useState(0);
+  const [ttftMs, setTtftMs] = useState<number | null>(null);
   useEffect(() => {
     if (!streaming || !streamStartedAt) { setElapsedSec(0); return; }
     setElapsedSec(Math.floor((Date.now() - streamStartedAt) / 1000));
@@ -1632,6 +1637,11 @@ export default function Cabinet() {
         ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt, models: councilPanel }
         : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch, search_source: searchSource };
 
+      setStreamPhase("connecting");
+      setStreamBytes(0);
+      setStreamChunks(0);
+      setTtftMs(null);
+      const reqStartedAt = Date.now();
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -1643,13 +1653,16 @@ export default function Cabinet() {
 
       if (!resp.ok || !resp.body) {
         const errTxt = await resp.text().catch(() => "");
+        setStreamPhase("idle");
         throw new Error(errTxt || `HTTP ${resp.status}`);
       }
+      setStreamPhase("waiting");
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
       let pendingEvent: string | null = null;
+      let firstChunkSeen = false;
       const mergeAnnotations = (anns: any) => {
         if (!Array.isArray(anns)) return;
         for (const a of anns) {
@@ -1663,6 +1676,15 @@ export default function Cabinet() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (value) {
+          setStreamBytes((b) => b + value.byteLength);
+          setStreamChunks((c) => c + 1);
+          if (!firstChunkSeen) {
+            firstChunkSeen = true;
+            setTtftMs(Date.now() - reqStartedAt);
+            setStreamPhase("streaming");
+          }
+        }
         buf += decoder.decode(value, { stream: true });
         let idx;
         while ((idx = buf.indexOf("\n")) !== -1) {
@@ -1755,6 +1777,7 @@ export default function Cabinet() {
       });
     } finally {
       setStreaming(false);
+      setStreamPhase("idle");
     }
   };
 
@@ -2549,8 +2572,12 @@ export default function Cabinet() {
                             ? councilProgress.stage === "summarizing"
                               ? `Сборка сводного ответа консилиума… ${elapsedSec}s`
                               : `Опрос моделей консилиума: ${councilProgress.done}/${councilProgress.total} · ${elapsedSec}s`
-                            : <>Думаю… {elapsedSec}s
-                                {elapsedSec >= 60 && elapsedSec < 240 && (
+                            : <>
+                                {streamPhase === "connecting" && <>🔌 Соединяюсь с моделью <span className="opacity-70">({model})</span>… {elapsedSec}s</>}
+                                {streamPhase === "waiting" && <>✅ Соединение установлено · ⏳ Жду первый токен… {elapsedSec}s</>}
+                                {streamPhase === "streaming" && <>📡 Стрим идёт · {elapsedSec}s · {(streamBytes/1024).toFixed(1)} KB · {streamChunks} чанков{ttftMs !== null && <> · TTFT {(ttftMs/1000).toFixed(1)}s</>}</>}
+                                {streamPhase === "idle" && <>Думаю… {elapsedSec}s</>}
+                                {elapsedSec >= 60 && elapsedSec < 240 && streamPhase !== "streaming" && (
                                   <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
                                 )}
                                 {elapsedSec >= 240 && (
