@@ -85,8 +85,8 @@ export interface AggregationResult {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function norm(s: string) {
-  return s.toLowerCase().trim();
+function norm(s: unknown) {
+  return String(s ?? "").toLowerCase().trim();
 }
 
 /**
@@ -116,15 +116,15 @@ type DbRule = {
 };
 
 function ruleMatchCodes(r: DbRule): string[] {
-  const arr: string[] = [];
+  const arr: unknown[] = [];
   if (r.when?.test_code) arr.push(r.when.test_code);
-  if (r.match?.codes?.length) arr.push(...r.match.codes);
+  if (Array.isArray(r.match?.codes)) arr.push(...r.match.codes);
   return arr.map(norm).filter(Boolean);
 }
 function ruleMatchNames(r: DbRule): string[] {
-  const arr: string[] = [];
+  const arr: unknown[] = [];
   if (r.when?.test_name) arr.push(r.when.test_name);
-  if (r.match?.names?.length) arr.push(...r.match.names);
+  if (Array.isArray(r.match?.names)) arr.push(...r.match.names);
   return arr.map(norm).filter(Boolean);
 }
 
@@ -145,6 +145,9 @@ function findLatestMatch(labs: LabRow[], rule: DbRule): LabRow | null {
 
 /** Проверка «сработало ли правило» + возврат severity, к которой оно поднимает статус пути. */
 function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> | null {
+  const labValue = Number(lab.value);
+  if (!Number.isFinite(labValue)) return null;
+
   // Новый формат
   if (rule.when || rule.raises_to) {
     const op = rule.when?.op || ">";
@@ -157,22 +160,26 @@ function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> |
         : vfr === "low"
         ? lab.reference_min
         : null;
-    if (cmpValue == null || !isFinite(cmpValue)) return null;
-    const v = lab.value;
+    if (cmpValue == null || !Number.isFinite(Number(cmpValue))) return null;
+    const v = labValue;
+    const cmp = Number(cmpValue);
     let hit = false;
     switch (op) {
-      case ">": hit = v > cmpValue; break;
-      case ">=": hit = v >= cmpValue; break;
-      case "<": hit = v < cmpValue; break;
-      case "<=": hit = v <= cmpValue; break;
-      case "=": hit = v === cmpValue; break;
-      case "!=": hit = v !== cmpValue; break;
+      case ">": hit = v > cmp; break;
+      case ">=": hit = v >= cmp; break;
+      case "<": hit = v < cmp; break;
+      case "<=": hit = v <= cmp; break;
+      case "=": hit = v === cmp; break;
+      case "!=": hit = v !== cmp; break;
+      default: return null;
     }
     if (!hit) return "norm";
     return (rule.raises_to as any) || "mild";
   }
   // Legacy формат
-  const { value, reference_min, reference_max } = lab;
+  const value = labValue;
+  const reference_min = lab.reference_min == null ? null : Number(lab.reference_min);
+  const reference_max = lab.reference_max == null ? null : Number(lab.reference_max);
   const thresholds = rule.thresholds;
   const direction = rule.direction;
   if (!thresholds || !direction) return null;
@@ -203,11 +210,11 @@ function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> |
 }
 
 function ruleLabel(rule: DbRule): string {
-  return rule.label || rule.code || rule.when?.test_code || rule.when?.test_name || "правило";
+  return norm(rule.label || rule.code || rule.when?.test_code || rule.when?.test_name || "правило") || "правило";
 }
 function ruleNodes(rule: DbRule): string[] {
-  if (rule.highlight_nodes?.length) return rule.highlight_nodes;
-  if (rule.node_id) return [rule.node_id];
+  if (Array.isArray(rule.highlight_nodes) && rule.highlight_nodes.length) return rule.highlight_nodes.map(String).filter(Boolean);
+  if (rule.node_id) return [String(rule.node_id)];
   return [];
 }
 
@@ -251,7 +258,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     id: p.id,
     slug: p.slug,
     name: p.name,
-    rules: Array.isArray(p.rules) ? (p.rules as PathwayRule[]) : [],
+    rules: Array.isArray(p.rules) ? (p.rules as DbRule[]) : [],
   }));
 
 
@@ -285,42 +292,52 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     let matched = 0;
     const affected = new Set<string>();
     let status: Severity = "no_data";
-    for (const rule of pw.rules as DbRule[]) {
-      const lab = findLatestMatch(labs, rule);
-      if (!lab) continue;
-      matched += 1;
-      const sev = evaluateRule(rule, lab);
-      if (!sev) continue;
-      if (sev === "norm") {
-        status = worst(status, "norm");
+    for (const rawRule of pw.rules as DbRule[]) {
+      try {
+        const rule = (rawRule && typeof rawRule === "object" ? rawRule : {}) as DbRule;
+        const lab = findLatestMatch(labs, rule);
+        if (!lab) continue;
+        matched += 1;
+        const sev = evaluateRule(rule, lab);
+        if (!sev) continue;
+        if (sev === "norm") {
+          status = worst(status, "norm");
+          continue;
+        }
+        status = worst(status, sev);
+        const nodes = ruleNodes(rule);
+        for (const nid of nodes) affected.add(nid);
+        const primaryNode = nodes[0] || "";
+        const label = ruleLabel(rule);
+        findings.push({
+          pathway_id: pw.id,
+          node_id: primaryNode,
+          severity: sev,
+          label: `${label}: ${lab.value} ${lab.unit}`.trim(),
+          detail: [
+            lab.reference_min != null ? `реф. ≥ ${lab.reference_min}` : null,
+            lab.reference_max != null ? `реф. ≤ ${lab.reference_max}` : null,
+            `забор ${lab.test_date}`,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          source_ref: {
+            rule_code: rule.code || null,
+            highlight_nodes: nodes,
+            lab_result_id: lab.id,
+            test_code: lab.test_code,
+            test_name: lab.test_name,
+            value: lab.value,
+          },
+        });
+      } catch (ruleError) {
+        console.warn("[metabolic] bad rule skipped", {
+          pathway: pw.slug,
+          rule: rawRule,
+          error: ruleError instanceof Error ? ruleError.message : String(ruleError),
+        });
         continue;
       }
-      status = worst(status, sev);
-      const nodes = ruleNodes(rule);
-      for (const nid of nodes) affected.add(nid);
-      const primaryNode = nodes[0] || "";
-      const label = ruleLabel(rule);
-      findings.push({
-        pathway_id: pw.id,
-        node_id: primaryNode,
-        severity: sev,
-        label: `${label}: ${lab.value} ${lab.unit}`.trim(),
-        detail: [
-          lab.reference_min != null ? `реф. ≥ ${lab.reference_min}` : null,
-          lab.reference_max != null ? `реф. ≤ ${lab.reference_max}` : null,
-          `забор ${lab.test_date}`,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-        source_ref: {
-          rule_code: rule.code || null,
-          highlight_nodes: nodes,
-          lab_result_id: lab.id,
-          test_code: lab.test_code,
-          test_name: lab.test_name,
-          value: lab.value,
-        },
-      });
     }
     if (matched === 0) status = "no_data";
     else if (status === "no_data") status = "norm";
@@ -359,11 +376,12 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
 
   // удаляем автоматические findings текущего пересчёта
   // (маркер: source_ref содержит rule_code или lab_result_id)
-  await (supabase as any)
+  const { error: delErr } = await (supabase as any)
     .from("map_findings")
     .delete()
     .eq("map_id", mapId)
     .not("source_ref->lab_result_id", "is", null);
+  if (delErr) throw delErr;
 
   if (findings.length) {
     const sevToStored: Record<string, string> = {
