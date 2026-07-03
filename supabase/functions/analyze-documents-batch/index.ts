@@ -325,16 +325,7 @@ async function processFinal(batchId: string) {
       return `## Подпакет ${i + 1} (${p.files?.length || 0} файлов)\n${p.content}`;
     }).join("\n\n---\n\n");
 
-
-    const isVeniceFinal = model.startsWith("venice/");
-    const realModelFinal = isVeniceFinal ? model.slice("venice/".length) : model;
-    const finalUrl = isVeniceFinal
-      ? "https://api.venice.ai/api/v1/chat/completions"
-      : OPENROUTER_URL;
-    const finalKey = isVeniceFinal ? (Deno.env.get("VENICE_API_KEY") ?? "") : apiKey;
-    if (isVeniceFinal && !finalKey) throw new Error("VENICE_API_KEY missing");
     const finalPayload: Record<string, unknown> = {
-      model: realModelFinal,
       messages: [
         {
           role: "system",
@@ -351,26 +342,46 @@ async function processFinal(batchId: string) {
       ],
       max_tokens: 6000,
     };
-    if (isVeniceFinal) finalPayload.venice_parameters = { include_venice_system_prompt: false };
-    const finalResp = await fetch(finalUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${finalKey}`,
-        "Content-Type": "application/json",
-        ...(isVeniceFinal ? {} : { "HTTP-Referer": "https://tarusin.pro", "X-Title": "Cabinet batch analyzer (synthesis)" }),
-      },
-      body: JSON.stringify(finalPayload),
-    });
-    if (!finalResp.ok) {
-      const body = await finalResp.text().catch(() => "");
-      throw new Error(humanizeOpenRouterError(finalResp.status, body));
+    let finalText = "";
+    let usedFinalModel = model;
+    let lastFinalError = "unknown error";
+    for (const attempt of attemptsForModel(model)) {
+      const isVeniceFinal = attempt.startsWith("venice/");
+      const realModelFinal = isVeniceFinal ? attempt.slice("venice/".length) : attempt;
+      const finalUrl = isVeniceFinal ? "https://api.venice.ai/api/v1/chat/completions" : OPENROUTER_URL;
+      const finalKey = isVeniceFinal ? (Deno.env.get("VENICE_API_KEY") ?? "") : apiKey;
+      if (isVeniceFinal && !finalKey) { lastFinalError = "VENICE_API_KEY missing"; continue; }
+      const payload = { ...finalPayload, model: realModelFinal } as Record<string, unknown>;
+      if (isVeniceFinal) payload.venice_parameters = { include_venice_system_prompt: false };
+      try {
+        const finalResp = await fetch(finalUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${finalKey}`,
+            "Content-Type": "application/json",
+            ...(isVeniceFinal ? {} : { "HTTP-Referer": "https://tarusin.pro", "X-Title": "Cabinet batch analyzer (synthesis)" }),
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!finalResp.ok) {
+          const body = await finalResp.text().catch(() => "");
+          throw new Error(humanizeOpenRouterError(finalResp.status, body));
+        }
+        const fj = await finalResp.json();
+        finalText = fj.choices?.[0]?.message?.content || "";
+        if (!finalText.trim()) throw new Error("Пустой ответ финального синтеза");
+        usedFinalModel = attempt;
+        break;
+      } catch (e: any) {
+        lastFinalError = e?.message || String(e);
+        await logEvent(supabase, batchId, { stage: "final_model_fail", model: attempt, message: lastFinalError });
+      }
     }
-    const fj = await finalResp.json();
-    const finalText: string = fj.choices?.[0]?.message?.content || "";
+    if (!finalText.trim()) throw new Error(lastFinalError);
     await supabase.from("analysis_batches").update({
       status: "done", final_result: finalText, partial_results: partial,
     }).eq("id", batchId);
-    await logEvent(supabase, batchId, { stage: "final_done", chars: finalText.length });
+    await logEvent(supabase, batchId, { stage: "final_done", chars: finalText.length, used_model: usedFinalModel });
   } catch (e) {
     await logEvent(supabase, batchId, { stage: "final_error", message: (e as Error).message });
     await supabase.from("analysis_batches").update({
