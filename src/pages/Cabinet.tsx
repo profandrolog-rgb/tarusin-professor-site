@@ -29,6 +29,8 @@ import MetabolicMapMiniCard from "@/components/metabolic/MetabolicMapMiniCard";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
 import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
+import { fetchActiveProtocolText } from "@/lib/protocolContextFetcher";
+import { Progress } from "@/components/ui/progress";
 import { Link2, Activity } from "lucide-react";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
@@ -434,6 +436,25 @@ export default function Cabinet() {
     }, 1000);
     return () => clearInterval(t);
   }, [streaming, streamStartedAt]);
+  // Прогресс работы (для консилиума — реальный done/total, иначе индикатив: 0=idle, 30=запрос отправлен, 70=идёт стрим, 100=готово)
+  const [councilProgress, setCouncilProgress] = useState<{ done: number; total: number; stage: string } | null>(null);
+  const [genericProgress, setGenericProgress] = useState<number>(0);
+  useEffect(() => {
+    if (!streaming) { setGenericProgress(0); return; }
+    setGenericProgress(15);
+    const t = setInterval(() => {
+      setGenericProgress((p) => (p < 92 ? p + Math.max(1, Math.round((95 - p) * 0.08)) : p));
+    }, 800);
+    return () => clearInterval(t);
+  }, [streaming]);
+  // Прикреплять активный протокол пациента (жалобы/анамнез/статус) к вопросу
+  const [attachProtocol, setAttachProtocol] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("cabinet.attachProtocol") !== "0";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem("cabinet.attachProtocol", attachProtocol ? "1" : "0");
+  }, [attachProtocol]);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
     return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
@@ -1457,11 +1478,34 @@ export default function Cabinet() {
     if (isImageModel) return generateImage();
     if (pubmedMode) return sendPubmedMessage();
     if (!user || streaming) return;
-    const text = input.trim();
+    let text = input.trim();
     if (!text && !attachments.length) return;
 
     setStreaming(true);
     setStreamStartedAt(Date.now());
+    setCouncilProgress(null);
+
+    // Прикрепить содержимое активного протокола пациента (жалобы/анамнез/статус)
+    // к текущему сообщению — так модель видит клинический контекст, о котором
+    // пишет пользователь в соседней вкладке.
+    // Прикрепить содержимое активного протокола пациента (жалобы/анамнез/статус)
+    // к текущему сообщению — так модель видит клинический контекст, о котором
+    // пишет пользователь в соседней вкладке.
+    if (attachProtocol) {
+      const ctx = getActiveContext();
+      if (ctx) {
+        try {
+          const body = await fetchActiveProtocolText(ctx);
+          if (body && body.trim()) {
+            text = `[Контекст пациента из активного протокола (${ctx.kind}) — ${ctx.patientName}]\n\n${body}\n\n---\n\n${text || "(без дополнительного вопроса — оцените и предложите тактику)"}`;
+            toast.success(`Прикреплён протокол: ${ctx.patientName}`, { duration: 2000 });
+          }
+        } catch (e) {
+          console.warn("attach protocol failed", e);
+        }
+      }
+    }
+
     const userMsg: Msg = { role: "user", content: text, attachments: [...attachments] };
 
     // Ensure conversation
@@ -1570,7 +1614,13 @@ export default function Cabinet() {
           try {
             const parsed = JSON.parse(json);
             if (council) {
-              if (pendingEvent === "answers") {
+              if (pendingEvent === "progress") {
+                setCouncilProgress({
+                  done: Number(parsed.done) || 0,
+                  total: Number(parsed.total) || 0,
+                  stage: String(parsed.stage || "fanout"),
+                });
+              } else if (pendingEvent === "answers") {
                 councilAnswers = parsed as CouncilAnswer[];
                 setMessages((prev) => {
                   const next = [...prev];
@@ -2424,17 +2474,37 @@ export default function Cabinet() {
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span className="tabular-nums">
-                        Думаю… {elapsedSec}s
-                        {elapsedSec >= 60 && elapsedSec < 240 && (
-                          <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
-                        )}
-                        {elapsedSec >= 240 && (
-                          <span className="text-xs text-amber-600 dark:text-amber-400"> · долго, риск обрыва — можно отменить и сменить модель</span>
-                        )}
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        <span className="tabular-nums flex-1">
+                          {councilProgress
+                            ? councilProgress.stage === "summarizing"
+                              ? `Сборка сводного ответа консилиума… ${elapsedSec}s`
+                              : `Опрос моделей консилиума: ${councilProgress.done}/${councilProgress.total} · ${elapsedSec}s`
+                            : <>Думаю… {elapsedSec}s
+                                {elapsedSec >= 60 && elapsedSec < 240 && (
+                                  <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
+                                )}
+                                {elapsedSec >= 240 && (
+                                  <span className="text-xs text-amber-600 dark:text-amber-400"> · долго, риск обрыва — можно отменить и сменить модель</span>
+                                )}
+                              </>
+                          }
+                        </span>
+                      </div>
+                      <Progress
+                        value={
+                          councilProgress && councilProgress.total > 0
+                            ? councilProgress.stage === "summarizing"
+                              ? Math.max(90, Math.min(99, 90 + Math.floor(elapsedSec / 6)))
+                              : Math.round((councilProgress.done / councilProgress.total) * 85)
+                            : (m.content?.length ?? 0) > 0
+                              ? Math.max(genericProgress, 60)
+                              : genericProgress
+                        }
+                        className="h-1.5"
+                      />
                     </div>
                   )
                 ) : (
@@ -2681,6 +2751,21 @@ export default function Cabinet() {
               className={recording ? "animate-pulse" : ""}
             >
               {transcribing ? <Loader2 className="w-4 h-4 animate-spin" /> : recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </Button>
+            <Button
+              type="button"
+              variant={attachProtocol ? "default" : "outline"}
+              size="icon"
+              onClick={() => setAttachProtocol((v) => !v)}
+              disabled={streaming}
+              aria-label="Прикреплять активный протокол"
+              title={
+                attachProtocol
+                  ? "К вопросу прикрепляется активный протокол пациента (жалобы, анамнез, статус). Кликните, чтобы выключить."
+                  : "Включить автоматическую передачу содержимого активного протокола пациента в вопрос"
+              }
+            >
+              <FileText className="w-4 h-4" />
             </Button>
             <Button
               type="button"
