@@ -29,6 +29,12 @@ export interface CatalogRow {
   default_frequency: string | null;
   application_point: string | null;
   is_active: boolean;
+  // Расширения метаболической карты (переопределяют базовые поля, если заданы)
+  mm_targets?: string[] | null;
+  mm_application_point?: string | null;
+  mm_evidence_level?: string | null;
+  mm_priority?: number | null;
+  mm_contraindications?: string[] | null;
 }
 
 export interface FindingRow {
