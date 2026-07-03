@@ -19,22 +19,29 @@ interface Props { patientId: string; patientName?: string | null }
 export default function MetabolicMapMiniCard({ patientId, patientName }: Props) {
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [lastAt, setLastAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
+  const [shown, setShown] = useState(false); // грузим ТОЛЬКО по запросу пользователя
 
   const load = async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("metabolic_maps")
-      .select("aggregate_summary, last_aggregated_at")
-      .eq("patient_id", patientId)
-      .maybeSingle();
-    setSummary((data?.aggregate_summary?.pathways as PathwaySummary[]) || []);
-    setLastAt(data?.last_aggregated_at || null);
-    setLoading(false);
+    try {
+      const { data } = await (supabase as any)
+        .from("metabolic_maps")
+        .select("aggregate_summary, last_aggregated_at")
+        .eq("patient_id", patientId)
+        .maybeSingle();
+      setSummary((data?.aggregate_summary?.pathways as PathwaySummary[]) || []);
+      setLastAt(data?.last_aggregated_at || null);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, [patientId]);
+  const show = async () => {
+    setShown(true);
+    await load();
+  };
 
   const recalc = async () => {
     setRunning(true);
@@ -47,15 +54,43 @@ export default function MetabolicMapMiniCard({ patientId, patientName }: Props) 
     } finally { setRunning(false); }
   };
 
+  // Свёрнутый вид — ничего не грузим, пока пользователь не попросит
+  if (!shown) {
+    return (
+      <div className="rounded-lg border border-border bg-card px-3 py-2 flex items-center gap-2 text-sm">
+        <Activity className="w-4 h-4 text-primary" />
+        <span className="font-medium">Метаболическая карта</span>
+        {patientName && <span className="text-muted-foreground text-xs truncate">· {patientName}</span>}
+        <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" onClick={show}>
+          Показать
+        </Button>
+        <a
+          href={`/admin/patients/${patientId}/metabolic-map`}
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          Открыть <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-2 space-y-2">
       <div className="flex items-center gap-2 text-sm">
         <Activity className="w-4 h-4 text-primary" />
         <span className="font-medium">Метаболическая карта</span>
         {patientName && <span className="text-muted-foreground text-xs truncate">· {patientName}</span>}
+        <button
+          type="button"
+          onClick={() => setShown(false)}
+          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          title="Свернуть"
+        >
+          Скрыть
+        </button>
         <a
           href={`/admin/patients/${patientId}/metabolic-map`}
-          className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
           Открыть <ExternalLink className="w-3 h-3" />
         </a>
