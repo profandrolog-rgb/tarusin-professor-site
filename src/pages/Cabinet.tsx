@@ -1478,11 +1478,32 @@ export default function Cabinet() {
     if (isImageModel) return generateImage();
     if (pubmedMode) return sendPubmedMessage();
     if (!user || streaming) return;
-    const text = input.trim();
+    let text = input.trim();
     if (!text && !attachments.length) return;
 
     setStreaming(true);
     setStreamStartedAt(Date.now());
+    setCouncilProgress(null);
+
+    // Прикрепить содержимое активного протокола пациента (жалобы/анамнез/статус)
+    // к текущему сообщению — так модель видит клинический контекст, о котором
+    // пишет пользователь в соседней вкладке.
+    let protocolAppended: string | null = null;
+    if (attachProtocol) {
+      const ctx = getActiveContext();
+      if (ctx) {
+        try {
+          const body = await fetchActiveProtocolText(ctx);
+          if (body && body.trim()) {
+            protocolAppended = body;
+            text = `[Контекст пациента из активного протокола (${ctx.kind}) — ${ctx.patientName}]\n\n${body}\n\n---\n\n${text || "(без дополнительного вопроса — оцените и предложите тактику)"}`;
+          }
+        } catch (e) {
+          console.warn("attach protocol failed", e);
+        }
+      }
+    }
+
     const userMsg: Msg = { role: "user", content: text, attachments: [...attachments] };
 
     // Ensure conversation
