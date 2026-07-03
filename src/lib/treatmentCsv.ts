@@ -8,17 +8,23 @@ export const CATALOG_KNOWN_COLUMNS = [
   "is_rx","is_off_label","light_sensitive","glucose_only",
   "dose_range_min","dose_range_max","is_active","tags","pack_size",
   "price_override","price_currency","price_source_note","pack_size_num","units_per_dose_num",
+  // ── Метаболическая карта ───────────────────────────────────────────
+  "mm_targets","mm_application_point","mm_evidence_level","mm_priority","mm_contraindications",
 ] as const;
 
 export const NUMERIC_COLUMNS = new Set([
   "default_dose","default_dilution_volume","default_duration_days",
   "dose_range_min","dose_range_max",
   "price_override","pack_size_num","units_per_dose_num",
+  "mm_priority",
 ]);
 export const BOOL_COLUMNS = new Set([
   "is_rx","is_off_label","light_sensitive","glucose_only","is_active",
 ]);
-export const ARRAY_COLUMNS = new Set(["time_of_day_default","tags"]);
+export const ARRAY_COLUMNS = new Set([
+  "time_of_day_default","tags",
+  "mm_targets","mm_contraindications",
+]);
 
 const ALLOWED_CATEGORIES = new Set([
   "iv_drip","iv_bolus","im","sc","oral_rx","oral_supplement",

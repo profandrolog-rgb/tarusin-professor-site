@@ -29,6 +29,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { TemplateSVG } from "@/components/metabolic/schemes/TemplateSVG";
+import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
 import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
@@ -552,6 +554,18 @@ export default function AdminPatientMetabolicMap() {
                           const prev = rxLabelByNode.get(r.target_node_id);
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
+                        }
+                        const tpl = getTemplate(pw.slug);
+                        if (tpl) {
+                          return (
+                            <TemplateSVG
+                              template={tpl}
+                              highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                              rxNodes={rxNodes}
+                              rxLabelByNode={rxLabelByNode}
+                              height={280}
+                            />
+                          );
                         }
                         const sceneToRender = pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
                           ? pw.svg_scene
