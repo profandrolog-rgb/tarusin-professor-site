@@ -189,7 +189,7 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   if (text.trim()) parts.push({ type: "text", text });
   for (const a of atts) {
     const url = a.dataUrl; // signed URL for new, base64 data URL for legacy
-    if (!url && !a.path) continue;
+    if (!url) continue;
     if (a.type.startsWith("image/")) {
       parts.push({ type: "image_url", image_url: { url } });
     } else if (a.type === "application/pdf") {
