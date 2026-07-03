@@ -89,9 +89,48 @@ function norm(s: string) {
   return s.toLowerCase().trim();
 }
 
-function findLatestMatch(labs: LabRow[], rule: PathwayRule): LabRow | null {
-  const codes = (rule.match.codes || []).map(norm);
-  const names = (rule.match.names || []).map(norm);
+/**
+ * Фактическая схема правила в БД (pathways.rules):
+ *   { code, when: { op, test_code, test_name?, value?, value_from_ref? },
+ *     raises_to: "mild"|"moderate"|"severe", highlight_nodes: [] }
+ *
+ * Поддерживаем также «старый» формат с match/direction/thresholds (на случай миграции).
+ */
+type DbRule = {
+  code?: string;
+  label?: string;
+  when?: {
+    op?: ">" | "<" | ">=" | "<=" | "=" | "!=";
+    test_code?: string;
+    test_name?: string;
+    value?: number;
+    value_from_ref?: "high" | "low";
+  };
+  raises_to?: "mild" | "moderate" | "severe";
+  highlight_nodes?: string[];
+  // legacy
+  node_id?: string;
+  direction?: "below" | "above" | "outside";
+  match?: { codes?: string[]; names?: string[] };
+  thresholds?: { mild: number; moderate: number; severe: number };
+};
+
+function ruleMatchCodes(r: DbRule): string[] {
+  const arr: string[] = [];
+  if (r.when?.test_code) arr.push(r.when.test_code);
+  if (r.match?.codes?.length) arr.push(...r.match.codes);
+  return arr.map(norm).filter(Boolean);
+}
+function ruleMatchNames(r: DbRule): string[] {
+  const arr: string[] = [];
+  if (r.when?.test_name) arr.push(r.when.test_name);
+  if (r.match?.names?.length) arr.push(...r.match.names);
+  return arr.map(norm).filter(Boolean);
+}
+
+function findLatestMatch(labs: LabRow[], rule: DbRule): LabRow | null {
+  const codes = ruleMatchCodes(rule);
+  const names = ruleMatchNames(rule);
   const hits = labs.filter((l) => {
     const c = norm(l.test_code || "");
     const n = norm(l.test_name || "");
@@ -100,15 +139,43 @@ function findLatestMatch(labs: LabRow[], rule: PathwayRule): LabRow | null {
     return false;
   });
   if (!hits.length) return null;
-  // latest by test_date
   hits.sort((a, b) => (a.test_date < b.test_date ? 1 : -1));
   return hits[0];
 }
 
-function severityFor(rule: PathwayRule, lab: LabRow): Exclude<Severity, "no_data"> | null {
+/** Проверка «сработало ли правило» + возврат severity, к которой оно поднимает статус пути. */
+function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> | null {
+  // Новый формат
+  if (rule.when || rule.raises_to) {
+    const op = rule.when?.op || ">";
+    const vfr = rule.when?.value_from_ref;
+    const cmpValue: number | null =
+      typeof rule.when?.value === "number"
+        ? rule.when.value
+        : vfr === "high"
+        ? lab.reference_max
+        : vfr === "low"
+        ? lab.reference_min
+        : null;
+    if (cmpValue == null || !isFinite(cmpValue)) return null;
+    const v = lab.value;
+    let hit = false;
+    switch (op) {
+      case ">": hit = v > cmpValue; break;
+      case ">=": hit = v >= cmpValue; break;
+      case "<": hit = v < cmpValue; break;
+      case "<=": hit = v <= cmpValue; break;
+      case "=": hit = v === cmpValue; break;
+      case "!=": hit = v !== cmpValue; break;
+    }
+    if (!hit) return "norm";
+    return (rule.raises_to as any) || "mild";
+  }
+  // Legacy формат
   const { value, reference_min, reference_max } = lab;
-  const { thresholds, direction } = rule;
-
+  const thresholds = rule.thresholds;
+  const direction = rule.direction;
+  if (!thresholds || !direction) return null;
   if (direction === "below") {
     if (reference_min == null || reference_min <= 0) return null;
     const ratio = value / reference_min;
@@ -125,20 +192,25 @@ function severityFor(rule: PathwayRule, lab: LabRow): Exclude<Severity, "no_data
     if (ratio >= thresholds.mild) return "mild";
     return "norm";
   }
-  // outside
   if (reference_min == null && reference_max == null) return null;
   let dev = 0;
-  if (reference_min != null && value < reference_min && reference_min > 0) {
-    dev = Math.max(dev, (reference_min - value) / reference_min);
-  }
-  if (reference_max != null && value > reference_max && reference_max > 0) {
-    dev = Math.max(dev, (value - reference_max) / reference_max);
-  }
+  if (reference_min != null && value < reference_min && reference_min > 0) dev = Math.max(dev, (reference_min - value) / reference_min);
+  if (reference_max != null && value > reference_max && reference_max > 0) dev = Math.max(dev, (value - reference_max) / reference_max);
   if (dev >= thresholds.severe) return "severe";
   if (dev >= thresholds.moderate) return "moderate";
   if (dev >= thresholds.mild) return "mild";
   return "norm";
 }
+
+function ruleLabel(rule: DbRule): string {
+  return rule.label || rule.code || rule.when?.test_code || rule.when?.test_name || "правило";
+}
+function ruleNodes(rule: DbRule): string[] {
+  if (rule.highlight_nodes?.length) return rule.highlight_nodes;
+  if (rule.node_id) return [rule.node_id];
+  return [];
+}
+
 
 function worst(a: Severity, b: Severity): Severity {
   return SEVERITY_ORDER.indexOf(a) >= SEVERITY_ORDER.indexOf(b) ? a : b;
