@@ -878,7 +878,7 @@ export default function Cabinet() {
     }
     const MAX_FILES = 2;
     const MAX_SIZE = 20 * 1024 * 1024; // real upload limit: 20 MB per file
-    const LOCAL_FALLBACK_MAX = 12 * 1024 * 1024; // base64 fallback must stay small enough for function payload
+    const LOCAL_FALLBACK_MAX = MAX_SIZE; // private PDFs must go to AI as base64; signed storage URLs are not reliable for parser
     const list = Array.from(files);
     const out: Attachment[] = [];
     const errors: string[] = [];
