@@ -50,6 +50,9 @@ type Pathway = {
   nodes: Array<{ id: string; label: string; x?: number; y?: number; kind?: string }>;
   edges: Array<{ from: string; to: string; label?: string }>;
   svg_scene: SceneJson | null;
+  group?: string | null;
+  group_order?: number | null;
+  consequences?: Array<{ to_slug?: string; to_label?: string; weight?: number }>;
 };
 type Finding = {
   id: string;
