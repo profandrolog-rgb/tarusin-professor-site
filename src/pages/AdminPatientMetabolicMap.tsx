@@ -347,7 +347,7 @@ export default function AdminPatientMetabolicMap() {
             </Button>
             <Button onClick={handleAiBuild} disabled={aiBusy || !mapId} variant="secondary" className="gap-2">
               {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              ИИ-интерпретация
+              ИИ-интерпретация{aiBusy ? ` · ${aiElapsed}с` : ""}
             </Button>
             <Button onClick={handleRebuildRx} disabled={rxBusy || !mapId} variant="secondary" className="gap-2">
               {rxBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Beaker className="w-4 h-4" />}
