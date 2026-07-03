@@ -85,10 +85,10 @@ export const CURATED_MODELS: CuratedModel[] = [
   // ─── Глубокие ─────────────────────────────────────────────────────────
   {
     key: "gemini-pro",
-    label: "Gemini 2.5 Pro",
+    label: "Gemini 3.1 Pro",
     tier: "deep",
-    candidates: ["google/gemini-2.5-pro"],
-    familyRegex: /^google\/gemini-(?:2\.5|3)[^/]*pro(?!-image)/i,
+    candidates: ["google/gemini-3.1-pro-preview", "google/gemini-2.5-pro"],
+    familyRegex: /^google\/gemini-(?:2\.5|3|3\.1)[^/]*pro(?!-image)/i,
   },
   {
     key: "claude-opus",
