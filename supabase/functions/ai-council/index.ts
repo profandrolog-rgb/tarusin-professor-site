@@ -50,6 +50,7 @@ async function callOpenRouter(
   model: string,
   messages: unknown[],
   veniceKey?: string,
+  signal?: AbortSignal,
 ) {
   const isVenice = model.startsWith("venice/");
   const url = isVenice
@@ -73,6 +74,7 @@ async function callOpenRouter(
       ...(isVenice ? {} : { "HTTP-Referer": origin, "X-Title": "Tarusin Council" }),
     },
     body: JSON.stringify(payload),
+    signal,
   });
   if (!r.ok) {
     const t = await r.text().catch(() => "");
