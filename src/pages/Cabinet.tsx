@@ -1637,6 +1637,11 @@ export default function Cabinet() {
         ? { messages: historyForApi, system: systemPrompt, system_summarizer: summarizerPrompt, models: councilPanel }
         : { model, messages: historyForApi, reasoning_effort: speed === "fast" ? "low" : "high", system: systemPrompt, web_search: usedWebSearch, search_source: searchSource };
 
+      setStreamPhase("connecting");
+      setStreamBytes(0);
+      setStreamChunks(0);
+      setTtftMs(null);
+      const reqStartedAt = Date.now();
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -1648,8 +1653,10 @@ export default function Cabinet() {
 
       if (!resp.ok || !resp.body) {
         const errTxt = await resp.text().catch(() => "");
+        setStreamPhase("idle");
         throw new Error(errTxt || `HTTP ${resp.status}`);
       }
+      setStreamPhase("waiting");
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
