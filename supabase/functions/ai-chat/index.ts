@@ -128,6 +128,16 @@ Deno.serve(async (req) => {
       body.search_source === "pubmed" ? "pubmed" : "web";
     const usePubmed = webSearch && searchSource === "pubmed" && !isPerplexity;
 
+    const hasPdfInput = (body.messages as any[]).some((msg: any) =>
+      Array.isArray(msg?.content) && msg.content.some((part: any) =>
+        part?.type === "file" && (
+          /\.pdf$/i.test(String(part?.file?.filename || "")) ||
+          String(part?.file?.file_data || part?.file?.fileData || "").startsWith("data:application/pdf") ||
+          String(part?.file?.file_data || part?.file?.fileData || "").toLowerCase().includes(".pdf")
+        )
+      )
+    );
+
     // PubMed mode: fetch citations and inject them as context
     let pubmedSources: Array<{ url: string; title: string; content: string }> = [];
     let finalMessages = messagesWithSystem;
@@ -245,7 +255,10 @@ Deno.serve(async (req) => {
       };
       if (gateway === "openrouter") {
         payload.provider = { sort: "throughput" };
-        if (webSearch && !usePubmed) payload.plugins = [{ id: "web", max_results: 5 }];
+        const plugins: unknown[] = [];
+        if (webSearch && !usePubmed) plugins.push({ id: "web", max_results: 5 });
+        if (hasPdfInput) plugins.push({ id: "file-parser", pdf: { engine: "cloudflare-ai" } });
+        if (plugins.length) payload.plugins = plugins;
       } else if (gateway === "venice") {
         payload.venice_parameters = { include_venice_system_prompt: false };
       }
