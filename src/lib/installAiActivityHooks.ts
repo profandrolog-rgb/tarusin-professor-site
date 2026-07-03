@@ -7,6 +7,16 @@ import { startAiTask, labelForEndpoint } from "./aiActivity";
 
 let installed = false;
 
+// Фоновые/служебные функции, которые не должны шуметь в AiActivityDock
+const SILENT_ENDPOINTS = [
+  "timeweb-deploy-status",
+  "timeweb-deploy",
+  "trigger-timeweb-deploy",
+];
+function isSilent(urlOrName: string): boolean {
+  return SILENT_ENDPOINTS.some((s) => urlOrName.includes(s));
+}
+
 export function installAiActivityHooks() {
   if (installed || typeof window === "undefined") return;
   installed = true;
@@ -16,7 +26,8 @@ export function installAiActivityHooks() {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
     const isEdgeFn = typeof url === "string" && /\/functions\/v1\//.test(url);
-    if (!isEdgeFn) return origFetch(input as any, init);
+    if (!isEdgeFn || isSilent(url)) return origFetch(input as any, init);
+
 
     const label = labelForEndpoint(url);
     const task = startAiTask({ label, endpoint: url });
@@ -69,6 +80,7 @@ export function installAiActivityHooks() {
     if (fns && typeof fns.invoke === "function" && !fns.__aiActivityWrapped) {
       const origInvoke = fns.invoke.bind(fns);
       fns.invoke = async (fnName: string, opts?: any) => {
+        if (isSilent(fnName)) return origInvoke(fnName, opts);
         const label = labelForEndpoint(fnName);
         const task = startAiTask({ label, endpoint: `functions/v1/${fnName}` });
         try {
