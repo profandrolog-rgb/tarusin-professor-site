@@ -30,6 +30,7 @@ import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu"
 import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
 import { fetchActiveProtocolText } from "@/lib/protocolContextFetcher";
+import { fetchPatientHistory, summarizeCounts } from "@/lib/patientHistoryFetcher";
 import { Progress } from "@/components/ui/progress";
 import { Link2, Activity } from "lucide-react";
 
@@ -467,6 +468,9 @@ export default function Cabinet() {
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem("cabinet.attachProtocol", attachProtocol ? "1" : "0");
   }, [attachProtocol]);
+  // Включать всю ретроспективу пациента (все УЗИ/визиты/анализы/заключения) в контекст
+  const [attachHistory, setAttachHistory] = useState<boolean>(false);
+  const [historyCountsHint, setHistoryCountsHint] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
     return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
@@ -1517,6 +1521,25 @@ export default function Cabinet() {
         } catch (e) {
           console.warn("attach protocol failed", e);
         }
+      }
+    }
+
+    // Полная ретроспектива пациента: все прошлые визиты/УЗИ/анализы/заключения + таблицы динамики
+    if (attachHistory && pendingPatient.id) {
+      try {
+        toast.info("Собираю всю историю пациента…", { duration: 2000 });
+        const { text: historyText, counts } = await fetchPatientHistory(pendingPatient.id, pendingPatient.name || undefined);
+        const summary = summarizeCounts(counts);
+        setHistoryCountsHint(summary);
+        if (historyText && historyText.trim()) {
+          text = `[Полная ретроспектива пациента — ${pendingPatient.name || pendingPatient.id}]\n${summary}\n\n${historyText}\n\n---\n\n${text || "(без дополнительного вопроса — проанализируйте динамику и предложите тактику)"}`;
+          toast.success(`История подтянута: ${summary}`, { duration: 3000 });
+        } else {
+          toast.warning("По пациенту не найдено исторических записей");
+        }
+      } catch (e: any) {
+        console.warn("attach history failed", e);
+        toast.error(`Не удалось собрать историю: ${e?.message || e}`);
       }
     }
 
@@ -2808,6 +2831,27 @@ export default function Cabinet() {
               }
             >
               <FileText className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
+              variant={attachHistory ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAttachHistory((v) => !v)}
+              disabled={streaming || !pendingPatient.id}
+              aria-label="Включить полную историю пациента"
+              title={
+                !pendingPatient.id
+                  ? "Сначала привяжите пациента к диалогу"
+                  : attachHistory
+                    ? `Будет отправлена вся ретроспектива пациента (визиты, УЗИ, анализы, планы, заключения) с таблицей динамики. ${historyCountsHint ? "Последний сбор: " + historyCountsHint : ""}`
+                    : "📚 Включить всю историю пациента (все УЗИ, визиты, анализы, прошлые заключения) с хронологией и динамикой"
+              }
+              className="gap-1 px-2"
+            >
+              📚 <span className="hidden sm:inline text-xs">История</span>
+              {historyCountsHint && attachHistory && (
+                <span className="hidden md:inline text-[10px] opacity-75">({historyCountsHint.split(" · ").length})</span>
+              )}
             </Button>
             <Button
               type="button"
