@@ -444,6 +444,8 @@ export default function Cabinet() {
   const [streamBytes, setStreamBytes] = useState(0);
   const [streamChunks, setStreamChunks] = useState(0);
   const [ttftMs, setTtftMs] = useState<number | null>(null);
+  const [streamStatusLine, setStreamStatusLine] = useState<string>("");
+  const activeStreamAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     if (!streaming || !streamStartedAt) { setElapsedSec(0); return; }
     setElapsedSec(Math.floor((Date.now() - streamStartedAt) / 1000));
@@ -465,6 +467,12 @@ export default function Cabinet() {
     }, 800);
     return () => clearInterval(t);
   }, [streaming]);
+  const cancelActiveStream = useCallback(() => {
+    activeStreamAbortRef.current?.abort("user_cancelled");
+    setStreamStatusLine("Запрос отменён пользователем");
+    setStreaming(false);
+    setStreamPhase("idle");
+  }, []);
   // Прикреплять активный протокол пациента (жалобы/анамнез/статус) к вопросу
   const [attachProtocol, setAttachProtocol] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -1641,7 +1649,13 @@ export default function Cabinet() {
       setStreamBytes(0);
       setStreamChunks(0);
       setTtftMs(null);
+      setStreamStatusLine("Открываю защищённый канал к модели…");
+      const controller = new AbortController();
+      activeStreamAbortRef.current = controller;
       const reqStartedAt = Date.now();
+      let noTokenTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+        controller.abort("no_first_token_timeout");
+      }, 180_000);
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -1649,6 +1663,7 @@ export default function Cabinet() {
           Authorization: `Bearer ${sess.session?.access_token ?? ""}`,
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
       if (!resp.ok || !resp.body) {
@@ -1657,12 +1672,19 @@ export default function Cabinet() {
         throw new Error(errTxt || `HTTP ${resp.status}`);
       }
       setStreamPhase("waiting");
+      const usedModelHeader = resp.headers.get("x-used-model");
+      const usedGatewayHeader = resp.headers.get("x-used-gateway");
+      if (usedModelHeader) {
+        setStreamStatusLine(`HTTP ${resp.status} · модель приняла запрос: ${usedModelHeader}${usedGatewayHeader ? ` · ${usedGatewayHeader}` : ""}`);
+      } else {
+        setStreamStatusLine(`HTTP ${resp.status} · соединение установлено, жду первый токен`);
+      }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buf = "";
       let pendingEvent: string | null = null;
-      let firstChunkSeen = false;
+      let firstTokenSeen = false;
       const mergeAnnotations = (anns: any) => {
         if (!Array.isArray(anns)) return;
         for (const a of anns) {
@@ -1679,11 +1701,6 @@ export default function Cabinet() {
         if (value) {
           setStreamBytes((b) => b + value.byteLength);
           setStreamChunks((c) => c + 1);
-          if (!firstChunkSeen) {
-            firstChunkSeen = true;
-            setTtftMs(Date.now() - reqStartedAt);
-            setStreamPhase("streaming");
-          }
         }
         buf += decoder.decode(value, { stream: true });
         let idx;
@@ -1697,6 +1714,23 @@ export default function Cabinet() {
           if (json === "[DONE]") { pendingEvent = null; continue; }
           try {
             const parsed = JSON.parse(json);
+            if (pendingEvent === "status") {
+              const usedModel = parsed?.model ? String(parsed.model) : model;
+              const gateway = parsed?.gateway ? String(parsed.gateway) : "gateway";
+              setStreamPhase("waiting");
+              setStreamStatusLine(`Канал открыт · ${usedModel} · ${gateway} · жду токены`);
+              pendingEvent = null;
+              continue;
+            }
+            if (pendingEvent === "heartbeat") {
+              const elapsed = Number(parsed?.elapsed_sec) || elapsedSec;
+              setStreamStatusLine(`Канал жив · ожидание токенов ${elapsed}s · ${(streamBytes / 1024).toFixed(1)} KB`);
+              pendingEvent = null;
+              continue;
+            }
+            if (pendingEvent === "error") {
+              throw new Error(parsed?.message || parsed?.error || "Модель оборвала поток без ответа");
+            }
             if (council) {
               if (pendingEvent === "progress") {
                 setCouncilProgress({
@@ -1731,6 +1765,16 @@ export default function Cabinet() {
               mergeAnnotations(choice?.message?.annotations);
               if (delta) {
                 assistantSoFar += delta;
+                if (!firstTokenSeen) {
+                  firstTokenSeen = true;
+                  if (noTokenTimer) {
+                    clearTimeout(noTokenTimer);
+                    noTokenTimer = null;
+                  }
+                  setTtftMs(Date.now() - reqStartedAt);
+                  setStreamPhase("streaming");
+                  setStreamStatusLine("Получаю текст ответа…");
+                }
               }
               if (delta || collectedSources.length) {
                 const sourcesSnapshot = collectedSources.slice();
@@ -1745,6 +1789,16 @@ export default function Cabinet() {
           pendingEvent = null;
         }
       }
+
+      if (noTokenTimer) {
+        clearTimeout(noTokenTimer);
+        noTokenTimer = null;
+      }
+      if (!council && !assistantSoFar.trim()) {
+        throw new Error("Соединение было установлено, но модель завершила поток без текста ответа. Смените модель или повторите запрос — пустой ответ больше не будет скрыт колесом ожидания.");
+      }
+      setStreamPhase("done");
+      setStreamStatusLine("Ответ получен полностью");
 
 
       // Persist assistant message
@@ -1769,13 +1823,17 @@ export default function Cabinet() {
         loadConversations();
       }
     } catch (e: any) {
-      toast.error(friendlyChatError(e?.message || ""));
+      const rawMessage = e?.name === "AbortError" || e?.message === "no_first_token_timeout"
+        ? "Нет первого токена 180 секунд: запрос автоматически остановлен, чтобы не висело вечное колесо."
+        : e?.message || "";
+      toast.error(friendlyChatError(rawMessage));
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = { role: "assistant", content: "⚠️ Ошибка получения ответа." };
+        next[next.length - 1] = { role: "assistant", content: `⚠️ Ошибка получения ответа.\n\n${rawMessage}` };
         return next;
       });
     } finally {
+      if (activeStreamAbortRef.current) activeStreamAbortRef.current = null;
       setStreaming(false);
       setStreamPhase("idle");
     }
@@ -2576,6 +2634,7 @@ export default function Cabinet() {
                                 {streamPhase === "connecting" && <>🔌 Соединяюсь с моделью <span className="opacity-70">({model})</span>… {elapsedSec}s</>}
                                 {streamPhase === "waiting" && <>✅ Соединение установлено · ⏳ Жду первый токен… {elapsedSec}s</>}
                                 {streamPhase === "streaming" && <>📡 Стрим идёт · {elapsedSec}s · {(streamBytes/1024).toFixed(1)} KB · {streamChunks} чанков{ttftMs !== null && <> · TTFT {(ttftMs/1000).toFixed(1)}s</>}</>}
+                                {streamPhase === "done" && <>✅ Ответ получен · {elapsedSec}s</>}
                                 {streamPhase === "idle" && <>Думаю… {elapsedSec}s</>}
                                 {elapsedSec >= 60 && elapsedSec < 240 && streamPhase !== "streaming" && (
                                   <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
@@ -2586,7 +2645,25 @@ export default function Cabinet() {
                               </>
                           }
                         </span>
+                          {!councilProgress && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={cancelActiveStream}
+                              className="h-7 px-2 text-xs"
+                              title="Остановить текущий запрос"
+                            >
+                              <Square className="w-3 h-3 mr-1" /> Стоп
+                            </Button>
+                          )}
                       </div>
+                        {!councilProgress && streamStatusLine && (
+                          <div className="rounded-md border border-border bg-background/60 px-2 py-1 text-[11px] text-muted-foreground">
+                            <div className="font-mono break-all">{streamStatusLine}</div>
+                            <div className="mt-0.5 tabular-nums">байты: {streamBytes} · чанки: {streamChunks} · таймаут первого токена: 180s</div>
+                          </div>
+                        )}
                       <Progress
                         value={
                           councilProgress && councilProgress.total > 0
