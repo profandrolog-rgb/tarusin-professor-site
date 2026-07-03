@@ -392,6 +392,10 @@ export default function AdminPatientMetabolicMap() {
           </CardContent>
         </Card>
 
+        <DataContextPanel patientId={patient.id} visitId={selectedVisit === "all" ? null : selectedVisit} />
+
+
+
         {mapNotes && (
           <Card>
             <CardHeader><CardTitle className="text-base">Заметки</CardTitle></CardHeader>
