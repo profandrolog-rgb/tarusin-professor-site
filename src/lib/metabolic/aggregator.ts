@@ -285,23 +285,26 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     let matched = 0;
     const affected = new Set<string>();
     let status: Severity = "no_data";
-    for (const rule of pw.rules) {
+    for (const rule of pw.rules as DbRule[]) {
       const lab = findLatestMatch(labs, rule);
       if (!lab) continue;
       matched += 1;
-      const sev = severityFor(rule, lab);
+      const sev = evaluateRule(rule, lab);
       if (!sev) continue;
       if (sev === "norm") {
         status = worst(status, "norm");
         continue;
       }
       status = worst(status, sev);
-      affected.add(rule.node_id);
+      const nodes = ruleNodes(rule);
+      for (const nid of nodes) affected.add(nid);
+      const primaryNode = nodes[0] || "";
+      const label = ruleLabel(rule);
       findings.push({
         pathway_id: pw.id,
-        node_id: rule.node_id,
+        node_id: primaryNode,
         severity: sev,
-        label: `${rule.label}: ${lab.value} ${lab.unit}`.trim(),
+        label: `${label}: ${lab.value} ${lab.unit}`.trim(),
         detail: [
           lab.reference_min != null ? `реф. ≥ ${lab.reference_min}` : null,
           lab.reference_max != null ? `реф. ≤ ${lab.reference_max}` : null,
@@ -310,7 +313,8 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
           .filter(Boolean)
           .join(" · "),
         source_ref: {
-          rule_id: rule.id,
+          rule_code: rule.code || null,
+          highlight_nodes: nodes,
           lab_result_id: lab.id,
           test_code: lab.test_code,
           test_name: lab.test_name,
