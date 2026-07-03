@@ -354,36 +354,95 @@ Deno.serve(async (req) => {
       });
     }
 
-    let outBody: ReadableStream<Uint8Array> = orResp.body;
-    if (pubmedSources.length) {
-      const annotations = pubmedSources.map((s) => ({
-        type: "url_citation",
-        url_citation: { url: s.url, title: s.title, content: s.content.slice(0, 400) },
-      }));
-      const annChunk = `data: ${JSON.stringify({ choices: [{ delta: { annotations } }] })}\n\n`;
-      const enc = new TextEncoder();
-      const dec = new TextDecoder();
-      const reader = orResp.body.getReader();
-      outBody = new ReadableStream({
-        async pull(controller) {
-          const { done, value } = await reader.read();
-          if (done) {
-            controller.enqueue(enc.encode(annChunk));
-            controller.enqueue(enc.encode("data: [DONE]\n\n"));
-            controller.close();
-            return;
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+    const reader = orResp.body.getReader();
+    const annotations = pubmedSources.map((s) => ({
+      type: "url_citation",
+      url_citation: { url: s.url, title: s.title, content: s.content.slice(0, 400) },
+    }));
+    const annChunk = annotations.length
+      ? `data: ${JSON.stringify({ choices: [{ delta: { annotations } }] })}\n\n`
+      : "";
+    let annotationsSent = false;
+    let finished = false;
+    const outBody = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const startedAt = Date.now();
+        controller.enqueue(enc.encode(`event: status\ndata: ${JSON.stringify({
+          model: usedAttempt.model,
+          gateway: usedAttempt.gateway,
+          upstream_status: orResp.status,
+        })}\n\n`));
+
+        const heartbeat = setInterval(() => {
+          if (finished) return;
+          try {
+            controller.enqueue(enc.encode(`event: heartbeat\ndata: ${JSON.stringify({
+              elapsed_sec: Math.floor((Date.now() - startedAt) / 1000),
+              model: usedAttempt.model,
+            })}\n\n`));
+          } catch (_) { /* stream already closed */ }
+        }, 10_000);
+
+        try {
+          while (true) {
+            const read = await Promise.race([
+              reader.read(),
+              new Promise<{ done: true; value?: undefined; timeout: true }>((resolve) =>
+                setTimeout(() => resolve({ done: true, timeout: true }), 180_000)
+              ),
+            ] as const);
+
+            if ((read as any).timeout) {
+              controller.enqueue(enc.encode(`event: error\ndata: ${JSON.stringify({
+                error: "upstream_no_tokens_timeout",
+                message: "Модель открыла поток, но 180 секунд не прислала ни одного чанка. Поток остановлен вместо вечного ожидания.",
+                model: usedAttempt.model,
+              })}\n\n`));
+              controller.enqueue(enc.encode("data: [DONE]\n\n"));
+              await reader.cancel().catch(() => null);
+              break;
+            }
+
+            if (read.done) {
+              if (annChunk && !annotationsSent) {
+                controller.enqueue(enc.encode(annChunk));
+                annotationsSent = true;
+                controller.enqueue(enc.encode("data: [DONE]\n\n"));
+              }
+              break;
+            }
+
+            const value = read.value;
+            const text = dec.decode(value, { stream: true });
+            if (annChunk && text.includes("[DONE]")) {
+              const cleaned = text.replace(/data:\s*\[DONE\]\s*\n+/g, "");
+              if (cleaned) controller.enqueue(enc.encode(cleaned));
+              controller.enqueue(enc.encode(annChunk));
+              annotationsSent = true;
+              controller.enqueue(enc.encode("data: [DONE]\n\n"));
+            } else {
+              controller.enqueue(value);
+            }
           }
-          const text = dec.decode(value, { stream: true });
-          if (text.includes("[DONE]")) {
-            const cleaned = text.replace(/data:\s*\[DONE\]\s*\n+/g, "");
-            if (cleaned) controller.enqueue(enc.encode(cleaned));
-          } else {
-            controller.enqueue(value);
-          }
-        },
-        cancel() { reader.cancel(); },
-      });
-    }
+        } catch (e: any) {
+          controller.enqueue(enc.encode(`event: error\ndata: ${JSON.stringify({
+            error: "stream_proxy_error",
+            message: e?.message || String(e),
+            model: usedAttempt.model,
+          })}\n\n`));
+        } finally {
+          finished = true;
+          clearInterval(heartbeat);
+          controller.close();
+        }
+      },
+      cancel() {
+        finished = true;
+        reader.cancel();
+      },
+    });
 
     return new Response(outBody, {
       headers: {
@@ -392,6 +451,8 @@ Deno.serve(async (req) => {
         "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
         "X-Accel-Buffering": "no",
+        "X-Used-Model": usedAttempt.model,
+        "X-Used-Gateway": usedAttempt.gateway,
       },
     });
   } catch (err) {
