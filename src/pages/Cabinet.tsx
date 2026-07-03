@@ -2499,7 +2499,7 @@ export default function Cabinet() {
                             ? councilProgress.stage === "summarizing"
                               ? Math.max(90, Math.min(99, 90 + Math.floor(elapsedSec / 6)))
                               : Math.round((councilProgress.done / councilProgress.total) * 85)
-                            : assistantSoFarLen(m.content) > 0
+                            : (m.content?.length ?? 0) > 0
                               ? Math.max(genericProgress, 60)
                               : genericProgress
                         }
