@@ -1524,6 +1524,25 @@ export default function Cabinet() {
       }
     }
 
+    // Полная ретроспектива пациента: все прошлые визиты/УЗИ/анализы/заключения + таблицы динамики
+    if (attachHistory && pendingPatient.id) {
+      try {
+        toast.info("Собираю всю историю пациента…", { duration: 2000 });
+        const { text: historyText, counts } = await fetchPatientHistory(pendingPatient.id, pendingPatient.name || undefined);
+        const summary = summarizeCounts(counts);
+        setHistoryCountsHint(summary);
+        if (historyText && historyText.trim()) {
+          text = `[Полная ретроспектива пациента — ${pendingPatient.name || pendingPatient.id}]\n${summary}\n\n${historyText}\n\n---\n\n${text || "(без дополнительного вопроса — проанализируйте динамику и предложите тактику)"}`;
+          toast.success(`История подтянута: ${summary}`, { duration: 3000 });
+        } else {
+          toast.warning("По пациенту не найдено исторических записей");
+        }
+      } catch (e: any) {
+        console.warn("attach history failed", e);
+        toast.error(`Не удалось собрать историю: ${e?.message || e}`);
+      }
+    }
+
     const userMsg: Msg = { role: "user", content: text, attachments: [...attachments] };
 
     // Ensure conversation
