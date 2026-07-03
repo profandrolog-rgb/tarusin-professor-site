@@ -1,5 +1,5 @@
 import { Outlet, useNavigation } from "react-router-dom";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,6 +8,8 @@ import { MainLayout } from "@/layouts/MainLayout";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AppErrorBoundary } from "@/components/RouteErrorBoundary";
 import { Loader2 } from "lucide-react";
+import AiActivityDock from "@/components/AiActivityDock";
+import { installAiActivityHooks } from "@/lib/installAiActivityHooks";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,24 +46,28 @@ const NavigationBar = () => {
   );
 };
 
-const RootLayout = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <MainLayout>
-          <AppErrorBoundary>
-            <NavigationBar />
-            <Suspense fallback={<RouteLoader />}>
-              <Outlet />
-            </Suspense>
-          </AppErrorBoundary>
-        </MainLayout>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const RootLayout = () => {
+  useEffect(() => { installAiActivityHooks(); }, []);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <MainLayout>
+            <AppErrorBoundary>
+              <NavigationBar />
+              <Suspense fallback={<RouteLoader />}>
+                <Outlet />
+              </Suspense>
+            </AppErrorBoundary>
+          </MainLayout>
+          <Toaster />
+          <Sonner />
+          <AiActivityDock />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default RootLayout;
 
