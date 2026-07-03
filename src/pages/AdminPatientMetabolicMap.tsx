@@ -446,18 +446,44 @@ export default function AdminPatientMetabolicMap() {
           </div>
           <Card>
             <CardContent className="p-3">
-              <MetroOverview
-                pathways={pathways.map((pw) => ({
+              <PathwayTilesGrid
+                pathways={pathways.map((pw) => {
+                  const status = (summaryByPathway.get(pw.id)?.status ||
+                    ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity;
+                  const fList = findingsByPathway.get(pw.id) || [];
+                  const evidence = fList.slice(0, 2).map((f) => f.label).join(" · ");
+                  return {
+                    id: pw.id,
+                    slug: pw.slug,
+                    name: pw.name,
+                    status,
+                    group: pw.group ?? null,
+                    group_order: pw.group_order ?? null,
+                    evidence,
+                  };
+                })}
+                onSelect={(slug) => {
+                  const el = document.getElementById(`pw-${slug}`);
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Цепочка проблем: что тянет за собой</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <ProblemChainSVG
+                causes={pathways.map((pw) => ({
                   id: pw.id,
                   slug: pw.slug,
                   name: pw.name,
                   status: (summaryByPathway.get(pw.id)?.status ||
                     ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity,
+                  consequences: pw.consequences || [],
                 }))}
-                onSelect={(slug) => {
-                  const el = document.getElementById(`pw-${slug}`);
-                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
               />
             </CardContent>
           </Card>
