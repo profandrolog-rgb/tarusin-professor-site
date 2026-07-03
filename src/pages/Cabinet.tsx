@@ -1675,6 +1675,15 @@ export default function Cabinet() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (value) {
+          setStreamBytes((b) => b + value.byteLength);
+          setStreamChunks((c) => c + 1);
+          if (ttftMs === null) {
+            const t = Date.now() - reqStartedAt;
+            setTtftMs(t);
+            setStreamPhase("streaming");
+          }
+        }
         buf += decoder.decode(value, { stream: true });
         let idx;
         while ((idx = buf.indexOf("\n")) !== -1) {
