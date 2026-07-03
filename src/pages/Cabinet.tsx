@@ -1614,7 +1614,13 @@ export default function Cabinet() {
           try {
             const parsed = JSON.parse(json);
             if (council) {
-              if (pendingEvent === "answers") {
+              if (pendingEvent === "progress") {
+                setCouncilProgress({
+                  done: Number(parsed.done) || 0,
+                  total: Number(parsed.total) || 0,
+                  stage: String(parsed.stage || "fanout"),
+                });
+              } else if (pendingEvent === "answers") {
                 councilAnswers = parsed as CouncilAnswer[];
                 setMessages((prev) => {
                   const next = [...prev];
