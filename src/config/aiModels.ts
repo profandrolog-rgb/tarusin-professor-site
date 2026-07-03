@@ -24,9 +24,9 @@ export const CURATED_MODELS: CuratedModel[] = [
   // ─── Быстрые ───────────────────────────────────────────────────────────
   {
     key: "gemini-flash",
-    label: "Gemini 2.5 Flash",
+    label: "Gemini 3 Flash",
     tier: "fast",
-    candidates: ["google/gemini-2.5-flash"],
+    candidates: ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"],
     familyRegex: /^google\/gemini-(?:2\.5|3)[^/]*flash(?!-image)/i,
   },
   {
