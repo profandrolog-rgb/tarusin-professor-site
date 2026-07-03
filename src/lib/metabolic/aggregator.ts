@@ -43,7 +43,7 @@ export interface Pathway {
   id: string;
   slug: string;
   name: string;
-  rules: PathwayRule[];
+  rules: any[];
 }
 
 export interface LabRow {
