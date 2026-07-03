@@ -436,6 +436,25 @@ export default function Cabinet() {
     }, 1000);
     return () => clearInterval(t);
   }, [streaming, streamStartedAt]);
+  // Прогресс работы (для консилиума — реальный done/total, иначе индикатив: 0=idle, 30=запрос отправлен, 70=идёт стрим, 100=готово)
+  const [councilProgress, setCouncilProgress] = useState<{ done: number; total: number; stage: string } | null>(null);
+  const [genericProgress, setGenericProgress] = useState<number>(0);
+  useEffect(() => {
+    if (!streaming) { setGenericProgress(0); return; }
+    setGenericProgress(15);
+    const t = setInterval(() => {
+      setGenericProgress((p) => (p < 92 ? p + Math.max(1, Math.round((95 - p) * 0.08)) : p));
+    }, 800);
+    return () => clearInterval(t);
+  }, [streaming]);
+  // Прикреплять активный протокол пациента (жалобы/анамнез/статус) к вопросу
+  const [attachProtocol, setAttachProtocol] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("cabinet.attachProtocol") !== "0";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem("cabinet.attachProtocol", attachProtocol ? "1" : "0");
+  }, [attachProtocol]);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
     return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
