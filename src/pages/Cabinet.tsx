@@ -78,8 +78,17 @@ type SpeedMode = "fast" | "deep";
 type Attachment = {
   name: string;
   type: string; // mime
+  size?: number;
   path?: string;   // storage path in chat-attachments (new scheme)
-  dataUrl?: string; // signed URL (new) OR legacy data:...;base64,... (old messages)
+  dataUrl?: string; // signed URL (preferred) OR legacy/local data:...;base64,...
+};
+
+type AttachmentUploadStatus = {
+  phase: "idle" | "uploading" | "ready" | "error";
+  done: number;
+  total: number;
+  detail: string;
+  error?: string;
 };
 
 type CouncilAnswer = { model: string; content: string; error: string | null };
@@ -183,6 +192,18 @@ const fileToDataUrl = (file: File): Promise<string> =>
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+
+const formatBytes = (bytes?: number): string => {
+  if (!bytes || bytes <= 0) return "";
+  const units = ["Б", "КБ", "МБ", "ГБ"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value >= 10 || unit === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unit]}`;
+};
 
 const buildMultimodalContent = (text: string, atts: Attachment[]) => {
   if (!atts.length) return text;
@@ -419,6 +440,12 @@ export default function Cabinet() {
 
   const [speed, setSpeed] = useState<SpeedMode>("fast");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachmentUpload, setAttachmentUpload] = useState<AttachmentUploadStatus>({
+    phase: "idle",
+    done: 0,
+    total: 0,
+    detail: "",
+  });
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [council, setCouncil] = useState(false);
   const [privateMode, setPrivateMode] = useState(false);
@@ -850,16 +877,23 @@ export default function Cabinet() {
       return;
     }
     const MAX_FILES = 2;
-    const MAX_SIZE = 25 * 1024 * 1024; // 25 MB per file (Storage upload, not request body)
+    const MAX_SIZE = 20 * 1024 * 1024; // real upload limit: 20 MB per file
+    const LOCAL_FALLBACK_MAX = 12 * 1024 * 1024; // base64 fallback must stay small enough for function payload
     const list = Array.from(files);
     const out: Attachment[] = [];
+    const errors: string[] = [];
+    setAttachmentUpload({ phase: "uploading", done: 0, total: list.length, detail: "Проверяю выбранные файлы…" });
     for (const f of list) {
       if (attachments.length + out.length >= MAX_FILES) {
-        toast.error(`В обычный чат можно прикрепить максимум ${MAX_FILES} файла. Для больших объёмов используйте «Пакетный анализ».`);
+        const msg = `В обычный чат можно прикрепить максимум ${MAX_FILES} файла. Для больших объёмов используйте «Пакетный анализ».`;
+        errors.push(msg);
+        toast.error(msg);
         break;
       }
       if (f.size > MAX_SIZE) {
-        toast.error(`${f.name}: больше 25 МБ`);
+        const msg = `${f.name}: больше 20 МБ`;
+        errors.push(msg);
+        toast.error(msg);
         continue;
       }
       // Some browsers/OS report empty type or "application/octet-stream" for
@@ -871,12 +905,20 @@ export default function Cabinet() {
       const isImage = rawType.startsWith("image/") || isImgByExt;
       const isPdf = rawType === "application/pdf" || isPdfByExt;
       if (!isImage && !isPdf) {
-        toast.error(`${f.name}: только PDF и изображения (получено «${rawType || "неизвестный тип"}»)`);
+        const msg = `${f.name}: только PDF и изображения (получено «${rawType || "неизвестный тип"}»)`;
+        errors.push(msg);
+        toast.error(msg);
         continue;
       }
       const effectiveType = isPdf ? "application/pdf" : (rawType.startsWith("image/") ? rawType : "image/jpeg");
       const safeName = (f.name || (isPdf ? "document.pdf" : "image.jpg")).replace(/[^\w.\-]+/g, "_");
       const path = `${user.id}/chat/${crypto.randomUUID()}/${safeName}`;
+      setAttachmentUpload({
+        phase: "uploading",
+        done: out.length,
+        total: list.length,
+        detail: `Загружаю ${safeName} (${formatBytes(f.size)}) в защищённое хранилище…`,
+      });
       let up: any;
       try {
         up = await supabase.storage.from("chat-attachments").upload(path, f, {
@@ -884,25 +926,76 @@ export default function Cabinet() {
         });
       } catch (e: any) {
         console.error("[cabinet] storage upload threw", e);
-        toast.error(`${f.name}: не удалось загрузить (${e?.message || "network"})`);
-        continue;
+        up = { error: e };
       }
       if (up?.error) {
         console.error("[cabinet] storage upload error", up.error);
-        toast.error(`${f.name}: не удалось загрузить (${up.error.message})`);
+        if (f.size <= LOCAL_FALLBACK_MAX) {
+          try {
+            setAttachmentUpload({
+              phase: "uploading",
+              done: out.length,
+              total: list.length,
+              detail: `Хранилище не ответило — готовлю ${safeName} локально для текущего запроса…`,
+            });
+            const localDataUrl = await fileToDataUrl(f);
+            out.push({ name: safeName, type: effectiveType, size: f.size, dataUrl: localDataUrl });
+            toast.warning(`${f.name}: прикреплено только к текущему запросу (история без файла)`);
+            continue;
+          } catch (e: any) {
+            const msg = `${f.name}: не удалось подготовить локально (${e?.message || "FileReader"})`;
+            errors.push(msg);
+            toast.error(msg);
+            continue;
+          }
+        }
+        const msg = `${f.name}: не удалось загрузить в хранилище (${up.error.message || "network"})`;
+        errors.push(msg);
+        toast.error(msg);
         continue;
       }
       let dataUrl = "";
       try {
-        dataUrl = await fileToDataUrl(f);
+        setAttachmentUpload({
+          phase: "uploading",
+          done: out.length,
+          total: list.length,
+          detail: `Создаю временную ссылку для модели: ${safeName}…`,
+        });
+        const { data: signed, error: signError } = await supabase.storage
+          .from("chat-attachments")
+          .createSignedUrl(path, 60 * 60);
+        if (signError || !signed?.signedUrl) throw signError || new Error("signed URL missing");
+        dataUrl = signed.signedUrl;
       } catch (e) {
-        console.error("[cabinet] fileToDataUrl failed", e);
-        toast.error(`${f.name}: файл загружен, но не удалось подготовить его для модели`);
-        continue;
+        console.error("[cabinet] signed URL failed, falling back to base64", e);
+        if (f.size > LOCAL_FALLBACK_MAX) {
+          const msg = `${f.name}: файл загружен, но не удалось создать временную ссылку для модели`;
+          errors.push(msg);
+          toast.error(msg);
+          continue;
+        }
+        try {
+          dataUrl = await fileToDataUrl(f);
+        } catch (readErr) {
+          console.error("[cabinet] fileToDataUrl failed", readErr);
+          const msg = `${f.name}: файл загружен, но не удалось подготовить его для модели`;
+          errors.push(msg);
+          toast.error(msg);
+          continue;
+        }
       }
-      out.push({ name: safeName, type: effectiveType, path, dataUrl });
+      out.push({ name: safeName, type: effectiveType, size: f.size, path, dataUrl });
     }
-    if (out.length) toast.success(`Прикреплено: ${out.map((a) => a.name).join(", ")}`);
+    if (out.length) {
+      const detail = `Готово к отправке: ${out.map((a) => `${a.name}${a.size ? ` · ${formatBytes(a.size)}` : ""}`).join(", ")}`;
+      setAttachmentUpload({ phase: "ready", done: out.length, total: list.length, detail });
+      toast.success(`Прикреплено: ${out.map((a) => a.name).join(", ")}`);
+      setTimeout(() => setAttachmentUpload((s) => s.phase === "ready" ? { phase: "idle", done: 0, total: 0, detail: "" } : s), 8000);
+    } else {
+      const detail = errors[0] || "Файлы не прикреплены";
+      setAttachmentUpload({ phase: "error", done: 0, total: list.length, detail, error: detail });
+    }
     setAttachments((prev) => [...prev, ...out]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -1575,7 +1668,19 @@ export default function Cabinet() {
       }
     }
 
-    const userMsg: Msg = { role: "user", content: text, attachments: [...attachments] };
+    const attachmentsForSend = await Promise.all(attachments.map(async (a) => {
+      if (a.dataUrl || !a.path) return a;
+      const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrl(a.path, 60 * 60);
+      return signed?.signedUrl ? { ...a, dataUrl: signed.signedUrl } : a;
+    }));
+    const unavailable = attachmentsForSend.filter((a) => !a.dataUrl);
+    if (unavailable.length) {
+      toast.error(`Не могу передать модели файл: ${unavailable.map((a) => a.name).join(", ")}`);
+      setStreaming(false);
+      return;
+    }
+
+    const userMsg: Msg = { role: "user", content: text, attachments: attachmentsForSend };
 
     // Ensure conversation
     let convId = activeId;
@@ -1609,7 +1714,7 @@ export default function Cabinet() {
 
     // Persist user message — strip transient signed URLs for path-based attachments
     const persistedAtts = (userMsg.attachments || []).map((a) =>
-      a.path ? { name: a.name, type: a.type, path: a.path } : a,
+      a.path ? { name: a.name, type: a.type, size: a.size, path: a.path } : { name: a.name, type: a.type, size: a.size },
     );
     if (!priv) {
       await supabase.from("ai_messages").insert({
@@ -2806,21 +2911,38 @@ export default function Cabinet() {
               disabled={streaming}
             />
           )}
-          {attachments.length > 0 && !isImageModel && (
-            <div className="flex flex-wrap gap-2">
-              {attachments.map((a, i) => (
-                <div key={i} className="flex items-center gap-1 bg-muted rounded px-2 py-1 text-xs">
-                  {a.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
-                  <span className="max-w-[160px] truncate">{a.name}</span>
-                  <button
-                    onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))}
-                    className="hover:text-destructive"
-                    aria-label="Убрать"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+          {!isImageModel && (attachmentUpload.phase !== "idle" || attachments.length > 0) && (
+            <div className="space-y-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+              {attachmentUpload.phase !== "idle" && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs">
+                    {attachmentUpload.phase === "uploading" ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" /> : attachmentUpload.phase === "error" ? <X className="w-3.5 h-3.5 text-destructive" /> : <FileText className="w-3.5 h-3.5 text-primary" />}
+                    <span className={attachmentUpload.phase === "error" ? "text-destructive" : "text-foreground"}>{attachmentUpload.detail}</span>
+                  </div>
+                  {attachmentUpload.total > 0 && (
+                    <Progress value={Math.min(100, Math.max(8, Math.round((attachmentUpload.done / attachmentUpload.total) * 100)))} className="h-1" />
+                  )}
                 </div>
-              ))}
+              )}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((a, i) => (
+                    <div key={i} className="flex items-center gap-1 bg-background rounded px-2 py-1 text-xs border border-border">
+                      {a.type.startsWith("image/") ? <ImageIcon className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                      <span className="max-w-[160px] truncate">{a.name}</span>
+                      {a.size ? <span className="text-muted-foreground">· {formatBytes(a.size)}</span> : null}
+                      <span className="text-primary">· готов</span>
+                      <button
+                        onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))}
+                        className="hover:text-destructive"
+                        aria-label="Убрать"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -2913,11 +3035,11 @@ export default function Cabinet() {
               variant="outline"
               size="icon"
               onClick={() => fileInputRef.current?.click()}
-              disabled={streaming || !attachmentsSupported}
+              disabled={streaming || attachmentUpload.phase === "uploading" || !attachmentsSupported}
               aria-label="Прикрепить файл"
               title={
                 attachmentsSupported
-                  ? "Прикрепить PDF/изображение (до 2 файлов, 25 МБ)"
+                  ? "Прикрепить PDF/изображение (до 2 файлов, 20 МБ)"
                   : `Модель «${currentLive?.name || model}» не принимает картинки/PDF.\nПодходят: ${visionCapableLabels.length ? visionCapableLabels.join(", ") : "Claude Sonnet, Gemini, GPT-5"}.`
               }
             >
@@ -3034,7 +3156,7 @@ export default function Cabinet() {
               className="flex-1 min-h-[44px] max-h-40 resize-none"
               disabled={streaming}
             />
-            <Button onClick={sendMessage} disabled={streaming || (!input.trim() && !attachments.length)} size="icon">
+            <Button onClick={sendMessage} disabled={streaming || attachmentUpload.phase === "uploading" || (!input.trim() && !attachments.length)} size="icon" aria-label="Отправить">
               {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
