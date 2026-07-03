@@ -555,6 +555,18 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
+                        const tpl = getTemplate(pw.slug);
+                        if (tpl) {
+                          return (
+                            <TemplateSVG
+                              template={tpl}
+                              highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                              rxNodes={rxNodes}
+                              rxLabelByNode={rxLabelByNode}
+                              height={280}
+                            />
+                          );
+                        }
                         const sceneToRender = pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
                           ? pw.svg_scene
                           : buildAutoScene(pw.nodes || [], pw.edges || []);
