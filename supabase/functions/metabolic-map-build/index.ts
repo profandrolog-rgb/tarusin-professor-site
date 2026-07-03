@@ -18,7 +18,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEFAULT_MODEL = "google/gemini-2.5-pro";
+// Flash — быстрый дефолт (обычно ≤ 20 с). Про можно передать явно из клиента.
+const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `Ты — клинический интерпретатор метаболической карты.
 Тебе передают ДЕТЕРМИНИРОВАННЫЙ черновик (статусы путей по правилам) и полный контекст

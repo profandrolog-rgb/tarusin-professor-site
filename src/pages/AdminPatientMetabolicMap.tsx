@@ -38,6 +38,7 @@ import { buildAutoScene } from "@/lib/metabolic/autoLayout";
 import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
 import { AuditPanel } from "@/components/metabolic/AuditPanel";
+import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean };
 type Pathway = {
@@ -108,9 +109,18 @@ export default function AdminPatientMetabolicMap() {
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [aiElapsed, setAiElapsed] = useState(0);
   const [deidentified, setDeidentified] = useState(true);
   const [ai, setAi] = useState<any | null>(null);
   const [rxBusy, setRxBusy] = useState(false);
+
+  // Таймер прогресса ИИ-запроса
+  useEffect(() => {
+    if (!aiBusy) { setAiElapsed(0); return; }
+    const t0 = Date.now();
+    const id = setInterval(() => setAiElapsed(Math.round((Date.now() - t0) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [aiBusy]);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
@@ -337,7 +347,7 @@ export default function AdminPatientMetabolicMap() {
             </Button>
             <Button onClick={handleAiBuild} disabled={aiBusy || !mapId} variant="secondary" className="gap-2">
               {aiBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              ИИ-интерпретация
+              ИИ-интерпретация{aiBusy ? ` · ${aiElapsed}с` : ""}
             </Button>
             <Button onClick={handleRebuildRx} disabled={rxBusy || !mapId} variant="secondary" className="gap-2">
               {rxBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Beaker className="w-4 h-4" />}
@@ -381,6 +391,10 @@ export default function AdminPatientMetabolicMap() {
             )}
           </CardContent>
         </Card>
+
+        <DataContextPanel patientId={patient.id} visitId={selectedVisit === "all" ? null : selectedVisit} />
+
+
 
         {mapNotes && (
           <Card>
