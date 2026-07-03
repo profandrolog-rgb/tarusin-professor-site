@@ -30,7 +30,8 @@ import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Reg
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
-import { MetroOverview } from "@/components/metabolic/MetroOverview";
+import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
+import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
@@ -49,6 +50,9 @@ type Pathway = {
   nodes: Array<{ id: string; label: string; x?: number; y?: number; kind?: string }>;
   edges: Array<{ from: string; to: string; label?: string }>;
   svg_scene: SceneJson | null;
+  group?: string | null;
+  group_order?: number | null;
+  consequences?: Array<{ to_slug?: string; to_label?: string; weight?: number }>;
 };
 type Finding = {
   id: string;
@@ -139,7 +143,7 @@ export default function AdminPatientMetabolicMap() {
     setBusy(true);
     const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
       supabase.from("patients").select("id, full_name, birth_date, history_number, share_simple_only").eq("id", id).maybeSingle(),
-      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true).order("name"),
+      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene, group, group_order, consequences").eq("is_active", true).order("group_order").order("name"),
       (supabase as any)
         .from("metabolic_maps")
         .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary, meta")
@@ -442,18 +446,44 @@ export default function AdminPatientMetabolicMap() {
           </div>
           <Card>
             <CardContent className="p-3">
-              <MetroOverview
-                pathways={pathways.map((pw) => ({
+              <PathwayTilesGrid
+                pathways={pathways.map((pw) => {
+                  const status = (summaryByPathway.get(pw.id)?.status ||
+                    ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity;
+                  const fList = findingsByPathway.get(pw.id) || [];
+                  const evidence = fList.slice(0, 2).map((f) => f.label).join(" · ");
+                  return {
+                    id: pw.id,
+                    slug: pw.slug,
+                    name: pw.name,
+                    status,
+                    group: pw.group ?? null,
+                    group_order: pw.group_order ?? null,
+                    evidence,
+                  };
+                })}
+                onSelect={(slug) => {
+                  const el = document.getElementById(`pw-${slug}`);
+                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Цепочка проблем: что тянет за собой</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <ProblemChainSVG
+                causes={pathways.map((pw) => ({
                   id: pw.id,
                   slug: pw.slug,
                   name: pw.name,
                   status: (summaryByPathway.get(pw.id)?.status ||
                     ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity,
+                  consequences: pw.consequences || [],
                 }))}
-                onSelect={(slug) => {
-                  const el = document.getElementById(`pw-${slug}`);
-                  el?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
               />
             </CardContent>
           </Card>

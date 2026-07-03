@@ -2546,9 +2546,12 @@ export type Database = {
       }
       pathways: {
         Row: {
+          consequences: Json
           created_at: string
           description: string | null
           edges: Json
+          group: string | null
+          group_order: number | null
           id: string
           is_active: boolean
           name: string
@@ -2560,9 +2563,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          consequences?: Json
           created_at?: string
           description?: string | null
           edges?: Json
+          group?: string | null
+          group_order?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -2574,9 +2580,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          consequences?: Json
           created_at?: string
           description?: string | null
           edges?: Json
+          group?: string | null
+          group_order?: number | null
           id?: string
           is_active?: boolean
           name?: string
