@@ -2834,6 +2834,26 @@ export default function Cabinet() {
             </Button>
             <Button
               type="button"
+              variant={attachHistory ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAttachHistory((v) => !v)}
+              disabled={streaming || !pendingPatient.id}
+              aria-label="Включить полную историю пациента"
+              title={
+                !pendingPatient.id
+                  ? "Сначала привяжите пациента к диалогу"
+                  : attachHistory
+                    ? `Будет отправлена вся ретроспектива пациента (визиты, УЗИ, анализы, планы, заключения) с таблицей динамики. ${historyCountsHint ? "Последний сбор: " + historyCountsHint : ""}`
+                    : "📚 Включить всю историю пациента (все УЗИ, визиты, анализы, прошлые заключения) с хронологией и динамикой"
+              }
+              className="gap-1 px-2"
+            >
+              📚 <span className="hidden sm:inline text-xs">История</span>
+              {historyCountsHint && attachHistory && (
+                <span className="hidden md:inline text-[10px] opacity-75">({historyCountsHint.split(" · ").length})</span>
+              )}
+            <Button
+              type="button"
               variant={webSearch ? "default" : "outline"}
               size="icon"
               onClick={() => setWebSearch((v) => !v)}
