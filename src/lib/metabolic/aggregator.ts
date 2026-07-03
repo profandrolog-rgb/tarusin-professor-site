@@ -159,6 +159,16 @@ export interface RunOptions {
 export async function runAggregation(opts: RunOptions): Promise<AggregationResult> {
   const { patientId, visitId } = opts;
 
+  // 0. подтягиваем лабораторные из свободного текста AI-протоколов визитов
+  // (безопасно: дедуп внутри функции; ошибки не прерывают расчёт)
+  try {
+    await supabase.functions.invoke("extract-visit-labs", {
+      body: { patient_id: patientId, only_new: true },
+    });
+  } catch (e) {
+    console.warn("[metabolic] extract-visit-labs skipped:", (e as any)?.message || e);
+  }
+
   // 1. загружаем пути с правилами
   const { data: pwRows, error: pwErr } = await (supabase as any)
     .from("pathways")
@@ -171,6 +181,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     name: p.name,
     rules: Array.isArray(p.rules) ? (p.rules as PathwayRule[]) : [],
   }));
+
 
   // 2. визит-источник (для отсечения по дате)
   let visitDate: string | null = null;
