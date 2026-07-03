@@ -2754,6 +2754,21 @@ export default function Cabinet() {
             </Button>
             <Button
               type="button"
+              variant={attachProtocol ? "default" : "outline"}
+              size="icon"
+              onClick={() => setAttachProtocol((v) => !v)}
+              disabled={streaming}
+              aria-label="Прикреплять активный протокол"
+              title={
+                attachProtocol
+                  ? "К вопросу прикрепляется активный протокол пациента (жалобы, анамнез, статус). Кликните, чтобы выключить."
+                  : "Включить автоматическую передачу содержимого активного протокола пациента в вопрос"
+              }
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
+            <Button
+              type="button"
               variant={webSearch ? "default" : "outline"}
               size="icon"
               onClick={() => setWebSearch((v) => !v)}
