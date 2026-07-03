@@ -467,6 +467,9 @@ export default function Cabinet() {
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem("cabinet.attachProtocol", attachProtocol ? "1" : "0");
   }, [attachProtocol]);
+  // Включать всю ретроспективу пациента (все УЗИ/визиты/анализы/заключения) в контекст
+  const [attachHistory, setAttachHistory] = useState<boolean>(false);
+  const [historyCountsHint, setHistoryCountsHint] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
     return window.localStorage.getItem(SYSTEM_PROMPT_LS_KEY) || DEFAULT_SYSTEM_PROMPT;
