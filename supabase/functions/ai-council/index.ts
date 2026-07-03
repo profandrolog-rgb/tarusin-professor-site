@@ -15,7 +15,7 @@ const corsHeaders = {
 const DEFAULT_PANEL = [
   "anthropic/claude-sonnet-4.5",
   "openai/gpt-5",
-  "google/gemini-2.5-pro",
+  "google/gemini-3.1-pro-preview",
   "x-ai/grok-4.3",
 ];
 const DEFAULT_SUMMARIZER = "anthropic/claude-sonnet-4.5";
