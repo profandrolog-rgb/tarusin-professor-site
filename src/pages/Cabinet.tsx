@@ -44,6 +44,8 @@ const DEFAULT_MODEL =
   CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
   "google/gemini-2.5-flash";
 
+const COUNCIL_MODEL_KEYS = ["gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5"];
+
 
 const DEFAULT_SYSTEM_PROMPT =
   "Ты — ассистент профессора Д. И. Тарусина: профессор, д.м.н., 40 лет клинического стажа, основатель детской урологии-андрологии в России, руководитель Городского центра репродуктивного здоровья детей и подростков. " +
@@ -381,7 +383,11 @@ export default function Cabinet() {
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
   const imageModels = resolvedModels.filter((m) => m.kind === "image");
-  const councilPanel = deepModels.filter((m) => m.available).map((m) => m.id);
+  const councilPanel = COUNCIL_MODEL_KEYS
+    .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
+    .filter((id): id is string => Boolean(id))
+    .filter((id, index, arr) => arr.indexOf(id) === index)
+    .slice(0, 6);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
     if (liveModelsLoading || !resolvedModels.length) return;
