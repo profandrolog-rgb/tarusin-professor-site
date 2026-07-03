@@ -444,6 +444,8 @@ export default function Cabinet() {
   }, [streaming, streamStartedAt]);
   // Прогресс работы (для консилиума — реальный done/total, иначе индикатив: 0=idle, 30=запрос отправлен, 70=идёт стрим, 100=готово)
   const [councilProgress, setCouncilProgress] = useState<{ done: number; total: number; stage: string } | null>(null);
+  // Пер-модельный статус консилиума: показываем список ещё до старта и обновляем по мере ответов
+  const [councilStatuses, setCouncilStatuses] = useState<Array<{ model: string; state: "pending" | "ok" | "fail" }>>([]);
   const [genericProgress, setGenericProgress] = useState<number>(0);
   useEffect(() => {
     if (!streaming) { setGenericProgress(0); return; }
@@ -1569,6 +1571,12 @@ export default function Cabinet() {
     let councilAnswers: CouncilAnswer[] | undefined;
     let collectedSources: SourceCitation[] = [];
     const usedWebSearch = webSearch && !council;
+    if (council) {
+      setCouncilStatuses(councilPanel.map((m) => ({ model: m, state: "pending" })));
+      setCouncilProgress({ done: 0, total: councilPanel.length, stage: "fanout" });
+    } else {
+      setCouncilStatuses([]);
+    }
     try {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
@@ -1626,6 +1634,11 @@ export default function Cabinet() {
                   total: Number(parsed.total) || 0,
                   stage: String(parsed.stage || "fanout"),
                 });
+                if (parsed.model && parsed.stage === "fanout") {
+                  setCouncilStatuses((prev) => prev.map((s) =>
+                    s.model === parsed.model ? { ...s, state: parsed.ok ? "ok" : "fail" } : s
+                  ));
+                }
               } else if (pendingEvent === "answers") {
                 councilAnswers = parsed as CouncilAnswer[];
                 setMessages((prev) => {
@@ -2511,6 +2524,23 @@ export default function Cabinet() {
                         }
                         className="h-1.5"
                       />
+                      {council && councilStatuses.length > 0 && (
+                        <ul className="mt-1 space-y-0.5 text-[11px] font-mono">
+                          {councilStatuses.map((s) => {
+                            const short = s.model.split("/").pop();
+                            const icon = s.state === "ok" ? "✓" : s.state === "fail" ? "✗" : "…";
+                            const color = s.state === "ok" ? "text-emerald-600 dark:text-emerald-400"
+                              : s.state === "fail" ? "text-destructive"
+                              : "text-muted-foreground";
+                            return (
+                              <li key={s.model} className={`flex items-center gap-2 ${color}`}>
+                                <span className="w-3 tabular-nums">{icon}</span>
+                                <span className="truncate">{short}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </div>
                   )
                 ) : (
