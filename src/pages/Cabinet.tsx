@@ -1662,6 +1662,7 @@ export default function Cabinet() {
       const decoder = new TextDecoder();
       let buf = "";
       let pendingEvent: string | null = null;
+      let firstChunkSeen = false;
       const mergeAnnotations = (anns: any) => {
         if (!Array.isArray(anns)) return;
         for (const a of anns) {
@@ -1678,9 +1679,9 @@ export default function Cabinet() {
         if (value) {
           setStreamBytes((b) => b + value.byteLength);
           setStreamChunks((c) => c + 1);
-          if (ttftMs === null) {
-            const t = Date.now() - reqStartedAt;
-            setTtftMs(t);
+          if (!firstChunkSeen) {
+            firstChunkSeen = true;
+            setTtftMs(Date.now() - reqStartedAt);
             setStreamPhase("streaming");
           }
         }
