@@ -13,12 +13,44 @@ const corsHeaders = {
 };
 
 const DEFAULT_PANEL = [
+  "google/gemini-3-flash-preview",
   "anthropic/claude-sonnet-4.5",
-  "openai/gpt-5",
-  "google/gemini-3.1-pro-preview",
+  "openai/gpt-5-mini",
   "x-ai/grok-4.3",
+  "qwen/qwen3.6-flash",
+  "z-ai/glm-5",
 ];
-const DEFAULT_SUMMARIZER = "anthropic/claude-sonnet-4.5";
+const DEFAULT_SUMMARIZER = "google/gemini-3-flash-preview";
+
+const GLOBAL_FALLBACK_MODELS = [
+  "google/gemini-3-flash-preview",
+  "anthropic/claude-sonnet-4.5",
+  "openai/gpt-5-mini",
+  "deepseek/deepseek-v4-flash",
+  "qwen/qwen3.6-flash",
+  "z-ai/glm-5",
+];
+
+const MODEL_FALLBACKS: Record<string, string[]> = {
+  "google/gemini-2.5-pro": ["google/gemini-3.1-pro-preview", "google/gemini-3-flash-preview"],
+  "google/gemini-3.1-pro-preview": ["google/gemini-3-flash-preview"],
+  "openai/gpt-5": ["openai/gpt-5-mini", "openai/gpt-5-chat"],
+  "anthropic/claude-opus-4.8": ["anthropic/claude-sonnet-4.5"],
+  "anthropic/claude-opus-4-8": ["anthropic/claude-sonnet-4.5"],
+  "moonshotai/kimi-k2-thinking": ["qwen/qwen3.6-flash", "z-ai/glm-5"],
+  "deepseek/deepseek-v4-pro": ["deepseek/deepseek-v4-flash", "deepseek/deepseek-v3.2"],
+};
+
+const unique = (items: string[]) => items.filter((item, index, arr) => Boolean(item) && arr.indexOf(item) === index);
+
+function attemptsForModel(model: string): string[] {
+  return unique([model, ...(MODEL_FALLBACKS[model] ?? []), ...GLOBAL_FALLBACK_MODELS]).slice(0, 5);
+}
+
+function looksLikeRefusal(content: string): boolean {
+  const head = content.slice(0, 1400).toLowerCase();
+  return /(?:i\s+(?:can['’]?t|cannot)\s+(?:provide|give|assist).*medical)|(?:not\s+a\s+substitute\s+for\s+professional\s+medical)|(?:я\s+не\s+могу\s+(?:предоставить|дать).*?(?:медицин|рекомендац|совет))|(?:не\s+могу\s+помочь\s+с\s+этим)/i.test(head);
+}
 
 const DEFAULT_SYSTEM_PROMPT =
   "Ты — ассистент профессора Д. И. Тарусина: профессор, д.м.н., 40 лет клинического стажа, основатель детской урологии-андрологии в России, руководитель Городского центра репродуктивного здоровья детей и подростков. " +
@@ -61,7 +93,6 @@ async function callOpenRouter(
   if (!key) throw new Error(isVenice ? "VENICE_API_KEY missing" : "OPENROUTER_API_KEY missing");
   const payload: Record<string, unknown> = { model: realModel, messages };
   if (!isVenice) {
-    payload.reasoning = { effort: "low" };
     payload.provider = { sort: "throughput" };
   } else {
     payload.venice_parameters = { include_venice_system_prompt: false };
@@ -159,30 +190,45 @@ Deno.serve(async (req) => {
         send(`: council-start\n\n`);
         const keepalive = setInterval(() => send(`: ping\n\n`), 5000);
 
-        // 1. Fan out in parallel with a per-model timeout so a single slow/hung
-        // model can't block the whole council. Emit progress as each finishes.
+        // 1. Fan out in parallel. Each slot has immediate fallback models, so
+        // one provider refusal/timeout never interrupts the whole council.
         const total = panel.length;
         let doneCount = 0;
         send(`event: progress\ndata: ${JSON.stringify({ stage: "fanout", done: 0, total })}\n\n`);
-        const MODEL_TIMEOUT_MS = 90_000;
+        const SLOT_TIMEOUT_MS = 62_000;
+        const ATTEMPT_TIMEOUT_MS = 32_000;
         let results: { model: string; content: string; error: string | null }[] = [];
-        try {
-          results = await Promise.all(panel.map(async (model) => {
+        const callSlot = async (requestedModel: string) => {
+          const slotStarted = Date.now();
+          let lastError = "unknown error";
+          for (const attemptModel of attemptsForModel(requestedModel)) {
+            const remaining = SLOT_TIMEOUT_MS - (Date.now() - slotStarted);
+            if (remaining < 4_000) break;
             const t0 = Date.now();
             const ac = new AbortController();
-            const timer = setTimeout(() => ac.abort(new Error(`timeout ${MODEL_TIMEOUT_MS}ms`)), MODEL_TIMEOUT_MS);
-            let res: { model: string; content: string; error: string | null };
+            const timeoutMs = Math.min(ATTEMPT_TIMEOUT_MS, remaining);
+            const timer = setTimeout(() => ac.abort(new Error(`timeout ${timeoutMs}ms`)), timeoutMs);
             try {
-              const content = await callOpenRouter(apiKey, origin, model, messages, veniceKey, ac.signal);
-              console.log("[ai-council] model ok", JSON.stringify({ model, ms: Date.now() - t0, len: content.length }));
-              res = { model, content, error: null };
+              const content = await callOpenRouter(apiKey, origin, attemptModel, messages, veniceKey, ac.signal);
+              if (looksLikeRefusal(content)) throw new Error("model refusal");
+              console.log("[ai-council] model ok", JSON.stringify({ requestedModel, model: attemptModel, ms: Date.now() - t0, len: content.length }));
+              return {
+                model: attemptModel === requestedModel ? requestedModel : `${requestedModel} → ${attemptModel}`,
+                content,
+                error: null,
+              };
             } catch (e: any) {
-              const msg = e?.message || String(e);
-              console.error("[ai-council] model fail", JSON.stringify({ model, ms: Date.now() - t0, err: msg }));
-              res = { model, content: "", error: msg };
+              lastError = e?.message || String(e);
+              console.error("[ai-council] model fail", JSON.stringify({ requestedModel, model: attemptModel, ms: Date.now() - t0, err: lastError }));
             } finally {
               clearTimeout(timer);
             }
+          }
+          return { model: requestedModel, content: "", error: lastError };
+        };
+        try {
+          results = await Promise.all(panel.map(async (model) => {
+            const res = await callSlot(model);
             doneCount++;
             send(`event: progress\ndata: ${JSON.stringify({ stage: "fanout", done: doneCount, total, model, ok: !res.error })}\n\n`);
             return res;
@@ -233,7 +279,7 @@ Deno.serve(async (req) => {
               { role: "user", content: synthPrompt },
             ],
             stream: true,
-            reasoning: { effort: "low" },
+            max_tokens: 4096,
             provider: { sort: "throughput" },
           }),
         });
