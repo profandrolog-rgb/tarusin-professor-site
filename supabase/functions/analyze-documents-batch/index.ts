@@ -15,9 +15,26 @@ const corsHeaders = {
 
 const BUCKET = "chat-attachments";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4.6";
+const DEFAULT_MODEL = "google/gemini-3-flash-preview";
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 const MAX_FILES = 50;
+
+const FALLBACK_MODELS = [
+  "google/gemini-3-flash-preview",
+  "anthropic/claude-sonnet-4.5",
+  "openai/gpt-5-mini",
+  "anthropic/claude-sonnet-4.6",
+];
+
+const MODEL_FALLBACKS: Record<string, string[]> = {
+  "anthropic/claude-sonnet-4.6": ["anthropic/claude-sonnet-4.5", "google/gemini-3-flash-preview"],
+  "anthropic/claude-sonnet-4.5": ["google/gemini-3-flash-preview", "openai/gpt-5-mini"],
+  "google/gemini-2.5-pro": ["google/gemini-3-flash-preview", "openai/gpt-5-mini"],
+  "google/gemini-3.1-pro-preview": ["google/gemini-3-flash-preview", "openai/gpt-5-mini"],
+};
+
+const unique = (items: string[]) => items.filter((item, index, arr) => Boolean(item) && arr.indexOf(item) === index);
+const attemptsForModel = (model: string) => unique([model, ...(MODEL_FALLBACKS[model] ?? []), ...FALLBACK_MODELS]).slice(0, 5);
 
 type FileRef = { path: string; name: string; ext: string };
 
@@ -85,7 +102,7 @@ function selfInvoke(body: Record<string, unknown>) {
 }
 
 
-async function fetchSubbatchAnalysis(
+async function fetchSubbatchAnalysisAttempt(
   apiKey: string,
   supabase: ReturnType<typeof admin>,
   model: string,
@@ -176,6 +193,28 @@ async function fetchSubbatchAnalysis(
   return { content, per_file_errors };
 }
 
+async function fetchSubbatchAnalysis(
+  apiKey: string,
+  supabase: ReturnType<typeof admin>,
+  model: string,
+  task: string,
+  refs: FileRef[],
+  subbatchIndex: number,
+  totalSubbatches: number,
+): Promise<{ content: string; per_file_errors: { file: string; error: string }[]; used_model: string }> {
+  let last = "unknown error";
+  for (const attempt of attemptsForModel(model)) {
+    try {
+      const result = await fetchSubbatchAnalysisAttempt(apiKey, supabase, attempt, task, refs, subbatchIndex, totalSubbatches);
+      return { ...result, used_model: attempt };
+    } catch (e: any) {
+      last = e?.message || String(e);
+      console.error("[analyze-documents-batch] subbatch model failed", JSON.stringify({ requested: model, attempt, subbatchIndex, error: last.slice(0, 500) }));
+    }
+  }
+  throw new Error(last);
+}
+
 async function processSubbatch(batchId: string, subbatchIndex: number) {
   const supabase = admin();
   const apiKey = Deno.env.get("OPENROUTER_API_KEY");
@@ -243,12 +282,12 @@ async function processSubbatch(batchId: string, subbatchIndex: number) {
     });
     try {
       await logEvent(supabase, batchId, { stage: "openrouter_call", subbatch_index: subbatchIndex, files: refs.length, model });
-      const { content, per_file_errors } = await fetchSubbatchAnalysis(apiKey, supabase, model, task, refs, subbatchIndex, subbatches.length);
+      const { content, per_file_errors, used_model } = await fetchSubbatchAnalysis(apiKey, supabase, model, task, refs, subbatchIndex, subbatches.length);
       await logEvent(supabase, batchId, {
         stage: "subbatch_done", subbatch_index: subbatchIndex,
-        content_chars: content.length, per_file_errors: per_file_errors.length,
+        content_chars: content.length, per_file_errors: per_file_errors.length, used_model,
       });
-      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors });
+      partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), content, per_file_errors, used_model });
     } catch (e) {
       await logEvent(supabase, batchId, { stage: "subbatch_error", subbatch_index: subbatchIndex, message: (e as Error).message });
       partial.push({ subbatch_index: subbatchIndex, files: refs.map(r => r.name), error: (e as Error).message });
