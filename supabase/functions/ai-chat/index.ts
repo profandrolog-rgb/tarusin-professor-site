@@ -236,15 +236,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Gemini Flash в режиме reasoning часто упирается в лимит времени edge-функции
-    // (~5 минут) и обрывает стрим. Принудительно держим reasoning минимальным
-    // для всей семьи Gemini Flash, и ставим жёсткий потолок токенов вывода.
-    const isGeminiFlash = /google\/gemini-[^/]*flash/i.test(resolvedModel);
-    const effectiveEffort: "low" | "medium" | "high" = isGeminiFlash ? "low" : effort;
-
     const makePayload = (modelId: string, gateway: "openrouter" | "venice" | "perplexity") => {
-      const isAttemptGeminiFlash = /google\/gemini-[^/]*flash/i.test(modelId);
-      const attemptEffort: "low" | "medium" | "high" = isAttemptGeminiFlash ? "low" : effort;
       const payload: Record<string, unknown> = {
         model: modelId,
         messages: finalMessages,
@@ -252,7 +244,6 @@ Deno.serve(async (req) => {
         max_tokens: 8192,
       };
       if (gateway === "openrouter") {
-        payload.reasoning = { effort: attemptEffort };
         payload.provider = { sort: "throughput" };
         if (webSearch && !usePubmed) payload.plugins = [{ id: "web", max_results: 5 }];
       } else if (gateway === "venice") {
