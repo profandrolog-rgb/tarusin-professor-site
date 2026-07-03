@@ -2793,7 +2793,7 @@ export default function Cabinet() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept="image/*,application/pdf,.pdf,.png,.jpg,.jpeg,.webp,.gif,.heic"
               multiple
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
