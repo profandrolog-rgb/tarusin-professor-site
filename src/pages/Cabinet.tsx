@@ -2524,6 +2524,23 @@ export default function Cabinet() {
                         }
                         className="h-1.5"
                       />
+                      {council && councilStatuses.length > 0 && (
+                        <ul className="mt-1 space-y-0.5 text-[11px] font-mono">
+                          {councilStatuses.map((s) => {
+                            const short = s.model.split("/").pop();
+                            const icon = s.state === "ok" ? "✓" : s.state === "fail" ? "✗" : "…";
+                            const color = s.state === "ok" ? "text-emerald-600 dark:text-emerald-400"
+                              : s.state === "fail" ? "text-destructive"
+                              : "text-muted-foreground";
+                            return (
+                              <li key={s.model} className={`flex items-center gap-2 ${color}`}>
+                                <span className="w-3 tabular-nums">{icon}</span>
+                                <span className="truncate">{short}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </div>
                   )
                 ) : (
