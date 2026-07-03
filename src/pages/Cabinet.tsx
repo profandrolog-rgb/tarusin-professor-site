@@ -2852,6 +2852,7 @@ export default function Cabinet() {
               {historyCountsHint && attachHistory && (
                 <span className="hidden md:inline text-[10px] opacity-75">({historyCountsHint.split(" · ").length})</span>
               )}
+            </Button>
             <Button
               type="button"
               variant={webSearch ? "default" : "outline"}
