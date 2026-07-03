@@ -169,20 +169,19 @@ Deno.serve(async (req) => {
         try {
           results = await Promise.all(panel.map(async (model) => {
             const t0 = Date.now();
-            const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`timeout ${MODEL_TIMEOUT_MS}ms`)), MODEL_TIMEOUT_MS),
-            );
+            const ac = new AbortController();
+            const timer = setTimeout(() => ac.abort(new Error(`timeout ${MODEL_TIMEOUT_MS}ms`)), MODEL_TIMEOUT_MS);
             let res: { model: string; content: string; error: string | null };
             try {
-              const content = await Promise.race([
-                callOpenRouter(apiKey, origin, model, messages, veniceKey),
-                timeoutPromise,
-              ]);
+              const content = await callOpenRouter(apiKey, origin, model, messages, veniceKey, ac.signal);
               console.log("[ai-council] model ok", JSON.stringify({ model, ms: Date.now() - t0, len: content.length }));
               res = { model, content, error: null };
             } catch (e: any) {
-              console.error("[ai-council] model fail", JSON.stringify({ model, ms: Date.now() - t0, err: e?.message || String(e) }));
-              res = { model, content: "", error: e?.message || String(e) };
+              const msg = e?.message || String(e);
+              console.error("[ai-council] model fail", JSON.stringify({ model, ms: Date.now() - t0, err: msg }));
+              res = { model, content: "", error: msg };
+            } finally {
+              clearTimeout(timer);
             }
             doneCount++;
             send(`event: progress\ndata: ${JSON.stringify({ stage: "fanout", done: doneCount, total, model, ok: !res.error })}\n\n`);
