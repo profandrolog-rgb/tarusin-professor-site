@@ -30,6 +30,7 @@ import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu"
 import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
 import { fetchActiveProtocolText } from "@/lib/protocolContextFetcher";
+import { fetchPatientHistory, summarizeCounts } from "@/lib/patientHistoryFetcher";
 import { Progress } from "@/components/ui/progress";
 import { Link2, Activity } from "lucide-react";
 
