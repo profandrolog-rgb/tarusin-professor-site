@@ -29,6 +29,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { TemplateSVG } from "@/components/metabolic/schemes/TemplateSVG";
+import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
 import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
