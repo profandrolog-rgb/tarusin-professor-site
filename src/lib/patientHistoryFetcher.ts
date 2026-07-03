@@ -96,20 +96,21 @@ export async function fetchPatientHistory(patientId: string, patientName?: strin
     plans: 0, rounds: 0, documents: 0, diagnoses: 0, metabolic: 0,
   };
 
-  const [
-    visitsRes, uzRes, labsRes, anthroRes, plansRes,
-    diagRes, docsRes, mapRes, patientRes,
-  ] = await Promise.all([
-    supabase.from("patient_visits").select("*").eq("patient_id", patientId).order("visit_date", { ascending: true }),
-    supabase.from("ultrasound_results").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
-    supabase.from("lab_results").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
-    supabase.from("anthropometry_measurements").select("*").eq("patient_id", patientId).order("measurement_date", { ascending: true }),
-    supabase.from("treatment_plans").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
-    supabase.from("patient_diagnosis_timeline").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
-    supabase.from("patient_documents").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
-    supabase.from("metabolic_map_snapshots").select("*").eq("patient_id", patientId).order("created_at", { ascending: true }),
-    supabase.from("patients").select("full_name, birth_date, sex, history_number, notes").eq("id", patientId).maybeSingle(),
+  const sb: any = supabase;
+  const fetchAll = (table: string, orderCol: string) =>
+    sb.from(table).select("*").eq("patient_id", patientId).order(orderCol, { ascending: true });
+  const results = await Promise.all([
+    fetchAll("patient_visits", "visit_date"),
+    fetchAll("ultrasound_results", "created_at"),
+    fetchAll("lab_results", "created_at"),
+    fetchAll("anthropometry_measurements", "measurement_date"),
+    fetchAll("treatment_plans", "created_at"),
+    fetchAll("patient_diagnosis_timeline", "created_at"),
+    fetchAll("patient_documents", "created_at"),
+    fetchAll("metabolic_map_snapshots", "created_at"),
+    sb.from("patients").select("full_name, birth_date, sex, history_number, notes").eq("id", patientId).maybeSingle(),
   ]);
+  const [visitsRes, uzRes, labsRes, anthroRes, plansRes, diagRes, docsRes, mapRes, patientRes] = results;
 
   const visits = visitsRes.data || [];
   const uz = uzRes.data || [];
