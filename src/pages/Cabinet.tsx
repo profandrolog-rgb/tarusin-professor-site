@@ -29,6 +29,8 @@ import MetabolicMapMiniCard from "@/components/metabolic/MetabolicMapMiniCard";
 import { SelectionContextMenu } from "@/components/cabinet/SelectionContextMenu";
 import { ThreadPatientBadge } from "@/components/cabinet/ThreadPatientBadge";
 import { getActiveContext, subscribeActiveContext, type ActivePatientContext } from "@/lib/protocolBridge";
+import { fetchActiveProtocolText } from "@/lib/protocolContextFetcher";
+import { Progress } from "@/components/ui/progress";
 import { Link2, Activity } from "lucide-react";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
