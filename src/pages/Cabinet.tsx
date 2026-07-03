@@ -849,28 +849,47 @@ export default function Cabinet() {
         toast.error(`${f.name}: больше 25 МБ`);
         continue;
       }
-      if (!f.type.startsWith("image/") && f.type !== "application/pdf") {
-        toast.error(`${f.name}: только PDF и изображения`);
+      // Some browsers/OS report empty type or "application/octet-stream" for
+      // PDFs from USB/сетевых дисков — определяем тип и по расширению.
+      const lowerName = (f.name || "").toLowerCase();
+      const isPdfByExt = /\.pdf$/i.test(lowerName);
+      const isImgByExt = /\.(png|jpe?g|webp|gif|heic|bmp|tiff?)$/i.test(lowerName);
+      const rawType = (f.type || "").toLowerCase();
+      const isImage = rawType.startsWith("image/") || isImgByExt;
+      const isPdf = rawType === "application/pdf" || isPdfByExt;
+      if (!isImage && !isPdf) {
+        toast.error(`${f.name}: только PDF и изображения (получено «${rawType || "неизвестный тип"}»)`);
         continue;
       }
-      const safeName = f.name.replace(/[^\w.\-]+/g, "_");
+      const effectiveType = isPdf ? "application/pdf" : (rawType.startsWith("image/") ? rawType : "image/jpeg");
+      const safeName = (f.name || (isPdf ? "document.pdf" : "image.jpg")).replace(/[^\w.\-]+/g, "_");
       const path = `${user.id}/chat/${crypto.randomUUID()}/${safeName}`;
-      const up = await supabase.storage.from("chat-attachments").upload(path, f, {
-        contentType: f.type, upsert: false,
-      });
-      if (up.error) {
+      let up: any;
+      try {
+        up = await supabase.storage.from("chat-attachments").upload(path, f, {
+          contentType: effectiveType, upsert: false,
+        });
+      } catch (e: any) {
+        console.error("[cabinet] storage upload threw", e);
+        toast.error(`${f.name}: не удалось загрузить (${e?.message || "network"})`);
+        continue;
+      }
+      if (up?.error) {
+        console.error("[cabinet] storage upload error", up.error);
         toast.error(`${f.name}: не удалось загрузить (${up.error.message})`);
         continue;
       }
       let dataUrl = "";
       try {
         dataUrl = await fileToDataUrl(f);
-      } catch {
+      } catch (e) {
+        console.error("[cabinet] fileToDataUrl failed", e);
         toast.error(`${f.name}: файл загружен, но не удалось подготовить его для модели`);
         continue;
       }
-      out.push({ name: f.name, type: f.type, path, dataUrl });
+      out.push({ name: safeName, type: effectiveType, path, dataUrl });
     }
+    if (out.length) toast.success(`Прикреплено: ${out.map((a) => a.name).join(", ")}`);
     setAttachments((prev) => [...prev, ...out]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -2774,7 +2793,7 @@ export default function Cabinet() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf"
+              accept="image/*,application/pdf,.pdf,.png,.jpg,.jpeg,.webp,.gif,.heic"
               multiple
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
