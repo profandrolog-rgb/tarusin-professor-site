@@ -171,17 +171,27 @@ export async function rebuildMapRecommendations({ mapId, patientId }: BuildOptio
     .maybeSingle();
   const ageYears = yearsBetween((patient as any)?.birth_date || null);
 
-  // 4) каталог (только активные с непустыми targets)
+  // 4) каталог (только активные; берём mm_targets, если заданы, иначе targets)
   const { data: cat } = await (supabase as any)
     .from("treatment_catalog")
     .select(
-      "id, name, subcategory, category, targets, contraindications, age_min_years, age_max_years, evidence_level, catalog_priority, default_dose, dose_unit, default_route_label, default_frequency, application_point, is_active",
+      "id, name, subcategory, category, targets, contraindications, age_min_years, age_max_years, evidence_level, catalog_priority, default_dose, dose_unit, default_route_label, default_frequency, application_point, is_active, mm_targets, mm_application_point, mm_evidence_level, mm_priority, mm_contraindications",
     )
-    .eq("is_active", true)
-    .not("targets", "is", null);
-  const catalog = (((cat as CatalogRow[]) || []).filter(
-    (r) => Array.isArray(r.targets) && r.targets.length > 0,
-  )) as CatalogRow[];
+    .eq("is_active", true);
+  const evidenceLetterToNum = (v?: string | null) =>
+    v ? ({ A: 4, B: 3, C: 2, D: 1 } as Record<string, number>)[v.toUpperCase()] ?? 0 : 0;
+  const catalog = (((cat as CatalogRow[]) || []).map((r) => {
+    const merged = { ...r };
+    // mm_targets переопределяют targets, если заданы
+    if (Array.isArray(r.mm_targets) && r.mm_targets.length > 0) {
+      merged.targets = r.mm_targets;
+    }
+    if (r.mm_application_point) merged.application_point = r.mm_application_point;
+    if (r.mm_priority != null) merged.catalog_priority = r.mm_priority;
+    const mmEv = evidenceLetterToNum(r.mm_evidence_level);
+    if (mmEv > 0) merged.evidence_level = mmEv;
+    return merged;
+  }).filter((r) => Array.isArray(r.targets) && r.targets.length > 0)) as CatalogRow[];
 
   // 5) собираем предложения
   const previews: RecPreview[] = [];
