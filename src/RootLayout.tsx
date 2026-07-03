@@ -46,24 +46,28 @@ const NavigationBar = () => {
   );
 };
 
-const RootLayout = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <MainLayout>
-          <AppErrorBoundary>
-            <NavigationBar />
-            <Suspense fallback={<RouteLoader />}>
-              <Outlet />
-            </Suspense>
-          </AppErrorBoundary>
-        </MainLayout>
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const RootLayout = () => {
+  useEffect(() => { installAiActivityHooks(); }, []);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <MainLayout>
+            <AppErrorBoundary>
+              <NavigationBar />
+              <Suspense fallback={<RouteLoader />}>
+                <Outlet />
+              </Suspense>
+            </AppErrorBoundary>
+          </MainLayout>
+          <Toaster />
+          <Sonner />
+          <AiActivityDock />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default RootLayout;
 
