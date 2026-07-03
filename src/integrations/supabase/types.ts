@@ -4171,6 +4171,11 @@ export type Database = {
           is_off_label: boolean
           is_rx: boolean
           light_sensitive: boolean
+          mm_application_point: string | null
+          mm_contraindications: string[] | null
+          mm_evidence_level: string | null
+          mm_priority: number | null
+          mm_targets: string[] | null
           name: string
           notes: string | null
           pack_size: string | null
@@ -4224,6 +4229,11 @@ export type Database = {
           is_off_label?: boolean
           is_rx?: boolean
           light_sensitive?: boolean
+          mm_application_point?: string | null
+          mm_contraindications?: string[] | null
+          mm_evidence_level?: string | null
+          mm_priority?: number | null
+          mm_targets?: string[] | null
           name: string
           notes?: string | null
           pack_size?: string | null
@@ -4277,6 +4287,11 @@ export type Database = {
           is_off_label?: boolean
           is_rx?: boolean
           light_sensitive?: boolean
+          mm_application_point?: string | null
+          mm_contraindications?: string[] | null
+          mm_evidence_level?: string | null
+          mm_priority?: number | null
+          mm_targets?: string[] | null
           name?: string
           notes?: string | null
           pack_size?: string | null
