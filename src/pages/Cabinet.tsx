@@ -2000,9 +2000,15 @@ export default function Cabinet() {
         loadConversations();
       }
     } catch (e: any) {
-      const rawMessage = e?.name === "AbortError" || e?.message === "no_first_token_timeout"
-        ? "Нет первого токена 180 секунд: запрос автоматически остановлен, чтобы не висело вечное колесо."
-        : e?.message || "";
+      const abortReason = String((e as any)?.reason || e?.message || "");
+      const rawMessage =
+        e?.name === "AbortError" && /stall/i.test(abortReason)
+          ? "Стрим завис: 90 секунд не пришло ни одного байта. Соединение автоматически разорвано, чтобы не висело вечное колесо. Смените модель или повторите."
+          : e?.name === "AbortError" && /hard_limit/i.test(abortReason)
+            ? "Достигнут общий потолок стрима (5 мин). Соединение разорвано."
+            : e?.name === "AbortError"
+              ? "Запрос отменён."
+              : e?.message || "";
       toast.error(friendlyChatError(rawMessage));
       setMessages((prev) => {
         const next = [...prev];
