@@ -1571,6 +1571,12 @@ export default function Cabinet() {
     let councilAnswers: CouncilAnswer[] | undefined;
     let collectedSources: SourceCitation[] = [];
     const usedWebSearch = webSearch && !council;
+    if (council) {
+      setCouncilStatuses(councilPanel.map((m) => ({ model: m, state: "pending" })));
+      setCouncilProgress({ done: 0, total: councilPanel.length, stage: "fanout" });
+    } else {
+      setCouncilStatuses([]);
+    }
     try {
       const { data: sess } = await supabase.auth.getSession();
       const url = council ? COUNCIL_URL : CHAT_URL;
