@@ -439,6 +439,11 @@ export default function Cabinet() {
   const [streaming, setStreaming] = useState(false);
   const [streamStartedAt, setStreamStartedAt] = useState<number | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
+  // Наглядные индикаторы стрима: статус соединения, байты, чанки, ttft
+  const [streamPhase, setStreamPhase] = useState<"idle" | "connecting" | "waiting" | "streaming" | "done">("idle");
+  const [streamBytes, setStreamBytes] = useState(0);
+  const [streamChunks, setStreamChunks] = useState(0);
+  const [ttftMs, setTtftMs] = useState<number | null>(null);
   useEffect(() => {
     if (!streaming || !streamStartedAt) { setElapsedSec(0); return; }
     setElapsedSec(Math.floor((Date.now() - streamStartedAt) / 1000));
