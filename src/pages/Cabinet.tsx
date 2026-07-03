@@ -2474,17 +2474,37 @@ export default function Cabinet() {
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span className="tabular-nums">
-                        Думаю… {elapsedSec}s
-                        {elapsedSec >= 60 && elapsedSec < 240 && (
-                          <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
-                        )}
-                        {elapsedSec >= 240 && (
-                          <span className="text-xs text-amber-600 dark:text-amber-400"> · долго, риск обрыва — можно отменить и сменить модель</span>
-                        )}
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        <span className="tabular-nums flex-1">
+                          {councilProgress
+                            ? councilProgress.stage === "summarizing"
+                              ? `Сборка сводного ответа консилиума… ${elapsedSec}s`
+                              : `Опрос моделей консилиума: ${councilProgress.done}/${councilProgress.total} · ${elapsedSec}s`
+                            : <>Думаю… {elapsedSec}s
+                                {elapsedSec >= 60 && elapsedSec < 240 && (
+                                  <span className="text-xs opacity-70"> · модель размышляет, ответ скоро пойдёт</span>
+                                )}
+                                {elapsedSec >= 240 && (
+                                  <span className="text-xs text-amber-600 dark:text-amber-400"> · долго, риск обрыва — можно отменить и сменить модель</span>
+                                )}
+                              </>
+                          }
+                        </span>
+                      </div>
+                      <Progress
+                        value={
+                          councilProgress && councilProgress.total > 0
+                            ? councilProgress.stage === "summarizing"
+                              ? Math.max(90, Math.min(99, 90 + Math.floor(elapsedSec / 6)))
+                              : Math.round((councilProgress.done / councilProgress.total) * 85)
+                            : assistantSoFarLen(m.content) > 0
+                              ? Math.max(genericProgress, 60)
+                              : genericProgress
+                        }
+                        className="h-1.5"
+                      />
                     </div>
                   )
                 ) : (
