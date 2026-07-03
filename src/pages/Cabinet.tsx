@@ -215,7 +215,7 @@ const buildMultimodalContent = (text: string, atts: Attachment[]) => {
     if (a.type.startsWith("image/")) {
       parts.push({ type: "image_url", image_url: { url } });
     } else if (a.type === "application/pdf") {
-      parts.push({ type: "file", file: { filename: a.name, file_data: url } });
+      parts.push({ type: "file", file: { filename: a.name, file_data: url, fileData: url } });
     }
   }
   return parts;
@@ -960,13 +960,19 @@ export default function Cabinet() {
           phase: "uploading",
           done: out.length,
           total: list.length,
-          detail: `Создаю временную ссылку для модели: ${safeName}…`,
+          detail: isPdf && f.size <= LOCAL_FALLBACK_MAX
+            ? `Кодирую PDF для модели: ${safeName}…`
+            : `Создаю временную ссылку для модели: ${safeName}…`,
         });
-        const { data: signed, error: signError } = await supabase.storage
-          .from("chat-attachments")
-          .createSignedUrl(path, 60 * 60);
-        if (signError || !signed?.signedUrl) throw signError || new Error("signed URL missing");
-        dataUrl = signed.signedUrl;
+        if (isPdf && f.size <= LOCAL_FALLBACK_MAX) {
+          dataUrl = await fileToDataUrl(f);
+        } else {
+          const { data: signed, error: signError } = await supabase.storage
+            .from("chat-attachments")
+            .createSignedUrl(path, 60 * 60);
+          if (signError || !signed?.signedUrl) throw signError || new Error("signed URL missing");
+          dataUrl = signed.signedUrl;
+        }
       } catch (e) {
         console.error("[cabinet] signed URL failed, falling back to base64", e);
         if (f.size > LOCAL_FALLBACK_MAX) {
