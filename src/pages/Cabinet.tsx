@@ -1105,6 +1105,7 @@ export default function Cabinet() {
         throw new Error(err || `HTTP ${resp.status}`);
       }
       const json = await resp.json();
+      const answerText = String(json.answer || "").trim();
       const payload: PubmedPayload = {
         used_query: json.used_query || "",
         english_query: json.english_query || "",
@@ -1112,12 +1113,19 @@ export default function Cabinet() {
         retstart: Number(json.retstart) || 0,
         sources: (json.sources || []) as PubmedSource[],
       };
+      if (!answerText) {
+        throw new Error(
+          payload.sources.length === 0
+            ? `PubMed по запросу «${payload.english_query || text}» не нашёл источников — модель нечего было анализировать.`
+            : `PubMed вернул ${payload.sources.length} источников, но модель не сформировала текст ответа. Смените модель или повторите.`
+        );
+      }
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = { role: "assistant", content: json.answer || "", model: `pubmed:${model}`, pubmed: payload };
+        next[next.length - 1] = { role: "assistant", content: answerText, model: `pubmed:${model}`, pubmed: payload };
         return next;
       });
-      await persistPubmedAssistant(convId, json.answer || "", payload);
+      await persistPubmedAssistant(convId, answerText, payload);
     } catch (e: any) {
       toast.error("PubMed-поиск не удался: " + (e?.message || ""));
       setMessages((prev) => {
@@ -1764,9 +1772,21 @@ export default function Cabinet() {
       const controller = new AbortController();
       activeStreamAbortRef.current = controller;
       const reqStartedAt = Date.now();
-      let noTokenTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-        controller.abort("no_first_token_timeout");
-      }, 180_000);
+
+      // Единый «stall-детектор» для ЛЮБОЙ модели.
+      // Сбрасывается на КАЖДЫЙ прочитанный чанк (в т.ч. heartbeat, reasoning,
+      // annotations) — а не только на первый content-токен. Если 90 с ни одного
+      // байта — считаем канал зависшим и рвём соединение.
+      const STALL_LIMIT_MS = 90_000;                 // между чанками
+      const HARD_LIMIT_MS = 300_000;                 // общий потолок стрима
+      let stallTimer: ReturnType<typeof setTimeout> | null = null;
+      const armStall = () => {
+        if (stallTimer) clearTimeout(stallTimer);
+        stallTimer = setTimeout(() => controller.abort("stream_stalled"), STALL_LIMIT_MS);
+      };
+      const hardTimer = setTimeout(() => controller.abort("stream_hard_limit"), HARD_LIMIT_MS);
+      armStall();
+
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -1779,6 +1799,8 @@ export default function Cabinet() {
 
       if (!resp.ok || !resp.body) {
         const errTxt = await resp.text().catch(() => "");
+        if (stallTimer) clearTimeout(stallTimer);
+        clearTimeout(hardTimer);
         setStreamPhase("idle");
         throw new Error(errTxt || `HTTP ${resp.status}`);
       }
@@ -1796,6 +1818,8 @@ export default function Cabinet() {
       let buf = "";
       let pendingEvent: string | null = null;
       let firstTokenSeen = false;
+      let reasoningChars = 0;              // Символов reasoning'а (o1/Kimi/deepseek-reasoner)
+      let progressEvents = 0;              // Любая активность бэкенда (heartbeat/status/progress)
       let fatalStreamError: Error | null = null;
       const mergeAnnotations = (anns: any) => {
         if (!Array.isArray(anns)) return;
@@ -1811,6 +1835,7 @@ export default function Cabinet() {
         const { done, value } = await reader.read();
         if (done) break;
         if (value) {
+          armStall();                       // ЛЮБОЙ байт = жив
           setStreamBytes((b) => b + value.byteLength);
           setStreamChunks((c) => c + 1);
         }
@@ -1827,6 +1852,7 @@ export default function Cabinet() {
           try {
             const parsed = JSON.parse(json);
             if (pendingEvent === "status") {
+              progressEvents++;
               const usedModel = parsed?.model ? String(parsed.model) : model;
               const gateway = parsed?.gateway ? String(parsed.gateway) : "gateway";
               setStreamPhase("waiting");
@@ -1835,8 +1861,13 @@ export default function Cabinet() {
               continue;
             }
             if (pendingEvent === "heartbeat") {
+              progressEvents++;
               const elapsed = Number(parsed?.elapsed_sec) || elapsedSec;
-              setStreamStatusLine(`Канал жив · ожидание токенов ${elapsed}s · ${(streamBytes / 1024).toFixed(1)} KB`);
+              setStreamStatusLine(
+                reasoningChars > 0
+                  ? `Модель размышляет · ${reasoningChars} симв. reasoning · ${elapsed}s`
+                  : `Канал жив · ожидание токенов ${elapsed}s · ${(streamBytes / 1024).toFixed(1)} KB`
+              );
               pendingEvent = null;
               continue;
             }
@@ -1847,6 +1878,7 @@ export default function Cabinet() {
             }
             if (council) {
               if (pendingEvent === "progress") {
+                progressEvents++;
                 setCouncilProgress({
                   done: Number(parsed.done) || 0,
                   total: Number(parsed.total) || 0,
@@ -1866,6 +1898,11 @@ export default function Cabinet() {
                 });
               } else if (typeof parsed.delta === "string") {
                 assistantSoFar += parsed.delta;
+                if (!firstTokenSeen && parsed.delta.trim()) {
+                  firstTokenSeen = true;
+                  setTtftMs(Date.now() - reqStartedAt);
+                  setStreamPhase("streaming");
+                }
                 setMessages((prev) => {
                   const next = [...prev];
                   next[next.length - 1] = { role: "assistant", content: assistantSoFar, model: "council", council: councilAnswers };
@@ -1875,16 +1912,24 @@ export default function Cabinet() {
             } else {
               const choice = parsed.choices?.[0];
               const delta = choice?.delta?.content;
+              // Reasoning-токены (o1, deepseek-reasoner, Kimi thinking, Grok):
+              // разные провайдеры кладут их в разные поля — принимаем все известные.
+              const reasoning: string | undefined =
+                choice?.delta?.reasoning ??
+                choice?.delta?.reasoning_content ??
+                choice?.delta?.thinking ??
+                (typeof choice?.delta?.reasoning_delta === "string" ? choice.delta.reasoning_delta : undefined);
+              if (typeof reasoning === "string" && reasoning.length) {
+                reasoningChars += reasoning.length;
+                setStreamPhase("waiting");
+                setStreamStatusLine(`Модель размышляет · ${reasoningChars} симв. reasoning`);
+              }
               mergeAnnotations(choice?.delta?.annotations);
               mergeAnnotations(choice?.message?.annotations);
               if (delta) {
                 assistantSoFar += delta;
                 if (!firstTokenSeen) {
                   firstTokenSeen = true;
-                  if (noTokenTimer) {
-                    clearTimeout(noTokenTimer);
-                    noTokenTimer = null;
-                  }
                   setTtftMs(Date.now() - reqStartedAt);
                   setStreamPhase("streaming");
                   setStreamStatusLine("Получаю текст ответа…");
@@ -1899,23 +1944,46 @@ export default function Cabinet() {
                 });
               }
             }
-          } catch { /* partial */ }
+          } catch { /* partial JSON — дождёмся следующего чанка */ }
           pendingEvent = null;
         }
         if (fatalStreamError) break;
       }
 
+      if (stallTimer) clearTimeout(stallTimer);
+      clearTimeout(hardTimer);
       if (fatalStreamError) throw fatalStreamError;
 
-      if (noTokenTimer) {
-        clearTimeout(noTokenTimer);
-        noTokenTimer = null;
-      }
-      if (!council && !assistantSoFar.trim()) {
-        throw new Error("Соединение было установлено, но модель завершила поток без текста ответа. Смените модель или повторите запрос — пустой ответ больше не будет скрыт колесом ожидания.");
+      // Пустой ответ — для ЛЮБОГО режима (обычный чат, council, любая модель).
+      // Раньше это молча заканчивалось «Готово», и пользователь видел бесконечное
+      // ожидание либо пустой пузырь. Теперь всегда явная ошибка с диагностикой.
+      if (!assistantSoFar.trim()) {
+        if (council) {
+          const okCount = (councilAnswers || []).filter((a) => a?.content && !a.error).length;
+          throw new Error(
+            okCount === 0
+              ? "Консилиум завершился без единого ответа: все модели вернули пусто/ошибку. Смените состав панели."
+              : `Суммаризатор консилиума не выдал текст (ответили ${okCount} модели). Повторите запрос или смените модель суммаризатора.`
+          );
+        }
+        if (reasoningChars > 0) {
+          throw new Error(
+            `Модель ушла в reasoning (${reasoningChars} симв.), но не выдала ни одного токена ответа. ` +
+            `Обычно это исчерпание бюджета reasoning'а. Переключитесь на «быстрый» режим или другую модель.`
+          );
+        }
+        throw new Error(
+          progressEvents > 0
+            ? "Канал был открыт, backend слал heartbeat'ы, но модель не прислала ни одного токена контента. Смените модель или повторите запрос."
+            : "Соединение открылось, но не пришло ни одного байта данных. Проверьте сеть/провайдера модели."
+        );
       }
       setStreamPhase("done");
-      setStreamStatusLine("Ответ получен полностью");
+      setStreamStatusLine(
+        reasoningChars > 0
+          ? `Ответ получен · reasoning ${reasoningChars} симв. · ${(streamBytes / 1024).toFixed(1)} KB`
+          : "Ответ получен полностью"
+      );
 
 
       // Persist assistant message
@@ -1940,9 +2008,15 @@ export default function Cabinet() {
         loadConversations();
       }
     } catch (e: any) {
-      const rawMessage = e?.name === "AbortError" || e?.message === "no_first_token_timeout"
-        ? "Нет первого токена 180 секунд: запрос автоматически остановлен, чтобы не висело вечное колесо."
-        : e?.message || "";
+      const abortReason = String((e as any)?.reason || e?.message || "");
+      const rawMessage =
+        e?.name === "AbortError" && /stall/i.test(abortReason)
+          ? "Стрим завис: 90 секунд не пришло ни одного байта. Соединение автоматически разорвано, чтобы не висело вечное колесо. Смените модель или повторите."
+          : e?.name === "AbortError" && /hard_limit/i.test(abortReason)
+            ? "Достигнут общий потолок стрима (5 мин). Соединение разорвано."
+            : e?.name === "AbortError"
+              ? "Запрос отменён."
+              : e?.message || "";
       toast.error(friendlyChatError(rawMessage));
       setMessages((prev) => {
         const next = [...prev];
