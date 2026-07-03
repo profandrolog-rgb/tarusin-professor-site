@@ -444,6 +444,8 @@ export default function Cabinet() {
   }, [streaming, streamStartedAt]);
   // Прогресс работы (для консилиума — реальный done/total, иначе индикатив: 0=idle, 30=запрос отправлен, 70=идёт стрим, 100=готово)
   const [councilProgress, setCouncilProgress] = useState<{ done: number; total: number; stage: string } | null>(null);
+  // Пер-модельный статус консилиума: показываем список ещё до старта и обновляем по мере ответов
+  const [councilStatuses, setCouncilStatuses] = useState<Array<{ model: string; state: "pending" | "ok" | "fail" }>>([]);
   const [genericProgress, setGenericProgress] = useState<number>(0);
   useEffect(() => {
     if (!streaming) { setGenericProgress(0); return; }
