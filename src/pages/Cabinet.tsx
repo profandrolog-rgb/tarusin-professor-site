@@ -1628,6 +1628,11 @@ export default function Cabinet() {
                   total: Number(parsed.total) || 0,
                   stage: String(parsed.stage || "fanout"),
                 });
+                if (parsed.model && parsed.stage === "fanout") {
+                  setCouncilStatuses((prev) => prev.map((s) =>
+                    s.model === parsed.model ? { ...s, state: parsed.ok ? "ok" : "fail" } : s
+                  ));
+                }
               } else if (pendingEvent === "answers") {
                 councilAnswers = parsed as CouncilAnswer[];
                 setMessages((prev) => {
