@@ -1,9 +1,20 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const EXTRACTION_MODELS = [
+  'google/gemini-3-flash-preview',
+  'google/gemini-3.1-pro-preview',
+  'openai/gpt-5-mini',
+];
 
 const EXTRACTION_SYSTEM = `Ты — медицинский парсер PDF. Извлекай ТОЛЬКО то, что явно присутствует в тексте. Никогда не выдумывай значения. Если значение нечитаемое или сомнительное — ставь needs_review=true. Верни строго JSON-объект по схеме:
 {
@@ -26,7 +37,7 @@ function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '').trim();
 }
 
-async function extractWithGemini(fileDataUrl: string, fileName: string) {
+async function callExtractionModel(model: string, fileDataUrl: string, fileName: string) {
   const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -34,7 +45,7 @@ async function extractWithGemini(fileDataUrl: string, fileName: string) {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'google/gemini-3-flash-preview',
+      model,
       messages: [
         { role: 'system', content: EXTRACTION_SYSTEM },
         {
@@ -48,10 +59,7 @@ async function extractWithGemini(fileDataUrl: string, fileName: string) {
       response_format: { type: 'json_object' },
     }),
   });
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error(`AI gateway ${resp.status}: ${t.slice(0, 300)}`);
-  }
+  if (!resp.ok) throw new Error(`AI gateway ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   const j = await resp.json();
   const content = j.choices?.[0]?.message?.content;
   if (!content) throw new Error('Empty AI response');
@@ -62,6 +70,21 @@ async function extractWithGemini(fileDataUrl: string, fileName: string) {
     if (m) return JSON.parse(m[0]);
     throw new Error('Failed to parse AI JSON');
   }
+}
+
+async function extractWithFallback(fileDataUrl: string, fileName: string) {
+  let last = 'unknown error';
+  for (const model of EXTRACTION_MODELS) {
+    try {
+      const parsed = await callExtractionModel(model, fileDataUrl, fileName);
+      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fileName }));
+      return parsed;
+    } catch (e: any) {
+      last = e?.message || String(e);
+      console.error('parse-medical-pdf model fail', JSON.stringify({ model, fileName, error: last.slice(0, 500) }));
+    }
+  }
+  throw new Error(`Не удалось разобрать PDF ни одной моделью: ${last}`);
 }
 
 Deno.serve(async (req) => {
@@ -102,7 +125,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // AI extraction
-    const parsed = await extractWithGemini(file_data, file_name);
+    const parsed = await extractWithFallback(file_data, file_name);
     const docDate: string | null = parsed.document_date || null;
     const testDate = docDate || new Date().toISOString().slice(0, 10);
 
