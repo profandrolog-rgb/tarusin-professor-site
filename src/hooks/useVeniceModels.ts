@@ -24,6 +24,11 @@ async function fetchVeniceModels(): Promise<LiveModelInfo[]> {
       }
     } catch { /* ignore */ }
   }
+  // Функция требует авторизации (401 для анонимов). Не дёргаем её без сессии —
+  // иначе на публичных страницах (например, /cabinet до логина) в глобальном
+  // AI-доке всплывает ошибка «list-venice-models · HTTP 401».
+  const { data: sess } = await supabase.auth.getSession();
+  if (!sess?.session) return [];
   if (inFlight) return inFlight;
   inFlight = (async () => {
     const { data, error } = await supabase.functions.invoke("list-venice-models", { body: {} });
