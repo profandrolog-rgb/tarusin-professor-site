@@ -22,6 +22,7 @@ export default function AdminPatientForm({ mode }: Props) {
   const [birthDate, setBirthDate] = useState("");
   const [historyNumber, setHistoryNumber] = useState("");
   const [phone, setPhone] = useState("");
+  const [sex, setSex] = useState<"" | "M" | "F">("");
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
