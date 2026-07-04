@@ -378,6 +378,8 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
       }
     }
   }
+  // ASCII-коды впереди — их предпочитаем при токен/подстрочных совпадениях
+  catEntries.sort((a, b) => Number(asciiCodeRe.test(b.code)) - Number(asciiCodeRe.test(a.code)));
   for (const l of labs) {
     if (l.test_code && String(l.test_code).trim()) continue;
     const nm = norm(l.test_name);
