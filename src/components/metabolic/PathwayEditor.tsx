@@ -167,15 +167,22 @@ export function PathwayEditor({
           </p>
         </DialogHeader>
         <div className="flex-1 min-h-0 relative">
-          <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
-            {open && (
-              <EditorInner
-                key={instanceKey}
-                initialScene={initialScene}
-                onApi={(api) => { apiRef.current = api; setReady(true); }}
-              />
-            )}
-          </Suspense>
+          {backgroundNode && (
+            <div className="absolute inset-0 pointer-events-none z-0 flex items-center justify-center bg-white">
+              {backgroundNode}
+            </div>
+          )}
+          <div className="absolute inset-0 z-10">
+            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+              {open && (
+                <EditorInner
+                  key={instanceKey}
+                  initialScene={initialScene}
+                  onApi={(api) => { apiRef.current = api; setReady(true); }}
+                />
+              )}
+            </Suspense>
+          </div>
         </div>
         <DialogFooter className="p-3 border-t gap-2">
           <Button
