@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 300" role="img" data-pathway="electrolytes_abr">
+<title>Электролиты / КЩБ</title><desc>Почки регулируют натрий, калий, хлор; бикарбонат и анионный разрыв — кислотно-щелочной баланс.</desc>
+<style>
+.node-shape{fill:#EEF0F2;stroke:#8A8F98;stroke-width:1;}
+.lbl{font-family:Arial,Helvetica,sans-serif;fill:#22303C;}
+.lbl-t{font-weight:600;font-size:14px;}
+.lbl-s{font-size:12px;fill:#5A6672;}
+.edge{stroke:#9AA3AD;stroke-width:1.2;fill:none;}
+[data-sev="norm"] .node-shape{fill:#E6F4EA;stroke:#3B8E5A;}
+[data-sev="mild"] .node-shape{fill:#FBF3D6;stroke:#C9A227;}
+[data-sev="moderate"] .node-shape{fill:#FBE7D2;stroke:#D97B29;}
+[data-sev="severe"] .node-shape{fill:#F7D9D9;stroke:#C0392B;}
+[data-sev="nodata"] .node-shape{fill:#F1EFE8;stroke:#B4B2A9;}
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<line x1="157" y1="118" x2="224" y2="86" class="edge" marker-end="url(#arrow)"/>
+<line x1="162" y1="140" x2="208" y2="137" class="edge" marker-end="url(#arrow)"/>
+<line x1="162" y1="165" x2="208" y2="180" class="edge" marker-end="url(#arrow)"/>
+<line x1="522" y1="150" x2="548" y2="156" class="edge" marker-end="url(#arrow)"/>
+<line x1="522" y1="188" x2="548" y2="182" class="edge" marker-end="url(#arrow)"/>
+<g class="node" data-node-id="kidney" data-node-type="organ"><rect class="node-shape" x="40" y="120" width="120" height="50" rx="8"/><text class="lbl lbl-t" x="100.0" y="145.0" text-anchor="middle" dominant-baseline="central">Почки</text></g>
+<g class="node" data-node-id="sodium" data-node-type="marker"><rect class="node-shape" x="210" y="40" width="130" height="44" rx="8"/><text class="lbl lbl-t" x="275.0" y="62.0" text-anchor="middle" dominant-baseline="central">Натрий</text></g>
+<g class="node" data-node-id="potassium" data-node-type="marker"><rect class="node-shape" x="210" y="110" width="130" height="44" rx="8"/><text class="lbl lbl-t" x="275.0" y="132.0" text-anchor="middle" dominant-baseline="central">Калий</text></g>
+<g class="node" data-node-id="chloride" data-node-type="marker"><rect class="node-shape" x="210" y="180" width="130" height="44" rx="8"/><text class="lbl lbl-t" x="275.0" y="202.0" text-anchor="middle" dominant-baseline="central">Хлор</text></g>
+<g class="node" data-node-id="bicarbonate" data-node-type="marker"><rect class="node-shape" x="370" y="110" width="150" height="44" rx="8"/><text class="lbl lbl-t" x="445.0" y="132.0" text-anchor="middle" dominant-baseline="central">Бикарбонат</text></g>
+<g class="node" data-node-id="anion_gap" data-node-type="index"><rect class="node-shape" x="370" y="180" width="150" height="50" rx="8"/><text class="lbl lbl-t" x="445.0" y="196.0" text-anchor="middle" dominant-baseline="central">Анионный</text><text class="lbl lbl-s" x="445.0" y="214.0" text-anchor="middle" dominant-baseline="central">разрыв</text></g>
+<g class="node" data-node-id="acid_base" data-node-type="target"><rect class="node-shape" x="550" y="145" width="110" height="50" rx="8"/><text class="lbl lbl-t" x="605.0" y="170.0" text-anchor="middle" dominant-baseline="central">КЩБ</text></g>
+</svg>

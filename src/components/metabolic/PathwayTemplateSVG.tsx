@@ -9,6 +9,21 @@ import ironSvg from "@/assets/pathways/iron.svg?raw";
 import thyroidSvg from "@/assets/pathways/thyroid.svg?raw";
 import insulinGlucoseSvg from "@/assets/pathways/insulin_glucose.svg?raw";
 import boneMineralSvg from "@/assets/pathways/bone_mineral.svg?raw";
+import growthIgf1Svg from "@/assets/pathways/growth_igf1.svg?raw";
+import hpaSvg from "@/assets/pathways/hpa.svg?raw";
+import lipidsSvg from "@/assets/pathways/lipids.svg?raw";
+import inflammationSvg from "@/assets/pathways/inflammation.svg?raw";
+import oxidativeStressSvg from "@/assets/pathways/oxidative_stress.svg?raw";
+import electrolytesAbrSvg from "@/assets/pathways/electrolytes_abr.svg?raw";
+import energyTcaSvg from "@/assets/pathways/energy_tca.svg?raw";
+import aminoUreaSvg from "@/assets/pathways/amino_urea.svg?raw";
+import micronutrientsSteroidSvg from "@/assets/pathways/micronutrients_steroid.svg?raw";
+import detoxP12Svg from "@/assets/pathways/detox_p12.svg?raw";
+import gutPermeabilitySvg from "@/assets/pathways/gut_permeability.svg?raw";
+import hpgAxisSvg from "@/assets/pathways/hpg_axis.svg?raw";
+import hpoAxisSvg from "@/assets/pathways/hpo_axis.svg?raw";
+import androgensPcosSvg from "@/assets/pathways/androgens_pcos.svg?raw";
+import prolactinRegSvg from "@/assets/pathways/prolactin_reg.svg?raw";
 
 export const PATHWAY_SVG_TEMPLATES: Record<string, string> = {
   methylation: methylationSvg,
@@ -16,7 +31,23 @@ export const PATHWAY_SVG_TEMPLATES: Record<string, string> = {
   thyroid: thyroidSvg,
   insulin_glucose: insulinGlucoseSvg,
   bone_mineral: boneMineralSvg,
+  growth_igf1: growthIgf1Svg,
+  hpa: hpaSvg,
+  lipids: lipidsSvg,
+  inflammation: inflammationSvg,
+  oxidative_stress: oxidativeStressSvg,
+  electrolytes_abr: electrolytesAbrSvg,
+  energy_tca: energyTcaSvg,
+  amino_urea: aminoUreaSvg,
+  micronutrients_steroid: micronutrientsSteroidSvg,
+  detox_p12: detoxP12Svg,
+  gut_permeability: gutPermeabilitySvg,
+  hpg_axis: hpgAxisSvg,
+  hpo_axis: hpoAxisSvg,
+  androgens_pcos: androgensPcosSvg,
+  prolactin_reg: prolactinRegSvg,
 };
+
 
 export function hasPathwaySvgTemplate(slug: string): boolean {
   return !!PATHWAY_SVG_TEMPLATES[slug];

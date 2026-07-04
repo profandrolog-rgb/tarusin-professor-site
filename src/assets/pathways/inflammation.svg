@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 280" role="img" data-pathway="inflammation">
+<title>Воспаление / протеинограмма</title><desc>СРБ, СОЭ, ферритин-реактант; протеинограмма — общий белок, альбумин, глобулины.</desc>
+<style>
+.node-shape{fill:#EEF0F2;stroke:#8A8F98;stroke-width:1;}
+.lbl{font-family:Arial,Helvetica,sans-serif;fill:#22303C;}
+.lbl-t{font-weight:600;font-size:14px;}
+.lbl-s{font-size:12px;fill:#5A6672;}
+.edge{stroke:#9AA3AD;stroke-width:1.2;fill:none;}
+[data-sev="norm"] .node-shape{fill:#E6F4EA;stroke:#3B8E5A;}
+[data-sev="mild"] .node-shape{fill:#FBF3D6;stroke:#C9A227;}
+[data-sev="moderate"] .node-shape{fill:#FBE7D2;stroke:#D97B29;}
+[data-sev="severe"] .node-shape{fill:#F7D9D9;stroke:#C0392B;}
+[data-sev="nodata"] .node-shape{fill:#F1EFE8;stroke:#B4B2A9;}
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<line x1="340" y1="88" x2="340" y2="118" class="edge" marker-end="url(#arrow)"/>
+<line x1="340" y1="166" x2="340" y2="198" class="edge" marker-end="url(#arrow)"/>
+<line x1="192" y1="136" x2="478" y2="109" class="edge" marker-end="url(#arrow)"/>
+<line x1="192" y1="150" x2="478" y2="175" class="edge" marker-end="url(#arrow)"/>
+<g class="node" data-node-id="crp" data-node-type="marker"><rect class="node-shape" x="270" y="40" width="140" height="46" rx="8"/><text class="lbl lbl-t" x="340.0" y="63.0" text-anchor="middle" dominant-baseline="central">СРБ</text></g>
+<g class="node" data-node-id="esr" data-node-type="marker"><rect class="node-shape" x="270" y="120" width="140" height="44" rx="8"/><text class="lbl lbl-t" x="340.0" y="142.0" text-anchor="middle" dominant-baseline="central">СОЭ</text></g>
+<g class="node" data-node-id="ferritin_react" data-node-type="marker"><rect class="node-shape" x="270" y="200" width="140" height="50" rx="8"/><text class="lbl lbl-t" x="340.0" y="216.0" text-anchor="middle" dominant-baseline="central">Ферритин</text><text class="lbl lbl-s" x="340.0" y="234.0" text-anchor="middle" dominant-baseline="central">реактант</text></g>
+<g class="node" data-node-id="total_protein" data-node-type="marker"><rect class="node-shape" x="40" y="120" width="150" height="46" rx="8"/><text class="lbl lbl-t" x="115.0" y="143.0" text-anchor="middle" dominant-baseline="central">Общий белок</text></g>
+<g class="node" data-node-id="albumin" data-node-type="marker"><rect class="node-shape" x="480" y="80" width="150" height="44" rx="8"/><text class="lbl lbl-t" x="555.0" y="102.0" text-anchor="middle" dominant-baseline="central">Альбумин</text></g>
+<g class="node" data-node-id="globulins" data-node-type="marker"><rect class="node-shape" x="480" y="160" width="150" height="44" rx="8"/><text class="lbl lbl-t" x="555.0" y="182.0" text-anchor="middle" dominant-baseline="central">Глобулины</text></g>
+</svg>
