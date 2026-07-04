@@ -157,8 +157,19 @@ function findLatestMatch(labs: LabRow[], rule: DbRule): LabRow | null {
   return hits[0];
 }
 
-/** Проверка «сработало ли правило» + возврат severity, к которой оно поднимает статус пути. */
-function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> | null {
+/**
+ * Проверка «сработало ли правило» + возврат severity, к которой оно поднимает статус пути.
+ *
+ * refLow/refHigh — уже разрешённые резолвером границы (с бланка либо из
+ * reference_ranges с учётом пола/возраста/фазы). Если они null — правило
+ * не может быть оценено и возвращаем null (нет данных, не «норма»).
+ */
+function evaluateRule(
+  rule: DbRule,
+  lab: LabRow,
+  refLow: number | null,
+  refHigh: number | null,
+): Exclude<Severity, "no_data"> | null {
   const labValue = Number(lab.value);
   if (!Number.isFinite(labValue)) return null;
 
@@ -170,9 +181,9 @@ function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> |
       typeof rule.when?.value === "number"
         ? rule.when.value
         : vfr === "high"
-        ? lab.reference_max
+        ? refHigh
         : vfr === "low"
-        ? lab.reference_min
+        ? refLow
         : null;
     if (cmpValue == null || !Number.isFinite(Number(cmpValue))) return null;
     const v = labValue;
@@ -192,8 +203,8 @@ function evaluateRule(rule: DbRule, lab: LabRow): Exclude<Severity, "no_data"> |
   }
   // Legacy формат
   const value = labValue;
-  const reference_min = lab.reference_min == null ? null : Number(lab.reference_min);
-  const reference_max = lab.reference_max == null ? null : Number(lab.reference_max);
+  const reference_min = refLow;
+  const reference_max = refHigh;
   const thresholds = rule.thresholds;
   const direction = rule.direction;
   if (!thresholds || !direction) return null;
