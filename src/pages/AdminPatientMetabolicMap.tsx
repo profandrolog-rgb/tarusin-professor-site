@@ -41,6 +41,8 @@ import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
 import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
 import { SteroidHubSVG } from "@/components/metabolic/schemes/SteroidHubSVG";
+import { VitDSchemeSVG } from "@/components/metabolic/schemes/VitDSchemeSVG";
+import { EndoDisruptorsSchemeSVG } from "@/components/metabolic/schemes/EndoDisruptorsSchemeSVG";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
