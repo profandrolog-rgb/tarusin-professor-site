@@ -104,9 +104,34 @@ export default function AdminPatientForm({ mode }: Props) {
                 <Input value={historyNumber} onChange={(e) => setHistoryNumber(e.target.value)} />
               </div>
             </div>
-            <div className="space-y-1">
-              <Label>Телефон</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 (___) ___-__-__" />
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Телефон</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 (___) ___-__-__" />
+              </div>
+              <div className="space-y-1">
+                <Label>Пол</Label>
+                <div className="flex gap-2">
+                  {[
+                    { v: "", label: "не указан" },
+                    { v: "M", label: "муж" },
+                    { v: "F", label: "жен" },
+                  ].map((o) => (
+                    <Button
+                      key={o.v || "none"}
+                      type="button"
+                      variant={sex === o.v ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSex(o.v as any)}
+                    >
+                      {o.label}
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Нужно для женских путей метаболической карты и фильтрации референсов по полу/фазе.
+                </p>
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => navigate(-1)}>Отмена</Button>
