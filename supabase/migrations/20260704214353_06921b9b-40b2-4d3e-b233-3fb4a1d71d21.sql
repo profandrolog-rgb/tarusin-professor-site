@@ -1,0 +1,2 @@
+UPDATE public.reference_ranges SET age_max_years=16, updated_at=now() WHERE analyte_code='ALP' AND source='fallback_json' AND sex='M' AND age_min_years=9 AND age_max_years=15;
+UPDATE public.reference_ranges SET age_min_years=16, updated_at=now() WHERE analyte_code='ALP' AND source='fallback_json' AND sex='M' AND age_min_years=15 AND age_max_years=18;
