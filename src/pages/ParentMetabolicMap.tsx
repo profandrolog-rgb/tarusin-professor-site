@@ -27,8 +27,8 @@ export default function ParentMetabolicMap() {
   const { id } = useParams<{ id: string }>();
   const { user, loading } = useAuth();
   const [busy, setBusy] = useState(true);
-  const [patient, setPatient] = useState<{ id: string; full_name: string; share_simple_only: boolean } | null>(null);
-  const [pathways, setPathways] = useState<Array<{ id: string; slug: string; name: string; description: string | null }>>([]);
+  const [patient, setPatient] = useState<{ id: string; full_name: string; share_simple_only: boolean; sex?: "M" | "F" | null } | null>(null);
+  const [pathways, setPathways] = useState<Array<{ id: string; slug: string; name: string; description: string | null; sex?: "M" | "F" | null }>>([]);
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [recs, setRecs] = useState<Array<{ id: string; pathway_id: string | null; application_point: string | null; catalog: any }>>([]);
@@ -38,8 +38,8 @@ export default function ParentMetabolicMap() {
     (async () => {
       setBusy(true);
       const [{ data: p }, { data: pw }, { data: m }, ts] = await Promise.all([
-        (supabase as any).from("patients").select("id, full_name, share_simple_only").eq("id", id).maybeSingle(),
-        (supabase as any).from("pathways").select("id, slug, name, description").eq("is_active", true).order("name"),
+        (supabase as any).from("patients").select("id, full_name, share_simple_only, sex").eq("id", id).maybeSingle(),
+        (supabase as any).from("pathways").select("id, slug, name, description, sex").eq("is_active", true).order("name"),
         (supabase as any)
           .from("metabolic_maps")
           .select("id, aggregate_summary")
@@ -48,7 +48,13 @@ export default function ParentMetabolicMap() {
         fetchPathwayTexts(),
       ]);
       setPatient(p as any);
-      setPathways((pw as any) || []);
+      // Фильтр по полу: если пол не указан — только общие пути (sex IS NULL).
+      const patientSex = ((p as any)?.sex === "M" || (p as any)?.sex === "F") ? (p as any).sex : null;
+      const allPw = ((pw as any[]) || []) as Array<{ id: string; slug: string; name: string; description: string | null; sex?: "M" | "F" | null }>;
+      const visiblePw = patientSex
+        ? allPw.filter((x) => !x.sex || x.sex === patientSex)
+        : allPw.filter((x) => !x.sex);
+      setPathways(visiblePw);
       setSummary(((m as any)?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(ts as any);
       if (m?.id) {
