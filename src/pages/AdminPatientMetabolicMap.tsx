@@ -567,7 +567,7 @@ export default function AdminPatientMetabolicMap() {
                           <Badge variant="outline" className={STATUS_BADGE[status]}>
                             {SEVERITY_LABEL[status]}
                           </Badge>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setEditorPathway(pw)}>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => openEditor(pw)}>
                             <Pencil className="w-3.5 h-3.5" />Схема
                           </Button>
                         </div>
