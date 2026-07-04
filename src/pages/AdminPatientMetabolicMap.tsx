@@ -232,6 +232,14 @@ export default function AdminPatientMetabolicMap() {
       setFindings([]);
       setRecs([]);
     }
+
+    // Лабораторные значения пациента — для подписи узлов SVG значениями (норма + отклонения).
+    const { data: lr } = await (supabase as any)
+      .from("lab_results")
+      .select("id, test_name, test_code, value, unit")
+      .eq("patient_id", id)
+      .order("test_date", { ascending: false });
+    setLabRows(((lr as any[]) || []).map((r) => ({ id: r.id, test_name: r.test_name, test_code: r.test_code, value: r.value, unit: r.unit })));
     setBusy(false);
   }, [id]);
 
