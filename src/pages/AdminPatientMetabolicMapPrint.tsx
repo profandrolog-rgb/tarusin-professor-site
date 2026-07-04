@@ -74,12 +74,12 @@ export default function AdminPatientMetabolicMapPrint() {
       setSummary((m?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(txs);
 
-      const codes = ((pw as any[]) || []).map((r: any) => r.slug).filter(Boolean);
-      if (codes.length) {
+      // Персональные рабочие копии схем этого пациента из map_schemas.
+      if (m?.id) {
         const { data: sch } = await (supabase as any)
-          .from("pathway_schemas")
+          .from("map_schemas")
           .select("pathway_code, scene")
-          .in("pathway_code", codes);
+          .eq("map_id", m.id);
         const map = new Map<string, SceneJson>();
         for (const row of (sch || []) as Array<{ pathway_code: string; scene: SceneJson }>) {
           if (row?.pathway_code && row?.scene) map.set(row.pathway_code, row.scene);
