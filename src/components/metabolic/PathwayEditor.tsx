@@ -52,6 +52,7 @@ export function PathwayEditor({
   pathwayName,
   patientScene,
   templateScene,
+  backgroundNode,
   onSaved,
 }: {
   open: boolean;
@@ -65,6 +66,8 @@ export function PathwayEditor({
   patientScene: SceneJson | null | undefined;
   /** Шаблон пути — используется при первом открытии и по кнопке «Сбросить». */
   templateScene: SceneJson | null | undefined;
+  /** Опциональная подложка (например, статический SVG-шаблон), рисуется под холстом Excalidraw. */
+  backgroundNode?: React.ReactNode;
   onSaved?: (scene: SceneJson | null) => void;
 }) {
   const apiRef = useRef<any>(null);
