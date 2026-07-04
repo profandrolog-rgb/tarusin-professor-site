@@ -114,6 +114,7 @@ export default function AdminPatientMetabolicMap() {
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
+  const [schemas, setSchemas] = useState<Map<string, SceneJson>>(new Map());
   const [aiBusy, setAiBusy] = useState(false);
   const [aiElapsed, setAiElapsed] = useState(0);
   const [deidentified, setDeidentified] = useState(true);
