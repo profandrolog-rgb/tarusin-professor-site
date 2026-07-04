@@ -818,14 +818,17 @@ export default function AdminPatientMetabolicMap() {
       </div>
 
       {editorPathway && (() => {
-        // Шаблон — общий (pathway_schemas / templateToScene / auto).
-        // Рабочая копия — персональная для этого пациента из map_schemas.
-        const tpl = getTemplate(editorPathway.slug);
-        const templateScene: SceneJson | null =
-          (tpl ? templateToScene(tpl) : null) ||
-          (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
-            ? editorPathway.svg_scene
-            : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
+        // Для путей со статичным SVG-шаблоном редактор открывается как ЧИСТЫЙ
+        // оверлей поверх шаблона — врач добавляет свои пометки, не меняя базу.
+        // Для остальных — прежнее поведение: templateScene = сцена шаблона.
+        const svgTpl = hasPathwaySvgTemplate(editorPathway.slug);
+        const tpl = svgTpl ? null : getTemplate(editorPathway.slug);
+        const templateScene: SceneJson | null = svgTpl
+          ? { elements: [], appState: { viewBackgroundColor: "transparent" }, files: {} }
+          : (tpl ? templateToScene(tpl) : null) ||
+            (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
+              ? editorPathway.svg_scene
+              : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
         const patientScene = schemas.get(editorPathway.slug) || null;
         return (
           <PathwayEditor
