@@ -33,17 +33,35 @@ type LabLite = {
 };
 
 interface Props {
+  patientId: string;
   pathways: PathwayLite[];
   summary: PathwaySummary[];
-  labs: LabLite[];
+  /** Опционально: если визит выбран, ограничиваем лабы по дате визита */
+  visitDate?: string | null;
 }
 
 function normCode(s: string | null | undefined): string {
   return String(s ?? "").toUpperCase().trim();
 }
 
-export function CompletenessInspector({ pathways, summary, labs }: Props) {
+export function CompletenessInspector({ patientId, pathways, summary, visitDate }: Props) {
   const [codeLabels, setCodeLabels] = useState<Record<string, string>>({});
+  const [labs, setLabs] = useState<LabLite[]>([]);
+
+  // Собственная загрузка лабораторных — минимальный срез (код + название)
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      let q = supabase.from("lab_results").select("test_code, test_name").eq("patient_id", patientId);
+      if (visitDate) q = q.lte("test_date", visitDate);
+      const { data } = await q;
+      if (!alive) return;
+      setLabs(((data as any[]) || []) as LabLite[]);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [patientId, visitDate]);
 
   // Тянем каталог, чтобы показывать привычные короткие названия (ТТГ, АМГ и т.п.)
   useEffect(() => {
