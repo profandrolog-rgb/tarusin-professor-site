@@ -16,9 +16,10 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     B12: "b12",
     FOLATE: "folate",
     B6: "b6",
-    // OA-панель
-    MMA_U: "mma_u",
+    // OA-панель: метилмалоновая кислота — маркер функционального дефицита B12
+    MMA_U: "b12",
   },
+
   iron: {
     FERR: "ferritin_store",
     IRON: "serum_iron",
