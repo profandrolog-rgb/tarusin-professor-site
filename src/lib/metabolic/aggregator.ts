@@ -341,6 +341,40 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   if (labErr) throw labErr;
   const labs = ((labData as any[]) || []) as LabRow[];
 
+  // 3.0 Каталог анализов → карта {upper(name|short_name|synonym) → каталожный short_name (upper)}.
+  // Нужна для лабов, у которых test_code = NULL (парсер ещё не проставил код):
+  // сопоставляем по test_name → подставляем каталожный код прямо в объект lab,
+  // чтобы правила pathways.rules находили совпадение через when.test_code.
+  const { data: catRows } = await (supabase as any)
+    .from("lab_tests_catalog")
+    .select("short_name, name, synonyms")
+    .eq("is_active", true);
+  const nameToCode = new Map<string, string>();
+  for (const row of ((catRows as any[]) || [])) {
+    const code = norm(row.short_name || row.name);
+    if (!code) continue;
+    const codeUp = code.toUpperCase();
+    const keys: string[] = [];
+    if (row.short_name) keys.push(norm(row.short_name));
+    if (row.name) keys.push(norm(row.name));
+    if (Array.isArray(row.synonyms)) for (const s of row.synonyms) if (s) keys.push(norm(s));
+    for (const k of keys) if (k && !nameToCode.has(k)) nameToCode.set(k, codeUp);
+  }
+  for (const l of labs) {
+    if (l.test_code && String(l.test_code).trim()) continue;
+    const nm = norm(l.test_name);
+    if (!nm) continue;
+    // 1) точное совпадение
+    let resolved = nameToCode.get(nm);
+    // 2) частичное — каталожный ключ содержится в имени с бланка
+    if (!resolved) {
+      for (const [k, v] of nameToCode) {
+        if (k.length >= 3 && nm.includes(k)) { resolved = v; break; }
+      }
+    }
+    if (resolved) l.test_code = resolved;
+  }
+
   // 3.1 Предзагрузка reference_ranges для всех кодов, которые встречаются в правилах или лабах
   const codeSet = new Set<string>();
   for (const pw of pathways) {
