@@ -29,6 +29,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, fetchPathwaySeverityTexts, pickSeverityText, type PathwayText, type PathwaySeverityText, type Register } from "@/lib/metabolic/texts";
 import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
 import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
+import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggregateNodes";
+import { computeIndices } from "@/lib/metabolic/metaIndices";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
@@ -406,6 +408,20 @@ export default function AdminPatientMetabolicMap() {
       }
       if (perNode.size) out.set(slug, perNode);
     }
+    // 1b) Агрегированные узлы (сумма из нескольких строк lab_results) — перекрывают одиночный резолв,
+    // если данный узел присутствует в пути.
+    const aggregates = computeAllAggregates(labRows as any);
+    if (aggregates.size) {
+      for (const pw of pathways) {
+        const nodeIds = new Set<string>((pw.nodes || []).map((n: any) => n?.id).filter(Boolean));
+        let perNode = out.get(pw.slug);
+        for (const [aggNodeId, entry] of aggregates.entries()) {
+          if (!nodeIds.has(aggNodeId)) continue;
+          if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+          perNode.set(aggNodeId, { text: entry.text });
+        }
+      }
+    }
     // 2) Отклонения из map_findings: перекрываем текстом со стрелкой ↑/↓ и severity
     for (const f of findings) {
       if (!f.node_id) continue;
@@ -428,6 +444,9 @@ export default function AdminPatientMetabolicMap() {
     }
     return out;
   }, [labRows, labCodesById, findings, pathways]);
+
+  // Интегральные индексы: считаются из нескольких значений lab_results.
+  const metaIndices = useMemo(() => computeIndices(labRows as any), [labRows]);
 
 
 
@@ -642,6 +661,38 @@ export default function AdminPatientMetabolicMap() {
             </CardContent>
           </Card>
         </section>
+
+        {metaIndices.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Интегральные индексы</h2>
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {metaIndices.map((ix) => (
+                    <div key={ix.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{ix.label}</div>
+                        {ix.note && <div className="text-xs text-muted-foreground truncate">{ix.note}</div>}
+                      </div>
+                      <div className="text-right whitespace-nowrap">
+                        <div className="tabular-nums font-semibold">
+                          {ix.displayValue}{ix.unit ? ` ${ix.unit}` : ""}
+                        </div>
+                        <div className="text-xs text-muted-foreground">цель: {ix.target}</div>
+                      </div>
+                      <Badge
+                        variant={ix.status === "ok" ? "secondary" : ix.status === "off" ? "destructive" : "outline"}
+                        className="shrink-0"
+                      >
+                        {ix.status === "ok" ? "в норме" : ix.status === "off" ? "вне цели" : "—"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Метаболические пути</h2>
