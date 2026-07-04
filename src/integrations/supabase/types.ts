@@ -2013,6 +2013,63 @@ export type Database = {
           },
         ]
       }
+      map_pathway_reviews: {
+        Row: {
+          ai_status: string | null
+          created_at: string
+          divergence: string | null
+          id: string
+          kept: string
+          map_id: string
+          note: string | null
+          pathway_id: string
+          reviewer_id: string | null
+          rules_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_status?: string | null
+          created_at?: string
+          divergence?: string | null
+          id?: string
+          kept: string
+          map_id: string
+          note?: string | null
+          pathway_id: string
+          reviewer_id?: string | null
+          rules_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_status?: string | null
+          created_at?: string
+          divergence?: string | null
+          id?: string
+          kept?: string
+          map_id?: string
+          note?: string | null
+          pathway_id?: string
+          reviewer_id?: string | null
+          rules_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_pathway_reviews_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "metabolic_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_pathway_reviews_pathway_id_fkey"
+            columns: ["pathway_id"]
+            isOneToOne: false
+            referencedRelation: "pathways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       map_recommendations: {
         Row: {
           age_warning: string | null

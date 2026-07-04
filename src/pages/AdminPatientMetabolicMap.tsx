@@ -754,6 +754,7 @@ export default function AdminPatientMetabolicMap() {
         </div>
 
         <AuditPanel
+          mapId={mapId}
           pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
           summary={summary}
           findings={findings as any}
