@@ -31,6 +31,7 @@ import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
 import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
 import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggregateNodes";
 import { computeIndices } from "@/lib/metabolic/metaIndices";
+import { IndicesGauges } from "@/components/metabolic/IndicesGauges";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
@@ -665,32 +666,10 @@ export default function AdminPatientMetabolicMap() {
         {metaIndices.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-xl font-semibold">Интегральные индексы</h2>
-            <Card>
-              <CardContent className="p-0">
-                <div className="divide-y">
-                  {metaIndices.map((ix) => (
-                    <div key={ix.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium">{ix.label}</div>
-                        {ix.note && <div className="text-xs text-muted-foreground truncate">{ix.note}</div>}
-                      </div>
-                      <div className="text-right whitespace-nowrap">
-                        <div className="tabular-nums font-semibold">
-                          {ix.displayValue}{ix.unit ? ` ${ix.unit}` : ""}
-                        </div>
-                        <div className="text-xs text-muted-foreground">цель: {ix.target}</div>
-                      </div>
-                      <Badge
-                        variant={ix.status === "ok" ? "secondary" : ix.status === "off" ? "destructive" : "outline"}
-                        className="shrink-0"
-                      >
-                        {ix.status === "ok" ? "в норме" : ix.status === "off" ? "вне цели" : "—"}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <p className="text-xs text-muted-foreground -mt-2">
+              Расчётные показатели из спектра. Зелёная зона — цель, жёлтая — пограничная, красная — вне нормы. Стрелка — значение пациента.
+            </p>
+            <IndicesGauges indices={metaIndices} patientSex={patient?.sex ?? null} />
           </section>
         )}
 
