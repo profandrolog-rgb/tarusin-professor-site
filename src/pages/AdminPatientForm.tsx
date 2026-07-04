@@ -58,6 +58,7 @@ export default function AdminPatientForm({ mode }: Props) {
       birth_date: birthDate || null,
       phone: phone.trim() || null,
       history_number: historyNumber.trim() || null,
+      sex: sex || null,
     };
     if (mode === "create") {
       const { data, error } = await supabase.from("patients").insert(payload).select("id").single();
