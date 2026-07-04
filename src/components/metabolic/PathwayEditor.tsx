@@ -24,7 +24,7 @@ function EditorInner({
     elements: Array.isArray(initialScene?.elements) ? initialScene!.elements : [],
     appState: {
       ...(initialScene?.appState || {}),
-      viewBackgroundColor: "#ffffff",
+      viewBackgroundColor: initialScene?.appState?.viewBackgroundColor ?? "#ffffff",
     },
     files: initialScene?.files || null,
     scrollToContent: true,
