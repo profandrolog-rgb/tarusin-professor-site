@@ -293,6 +293,25 @@ export default function AdminPatientMetabolicMap() {
     }
   };
 
+  // Открытие редактора персональной схемы: гарантируем наличие metabolic_maps
+  // для этого пациента, чтобы map_schemas имел куда ссылаться.
+  const openEditor = async (pw: Pathway) => {
+    if (!id) return;
+    if (!mapId) {
+      const { data, error } = await (supabase as any)
+        .from("metabolic_maps")
+        .insert({ patient_id: id })
+        .select("id")
+        .single();
+      if (error) {
+        toast({ title: "Не удалось создать карту", description: error.message, variant: "destructive" });
+        return;
+      }
+      setMapId(data.id);
+    }
+    setEditorPathway(pw);
+  };
+
   const recsByPathway = useMemo(() => {
     const m = new Map<string, Recommendation[]>();
     for (const r of recs) {
