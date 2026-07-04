@@ -753,6 +753,13 @@ export default function AdminPatientMetabolicMap() {
           />
         </div>
 
+        <CompletenessInspector
+          patientId={patient.id}
+          pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name, rules: (p as any).rules }))}
+          summary={summary}
+          visitDate={selectedVisitDate}
+        />
+
         <AuditPanel
           mapId={mapId}
           pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))}
