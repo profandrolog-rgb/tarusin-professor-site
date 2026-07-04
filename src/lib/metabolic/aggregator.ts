@@ -370,7 +370,13 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     const keys = aliases.map((a) => norm(a)).filter(Boolean);
     const tokens = keys.map((k) => k.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
     catEntries.push({ code, keys, tokens });
-    for (const k of keys) if (!directLookup.has(k)) directLookup.set(k, code);
+    const isAscii = asciiCodeRe.test(code);
+    for (const k of keys) {
+      // ASCII-код (SHBG, TESTO, HCY) вытесняет кириллический — так правило найдёт совпадение.
+      if (!directLookup.has(k) || (isAscii && !asciiCodeRe.test(directLookup.get(k)!))) {
+        directLookup.set(k, code);
+      }
+    }
   }
   for (const l of labs) {
     if (l.test_code && String(l.test_code).trim()) continue;
