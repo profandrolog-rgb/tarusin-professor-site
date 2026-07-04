@@ -754,7 +754,7 @@ export default function AdminPatientMetabolicMap() {
                         //  4) авто-раскладка nodes/edges.
                         const highlightsMap = new Map(Array.from(affectedNodes).map((n) => [n, status]));
                         // Кастомные статичные SVG-схемы для путей, где авто-раскладка стрелок мешает.
-                        const CUSTOM_SCHEMES: Record<string, React.ComponentType<{ values?: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> }>> = {
+                        const CUSTOM_SCHEMES: Record<string, (props: { values?: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> }) => JSX.Element> = {
                           steroidogenesis: SteroidHubSVG,
                           vit_d_bone: VitDSchemeSVG,
                           endocrine_disruptors: EndoDisruptorsSchemeSVG,
