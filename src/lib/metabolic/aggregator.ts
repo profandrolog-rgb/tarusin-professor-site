@@ -83,6 +83,13 @@ export interface PathwaySummary {
   status: Severity;
   matched_markers: number;
   affected_nodes: string[];
+  /**
+   * Коды показателей, по которым резолвер вернул needsPhase — для них
+   * оценка пропущена, т.к. женские фазозависимые (E2/PROG/LH/FSH при sex=F)
+   * без указанной фазы цикла интерпретировать нельзя. UI использует этот же
+   * сигнал, чтобы показать «нужна фаза цикла» ровно для этих показателей.
+   */
+  needs_phase_codes?: string[];
 }
 
 export interface AggregationResult {
