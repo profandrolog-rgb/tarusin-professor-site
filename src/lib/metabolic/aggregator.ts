@@ -341,39 +341,62 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   if (labErr) throw labErr;
   const labs = ((labData as any[]) || []) as LabRow[];
 
-  // 3.0 Каталог анализов → карта {upper(name|short_name|synonym) → каталожный short_name (upper)}.
+  // 3.0 Каталог анализов → карта для резолва каталожного кода по test_name.
   // Нужна для лабов, у которых test_code = NULL (парсер ещё не проставил код):
   // сопоставляем по test_name → подставляем каталожный код прямо в объект lab,
   // чтобы правила pathways.rules находили совпадение через when.test_code.
+  //
+  // «Каталожный код» = синоним, похожий на код правила (ASCII, uppercase, до 12 символов).
+  // Если такого нет — fallback на short_name/name. Это позволяет ГСПГ → SHBG,
+  // Общий тестостерон → TESTO и т.п.
   const { data: catRows } = await (supabase as any)
     .from("lab_tests_catalog")
     .select("short_name, name, synonyms")
     .eq("is_active", true);
-  const nameToCode = new Map<string, string>();
+  const asciiCodeRe = /^[A-Z0-9_]{2,12}$/;
+  type CatEntry = { code: string; keys: string[]; tokens: string[][] };
+  const catEntries: CatEntry[] = [];
+  const directLookup = new Map<string, string>();
   for (const row of ((catRows as any[]) || [])) {
-    const code = norm(row.short_name || row.name);
+    const aliases: string[] = [];
+    if (row.short_name) aliases.push(String(row.short_name));
+    if (row.name) aliases.push(String(row.name));
+    if (Array.isArray(row.synonyms)) for (const s of row.synonyms) if (s) aliases.push(String(s));
+    if (!aliases.length) continue;
+    // Предпочитаемый код: ASCII-uppercase синоним, иначе short_name/name/первый alias.
+    const asciiHit = aliases.map((a) => String(a).trim().toUpperCase()).find((a) => asciiCodeRe.test(a));
+    const code = (asciiHit || String(row.short_name || row.name || aliases[0])).trim().toUpperCase();
     if (!code) continue;
-    const codeUp = code.toUpperCase();
-    const keys: string[] = [];
-    if (row.short_name) keys.push(norm(row.short_name));
-    if (row.name) keys.push(norm(row.name));
-    if (Array.isArray(row.synonyms)) for (const s of row.synonyms) if (s) keys.push(norm(s));
-    for (const k of keys) if (k && !nameToCode.has(k)) nameToCode.set(k, codeUp);
+    const keys = aliases.map((a) => norm(a)).filter(Boolean);
+    const tokens = keys.map((k) => k.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+    catEntries.push({ code, keys, tokens });
+    for (const k of keys) if (!directLookup.has(k)) directLookup.set(k, code);
   }
   for (const l of labs) {
     if (l.test_code && String(l.test_code).trim()) continue;
     const nm = norm(l.test_name);
     if (!nm) continue;
     // 1) точное совпадение
-    let resolved = nameToCode.get(nm);
-    // 2) частичное — каталожный ключ содержится в имени с бланка
+    let resolved = directLookup.get(nm);
+    // 2) подстрока (кат. ключ ⊆ имя лаба)
     if (!resolved) {
-      for (const [k, v] of nameToCode) {
+      for (const [k, v] of directLookup) {
         if (k.length >= 3 && nm.includes(k)) { resolved = v; break; }
+      }
+    }
+    // 3) множество токенов совпадает (Тестостерон общий ⇄ Общий тестостерон)
+    if (!resolved) {
+      const labTokens = new Set(nm.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+      if (labTokens.size) {
+        for (const e of catEntries) {
+          const matched = e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
+          if (matched) { resolved = e.code; break; }
+        }
       }
     }
     if (resolved) l.test_code = resolved;
   }
+
 
   // 3.1 Предзагрузка reference_ranges для всех кодов, которые встречаются в правилах или лабах
   const codeSet = new Set<string>();
