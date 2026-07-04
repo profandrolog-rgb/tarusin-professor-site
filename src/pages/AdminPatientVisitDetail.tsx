@@ -41,7 +41,7 @@ interface Visit {
   diagnosis: string | null;
   icd_code: string | null;
   next_visit_date: string | null;
-  patient: { id: string; full_name: string; history_number: string | null; birth_date: string } | null;
+  patient: { id: string; full_name: string; history_number: string | null; birth_date: string; sex: "M" | "F" | null } | null;
 }
 
 interface SiblingVisit {
