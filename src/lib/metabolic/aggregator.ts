@@ -361,6 +361,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   for (const pw of pathways) {
     let matched = 0;
     const affected = new Set<string>();
+    const needsPhaseCodes = new Set<string>();
     let status: Severity = "no_data";
     for (const rawRule of pw.rules as DbRule[]) {
       try {
@@ -380,6 +381,8 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
         // Фаза не указана — фазозависимый показатель не оцениваем и не помечаем как патологию.
         if (resolved && "needsPhase" in resolved) {
           matched += 1; // засчитываем как «есть данные, но нужна фаза»
+          const codeForHint = String(analyteCode || lab.test_code || "").toUpperCase().trim();
+          if (codeForHint) needsPhaseCodes.add(codeForHint);
           continue;
         }
         if (!resolved) continue;
@@ -437,8 +440,10 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
       status,
       matched_markers: matched,
       affected_nodes: [...affected],
+      needs_phase_codes: needsPhaseCodes.size ? [...needsPhaseCodes] : [],
     });
   }
+
 
   // 5. апсерт карты + замена findings
   const computedAt = new Date().toISOString();
