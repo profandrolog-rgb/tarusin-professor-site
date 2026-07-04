@@ -356,7 +356,6 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   const asciiCodeRe = /^[A-Z0-9_]{2,12}$/;
   type CatEntry = { code: string; keys: string[]; tokens: string[][] };
   const catEntries: CatEntry[] = [];
-  const directLookup = new Map<string, string>();
   for (const row of ((catRows as any[]) || [])) {
     const aliases: string[] = [];
     if (row.short_name) aliases.push(String(row.short_name));
