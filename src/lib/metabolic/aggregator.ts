@@ -376,7 +376,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
           continue;
         }
         if (!resolved) continue;
-        const bounds = resolved; // теперь ResolvedRef
+        const bounds = resolved as { ref_low: number | null; ref_high: number | null; source: "blank" | "reference_ranges" };
         matched += 1;
         const sev = evaluateRule(rule, lab, bounds.ref_low, bounds.ref_high);
         if (!sev) continue;
@@ -395,9 +395,9 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
           severity: sev,
           label: `${label}: ${lab.value} ${lab.unit}`.trim(),
           detail: [
-            resolved.ref_low != null ? `реф. ≥ ${resolved.ref_low}` : null,
-            resolved.ref_high != null ? `реф. ≤ ${resolved.ref_high}` : null,
-            resolved.source === "reference_ranges" ? "(по возрасту/фазе)" : null,
+            bounds.ref_low != null ? `реф. ≥ ${bounds.ref_low}` : null,
+            bounds.ref_high != null ? `реф. ≤ ${bounds.ref_high}` : null,
+            bounds.source === "reference_ranges" ? "(по возрасту/фазе)" : null,
             `забор ${lab.test_date}`,
           ]
             .filter(Boolean)
@@ -409,7 +409,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
             test_code: lab.test_code,
             test_name: lab.test_name,
             value: lab.value,
-            ref_source: resolved.source,
+            ref_source: bounds.source,
           },
         });
       } catch (ruleError) {
