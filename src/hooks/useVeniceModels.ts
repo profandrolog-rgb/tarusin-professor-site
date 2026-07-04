@@ -91,11 +91,23 @@ export function useVeniceModels(): VeniceModelsState {
 
   useEffect(() => {
     let cancelled = false;
-    fetchVeniceModels()
-      .then((l) => { if (!cancelled) { setList(l); setLoading(false); } })
-      .catch((e) => { if (!cancelled) { setError(e?.message || "fetch failed"); setLoading(false); } });
-    return () => { cancelled = true; };
+    const run = () => {
+      fetchVeniceModels()
+        .then((l) => { if (!cancelled) { setList(l); setLoading(false); } })
+        .catch((e) => { if (!cancelled) { setError(e?.message || "fetch failed"); setLoading(false); } });
+    };
+    run();
+    // Перезапрашиваем каталог, когда пользователь входит в систему.
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") run();
+    });
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
+
+  const byId = new Map<string, LiveModelInfo>();
+  for (const m of list) byId.set(m.id, m);
+  return { list, byId, loading, error };
+}
 
   const byId = new Map<string, LiveModelInfo>();
   for (const m of list) byId.set(m.id, m);
