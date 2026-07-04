@@ -37,6 +37,7 @@ import { templateToScene } from "@/lib/metabolic/templateToScene";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
 import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
+import { SteroidHubSVG } from "@/components/metabolic/schemes/SteroidHubSVG";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
@@ -614,6 +615,35 @@ export default function AdminPatientMetabolicMap() {
                     ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity,
                   consequences: pw.consequences || [],
                 }))}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Стероидогенез</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <SteroidHubSVG
+                values={(() => {
+                  const map = nodeValuesByPathway.get("steroidogenesis");
+                  if (!map) return undefined;
+                  const out: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> = {};
+                  for (const [nodeId, entry] of map.entries()) {
+                    const anyEntry = entry as any;
+                    const raw = anyEntry?.value ?? anyEntry?.display ?? anyEntry?.text;
+                    const sev = anyEntry?.severity ?? anyEntry?.status;
+                    if (raw === undefined || raw === null || raw === "") continue;
+                    const status: "norm" | "mild" | "moderate" | "severe" | "nodata" =
+                      sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe"
+                        ? sev
+                        : sev === "no_data" || !sev
+                        ? "nodata"
+                        : "nodata";
+                    out[nodeId] = { value: raw, status };
+                  }
+                  return Object.keys(out).length ? out : undefined;
+                })()}
               />
             </CardContent>
           </Card>
