@@ -238,11 +238,15 @@ export interface RunOptions {
 export async function runAggregation(opts: RunOptions): Promise<AggregationResult> {
   const { patientId, visitId } = opts;
 
-  // 0. подтягиваем лабораторные из свободного текста AI-протоколов визитов
-  // (безопасно: дедуп внутри функции; ошибки не прерывают расчёт)
+  // 0. фоновая подтяжка лабораторных из свободного текста AI-протоколов визитов.
+  // НЕ ждём: AI-парсинг может занимать минуты на пациентах с большой историей —
+  // блокировать «Пересчитать» из-за этого нельзя. Результаты подхватятся при
+  // следующем пересчёте.
   try {
-    await supabase.functions.invoke("extract-visit-labs", {
+    void supabase.functions.invoke("extract-visit-labs", {
       body: { patient_id: patientId, only_new: true },
+    }).catch((e: any) => {
+      console.warn("[metabolic] extract-visit-labs bg failed:", e?.message || e);
     });
   } catch (e) {
     console.warn("[metabolic] extract-visit-labs skipped:", (e as any)?.message || e);

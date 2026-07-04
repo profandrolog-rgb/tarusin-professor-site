@@ -106,9 +106,12 @@ export async function fetchPatientHistory(patientId: string, patientName?: strin
     fetchAll("anthropometry_measurements", "measurement_date"),
     fetchAll("treatment_plans", "created_at"),
     fetchAll("patient_diagnosis_timeline", "created_at"),
-    fetchAll("patient_documents", "created_at"),
+    // patient_documents привязан к patient_cards (card_id), а не к patients.id —
+    // прямого FK на patient_id нет, поэтому в общей ретроспективе пропускаем.
+    Promise.resolve({ data: [] as any[] }),
     fetchAll("metabolic_map_snapshots", "created_at"),
-    sb.from("patients").select("full_name, birth_date, sex, history_number, notes").eq("id", patientId).maybeSingle(),
+    // В таблице patients нет колонки sex — не запрашиваем.
+    sb.from("patients").select("full_name, birth_date, history_number, notes").eq("id", patientId).maybeSingle(),
   ]);
   const [visitsRes, uzRes, labsRes, anthroRes, plansRes, diagRes, docsRes, mapRes, patientRes] = results;
 
@@ -155,7 +158,7 @@ export async function fetchPatientHistory(patientId: string, patientName?: strin
   const head: string[] = [];
   head.push(`# Ретроспектива пациента: ${patient?.full_name || patientName || patientId}`);
   if (patient?.birth_date) head.push(`Дата рождения: ${patient.birth_date}`);
-  if (patient?.sex) head.push(`Пол: ${patient.sex}`);
+  
   if (patient?.history_number) head.push(`№ истории: ${patient.history_number}`);
   parts.push(head.join("\n"));
 
