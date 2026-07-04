@@ -114,6 +114,7 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     "2HB": "hb2",
     NAA: "naa",
   },
+
   gut_permeability: {
     CALPRO: "calprotectin",
     ZONULIN: "zonulin",
