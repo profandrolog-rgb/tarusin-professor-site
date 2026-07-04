@@ -41,6 +41,8 @@ import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
 import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
 import { SteroidHubSVG } from "@/components/metabolic/schemes/SteroidHubSVG";
+import { VitDSchemeSVG } from "@/components/metabolic/schemes/VitDSchemeSVG";
+import { EndoDisruptorsSchemeSVG } from "@/components/metabolic/schemes/EndoDisruptorsSchemeSVG";
 import { SeverityLegend } from "@/components/metabolic/SeverityLegend";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { rebuildMapRecommendations } from "@/lib/metabolic/treatmentMatch";
@@ -751,6 +753,25 @@ export default function AdminPatientMetabolicMap() {
                         //  3) шаблон templateToScene;
                         //  4) авто-раскладка nodes/edges.
                         const highlightsMap = new Map(Array.from(affectedNodes).map((n) => [n, status]));
+                        // Кастомные статичные SVG-схемы для путей, где авто-раскладка стрелок мешает.
+                        const CUSTOM_SCHEMES: Record<string, (props: { values?: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> }) => JSX.Element> = {
+                          steroidogenesis: SteroidHubSVG,
+                          vit_d_bone: VitDSchemeSVG,
+                          endocrine_disruptors: EndoDisruptorsSchemeSVG,
+                        };
+                        const CustomScheme = CUSTOM_SCHEMES[pw.slug];
+                        if (CustomScheme) {
+                          const vals: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> = {};
+                          if (pwNodeValues) {
+                            for (const [nodeId, entry] of pwNodeValues.entries()) {
+                              if (!entry?.text) continue;
+                              const sev = entry.sev;
+                              const st = sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe" ? sev : "nodata";
+                              vals[nodeId] = { value: entry.text, status: st };
+                            }
+                          }
+                          return <CustomScheme values={Object.keys(vals).length ? vals : undefined} />;
+                        }
                         if (hasPathwaySvgTemplate(pw.slug)) {
                           return (
                             <PathwayTemplateSVG
