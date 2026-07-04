@@ -47,6 +47,42 @@ function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '').trim();
 }
 
+function toNum(s: string): number | null {
+  if (!s) return null;
+  const cleaned = s.replace(/\s+/g, '').replace(',', '.').replace(/[^\d.\-]/g, '');
+  if (!cleaned) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Parse reference text of forms: "A - B", "< B", "до B", "> A", "более A", "от A до B"
+function parseRefText(raw: string | null | undefined): { min: number | null; max: number | null } {
+  if (!raw) return { min: null, max: null };
+  const s = String(raw).trim().replace(/\u00a0/g, ' ');
+  const norm = s.toLowerCase();
+
+  // "< B" / "≤ B" / "до B" / "менее B" / "не более B"
+  let m = s.match(/^\s*[<≤]\s*([\d.,]+)/) ||
+          norm.match(/^\s*(?:до|менее|не более)\s+([\d.,]+)/);
+  if (m) return { min: null, max: toNum(m[1]) };
+
+  // "> A" / "≥ A" / "более A" / "от A" / "не менее A"
+  m = s.match(/^\s*[>≥]\s*([\d.,]+)/) ||
+      norm.match(/^\s*(?:более|не менее|свыше)\s+([\d.,]+)/) ||
+      norm.match(/^\s*от\s+([\d.,]+)\s*$/);
+  if (m) return { min: toNum(m[1]), max: null };
+
+  // "от A до B"
+  m = norm.match(/от\s+([\d.,]+)\s+до\s+([\d.,]+)/);
+  if (m) return { min: toNum(m[1]), max: toNum(m[2]) };
+
+  // "A - B" / "A – B" / "A — B" / "A..B" / "A/B"
+  m = s.match(/([\d.,]+)\s*(?:-|–|—|\.\.|to|—|~)\s*([\d.,]+)/i);
+  if (m) return { min: toNum(m[1]), max: toNum(m[2]) };
+
+  return { min: null, max: null };
+}
+
 async function callExtractionModel(model: string, fileDataUrl: string, fileName: string) {
   const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
