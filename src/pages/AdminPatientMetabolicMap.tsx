@@ -146,8 +146,8 @@ export default function AdminPatientMetabolicMap() {
     if (!id) return;
     setBusy(true);
     const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
-      supabase.from("patients").select("id, full_name, birth_date, history_number, share_simple_only").eq("id", id).maybeSingle(),
-      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene, group, group_order, consequences").eq("is_active", true).order("group_order").order("name"),
+      supabase.from("patients").select("id, full_name, birth_date, history_number, share_simple_only, sex").eq("id", id).maybeSingle(),
+      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene, group, group_order, consequences, sex").eq("is_active", true).order("group_order").order("name"),
       (supabase as any)
         .from("metabolic_maps")
         .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary, meta")
@@ -160,7 +160,14 @@ export default function AdminPatientMetabolicMap() {
         .order("visit_date", { ascending: false }),
     ]);
     setPatient(p as any);
-    setPathways((pw as any) || []);
+    // Фильтр путей по полу пациента: pathways.sex = пол ИЛИ sex IS NULL.
+    // Пол не указан → показываем только общие пути; половые прячем.
+    const patientSex = ((p as any)?.sex === "M" || (p as any)?.sex === "F") ? (p as any).sex : null;
+    const allPw = ((pw as any[]) || []) as Pathway[];
+    const visiblePw = patientSex
+      ? allPw.filter((x) => !x.sex || x.sex === patientSex)
+      : allPw.filter((x) => !x.sex);
+    setPathways(visiblePw);
     setMapId(m?.id || null);
     setMapNotes(m?.notes || null);
     setVisits((vs as any) || []);
