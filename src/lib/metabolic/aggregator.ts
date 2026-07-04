@@ -384,23 +384,18 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     if (l.test_code && String(l.test_code).trim()) continue;
     const nm = norm(l.test_name);
     if (!nm) continue;
-    // 1) точное совпадение
-    let resolved = directLookup.get(nm);
-    // 2) подстрока (кат. ключ ⊆ имя лаба)
-    if (!resolved) {
-      for (const [k, v] of directLookup) {
-        if (k.length >= 3 && nm.includes(k)) { resolved = v; break; }
-      }
-    }
-    // 3) множество токенов совпадает (Тестостерон общий ⇄ Общий тестостерон)
-    if (!resolved) {
-      const labTokens = new Set(nm.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
-      if (labTokens.size) {
-        for (const e of catEntries) {
-          const matched = e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
-          if (matched) { resolved = e.code; break; }
-        }
-      }
+    const labTokens = new Set(nm.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+    // Единый проход по каталогу (ASCII-коды уже впереди):
+    //   1) прямое равенство лаб-имени и любого ключа записи
+    //   2) любой ключ ⊆ имя лаба как подстрока
+    //   3) все токены какого-либо алиаса ⊆ токены лаб-имени
+    let resolved: string | undefined;
+    for (const e of catEntries) {
+      const hitDirect = e.keys.includes(nm);
+      const hitSubstr = !hitDirect && e.keys.some((k) => k.length >= 3 && nm.includes(k));
+      const hitTokens = !hitDirect && !hitSubstr && labTokens.size > 0 &&
+        e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
+      if (hitDirect || hitSubstr || hitTokens) { resolved = e.code; break; }
     }
     if (resolved) l.test_code = resolved;
   }
