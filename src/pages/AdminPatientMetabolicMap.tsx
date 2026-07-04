@@ -31,6 +31,7 @@ import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
 import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
 import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggregateNodes";
 import { computeIndices } from "@/lib/metabolic/metaIndices";
+import { IndicesGauges } from "@/components/metabolic/IndicesGauges";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
