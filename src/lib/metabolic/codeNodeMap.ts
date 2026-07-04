@@ -132,6 +132,23 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     IGF1: "igf1",
     IGFBP3: "igfbp3",
   },
+  steroidogenesis: {
+    CHOL: "cholesterol",
+    PREGNENOLONE: "pregnenolone",
+    "17OH_PREGNENOLONE": "17oh_pregnenolone",
+    PROG: "progesterone",
+    OHP17: "ohp17",
+    "11_DEOXYCORTISOL": "11_deoxycortisol",
+    CORT: "cortisol",
+    DOC: "doc",
+    CORTICOSTERONE: "corticosterone",
+    ALDOSTERONE: "aldosterone",
+    DHEAS: "dhea_s",
+    ANDROSTENEDIONE: "androstenedione",
+    TESTO: "testosterone",
+    DHT: "dht",
+    E2: "estradiol",
+  },
 };
 
 export function nodeIdForCode(pathwaySlug: string, code: string | null | undefined): string | null {
