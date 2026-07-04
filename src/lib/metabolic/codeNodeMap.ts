@@ -16,6 +16,8 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     B12: "b12",
     FOLATE: "folate",
     B6: "b6",
+    // OA-панель
+    MMA_U: "mma_u",
   },
   iron: {
     FERR: "ferritin_store",
@@ -45,6 +47,10 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     CA: "calcium",
     PHOS: "phosphorus",
     ALP: "alp",
+    // OA-панель: оксалатный обмен
+    OXAL: "oxalate",
+    GLYCOL: "glycolate",
+    GLYCER: "glycerate",
   },
   inflammation: {
     CRP: "crp",
@@ -69,6 +75,18 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     MG: "magnesium",
     GLU: "glucose",
     CK: "ck",
+    // OA-панель: ЦТК + кетоны
+    LACT_U: "lactate_u",
+    PYR_U: "pyruvate_u",
+    CITR_U: "citrate_u",
+    ACON: "cis_aconitate",
+    ISOCIT: "isocitrate",
+    AKG: "akg",
+    SUCC: "succinate",
+    FUM: "fumarate",
+    MAL: "malate",
+    "3HB": "hydroxybutyrate3",
+    ACAC: "acetoacetate",
   },
   amino_urea: {
     NH3: "ammonia",
@@ -87,11 +105,30 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     AST: "ast",
     GGT: "ggt",
     TBIL: "bilirubin",
+    // OA-панель: маркеры детокса и глутатионового цикла
+    PYROGLU: "pyroglutamate",
+    OROT: "orotate",
+    "2MHA": "mha2",
+    PGA: "pga",
+    MANDEL: "mandelate",
+    "2HB": "hb2",
+    NAA: "naa",
   },
   gut_permeability: {
     CALPRO: "calprotectin",
     ZONULIN: "zonulin",
     SIGA: "siga",
+    // OA-панель: дисбиоз/бактериальные метаболиты
+    BENZ: "benzoate",
+    PHPAA: "hpaa_p",
+    PHBA: "hba_p",
+    HIPP: "hippurate",
+    TCBA: "tcba",
+    IAA: "iaa",
+    CAFF: "caffeate",
+    TART: "tartarate",
+    ARAB: "arabinose",
+    OHPAA: "hpaa_o",
   },
   hpg_axis: {
     TESTO: "testosterone",
