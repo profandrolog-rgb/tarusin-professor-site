@@ -15,16 +15,19 @@ import {
 } from "./SmartTemplates";
 import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
 import { ExtraUziMpsSection } from "./sections/ExtraUziMps";
+import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 
 interface Props {
   type: ProtocolType;
   data: any;
   onChange: (data: any) => void;
   birthDate?: string | null;
+  patientSex?: "M" | "F" | null;
 }
 
-export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
+export function ProtocolForm({ type, data, onChange, birthDate, patientSex }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
+  const patchCycle = (p: Partial<CycleContextData>) => patch(p);
 
   const renderForm = () => {
     switch (type) {
@@ -77,6 +80,20 @@ export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
           </div>
         </div>
         <OperationTemplateBanner />
+        {patientSex === "F" ? (
+          <CycleContextSection
+            data={{
+              cycle_mode: data?.cycle_mode,
+              repro_status: data?.repro_status,
+              cycle_phase: data?.cycle_phase,
+              cycle_day: data?.cycle_day,
+              last_period_date: data?.last_period_date,
+              cycle_length: data?.cycle_length,
+              cycle_note: data?.cycle_note,
+            }}
+            onChange={patchCycle}
+          />
+        ) : null}
         {renderForm()}
         {/* Универсальный опциональный блок УЗДГ органов МПС — доступен в любом протоколе.
             Не показываем для типов, которые уже содержат полный УЗИ-блок. */}

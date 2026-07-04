@@ -41,7 +41,7 @@ interface Visit {
   diagnosis: string | null;
   icd_code: string | null;
   next_visit_date: string | null;
-  patient: { id: string; full_name: string; history_number: string | null; birth_date: string } | null;
+  patient: { id: string; full_name: string; history_number: string | null; birth_date: string; sex: "M" | "F" | null } | null;
 }
 
 interface SiblingVisit {
@@ -120,7 +120,7 @@ export default function AdminPatientVisitDetail() {
     setBaseline("");
     supabase
       .from("patient_visits")
-      .select("*, patient:patients(id, full_name, history_number, birth_date)")
+      .select("*, patient:patients(id, full_name, history_number, birth_date, sex)")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
@@ -544,6 +544,7 @@ export default function AdminPatientVisitDetail() {
                 data={visit.protocol_data}
                 onChange={(d) => update({ protocol_data: d })}
                 birthDate={visit.patient?.birth_date}
+                patientSex={visit.patient?.sex ?? null}
               />
 
             </CardContent>
