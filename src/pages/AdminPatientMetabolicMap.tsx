@@ -29,6 +29,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, fetchPathwaySeverityTexts, pickSeverityText, type PathwayText, type PathwaySeverityText, type Register } from "@/lib/metabolic/texts";
 import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
 import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
+import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggregateNodes";
+import { computeIndices } from "@/lib/metabolic/metaIndices";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
@@ -406,6 +408,20 @@ export default function AdminPatientMetabolicMap() {
       }
       if (perNode.size) out.set(slug, perNode);
     }
+    // 1b) Агрегированные узлы (сумма из нескольких строк lab_results) — перекрывают одиночный резолв,
+    // если данный узел присутствует в пути.
+    const aggregates = computeAllAggregates(labRows as any);
+    if (aggregates.size) {
+      for (const pw of pathways) {
+        const nodeIds = new Set<string>((pw.nodes || []).map((n: any) => n?.id).filter(Boolean));
+        let perNode = out.get(pw.slug);
+        for (const [aggNodeId, entry] of aggregates.entries()) {
+          if (!nodeIds.has(aggNodeId)) continue;
+          if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+          perNode.set(aggNodeId, { text: entry.text });
+        }
+      }
+    }
     // 2) Отклонения из map_findings: перекрываем текстом со стрелкой ↑/↓ и severity
     for (const f of findings) {
       if (!f.node_id) continue;
@@ -428,6 +444,9 @@ export default function AdminPatientMetabolicMap() {
     }
     return out;
   }, [labRows, labCodesById, findings, pathways]);
+
+  // Интегральные индексы: считаются из нескольких значений lab_results.
+  const metaIndices = useMemo(() => computeIndices(labRows as any), [labRows]);
 
 
 
