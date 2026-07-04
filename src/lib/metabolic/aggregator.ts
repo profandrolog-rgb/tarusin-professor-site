@@ -10,6 +10,16 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  calcAgeYears,
+  deriveCycleContext,
+  filterPathwaysBySex,
+  loadReferenceRanges,
+  PHASE_DEPENDENT_CODES,
+  resolveReference,
+  type PatientCtx,
+  type ReferenceRow,
+} from "@/lib/metabolic/referenceResolver";
 
 export type Severity = "norm" | "mild" | "moderate" | "severe" | "no_data";
 
