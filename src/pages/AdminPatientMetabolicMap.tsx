@@ -43,7 +43,7 @@ import { GuardianManager } from "@/components/metabolic/GuardianManager";
 import { AuditPanel } from "@/components/metabolic/AuditPanel";
 import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
 
-type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean };
+type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
 type Pathway = {
   id: string;
   slug: string;
@@ -55,6 +55,7 @@ type Pathway = {
   group?: string | null;
   group_order?: number | null;
   consequences?: Array<{ to_slug?: string; to_label?: string; weight?: number }>;
+  sex?: "M" | "F" | null;
 };
 type Finding = {
   id: string;
