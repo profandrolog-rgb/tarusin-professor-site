@@ -42,6 +42,7 @@ import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
 import { AuditPanel } from "@/components/metabolic/AuditPanel";
 import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
+import { CompletenessInspector } from "@/components/metabolic/CompletenessInspector";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
 type Pathway = {
@@ -147,7 +148,7 @@ export default function AdminPatientMetabolicMap() {
     setBusy(true);
     const [{ data: p }, { data: pw }, { data: m }, { data: vs }] = await Promise.all([
       supabase.from("patients").select("id, full_name, birth_date, history_number, share_simple_only, sex").eq("id", id).maybeSingle(),
-      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene, group, group_order, consequences, sex").eq("is_active", true).order("group_order").order("name"),
+      (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene, group, group_order, consequences, sex, rules").eq("is_active", true).order("group_order").order("name"),
       (supabase as any)
         .from("metabolic_maps")
         .select("id, notes, source_visit_id, last_aggregated_at, aggregate_summary, meta")
@@ -752,6 +753,13 @@ export default function AdminPatientMetabolicMap() {
             onShareChange={(v) => setPatient((prev) => (prev ? { ...prev, share_simple_only: v } : prev))}
           />
         </div>
+
+        <CompletenessInspector
+          patientId={patient.id}
+          pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name, rules: (p as any).rules }))}
+          summary={summary}
+          visitDate={selectedVisit && selectedVisit !== "all" ? (visits.find((v) => v.id === selectedVisit)?.visit_date || null) : null}
+        />
 
         <AuditPanel
           mapId={mapId}
