@@ -42,6 +42,7 @@ import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
 import { AuditPanel } from "@/components/metabolic/AuditPanel";
 import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
+import { CompletenessInspector } from "@/components/metabolic/CompletenessInspector";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
 type Pathway = {
