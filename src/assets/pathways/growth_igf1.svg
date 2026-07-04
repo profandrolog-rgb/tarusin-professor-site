@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 330" role="img" data-pathway="growth_igf1">
+<title>Ось роста (СТГ/ИФР-1)</title><desc>Соматолиберин и соматостатин регулируют СТГ; печень производит ИФР-1; зоны роста, линейный рост.</desc>
+<style>
+.node-shape{fill:#EEF0F2;stroke:#8A8F98;stroke-width:1;}
+.lbl{font-family:Arial,Helvetica,sans-serif;fill:#22303C;}
+.lbl-t{font-weight:600;font-size:14px;}
+.lbl-s{font-size:12px;fill:#5A6672;}
+.edge{stroke:#9AA3AD;stroke-width:1.2;fill:none;}
+[data-sev="norm"] .node-shape{fill:#E6F4EA;stroke:#3B8E5A;}
+[data-sev="mild"] .node-shape{fill:#FBF3D6;stroke:#C9A227;}
+[data-sev="moderate"] .node-shape{fill:#FBE7D2;stroke:#D97B29;}
+[data-sev="severe"] .node-shape{fill:#F7D9D9;stroke:#C0392B;}
+[data-sev="nodata"] .node-shape{fill:#F1EFE8;stroke:#B4B2A9;}
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<line x1="192" y1="84" x2="248" y2="98" class="edge" marker-end="url(#arrow)"/>
+<line x1="192" y1="153" x2="248" y2="137" class="edge" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<line x1="392" y1="116" x2="428" y2="117" class="edge" marker-end="url(#arrow)"/>
+<line x1="522" y1="117" x2="558" y2="117" class="edge" marker-end="url(#arrow)"/>
+<line x1="574" y1="141" x2="532" y2="173" class="edge" marker-end="url(#arrow)"/>
+<line x1="500" y1="223" x2="500" y2="243" class="edge" marker-end="url(#arrow)"/>
+<line x1="428" y1="198" x2="402" y2="198" class="edge" marker-end="url(#arrow)"/>
+<line x1="325" y1="223" x2="325" y2="243" class="edge" marker-end="url(#arrow)"/>
+<line x1="445" y1="173" x2="381" y2="144" class="edge" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<g class="node" data-node-id="ghrh" data-node-type="signal"><rect class="node-shape" x="40" y="40" width="150" height="50" rx="8"/><text class="lbl lbl-t" x="115.0" y="56.0" text-anchor="middle" dominant-baseline="central">Соматолиберин</text><text class="lbl lbl-s" x="115.0" y="74.0" text-anchor="middle" dominant-baseline="central">GHRH</text></g>
+<g class="node" data-node-id="somatostatin" data-node-type="signal"><rect class="node-shape" x="40" y="150" width="150" height="50" rx="8"/><text class="lbl lbl-t" x="115.0" y="166.0" text-anchor="middle" dominant-baseline="central">Соматостатин</text><text class="lbl lbl-s" x="115.0" y="184.0" text-anchor="middle" dominant-baseline="central">(−)</text></g>
+<g class="node" data-node-id="pituitary_gh" data-node-type="organ"><rect class="node-shape" x="250" y="90" width="140" height="52" rx="8"/><text class="lbl lbl-t" x="320.0" y="107.0" text-anchor="middle" dominant-baseline="central">Гипофиз</text><text class="lbl lbl-s" x="320.0" y="125.0" text-anchor="middle" dominant-baseline="central">СТГ</text></g>
+<g class="node" data-node-id="gh" data-node-type="hormone"><rect class="node-shape" x="430" y="95" width="90" height="44" rx="8"/><text class="lbl lbl-t" x="475.0" y="117.0" text-anchor="middle" dominant-baseline="central">СТГ</text></g>
+<g class="node" data-node-id="liver" data-node-type="organ"><rect class="node-shape" x="560" y="95" width="90" height="44" rx="8"/><text class="lbl lbl-t" x="605.0" y="117.0" text-anchor="middle" dominant-baseline="central">Печень</text></g>
+<g class="node" data-node-id="igf1" data-node-type="marker"><rect class="node-shape" x="430" y="175" width="140" height="46" rx="8"/><text class="lbl lbl-t" x="500.0" y="198.0" text-anchor="middle" dominant-baseline="central">ИФР-1</text></g>
+<g class="node" data-node-id="igfbp3" data-node-type="marker"><rect class="node-shape" x="430" y="245" width="140" height="44" rx="8"/><text class="lbl lbl-t" x="500.0" y="267.0" text-anchor="middle" dominant-baseline="central">ИФРСБ-3</text></g>
+<g class="node" data-node-id="growth_plate" data-node-type="target"><rect class="node-shape" x="250" y="175" width="150" height="46" rx="8"/><text class="lbl lbl-t" x="325.0" y="189.0" text-anchor="middle" dominant-baseline="central">Зоны роста</text><text class="lbl lbl-s" x="325.0" y="207.0" text-anchor="middle" dominant-baseline="central"></text></g>
+<g class="node" data-node-id="bone_growth" data-node-type="target"><rect class="node-shape" x="250" y="245" width="150" height="44" rx="8"/><text class="lbl lbl-t" x="325.0" y="267.0" text-anchor="middle" dominant-baseline="central">Линейный рост</text></g>
+</svg>
