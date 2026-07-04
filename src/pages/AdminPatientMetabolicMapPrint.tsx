@@ -323,4 +323,3 @@ export default function AdminPatientMetabolicMapPrint() {
 // Устаревший PrintPathwaySVG удалён — печать использует общий PathwaySceneSVG,
 // чтобы подсветка была одинаковой в карточке и в PDF.
 
-}
