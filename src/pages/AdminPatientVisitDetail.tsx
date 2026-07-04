@@ -120,7 +120,7 @@ export default function AdminPatientVisitDetail() {
     setBaseline("");
     supabase
       .from("patient_visits")
-      .select("*, patient:patients(id, full_name, history_number, birth_date)")
+      .select("*, patient:patients(id, full_name, history_number, birth_date, sex)")
       .eq("id", id)
       .maybeSingle()
       .then(({ data, error }) => {
