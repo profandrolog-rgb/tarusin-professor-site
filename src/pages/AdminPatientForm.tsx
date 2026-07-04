@@ -34,7 +34,7 @@ export default function AdminPatientForm({ mode }: Props) {
       setBusy(true);
       const { data } = await supabase
         .from("patients")
-        .select("full_name, birth_date, phone, history_number")
+        .select("full_name, birth_date, phone, history_number, sex")
         .eq("id", id)
         .maybeSingle();
       if (data) {
@@ -42,6 +42,8 @@ export default function AdminPatientForm({ mode }: Props) {
         setBirthDate((data as any).birth_date || "");
         setPhone((data as any).phone || "");
         setHistoryNumber((data as any).history_number || "");
+        const s = (data as any).sex;
+        setSex(s === "M" || s === "F" ? s : "");
       }
       setBusy(false);
     })();
