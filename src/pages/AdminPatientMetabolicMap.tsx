@@ -116,6 +116,9 @@ export default function AdminPatientMetabolicMap() {
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
   const [texts, setTexts] = useState<PathwayText[]>([]);
+  const [severityTexts, setSeverityTexts] = useState<PathwaySeverityText[]>([]);
+  const [labRows, setLabRows] = useState<Array<{ id: string; test_name: string | null; test_code: string | null; value: number | null; unit: string | null }>>([]);
+  const [catalogRows, setCatalogRows] = useState<CatalogRow[]>([]);
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
