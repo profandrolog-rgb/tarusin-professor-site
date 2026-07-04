@@ -169,6 +169,23 @@ export default function AdminPatientMetabolicMap() {
     setSummary(savedSummary);
     setAi(((m as any)?.meta?.ai) || null);
 
+    // Загружаем сохранённые врачом схемы (единый источник — pathway_schemas).
+    // Ключ — pathway_code (совпадает с slug). Карточка и редактор читают отсюда.
+    const codes = ((pw as any[]) || []).map((r: any) => r.slug).filter(Boolean);
+    if (codes.length) {
+      const { data: sch } = await (supabase as any)
+        .from("pathway_schemas")
+        .select("pathway_code, scene")
+        .in("pathway_code", codes);
+      const map = new Map<string, SceneJson>();
+      for (const row of (sch || []) as Array<{ pathway_code: string; scene: SceneJson }>) {
+        if (row?.pathway_code && row?.scene) map.set(row.pathway_code, row.scene);
+      }
+      setSchemas(map);
+    } else {
+      setSchemas(new Map());
+    }
+
     if (m?.id) {
       const [{ data: f }, { data: r }] = await Promise.all([
         (supabase as any)
