@@ -341,6 +341,58 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   if (labErr) throw labErr;
   const labs = ((labData as any[]) || []) as LabRow[];
 
+  // 3.0 Каталог анализов → карта для резолва каталожного кода по test_name.
+  // Нужна для лабов, у которых test_code = NULL (парсер ещё не проставил код):
+  // сопоставляем по test_name → подставляем каталожный код прямо в объект lab,
+  // чтобы правила pathways.rules находили совпадение через when.test_code.
+  //
+  // «Каталожный код» = синоним, похожий на код правила (ASCII, uppercase, до 12 символов).
+  // Если такого нет — fallback на short_name/name. Это позволяет ГСПГ → SHBG,
+  // Общий тестостерон → TESTO и т.п.
+  const { data: catRows } = await (supabase as any)
+    .from("lab_tests_catalog")
+    .select("short_name, name, synonyms")
+    .eq("is_active", true);
+  const asciiCodeRe = /^[A-Z0-9_]{2,12}$/;
+  type CatEntry = { code: string; keys: string[]; tokens: string[][] };
+  const catEntries: CatEntry[] = [];
+  for (const row of ((catRows as any[]) || [])) {
+    const aliases: string[] = [];
+    if (row.short_name) aliases.push(String(row.short_name));
+    if (row.name) aliases.push(String(row.name));
+    if (Array.isArray(row.synonyms)) for (const s of row.synonyms) if (s) aliases.push(String(s));
+    if (!aliases.length) continue;
+    // Предпочитаемый код: ASCII-uppercase синоним, иначе short_name/name/первый alias.
+    const asciiHit = aliases.map((a) => String(a).trim().toUpperCase()).find((a) => asciiCodeRe.test(a));
+    const code = (asciiHit || String(row.short_name || row.name || aliases[0])).trim().toUpperCase();
+    if (!code) continue;
+    const keys = aliases.map((a) => norm(a)).filter(Boolean);
+    const tokens = keys.map((k) => k.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+    catEntries.push({ code, keys, tokens });
+  }
+  // ASCII-коды впереди — их предпочитаем при токен/подстрочных совпадениях
+  catEntries.sort((a, b) => Number(asciiCodeRe.test(b.code)) - Number(asciiCodeRe.test(a.code)));
+  for (const l of labs) {
+    if (l.test_code && String(l.test_code).trim()) continue;
+    const nm = norm(l.test_name);
+    if (!nm) continue;
+    const labTokens = new Set(nm.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+    // Единый проход по каталогу (ASCII-коды уже впереди):
+    //   1) прямое равенство лаб-имени и любого ключа записи
+    //   2) любой ключ ⊆ имя лаба как подстрока
+    //   3) все токены какого-либо алиаса ⊆ токены лаб-имени
+    let resolved: string | undefined;
+    for (const e of catEntries) {
+      const hitDirect = e.keys.includes(nm);
+      const hitSubstr = !hitDirect && e.keys.some((k) => k.length >= 3 && nm.includes(k));
+      const hitTokens = !hitDirect && !hitSubstr && labTokens.size > 0 &&
+        e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
+      if (hitDirect || hitSubstr || hitTokens) { resolved = e.code; break; }
+    }
+    if (resolved) l.test_code = resolved;
+  }
+
+
   // 3.1 Предзагрузка reference_ranges для всех кодов, которые встречаются в правилах или лабах
   const codeSet = new Set<string>();
   for (const pw of pathways) {
