@@ -761,19 +761,34 @@ export default function AdminPatientMetabolicMap() {
         </div>
       </div>
 
-      {editorPathway && (
-        <PathwayEditor
-          open={!!editorPathway}
-          onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
-          pathwayId={editorPathway.id}
-          pathwayName={editorPathway.name}
-          initialScene={editorPathway.svg_scene}
-          onSaved={(scene) => {
-            setPathways((prev) => prev.map((p) => p.id === editorPathway.id ? { ...p, svg_scene: scene } : p));
-            setEditorPathway(null);
-          }}
-        />
-      )}
+      {editorPathway && (() => {
+        // В редактор отдаём ту же сцену, что и в карточку: сохранённая → шаблон → авто.
+        const tpl = getTemplate(editorPathway.slug);
+        const initial: SceneJson | null =
+          schemas.get(editorPathway.slug) ||
+          (tpl ? templateToScene(tpl) : null) ||
+          (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
+            ? editorPathway.svg_scene
+            : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
+        return (
+          <PathwayEditor
+            open={!!editorPathway}
+            onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
+            pathwayCode={editorPathway.slug}
+            pathwayName={editorPathway.name}
+            initialScene={initial}
+            onSaved={(scene) => {
+              // Синхронизируем локальный источник, чтобы карточка сразу перерисовалась.
+              setSchemas((prev) => {
+                const next = new Map(prev);
+                next.set(editorPathway.slug, scene);
+                return next;
+              });
+              setEditorPathway(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
