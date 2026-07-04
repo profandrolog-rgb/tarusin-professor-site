@@ -12,6 +12,10 @@ import {
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
+import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
+import { templateToScene } from "@/lib/metabolic/templateToScene";
+import { buildAutoScene } from "@/lib/metabolic/autoLayout";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
