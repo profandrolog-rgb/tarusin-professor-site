@@ -111,7 +111,7 @@ export function CycleContextSection({
             <div className="space-y-1">
               <Label className="text-xs">Фаза цикла (врач выбирает)</Label>
               <Select
-                value={d.cycle_phase || ""}
+                value={d.cycle_phase || "__none__"}
                 onValueChange={(v) => onChange({ cycle_phase: (v === "__none__" ? "" : v) as any })}
               >
                 <SelectTrigger className="h-9"><SelectValue placeholder="не выбрано" /></SelectTrigger>
