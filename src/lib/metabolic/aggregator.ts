@@ -115,6 +115,10 @@ type DbRule = {
     test_name?: string;
     value?: number;
     value_from_ref?: "high" | "low";
+    /** Фаза цикла, при которой правило применимо (только женские фазозависимые). */
+    phase?: string;
+    /** Статус (пубертат/менопауза и т.п.) — альтернатива фазе. */
+    status?: string;
   };
   raises_to?: "mild" | "moderate" | "severe";
   highlight_nodes?: string[];
