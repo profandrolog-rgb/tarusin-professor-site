@@ -573,28 +573,24 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
+                        // Единый источник сцены: сохранённая в pathway_schemas → фиксированный
+                        // шаблон (templateToScene) → авто-раскладка из nodes/edges.
+                        // Подсветка по тяжести применяется в PathwaySceneSVG на основе
+                        // customData.nodeId, поэтому все пути видят одинаковую перекраску.
                         const tpl = getTemplate(pw.slug);
-                        if (tpl) {
-                          return (
-                            <TemplateSVG
-                              template={tpl}
-                              highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
-                              rxNodes={rxNodes}
-                              rxLabelByNode={rxLabelByNode}
-                              height={280}
-                            />
-                          );
-                        }
-                        const sceneToRender = pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
-                          ? pw.svg_scene
-                          : buildAutoScene(pw.nodes || [], pw.edges || []);
+                        const sceneToRender =
+                          schemas.get(pw.slug) ||
+                          (tpl ? templateToScene(tpl) : null) ||
+                          (pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
+                            ? pw.svg_scene
+                            : buildAutoScene(pw.nodes || [], pw.edges || []));
                         return (
                           <PathwaySceneSVG
                             scene={sceneToRender}
                             highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
                             rxNodes={rxNodes}
                             rxLabelByNode={rxLabelByNode}
-                            maxHeight={260}
+                            maxHeight={280}
                           />
                         );
                       })()}
