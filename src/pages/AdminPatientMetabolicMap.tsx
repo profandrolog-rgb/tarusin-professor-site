@@ -29,6 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
 import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
 import { templateToScene } from "@/lib/metabolic/templateToScene";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
@@ -605,10 +606,25 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
-                        // Единый источник сцены: сохранённая в pathway_schemas → фиксированный
-                        // шаблон (templateToScene) → авто-раскладка из nodes/edges.
-                        // Подсветка по тяжести применяется в PathwaySceneSVG на основе
-                        // customData.nodeId, поэтому все пути видят одинаковую перекраску.
+                        // Приоритет источников:
+                        //  1) статичный SVG-шаблон пути (src/assets/pathways/<slug>.svg)
+                        //     — с подсветкой по data-sev и overlay-слоем правок врача поверх;
+                        //  2) сохранённая сцена в pathway_schemas/map_schemas;
+                        //  3) шаблон templateToScene;
+                        //  4) авто-раскладка nodes/edges.
+                        const highlightsMap = new Map(Array.from(affectedNodes).map((n) => [n, status]));
+                        if (hasPathwaySvgTemplate(pw.slug)) {
+                          return (
+                            <PathwayTemplateSVG
+                              slug={pw.slug}
+                              highlights={highlightsMap}
+                              rxNodes={rxNodes}
+                              rxLabelByNode={rxLabelByNode}
+                              overlayScene={schemas.get(pw.slug) || null}
+                              maxHeight={320}
+                            />
+                          );
+                        }
                         const tpl = getTemplate(pw.slug);
                         const sceneToRender =
                           schemas.get(pw.slug) ||
@@ -619,7 +635,7 @@ export default function AdminPatientMetabolicMap() {
                         return (
                           <PathwaySceneSVG
                             scene={sceneToRender}
-                            highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                            highlights={highlightsMap}
                             rxNodes={rxNodes}
                             rxLabelByNode={rxLabelByNode}
                             maxHeight={280}
@@ -802,14 +818,17 @@ export default function AdminPatientMetabolicMap() {
       </div>
 
       {editorPathway && (() => {
-        // Шаблон — общий (pathway_schemas / templateToScene / auto).
-        // Рабочая копия — персональная для этого пациента из map_schemas.
-        const tpl = getTemplate(editorPathway.slug);
-        const templateScene: SceneJson | null =
-          (tpl ? templateToScene(tpl) : null) ||
-          (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
-            ? editorPathway.svg_scene
-            : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
+        // Для путей со статичным SVG-шаблоном редактор открывается как ЧИСТЫЙ
+        // оверлей поверх шаблона — врач добавляет свои пометки, не меняя базу.
+        // Для остальных — прежнее поведение: templateScene = сцена шаблона.
+        const svgTpl = hasPathwaySvgTemplate(editorPathway.slug);
+        const tpl = svgTpl ? null : getTemplate(editorPathway.slug);
+        const templateScene: SceneJson | null = svgTpl
+          ? { elements: [], appState: { viewBackgroundColor: "transparent" }, files: {} }
+          : (tpl ? templateToScene(tpl) : null) ||
+            (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
+              ? editorPathway.svg_scene
+              : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
         const patientScene = schemas.get(editorPathway.slug) || null;
         return (
           <PathwayEditor
@@ -820,6 +839,12 @@ export default function AdminPatientMetabolicMap() {
             pathwayName={editorPathway.name}
             patientScene={patientScene}
             templateScene={templateScene}
+            backgroundNode={svgTpl ? (
+              <PathwayTemplateSVG
+                slug={editorPathway.slug}
+                maxHeight={9999}
+              />
+            ) : undefined}
             onSaved={(scene) => {
               // Обновляем локальный кэш персональной копии пациента.
               setSchemas((prev) => {
