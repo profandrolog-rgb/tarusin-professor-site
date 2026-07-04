@@ -80,6 +80,20 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex }: Pr
           </div>
         </div>
         <OperationTemplateBanner />
+        {patientSex === "F" ? (
+          <CycleContextSection
+            data={{
+              cycle_mode: data?.cycle_mode,
+              repro_status: data?.repro_status,
+              cycle_phase: data?.cycle_phase,
+              cycle_day: data?.cycle_day,
+              last_period_date: data?.last_period_date,
+              cycle_length: data?.cycle_length,
+              cycle_note: data?.cycle_note,
+            }}
+            onChange={patchCycle}
+          />
+        ) : null}
         {renderForm()}
         {/* Универсальный опциональный блок УЗДГ органов МПС — доступен в любом протоколе.
             Не показываем для типов, которые уже содержат полный УЗИ-блок. */}
