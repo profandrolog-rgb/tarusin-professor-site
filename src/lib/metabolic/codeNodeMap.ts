@@ -187,7 +187,28 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     DHT: "dht",
     E2: "estradiol",
   },
+  endocrine_disruptors: {
+    BPA: "bpa",
+    BPS: "bps",
+    BPF: "bpf",
+    MEHP: "mehp",
+    MEP: "mep",
+    MBP: "mbp",
+    MBZP: "mbzp",
+    PARABENS: "parabens",
+  },
+  vit_d_bone: {
+    VITD: "vitamin_d",
+    "25OHD": "vitamin_d",
+    "1_25OHD": "vitamin_d_active",
+    CALCITRIOL: "vitamin_d_active",
+    PTH: "pth",
+    CA: "calcium",
+    PHOS: "phosphate",
+    ALP: "alp",
+  },
 };
+
 
 export function nodeIdForCode(pathwaySlug: string, code: string | null | undefined): string | null {
   if (!code) return null;
