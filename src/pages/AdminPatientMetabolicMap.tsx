@@ -606,10 +606,25 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
-                        // Единый источник сцены: сохранённая в pathway_schemas → фиксированный
-                        // шаблон (templateToScene) → авто-раскладка из nodes/edges.
-                        // Подсветка по тяжести применяется в PathwaySceneSVG на основе
-                        // customData.nodeId, поэтому все пути видят одинаковую перекраску.
+                        // Приоритет источников:
+                        //  1) статичный SVG-шаблон пути (src/assets/pathways/<slug>.svg)
+                        //     — с подсветкой по data-sev и overlay-слоем правок врача поверх;
+                        //  2) сохранённая сцена в pathway_schemas/map_schemas;
+                        //  3) шаблон templateToScene;
+                        //  4) авто-раскладка nodes/edges.
+                        const highlightsMap = new Map(Array.from(affectedNodes).map((n) => [n, status]));
+                        if (hasPathwaySvgTemplate(pw.slug)) {
+                          return (
+                            <PathwayTemplateSVG
+                              slug={pw.slug}
+                              highlights={highlightsMap}
+                              rxNodes={rxNodes}
+                              rxLabelByNode={rxLabelByNode}
+                              overlayScene={schemas.get(pw.slug) || null}
+                              maxHeight={320}
+                            />
+                          );
+                        }
                         const tpl = getTemplate(pw.slug);
                         const sceneToRender =
                           schemas.get(pw.slug) ||
@@ -620,7 +635,7 @@ export default function AdminPatientMetabolicMap() {
                         return (
                           <PathwaySceneSVG
                             scene={sceneToRender}
-                            highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
+                            highlights={highlightsMap}
                             rxNodes={rxNodes}
                             rxLabelByNode={rxLabelByNode}
                             maxHeight={280}
