@@ -376,8 +376,9 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
           continue;
         }
         if (!resolved) continue;
+        const bounds = resolved; // теперь ResolvedRef
         matched += 1;
-        const sev = evaluateRule(rule, lab, resolved.ref_low, resolved.ref_high);
+        const sev = evaluateRule(rule, lab, bounds.ref_low, bounds.ref_high);
         if (!sev) continue;
         if (sev === "norm") {
           status = worst(status, "norm");
