@@ -633,7 +633,9 @@ export default function AdminPatientMetabolicMap() {
                   ...((savedSummary?.affected_nodes) || []),
                 ]);
                 const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
-                const text = pickText(texts, pw.id, register);
+                const severityText = pickSeverityText(severityTexts, pw.id, status, register);
+                const legacyText = pickText(texts, pw.id, register); // fallback, если severity-текст пуст
+                const pwNodeValues = nodeValuesByPathway.get(pw.slug);
                 const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
@@ -702,6 +704,7 @@ export default function AdminPatientMetabolicMap() {
                               highlights={highlightsMap}
                               rxNodes={rxNodes}
                               rxLabelByNode={rxLabelByNode}
+                              nodeValues={pwNodeValues}
                               overlayScene={schemas.get(pw.slug) || null}
                               maxHeight={320}
                             />
@@ -746,16 +749,22 @@ export default function AdminPatientMetabolicMap() {
                           Нет лабораторных данных для оценки этого пути.
                         </div>
                       )}
-                      {text && (
+                      {severityText ? (
                         <div className="text-xs space-y-1.5 pt-2 border-t">
-                          {text.summary && <p><span className="font-medium">Кратко:</span> {text.summary}</p>}
-                          {text.what_broken && <p><span className="font-medium">Что нарушено:</span> {text.what_broken}</p>}
-                          {text.evidence && <p><span className="font-medium">По каким показателям:</span> {text.evidence}</p>}
-                          {text.risks && <p><span className="font-medium">Чем грозит:</span> {text.risks}</p>}
-                          {text.connections && <p><span className="font-medium">Связи:</span> {text.connections}</p>}
-                          {text.actions && <p><span className="font-medium">Что делать:</span> {text.actions}</p>}
+                          <p><span className="font-medium">{REGISTER_LABEL[register]}:</span> {severityText}</p>
                         </div>
-                      )}
+                      ) : status === "norm" ? (
+                        <div className="text-xs italic text-muted-foreground pt-2 border-t">Отклонений не выявлено.</div>
+                      ) : legacyText && (legacyText.summary || legacyText.what_broken || legacyText.actions) ? (
+                        <div className="text-xs space-y-1.5 pt-2 border-t">
+                          {legacyText.summary && <p><span className="font-medium">Кратко:</span> {legacyText.summary}</p>}
+                          {legacyText.what_broken && <p><span className="font-medium">Что нарушено:</span> {legacyText.what_broken}</p>}
+                          {legacyText.evidence && <p><span className="font-medium">По каким показателям:</span> {legacyText.evidence}</p>}
+                          {legacyText.risks && <p><span className="font-medium">Чем грозит:</span> {legacyText.risks}</p>}
+                          {legacyText.connections && <p><span className="font-medium">Связи:</span> {legacyText.connections}</p>}
+                          {legacyText.actions && <p><span className="font-medium">Что делать:</span> {legacyText.actions}</p>}
+                        </div>
+                      ) : null}
                       {aiForPath && (
                         <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
                           <div className="flex items-center gap-2">
