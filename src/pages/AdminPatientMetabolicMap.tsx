@@ -761,29 +761,32 @@ export default function AdminPatientMetabolicMap() {
       </div>
 
       {editorPathway && (() => {
-        // В редактор отдаём ту же сцену, что и в карточку: сохранённая → шаблон → авто.
+        // Шаблон — общий (pathway_schemas / templateToScene / auto).
+        // Рабочая копия — персональная для этого пациента из map_schemas.
         const tpl = getTemplate(editorPathway.slug);
-        const initial: SceneJson | null =
-          schemas.get(editorPathway.slug) ||
+        const templateScene: SceneJson | null =
           (tpl ? templateToScene(tpl) : null) ||
           (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
             ? editorPathway.svg_scene
             : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
+        const patientScene = schemas.get(editorPathway.slug) || null;
         return (
           <PathwayEditor
             open={!!editorPathway}
             onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
+            mapId={mapId}
             pathwayCode={editorPathway.slug}
             pathwayName={editorPathway.name}
-            initialScene={initial}
+            patientScene={patientScene}
+            templateScene={templateScene}
             onSaved={(scene) => {
-              // Синхронизируем локальный источник, чтобы карточка сразу перерисовалась.
+              // Обновляем локальный кэш персональной копии пациента.
               setSchemas((prev) => {
                 const next = new Map(prev);
-                next.set(editorPathway.slug, scene);
+                if (scene) next.set(editorPathway.slug, scene);
+                else next.delete(editorPathway.slug);
                 return next;
               });
-              setEditorPathway(null);
             }}
           />
         );
