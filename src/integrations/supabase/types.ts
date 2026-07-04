@@ -2095,6 +2095,41 @@ export type Database = {
           },
         ]
       }
+      map_schemas: {
+        Row: {
+          created_at: string
+          id: string
+          map_id: string
+          pathway_code: string
+          scene: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          map_id: string
+          pathway_code: string
+          scene: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          map_id?: string
+          pathway_code?: string
+          scene?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "map_schemas_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "metabolic_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materia_medica_sections: {
         Row: {
           body: string

@@ -169,14 +169,13 @@ export default function AdminPatientMetabolicMap() {
     setSummary(savedSummary);
     setAi(((m as any)?.meta?.ai) || null);
 
-    // Загружаем сохранённые врачом схемы (единый источник — pathway_schemas).
-    // Ключ — pathway_code (совпадает с slug). Карточка и редактор читают отсюда.
-    const codes = ((pw as any[]) || []).map((r: any) => r.slug).filter(Boolean);
-    if (codes.length) {
+    // Персональные рабочие копии схем этого пациента (map_schemas).
+    // Шаблоны в pathway_schemas остаются нетронутыми и общими для всех.
+    if (m?.id) {
       const { data: sch } = await (supabase as any)
-        .from("pathway_schemas")
+        .from("map_schemas")
         .select("pathway_code, scene")
-        .in("pathway_code", codes);
+        .eq("map_id", m.id);
       const map = new Map<string, SceneJson>();
       for (const row of (sch || []) as Array<{ pathway_code: string; scene: SceneJson }>) {
         if (row?.pathway_code && row?.scene) map.set(row.pathway_code, row.scene);
@@ -292,6 +291,25 @@ export default function AdminPatientMetabolicMap() {
       toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
       await reload();
     }
+  };
+
+  // Открытие редактора персональной схемы: гарантируем наличие metabolic_maps
+  // для этого пациента, чтобы map_schemas имел куда ссылаться.
+  const openEditor = async (pw: Pathway) => {
+    if (!id) return;
+    if (!mapId) {
+      const { data, error } = await (supabase as any)
+        .from("metabolic_maps")
+        .insert({ patient_id: id })
+        .select("id")
+        .single();
+      if (error) {
+        toast({ title: "Не удалось создать карту", description: error.message, variant: "destructive" });
+        return;
+      }
+      setMapId(data.id);
+    }
+    setEditorPathway(pw);
   };
 
   const recsByPathway = useMemo(() => {
@@ -549,7 +567,7 @@ export default function AdminPatientMetabolicMap() {
                           <Badge variant="outline" className={STATUS_BADGE[status]}>
                             {SEVERITY_LABEL[status]}
                           </Badge>
-                          <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => setEditorPathway(pw)}>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => openEditor(pw)}>
                             <Pencil className="w-3.5 h-3.5" />Схема
                           </Button>
                         </div>
@@ -762,29 +780,32 @@ export default function AdminPatientMetabolicMap() {
       </div>
 
       {editorPathway && (() => {
-        // В редактор отдаём ту же сцену, что и в карточку: сохранённая → шаблон → авто.
+        // Шаблон — общий (pathway_schemas / templateToScene / auto).
+        // Рабочая копия — персональная для этого пациента из map_schemas.
         const tpl = getTemplate(editorPathway.slug);
-        const initial: SceneJson | null =
-          schemas.get(editorPathway.slug) ||
+        const templateScene: SceneJson | null =
           (tpl ? templateToScene(tpl) : null) ||
           (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
             ? editorPathway.svg_scene
             : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
+        const patientScene = schemas.get(editorPathway.slug) || null;
         return (
           <PathwayEditor
             open={!!editorPathway}
             onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
+            mapId={mapId}
             pathwayCode={editorPathway.slug}
             pathwayName={editorPathway.name}
-            initialScene={initial}
+            patientScene={patientScene}
+            templateScene={templateScene}
             onSaved={(scene) => {
-              // Синхронизируем локальный источник, чтобы карточка сразу перерисовалась.
+              // Обновляем локальный кэш персональной копии пациента.
               setSchemas((prev) => {
                 const next = new Map(prev);
-                next.set(editorPathway.slug, scene);
+                if (scene) next.set(editorPathway.slug, scene);
+                else next.delete(editorPathway.slug);
                 return next;
               });
-              setEditorPathway(null);
             }}
           />
         );
