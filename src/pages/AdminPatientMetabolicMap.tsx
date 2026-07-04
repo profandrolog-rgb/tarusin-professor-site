@@ -26,7 +26,9 @@ import {
   type PathwaySummary,
 } from "@/lib/metabolic/aggregator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
+import { fetchPathwayTexts, pickText, REGISTER_LABEL, fetchPathwaySeverityTexts, pickSeverityText, type PathwayText, type PathwaySeverityText, type Register } from "@/lib/metabolic/texts";
+import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
+import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
