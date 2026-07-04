@@ -108,8 +108,3 @@ export function useVeniceModels(): VeniceModelsState {
   for (const m of list) byId.set(m.id, m);
   return { list, byId, loading, error };
 }
-
-  const byId = new Map<string, LiveModelInfo>();
-  for (const m of list) byId.set(m.id, m);
-  return { list, byId, loading, error };
-}
