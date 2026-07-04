@@ -277,30 +277,51 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     console.warn("[metabolic] extract-visit-labs skipped:", (e as any)?.message || e);
   }
 
-  // 1. загружаем пути с правилами
-  const { data: pwRows, error: pwErr } = await (supabase as any)
-    .from("pathways")
-    .select("id, slug, name, rules")
-    .eq("is_active", true);
+  // 1. загружаем пути с правилами + пол/возраст пациента для фильтра
+  const [{ data: pwRows, error: pwErr }, { data: patientRow }] = await Promise.all([
+    (supabase as any).from("pathways").select("id, slug, name, sex, rules").eq("is_active", true),
+    (supabase as any).from("patients").select("sex, birth_date").eq("id", patientId).maybeSingle(),
+  ]);
   if (pwErr) throw pwErr;
-  const pathways: Pathway[] = ((pwRows as any[]) || []).map((p) => ({
+  const patientSex = (patientRow?.sex === "M" || patientRow?.sex === "F") ? patientRow.sex : null;
+  const ageYears = calcAgeYears(patientRow?.birth_date || null);
+  const allPathways = ((pwRows as any[]) || []).map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,
+    sex: (p.sex as string | null) ?? null,
     rules: Array.isArray(p.rules) ? (p.rules as DbRule[]) : [],
   }));
+  const pathways = filterPathwaysBySex(allPathways, patientSex);
 
-
-  // 2. визит-источник (для отсечения по дате)
+  // 2. визит-источник (для отсечения по дате) + контекст цикла из его protocol_data
   let visitDate: string | null = null;
+  let cyclePhase: PatientCtx["cyclePhase"] = null;
+  let reproStatus: PatientCtx["reproStatus"] = null;
   if (visitId) {
     const { data: v } = await supabase
       .from("patient_visits")
-      .select("visit_date")
+      .select("visit_date, protocol_data")
       .eq("id", visitId)
       .maybeSingle();
     visitDate = (v?.visit_date as string | undefined) || null;
+    const ctx = deriveCycleContext((v as any)?.protocol_data);
+    cyclePhase = ctx.cyclePhase;
+    reproStatus = ctx.reproStatus;
+  } else if (patientSex === "F") {
+    // Без явного визита берём контекст цикла из самого свежего визита пациентки.
+    const { data: vLatest } = await supabase
+      .from("patient_visits")
+      .select("visit_date, protocol_data")
+      .eq("patient_id", patientId)
+      .order("visit_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const ctx = deriveCycleContext((vLatest as any)?.protocol_data);
+    cyclePhase = ctx.cyclePhase;
+    reproStatus = ctx.reproStatus;
   }
+  const patientCtx: PatientCtx = { sex: patientSex, ageYears, cyclePhase, reproStatus };
 
   // 3. лабораторные
   let labsQuery = supabase
@@ -312,6 +333,19 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   const { data: labData, error: labErr } = await labsQuery;
   if (labErr) throw labErr;
   const labs = ((labData as any[]) || []) as LabRow[];
+
+  // 3.1 Предзагрузка reference_ranges для всех кодов, которые встречаются в правилах или лабах
+  const codeSet = new Set<string>();
+  for (const pw of pathways) {
+    for (const r of pw.rules as DbRule[]) {
+      const c = r?.when?.test_code;
+      if (c) codeSet.add(String(c).toUpperCase());
+    }
+  }
+  for (const l of labs) {
+    if (l.test_code) codeSet.add(String(l.test_code).toUpperCase());
+  }
+  const refIndex: ReferenceRow[] = await loadReferenceRanges([...codeSet]);
 
   // 4. применяем правила
   const findings: AggregatedFinding[] = [];
@@ -326,8 +360,24 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
         const rule = (rawRule && typeof rawRule === "object" ? rawRule : {}) as DbRule;
         const lab = findLatestMatch(labs, rule);
         if (!lab) continue;
+        // Резолвим границы референса: бланк → reference_ranges (фаза для F).
+        const analyteCode = (rule.when?.test_code || lab.test_code || "").toString();
+        const resolved = resolveReference({
+          analyteCode,
+          labReferenceMin: lab.reference_min == null ? null : Number(lab.reference_min),
+          labReferenceMax: lab.reference_max == null ? null : Number(lab.reference_max),
+          ctx: patientCtx,
+          refIndex,
+          rulePhase: rule.when?.phase || null,
+        });
+        // Фаза не указана — фазозависимый показатель не оцениваем и не помечаем как патологию.
+        if (resolved && "needsPhase" in resolved) {
+          matched += 1; // засчитываем как «есть данные, но нужна фаза»
+          continue;
+        }
+        if (!resolved) continue;
         matched += 1;
-        const sev = evaluateRule(rule, lab);
+        const sev = evaluateRule(rule, lab, resolved.ref_low, resolved.ref_high);
         if (!sev) continue;
         if (sev === "norm") {
           status = worst(status, "norm");
@@ -344,8 +394,9 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
           severity: sev,
           label: `${label}: ${lab.value} ${lab.unit}`.trim(),
           detail: [
-            lab.reference_min != null ? `реф. ≥ ${lab.reference_min}` : null,
-            lab.reference_max != null ? `реф. ≤ ${lab.reference_max}` : null,
+            resolved.ref_low != null ? `реф. ≥ ${resolved.ref_low}` : null,
+            resolved.ref_high != null ? `реф. ≤ ${resolved.ref_high}` : null,
+            resolved.source === "reference_ranges" ? "(по возрасту/фазе)" : null,
             `забор ${lab.test_date}`,
           ]
             .filter(Boolean)
@@ -357,6 +408,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
             test_code: lab.test_code,
             test_name: lab.test_name,
             value: lab.value,
+            ref_source: resolved.source,
           },
         });
       } catch (ruleError) {
