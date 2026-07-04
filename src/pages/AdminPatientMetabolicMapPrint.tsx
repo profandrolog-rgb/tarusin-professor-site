@@ -234,14 +234,33 @@ export default function AdminPatientMetabolicMapPrint() {
                 <div className={`text-sm px-2 py-1 rounded border ${STATUS_CLS[st]}`}>{SEVERITY_LABEL[st]}</div>
               </header>
 
-              {/* Схема сверху */}
+              {/* Схема сверху — тот же рендер, что и в карточке (единая подсветка) */}
               <div className="mb-4">
-                <PrintPathwaySVG
-                  pathway={pw}
-                  highlight={affectedNodes}
-                  rxNodes={new Set(recs.filter((r) => r.pathway_id === pw.id).map((r) => r.target_node_id).filter(Boolean) as string[])}
-                />
+                {(() => {
+                  const tpl = getTemplate(pw.slug);
+                  const anyPw = pw as any;
+                  const scene: SceneJson =
+                    schemas.get(pw.slug) ||
+                    (tpl ? templateToScene(tpl) : null) ||
+                    (anyPw.svg_scene && Array.isArray(anyPw.svg_scene.elements) && anyPw.svg_scene.elements.length > 0
+                      ? anyPw.svg_scene
+                      : buildAutoScene(pw.nodes || [], pw.edges || []));
+                  const rxSet = new Set<string>(
+                    recs.filter((r) => r.pathway_id === pw.id)
+                      .map((r) => r.target_node_id)
+                      .filter(Boolean) as string[],
+                  );
+                  return (
+                    <PathwaySceneSVG
+                      scene={scene}
+                      highlights={new Map(Array.from(affectedNodes).map((n) => [n, st]))}
+                      rxNodes={rxSet}
+                      maxHeight={320}
+                    />
+                  );
+                })()}
               </div>
+
 
               {/* Объяснение */}
               {t && (
