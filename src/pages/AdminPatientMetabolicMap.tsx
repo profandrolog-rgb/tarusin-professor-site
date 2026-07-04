@@ -142,6 +142,16 @@ export default function AdminPatientMetabolicMap() {
   }, [user, isAdmin, loading, navigate]);
 
   useEffect(() => { fetchPathwayTexts().then(setTexts); }, []);
+  useEffect(() => { fetchPathwaySeverityTexts().then(setSeverityTexts); }, []);
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("lab_tests_catalog")
+        .select("short_name, name, synonyms")
+        .eq("is_active", true);
+      setCatalogRows((data as CatalogRow[]) || []);
+    })();
+  }, []);
 
   useEffect(() => {
     // Auto-select affected pathways for print
