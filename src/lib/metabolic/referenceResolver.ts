@@ -124,6 +124,44 @@ export function resolveReference(args: {
 }
 
 /**
+ * Раскраска узла карты по отклонению значения от референса.
+ *   value ∈ [low, high]                    → "norm"
+ *   отклонение ≤ 15% от ближней границы    → "mild"
+ *   отклонение 15%…50%                     → "moderate"
+ *   отклонение > 50%                       → "severe"
+ *   нет границ (обе null)                  → "nodata"
+ * Если задана только одна граница (low ИЛИ high), проверяется только она.
+ * Величина отклонения нормируется на ближнюю границу; если она ≈ 0, берётся
+ * ширина диапазона (high - low), чтобы избежать деления на ноль.
+ */
+export type SeverityLevel = "norm" | "mild" | "moderate" | "severe" | "nodata";
+
+export function severityFromRange(
+  value: number | null | undefined,
+  refLow: number | null | undefined,
+  refHigh: number | null | undefined,
+): SeverityLevel {
+  if (value == null || !Number.isFinite(Number(value))) return "nodata";
+  const v = Number(value);
+  const lowOk = refLow != null && Number.isFinite(Number(refLow));
+  const highOk = refHigh != null && Number.isFinite(Number(refHigh));
+  if (!lowOk && !highOk) return "nodata";
+  const low = lowOk ? Number(refLow) : -Infinity;
+  const high = highOk ? Number(refHigh) : Infinity;
+  if (v >= low && v <= high) return "norm";
+
+  // Отклонение относительно ближайшей нарушенной границы
+  const boundary = v < low ? low : high;
+  const denom = Math.abs(boundary) > 1e-9
+    ? Math.abs(boundary)
+    : (lowOk && highOk ? Math.abs(high - low) || 1 : 1);
+  const dev = Math.abs(v - boundary) / denom;
+  if (dev <= 0.15) return "mild";
+  if (dev <= 0.5) return "moderate";
+  return "severe";
+}
+
+/**
  * Загружает reference_ranges для набора кодов.
  * Пустой список кодов — вернёт пустой массив без запроса.
  */
