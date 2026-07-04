@@ -92,8 +92,11 @@ export function CycleContextSection({
           <div className="space-y-1">
             <Label className="text-xs">Репродуктивный статус</Label>
             <Select
-              value={d.repro_status || ""}
-              onValueChange={(v) => onChange({ repro_status: v as any, ...(v === "postmenopause" ? { cycle_phase: "postmenopause" } : {}) })}
+              value={d.repro_status || "__none__"}
+              onValueChange={(v) => {
+                const val = v === "__none__" ? "" : v;
+                onChange({ repro_status: val as any, ...(val === "postmenopause" ? { cycle_phase: "postmenopause" } : {}) });
+              }}
             >
               <SelectTrigger className="h-9"><SelectValue placeholder="не указан" /></SelectTrigger>
               <SelectContent>
