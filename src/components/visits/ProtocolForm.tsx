@@ -15,16 +15,22 @@ import {
 } from "./SmartTemplates";
 import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
 import { ExtraUziMpsSection } from "./sections/ExtraUziMps";
+import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 
 interface Props {
   type: ProtocolType;
   data: any;
   onChange: (data: any) => void;
   birthDate?: string | null;
+  patientSex?: "M" | "F" | null;
 }
 
-export function ProtocolForm({ type, data, onChange, birthDate }: Props) {
+export function ProtocolForm({ type, data, onChange, birthDate, patientSex }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
+  const patchCycle = (p: Partial<CycleContextData>) => {
+    const cur = (data?.cycle_context || {}) as CycleContextData;
+    patch({ cycle_context: { ...cur, ...p }, ...p });
+  };
 
   const renderForm = () => {
     switch (type) {
