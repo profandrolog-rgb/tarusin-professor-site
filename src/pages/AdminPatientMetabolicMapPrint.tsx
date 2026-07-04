@@ -320,56 +320,7 @@ export default function AdminPatientMetabolicMapPrint() {
   );
 }
 
-function PrintPathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; highlight: Set<string>; rxNodes?: Set<string> }) {
-  const nodes = pathway.nodes || [];
-  if (!nodes.length) {
-    return <div className="border rounded p-4 text-xs text-neutral-500 italic text-center bg-neutral-50 min-h-[120px] flex items-center justify-center">Схема пути пока не задана</div>;
-  }
-  const W = 800, H = 240, PAD = 60;
-  const positioned = nodes.map((n, i) => {
-    const x = typeof n.x === "number" ? n.x : PAD + ((W - PAD * 2) * i) / Math.max(1, nodes.length - 1);
-    const y = typeof n.y === "number" ? n.y : H / 2;
-    return { ...n, x, y };
-  });
-  const byId = new Map(positioned.map((n) => [n.id, n]));
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto border rounded bg-neutral-50">
-      {(pathway.edges || []).map((e, i) => {
-        const a = byId.get(e.from), b = byId.get(e.to);
-        if (!a || !b) return null;
-        return (
-          <g key={i}>
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#666" strokeWidth={1.5} markerEnd="url(#pa)" />
-            {e.label && <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} textAnchor="middle" fontSize="10" fill="#555">{e.label}</text>}
-          </g>
-        );
-      })}
-      <defs>
-        <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#666" />
-        </marker>
-      </defs>
-      {positioned.map((n) => {
-        const hot = highlight.has(n.id);
-        const rx = rxNodes?.has(n.id);
-        return (
-          <g key={n.id}>
-            <circle
-              cx={n.x} cy={n.y} r={16}
-              fill={hot ? "#fee2e2" : "#fff"}
-              stroke={hot ? "#dc2626" : "#94a3b8"}
-              strokeWidth={hot ? 2.5 : 1.5}
-            />
-            <text x={n.x} y={n.y + 34} textAnchor="middle" fontSize="12" fill="#0f172a">{n.label}</text>
-            {rx && (
-              <g transform={`translate(${n.x + 14}, ${n.y - 14})`}>
-                <circle r={10} fill="#10b981" stroke="#065f46" strokeWidth={1.2} />
-                <text textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight={700} fill="#fff">℞</text>
-              </g>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
+// Устаревший PrintPathwaySVG удалён — печать использует общий PathwaySceneSVG,
+// чтобы подсветка была одинаковой в карточке и в PDF.
+
 }
