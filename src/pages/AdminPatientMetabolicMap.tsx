@@ -839,6 +839,12 @@ export default function AdminPatientMetabolicMap() {
             pathwayName={editorPathway.name}
             patientScene={patientScene}
             templateScene={templateScene}
+            backgroundNode={svgTpl ? (
+              <PathwayTemplateSVG
+                slug={editorPathway.slug}
+                maxHeight={9999}
+              />
+            ) : undefined}
             onSaved={(scene) => {
               // Обновляем локальный кэш персональной копии пациента.
               setSchemas((prev) => {
