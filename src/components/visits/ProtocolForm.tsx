@@ -27,10 +27,7 @@ interface Props {
 
 export function ProtocolForm({ type, data, onChange, birthDate, patientSex }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
-  const patchCycle = (p: Partial<CycleContextData>) => {
-    const cur = (data?.cycle_context || {}) as CycleContextData;
-    patch({ cycle_context: { ...cur, ...p }, ...p });
-  };
+  const patchCycle = (p: Partial<CycleContextData>) => patch(p);
 
   const renderForm = () => {
     switch (type) {
