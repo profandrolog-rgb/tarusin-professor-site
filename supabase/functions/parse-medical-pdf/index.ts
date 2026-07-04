@@ -178,12 +178,17 @@ Deno.serve(async (req) => {
     // Load catalog for synonym matching
     const { data: catalog } = await supabase
       .from('lab_tests_catalog')
-      .select('id, name, short_name, unit')
+      .select('id, name, short_name, unit, synonyms')
       .eq('is_active', true);
 
     const cat = (catalog || []).map((c: any) => ({
       ...c,
-      _norm: [normalize(c.name), normalize(c.short_name || '')].filter(Boolean),
+      _norm: [
+        normalize(c.name),
+        normalize(c.short_name || ''),
+        ...((Array.isArray(c.synonyms) ? c.synonyms : []) as any[])
+          .map((s: any) => normalize(String(s || ''))),
+      ].filter(Boolean),
     }));
 
     const inserted_labs: any[] = [];
@@ -194,6 +199,15 @@ Deno.serve(async (req) => {
       const target = normalize(lr.analyte);
       const match = cat.find((c: any) => c._norm.some((n: string) => n && (n === target || (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target)))));
 
+      // Reference: prefer AI numeric; fallback — parse ref_text
+      let refMin: number | null = typeof lr.ref_low === 'number' ? lr.ref_low : null;
+      let refMax: number | null = typeof lr.ref_high === 'number' ? lr.ref_high : null;
+      if (refMin === null && refMax === null) {
+        const parsedRef = parseRefText(lr.ref_text || lr.comment);
+        refMin = parsedRef.min;
+        refMax = parsedRef.max;
+      }
+
       const row: any = {
         patient_id: patient_id || null,
         consultation_case_id: consultation_case_id || null,
@@ -202,8 +216,8 @@ Deno.serve(async (req) => {
         test_code: null,
         value: lr.value,
         unit: lr.unit || match?.unit || '',
-        reference_min: lr.ref_low ?? null,
-        reference_max: lr.ref_high ?? null,
+        reference_min: refMin,
+        reference_max: refMax,
         test_date: testDate,
         source_document: file_name,
         confidence: lr.confidence ?? null,
