@@ -758,7 +758,7 @@ export default function AdminPatientMetabolicMap() {
           patientId={patient.id}
           pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name, rules: (p as any).rules }))}
           summary={summary}
-          visitDate={selectedVisitDate}
+          visitDate={selectedVisit && selectedVisit !== "all" ? (visits.find((v) => v.id === selectedVisit)?.visit_date || null) : null}
         />
 
         <AuditPanel
