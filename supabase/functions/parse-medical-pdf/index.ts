@@ -223,8 +223,42 @@ Deno.serve(async (req) => {
         confidence: lr.confidence ?? null,
         needs_review: !!lr.needs_review || !match,
       };
-      const { data: ins, error } = await supabase.from('lab_results').insert(row).select().single();
-      if (!error) inserted_labs.push(ins);
+      // Upsert by (patient_id/consultation_case_id, test_date, test_name) — avoid dupes on re-upload
+      let existingId: string | null = null;
+      if (patient_id) {
+        const { data: existing } = await supabase
+          .from('lab_results')
+          .select('id')
+          .eq('patient_id', patient_id)
+          .eq('test_date', testDate)
+          .eq('test_name', row.test_name)
+          .limit(1)
+          .maybeSingle();
+        existingId = existing?.id ?? null;
+      } else if (consultation_case_id) {
+        const { data: existing } = await supabase
+          .from('lab_results')
+          .select('id')
+          .eq('consultation_case_id', consultation_case_id)
+          .eq('test_date', testDate)
+          .eq('test_name', row.test_name)
+          .limit(1)
+          .maybeSingle();
+        existingId = existing?.id ?? null;
+      }
+
+      if (existingId) {
+        const { data: upd, error } = await supabase
+          .from('lab_results')
+          .update({ ...row, updated_at: new Date().toISOString() })
+          .eq('id', existingId)
+          .select()
+          .single();
+        if (!error && upd) inserted_labs.push(upd);
+      } else {
+        const { data: ins, error } = await supabase.from('lab_results').insert(row).select().single();
+        if (!error) inserted_labs.push(ins);
+      }
 
       if (!match) {
         const { data: q } = await supabase
