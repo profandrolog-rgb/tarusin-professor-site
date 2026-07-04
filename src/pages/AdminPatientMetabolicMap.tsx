@@ -627,20 +627,14 @@ export default function AdminPatientMetabolicMap() {
               <SteroidHubSVG
                 values={(() => {
                   const map = nodeValuesByPathway.get("steroidogenesis");
-                  if (!map) return undefined;
+                  if (!map || !map.size) return undefined;
                   const out: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> = {};
                   for (const [nodeId, entry] of map.entries()) {
-                    const anyEntry = entry as any;
-                    const raw = anyEntry?.value ?? anyEntry?.display ?? anyEntry?.text;
-                    const sev = anyEntry?.severity ?? anyEntry?.status;
-                    if (raw === undefined || raw === null || raw === "") continue;
+                    if (!entry?.text) continue;
+                    const sev = entry.sev;
                     const status: "norm" | "mild" | "moderate" | "severe" | "nodata" =
-                      sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe"
-                        ? sev
-                        : sev === "no_data" || !sev
-                        ? "nodata"
-                        : "nodata";
-                    out[nodeId] = { value: raw, status };
+                      sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe" ? sev : "nodata";
+                    out[nodeId] = { value: entry.text, status };
                   }
                   return Object.keys(out).length ? out : undefined;
                 })()}
