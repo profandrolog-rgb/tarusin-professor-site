@@ -128,6 +128,26 @@ export default function ParentMetabolicMap() {
           </Button>
         </div>
 
+        {(() => {
+          const needsPhaseAll = Array.from(
+            new Set(summary.flatMap((s) => s.needs_phase_codes || []))
+          );
+          if (!needsPhaseAll.length) return null;
+          return (
+            <Card className="border-blue-300/50 bg-blue-50/50 dark:bg-blue-950/20">
+              <CardContent className="p-4 text-sm flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5" />
+                <div>
+                  Для некоторых показателей ({needsPhaseAll.join(", ")}) нужна фаза
+                  менструального цикла — без неё врач не сможет их правильно
+                  оценить. Уточните дату последних mens на приёме.
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+
         {affected.length === 0 ? (
           <Card><CardContent className="p-6 text-sm text-muted-foreground italic">
             По имеющимся данным путей, требующих внимания, не выявлено.

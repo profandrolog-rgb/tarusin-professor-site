@@ -587,6 +587,11 @@ export default function AdminPatientMetabolicMap() {
                           {pwFindings.length > 0 && ` · отклонений: ${pwFindings.length}`}
                         </p>
                       )}
+                      {savedSummary && savedSummary.needs_phase_codes && savedSummary.needs_phase_codes.length > 0 && (
+                        <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                          🔵 Нужна фаза цикла: {savedSummary.needs_phase_codes.join(", ")} — укажите фазу в контексте визита, показатели пропущены.
+                        </p>
+                      )}
                     </CardHeader>
                     <CardContent className="pt-0 space-y-3">
                       {(() => {

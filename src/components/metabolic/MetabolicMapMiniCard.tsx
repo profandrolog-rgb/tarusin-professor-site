@@ -103,11 +103,31 @@ export default function MetabolicMapMiniCard({ patientId, patientName }: Props) 
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {summary.map((s) => (
-            <Badge key={s.pathway_id} variant="outline" className={`text-[11px] ${STATUS_CLS[s.status]}`}>
+            <Badge
+              key={s.pathway_id}
+              variant="outline"
+              className={`text-[11px] ${STATUS_CLS[s.status]}`}
+              title={
+                s.needs_phase_codes && s.needs_phase_codes.length
+                  ? `Нужна фаза цикла: ${s.needs_phase_codes.join(", ")}`
+                  : undefined
+              }
+            >
               {s.name}: {SEVERITY_LABEL[s.status]}
               {s.matched_markers > 0 && ` (${s.matched_markers})`}
+              {s.needs_phase_codes && s.needs_phase_codes.length > 0 && (
+                <span className="ml-1 text-blue-600">🔵</span>
+              )}
             </Badge>
           ))}
+        </div>
+      )}
+      {summary.some((s) => s.needs_phase_codes && s.needs_phase_codes.length > 0) && (
+        <div className="text-[10px] text-blue-700 dark:text-blue-300">
+          🔵 нужна фаза цикла:{" "}
+          {Array.from(
+            new Set(summary.flatMap((s) => s.needs_phase_codes || []))
+          ).join(", ")}
         </div>
       )}
 
