@@ -20,17 +20,21 @@ function EditorInner({
   initialScene: SceneJson | null | undefined;
   onApi: (api: any) => void;
 }) {
+  // ВАЖНО: initialData передаём ОДИН раз при монтировании. Excalidraw читает
+  // его только на первом рендере — если сцены нет в БД, всё равно отдаём
+  // объект (с фолбэком из шаблона), иначе канва останется пустой.
+  const initialData = {
+    elements: Array.isArray(initialScene?.elements) ? initialScene!.elements : [],
+    appState: {
+      ...(initialScene?.appState || {}),
+      viewBackgroundColor: "#ffffff",
+    },
+    files: initialScene?.files || null,
+    scrollToContent: true,
+  };
   return (
     <ExcalidrawLazy
-      initialData={{
-        elements: (initialScene?.elements as any) || [],
-        appState: {
-          ...(initialScene?.appState || {}),
-          viewBackgroundColor: "#ffffff",
-        } as any,
-        files: initialScene?.files || null,
-        scrollToContent: true,
-      }}
+      initialData={initialData}
       excalidrawAPI={onApi}
       UIOptions={{
         canvasActions: {
@@ -46,14 +50,15 @@ function EditorInner({
 export function PathwayEditor({
   open,
   onOpenChange,
-  pathwayId,
+  pathwayCode,
   pathwayName,
   initialScene,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  pathwayId: string;
+  /** Стабильный код пути (совпадает с pathways.slug). Ключ в pathway_schemas. */
+  pathwayCode: string;
   pathwayName: string;
   initialScene: SceneJson | null | undefined;
   onSaved?: (scene: SceneJson) => void;
@@ -80,10 +85,14 @@ export function PathwayEditor({
         appState: cleanAppState,
         files: files || {},
       };
+      // Сохраняем сцену пути в единый источник — pathway_schemas.
+      // Ключ — pathway_code (slug); карточка и редактор читают отсюда же.
       const { error } = await (supabase as any)
-        .from("pathways")
-        .update({ svg_scene: scene })
-        .eq("id", pathwayId);
+        .from("pathway_schemas")
+        .upsert(
+          { pathway_code: pathwayCode, scene, updated_at: new Date().toISOString() },
+          { onConflict: "pathway_code" },
+        );
       if (error) throw error;
       toast({ title: "Схема сохранена", description: pathwayName });
       onSaved?.(scene);
@@ -101,7 +110,8 @@ export function PathwayEditor({
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle>Редактирование схемы: {pathwayName}</DialogTitle>
           <p className="text-xs text-muted-foreground">
-            У ключевых узлов задавайте <code>customData.nodeId</code> — по нему приложение подсвечивает узлы по тяжести отклонений.
+            У ключевых узлов задавайте <code>customData.nodeId</code>, у стрелок — <code>customData.edge</code>.
+            По этим ключам приложение подсвечивает элементы по тяжести отклонений.
           </p>
         </DialogHeader>
         <div className="flex-1 min-h-0 relative">
