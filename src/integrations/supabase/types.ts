@@ -2613,6 +2613,7 @@ export type Database = {
           name: string
           nodes: Json
           rules: Json
+          sex: string | null
           slug: string
           svg_scene: Json | null
           svg_template: string | null
@@ -2630,6 +2631,7 @@ export type Database = {
           name: string
           nodes?: Json
           rules?: Json
+          sex?: string | null
           slug: string
           svg_scene?: Json | null
           svg_template?: string | null
@@ -2647,6 +2649,7 @@ export type Database = {
           name?: string
           nodes?: Json
           rules?: Json
+          sex?: string | null
           slug?: string
           svg_scene?: Json | null
           svg_template?: string | null
@@ -2943,6 +2946,7 @@ export type Database = {
           parent_name: string | null
           patronymic: string | null
           phone: string | null
+          sex: string | null
           share_simple_only: boolean
           telegram_username: string | null
           updated_at: string
@@ -2959,6 +2963,7 @@ export type Database = {
           parent_name?: string | null
           patronymic?: string | null
           phone?: string | null
+          sex?: string | null
           share_simple_only?: boolean
           telegram_username?: string | null
           updated_at?: string
@@ -2975,6 +2980,7 @@ export type Database = {
           parent_name?: string | null
           patronymic?: string | null
           phone?: string | null
+          sex?: string | null
           share_simple_only?: boolean
           telegram_username?: string | null
           updated_at?: string
@@ -3544,10 +3550,12 @@ export type Database = {
           created_at: string
           id: string
           method: string | null
+          phase: string | null
           ref_high: number | null
           ref_low: number | null
           sex: string
           source: string | null
+          status: string | null
           unit: string | null
           updated_at: string
         }
@@ -3558,10 +3566,12 @@ export type Database = {
           created_at?: string
           id?: string
           method?: string | null
+          phase?: string | null
           ref_high?: number | null
           ref_low?: number | null
           sex: string
           source?: string | null
+          status?: string | null
           unit?: string | null
           updated_at?: string
         }
@@ -3572,10 +3582,12 @@ export type Database = {
           created_at?: string
           id?: string
           method?: string | null
+          phase?: string | null
           ref_high?: number | null
           ref_low?: number | null
           sex?: string
           source?: string | null
+          status?: string | null
           unit?: string | null
           updated_at?: string
         }
