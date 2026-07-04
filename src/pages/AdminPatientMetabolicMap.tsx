@@ -371,6 +371,65 @@ export default function AdminPatientMetabolicMap() {
     return m;
   }, [summary]);
 
+  // Индекс каталога и резолв кода на каждый ряд lab_results (используем как в агрегаторе,
+  // если test_code = NULL). Только слой отображения — БД не меняем.
+  const labCodesById = useMemo(() => {
+    const catalog = buildCatalogIndex(catalogRows);
+    const m = new Map<string, string>();
+    for (const l of labRows) {
+      const code = (l.test_code && String(l.test_code).trim())
+        ? String(l.test_code).toUpperCase().trim()
+        : resolveCode(l.test_name, catalog);
+      if (code) m.set(l.id, code);
+    }
+    return m;
+  }, [labRows, catalogRows]);
+
+  // Значения показателей для узлов SVG: код → (значение, ед.) + направление из findings.
+  // Ключ верхнего уровня — slug пути, чтобы один код (например FERR) ложился на разные узлы
+  // в разных путях согласно CODE_NODE_MAP.
+  const nodeValuesByPathway = useMemo(() => {
+    const out = new Map<string, Map<string, { text: string; sev?: Severity }>>();
+    // 1) Нормальные и все измеренные значения из lab_results
+    for (const [slug, codeMap] of Object.entries(CODE_NODE_MAP)) {
+      const perNode = new Map<string, { text: string; sev?: Severity }>();
+      for (const l of labRows) {
+        const code = labCodesById.get(l.id);
+        if (!code) continue;
+        const nodeId = codeMap[code];
+        if (!nodeId) continue;
+        if (perNode.has(nodeId)) continue; // уже есть — берём самое свежее (labRows отсортирован по дате DESC)
+        const v = l.value == null ? "" : String(l.value);
+        const u = l.unit ? ` ${l.unit}` : "";
+        perNode.set(nodeId, { text: `${v}${u}`.trim() });
+      }
+      if (perNode.size) out.set(slug, perNode);
+    }
+    // 2) Отклонения из map_findings: перекрываем текстом со стрелкой ↑/↓ и severity
+    for (const f of findings) {
+      if (!f.node_id) continue;
+      const ref = (f.source_ref || {}) as any;
+      const ruleCode = String(ref.rule_code || "").toLowerCase();
+      const val = ref.value;
+      const pw = pathways.find((p) => p.id === f.pathway_id);
+      if (!pw) continue;
+      // Направление: rule_code содержит _high / _low; иначе — сравнение по detail не делаем.
+      const arrow = ruleCode.endsWith("_high") ? "↑ " : ruleCode.endsWith("_low") ? "↓ " : "";
+      // Единицы: пытаемся вытащить из label вида "code_high: 51 Ед/л"
+      const labelStr = String(f.label || "");
+      const mUnit = labelStr.match(/:\s*[\d.,-]+\s*(.+)$/);
+      const unit = mUnit ? ` ${mUnit[1].trim()}` : "";
+      const text = val == null || val === "" ? labelStr : `${arrow}${val}${unit}`.trim();
+      const sev: Severity = (f.severity as Severity) || "moderate";
+      let perNode = out.get(pw.slug);
+      if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+      perNode.set(f.node_id, { text, sev });
+    }
+    return out;
+  }, [labRows, labCodesById, findings, pathways]);
+
+
+
   if (loading || busy) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
