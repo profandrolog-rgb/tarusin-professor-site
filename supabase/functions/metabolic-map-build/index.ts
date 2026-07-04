@@ -116,11 +116,17 @@ Deno.serve(async (req) => {
     const model = body.model || DEFAULT_MODEL;
 
     // --- контекст пациента
-    const [{ data: patient }, { data: map }, { data: pwRows }] = await Promise.all([
-      supabase.from("patients").select("id, full_name, birth_date, first_name, last_name").eq("id", patientId).maybeSingle(),
+    const [{ data: patient }, { data: map }, { data: pwRowsAll }] = await Promise.all([
+      supabase.from("patients").select("id, full_name, birth_date, first_name, last_name, sex").eq("id", patientId).maybeSingle(),
       (supabase as any).from("metabolic_maps").select("id, meta, aggregate_summary, source_visit_id").eq("patient_id", patientId).maybeSingle(),
-      (supabase as any).from("pathways").select("slug, name, description, nodes, rules").eq("is_active", true),
+      (supabase as any).from("pathways").select("slug, name, description, nodes, rules, sex").eq("is_active", true),
     ]);
+    // Фильтр путей по полу пациента: sex IS NULL (общие) или совпадает с полом.
+    // Пол не указан → только общие; половые прячем, чтобы карта не решала за врача.
+    const patientSex = ((patient as any)?.sex === "M" || (patient as any)?.sex === "F") ? (patient as any).sex : null;
+    const pwRows = ((pwRowsAll as any[]) || []).filter((p) =>
+      patientSex ? (!p.sex || p.sex === patientSex) : !p.sex,
+    );
     if (!patient) {
       return new Response(JSON.stringify({ error: "patient not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
