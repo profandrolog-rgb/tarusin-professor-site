@@ -26,7 +26,9 @@ import {
   type PathwaySummary,
 } from "@/lib/metabolic/aggregator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
+import { fetchPathwayTexts, pickText, REGISTER_LABEL, fetchPathwaySeverityTexts, pickSeverityText, type PathwayText, type PathwaySeverityText, type Register } from "@/lib/metabolic/texts";
+import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
+import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
@@ -114,6 +116,9 @@ export default function AdminPatientMetabolicMap() {
   const [summary, setSummary] = useState<PathwaySummary[]>([]);
   const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
   const [texts, setTexts] = useState<PathwayText[]>([]);
+  const [severityTexts, setSeverityTexts] = useState<PathwaySeverityText[]>([]);
+  const [labRows, setLabRows] = useState<Array<{ id: string; test_name: string | null; test_code: string | null; value: number | null; unit: string | null }>>([]);
+  const [catalogRows, setCatalogRows] = useState<CatalogRow[]>([]);
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
@@ -137,6 +142,16 @@ export default function AdminPatientMetabolicMap() {
   }, [user, isAdmin, loading, navigate]);
 
   useEffect(() => { fetchPathwayTexts().then(setTexts); }, []);
+  useEffect(() => { fetchPathwaySeverityTexts().then(setSeverityTexts); }, []);
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("lab_tests_catalog")
+        .select("short_name, name, synonyms")
+        .eq("is_active", true);
+      setCatalogRows((data as CatalogRow[]) || []);
+    })();
+  }, []);
 
   useEffect(() => {
     // Auto-select affected pathways for print
@@ -217,6 +232,14 @@ export default function AdminPatientMetabolicMap() {
       setFindings([]);
       setRecs([]);
     }
+
+    // Лабораторные значения пациента — для подписи узлов SVG значениями (норма + отклонения).
+    const { data: lr } = await (supabase as any)
+      .from("lab_results")
+      .select("id, test_name, test_code, value, unit")
+      .eq("patient_id", id)
+      .order("test_date", { ascending: false });
+    setLabRows(((lr as any[]) || []).map((r) => ({ id: r.id, test_name: r.test_name, test_code: r.test_code, value: r.value, unit: r.unit })));
     setBusy(false);
   }, [id]);
 
@@ -347,6 +370,65 @@ export default function AdminPatientMetabolicMap() {
     for (const s of summary) m.set(s.pathway_id, s);
     return m;
   }, [summary]);
+
+  // Индекс каталога и резолв кода на каждый ряд lab_results (используем как в агрегаторе,
+  // если test_code = NULL). Только слой отображения — БД не меняем.
+  const labCodesById = useMemo(() => {
+    const catalog = buildCatalogIndex(catalogRows);
+    const m = new Map<string, string>();
+    for (const l of labRows) {
+      const code = (l.test_code && String(l.test_code).trim())
+        ? String(l.test_code).toUpperCase().trim()
+        : resolveCode(l.test_name, catalog);
+      if (code) m.set(l.id, code);
+    }
+    return m;
+  }, [labRows, catalogRows]);
+
+  // Значения показателей для узлов SVG: код → (значение, ед.) + направление из findings.
+  // Ключ верхнего уровня — slug пути, чтобы один код (например FERR) ложился на разные узлы
+  // в разных путях согласно CODE_NODE_MAP.
+  const nodeValuesByPathway = useMemo(() => {
+    const out = new Map<string, Map<string, { text: string; sev?: Severity }>>();
+    // 1) Нормальные и все измеренные значения из lab_results
+    for (const [slug, codeMap] of Object.entries(CODE_NODE_MAP)) {
+      const perNode = new Map<string, { text: string; sev?: Severity }>();
+      for (const l of labRows) {
+        const code = labCodesById.get(l.id);
+        if (!code) continue;
+        const nodeId = codeMap[code];
+        if (!nodeId) continue;
+        if (perNode.has(nodeId)) continue; // уже есть — берём самое свежее (labRows отсортирован по дате DESC)
+        const v = l.value == null ? "" : String(l.value);
+        const u = l.unit ? ` ${l.unit}` : "";
+        perNode.set(nodeId, { text: `${v}${u}`.trim() });
+      }
+      if (perNode.size) out.set(slug, perNode);
+    }
+    // 2) Отклонения из map_findings: перекрываем текстом со стрелкой ↑/↓ и severity
+    for (const f of findings) {
+      if (!f.node_id) continue;
+      const ref = (f.source_ref || {}) as any;
+      const ruleCode = String(ref.rule_code || "").toLowerCase();
+      const val = ref.value;
+      const pw = pathways.find((p) => p.id === f.pathway_id);
+      if (!pw) continue;
+      // Направление: rule_code содержит _high / _low; иначе — сравнение по detail не делаем.
+      const arrow = ruleCode.endsWith("_high") ? "↑ " : ruleCode.endsWith("_low") ? "↓ " : "";
+      // Единицы: пытаемся вытащить из label вида "code_high: 51 Ед/л"
+      const labelStr = String(f.label || "");
+      const mUnit = labelStr.match(/:\s*[\d.,-]+\s*(.+)$/);
+      const unit = mUnit ? ` ${mUnit[1].trim()}` : "";
+      const text = val == null || val === "" ? labelStr : `${arrow}${val}${unit}`.trim();
+      const sev: Severity = (f.severity as Severity) || "moderate";
+      let perNode = out.get(pw.slug);
+      if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+      perNode.set(f.node_id, { text, sev });
+    }
+    return out;
+  }, [labRows, labCodesById, findings, pathways]);
+
+
 
   if (loading || busy) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -551,7 +633,9 @@ export default function AdminPatientMetabolicMap() {
                   ...((savedSummary?.affected_nodes) || []),
                 ]);
                 const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
-                const text = pickText(texts, pw.id, register);
+                const severityText = pickSeverityText(severityTexts, pw.id, status, register);
+                const legacyText = pickText(texts, pw.id, register); // fallback, если severity-текст пуст
+                const pwNodeValues = nodeValuesByPathway.get(pw.slug);
                 const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
@@ -620,6 +704,7 @@ export default function AdminPatientMetabolicMap() {
                               highlights={highlightsMap}
                               rxNodes={rxNodes}
                               rxLabelByNode={rxLabelByNode}
+                              nodeValues={pwNodeValues}
                               overlayScene={schemas.get(pw.slug) || null}
                               maxHeight={320}
                             />
@@ -664,16 +749,22 @@ export default function AdminPatientMetabolicMap() {
                           Нет лабораторных данных для оценки этого пути.
                         </div>
                       )}
-                      {text && (
+                      {severityText ? (
                         <div className="text-xs space-y-1.5 pt-2 border-t">
-                          {text.summary && <p><span className="font-medium">Кратко:</span> {text.summary}</p>}
-                          {text.what_broken && <p><span className="font-medium">Что нарушено:</span> {text.what_broken}</p>}
-                          {text.evidence && <p><span className="font-medium">По каким показателям:</span> {text.evidence}</p>}
-                          {text.risks && <p><span className="font-medium">Чем грозит:</span> {text.risks}</p>}
-                          {text.connections && <p><span className="font-medium">Связи:</span> {text.connections}</p>}
-                          {text.actions && <p><span className="font-medium">Что делать:</span> {text.actions}</p>}
+                          <p><span className="font-medium">{REGISTER_LABEL[register]}:</span> {severityText}</p>
                         </div>
-                      )}
+                      ) : status === "norm" ? (
+                        <div className="text-xs italic text-muted-foreground pt-2 border-t">Отклонений не выявлено.</div>
+                      ) : legacyText && (legacyText.summary || legacyText.what_broken || legacyText.actions) ? (
+                        <div className="text-xs space-y-1.5 pt-2 border-t">
+                          {legacyText.summary && <p><span className="font-medium">Кратко:</span> {legacyText.summary}</p>}
+                          {legacyText.what_broken && <p><span className="font-medium">Что нарушено:</span> {legacyText.what_broken}</p>}
+                          {legacyText.evidence && <p><span className="font-medium">По каким показателям:</span> {legacyText.evidence}</p>}
+                          {legacyText.risks && <p><span className="font-medium">Чем грозит:</span> {legacyText.risks}</p>}
+                          {legacyText.connections && <p><span className="font-medium">Связи:</span> {legacyText.connections}</p>}
+                          {legacyText.actions && <p><span className="font-medium">Что делать:</span> {legacyText.actions}</p>}
+                        </div>
+                      ) : null}
                       {aiForPath && (
                         <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
                           <div className="flex items-center gap-2">

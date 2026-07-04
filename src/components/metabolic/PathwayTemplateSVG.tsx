@@ -65,11 +65,14 @@ function sevAttr(s: Severity): string {
  *  - маркерами ℞ у узлов с рекомендациями
  *  - опциональным Excalidraw-оверлеем поверх (правки врача, не меняющие шаблон)
  */
+export type NodeValue = { text: string; sev?: Severity };
+
 export function PathwayTemplateSVG({
   slug,
   highlights,
   rxNodes,
   rxLabelByNode,
+  nodeValues,
   overlayScene,
   maxHeight = 320,
 }: {
@@ -77,6 +80,7 @@ export function PathwayTemplateSVG({
   highlights?: Map<string, Severity>;
   rxNodes?: Set<string>;
   rxLabelByNode?: Map<string, string>;
+  nodeValues?: Map<string, NodeValue>;
   overlayScene?: SceneJson | null;
   maxHeight?: number;
 }) {
@@ -89,6 +93,7 @@ export function PathwayTemplateSVG({
     const parser = new DOMParser();
     const doc = parser.parseFromString(raw, "image/svg+xml");
     const svg = doc.documentElement as unknown as SVGSVGElement;
+    const svgNS = "http://www.w3.org/2000/svg";
 
     // 1) Подсветка узлов
     if (highlights && highlights.size) {
@@ -98,9 +103,35 @@ export function PathwayTemplateSVG({
       });
     }
 
+    // 1b) Значения показателей под подписью узла (не меняет геометрию/данные).
+    if (nodeValues && nodeValues.size) {
+      nodeValues.forEach((val, nodeId) => {
+        const g = svg.querySelector(`[data-node-id="${cssEscape(nodeId)}"]`) as SVGGElement | null;
+        if (!g) return;
+        // Проставим data-sev, если ещё не выставлено highlights
+        if (val.sev && !g.getAttribute("data-sev")) g.setAttribute("data-sev", sevAttr(val.sev));
+        const shape = g.querySelector(".node-shape") as SVGGraphicsElement | null;
+        if (!shape) return;
+        const geom = readShapeGeom(shape);
+        if (!geom) return;
+        // Убираем возможный дубль от предыдущего рендера
+        g.querySelectorAll(".lbl-v").forEach((n) => n.remove());
+        const t = doc.createElementNS(svgNS, "text");
+        t.setAttribute("class", "lbl lbl-v");
+        t.setAttribute("x", String(geom.x + geom.w / 2));
+        t.setAttribute("y", String(geom.y + geom.h + 11));
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("dominant-baseline", "central");
+        t.setAttribute("font-size", "11");
+        t.setAttribute("font-weight", "700");
+        t.setAttribute("fill", "#22303C");
+        t.textContent = val.text;
+        g.appendChild(t);
+      });
+    }
+
     // 2) Маркеры ℞
     if (rxNodes && rxNodes.size) {
-      const svgNS = "http://www.w3.org/2000/svg";
       rxNodes.forEach((nodeId) => {
         const g = svg.querySelector(`[data-node-id="${cssEscape(nodeId)}"]`) as SVGGElement | null;
         if (!g) return;
@@ -146,7 +177,7 @@ export function PathwayTemplateSVG({
     svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     return new XMLSerializer().serializeToString(svg);
-  }, [raw, highlights, rxNodes, rxLabelByNode]);
+  }, [raw, highlights, rxNodes, rxLabelByNode, nodeValues]);
 
   useEffect(() => {
     const host = hostRef.current;
