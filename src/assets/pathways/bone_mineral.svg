@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 320" role="img" data-pathway="bone_mineral">
+<title>Костно-минеральный обмен</title>
+<desc>Витамин D — кишечник — кальций; ПТГ регулирует кость, почки, фосфор; щелочная фосфатаза как маркер костного ремоделирования.</desc>
+<style>
+.node-shape{fill:#EEF0F2;stroke:#8A8F98;stroke-width:1;}
+.lbl{font-family:Arial,Helvetica,sans-serif;fill:#22303C;}
+.lbl-t{font-weight:600;font-size:14px;}
+.lbl-s{font-size:12px;fill:#5A6672;}
+.edge{stroke:#9AA3AD;stroke-width:1.2;fill:none;}
+[data-sev="norm"] .node-shape{fill:#E6F4EA;stroke:#3B8E5A;}
+[data-sev="mild"] .node-shape{fill:#FBF3D6;stroke:#C9A227;}
+[data-sev="moderate"] .node-shape{fill:#FBE7D2;stroke:#D97B29;}
+[data-sev="severe"] .node-shape{fill:#F7D9D9;stroke:#C0392B;}
+[data-sev="nodata"] .node-shape{fill:#F1EFE8;stroke:#B4B2A9;}
+</style>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<line x1="190" y1="70" x2="248" y2="70" class="edge" marker-end="url(#arrow)"/>
+<line x1="390" y1="70" x2="448" y2="70" class="edge" marker-end="url(#arrow)"/>
+<path d="M525 96 L525 125 L320 125 L320 148" class="edge" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+<line x1="390" y1="175" x2="448" y2="175" class="edge" marker-end="url(#arrow)"/>
+<line x1="320" y1="200" x2="320" y2="248" class="edge" marker-end="url(#arrow)"/>
+<path d="M250 175 L110 175 L110 248" class="edge" marker-end="url(#arrow)"/>
+<path d="M70 96 L70 248" class="edge" marker-end="url(#arrow)"/>
+<path d="M180 250 L180 232 L535 232 L535 248" class="edge" marker-end="url(#arrow)"/>
+
+<g class="node" data-node-id="vitamin_d" data-node-type="hormone"><rect class="node-shape" x="40" y="44" width="150" height="52" rx="8"/><text class="lbl lbl-t" x="115" y="63" text-anchor="middle" dominant-baseline="central">Витамин D</text><text class="lbl lbl-s" x="115" y="81" text-anchor="middle" dominant-baseline="central">25-OH</text></g>
+<g class="node" data-node-id="gut" data-node-type="organ"><rect class="node-shape" x="250" y="44" width="140" height="52" rx="8"/><text class="lbl lbl-t" x="320" y="63" text-anchor="middle" dominant-baseline="central">Кишечник</text><text class="lbl lbl-s" x="320" y="81" text-anchor="middle" dominant-baseline="central">всасывание</text></g>
+<g class="node" data-node-id="calcium" data-node-type="marker"><rect class="node-shape" x="450" y="44" width="150" height="52" rx="8"/><text class="lbl lbl-t" x="525" y="70" text-anchor="middle" dominant-baseline="central">Кальций</text></g>
+
+<g class="node" data-node-id="pth" data-node-type="hormone"><rect class="node-shape" x="250" y="150" width="140" height="50" rx="8"/><text class="lbl lbl-t" x="320" y="175" text-anchor="middle" dominant-baseline="central">ПТГ</text></g>
+<g class="node" data-node-id="phosphorus" data-node-type="marker"><rect class="node-shape" x="450" y="150" width="150" height="50" rx="8"/><text class="lbl lbl-t" x="525" y="175" text-anchor="middle" dominant-baseline="central">Фосфор</text></g>
+
+<g class="node" data-node-id="bone" data-node-type="target"><rect class="node-shape" x="40" y="250" width="140" height="48" rx="8"/><text class="lbl lbl-t" x="110" y="274" text-anchor="middle" dominant-baseline="central">Кость</text></g>
+<g class="node" data-node-id="kidney" data-node-type="organ"><rect class="node-shape" x="250" y="250" width="140" height="48" rx="8"/><text class="lbl lbl-t" x="320" y="274" text-anchor="middle" dominant-baseline="central">Почки</text></g>
+<g class="node" data-node-id="alp" data-node-type="marker"><rect class="node-shape" x="450" y="250" width="150" height="48" rx="8"/><text class="lbl lbl-t" x="525" y="274" text-anchor="middle" dominant-baseline="central">Щ. фосфатаза</text></g>
+</svg>
