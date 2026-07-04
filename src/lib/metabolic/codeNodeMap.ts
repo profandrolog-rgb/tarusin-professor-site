@@ -45,6 +45,10 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     CA: "calcium",
     PHOS: "phosphorus",
     ALP: "alp",
+    // OA-панель: оксалатный обмен
+    OXAL: "oxalate",
+    GLYCOL: "glycolate",
+    GLYCER: "glycerate",
   },
   inflammation: {
     CRP: "crp",
