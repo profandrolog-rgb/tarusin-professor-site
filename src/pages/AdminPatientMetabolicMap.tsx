@@ -662,6 +662,38 @@ export default function AdminPatientMetabolicMap() {
           </Card>
         </section>
 
+        {metaIndices.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold">Интегральные индексы</h2>
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {metaIndices.map((ix) => (
+                    <div key={ix.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{ix.label}</div>
+                        {ix.note && <div className="text-xs text-muted-foreground truncate">{ix.note}</div>}
+                      </div>
+                      <div className="text-right whitespace-nowrap">
+                        <div className="tabular-nums font-semibold">
+                          {ix.displayValue}{ix.unit ? ` ${ix.unit}` : ""}
+                        </div>
+                        <div className="text-xs text-muted-foreground">цель: {ix.target}</div>
+                      </div>
+                      <Badge
+                        variant={ix.status === "ok" ? "secondary" : ix.status === "off" ? "destructive" : "outline"}
+                        className="shrink-0"
+                      >
+                        {ix.status === "ok" ? "в норме" : ix.status === "off" ? "вне цели" : "—"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Метаболические пути</h2>
           {pathways.length === 0 ? (
