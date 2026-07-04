@@ -12,6 +12,10 @@ import {
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
+import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
+import { templateToScene } from "@/lib/metabolic/templateToScene";
+import { buildAutoScene } from "@/lib/metabolic/autoLayout";
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
@@ -52,6 +56,7 @@ export default function AdminPatientMetabolicMapPrint() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [recs, setRecs] = useState<any[]>([]);
+  const [schemas, setSchemas] = useState<Map<string, SceneJson>>(new Map());
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -60,7 +65,7 @@ export default function AdminPatientMetabolicMapPrint() {
       if (!id) return;
       const [{ data: p }, { data: pw }, { data: m }, txs] = await Promise.all([
         supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
-        (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges").eq("is_active", true),
+        (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true),
         (supabase as any).from("metabolic_maps").select("id, aggregate_summary").eq("patient_id", id).maybeSingle(),
         fetchPathwayTexts(),
       ]);
@@ -68,6 +73,20 @@ export default function AdminPatientMetabolicMapPrint() {
       setPathways(((pw as any) || []) as Pathway[]);
       setSummary((m?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(txs);
+
+      const codes = ((pw as any[]) || []).map((r: any) => r.slug).filter(Boolean);
+      if (codes.length) {
+        const { data: sch } = await (supabase as any)
+          .from("pathway_schemas")
+          .select("pathway_code, scene")
+          .in("pathway_code", codes);
+        const map = new Map<string, SceneJson>();
+        for (const row of (sch || []) as Array<{ pathway_code: string; scene: SceneJson }>) {
+          if (row?.pathway_code && row?.scene) map.set(row.pathway_code, row.scene);
+        }
+        setSchemas(map);
+      }
+
       if (m?.id) {
         const [{ data: f }, { data: r }] = await Promise.all([
           (supabase as any)
@@ -215,14 +234,33 @@ export default function AdminPatientMetabolicMapPrint() {
                 <div className={`text-sm px-2 py-1 rounded border ${STATUS_CLS[st]}`}>{SEVERITY_LABEL[st]}</div>
               </header>
 
-              {/* Схема сверху */}
+              {/* Схема сверху — тот же рендер, что и в карточке (единая подсветка) */}
               <div className="mb-4">
-                <PrintPathwaySVG
-                  pathway={pw}
-                  highlight={affectedNodes}
-                  rxNodes={new Set(recs.filter((r) => r.pathway_id === pw.id).map((r) => r.target_node_id).filter(Boolean) as string[])}
-                />
+                {(() => {
+                  const tpl = getTemplate(pw.slug);
+                  const anyPw = pw as any;
+                  const scene: SceneJson =
+                    schemas.get(pw.slug) ||
+                    (tpl ? templateToScene(tpl) : null) ||
+                    (anyPw.svg_scene && Array.isArray(anyPw.svg_scene.elements) && anyPw.svg_scene.elements.length > 0
+                      ? anyPw.svg_scene
+                      : buildAutoScene(pw.nodes || [], pw.edges || []));
+                  const rxSet = new Set<string>(
+                    recs.filter((r) => r.pathway_id === pw.id)
+                      .map((r) => r.target_node_id)
+                      .filter(Boolean) as string[],
+                  );
+                  return (
+                    <PathwaySceneSVG
+                      scene={scene}
+                      highlights={new Map(Array.from(affectedNodes).map((n) => [n, st]))}
+                      rxNodes={rxSet}
+                      maxHeight={320}
+                    />
+                  );
+                })()}
               </div>
+
 
               {/* Объяснение */}
               {t && (
@@ -282,56 +320,6 @@ export default function AdminPatientMetabolicMapPrint() {
   );
 }
 
-function PrintPathwaySVG({ pathway, highlight, rxNodes }: { pathway: Pathway; highlight: Set<string>; rxNodes?: Set<string> }) {
-  const nodes = pathway.nodes || [];
-  if (!nodes.length) {
-    return <div className="border rounded p-4 text-xs text-neutral-500 italic text-center bg-neutral-50 min-h-[120px] flex items-center justify-center">Схема пути пока не задана</div>;
-  }
-  const W = 800, H = 240, PAD = 60;
-  const positioned = nodes.map((n, i) => {
-    const x = typeof n.x === "number" ? n.x : PAD + ((W - PAD * 2) * i) / Math.max(1, nodes.length - 1);
-    const y = typeof n.y === "number" ? n.y : H / 2;
-    return { ...n, x, y };
-  });
-  const byId = new Map(positioned.map((n) => [n.id, n]));
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto border rounded bg-neutral-50">
-      {(pathway.edges || []).map((e, i) => {
-        const a = byId.get(e.from), b = byId.get(e.to);
-        if (!a || !b) return null;
-        return (
-          <g key={i}>
-            <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#666" strokeWidth={1.5} markerEnd="url(#pa)" />
-            {e.label && <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} textAnchor="middle" fontSize="10" fill="#555">{e.label}</text>}
-          </g>
-        );
-      })}
-      <defs>
-        <marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#666" />
-        </marker>
-      </defs>
-      {positioned.map((n) => {
-        const hot = highlight.has(n.id);
-        const rx = rxNodes?.has(n.id);
-        return (
-          <g key={n.id}>
-            <circle
-              cx={n.x} cy={n.y} r={16}
-              fill={hot ? "#fee2e2" : "#fff"}
-              stroke={hot ? "#dc2626" : "#94a3b8"}
-              strokeWidth={hot ? 2.5 : 1.5}
-            />
-            <text x={n.x} y={n.y + 34} textAnchor="middle" fontSize="12" fill="#0f172a">{n.label}</text>
-            {rx && (
-              <g transform={`translate(${n.x + 14}, ${n.y - 14})`}>
-                <circle r={10} fill="#10b981" stroke="#065f46" strokeWidth={1.2} />
-                <text textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight={700} fill="#fff">℞</text>
-              </g>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
+// Устаревший PrintPathwaySVG удалён — печать использует общий PathwaySceneSVG,
+// чтобы подсветка была одинаковой в карточке и в PDF.
+

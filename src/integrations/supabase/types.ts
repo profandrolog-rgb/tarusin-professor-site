@@ -2456,6 +2456,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pathway_schemas: {
+        Row: {
+          pathway_code: string
+          scene: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          pathway_code: string
+          scene: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          pathway_code?: string
+          scene?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pathway_severity_texts: {
         Row: {
           created_at: string

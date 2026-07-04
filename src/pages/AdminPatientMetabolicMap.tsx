@@ -29,8 +29,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Register } from "@/lib/metabolic/texts";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
-import { TemplateSVG } from "@/components/metabolic/schemes/TemplateSVG";
 import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
+import { templateToScene } from "@/lib/metabolic/templateToScene";
 import { PathwayEditor } from "@/components/metabolic/PathwayEditor";
 import { PathwayTilesGrid } from "@/components/metabolic/PathwayTilesGrid";
 import { ProblemChainSVG } from "@/components/metabolic/ProblemChainSVG";
@@ -114,6 +114,7 @@ export default function AdminPatientMetabolicMap() {
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
   const [editorPathway, setEditorPathway] = useState<Pathway | null>(null);
+  const [schemas, setSchemas] = useState<Map<string, SceneJson>>(new Map());
   const [aiBusy, setAiBusy] = useState(false);
   const [aiElapsed, setAiElapsed] = useState(0);
   const [deidentified, setDeidentified] = useState(true);
@@ -167,6 +168,23 @@ export default function AdminPatientMetabolicMap() {
     const savedSummary = ((m as any)?.aggregate_summary?.pathways as PathwaySummary[]) || [];
     setSummary(savedSummary);
     setAi(((m as any)?.meta?.ai) || null);
+
+    // Загружаем сохранённые врачом схемы (единый источник — pathway_schemas).
+    // Ключ — pathway_code (совпадает с slug). Карточка и редактор читают отсюда.
+    const codes = ((pw as any[]) || []).map((r: any) => r.slug).filter(Boolean);
+    if (codes.length) {
+      const { data: sch } = await (supabase as any)
+        .from("pathway_schemas")
+        .select("pathway_code, scene")
+        .in("pathway_code", codes);
+      const map = new Map<string, SceneJson>();
+      for (const row of (sch || []) as Array<{ pathway_code: string; scene: SceneJson }>) {
+        if (row?.pathway_code && row?.scene) map.set(row.pathway_code, row.scene);
+      }
+      setSchemas(map);
+    } else {
+      setSchemas(new Map());
+    }
 
     if (m?.id) {
       const [{ data: f }, { data: r }] = await Promise.all([
@@ -555,28 +573,24 @@ export default function AdminPatientMetabolicMap() {
                           const name = r.catalog?.name || "";
                           rxLabelByNode.set(r.target_node_id, prev ? `${prev} · ${name}` : name);
                         }
+                        // Единый источник сцены: сохранённая в pathway_schemas → фиксированный
+                        // шаблон (templateToScene) → авто-раскладка из nodes/edges.
+                        // Подсветка по тяжести применяется в PathwaySceneSVG на основе
+                        // customData.nodeId, поэтому все пути видят одинаковую перекраску.
                         const tpl = getTemplate(pw.slug);
-                        if (tpl) {
-                          return (
-                            <TemplateSVG
-                              template={tpl}
-                              highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
-                              rxNodes={rxNodes}
-                              rxLabelByNode={rxLabelByNode}
-                              height={280}
-                            />
-                          );
-                        }
-                        const sceneToRender = pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
-                          ? pw.svg_scene
-                          : buildAutoScene(pw.nodes || [], pw.edges || []);
+                        const sceneToRender =
+                          schemas.get(pw.slug) ||
+                          (tpl ? templateToScene(tpl) : null) ||
+                          (pw.svg_scene && Array.isArray(pw.svg_scene.elements) && pw.svg_scene.elements.length > 0
+                            ? pw.svg_scene
+                            : buildAutoScene(pw.nodes || [], pw.edges || []));
                         return (
                           <PathwaySceneSVG
                             scene={sceneToRender}
                             highlights={new Map(Array.from(affectedNodes).map((n) => [n, status]))}
                             rxNodes={rxNodes}
                             rxLabelByNode={rxLabelByNode}
-                            maxHeight={260}
+                            maxHeight={280}
                           />
                         );
                       })()}
@@ -747,19 +761,34 @@ export default function AdminPatientMetabolicMap() {
         </div>
       </div>
 
-      {editorPathway && (
-        <PathwayEditor
-          open={!!editorPathway}
-          onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
-          pathwayId={editorPathway.id}
-          pathwayName={editorPathway.name}
-          initialScene={editorPathway.svg_scene}
-          onSaved={(scene) => {
-            setPathways((prev) => prev.map((p) => p.id === editorPathway.id ? { ...p, svg_scene: scene } : p));
-            setEditorPathway(null);
-          }}
-        />
-      )}
+      {editorPathway && (() => {
+        // В редактор отдаём ту же сцену, что и в карточку: сохранённая → шаблон → авто.
+        const tpl = getTemplate(editorPathway.slug);
+        const initial: SceneJson | null =
+          schemas.get(editorPathway.slug) ||
+          (tpl ? templateToScene(tpl) : null) ||
+          (editorPathway.svg_scene && Array.isArray(editorPathway.svg_scene.elements) && editorPathway.svg_scene.elements.length > 0
+            ? editorPathway.svg_scene
+            : buildAutoScene(editorPathway.nodes || [], editorPathway.edges || []));
+        return (
+          <PathwayEditor
+            open={!!editorPathway}
+            onOpenChange={(v) => { if (!v) setEditorPathway(null); }}
+            pathwayCode={editorPathway.slug}
+            pathwayName={editorPathway.name}
+            initialScene={initial}
+            onSaved={(scene) => {
+              // Синхронизируем локальный источник, чтобы карточка сразу перерисовалась.
+              setSchemas((prev) => {
+                const next = new Map(prev);
+                next.set(editorPathway.slug, scene);
+                return next;
+              });
+              setEditorPathway(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
