@@ -12,6 +12,8 @@ import {
   ContextMenuSubContent,
   ContextMenuLabel,
 } from "@/components/ui/context-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   getActiveContext,
   getRecentContexts,
