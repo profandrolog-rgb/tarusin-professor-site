@@ -12,12 +12,45 @@ export const VISIT_BUCKET_LABEL: Record<VisitBucket, string> = {
 };
 
 export function bucketForPlanItem(it: ParsedPlanItem): VisitBucket {
-  const c = (it.section_category || "").toLowerCase();
-  if (/мед|лекар|препар|табл|капс|раств|инъек|мазь|свеч|сироп|капл|бад|пептид|гомеоп/.test(c))
-    return "treatments";
+  const c = (it.section_category || "").toLowerCase().trim();
+
+  // Latin keys from parse-treatment-recommendations
+  const LATIN_MAP: Record<string, VisitBucket> = {
+    examination: "examinations",
+    exam: "examinations",
+    lab: "examinations",
+    labs: "examinations",
+    imaging: "examinations",
+    diagnostic: "examinations",
+    referral: "referrals",
+    consultation: "referrals",
+    consult: "referrals",
+    lifestyle: "diet",
+    diet: "diet",
+    nutrition: "diet",
+    iv_drip: "treatments",
+    iv_bolus: "treatments",
+    im: "treatments",
+    sc: "treatments",
+    oral_rx: "treatments",
+    oral_supplement: "treatments",
+    rectal: "treatments",
+    topical: "treatments",
+    nasal: "treatments",
+    sublingual: "treatments",
+    peptide: "treatments",
+    procedure: "treatments",
+    homeopathy: "treatments",
+    physiotherapy: "treatments",
+  };
+  if (LATIN_MAP[c]) return LATIN_MAP[c];
+
+  // Fallback: Russian regex heuristics
   if (/обслед|анализ|узи|кт|мрт|рентг|диагност|допплер|эхо|лаб/.test(c)) return "examinations";
   if (/консульт|направ|специалист/.test(c)) return "referrals";
   if (/диет|питан|режим|образ жизни/.test(c)) return "diet";
+  if (/мед|лекар|препар|табл|капс|раств|инъек|мазь|свеч|сироп|капл|бад|пептид|гомеоп|процедур|физио/.test(c))
+    return "treatments";
   return "treatments";
 }
 
