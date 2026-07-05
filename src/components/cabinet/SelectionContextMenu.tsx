@@ -181,33 +181,99 @@ export function SelectionContextMenu({
     }
   };
 
-  const confirmSendPlanItems = (selected: ParsedPlanItem[]) => {
+  const [noProtocolPrompt, setNoProtocolPrompt] = useState<null | { items: ParsedPlanItem[] }>(null);
+
+  async function findLatestVisitId(patientId: string): Promise<string | null> {
+    const { data } = await supabase
+      .from("patient_visits")
+      .select("id")
+      .eq("patient_id", patientId)
+      .order("visit_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as any)?.id ?? null;
+  }
+
+  async function createDraftVisit(patientId: string, protocolType: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from("patient_visits")
+      .insert({
+        patient_id: patientId,
+        protocol_type: protocolType,
+        protocol_data: {},
+      } as any)
+      .select("id")
+      .single();
+    if (error || !data) {
+      toast.error("Не удалось создать протокол", { description: error?.message });
+      return null;
+    }
+    return (data as any).id as string;
+  }
+
+  const openVisitWithItems = (visitId: string, items: ParsedPlanItem[], patientId: string) => {
+    // Queue items with patient scope so the opened protocol picks them up on mount.
+    sendPlanItemsToProtocol(items, {
+      patientId,
+      patientName: effectivePatientName ?? "",
+      kind: "visit",
+      url: "",
+      updatedAt: Date.now(),
+    });
+    window.open(`/admin/visits/${visitId}`, "_blank", "noopener");
+  };
+
+  const confirmSendPlanItems = async (selected: ParsedPlanItem[]) => {
     if (selected.length === 0) return;
-    // Send to any active protocol tab (treatment_plan, visit, consultation, ultrasound) if it matches the bound patient;
-    // otherwise queue with the bound patientId so the next opened protocol picks it up.
-    const target =
-      active && (!effectivePatientId || !active.patientId || active.patientId === effectivePatientId)
-        ? active
-        : effectivePatientId
-        ? ({
-            patientId: effectivePatientId,
-            patientName: effectivePatientName ?? "",
-            kind: "treatment_plan" as const,
-            url: "",
-            updatedAt: Date.now(),
-          })
-        : undefined;
-    sendPlanItemsToProtocol(selected, target);
     setDialogOpen(false);
-    const where = target?.kind === "visit" ? "в назначения визита"
-      : target?.kind === "consultation" ? "в назначения консультации"
-      : target?.kind === "ultrasound" ? "в назначения УЗИ"
-      : "в план лечения";
-    toast.success(
-      effectivePatientName
-        ? `${selected.length} позиций ${where}: ${effectivePatientName}`
-        : `${selected.length} позиций в очереди — без привязки к пациенту`,
+
+    // 1. Есть открытая вкладка протокола этого пациента → доставляем туда (live через BroadcastChannel).
+    if (active && (!effectivePatientId || !active.patientId || active.patientId === effectivePatientId)) {
+      sendPlanItemsToProtocol(selected, active);
+      const where = active.kind === "visit" ? "в назначения визита"
+        : active.kind === "consultation" ? "в назначения консультации"
+        : active.kind === "ultrasound" ? "в назначения УЗИ"
+        : "в план лечения";
+      toast.success(
+        `${selected.length} позиций ${where}${effectivePatientName ? ": " + effectivePatientName : ""}`,
+      );
+      return;
+    }
+
+    // 2. Пациент известен, но открытой вкладки нет → ищем последний протокол в БД и открываем его.
+    if (effectivePatientId) {
+      const latestId = await findLatestVisitId(effectivePatientId);
+      if (latestId) {
+        openVisitWithItems(latestId, selected, effectivePatientId);
+        toast.success(
+          `${selected.length} позиций отправлены в последний протокол пациента${
+            effectivePatientName ? ": " + effectivePatientName : ""
+          }`,
+        );
+        return;
+      }
+      // 3. Ни одного протокола нет — спрашиваем, какой создать.
+      setNoProtocolPrompt({ items: selected });
+      return;
+    }
+
+    // 4. Пациент не привязан — оставляем в очереди без адресата.
+    sendPlanItemsToProtocol(selected);
+    toast.info(
+      `${selected.length} позиций в очереди — привяжите пациента к диалогу, чтобы отправить в протокол`,
     );
+  };
+
+  const createAndOpen = async (protocolType: string) => {
+    if (!noProtocolPrompt || !effectivePatientId) return;
+    const items = noProtocolPrompt.items;
+    setNoProtocolPrompt(null);
+    const id = await createDraftVisit(effectivePatientId, protocolType);
+    if (id) {
+      openVisitWithItems(id, items, effectivePatientId);
+      toast.success(`Создан новый протокол, ${items.length} позиций отправлены`);
+    }
   };
 
   const bindingLabel = boundPatient?.id
