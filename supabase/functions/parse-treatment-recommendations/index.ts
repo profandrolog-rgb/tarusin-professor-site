@@ -13,6 +13,7 @@ const SECTION_KEYS = [
   "oral_rx", "oral_supplement", "rectal", "topical",
   "nasal", "sublingual", "peptide", "procedure",
   "lifestyle", "homeopathy", "physiotherapy",
+  "examination", "referral",
 ];
 
 Deno.serve(async (req) => {
