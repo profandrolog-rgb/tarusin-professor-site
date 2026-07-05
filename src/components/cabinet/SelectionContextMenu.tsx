@@ -347,6 +347,29 @@ export function SelectionContextMenu({
         onConfirm={confirmSendPlanItems}
       />
 
+      <Dialog open={!!noProtocolPrompt} onOpenChange={(o) => !o && setNoProtocolPrompt(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Нет открытого протокола</DialogTitle>
+            <DialogDescription>
+              У пациента {effectivePatientName ? <b>{effectivePatientName}</b> : "без имени"} нет ни одного протокола. Создать новый и отправить туда {noProtocolPrompt?.items.length ?? 0} назначений?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-2">
+            <Button onClick={() => createAndOpen("primary_short")}>Новый визит (первичная)</Button>
+            <Button variant="secondary" onClick={() => createAndOpen("online_consult")}>
+              ONLINE консультация
+            </Button>
+            <Button variant="secondary" onClick={() => createAndOpen("uzi_reproductive")}>
+              УЗИ (репродуктивная)
+            </Button>
+            <Button variant="ghost" onClick={() => setNoProtocolPrompt(null)}>
+              Отмена
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <RxItemsPreviewDialog
         open={rxOpen}
         onOpenChange={setRxOpen}
