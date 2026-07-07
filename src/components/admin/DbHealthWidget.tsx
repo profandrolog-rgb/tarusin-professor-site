@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Database, RefreshCw, Activity, HardDrive, Plug } from "lucide-react";
 
 type Stats = {
@@ -18,33 +19,47 @@ type Stats = {
 const DISK_LIMIT_BYTES = 8 * 1024 * 1024 * 1024;
 
 export function DbHealthWidget() {
+  const { session } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
+    const token = session?.access_token;
+    if (!token) {
+      setStats(null);
+      setErr("Нет активной сессии администратора.");
+      return;
+    }
+
     setLoading(true);
     setErr(null);
     try {
       const { data, error } = await supabase.functions.invoke("db-maintenance", {
         body: { action: "stats" },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (error) throw error;
+      if (error) {
+        setStats(null);
+        setErr(error.message ?? "Не удалось получить статус базы данных.");
+        return;
+      }
       setStats(data as Stats);
       setUpdatedAt(new Date());
     } catch (e: any) {
+      setStats(null);
       setErr(e?.message ?? String(e));
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.access_token]);
 
   useEffect(() => {
     load();
     const id = setInterval(load, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [load]);
 
   const diskBytes = stats ? Number(stats.db.bytes) : 0;
   const diskPct = Math.min(100, Math.round((diskBytes / DISK_LIMIT_BYTES) * 100));
