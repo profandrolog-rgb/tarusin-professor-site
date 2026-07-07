@@ -3,7 +3,7 @@ import { Link, useParams, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, Download, FileText, Loader2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2, ChevronRight, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,9 @@ import JsonLd from "@/components/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 import { proxyImage } from "@/lib/proxyImage";
 import {
   type ParentsMaterial,
@@ -45,8 +48,16 @@ const ParentsMaterialLanding = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
+  const [submittingLead, setSubmittingLead] = useState(false);
+
+  const unlockKey = (id: string) => `pm_unlocked_${id}`;
 
   useEffect(() => {
+
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -91,10 +102,19 @@ const ParentsMaterialLanding = () => {
         relRows = [...relRows, ...extra].slice(0, 3);
       }
       if (!cancelled) setRelated(relRows);
+      if (!cancelled) {
+        // Разлочить, если пользователь уже оставлял контакты для этой памятки
+        try {
+          if (typeof window !== "undefined" && window.localStorage.getItem(unlockKey(rec.id))) {
+            setUnlocked(true);
+          }
+        } catch { /* ignore */ }
+      }
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [slug]);
+
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -110,7 +130,9 @@ const ParentsMaterialLanding = () => {
   const ogImage = item.og_image_path ? parentsMediaPublicUrl(item.og_image_path) : preview;
   const audLabel = item.audience ? (isEn ? audienceLabelEn[item.audience] : audienceLabelRu[item.audience]) : (isEn ? "Handout" : "Памятка");
 
-  const handleDownload = async () => {
+  const gateRequired = !!item.gated && !unlocked;
+
+  const triggerDownload = async () => {
     if (!item.file_path) {
       toast.error(isEn ? "PDF not available yet" : "PDF пока не прикреплён");
       return;
@@ -122,10 +144,45 @@ const ParentsMaterialLanding = () => {
       // счётчик не критичен
     }
     const url = parentsMediaPublicUrl(item.file_path)!;
-    // Открываем в новой вкладке, чтобы избежать блокировок и CORS
     window.open(url, "_blank", "noopener,noreferrer");
     setDownloading(false);
   };
+
+  const handleDownload = async () => {
+    if (gateRequired) return;
+    await triggerDownload();
+  };
+
+  const submitLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = leadEmail.trim();
+    const phone = leadPhone.trim();
+    if (!email && !phone) {
+      toast.error(isEn ? "Please provide email or phone" : "Укажите email или телефон");
+      return;
+    }
+    setSubmittingLead(true);
+    try {
+      const { error } = await supabase.from("parents_material_leads" as any).insert({
+        material_id: item.id,
+        name: leadName.trim() || null,
+        email: email || null,
+        phone: phone || null,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        referrer: typeof document !== "undefined" ? document.referrer || null : null,
+      } as any);
+      if (error) throw error;
+      try { window.localStorage.setItem(unlockKey(item.id), "1"); } catch { /* ignore */ }
+      setUnlocked(true);
+      toast.success(isEn ? "Thanks! Starting download…" : "Спасибо! Начинаю скачивание…");
+      await triggerDownload();
+    } catch (err: any) {
+      toast.error(err?.message || (isEn ? "Failed to submit" : "Не удалось отправить"));
+    } finally {
+      setSubmittingLead(false);
+    }
+  };
+
 
   const pageUrl = `${SITE_URL}/for-parents/materials/${item.slug}/`;
   const jsonLd = {
@@ -206,17 +263,49 @@ const ParentsMaterialLanding = () => {
             </div>
             <CardContent className="p-6 md:p-8 flex flex-col justify-center gap-4">
               {description && <p className="text-muted-foreground leading-relaxed">{description}</p>}
-              <Button size="lg" onClick={handleDownload} disabled={downloading || !item.file_path} className="w-full">
-                {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
-                {isEn ? "Download PDF" : "Скачать PDF"}
-                {item.file_size_bytes ? ` · ${formatBytes(item.file_size_bytes)}` : ""}
-              </Button>
+              {gateRequired ? (
+                <form onSubmit={submitLead} className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Lock className="w-4 h-4 text-primary" />
+                    {isEn ? "Leave your contact to get the PDF" : "Оставьте контакт — и PDF откроется"}
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <Label htmlFor="lead-name" className="text-xs">{isEn ? "Name (optional)" : "Имя (по желанию)"}</Label>
+                      <Input id="lead-name" value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder={isEn ? "Your name" : "Ваше имя"} autoComplete="name" />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead-email" className="text-xs">Email</Label>
+                      <Input id="lead-email" type="email" value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead-phone" className="text-xs">{isEn ? "Phone" : "Телефон"}</Label>
+                      <Input id="lead-phone" type="tel" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="+7 ___ ___ __ __" autoComplete="tel" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {isEn ? "Provide email or phone. Submitting means consent to be contacted about this material." : "Достаточно email или телефона. Отправляя форму, вы соглашаетесь на связь по этой памятке."}
+                    </p>
+                  </div>
+                  <Button type="submit" size="lg" disabled={submittingLead || !item.file_path} className="w-full">
+                    {submittingLead ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
+                    {isEn ? "Get the PDF" : "Получить PDF"}
+                    {item.file_size_bytes ? ` · ${formatBytes(item.file_size_bytes)}` : ""}
+                  </Button>
+                </form>
+              ) : (
+                <Button size="lg" onClick={handleDownload} disabled={downloading || !item.file_path} className="w-full">
+                  {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
+                  {isEn ? "Download PDF" : "Скачать PDF"}
+                  {item.file_size_bytes ? ` · ${formatBytes(item.file_size_bytes)}` : ""}
+                </Button>
+              )}
               {!item.file_path && (
                 <p className="text-xs text-muted-foreground text-center">
                   {isEn ? "PDF will be available soon." : "PDF будет доступен в ближайшее время."}
                 </p>
               )}
             </CardContent>
+
           </div>
         </Card>
 
