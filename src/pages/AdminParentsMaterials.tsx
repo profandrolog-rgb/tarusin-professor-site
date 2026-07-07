@@ -28,6 +28,8 @@ import {
   deleteParentsMedia, parentsMediaPublicUrl, slugify, formatBytes,
 } from "@/lib/parentsMaterialsBucket";
 import EmojiPickerButton from "@/components/parents/EmojiPickerButton";
+import MaterialLeadsDialog from "@/components/parents/MaterialLeadsDialog";
+
 import AutoSaveIndicator from "@/components/parents/AutoSaveIndicator";
 import { useDebouncedAutoSave } from "@/hooks/useDebouncedAutoSave";
 
