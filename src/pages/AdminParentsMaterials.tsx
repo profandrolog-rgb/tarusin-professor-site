@@ -1,22 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, GripVertical, ExternalLink, Loader2, Save, Upload, Eye, EyeOff, Languages, ImageIcon } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, GripVertical, ExternalLink, Loader2, Save, Upload, Eye, EyeOff, Languages, ImageIcon, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
+  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -31,41 +21,62 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  type ParentsMaterial,
-  resolveMaterialPreview,
-  uploadParentsMedia,
-  deleteParentsMedia,
+  type ParentsMaterial, type ParentsMaterialKind, type ParentsMaterialAudience,
+  resolveMaterialPreview, uploadParentsMedia, uploadParentsOgImage, uploadParentsHandoutPdf,
+  deleteParentsMedia, parentsMediaPublicUrl, slugify, formatBytes,
 } from "@/lib/parentsMaterialsBucket";
 
-type Kind = "article" | "video" | "podcast";
-
-const KIND_LABELS: Record<Kind, string> = {
+const KIND_LABELS: Record<ParentsMaterialKind, string> = {
   article: "Статьи",
   video: "Видео",
   podcast: "Подкасты",
+  handout: "Материалы для скачивания",
 };
 
-const KIND_HINTS: Record<Kind, string> = {
+const KIND_HINTS: Record<ParentsMaterialKind, string> = {
   article: "Внешние статьи и публикации со ссылкой. Превью — картинка или Unsplash-URL.",
   video: "YouTube-ролики. Превью можно указать URL вида https://img.youtube.com/vi/<id>/maxresdefault.jpg",
   podcast: "Аудио-подкасты и интервью. Обычно без превью — используется иконка наушников.",
+  handout: "PDF-памятки и чек-листы со своим лендингом /for-parents/materials/{slug}.",
 };
 
-function emptyDraft(kind: Kind): Omit<ParentsMaterial, "id" | "created_at" | "updated_at"> {
+const AUDIENCE_OPTIONS: { value: ParentsMaterialAudience; label: string }[] = [
+  { value: "parent", label: "Родители" },
+  { value: "adult_man", label: "Взрослый пациент" },
+  { value: "pediatric_patient", label: "Юный пациент" },
+  { value: "professional", label: "Врач-профессионал" },
+];
+
+function emptyDraft(kind: ParentsMaterialKind): Omit<ParentsMaterial, "id" | "created_at" | "updated_at"> {
   return {
     kind,
     title: "",
-    description: "",
+    description: null,
     title_en: null,
     description_en: null,
-    url: "",
-    source: "",
+    url: kind === "handout" ? null : "",
+    source: null,
     image_path: null,
     image_url: null,
     emoji: null,
     sort_order: 0,
-    is_published: true,
+    is_published: false,
+    slug: null,
+    file_path: null,
+    file_size_bytes: null,
+    pages_count: null,
+    long_description: null,
+    long_description_en: null,
+    seo_title: null,
+    seo_title_en: null,
+    seo_description: null,
+    seo_description_en: null,
+    og_image_path: null,
+    audience: kind === "handout" ? "parent" : null,
+    download_count: 0,
+    gated: false,
   };
 }
 
@@ -75,7 +86,7 @@ const AdminParentsMaterials = () => {
 
   const [items, setItems] = useState<ParentsMaterial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeKind, setActiveKind] = useState<Kind>("article");
+  const [activeKind, setActiveKind] = useState<ParentsMaterialKind>("article");
   const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -91,62 +102,43 @@ const AdminParentsMaterials = () => {
       .select("*")
       .order("kind", { ascending: true })
       .order("sort_order", { ascending: true });
-    if (error) {
-      toast.error("Не удалось загрузить материалы: " + error.message);
-    } else {
-      setItems((data ?? []) as unknown as ParentsMaterial[]);
-    }
+    if (error) toast.error("Не удалось загрузить материалы: " + error.message);
+    else setItems((data ?? []) as unknown as ParentsMaterial[]);
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user && isAdmin) load();
-  }, [user, isAdmin]);
+  useEffect(() => { if (user && isAdmin) load(); }, [user, isAdmin]);
 
   const addNew = async () => {
     const draft = emptyDraft(activeKind);
     const maxSort = items.filter((i) => i.kind === activeKind).reduce((m, i) => Math.max(m, i.sort_order), 0);
     draft.sort_order = maxSort + 10;
-    draft.title = "Новая карточка";
-    draft.url = "https://";
-    const { data, error } = await supabase
-      .from("parents_materials" as any)
-      .insert(draft as any)
-      .select()
-      .single();
-    if (error) {
-      toast.error("Ошибка создания: " + error.message);
-      return;
+    draft.title = activeKind === "handout" ? "Новая памятка" : "Новая карточка";
+    if (activeKind === "handout") {
+      draft.slug = `handout-${Date.now()}`;
     }
+    const { data, error } = await supabase.from("parents_materials" as any).insert(draft as any).select().single();
+    if (error) { toast.error("Ошибка создания: " + error.message); return; }
     setItems((prev) => [...prev, data as unknown as ParentsMaterial]);
     toast.success("Карточка создана");
   };
 
-  const updateItem = async (id: string, patch: Partial<ParentsMaterial>) => {
+  const updateItem = async (id: string, patch: Partial<ParentsMaterial>): Promise<boolean> => {
     setSavingId(id);
-    const { error } = await supabase
-      .from("parents_materials" as any)
-      .update(patch as any)
-      .eq("id", id);
+    const { error } = await supabase.from("parents_materials" as any).update(patch as any).eq("id", id);
     setSavingId(null);
-    if (error) {
-      toast.error("Ошибка сохранения: " + error.message);
-      return false;
-    }
+    if (error) { toast.error("Ошибка сохранения: " + error.message); return false; }
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
     return true;
   };
 
   const removeItem = async (item: ParentsMaterial) => {
     if (!confirm(`Удалить «${item.title}»? Это действие нельзя отменить.`)) return;
-    if (item.image_path) {
-      await deleteParentsMedia(item.image_path).catch(() => {});
-    }
+    if (item.image_path) await deleteParentsMedia(item.image_path).catch(() => {});
+    if (item.file_path) await deleteParentsMedia(item.file_path).catch(() => {});
+    if (item.og_image_path) await deleteParentsMedia(item.og_image_path).catch(() => {});
     const { error } = await supabase.from("parents_materials" as any).delete().eq("id", item.id);
-    if (error) {
-      toast.error("Ошибка удаления: " + error.message);
-      return;
-    }
+    if (error) { toast.error("Ошибка удаления: " + error.message); return; }
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     toast.success("Удалено");
   };
@@ -165,27 +157,16 @@ const AdminParentsMaterials = () => {
     const newIdx = kindItems.findIndex((i) => i.id === over.id);
     if (oldIdx < 0 || newIdx < 0) return;
     const reordered = arrayMove(kindItems, oldIdx, newIdx);
-    // Пересчитываем sort_order с шагом 10
     const updates = reordered.map((it, idx) => ({ id: it.id, sort_order: (idx + 1) * 10 }));
-    // Оптимистично обновляем стейт
     setItems((prev) => {
       const map = new Map(updates.map((u) => [u.id, u.sort_order]));
       return prev.map((it) => (map.has(it.id) ? { ...it, sort_order: map.get(it.id)! } : it));
     });
-    // Пишем в БД пачкой
-    await Promise.all(
-      updates.map((u) =>
-        supabase.from("parents_materials" as any).update({ sort_order: u.sort_order }).eq("id", u.id),
-      ),
-    );
+    await Promise.all(updates.map((u) => supabase.from("parents_materials" as any).update({ sort_order: u.sort_order }).eq("id", u.id)));
   };
 
   if (authLoading || !user || !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   return (
@@ -202,8 +183,7 @@ const AdminParentsMaterials = () => {
               Управление карточками во вкладке <span className="font-medium">«Полезные материалы»</span> на странице{" "}
               <Link to="/for-parents" target="_blank" className="text-primary hover:underline inline-flex items-center gap-1">
                 /for-parents <ExternalLink className="w-3 h-3" />
-              </Link>
-              . Порядок карточек редактируется перетаскиванием.
+              </Link>. Порядок карточек редактируется перетаскиванием.
             </p>
           </div>
           <Button onClick={addNew}>
@@ -211,9 +191,9 @@ const AdminParentsMaterials = () => {
           </Button>
         </div>
 
-        <Tabs value={activeKind} onValueChange={(v) => setActiveKind(v as Kind)}>
-          <TabsList className="mb-4">
-            {(Object.keys(KIND_LABELS) as Kind[]).map((k) => {
+        <Tabs value={activeKind} onValueChange={(v) => setActiveKind(v as ParentsMaterialKind)}>
+          <TabsList className="mb-4 flex-wrap h-auto">
+            {(Object.keys(KIND_LABELS) as ParentsMaterialKind[]).map((k) => {
               const count = items.filter((i) => i.kind === k).length;
               return (
                 <TabsTrigger key={k} value={k}>
@@ -223,7 +203,7 @@ const AdminParentsMaterials = () => {
             })}
           </TabsList>
 
-          {(Object.keys(KIND_LABELS) as Kind[]).map((k) => (
+          {(Object.keys(KIND_LABELS) as ParentsMaterialKind[]).map((k) => (
             <TabsContent key={k} value={k}>
               <p className="text-xs text-muted-foreground mb-4">{KIND_HINTS[k]}</p>
               {loading ? (
@@ -235,13 +215,11 @@ const AdminParentsMaterials = () => {
                   <SortableContext items={kindItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-3">
                       {kindItems.map((it) => (
-                        <MaterialRow
-                          key={it.id}
-                          item={it}
-                          saving={savingId === it.id}
-                          onSave={(patch) => updateItem(it.id, patch)}
-                          onDelete={() => removeItem(it)}
-                        />
+                        it.kind === "handout" ? (
+                          <HandoutRow key={it.id} item={it} saving={savingId === it.id} onSave={(p) => updateItem(it.id, p)} onDelete={() => removeItem(it)} allSlugs={items.filter((x) => x.id !== it.id).map((x) => x.slug).filter(Boolean) as string[]} />
+                        ) : (
+                          <MaterialRow key={it.id} item={it} saving={savingId === it.id} onSave={(p) => updateItem(it.id, p)} onDelete={() => removeItem(it)} />
+                        )
                       ))}
                     </div>
                   </SortableContext>
@@ -255,6 +233,8 @@ const AdminParentsMaterials = () => {
   );
 };
 
+/* ------------------- Regular row (article / video / podcast) ------------------- */
+
 interface RowProps {
   item: ParentsMaterial;
   saving: boolean;
@@ -265,7 +245,6 @@ interface RowProps {
 const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
-
   const [draft, setDraft] = useState(item);
   const [uploading, setUploading] = useState(false);
   const [showEn, setShowEn] = useState(false);
@@ -274,7 +253,7 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
     (draft.description ?? "") !== (item.description ?? "") ||
     (draft.title_en ?? "") !== (item.title_en ?? "") ||
     (draft.description_en ?? "") !== (item.description_en ?? "") ||
-    draft.url !== item.url ||
+    (draft.url ?? "") !== (item.url ?? "") ||
     (draft.source ?? "") !== (item.source ?? "") ||
     (draft.image_url ?? "") !== (item.image_url ?? "") ||
     (draft.emoji ?? "") !== (item.emoji ?? "");
@@ -284,24 +263,12 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
-      // Удаляем старый файл, если был
-      if (item.image_path) {
-        await deleteParentsMedia(item.image_path).catch(() => {});
-      }
+      if (item.image_path) await deleteParentsMedia(item.image_path).catch(() => {});
       const path = await uploadParentsMedia(file);
       await onSave({ image_path: path });
       toast.success("Картинка загружена");
-    } catch (e: any) {
-      toast.error("Ошибка загрузки: " + (e?.message || e));
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeImage = async () => {
-    if (item.image_path) await deleteParentsMedia(item.image_path).catch(() => {});
-    await onSave({ image_path: null });
-    toast.success("Картинка убрана");
+    } catch (e: any) { toast.error("Ошибка загрузки: " + (e?.message || e)); }
+    finally { setUploading(false); }
   };
 
   const preview = resolveMaterialPreview(draft);
@@ -310,125 +277,52 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
     <Card ref={setNodeRef} style={style} className="overflow-hidden">
       <CardContent className="p-4">
         <div className="flex gap-3 items-start">
-          <button
-            {...attributes}
-            {...listeners}
-            className="mt-1 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
-            aria-label="Перетащить"
-            type="button"
-          >
+          <button {...attributes} {...listeners} className="mt-1 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Перетащить" type="button">
             <GripVertical className="w-5 h-5" />
           </button>
-
           <div className="w-24 h-16 rounded-md bg-muted flex-shrink-0 overflow-hidden flex items-center justify-center border">
-            {preview ? (
-              <img src={preview} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <ImageIcon className="w-6 h-6 text-muted-foreground" />
-            )}
+            {preview ? <img src={preview} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="w-6 h-6 text-muted-foreground" />}
           </div>
-
           <div className="flex-1 min-w-0 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-2">
-              <Input
-                value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="Заголовок"
-              />
-              <Input
-                value={draft.source ?? ""}
-                onChange={(e) => setDraft({ ...draft, source: e.target.value })}
-                placeholder="Источник (Uroweb.ru, YouTube, Mel.fm…)"
-              />
+              <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Заголовок" />
+              <Input value={draft.source ?? ""} onChange={(e) => setDraft({ ...draft, source: e.target.value })} placeholder="Источник" />
             </div>
-
-            <Textarea
-              value={draft.description ?? ""}
-              onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-              placeholder="Краткое описание"
-              rows={2}
-            />
-
+            <Textarea value={draft.description ?? ""} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Краткое описание" rows={2} />
             <div className="grid grid-cols-1 md:grid-cols-[1fr_100px] gap-2">
-              <Input
-                value={draft.url}
-                onChange={(e) => setDraft({ ...draft, url: e.target.value })}
-                placeholder="https://…"
-              />
-              <Input
-                value={draft.emoji ?? ""}
-                onChange={(e) => setDraft({ ...draft, emoji: e.target.value })}
-                placeholder="Эмодзи"
-                maxLength={4}
-              />
+              <Input value={draft.url ?? ""} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="https://…" />
+              <Input value={draft.emoji ?? ""} onChange={(e) => setDraft({ ...draft, emoji: e.target.value })} placeholder="Эмодзи" maxLength={4} />
             </div>
-
-            {/* Картинка */}
             <div className="flex items-center gap-2 flex-wrap">
               <Label className="text-xs text-muted-foreground">Превью:</Label>
               <label className="inline-flex">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) handleUpload(f);
-                    e.currentTarget.value = "";
-                  }}
-                />
+                <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.currentTarget.value = ""; }} />
                 <Button asChild variant="outline" size="sm" disabled={uploading}>
-                  <span>{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}Загрузить файл</span>
+                  <span>{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}Загрузить</span>
                 </Button>
               </label>
               <span className="text-xs text-muted-foreground">или</span>
-              <Input
-                value={draft.image_url ?? ""}
-                onChange={(e) => setDraft({ ...draft, image_url: e.target.value })}
-                placeholder="URL картинки (Unsplash, YouTube thumb)"
-                className="flex-1 min-w-[220px]"
-              />
+              <Input value={draft.image_url ?? ""} onChange={(e) => setDraft({ ...draft, image_url: e.target.value })} placeholder="URL картинки" className="flex-1 min-w-[220px]" />
               {item.image_path && (
-                <Button variant="ghost" size="sm" onClick={removeImage} className="text-destructive">
+                <Button variant="ghost" size="sm" onClick={async () => { await deleteParentsMedia(item.image_path!); await onSave({ image_path: null }); }} className="text-destructive">
                   <Trash2 className="w-3.5 h-3.5 mr-1" />Убрать файл
                 </Button>
               )}
             </div>
-
-            {/* EN перевод */}
             <Collapsible open={showEn} onOpenChange={setShowEn}>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-xs">
-                  <Languages className="w-3.5 h-3.5 mr-1" />
-                  {showEn ? "Скрыть EN перевод" : "Английский перевод (EN)"}
+                  <Languages className="w-3.5 h-3.5 mr-1" />{showEn ? "Скрыть EN" : "Английский (EN)"}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-2 pt-2">
-                <Input
-                  value={draft.title_en ?? ""}
-                  onChange={(e) => setDraft({ ...draft, title_en: e.target.value })}
-                  placeholder="Title (EN)"
-                />
-                <Textarea
-                  value={draft.description_en ?? ""}
-                  onChange={(e) => setDraft({ ...draft, description_en: e.target.value })}
-                  placeholder="Description (EN)"
-                  rows={2}
-                />
+                <Input value={draft.title_en ?? ""} onChange={(e) => setDraft({ ...draft, title_en: e.target.value })} placeholder="Title (EN)" />
+                <Textarea value={draft.description_en ?? ""} onChange={(e) => setDraft({ ...draft, description_en: e.target.value })} placeholder="Description (EN)" rows={2} />
               </CollapsibleContent>
             </Collapsible>
-
-            {/* Actions row */}
             <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
               <div className="flex items-center gap-2">
-                <Switch
-                  checked={draft.is_published}
-                  onCheckedChange={(v) => {
-                    setDraft({ ...draft, is_published: v });
-                    onSave({ is_published: v });
-                  }}
-                />
+                <Switch checked={draft.is_published} onCheckedChange={(v) => { setDraft({ ...draft, is_published: v }); onSave({ is_published: v }); }} />
                 <Label className="text-xs cursor-pointer flex items-center gap-1">
                   {draft.is_published ? <><Eye className="w-3.5 h-3.5" />Опубликовано</> : <><EyeOff className="w-3.5 h-3.5" />Черновик</>}
                 </Label>
@@ -437,25 +331,295 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
                 <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
                   <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
                 </Button>
-                <Button
-                  size="sm"
-                  disabled={!dirty || saving}
-                  onClick={async () => {
-                    const ok = await onSave({
-                      title: draft.title.trim(),
-                      description: draft.description?.trim() || null,
-                      title_en: draft.title_en?.trim() || null,
-                      description_en: draft.description_en?.trim() || null,
-                      url: draft.url.trim(),
-                      source: draft.source?.trim() || null,
-                      image_url: draft.image_url?.trim() || null,
-                      emoji: draft.emoji?.trim() || null,
-                    });
-                    if (ok) toast.success("Сохранено");
-                  }}
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
-                  Сохранить
+                <Button size="sm" disabled={!dirty || saving} onClick={async () => {
+                  const ok = await onSave({
+                    title: draft.title.trim(),
+                    description: draft.description?.trim() || null,
+                    title_en: draft.title_en?.trim() || null,
+                    description_en: draft.description_en?.trim() || null,
+                    url: draft.url?.trim() || null,
+                    source: draft.source?.trim() || null,
+                    image_url: draft.image_url?.trim() || null,
+                    emoji: draft.emoji?.trim() || null,
+                  });
+                  if (ok) toast.success("Сохранено");
+                }}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}Сохранить
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+/* ------------------- Handout row (PDF landing) ------------------- */
+
+interface HandoutProps extends RowProps { allSlugs: string[]; }
+
+const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const [draft, setDraft] = useState(item);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [uploadingOg, setUploadingOg] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [showEn, setShowEn] = useState(false);
+  const [showSeo, setShowSeo] = useState(false);
+  const [showLong, setShowLong] = useState(false);
+
+  useEffect(() => { setDraft(item); }, [item.id, item.image_path, item.file_path, item.og_image_path]);
+
+  const slugConflict = draft.slug && allSlugs.includes(draft.slug);
+
+  const dirty = JSON.stringify({
+    ...draft, image_path: null, file_path: null, og_image_path: null, file_size_bytes: null,
+  }) !== JSON.stringify({
+    ...item, image_path: null, file_path: null, og_image_path: null, file_size_bytes: null,
+  });
+
+  const preview = resolveMaterialPreview(draft);
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImg(true);
+    try {
+      if (item.image_path) await deleteParentsMedia(item.image_path).catch(() => {});
+      const path = await uploadParentsMedia(file);
+      await onSave({ image_path: path });
+      toast.success("Обложка загружена");
+    } catch (e: any) { toast.error("Ошибка: " + (e?.message || e)); }
+    finally { setUploadingImg(false); }
+  };
+
+  const handleOgUpload = async (file: File) => {
+    setUploadingOg(true);
+    try {
+      if (item.og_image_path) await deleteParentsMedia(item.og_image_path).catch(() => {});
+      const path = await uploadParentsOgImage(file);
+      await onSave({ og_image_path: path });
+      toast.success("OG-картинка загружена");
+    } catch (e: any) { toast.error("Ошибка: " + (e?.message || e)); }
+    finally { setUploadingOg(false); }
+  };
+
+  const handlePdfUpload = async (file: File) => {
+    setUploadingPdf(true);
+    try {
+      if (item.file_path) await deleteParentsMedia(item.file_path).catch(() => {});
+      const { path, size } = await uploadParentsHandoutPdf(file, draft.slug || undefined);
+      await onSave({ file_path: path, file_size_bytes: size });
+      toast.success("PDF загружен");
+    } catch (e: any) { toast.error("Ошибка: " + (e?.message || e)); }
+    finally { setUploadingPdf(false); }
+  };
+
+  const seoTitleLen = (draft.seo_title || "").length;
+  const seoDescLen = (draft.seo_description || "").length;
+
+  return (
+    <Card ref={setNodeRef} style={style} className="overflow-hidden border-primary/20">
+      <CardContent className="p-4">
+        <div className="flex gap-3 items-start">
+          <button {...attributes} {...listeners} className="mt-1 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Перетащить" type="button">
+            <GripVertical className="w-5 h-5" />
+          </button>
+          <div className="w-24 h-32 rounded-md bg-muted flex-shrink-0 overflow-hidden flex items-center justify-center border">
+            {preview ? <img src={preview} alt="" className="w-full h-full object-cover" /> : <FileText className="w-8 h-8 text-muted-foreground" />}
+          </div>
+
+          <div className="flex-1 min-w-0 space-y-3">
+            {/* Header row */}
+            <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+              <Badge variant="outline" className="gap-1"><FileText className="w-3 h-3" />PDF</Badge>
+              {item.file_size_bytes ? <Badge variant="outline">{formatBytes(item.file_size_bytes)}</Badge> : <Badge variant="outline" className="text-amber-600">PDF не загружен</Badge>}
+              <Badge variant="outline" className="gap-1"><Download className="w-3 h-3" />{item.download_count} скачив.</Badge>
+              {draft.slug && (
+                <Link to={`/for-parents/materials/${draft.slug}`} target="_blank" className="text-primary hover:underline inline-flex items-center gap-1">
+                  /for-parents/materials/{draft.slug} <ExternalLink className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+
+            <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Заголовок памятки" className="text-base font-medium" />
+
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_120px] gap-2">
+              <div>
+                <Input
+                  value={draft.slug ?? ""}
+                  onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
+                  placeholder="url-slug"
+                  className={slugConflict ? "border-destructive" : ""}
+                />
+                {slugConflict && <p className="text-xs text-destructive mt-1">Slug уже занят</p>}
+              </div>
+              <Select value={draft.audience ?? "parent"} onValueChange={(v) => setDraft({ ...draft, audience: v as ParentsMaterialAudience })}>
+                <SelectTrigger><SelectValue placeholder="Аудитория" /></SelectTrigger>
+                <SelectContent>
+                  {AUDIENCE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input type="number" min={1} value={draft.pages_count ?? ""} onChange={(e) => setDraft({ ...draft, pages_count: e.target.value ? Number(e.target.value) : null })} placeholder="Стр." />
+            </div>
+
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setDraft({ ...draft, slug: slugify(draft.title) })}>
+                Сгенерировать slug из заголовка
+              </Button>
+            </div>
+
+            <Textarea value={draft.description ?? ""} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Краткое описание (для карточки на /for-parents)" rows={2} />
+
+            {/* PDF upload */}
+            <div className="border rounded-lg p-3 bg-muted/30 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label className="text-xs font-medium">PDF-файл памятки:</Label>
+                {item.file_path && (
+                  <a href={parentsMediaPublicUrl(item.file_path)!} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                    <Download className="w-3 h-3" />Скачать текущий
+                  </a>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="inline-flex">
+                  <input type="file" accept="application/pdf" className="hidden" disabled={uploadingPdf} onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f); e.currentTarget.value = ""; }} />
+                  <Button asChild variant="outline" size="sm" disabled={uploadingPdf}>
+                    <span>{uploadingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}{item.file_path ? "Заменить PDF" : "Загрузить PDF"}</span>
+                  </Button>
+                </label>
+                {item.file_path && (
+                  <Button variant="ghost" size="sm" onClick={async () => { await deleteParentsMedia(item.file_path!); await onSave({ file_path: null, file_size_bytes: null }); }} className="text-destructive">
+                    <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить PDF
+                  </Button>
+                )}
+                <span className="text-xs text-muted-foreground">Макс 20 МБ, только PDF</span>
+              </div>
+            </div>
+
+            {/* Cover image */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-xs text-muted-foreground">Обложка карточки:</Label>
+              <label className="inline-flex">
+                <input type="file" accept="image/*" className="hidden" disabled={uploadingImg} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.currentTarget.value = ""; }} />
+                <Button asChild variant="outline" size="sm" disabled={uploadingImg}>
+                  <span>{uploadingImg ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}Загрузить</span>
+                </Button>
+              </label>
+              <span className="text-xs text-muted-foreground">или</span>
+              <Input value={draft.image_url ?? ""} onChange={(e) => setDraft({ ...draft, image_url: e.target.value })} placeholder="URL картинки" className="flex-1 min-w-[220px]" />
+              {item.image_path && (
+                <Button variant="ghost" size="sm" onClick={async () => { await deleteParentsMedia(item.image_path!); await onSave({ image_path: null }); }} className="text-destructive">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </div>
+
+            {/* OG image */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-xs text-muted-foreground">OG-картинка (1200×630, соцсети):</Label>
+              <label className="inline-flex">
+                <input type="file" accept="image/*" className="hidden" disabled={uploadingOg} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleOgUpload(f); e.currentTarget.value = ""; }} />
+                <Button asChild variant="outline" size="sm" disabled={uploadingOg}>
+                  <span>{uploadingOg ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}Загрузить OG</span>
+                </Button>
+              </label>
+              {item.og_image_path && (
+                <>
+                  <a href={parentsMediaPublicUrl(item.og_image_path)!} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Открыть</a>
+                  <Button variant="ghost" size="sm" onClick={async () => { await deleteParentsMedia(item.og_image_path!); await onSave({ og_image_path: null }); }} className="text-destructive">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Long description (Markdown) */}
+            <Collapsible open={showLong} onOpenChange={setShowLong}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  <FileText className="w-3.5 h-3.5 mr-1" />{showLong ? "Скрыть длинное описание" : "Длинное описание (Markdown)"}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                <Textarea value={draft.long_description ?? ""} onChange={(e) => setDraft({ ...draft, long_description: e.target.value })} placeholder="## Что внутри&#10;- пункт 1&#10;- пункт 2&#10;&#10;## Как использовать" rows={10} className="font-mono text-xs" />
+                <p className="text-xs text-muted-foreground">Поддерживаются H2/H3, списки, цитаты, ссылки, таблицы (GFM).</p>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* SEO */}
+            <Collapsible open={showSeo} onOpenChange={setShowSeo}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1" />{showSeo ? "Скрыть SEO" : "SEO мета-теги"}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                <div>
+                  <Input value={draft.seo_title ?? ""} onChange={(e) => setDraft({ ...draft, seo_title: e.target.value })} placeholder="SEO title (fallback — заголовок)" maxLength={80} />
+                  <p className={`text-xs mt-0.5 ${seoTitleLen > 60 ? "text-amber-600" : "text-muted-foreground"}`}>{seoTitleLen}/60</p>
+                </div>
+                <div>
+                  <Textarea value={draft.seo_description ?? ""} onChange={(e) => setDraft({ ...draft, seo_description: e.target.value })} placeholder="SEO description" rows={2} maxLength={200} />
+                  <p className={`text-xs mt-0.5 ${seoDescLen > 160 ? "text-amber-600" : "text-muted-foreground"}`}>{seoDescLen}/160</p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* EN */}
+            <Collapsible open={showEn} onOpenChange={setShowEn}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  <Languages className="w-3.5 h-3.5 mr-1" />{showEn ? "Скрыть EN" : "Английский перевод (EN)"}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                <Input value={draft.title_en ?? ""} onChange={(e) => setDraft({ ...draft, title_en: e.target.value })} placeholder="Title (EN)" />
+                <Textarea value={draft.description_en ?? ""} onChange={(e) => setDraft({ ...draft, description_en: e.target.value })} placeholder="Short description (EN)" rows={2} />
+                <Textarea value={draft.long_description_en ?? ""} onChange={(e) => setDraft({ ...draft, long_description_en: e.target.value })} placeholder="Long description (EN, Markdown)" rows={6} className="font-mono text-xs" />
+                <Input value={draft.seo_title_en ?? ""} onChange={(e) => setDraft({ ...draft, seo_title_en: e.target.value })} placeholder="SEO title (EN)" maxLength={80} />
+                <Textarea value={draft.seo_description_en ?? ""} onChange={(e) => setDraft({ ...draft, seo_description_en: e.target.value })} placeholder="SEO description (EN)" rows={2} maxLength={200} />
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-1 border-t mt-2">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Switch checked={draft.is_published} onCheckedChange={(v) => { setDraft({ ...draft, is_published: v }); onSave({ is_published: v }); }} />
+                  <Label className="text-xs cursor-pointer flex items-center gap-1">
+                    {draft.is_published ? <><Eye className="w-3.5 h-3.5" />Опубликовано</> : <><EyeOff className="w-3.5 h-3.5" />Черновик</>}
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={draft.gated} onCheckedChange={(v) => { setDraft({ ...draft, gated: v }); onSave({ gated: v }); }} />
+                  <Label className="text-xs cursor-pointer text-muted-foreground">Гейт (форма перед скачиванием)</Label>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+                  <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
+                </Button>
+                <Button size="sm" disabled={!dirty || saving || !!slugConflict} onClick={async () => {
+                  const ok = await onSave({
+                    title: draft.title.trim(),
+                    slug: draft.slug?.trim() || null,
+                    description: draft.description?.trim() || null,
+                    long_description: draft.long_description || null,
+                    title_en: draft.title_en?.trim() || null,
+                    description_en: draft.description_en?.trim() || null,
+                    long_description_en: draft.long_description_en || null,
+                    seo_title: draft.seo_title?.trim() || null,
+                    seo_title_en: draft.seo_title_en?.trim() || null,
+                    seo_description: draft.seo_description?.trim() || null,
+                    seo_description_en: draft.seo_description_en?.trim() || null,
+                    audience: draft.audience,
+                    pages_count: draft.pages_count,
+                    image_url: draft.image_url?.trim() || null,
+                  });
+                  if (ok) toast.success("Сохранено");
+                }}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}Сохранить
                 </Button>
               </div>
             </div>
