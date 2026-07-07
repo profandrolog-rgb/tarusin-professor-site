@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, MessageCircle } from "lucide-react";
+import { CalendarCheck, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const STORAGE_KEY = "exit_popup_shown";
@@ -45,9 +45,9 @@ const ExitIntentPopup = () => {
     }, 100);
   };
 
-  const openWhatsApp = () => {
+  const callClinic = () => {
     setOpen(false);
-    window.open("https://wa.me/79266005550", "_blank");
+    window.location.href = "tel:+74953030000";
   };
 
   return (
@@ -68,9 +68,9 @@ const ExitIntentPopup = () => {
             <CalendarCheck className="w-4 h-4 mr-2" />
             {isEn ? "Book Consultation" : "Записаться на приём"}
           </Button>
-          <Button variant="outline" onClick={openWhatsApp} className="w-full">
-            <MessageCircle className="w-4 h-4 mr-2" />
-            {isEn ? "Message via WhatsApp" : "Написать в WhatsApp"}
+          <Button variant="outline" onClick={callClinic} className="w-full">
+            <Phone className="w-4 h-4 mr-2" />
+            {isEn ? "Call the Clinic" : "Позвонить в клинику"}
           </Button>
         </div>
       </DialogContent>

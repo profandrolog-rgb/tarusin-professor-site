@@ -41,7 +41,7 @@ const PrivacyPolicy = () => {
                   <h2 className="text-xl font-semibold text-foreground mt-8">5. User Rights</h2>
                   <p>5.1. The user has the right to request clarification, blocking, or deletion of their personal data by contacting us through the information provided on the website.</p>
                   <h2 className="text-xl font-semibold text-foreground mt-8">6. Contact Information</h2>
-                  <p>For questions related to personal data processing, please call +7 (926) 600-555-0 or use the contact form on the website.</p>
+                  <p>For questions related to personal data processing, please call +7 (495) 303-00-00 or use the contact form on the website.</p>
                 </>
               ) : (
                 <>
@@ -62,7 +62,7 @@ const PrivacyPolicy = () => {
                   <h2 className="text-xl font-semibold text-foreground mt-8">5. Права пользователя</h2>
                   <p>5.1. Пользователь вправе потребовать уточнения, блокирования или уничтожения своих персональных данных, обратившись по контактным данным, указанным на сайте.</p>
                   <h2 className="text-xl font-semibold text-foreground mt-8">6. Контактная информация</h2>
-                  <p>По вопросам, связанным с обработкой персональных данных, обращайтесь по телефону +7&nbsp;(926)&nbsp;600-555-0 или через форму обратной связи на сайте.</p>
+                  <p>По вопросам, связанным с обработкой персональных данных, обращайтесь по телефону +7&nbsp;(495)&nbsp;303-00-00 или через форму обратной связи на сайте.</p>
                 </>
               )}
             </div>
