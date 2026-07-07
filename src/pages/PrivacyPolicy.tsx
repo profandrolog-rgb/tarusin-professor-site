@@ -41,7 +41,7 @@ const PrivacyPolicy = () => {
                   <h2 className="text-xl font-semibold text-foreground mt-8">5. User Rights</h2>
                   <p>5.1. The user has the right to request clarification, blocking, or deletion of their personal data by contacting us through the information provided on the website.</p>
                   <h2 className="text-xl font-semibold text-foreground mt-8">6. Contact Information</h2>
-                  <p>For questions related to personal data processing, please call +7 (926) 600-555-0 or use the contact form on the website.</p>
+                  <p>For questions related to personal data processing, please call +7 (495) 303-00-00 or use the contact form on the website.</p>
                 </>
               ) : (
                 <>
