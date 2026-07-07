@@ -128,10 +128,17 @@ const siteSections = [
   },
   {
     title: "Материалы о заболеваниях",
-    description: "Видео, подкасты и статьи для родителей и пациентов",
+    description: "Статьи-лонгриды про болезни (детские и взрослые)",
     icon: Baby,
     href: "/admin/disease-articles",
     color: "text-pink-500",
+  },
+  {
+    title: "«Полезные материалы» для родителей",
+    description: "Карточки статей, YouTube-видео и подкастов на /for-parents",
+    icon: BookOpen,
+    href: "/admin/parents-materials",
+    color: "text-fuchsia-500",
   },
   {
     title: "Наши исследования",
