@@ -310,9 +310,9 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
               <Input value={draft.source ?? ""} onChange={(e) => setDraft({ ...draft, source: e.target.value })} placeholder="Источник" />
             </div>
             <Textarea value={draft.description ?? ""} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Краткое описание" rows={2} />
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_100px] gap-2">
-              <Input value={draft.url ?? ""} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="https://…" />
-              <Input value={draft.emoji ?? ""} onChange={(e) => setDraft({ ...draft, emoji: e.target.value })} placeholder="Эмодзи" maxLength={4} />
+            <div className="flex items-start gap-2 flex-wrap">
+              <Input value={draft.url ?? ""} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="https://…" className="flex-1 min-w-[220px]" />
+              <EmojiPickerButton value={draft.emoji} onChange={(v) => setDraft({ ...draft, emoji: v })} />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Label className="text-xs text-muted-foreground">Превью:</Label>
