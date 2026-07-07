@@ -154,17 +154,7 @@ const ContactSection = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t("contact.subtitle")}</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-5xl mx-auto">
-          <ClinicCard
-            name="AVE-CLINIC"
-            address={isEn ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}
-            phones={[
-              { number: "+7 (926) 600-555-0", href: "79266005550", label: "WhatsApp, Telegram, MAX", isWhatsApp: true },
-            ]}
-            schedule={isEn ? "By appointment only" : "Только по предварительной записи"}
-            directions={aveDirections}
-            labels={labels}
-          />
+        <div className="mb-12 max-w-2xl mx-auto">
           <ClinicCard
             name={isEn ? "Dr. Matara's Clinic" : "Клиника доктора Матара"}
             address={isEn ? "Moscow, Korovinskoye Hwy 9, Bldg 2" : "г. Москва, Коровинское шоссе д. 9 к. 2"}
