@@ -57,7 +57,7 @@ export function DbHealthWidget() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 60_000);
+    const id = setInterval(load, 300_000);
     return () => clearInterval(id);
   }, [load]);
 
