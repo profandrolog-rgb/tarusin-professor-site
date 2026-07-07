@@ -66,21 +66,6 @@ const Contacts = () => {
           {
             "@context": "https://schema.org",
             "@type": "MedicalClinic",
-            name: "AVE-CLINIC",
-            url: "https://tarusin.pro/contacts",
-            address: {
-              "@type": "PostalAddress",
-              streetAddress: "3-я Запрудная ул., д. 16",
-              addressLocality: "с. Немчиновка",
-              addressRegion: "Московская область",
-              addressCountry: "RU",
-            },
-            geo: { "@type": "GeoCoordinates", latitude: 55.723389, longitude: 37.370515 },
-            medicalSpecialty: ["Urology", "PediatricSurgery"],
-          },
-          {
-            "@context": "https://schema.org",
-            "@type": "MedicalClinic",
             name: "Клиника доктора Матара",
             url: "https://tarusin.pro/contacts",
             address: {
