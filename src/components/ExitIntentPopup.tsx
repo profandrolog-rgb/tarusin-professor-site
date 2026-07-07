@@ -45,9 +45,9 @@ const ExitIntentPopup = () => {
     }, 100);
   };
 
-  const openWhatsApp = () => {
+  const callClinic = () => {
     setOpen(false);
-    window.open("https://wa.me/79266005550", "_blank");
+    window.location.href = "tel:+74953030000";
   };
 
   return (
