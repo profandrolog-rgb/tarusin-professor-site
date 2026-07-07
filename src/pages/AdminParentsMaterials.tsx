@@ -558,6 +558,14 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
               )}
             </div>
 
+            {/* Emoji */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-xs text-muted-foreground">Эмодзи (для карточки):</Label>
+              <EmojiPickerButton value={draft.emoji} onChange={(v) => setDraft({ ...draft, emoji: v })} />
+              <span className="text-xs text-muted-foreground">выводится в углу превью</span>
+            </div>
+
+
             {/* OG image */}
             <div className="flex items-center gap-2 flex-wrap">
               <Label className="text-xs text-muted-foreground">OG-картинка (1200×630, соцсети):</Label>
