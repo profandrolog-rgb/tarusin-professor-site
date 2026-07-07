@@ -78,8 +78,6 @@ const StickyBottomPanel = () => {
             </Button>
             <div className="hidden md:flex items-center gap-4">
               <a href="tel:+74953030000" className="text-sm text-primary-foreground/90 hover:text-primary-foreground transition-colors">+7 (495) 303-00-00</a>
-              <span className="text-primary-foreground/30">|</span>
-              <a href="tel:+79266005550" className="text-sm text-primary-foreground/70 hover:text-primary-foreground transition-colors">+7 (926) 600-555-0</a>
             </div>
             <Dialog open={questionOpen} onOpenChange={setQuestionOpen}>
               <DialogTrigger asChild>
