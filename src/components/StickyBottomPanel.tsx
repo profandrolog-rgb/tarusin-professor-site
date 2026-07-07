@@ -51,7 +51,7 @@ const StickyBottomPanel = () => {
               <h3 className="text-lg font-bold text-foreground">{t("sticky.bookAppointment")}</h3>
               <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)}><X className="w-5 h-5" /></Button>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="max-w-md mx-auto">
               <div className="p-4 rounded-xl bg-accent/10 border-2 border-accent/30 relative">
                 <div className="absolute -top-2.5 left-4 px-2 py-0.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full uppercase tracking-wider">{t("sticky.priority")}</div>
                 <h4 className="font-semibold text-foreground mb-2 mt-1">{isEn ? "Dr. Matara's Clinic" : t("hero.mataraClinic")}</h4>
@@ -60,13 +60,6 @@ const StickyBottomPanel = () => {
                   <a href="tel:+74953030000" className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (495) 303-00-00 <span className="text-xs text-muted-foreground font-normal">({t("sticky.reception")})</span></a>
                   <a href="tel:+79263030111" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (926) 303-01-11 <span className="text-xs text-muted-foreground font-normal">({t("sticky.booking")})</span></a>
                   <a href="tel:+79160303031" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (916) 030-30-31 <span className="text-xs text-muted-foreground font-normal">({t("sticky.booking")})</span></a>
-                </div>
-              </div>
-              <div className="p-4 rounded-xl bg-secondary/50 border border-border">
-                <h4 className="font-semibold text-foreground mb-2">{t("hero.aveClinic")}</h4>
-                <p className="text-xs text-muted-foreground mb-3">{isEn ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}</p>
-                <div className="space-y-1.5">
-                  <a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline"><Phone className="w-3.5 h-3.5" /> +7 (926) 600-555-0 <span className="text-xs text-muted-foreground font-normal">(WhatsApp, Telegram, MAX)</span></a>
                 </div>
               </div>
             </div>
