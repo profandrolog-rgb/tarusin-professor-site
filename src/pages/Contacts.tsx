@@ -157,7 +157,7 @@ const Contacts = () => {
               <p className="text-xs text-muted-foreground text-center">{isEn ? "By submitting, you agree to the processing of personal data" : "Нажимая кнопку, вы соглашаетесь с обработкой персональных данных"}</p>
             </form>
           </CardContent></Card>
-          <Card className="mt-6"><CardContent className="p-6"><div className="flex items-start gap-4"><div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0"><span className="text-lg">🚗</span></div><div><h3 className="font-semibold text-foreground mb-2">{isEn ? "Parking (AVE-CLINIC)" : "Парковка (AVE-CLINIC)"}</h3><p className="text-muted-foreground">{isEn ? <>Gated parking for patients. Tell security the password — <span className="font-semibold text-primary">"To the medical center"</span></> : <>Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span></>}</p></div></div></CardContent></Card>
+          
         </div>
       </main>
     </div>
