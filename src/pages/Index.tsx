@@ -30,7 +30,7 @@ const jsonLd = {
       "alternateName": "Tarusin Dmitry Igorevich",
       "image": "https://tarusin.pro/assets/professor-photo-DpatXHVQ.png",
       "url": "https://tarusin.pro/",
-      "telephone": "+7-926-600-555-0",
+      "telephone": "+7-495-303-00-00",
       "medicalSpecialty": [
         "PediatricUrology",
         "Andrology",
