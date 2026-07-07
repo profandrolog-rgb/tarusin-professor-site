@@ -161,6 +161,7 @@ const ruPublicChildren: RouteRecord[] = [
 const enPublicChildren: RouteRecord[] = [
   { index: true, Component: Index, entry: "src/pages/Index.tsx" },
   { path: "for-parents", lazy: lazyForParents, entry: "src/pages/ForParents.tsx" },
+  { path: "for-parents/materials/:slug", lazy: lazyParentsMaterialLanding, entry: "src/pages/ParentsMaterialLanding.tsx" },
   { path: "for-parents/:slug", lazy: lazyDiseaseDetail, entry: "src/pages/DiseaseDetailPage.tsx" },
   { path: "for-doctors", lazy: lazyForDoctors, entry: "src/pages/ForDoctors.tsx" },
   { path: "media", lazy: lazyMedia, entry: "src/pages/Media.tsx" },
