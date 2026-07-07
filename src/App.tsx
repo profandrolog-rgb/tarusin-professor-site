@@ -126,6 +126,7 @@ const EnRoot = () => (
 const ruPublicChildren: RouteRecord[] = [
   { index: true, Component: Index },
   { path: "for-parents", lazy: lazyForParents, entry: "src/pages/ForParents.tsx", loader: parentsLoader as any },
+  { path: "for-parents/materials/:slug", lazy: lazyParentsMaterialLanding, entry: "src/pages/ParentsMaterialLanding.tsx" },
   {
     path: "for-parents/:slug",
     lazy: lazyDiseaseDetail,
