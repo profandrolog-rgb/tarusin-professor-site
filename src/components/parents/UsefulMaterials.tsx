@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Video, Headphones, ExternalLink, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { BookOpen, Video, Headphones, ExternalLink, Loader2, FileText, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { proxyImage } from "@/lib/proxyImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { type ParentsMaterial, resolveMaterialPreview } from "@/lib/parentsMaterialsBucket";
+import { type ParentsMaterial, resolveMaterialPreview, pagesLabel } from "@/lib/parentsMaterialsBucket";
 
 const UsefulMaterials = () => {
   const { i18n } = useTranslation();
@@ -36,6 +37,7 @@ const UsefulMaterials = () => {
   const articles = items.filter((i) => i.kind === "article");
   const videos = items.filter((i) => i.kind === "video");
   const podcasts = items.filter((i) => i.kind === "podcast");
+  const handouts = items.filter((i) => i.kind === "handout");
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
@@ -100,6 +102,56 @@ const UsefulMaterials = () => {
                     </div>
                   </CardContent>
                 </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Handouts (downloadable PDFs) */}
+      {handouts.length > 0 && (
+        <section className="mb-16">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-primary" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "Downloadable Materials" : "Материалы для скачивания"}</h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {handouts.map((h) => {
+              const preview = resolveMaterialPreview(h);
+              return (
+                <Link key={h.id} to={`/for-parents/materials/${h.slug}/`} className="group">
+                  <Card className="h-full overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                    <div className="relative overflow-hidden">
+                      <AspectRatio ratio={16 / 10}>
+                        {preview ? (
+                          <img src={proxyImage(preview)} alt={pickTitle(h)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center"><FileText className="w-12 h-12 text-muted-foreground" /></div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+                            PDF{h.pages_count ? ` · ${pagesLabel(h.pages_count)}` : ""}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <h3 className="text-white font-semibold text-base leading-snug line-clamp-2">
+                            {h.emoji ? `${h.emoji} ` : ""}{pickTitle(h)}
+                          </h3>
+                        </div>
+                      </AspectRatio>
+                    </div>
+                    <CardContent className="p-4">
+                      {pickDesc(h) && <p className="text-muted-foreground text-sm line-clamp-3 mb-3">{pickDesc(h)}</p>}
+                      <div className="flex items-center text-primary text-sm font-medium group-hover:underline">
+                        <Download className="w-3.5 h-3.5 mr-1.5" />
+                        {isEn ? "Download" : "Скачать"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               );
             })}
           </div>

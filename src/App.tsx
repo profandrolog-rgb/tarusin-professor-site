@@ -22,6 +22,7 @@ const page = (loader: () => Promise<{ default: React.ComponentType<any> }>) =>
 // Публичные страницы — ленивые (каждая в своём чанке).
 const lazyForParents = page(() => import("./pages/ForParents"));
 const lazyDiseaseDetail = page(() => import("./pages/DiseaseDetailPage"));
+const lazyParentsMaterialLanding = page(() => import("./pages/ParentsMaterialLanding"));
 const lazyForDoctors = page(() => import("./pages/ForDoctors"));
 const lazyMedia = page(() => import("./pages/Media"));
 const lazyVideos = page(() => import("./pages/Videos"));
@@ -57,6 +58,7 @@ const AdminPatientVisitDetail = lazy(() => import("./pages/AdminPatientVisitDeta
 const AdminPatientVisitPrint = lazy(() => import("./pages/AdminPatientVisitPrint"));
 const AdminDiseaseArticles = lazy(() => import("./pages/AdminDiseaseArticles"));
 const AdminParentsMaterials = lazy(() => import("./pages/AdminParentsMaterials"));
+const ParentsMaterialLanding = lazy(() => import("./pages/ParentsMaterialLanding"));
 const AdminPatientCards = lazy(() => import("./pages/AdminPatientCards"));
 const AdminConsultations = lazy(() => import("./pages/AdminConsultations"));
 const AdminSelfCheck = lazy(() => import("./pages/AdminSelfCheck"));
@@ -124,6 +126,7 @@ const EnRoot = () => (
 const ruPublicChildren: RouteRecord[] = [
   { index: true, Component: Index },
   { path: "for-parents", lazy: lazyForParents, entry: "src/pages/ForParents.tsx", loader: parentsLoader as any },
+  { path: "for-parents/materials/:slug", lazy: lazyParentsMaterialLanding, entry: "src/pages/ParentsMaterialLanding.tsx" },
   {
     path: "for-parents/:slug",
     lazy: lazyDiseaseDetail,
@@ -158,6 +161,7 @@ const ruPublicChildren: RouteRecord[] = [
 const enPublicChildren: RouteRecord[] = [
   { index: true, Component: Index, entry: "src/pages/Index.tsx" },
   { path: "for-parents", lazy: lazyForParents, entry: "src/pages/ForParents.tsx" },
+  { path: "for-parents/materials/:slug", lazy: lazyParentsMaterialLanding, entry: "src/pages/ParentsMaterialLanding.tsx" },
   { path: "for-parents/:slug", lazy: lazyDiseaseDetail, entry: "src/pages/DiseaseDetailPage.tsx" },
   { path: "for-doctors", lazy: lazyForDoctors, entry: "src/pages/ForDoctors.tsx" },
   { path: "media", lazy: lazyMedia, entry: "src/pages/Media.tsx" },
