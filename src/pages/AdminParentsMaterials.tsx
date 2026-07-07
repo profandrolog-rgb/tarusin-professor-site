@@ -381,10 +381,46 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
 
   const slugConflict = draft.slug && allSlugs.includes(draft.slug);
 
-  const dirty = JSON.stringify({
-    ...draft, image_path: null, file_path: null, og_image_path: null, file_size_bytes: null,
-  }) !== JSON.stringify({
-    ...item, image_path: null, file_path: null, og_image_path: null, file_size_bytes: null,
+  // Autosave payload — all editable text/meta fields (files handled by explicit upload handlers)
+  const patch = {
+    title: draft.title.trim(),
+    slug: draft.slug?.trim() || null,
+    description: draft.description?.trim() || null,
+    long_description: draft.long_description || null,
+    title_en: draft.title_en?.trim() || null,
+    description_en: draft.description_en?.trim() || null,
+    long_description_en: draft.long_description_en || null,
+    seo_title: draft.seo_title?.trim() || null,
+    seo_title_en: draft.seo_title_en?.trim() || null,
+    seo_description: draft.seo_description?.trim() || null,
+    seo_description_en: draft.seo_description_en?.trim() || null,
+    audience: draft.audience,
+    pages_count: draft.pages_count,
+    image_url: draft.image_url?.trim() || null,
+    emoji: draft.emoji || null,
+  };
+  const serverPatch = {
+    title: item.title,
+    slug: item.slug ?? null,
+    description: item.description ?? null,
+    long_description: item.long_description ?? null,
+    title_en: item.title_en ?? null,
+    description_en: item.description_en ?? null,
+    long_description_en: item.long_description_en ?? null,
+    seo_title: item.seo_title ?? null,
+    seo_title_en: item.seo_title_en ?? null,
+    seo_description: item.seo_description ?? null,
+    seo_description_en: item.seo_description_en ?? null,
+    audience: item.audience,
+    pages_count: item.pages_count,
+    image_url: item.image_url ?? null,
+    emoji: item.emoji ?? null,
+  };
+  const { status } = useDebouncedAutoSave({
+    value: patch,
+    serverValue: serverPatch,
+    enabled: !slugConflict, // don't save while slug conflicts
+    onSave: async (v) => onSave(v as Partial<ParentsMaterial>),
   });
 
   const preview = resolveMaterialPreview(draft);
