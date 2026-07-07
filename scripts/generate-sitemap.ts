@@ -64,6 +64,23 @@ async function fetchDynamicEntries(): Promise<SitemapEntry[]> {
       }
     }
 
+    const { data: handouts } = await supabase
+      .from("parents_materials")
+      .select("slug, updated_at")
+      .eq("kind", "handout")
+      .eq("is_published", true);
+    if (handouts) {
+      for (const h of handouts as Array<{ slug: string | null; updated_at: string | null }>) {
+        if (h.slug) {
+          entries.push({
+            path: `/for-parents/materials/${h.slug}/`,
+            lastmod: h.updated_at?.slice(0, 10),
+            changefreq: "monthly",
+            priority: "0.7",
+          });
+        }
+      }
+
     try {
       const { allChecklists } = await import("../src/data/checklists/index");
       for (const c of allChecklists) {
