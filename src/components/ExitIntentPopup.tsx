@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, MessageCircle } from "lucide-react";
+import { CalendarCheck, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const STORAGE_KEY = "exit_popup_shown";
