@@ -27,6 +27,9 @@ import {
   resolveMaterialPreview, uploadParentsMedia, uploadParentsOgImage, uploadParentsHandoutPdf,
   deleteParentsMedia, parentsMediaPublicUrl, slugify, formatBytes,
 } from "@/lib/parentsMaterialsBucket";
+import EmojiPickerButton from "@/components/parents/EmojiPickerButton";
+import AutoSaveIndicator from "@/components/parents/AutoSaveIndicator";
+import { useDebouncedAutoSave } from "@/hooks/useDebouncedAutoSave";
 
 const KIND_LABELS: Record<ParentsMaterialKind, string> = {
   article: "Статьи",
@@ -248,17 +251,35 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
   const [draft, setDraft] = useState(item);
   const [uploading, setUploading] = useState(false);
   const [showEn, setShowEn] = useState(false);
-  const dirty =
-    draft.title !== item.title ||
-    (draft.description ?? "") !== (item.description ?? "") ||
-    (draft.title_en ?? "") !== (item.title_en ?? "") ||
-    (draft.description_en ?? "") !== (item.description_en ?? "") ||
-    (draft.url ?? "") !== (item.url ?? "") ||
-    (draft.source ?? "") !== (item.source ?? "") ||
-    (draft.image_url ?? "") !== (item.image_url ?? "") ||
-    (draft.emoji ?? "") !== (item.emoji ?? "");
 
   useEffect(() => { setDraft(item); }, [item.id, item.image_path]);
+
+  // Fields covered by autosave (everything editable that isn't file_path/image_path handled separately)
+  const patch = {
+    title: draft.title.trim(),
+    description: draft.description?.trim() || null,
+    title_en: draft.title_en?.trim() || null,
+    description_en: draft.description_en?.trim() || null,
+    url: draft.url?.trim() || null,
+    source: draft.source?.trim() || null,
+    image_url: draft.image_url?.trim() || null,
+    emoji: draft.emoji || null,
+  };
+  const serverPatch = {
+    title: item.title,
+    description: item.description ?? null,
+    title_en: item.title_en ?? null,
+    description_en: item.description_en ?? null,
+    url: item.url ?? null,
+    source: item.source ?? null,
+    image_url: item.image_url ?? null,
+    emoji: item.emoji ?? null,
+  };
+  const { status } = useDebouncedAutoSave({
+    value: patch,
+    serverValue: serverPatch,
+    onSave: async (v) => onSave(v as Partial<ParentsMaterial>),
+  });
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -289,9 +310,9 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
               <Input value={draft.source ?? ""} onChange={(e) => setDraft({ ...draft, source: e.target.value })} placeholder="Источник" />
             </div>
             <Textarea value={draft.description ?? ""} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Краткое описание" rows={2} />
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_100px] gap-2">
-              <Input value={draft.url ?? ""} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="https://…" />
-              <Input value={draft.emoji ?? ""} onChange={(e) => setDraft({ ...draft, emoji: e.target.value })} placeholder="Эмодзи" maxLength={4} />
+            <div className="flex items-start gap-2 flex-wrap">
+              <Input value={draft.url ?? ""} onChange={(e) => setDraft({ ...draft, url: e.target.value })} placeholder="https://…" className="flex-1 min-w-[220px]" />
+              <EmojiPickerButton value={draft.emoji} onChange={(v) => setDraft({ ...draft, emoji: v })} />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Label className="text-xs text-muted-foreground">Превью:</Label>
@@ -321,32 +342,18 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
               </CollapsibleContent>
             </Collapsible>
             <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
-              <div className="flex items-center gap-2">
-                <Switch checked={draft.is_published} onCheckedChange={(v) => { setDraft({ ...draft, is_published: v }); onSave({ is_published: v }); }} />
-                <Label className="text-xs cursor-pointer flex items-center gap-1">
-                  {draft.is_published ? <><Eye className="w-3.5 h-3.5" />Опубликовано</> : <><EyeOff className="w-3.5 h-3.5" />Черновик</>}
-                </Label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Switch checked={draft.is_published} onCheckedChange={(v) => { setDraft({ ...draft, is_published: v }); onSave({ is_published: v }); }} />
+                  <Label className="text-xs cursor-pointer flex items-center gap-1">
+                    {draft.is_published ? <><Eye className="w-3.5 h-3.5" />Опубликовано</> : <><EyeOff className="w-3.5 h-3.5" />Черновик</>}
+                  </Label>
+                </div>
+                <AutoSaveIndicator status={saving ? "saving" : status} />
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
-                </Button>
-                <Button size="sm" disabled={!dirty || saving} onClick={async () => {
-                  const ok = await onSave({
-                    title: draft.title.trim(),
-                    description: draft.description?.trim() || null,
-                    title_en: draft.title_en?.trim() || null,
-                    description_en: draft.description_en?.trim() || null,
-                    url: draft.url?.trim() || null,
-                    source: draft.source?.trim() || null,
-                    image_url: draft.image_url?.trim() || null,
-                    emoji: draft.emoji?.trim() || null,
-                  });
-                  if (ok) toast.success("Сохранено");
-                }}>
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}Сохранить
-                </Button>
-              </div>
+              <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+                <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
+              </Button>
             </div>
           </div>
         </div>
@@ -374,10 +381,46 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
 
   const slugConflict = draft.slug && allSlugs.includes(draft.slug);
 
-  const dirty = JSON.stringify({
-    ...draft, image_path: null, file_path: null, og_image_path: null, file_size_bytes: null,
-  }) !== JSON.stringify({
-    ...item, image_path: null, file_path: null, og_image_path: null, file_size_bytes: null,
+  // Autosave payload — all editable text/meta fields (files handled by explicit upload handlers)
+  const patch = {
+    title: draft.title.trim(),
+    slug: draft.slug?.trim() || null,
+    description: draft.description?.trim() || null,
+    long_description: draft.long_description || null,
+    title_en: draft.title_en?.trim() || null,
+    description_en: draft.description_en?.trim() || null,
+    long_description_en: draft.long_description_en || null,
+    seo_title: draft.seo_title?.trim() || null,
+    seo_title_en: draft.seo_title_en?.trim() || null,
+    seo_description: draft.seo_description?.trim() || null,
+    seo_description_en: draft.seo_description_en?.trim() || null,
+    audience: draft.audience,
+    pages_count: draft.pages_count,
+    image_url: draft.image_url?.trim() || null,
+    emoji: draft.emoji || null,
+  };
+  const serverPatch = {
+    title: item.title,
+    slug: item.slug ?? null,
+    description: item.description ?? null,
+    long_description: item.long_description ?? null,
+    title_en: item.title_en ?? null,
+    description_en: item.description_en ?? null,
+    long_description_en: item.long_description_en ?? null,
+    seo_title: item.seo_title ?? null,
+    seo_title_en: item.seo_title_en ?? null,
+    seo_description: item.seo_description ?? null,
+    seo_description_en: item.seo_description_en ?? null,
+    audience: item.audience,
+    pages_count: item.pages_count,
+    image_url: item.image_url ?? null,
+    emoji: item.emoji ?? null,
+  };
+  const { status } = useDebouncedAutoSave({
+    value: patch,
+    serverValue: serverPatch,
+    enabled: !slugConflict, // don't save while slug conflicts
+    onSave: async (v) => onSave(v as Partial<ParentsMaterial>),
   });
 
   const preview = resolveMaterialPreview(draft);
@@ -596,30 +639,10 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
                   <Label className="text-xs cursor-pointer text-muted-foreground">Гейт (форма перед скачиванием)</Label>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <AutoSaveIndicator status={saving ? "saving" : (slugConflict ? "error" : status)} />
                 <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
                   <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
-                </Button>
-                <Button size="sm" disabled={!dirty || saving || !!slugConflict} onClick={async () => {
-                  const ok = await onSave({
-                    title: draft.title.trim(),
-                    slug: draft.slug?.trim() || null,
-                    description: draft.description?.trim() || null,
-                    long_description: draft.long_description || null,
-                    title_en: draft.title_en?.trim() || null,
-                    description_en: draft.description_en?.trim() || null,
-                    long_description_en: draft.long_description_en || null,
-                    seo_title: draft.seo_title?.trim() || null,
-                    seo_title_en: draft.seo_title_en?.trim() || null,
-                    seo_description: draft.seo_description?.trim() || null,
-                    seo_description_en: draft.seo_description_en?.trim() || null,
-                    audience: draft.audience,
-                    pages_count: draft.pages_count,
-                    image_url: draft.image_url?.trim() || null,
-                  });
-                  if (ok) toast.success("Сохранено");
-                }}>
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}Сохранить
                 </Button>
               </div>
             </div>

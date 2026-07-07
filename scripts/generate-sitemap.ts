@@ -80,6 +80,8 @@ async function fetchDynamicEntries(): Promise<SitemapEntry[]> {
           });
         }
       }
+    }
+
 
     try {
       const { allChecklists } = await import("../src/data/checklists/index");
