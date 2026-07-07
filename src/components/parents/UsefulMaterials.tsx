@@ -37,6 +37,7 @@ const UsefulMaterials = () => {
   const articles = items.filter((i) => i.kind === "article");
   const videos = items.filter((i) => i.kind === "video");
   const podcasts = items.filter((i) => i.kind === "podcast");
+  const handouts = items.filter((i) => i.kind === "handout");
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
