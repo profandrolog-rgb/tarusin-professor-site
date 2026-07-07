@@ -27,15 +27,24 @@ const ALLOWED_TABLES = new Set([
 async function isAdmin(req: Request): Promise<boolean> {
   const auth = req.headers.get("Authorization") || "";
   if (!auth.startsWith("Bearer ")) return false;
+  const token = auth.slice("Bearer ".length);
   const cli = createClient(SUPABASE_URL, ANON, {
     global: { headers: { Authorization: auth } },
     auth: { persistSession: false },
   });
-  const { data: { user } } = await cli.auth.getUser();
-  if (!user) return false;
+  const { data: userData, error: userErr } = await cli.auth.getUser(token);
+  if (userErr || !userData?.user) {
+    console.log("[db-maintenance] auth failure", userErr?.message);
+    return false;
+  }
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-  const { data } = await admin.from("user_roles")
-    .select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+  const { data, error } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userData.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error) console.log("[db-maintenance] role lookup error", error.message);
   return !!data;
 }
 
