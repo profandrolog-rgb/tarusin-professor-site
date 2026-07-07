@@ -60,17 +60,6 @@ const jsonLd = {
             "addressCountry": "RU"
           },
           "telephone": "+7-495-303-00-00"
-        },
-        {
-          "@type": "MedicalClinic",
-          "name": "AVE-CLINIC",
-          "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "3-я Запрудная ул., 16",
-            "addressLocality": "Немчиновка",
-            "addressCountry": "RU"
-          },
-          "telephone": "+7-926-600-555-0"
         }
       ],
       "sameAs": [
