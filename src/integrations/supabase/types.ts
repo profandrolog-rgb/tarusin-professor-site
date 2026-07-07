@@ -2548,6 +2548,60 @@ export type Database = {
         }
         Relationships: []
       }
+      parents_materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          description_en: string | null
+          emoji: string | null
+          id: string
+          image_path: string | null
+          image_url: string | null
+          is_published: boolean
+          kind: string
+          sort_order: number
+          source: string | null
+          title: string
+          title_en: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          description_en?: string | null
+          emoji?: string | null
+          id?: string
+          image_path?: string | null
+          image_url?: string | null
+          is_published?: boolean
+          kind: string
+          sort_order?: number
+          source?: string | null
+          title: string
+          title_en?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          description_en?: string | null
+          emoji?: string | null
+          id?: string
+          image_path?: string | null
+          image_url?: string | null
+          is_published?: boolean
+          kind?: string
+          sort_order?: number
+          source?: string | null
+          title?: string
+          title_en?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       pathway_schemas: {
         Row: {
           pathway_code: string
