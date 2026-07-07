@@ -2548,6 +2548,50 @@ export type Database = {
         }
         Relationships: []
       }
+      parents_material_leads: {
+        Row: {
+          consent: boolean
+          created_at: string
+          email: string | null
+          id: string
+          material_id: string
+          name: string | null
+          phone: string | null
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          consent?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          material_id: string
+          name?: string | null
+          phone?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          consent?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          material_id?: string
+          name?: string | null
+          phone?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parents_material_leads_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "parents_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parents_materials: {
         Row: {
           audience: string | null
