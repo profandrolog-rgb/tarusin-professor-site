@@ -57,6 +57,7 @@ const AdminPatientVisitDetail = lazy(() => import("./pages/AdminPatientVisitDeta
 const AdminPatientVisitPrint = lazy(() => import("./pages/AdminPatientVisitPrint"));
 const AdminDiseaseArticles = lazy(() => import("./pages/AdminDiseaseArticles"));
 const AdminParentsMaterials = lazy(() => import("./pages/AdminParentsMaterials"));
+const ParentsMaterialLanding = lazy(() => import("./pages/ParentsMaterialLanding"));
 const AdminPatientCards = lazy(() => import("./pages/AdminPatientCards"));
 const AdminConsultations = lazy(() => import("./pages/AdminConsultations"));
 const AdminSelfCheck = lazy(() => import("./pages/AdminSelfCheck"));
