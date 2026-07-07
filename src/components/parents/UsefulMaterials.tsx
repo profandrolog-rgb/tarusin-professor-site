@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Video, Headphones, ExternalLink, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { BookOpen, Video, Headphones, ExternalLink, Loader2, FileText, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { proxyImage } from "@/lib/proxyImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { type ParentsMaterial, resolveMaterialPreview } from "@/lib/parentsMaterialsBucket";
+import { type ParentsMaterial, resolveMaterialPreview, pagesLabel } from "@/lib/parentsMaterialsBucket";
 
 const UsefulMaterials = () => {
   const { i18n } = useTranslation();
