@@ -13,7 +13,7 @@ const stepsRu = [
 ];
 
 const stepsEn = [
-  { icon: Phone, title: "Book an Appointment", description: "Call or message via WhatsApp. We'll find a convenient time and clinic.", detail: "+7 (926) 600-555-0" },
+  { icon: Phone, title: "Book an Appointment", description: "Call or message via WhatsApp. We'll find a convenient time and clinic.", detail: "+7 (495) 303-00-00" },
   { icon: FileText, title: "Preparation", description: "Gather results of previous examinations, medical records and referrals.", detail: "See 'Patient Memo' section" },
   { icon: Stethoscope, title: "Initial Consultation", description: "Examination, ultrasound diagnostics, discussion of diagnosis and treatment plan.", detail: "45–60 minutes" },
   { icon: ClipboardCheck, title: "Pre-operative Preparation", description: "If surgery is needed — we'll order tests and examinations, explaining every step.", detail: "Test list provided at the visit" },
