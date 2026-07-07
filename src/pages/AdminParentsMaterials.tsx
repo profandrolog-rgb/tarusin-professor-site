@@ -480,12 +480,14 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
               <Badge variant="outline" className="gap-1"><FileText className="w-3 h-3" />PDF</Badge>
               {item.file_size_bytes ? <Badge variant="outline">{formatBytes(item.file_size_bytes)}</Badge> : <Badge variant="outline" className="text-amber-600">PDF не загружен</Badge>}
               <Badge variant="outline" className="gap-1"><Download className="w-3 h-3" />{item.download_count} скачив.</Badge>
+              <MaterialLeadsDialog materialId={item.id} materialTitle={item.title} />
               {draft.slug && (
                 <Link to={`/for-parents/materials/${draft.slug}`} target="_blank" className="text-primary hover:underline inline-flex items-center gap-1">
                   /for-parents/materials/{draft.slug} <ExternalLink className="w-3 h-3" />
                 </Link>
               )}
             </div>
+
 
             <Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Заголовок памятки" className="text-base font-medium" />
 
