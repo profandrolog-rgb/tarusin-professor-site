@@ -22,6 +22,7 @@ const page = (loader: () => Promise<{ default: React.ComponentType<any> }>) =>
 // Публичные страницы — ленивые (каждая в своём чанке).
 const lazyForParents = page(() => import("./pages/ForParents"));
 const lazyDiseaseDetail = page(() => import("./pages/DiseaseDetailPage"));
+const lazyParentsMaterialLanding = page(() => import("./pages/ParentsMaterialLanding"));
 const lazyForDoctors = page(() => import("./pages/ForDoctors"));
 const lazyMedia = page(() => import("./pages/Media"));
 const lazyVideos = page(() => import("./pages/Videos"));
