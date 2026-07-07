@@ -251,17 +251,35 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
   const [draft, setDraft] = useState(item);
   const [uploading, setUploading] = useState(false);
   const [showEn, setShowEn] = useState(false);
-  const dirty =
-    draft.title !== item.title ||
-    (draft.description ?? "") !== (item.description ?? "") ||
-    (draft.title_en ?? "") !== (item.title_en ?? "") ||
-    (draft.description_en ?? "") !== (item.description_en ?? "") ||
-    (draft.url ?? "") !== (item.url ?? "") ||
-    (draft.source ?? "") !== (item.source ?? "") ||
-    (draft.image_url ?? "") !== (item.image_url ?? "") ||
-    (draft.emoji ?? "") !== (item.emoji ?? "");
 
   useEffect(() => { setDraft(item); }, [item.id, item.image_path]);
+
+  // Fields covered by autosave (everything editable that isn't file_path/image_path handled separately)
+  const patch = {
+    title: draft.title.trim(),
+    description: draft.description?.trim() || null,
+    title_en: draft.title_en?.trim() || null,
+    description_en: draft.description_en?.trim() || null,
+    url: draft.url?.trim() || null,
+    source: draft.source?.trim() || null,
+    image_url: draft.image_url?.trim() || null,
+    emoji: draft.emoji || null,
+  };
+  const serverPatch = {
+    title: item.title,
+    description: item.description ?? null,
+    title_en: item.title_en ?? null,
+    description_en: item.description_en ?? null,
+    url: item.url ?? null,
+    source: item.source ?? null,
+    image_url: item.image_url ?? null,
+    emoji: item.emoji ?? null,
+  };
+  const { status } = useDebouncedAutoSave({
+    value: patch,
+    serverValue: serverPatch,
+    onSave: async (v) => onSave(v as Partial<ParentsMaterial>),
+  });
 
   const handleUpload = async (file: File) => {
     setUploading(true);
