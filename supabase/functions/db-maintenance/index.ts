@@ -26,18 +26,17 @@ const ALLOWED_TABLES = new Set([
 
 async function isAdmin(req: Request): Promise<boolean> {
   const auth = req.headers.get("Authorization") || "";
-  if (!auth.startsWith("Bearer ")) return false;
-  const token = auth.slice("Bearer ".length);
-  const cli = createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: auth } },
-    auth: { persistSession: false },
-  });
-  const { data: userData, error: userErr } = await cli.auth.getUser(token);
-  if (userErr || !userData?.user) {
-    console.log("[db-maintenance] auth failure", userErr?.message);
+  if (!auth.startsWith("Bearer ")) {
+    console.log("[db-maintenance] no bearer token");
     return false;
   }
+  const token = auth.slice("Bearer ".length);
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const { data: userData, error: userErr } = await admin.auth.getUser(token);
+  if (userErr || !userData?.user) {
+    console.log("[db-maintenance] auth failure", JSON.stringify(userErr), "user:", !!userData?.user);
+    return false;
+  }
   const { data, error } = await admin
     .from("user_roles")
     .select("role")
@@ -45,8 +44,10 @@ async function isAdmin(req: Request): Promise<boolean> {
     .eq("role", "admin")
     .maybeSingle();
   if (error) console.log("[db-maintenance] role lookup error", error.message);
+  if (!data) console.log("[db-maintenance] user", userData.user.id, "is not admin");
   return !!data;
 }
+
 
 async function runStats(client: Client) {
   const dbSize = await client.queryObject<{ size: string; bytes: string }>(
