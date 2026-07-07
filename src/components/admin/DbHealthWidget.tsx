@@ -57,7 +57,7 @@ export function DbHealthWidget() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 60_000);
+    const id = setInterval(load, 300_000);
     return () => clearInterval(id);
   }, [load]);
 
@@ -81,7 +81,7 @@ export function DbHealthWidget() {
               Здоровье базы данных (Lovable Cloud)
             </CardTitle>
             <CardDescription className="text-xs">
-              Обновляется каждую минуту
+              Обновляется каждые 5 минут
               {updatedAt && ` • последнее: ${updatedAt.toLocaleTimeString("ru-RU")}`}
             </CardDescription>
           </div>
