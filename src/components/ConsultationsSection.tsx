@@ -106,28 +106,6 @@ const ConsultationsSection = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-primary text-primary-foreground shadow-lg">
-              <CardContent className="p-6 space-y-4">
-                <h4 className="font-semibold text-lg">{t("consultations.contactInfo")} — AVE-CLINIC</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5" />
-                    <span className="text-sm">{t("consultations.aveAddress")}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5" />
-                    <span className="text-sm">+7 (926) 600-555-0 (WhatsApp, Telegram, MAX)</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5" />
-                    <span className="text-sm">{t("consultations.byAppointment")}</span>
-                  </div>
-                </div>
-                <Button onClick={scrollToContact} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground mt-4">
-                  {t("consultations.bookAppointment")}
-                </Button>
-              </CardContent>
-            </Card>
 
             <Card className="bg-primary text-primary-foreground shadow-lg">
               <CardContent className="p-6 space-y-4">
