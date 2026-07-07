@@ -48,8 +48,16 @@ const ParentsMaterialLanding = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+  const [leadPhone, setLeadPhone] = useState("");
+  const [submittingLead, setSubmittingLead] = useState(false);
+
+  const unlockKey = (id: string) => `pm_unlocked_${id}`;
 
   useEffect(() => {
+
     let cancelled = false;
     (async () => {
       setLoading(true);
