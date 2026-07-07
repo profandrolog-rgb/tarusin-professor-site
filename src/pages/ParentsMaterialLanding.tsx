@@ -3,7 +3,7 @@ import { Link, useParams, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, Download, FileText, Loader2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Download, FileText, Loader2, ChevronRight, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,9 @@ import JsonLd from "@/components/JsonLd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 import { proxyImage } from "@/lib/proxyImage";
 import {
   type ParentsMaterial,
