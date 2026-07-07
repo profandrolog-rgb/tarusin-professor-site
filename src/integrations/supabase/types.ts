@@ -2550,55 +2550,97 @@ export type Database = {
       }
       parents_materials: {
         Row: {
+          audience: string | null
           created_at: string
           description: string | null
           description_en: string | null
+          download_count: number
           emoji: string | null
+          file_path: string | null
+          file_size_bytes: number | null
+          gated: boolean
           id: string
           image_path: string | null
           image_url: string | null
           is_published: boolean
           kind: string
+          long_description: string | null
+          long_description_en: string | null
+          og_image_path: string | null
+          pages_count: number | null
+          seo_description: string | null
+          seo_description_en: string | null
+          seo_title: string | null
+          seo_title_en: string | null
+          slug: string | null
           sort_order: number
           source: string | null
           title: string
           title_en: string | null
           updated_at: string
-          url: string
+          url: string | null
         }
         Insert: {
+          audience?: string | null
           created_at?: string
           description?: string | null
           description_en?: string | null
+          download_count?: number
           emoji?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          gated?: boolean
           id?: string
           image_path?: string | null
           image_url?: string | null
           is_published?: boolean
           kind: string
+          long_description?: string | null
+          long_description_en?: string | null
+          og_image_path?: string | null
+          pages_count?: number | null
+          seo_description?: string | null
+          seo_description_en?: string | null
+          seo_title?: string | null
+          seo_title_en?: string | null
+          slug?: string | null
           sort_order?: number
           source?: string | null
           title: string
           title_en?: string | null
           updated_at?: string
-          url: string
+          url?: string | null
         }
         Update: {
+          audience?: string | null
           created_at?: string
           description?: string | null
           description_en?: string | null
+          download_count?: number
           emoji?: string | null
+          file_path?: string | null
+          file_size_bytes?: number | null
+          gated?: boolean
           id?: string
           image_path?: string | null
           image_url?: string | null
           is_published?: boolean
           kind?: string
+          long_description?: string | null
+          long_description_en?: string | null
+          og_image_path?: string | null
+          pages_count?: number | null
+          seo_description?: string | null
+          seo_description_en?: string | null
+          seo_title?: string | null
+          seo_title_en?: string | null
+          slug?: string | null
           sort_order?: number
           source?: string | null
           title?: string
           title_en?: string | null
           updated_at?: string
-          url?: string
+          url?: string | null
         }
         Relationships: []
       }
@@ -5938,6 +5980,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_material_download: {
+        Args: { material_id: string }
+        Returns: undefined
       }
       increment_public_plan_view: {
         Args: { _hash: string }
