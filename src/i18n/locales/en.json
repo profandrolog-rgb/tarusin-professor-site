@@ -40,8 +40,7 @@
     "yearsExp": "years of experience",
     "presentations": "presentations",
     "publicationsCount": "publications",
-    "mataraClinic": "Dr. Matara's Clinic",
-    "aveClinic": "AVE-CLINIC"
+    "mataraClinic": "Dr. Matara's Clinic"
   },
   "about": {
     "title": "About Me",
@@ -169,7 +168,6 @@
     "whatProblems": "Common Conditions",
     "howToPrepare": "How to Prepare",
     "contactInfo": "Contact Information",
-    "aveAddress": "Nemchinovka, 3rd Zaprudnaya St. 16, AVE-CLINIC",
     "children": "Children",
     "men": "Men",
     "byAppointment": "By appointment only",

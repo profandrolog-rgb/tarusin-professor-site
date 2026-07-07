@@ -60,24 +60,9 @@ const Contacts = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at AVE-CLINIC or Dr. Matara's Clinic in Moscow. Addresses, phone numbers and directions." : "Запись на приём к профессору Тарусину Д.И. в клиниках AVE-CLINIC и «Доктора Матара» в Москве. Адреса, телефоны и схема проезда."} path="/contacts" />
+      <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at Dr. Matara's Clinic in Moscow. Address, phone numbers and directions." : "Запись на приём к профессору Тарусину Д.И. в Клинике доктора Матара в Москве. Адрес, телефоны и схема проезда."} path="/contacts" />
       <JsonLd
         data={[
-          {
-            "@context": "https://schema.org",
-            "@type": "MedicalClinic",
-            name: "AVE-CLINIC",
-            url: "https://tarusin.pro/contacts",
-            address: {
-              "@type": "PostalAddress",
-              streetAddress: "3-я Запрудная ул., д. 16",
-              addressLocality: "с. Немчиновка",
-              addressRegion: "Московская область",
-              addressCountry: "RU",
-            },
-            geo: { "@type": "GeoCoordinates", latitude: 55.723389, longitude: 37.370515 },
-            medicalSpecialty: ["Urology", "PediatricSurgery"],
-          },
           {
             "@context": "https://schema.org",
             "@type": "MedicalClinic",
@@ -103,40 +88,7 @@ const Contacts = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid lg:grid-cols-2 gap-8 mb-12">
-          {/* AVE-CLINIC */}
-          <div className="flex flex-col">
-            <h2 className="text-2xl font-bold text-foreground mb-6">AVE-CLINIC</h2>
-            <Card className="mb-6 flex-shrink-0"><CardContent className="p-6"><div className="space-y-5">
-              <div><div className="flex items-center gap-4 mb-3"><div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0"><Phone className="w-5 h-5 text-accent" /></div><h3 className="font-semibold text-foreground">{isEn ? "Phones" : "Телефоны"}</h3></div>
-                <div className="space-y-2 ml-14">
-                  <div className="flex items-center"><a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:underline">+7 (926) 600-555-0</a><span className="text-muted-foreground text-sm ml-3">(WhatsApp, Telegram, MAX)</span></div>
-                </div>
-              </div>
-              <div className="flex items-start gap-4"><div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><MapPin className="w-5 h-5 text-primary" /></div><div><h3 className="font-semibold text-foreground mb-1">{isEn ? "Location" : "Место приёма"}</h3><p className="text-muted-foreground"><span className="font-medium text-foreground">AVE-CLINIC</span><br />{isEn ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}</p></div></div>
-              <div className="flex items-start gap-4"><div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Clock className="w-5 h-5 text-primary" /></div><div><h3 className="font-semibold text-foreground mb-1">{isEn ? "Schedule" : "Приём"}</h3><p className="text-muted-foreground">{isEn ? "By appointment only" : "Только по предварительной записи"}</p></div></div>
-            </div></CardContent></Card>
-            <Card className="mb-6 overflow-hidden flex-shrink-0"><CardContent className="p-0"><iframe src="https://yandex.ru/map-widget/v1/?ll=37.370515%2C55.723389&z=16&pt=37.370515%2C55.723389%2Cpm2rdm&l=map" width="100%" height="280" frameBorder="0" title={isEn ? "AVE-CLINIC Map" : "Карта AVE-CLINIC"} className="w-full" allowFullScreen /></CardContent></Card>
-            <Card className="flex-1"><CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4"><div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center"><Navigation className="w-5 h-5 text-primary" /></div><h3 className="font-semibold text-foreground text-lg">{isEn ? "Directions" : "Как добраться"}</h3></div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div><div className="flex items-center gap-2 mb-3"><Train className="w-4 h-4 text-primary" /><span className="font-medium text-foreground text-sm">{isEn ? "Metro / Railway" : "Метро и МЦД"}</span></div>
-                  <div className="space-y-2 text-sm">
-                    <div className="p-3 bg-secondary/50 rounded-lg"><div className="flex items-center justify-between mb-1"><span className="font-medium text-primary">{isEn ? "Nemchinovka Station" : "М Немчиновка"}</span><span className="text-muted-foreground text-xs">{isEn ? "14 min" : "14 мин"}</span></div><p className="text-muted-foreground text-xs">{isEn ? "Walk (950 m)" : "Пешком (950 м)"}</p></div>
-                    <div className="p-3 bg-secondary/50 rounded-lg"><div className="flex items-center justify-between mb-1"><span className="font-medium text-primary">{isEn ? "Nemchinovka Railway" : "ЖД Немчиновка"}</span><span className="text-muted-foreground text-xs">{isEn ? "13 min" : "13 мин"}</span></div><p className="text-muted-foreground text-xs">{isEn ? "Walk (900 m)" : "Пешком (900 м)"}</p></div>
-                  </div>
-                </div>
-                <div><div className="flex items-center gap-2 mb-3"><Bus className="w-4 h-4 text-primary" /><span className="font-medium text-foreground text-sm">{isEn ? "Buses" : "Автобусы"}</span></div>
-                  <div className="space-y-2 text-sm">
-                    <div className="p-3 bg-secondary/50 rounded-lg"><div className="font-medium text-foreground mb-1">№ 794</div><p className="text-muted-foreground text-xs">{isEn ? "to 'Nemchinovka' — 3 stops" : "до «Немчиновка» — 3 ост."}</p></div>
-                    <div className="p-3 bg-secondary/50 rounded-lg"><div className="font-medium text-foreground mb-1">№ 597м, 597</div><p className="text-muted-foreground text-xs">{isEn ? "to 'Nemchinovka' — 4 stops" : "до «Немчиновка» — 4 ост."}</p></div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 p-3 bg-accent/10 rounded-lg flex items-start gap-3"><span className="text-lg">🚗</span><div><p className="text-sm font-medium text-foreground">{isEn ? "Parking" : "Парковка"}</p><p className="text-xs text-muted-foreground">{isEn ? <>Gated parking. Password — <span className="font-semibold text-primary">"To the medical center"</span></> : <>Закрытая парковка. Пароль — <span className="font-semibold text-primary">«В медицинский центр»</span></>}</p></div></div>
-            </CardContent></Card>
-          </div>
-
+        <div className="max-w-3xl mx-auto mb-12">
           {/* Dr. Matara's Clinic */}
           <div className="flex flex-col">
             <h2 className="text-2xl font-bold text-foreground mb-6">{isEn ? "Dr. Matara's Clinic" : "Клиника доктора Матара"}</h2>
@@ -205,7 +157,7 @@ const Contacts = () => {
               <p className="text-xs text-muted-foreground text-center">{isEn ? "By submitting, you agree to the processing of personal data" : "Нажимая кнопку, вы соглашаетесь с обработкой персональных данных"}</p>
             </form>
           </CardContent></Card>
-          <Card className="mt-6"><CardContent className="p-6"><div className="flex items-start gap-4"><div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0"><span className="text-lg">🚗</span></div><div><h3 className="font-semibold text-foreground mb-2">{isEn ? "Parking (AVE-CLINIC)" : "Парковка (AVE-CLINIC)"}</h3><p className="text-muted-foreground">{isEn ? <>Gated parking for patients. Tell security the password — <span className="font-semibold text-primary">"To the medical center"</span></> : <>Для пациентов предусмотрена закрытая парковка. На охране сообщить пароль — <span className="font-semibold text-primary">«В медицинский центр»</span></>}</p></div></div></CardContent></Card>
+          
         </div>
       </main>
     </div>

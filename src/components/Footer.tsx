@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MapPin, Phone } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FOOTER_SOCIAL_LINKS, WhatsAppIcon, MaxQrModal } from "./SocialLinks";
+import { FOOTER_SOCIAL_LINKS, MaxQrModal } from "./SocialLinks";
 import { useTranslation } from "react-i18next";
 
 const Footer = () => {
@@ -118,13 +118,6 @@ const Footer = () => {
                   <li className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 flex-shrink-0 text-background/70" /><a href="tel:+79263030111" className="text-background/70 hover:text-background transition-colors">+7 (926) 303-01-11</a></li>
                   <li className="flex items-center gap-3 text-sm"><Phone className="w-4 h-4 flex-shrink-0 text-background/70" /><a href="tel:+79160303031" className="text-background/70 hover:text-background transition-colors">+7 (916) 030-30-31</a></li>
                   <li className="flex items-start gap-3 text-sm"><MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" /><span className="text-background/70">{t("lang") === "en" ? "Moscow, Korovinskoye Hwy 9, Bldg 2" : "Москва, Коровинское шоссе, 9 к2"}</span></li>
-                </ul>
-              </div>
-              <div>
-                <p className="font-medium text-background/90 text-sm mb-2">{t("hero.aveClinic")}</p>
-                <ul className="space-y-2">
-                  <li className="flex items-center gap-3 text-sm"><WhatsAppIcon className="w-4 h-4 flex-shrink-0 text-background/70" /><div><a href="https://wa.me/79266005550" target="_blank" rel="noopener noreferrer" className="text-background/70 hover:text-background transition-colors">+7 (926) 600-555-0</a><span className="text-background/50 ml-1">(WhatsApp, Telegram, MAX)</span></div></li>
-                  <li className="flex items-start gap-3 text-sm"><MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-background/70" /><span className="text-background/70">{t("lang") === "en" ? "Nemchinovka, 3rd Zaprudnaya St. 16" : "с. Немчиновка, 3-я Запрудная ул. дом 16"}</span></li>
                 </ul>
               </div>
             </div>
