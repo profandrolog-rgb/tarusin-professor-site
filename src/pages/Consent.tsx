@@ -41,7 +41,7 @@ const Consent = () => {
                   <h2 className="text-xl font-semibold text-foreground mt-8">5. Legal Basis</h2>
                   <p>Personal data processing is carried out in accordance with applicable data protection legislation.</p>
                   <h2 className="text-xl font-semibold text-foreground mt-8">6. Contact Information</h2>
-                  <p>For questions about personal data processing, please call +7 (926) 600-555-0 or use the contact form on the website.</p>
+                  <p>For questions about personal data processing, please call +7 (495) 303-00-00 or use the contact form on the website.</p>
                 </>
               ) : (
                 <>
