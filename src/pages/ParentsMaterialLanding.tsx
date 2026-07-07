@@ -130,7 +130,9 @@ const ParentsMaterialLanding = () => {
   const ogImage = item.og_image_path ? parentsMediaPublicUrl(item.og_image_path) : preview;
   const audLabel = item.audience ? (isEn ? audienceLabelEn[item.audience] : audienceLabelRu[item.audience]) : (isEn ? "Handout" : "Памятка");
 
-  const handleDownload = async () => {
+  const gateRequired = !!item.gated && !unlocked;
+
+  const triggerDownload = async () => {
     if (!item.file_path) {
       toast.error(isEn ? "PDF not available yet" : "PDF пока не прикреплён");
       return;
@@ -142,10 +144,45 @@ const ParentsMaterialLanding = () => {
       // счётчик не критичен
     }
     const url = parentsMediaPublicUrl(item.file_path)!;
-    // Открываем в новой вкладке, чтобы избежать блокировок и CORS
     window.open(url, "_blank", "noopener,noreferrer");
     setDownloading(false);
   };
+
+  const handleDownload = async () => {
+    if (gateRequired) return;
+    await triggerDownload();
+  };
+
+  const submitLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = leadEmail.trim();
+    const phone = leadPhone.trim();
+    if (!email && !phone) {
+      toast.error(isEn ? "Please provide email or phone" : "Укажите email или телефон");
+      return;
+    }
+    setSubmittingLead(true);
+    try {
+      const { error } = await supabase.from("parents_material_leads" as any).insert({
+        material_id: item.id,
+        name: leadName.trim() || null,
+        email: email || null,
+        phone: phone || null,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        referrer: typeof document !== "undefined" ? document.referrer || null : null,
+      } as any);
+      if (error) throw error;
+      try { window.localStorage.setItem(unlockKey(item.id), "1"); } catch { /* ignore */ }
+      setUnlocked(true);
+      toast.success(isEn ? "Thanks! Starting download…" : "Спасибо! Начинаю скачивание…");
+      await triggerDownload();
+    } catch (err: any) {
+      toast.error(err?.message || (isEn ? "Failed to submit" : "Не удалось отправить"));
+    } finally {
+      setSubmittingLead(false);
+    }
+  };
+
 
   const pageUrl = `${SITE_URL}/for-parents/materials/${item.slug}/`;
   const jsonLd = {
