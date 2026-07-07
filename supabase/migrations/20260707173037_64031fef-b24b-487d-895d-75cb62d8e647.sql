@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Public video access" ON storage.objects;
