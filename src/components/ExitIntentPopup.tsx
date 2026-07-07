@@ -68,9 +68,9 @@ const ExitIntentPopup = () => {
             <CalendarCheck className="w-4 h-4 mr-2" />
             {isEn ? "Book Consultation" : "Записаться на приём"}
           </Button>
-          <Button variant="outline" onClick={openWhatsApp} className="w-full">
-            <MessageCircle className="w-4 h-4 mr-2" />
-            {isEn ? "Message via WhatsApp" : "Написать в WhatsApp"}
+          <Button variant="outline" onClick={callClinic} className="w-full">
+            <Phone className="w-4 h-4 mr-2" />
+            {isEn ? "Call the Clinic" : "Позвонить в клинику"}
           </Button>
         </div>
       </DialogContent>
