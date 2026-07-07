@@ -639,30 +639,10 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
                   <Label className="text-xs cursor-pointer text-muted-foreground">Гейт (форма перед скачиванием)</Label>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <AutoSaveIndicator status={saving ? "saving" : (slugConflict ? "error" : status)} />
                 <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
                   <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
-                </Button>
-                <Button size="sm" disabled={!dirty || saving || !!slugConflict} onClick={async () => {
-                  const ok = await onSave({
-                    title: draft.title.trim(),
-                    slug: draft.slug?.trim() || null,
-                    description: draft.description?.trim() || null,
-                    long_description: draft.long_description || null,
-                    title_en: draft.title_en?.trim() || null,
-                    description_en: draft.description_en?.trim() || null,
-                    long_description_en: draft.long_description_en || null,
-                    seo_title: draft.seo_title?.trim() || null,
-                    seo_title_en: draft.seo_title_en?.trim() || null,
-                    seo_description: draft.seo_description?.trim() || null,
-                    seo_description_en: draft.seo_description_en?.trim() || null,
-                    audience: draft.audience,
-                    pages_count: draft.pages_count,
-                    image_url: draft.image_url?.trim() || null,
-                  });
-                  if (ok) toast.success("Сохранено");
-                }}>
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}Сохранить
                 </Button>
               </div>
             </div>
