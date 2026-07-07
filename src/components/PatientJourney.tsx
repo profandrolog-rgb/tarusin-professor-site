@@ -3,7 +3,7 @@ import { Phone, FileText, Stethoscope, ClipboardCheck, Scissors, HeartPulse, Cal
 import { useTranslation } from "react-i18next";
 
 const stepsRu = [
-  { icon: Phone, title: "Запись на приём", description: "Позвоните или напишите в WhatsApp. Мы подберём удобное время и клинику.", detail: "+7 (926) 600-555-0" },
+  { icon: Phone, title: "Запись на приём", description: "Позвоните или напишите в WhatsApp. Мы подберём удобное время и клинику.", detail: "+7 (495) 303-00-00" },
   { icon: FileText, title: "Подготовка", description: "Соберите результаты предыдущих обследований, выписки и направления.", detail: "Список — в разделе «Памятка пациенту»" },
   { icon: Stethoscope, title: "Первичная консультация", description: "Осмотр, УЗИ-диагностика, обсуждение диагноза и плана лечения.", detail: "45–60 минут" },
   { icon: ClipboardCheck, title: "Предоперационная подготовка", description: "Если нужна операция — назначим анализы и обследования, объясним каждый шаг.", detail: "Список анализов выдаём на приёме" },
