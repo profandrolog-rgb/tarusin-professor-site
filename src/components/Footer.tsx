@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MapPin, Phone } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FOOTER_SOCIAL_LINKS, WhatsAppIcon, MaxQrModal } from "./SocialLinks";
+import { FOOTER_SOCIAL_LINKS, MaxQrModal } from "./SocialLinks";
 import { useTranslation } from "react-i18next";
 
 const Footer = () => {
