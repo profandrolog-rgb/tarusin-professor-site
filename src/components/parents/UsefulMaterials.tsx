@@ -108,6 +108,56 @@ const UsefulMaterials = () => {
         </section>
       )}
 
+      {/* Handouts (downloadable PDFs) */}
+      {handouts.length > 0 && (
+        <section className="mb-16">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-primary" />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">{isEn ? "Downloadable Materials" : "Материалы для скачивания"}</h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {handouts.map((h) => {
+              const preview = resolveMaterialPreview(h);
+              return (
+                <Link key={h.id} to={`/for-parents/materials/${h.slug}/`} className="group">
+                  <Card className="h-full overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                    <div className="relative overflow-hidden">
+                      <AspectRatio ratio={16 / 10}>
+                        {preview ? (
+                          <img src={proxyImage(preview)} alt={pickTitle(h)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center"><FileText className="w-12 h-12 text-muted-foreground" /></div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                        <div className="absolute top-3 left-3">
+                          <span className="bg-primary/90 backdrop-blur-sm text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full">
+                            PDF{h.pages_count ? ` · ${pagesLabel(h.pages_count)}` : ""}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <h3 className="text-white font-semibold text-base leading-snug line-clamp-2">
+                            {h.emoji ? `${h.emoji} ` : ""}{pickTitle(h)}
+                          </h3>
+                        </div>
+                      </AspectRatio>
+                    </div>
+                    <CardContent className="p-4">
+                      {pickDesc(h) && <p className="text-muted-foreground text-sm line-clamp-3 mb-3">{pickDesc(h)}</p>}
+                      <div className="flex items-center text-primary text-sm font-medium group-hover:underline">
+                        <Download className="w-3.5 h-3.5 mr-1.5" />
+                        {isEn ? "Download" : "Скачать"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Videos */}
       {videos.length > 0 && (
         <section className="mb-16">
