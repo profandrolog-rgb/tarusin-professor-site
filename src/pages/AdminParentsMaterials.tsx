@@ -342,32 +342,18 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
               </CollapsibleContent>
             </Collapsible>
             <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
-              <div className="flex items-center gap-2">
-                <Switch checked={draft.is_published} onCheckedChange={(v) => { setDraft({ ...draft, is_published: v }); onSave({ is_published: v }); }} />
-                <Label className="text-xs cursor-pointer flex items-center gap-1">
-                  {draft.is_published ? <><Eye className="w-3.5 h-3.5" />Опубликовано</> : <><EyeOff className="w-3.5 h-3.5" />Черновик</>}
-                </Label>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Switch checked={draft.is_published} onCheckedChange={(v) => { setDraft({ ...draft, is_published: v }); onSave({ is_published: v }); }} />
+                  <Label className="text-xs cursor-pointer flex items-center gap-1">
+                    {draft.is_published ? <><Eye className="w-3.5 h-3.5" />Опубликовано</> : <><EyeOff className="w-3.5 h-3.5" />Черновик</>}
+                  </Label>
+                </div>
+                <AutoSaveIndicator status={saving ? "saving" : status} />
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
-                  <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
-                </Button>
-                <Button size="sm" disabled={!dirty || saving} onClick={async () => {
-                  const ok = await onSave({
-                    title: draft.title.trim(),
-                    description: draft.description?.trim() || null,
-                    title_en: draft.title_en?.trim() || null,
-                    description_en: draft.description_en?.trim() || null,
-                    url: draft.url?.trim() || null,
-                    source: draft.source?.trim() || null,
-                    image_url: draft.image_url?.trim() || null,
-                    emoji: draft.emoji?.trim() || null,
-                  });
-                  if (ok) toast.success("Сохранено");
-                }}>
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}Сохранить
-                </Button>
-              </div>
+              <Button variant="ghost" size="sm" onClick={onDelete} className="text-destructive hover:text-destructive">
+                <Trash2 className="w-3.5 h-3.5 mr-1" />Удалить
+              </Button>
             </div>
           </div>
         </div>
