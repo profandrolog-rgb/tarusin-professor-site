@@ -94,17 +94,6 @@ const ContactSection = () => {
     howToGet: t("contact.howToGet"), metro: t("contact.metro"), buses: t("contact.buses"), parking: t("contact.parking"),
   };
 
-  const aveDirections: DirectionsData = {
-    metro: [
-      { name: isEn ? "Nemchinovka Station" : "М Немчиновка", time: isEn ? "14 min" : "14 мин", detail: isEn ? "Walk (950 m)" : "Пешком (950 м)" },
-      { name: isEn ? "Nemchinovka Railway" : "ЖД Немчиновка", time: isEn ? "13 min" : "13 мин", detail: isEn ? "Walk (900 m)" : "Пешком (900 м)" },
-    ],
-    buses: [
-      { number: "794", detail: isEn ? "to 'Nemchinovka' — 3 stops" : "до «Немчиновка» — 3 ост." },
-      { number: "597м, 597", detail: isEn ? "to 'Nemchinovka' — 4 stops" : "до «Немчиновка» — 4 ост." },
-    ],
-    parking: { emoji: "🚗", title: isEn ? "Parking" : "Парковка", description: isEn ? <>Gated parking. Password — <span className="font-semibold">"To the medical center"</span></> : <>Закрытая парковка. Пароль — <span className="font-semibold">«В медицинский центр»</span></> },
-  };
 
   const mataraDirections: DirectionsData = {
     metro: [
