@@ -263,17 +263,49 @@ const ParentsMaterialLanding = () => {
             </div>
             <CardContent className="p-6 md:p-8 flex flex-col justify-center gap-4">
               {description && <p className="text-muted-foreground leading-relaxed">{description}</p>}
-              <Button size="lg" onClick={handleDownload} disabled={downloading || !item.file_path} className="w-full">
-                {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
-                {isEn ? "Download PDF" : "Скачать PDF"}
-                {item.file_size_bytes ? ` · ${formatBytes(item.file_size_bytes)}` : ""}
-              </Button>
+              {gateRequired ? (
+                <form onSubmit={submitLead} className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Lock className="w-4 h-4 text-primary" />
+                    {isEn ? "Leave your contact to get the PDF" : "Оставьте контакт — и PDF откроется"}
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <Label htmlFor="lead-name" className="text-xs">{isEn ? "Name (optional)" : "Имя (по желанию)"}</Label>
+                      <Input id="lead-name" value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder={isEn ? "Your name" : "Ваше имя"} autoComplete="name" />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead-email" className="text-xs">Email</Label>
+                      <Input id="lead-email" type="email" value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead-phone" className="text-xs">{isEn ? "Phone" : "Телефон"}</Label>
+                      <Input id="lead-phone" type="tel" value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="+7 ___ ___ __ __" autoComplete="tel" />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {isEn ? "Provide email or phone. Submitting means consent to be contacted about this material." : "Достаточно email или телефона. Отправляя форму, вы соглашаетесь на связь по этой памятке."}
+                    </p>
+                  </div>
+                  <Button type="submit" size="lg" disabled={submittingLead || !item.file_path} className="w-full">
+                    {submittingLead ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
+                    {isEn ? "Get the PDF" : "Получить PDF"}
+                    {item.file_size_bytes ? ` · ${formatBytes(item.file_size_bytes)}` : ""}
+                  </Button>
+                </form>
+              ) : (
+                <Button size="lg" onClick={handleDownload} disabled={downloading || !item.file_path} className="w-full">
+                  {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
+                  {isEn ? "Download PDF" : "Скачать PDF"}
+                  {item.file_size_bytes ? ` · ${formatBytes(item.file_size_bytes)}` : ""}
+                </Button>
+              )}
               {!item.file_path && (
                 <p className="text-xs text-muted-foreground text-center">
                   {isEn ? "PDF will be available soon." : "PDF будет доступен в ближайшее время."}
                 </p>
               )}
             </CardContent>
+
           </div>
         </Card>
 
