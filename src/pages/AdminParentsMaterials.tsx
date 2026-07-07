@@ -27,6 +27,9 @@ import {
   resolveMaterialPreview, uploadParentsMedia, uploadParentsOgImage, uploadParentsHandoutPdf,
   deleteParentsMedia, parentsMediaPublicUrl, slugify, formatBytes,
 } from "@/lib/parentsMaterialsBucket";
+import EmojiPickerButton from "@/components/parents/EmojiPickerButton";
+import AutoSaveIndicator from "@/components/parents/AutoSaveIndicator";
+import { useDebouncedAutoSave } from "@/hooks/useDebouncedAutoSave";
 
 const KIND_LABELS: Record<ParentsMaterialKind, string> = {
   article: "Статьи",
