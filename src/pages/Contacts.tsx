@@ -60,7 +60,7 @@ const Contacts = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at AVE-CLINIC or Dr. Matara's Clinic in Moscow. Addresses, phone numbers and directions." : "Запись на приём к профессору Тарусину Д.И. в клиниках AVE-CLINIC и «Доктора Матара» в Москве. Адреса, телефоны и схема проезда."} path="/contacts" />
+      <PageMeta title={isEn ? "Contacts & Booking — Prof. Tarusin D.I." : "Контакты и запись — Проф. Тарусин Д.И."} description={isEn ? "Book an appointment with Professor Tarusin at Dr. Matara's Clinic in Moscow. Address, phone numbers and directions." : "Запись на приём к профессору Тарусину Д.И. в Клинике доктора Матара в Москве. Адрес, телефоны и схема проезда."} path="/contacts" />
       <JsonLd
         data={[
           {
