@@ -81,7 +81,7 @@ export function DbHealthWidget() {
               Здоровье базы данных (Lovable Cloud)
             </CardTitle>
             <CardDescription className="text-xs">
-              Обновляется каждую минуту
+              Обновляется каждые 5 минут
               {updatedAt && ` • последнее: ${updatedAt.toLocaleTimeString("ru-RU")}`}
             </CardDescription>
           </div>
