@@ -130,7 +130,8 @@ function callModelOnce(
   // висеть бесконечно и вешать весь Promise.all — функцию потом убивает runtime,
   // и в UI это выглядит как «анализ застрял».
   const ac = new AbortController();
-  const timeoutMs = 120_000;
+  const timeoutMs = 240_000;
+
   const timer = setTimeout(() => ac.abort(), timeoutMs);
   return fetch(url, {
     method: "POST",
