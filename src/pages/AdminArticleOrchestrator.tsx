@@ -308,6 +308,25 @@ export default function AdminArticleOrchestrator() {
   const getSuggested = (key: string, fallback: string) =>
     editedSuggested.has(key) ? editedSuggested.get(key)! : fallback;
 
+  const copyToClipboard = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      sonnerToast.success(successMessage);
+    } catch {
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.style.position = "fixed";
+      area.style.left = "-9999px";
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(area);
+      if (!ok) throw new Error("Копирование заблокировано браузером");
+      sonnerToast.success(successMessage);
+    }
+  };
+
   const setSuggested = (key: string, val: string) => {
     setEditedSuggested((cur) => {
       const n = new Map(cur);
@@ -1066,10 +1085,7 @@ export default function AdminArticleOrchestrator() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(finalText);
-                  toast({ title: "Скопировано в буфер" });
-                }}
+                onClick={() => copyToClipboard(finalText, "Скопировано в буфер")}
               >
                 <Copy className="w-4 h-4 mr-2" /> Копировать
               </Button>
@@ -1162,8 +1178,7 @@ export default function AdminArticleOrchestrator() {
                         ``,
                         translation.content,
                       ].join("\n");
-                      navigator.clipboard.writeText(blob);
-                      sonnerToast.success("Английская версия скопирована целиком");
+                      copyToClipboard(blob, "Английская версия скопирована целиком");
                     }}
                   >
                     <Copy className="w-4 h-4 mr-2" /> Копировать всё
