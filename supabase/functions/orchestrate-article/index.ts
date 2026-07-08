@@ -269,6 +269,47 @@ function normalizeReview(parsed: any): { free_review: string; edits: any[] } | n
   return { free_review: String(parsed.free_review || parsed.summary || ""), edits };
 }
 
+function jsonKeepaliveResponse(
+  task: () => Promise<unknown>,
+  opts?: { successStatus?: number; errorStatus?: number },
+): Response {
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      let closed = false;
+      const send = (s: string) => {
+        if (!closed) {
+          try { controller.enqueue(enc.encode(s)); } catch { /* closed */ }
+        }
+      };
+      send("\n");
+      const keepalive = setInterval(() => send(" \n"), 5000);
+      try {
+        const payload = await task();
+        send(JSON.stringify(payload));
+      } catch (e: any) {
+        console.error("orchestrate-article streamed json error", e?.message || String(e));
+        send(JSON.stringify({ error: e?.message || String(e) }));
+      } finally {
+        clearInterval(keepalive);
+        closed = true;
+        try { controller.close(); } catch { /* ignore */ }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: opts?.successStatus ?? 200,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "Connection": "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
 async function callReviewModel(
   openrouterKey: string,
   veniceKey: string | undefined,
@@ -460,22 +501,14 @@ Deno.serve(async (req) => {
         { role: "system", content: ARBITER_SYSTEM },
         { role: "user", content: userMsg },
       ];
-      try {
+      return jsonKeepaliveResponse(async () => {
         const raw = await callModel(openrouterKey, veniceKey, origin, arbiter, messages, 0.2, "consolidate");
         const parsed = tryParseJson(raw);
         if (!parsed) {
-          return new Response(JSON.stringify({ error: "arbiter returned non-JSON", raw: raw.slice(0, 1000) }), {
-            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return { error: "arbiter returned non-JSON", raw: raw.slice(0, 1000) };
         }
-        return new Response(JSON.stringify({ consolidated: parsed, arbiter }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (e: any) {
-        return new Response(JSON.stringify({ error: e?.message || String(e) }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        return { consolidated: parsed, arbiter };
+      });
     }
 
     if (body.action === "rewrite") {
@@ -501,7 +534,7 @@ Deno.serve(async (req) => {
         editsBlock,
         styleBlock,
       ].filter(Boolean).join("\n");
-      try {
+      return jsonKeepaliveResponse(async () => {
         const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
           { role: "system", content: REWRITE_SYSTEM },
           { role: "user", content: userMsg },
@@ -509,18 +542,10 @@ Deno.serve(async (req) => {
         const parsed = tryParseJson(raw);
         const rewritten = parsed && typeof parsed.rewritten === "string" ? parsed.rewritten : null;
         if (!rewritten) {
-          return new Response(JSON.stringify({ error: "rewriter returned non-JSON or empty", raw: raw.slice(0, 1000) }), {
-            status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+          return { error: "rewriter returned non-JSON or empty", raw: raw.slice(0, 1000) };
         }
-        return new Response(JSON.stringify({ rewritten, rewriter, applied: editsAccepted.length }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (e: any) {
-        return new Response(JSON.stringify({ error: e?.message || String(e) }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+        return { rewritten, rewriter, applied: editsAccepted.length };
+      });
     }
 
     return new Response(JSON.stringify({ error: "unknown action" }), {
