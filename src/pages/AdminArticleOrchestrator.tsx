@@ -465,7 +465,7 @@ export default function AdminArticleOrchestrator() {
         }),
       });
       const j = await resp.json();
-      if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
+      if (!resp.ok || j?.error) throw new Error(j?.error || `HTTP ${resp.status}`);
       const cons = j.consolidated as { summary: string; edits: EditItem[] };
       setConsolidated(cons);
       // По умолчанию принимаем consensus и majority high/medium
@@ -506,7 +506,7 @@ export default function AdminArticleOrchestrator() {
         body: JSON.stringify({ action: "rewrite", text, edits: editsAccepted, rewriter }),
       });
       const j = await resp.json();
-      if (!resp.ok) throw new Error(j?.error || `HTTP ${resp.status}`);
+      if (!resp.ok || j?.error) throw new Error(j?.error || `HTTP ${resp.status}`);
       setFinalText(String(j.rewritten || ""));
       // Запоминаем применённые правки — чтобы исключить их при повторном ревью
       setAppliedEdits((cur) => [...cur, ...editsAccepted]);
