@@ -269,6 +269,35 @@ function normalizeReview(parsed: any): { free_review: string; edits: any[] } | n
   return { free_review: String(parsed.free_review || parsed.summary || ""), edits };
 }
 
+async function callReviewModel(
+  openrouterKey: string,
+  veniceKey: string | undefined,
+  origin: string,
+  model: string,
+  messages: unknown[],
+  text: string,
+): Promise<{ raw: string; review: { free_review: string; edits: any[] } | null; repaired: boolean }> {
+  const raw = await callModel(openrouterKey, veniceKey, origin, model, messages, 0.2, "review");
+  const first = normalizeReview(tryParseJson(raw));
+  if (first && first.edits.length > 0) return { raw, review: first, repaired: false };
+
+  const repairMessages = [
+    { role: "system", content: REVIEW_SYSTEM },
+    {
+      role: "user",
+      content: [
+        "Предыдущий ответ не дал полноценный JSON со списком правок. Сделай финальный редакторский вывод заново.",
+        "Верни только JSON. Обязательно заполни edits: 8-15 конкретных правок, если текст не идеален.",
+        "Сфокусируйся на терминологии, фактах, структуре, ясности для родителей, SEO и безопасности формулировок.",
+        "СТАТЬЯ:",
+        text,
+      ].join("\n\n"),
+    },
+  ];
+  const repairedRaw = await callModel(openrouterKey, veniceKey, origin, model, repairMessages, 0.1, "review");
+  return { raw: repairedRaw, review: normalizeReview(tryParseJson(repairedRaw)), repaired: true };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -373,11 +402,10 @@ Deno.serve(async (req) => {
             const t0 = Date.now();
             send(`event: model_start\ndata: ${JSON.stringify({ model, started_at: t0 })}\n\n`);
             try {
-              const raw = await callModel(openrouterKey, veniceKey, origin, model, messages, 0.3);
-              const parsed = tryParseJson(raw);
+              const { raw, review, repaired } = await callReviewModel(openrouterKey, veniceKey, origin, model, messages, text);
               const ms = Date.now() - t0;
-              const payload = parsed && typeof parsed === "object"
-                ? { model, free_review: String(parsed.free_review || ""), edits: Array.isArray(parsed.edits) ? parsed.edits : [], ms }
+              const payload = review
+                ? { model, free_review: review.free_review, edits: review.edits, ms, repaired }
                 : { model, free_review: raw.slice(0, 2000), edits: [], parse_error: true, ms };
               console.log("[orchestrator] ok", JSON.stringify({ model, ms, edits: payload.edits.length }));
               send(`event: model_done\ndata: ${JSON.stringify(payload)}\n\n`);
@@ -433,7 +461,7 @@ Deno.serve(async (req) => {
         { role: "user", content: userMsg },
       ];
       try {
-        const raw = await callModel(openrouterKey, veniceKey, origin, arbiter, messages, 0.2);
+        const raw = await callModel(openrouterKey, veniceKey, origin, arbiter, messages, 0.2, "consolidate");
         const parsed = tryParseJson(raw);
         if (!parsed) {
           return new Response(JSON.stringify({ error: "arbiter returned non-JSON", raw: raw.slice(0, 1000) }), {
@@ -477,7 +505,7 @@ Deno.serve(async (req) => {
         const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
           { role: "system", content: REWRITE_SYSTEM },
           { role: "user", content: userMsg },
-        ], 0.4);
+        ], 0.4, "rewrite");
         const parsed = tryParseJson(raw);
         const rewritten = parsed && typeof parsed.rewritten === "string" ? parsed.rewritten : null;
         if (!rewritten) {
