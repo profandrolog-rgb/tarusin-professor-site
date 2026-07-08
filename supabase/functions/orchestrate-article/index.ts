@@ -130,7 +130,8 @@ function callModelOnce(
   // висеть бесконечно и вешать весь Promise.all — функцию потом убивает runtime,
   // и в UI это выглядит как «анализ застрял».
   const ac = new AbortController();
-  const timeoutMs = 120_000;
+  const timeoutMs = 240_000;
+
   const timer = setTimeout(() => ac.abort(), timeoutMs);
   return fetch(url, {
     method: "POST",
@@ -189,12 +190,17 @@ async function callModel(
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || e);
-      if (!/empty content|HTTP 4\d\d|INVALID_REQUEST_BODY/i.test(msg)) break;
+      // Ретраим только «мягкие» ошибки формата запроса или пустой контент.
+      // Таймауты, 5xx и сетевые обрывы — терминальные: нет смысла тратить ещё 2×240с.
+      const retryable = /empty content|HTTP 4\d\d|INVALID_REQUEST_BODY/i.test(msg)
+        && !/timeout after/i.test(msg);
+      if (!retryable) break;
       console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);
     }
   }
   throw lastErr ?? new Error("callModel failed");
 }
+
 
 function tryParseJson(s: string): any {
   try {
