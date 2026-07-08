@@ -126,6 +126,12 @@ function callModelOnce(
   } else {
     payload.venice_parameters = { include_venice_system_prompt: false };
   }
+  // Per-request timeout: без него провайдер (например, xiaomi/mimo) может
+  // висеть бесконечно и вешать весь Promise.all — функцию потом убивает runtime,
+  // и в UI это выглядит как «анализ застрял».
+  const ac = new AbortController();
+  const timeoutMs = 120_000;
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
   return fetch(url, {
     method: "POST",
     headers: {
@@ -134,6 +140,7 @@ function callModelOnce(
       ...(isVenice ? {} : { "HTTP-Referer": origin, "X-Title": "Tarusin Article Orchestrator" }),
     },
     body: JSON.stringify(payload),
+    signal: ac.signal,
   }).then(async (r) => {
     if (!r.ok) {
       const t = await r.text().catch(() => "");
@@ -153,7 +160,11 @@ function callModelOnce(
       throw new Error(`empty content (finish_reason=${finish})`);
     }
     return content;
-  });
+  }).catch((e: any) => {
+    if (e?.name === "AbortError") throw new Error(`timeout after ${timeoutMs / 1000}s`);
+    throw e;
+  }).finally(() => clearTimeout(timer));
+
 }
 
 async function callModel(
