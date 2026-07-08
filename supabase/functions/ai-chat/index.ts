@@ -246,15 +246,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    const NO_REASONING_RE = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4)/;
     const makePayload = (modelId: string, gateway: "openrouter" | "venice" | "perplexity") => {
       const payload: Record<string, unknown> = {
         model: modelId,
         messages: finalMessages,
         stream: true,
-        max_tokens: 8192,
+        max_tokens: 16000,
       };
       if (gateway === "openrouter") {
         payload.provider = { sort: "throughput" };
+        if (!NO_REASONING_RE.test(modelId)) {
+          payload.reasoning = { effort };
+        }
         const plugins: unknown[] = [];
         if (webSearch && !usePubmed) plugins.push({ id: "web", max_results: 5 });
         if (hasPdfInput) plugins.push({ id: "file-parser", pdf: { engine: "cloudflare-ai" } });
@@ -264,6 +268,7 @@ Deno.serve(async (req) => {
       }
       return payload;
     };
+
 
     console.log("[ai-chat] request", JSON.stringify({
       user: claimsData.claims.sub,
