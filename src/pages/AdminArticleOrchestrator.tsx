@@ -615,6 +615,107 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
+  async function runReviewOne(model: string) {
+    const baseText = (finalText.trim() || text).trim();
+    if (baseText.length < 100) {
+      toast({ title: "Статья слишком короткая", description: "Минимум 100 символов.", variant: "destructive" });
+      return;
+    }
+    // Убираем прошлый результат этой модели, чтобы стрим заменил её карточку.
+    setReviews((cur) => cur.filter((r) => r.model !== model));
+    // Сбрасываем связанные с этой моделью локальные принятия правок.
+    setDirectAccepted((cur) => {
+      const n = new Map(cur);
+      for (const k of Array.from(n.keys())) if (k.startsWith(`${model}::`)) n.delete(k);
+      return n;
+    });
+    setEditedSuggested((cur) => {
+      const n = new Map(cur);
+      for (const k of Array.from(n.keys())) if (k.startsWith(`${model}::`)) n.delete(k);
+      return n;
+    });
+    setPending((cur) => { const n = new Set(cur); n.add(model); return n; });
+    setProgress((cur) => ({ ...cur, [model]: { status: "queued" } }));
+    setReviewing(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "review",
+          title,
+          text: baseText,
+          models: [model],
+          applied_edits: reviewRound > 1 ? appliedEdits : [],
+        }),
+      });
+      if (!resp.ok || !resp.body) {
+        const t = await resp.text().catch(() => "");
+        throw new Error(`HTTP ${resp.status}: ${t.slice(0, 200)}`);
+      }
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const events = buf.split("\n\n");
+        buf = events.pop() ?? "";
+        for (const ev of events) {
+          const lines = ev.split("\n");
+          let evType = "message";
+          let data = "";
+          for (const line of lines) {
+            if (line.startsWith("event:")) evType = line.slice(6).trim();
+            else if (line.startsWith("data:")) data += line.slice(5).trim();
+          }
+          if (!data) continue;
+          if (evType === "model_start") {
+            try {
+              const r = JSON.parse(data) as { model: string; started_at: number };
+              setProgress((cur) => ({ ...cur, [r.model]: { status: "running", startedAt: r.started_at } }));
+            } catch { /* ignore */ }
+          } else if (evType === "model_done") {
+            try {
+              const r = JSON.parse(data) as ModelReview;
+              setReviews((cur) => [...cur.filter((x) => x.model !== r.model), r]);
+              setPending((cur) => { const n = new Set(cur); n.delete(r.model); return n; });
+              setProgress((cur) => ({
+                ...cur,
+                [r.model]: {
+                  status: r.error ? "error" : "done",
+                  startedAt: cur[r.model]?.startedAt,
+                  ms: r.ms,
+                  edits: r.edits?.length ?? 0,
+                  error: r.error,
+                },
+              }));
+            } catch { /* ignore */ }
+          } else if (evType === "done") {
+            playCompletionChime();
+          }
+        }
+      }
+    } catch (e: any) {
+      toast({ title: `Ошибка ревью (${model})`, description: e?.message || String(e), variant: "destructive" });
+      setProgress((cur) => ({ ...cur, [model]: { status: "error", error: e?.message || String(e) } }));
+    } finally {
+      setPending((cur) => { const n = new Set(cur); n.delete(model); return n; });
+      // Если больше нет активных моделей — снимаем общий флаг reviewing.
+      setPending((cur) => {
+        if (cur.size === 0) setReviewing(false);
+        return cur;
+      });
+    }
+  }
+
   async function runConsolidation() {
     const valid = reviews.filter((r) => !r.error && (r.edits.length || r.free_review));
     if (!valid.length) {
@@ -1016,6 +1117,22 @@ export default function AdminArticleOrchestrator() {
               </TabsList>
               {reviews.map((r) => (
                 <TabsContent key={r.model} value={r.model} className="space-y-3 mt-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-muted-foreground truncate">
+                      {r.model}{typeof r.ms === "number" && !r.error ? ` · ${(r.ms / 1000).toFixed(1)}s` : ""}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={pending.has(r.model)}
+                      onClick={() => runReviewOne(r.model)}
+                      title="Перезапустить ревью только этой модели"
+                    >
+                      {pending.has(r.model)
+                        ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Идёт…</>
+                        : <><RotateCw className="w-3.5 h-3.5 mr-1.5" /> Повторить</>}
+                    </Button>
+                  </div>
                   {r.error ? (
                     <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
                       {r.error}
