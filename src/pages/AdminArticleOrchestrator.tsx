@@ -20,6 +20,9 @@ import { toast as sonnerToast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
+import { CURATED_MODELS, resolveCuratedModel } from "@/config/aiModels";
+import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
+import { useVeniceModels } from "@/hooks/useVeniceModels";
 
 
 
