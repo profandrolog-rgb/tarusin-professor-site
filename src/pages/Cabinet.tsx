@@ -45,7 +45,7 @@ const DEFAULT_MODEL =
   CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
   "google/gemini-2.5-flash";
 
-const COUNCIL_MODEL_KEYS = ["gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5"];
+const COUNCIL_MODEL_KEYS = ["gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5", "sakana-fugu"];
 
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -409,7 +409,7 @@ export default function Cabinet() {
     .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
     .filter((id): id is string => Boolean(id))
     .filter((id, index, arr) => arr.indexOf(id) === index)
-    .slice(0, 6);
+    .slice(0, 7);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
     if (liveModelsLoading || !resolvedModels.length) return;

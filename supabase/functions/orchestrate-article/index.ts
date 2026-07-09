@@ -135,7 +135,7 @@ function callModelOnce(
   if (!isVenice) {
     // Многие reasoning-модели при effort=low уводят ответ в reasoning tokens
     // и отдают пустой content. Для известных проблемных семейств не форсируем.
-    const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4)/.test(realModel);
+    const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4|sakana\/)/.test(realModel);
     if (opts.useReasoning && !skipReasoning) {
       payload.reasoning = { effort: "low" };
     }
