@@ -157,7 +157,7 @@ function callModelOnce(
   model: string,
   messages: unknown[],
   temperature: number,
-  opts: { useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number },
+  opts: { useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number; timeoutMs?: number },
 ): Promise<string> {
   const isVenice = model.startsWith("venice/");
   const url = isVenice
@@ -183,7 +183,7 @@ function callModelOnce(
     payload.venice_parameters = { include_venice_system_prompt: false };
   }
   const ac = new AbortController();
-  const timeoutMs = 170_000;
+  const timeoutMs = opts.timeoutMs ?? 200_000;
   const timer = setTimeout(() => ac.abort(), timeoutMs);
 
   const proxyClient = !isVenice && shouldUseProxy(realModel) ? getProxyClient() : null;
