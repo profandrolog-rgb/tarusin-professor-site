@@ -691,13 +691,25 @@ export default function AdminArticleOrchestrator() {
         <ArrowLeft className="w-4 h-4" /> Назад в админку
       </Link>
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Sparkles className="w-7 h-7 text-amber-500" /> Оркестратор статей
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Параллельное ревью статьи несколькими ИИ-моделями, голосование и арбитраж, применение правок.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Sparkles className="w-7 h-7 text-amber-500" /> Оркестратор статей
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Параллельное ревью статьи несколькими ИИ-моделями, голосование и арбитраж, применение правок.
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}
+          title="Звук по завершении этапов"
+          className="shrink-0"
+        >
+          {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
