@@ -336,6 +336,92 @@ export default function AdminArticleOrchestrator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- Персистентность прогона в localStorage (переживает F5, hot-reload, случайные уходы) ---
+  const DRAFT_KEY = "orchestrator:draft:v1";
+  const draftLoadedRef = useRef(false);
+  const draftHydratingRef = useRef(true);
+
+  useEffect(() => {
+    if (draftLoadedRef.current) return;
+    draftLoadedRef.current = true;
+    // Не восстанавливаем, если пришли с явным новым текстом или на перепроверку
+    if (incoming.text || incoming.recheck) {
+      draftHydratingRef.current = false;
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) { draftHydratingRef.current = false; return; }
+      const d = JSON.parse(raw);
+      // TTL 7 дней
+      if (!d?.savedAt || Date.now() - d.savedAt > 7 * 24 * 3600 * 1000) {
+        draftHydratingRef.current = false;
+        return;
+      }
+      if (typeof d.title === "string") setTitle(d.title);
+      if (typeof d.text === "string") setText(d.text);
+      if (Array.isArray(d.models)) setModels(d.models);
+      if (typeof d.arbiter === "string" && d.arbiter) setArbiter(d.arbiter);
+      if (typeof d.rewriter === "string" && d.rewriter) setRewriter(d.rewriter);
+      if (Array.isArray(d.reviews)) setReviews(d.reviews);
+      if (d.progress && typeof d.progress === "object") setProgress(d.progress);
+      if (d.consolidated) setConsolidated(d.consolidated);
+      if (Array.isArray(d.accepted)) setAccepted(new Set(d.accepted));
+      if (Array.isArray(d.directAccepted)) setDirectAccepted(new Map(d.directAccepted));
+      if (Array.isArray(d.editedSuggested)) setEditedSuggested(new Map(d.editedSuggested));
+      if (typeof d.finalText === "string") setFinalText(d.finalText);
+      if (Array.isArray(d.appliedEdits)) setAppliedEdits(d.appliedEdits);
+      if (typeof d.reviewRound === "number") setReviewRound(d.reviewRound);
+      if (d.translation) setTranslation(d.translation);
+      if (d.seoMeta) setSeoMeta(d.seoMeta);
+      const when = new Date(d.savedAt);
+      sonnerToast.success("Черновик восстановлен", {
+        description: `Автосохранение от ${when.toLocaleString("ru-RU")}. Кнопка «Сбросить черновик» в шапке.`,
+      });
+    } catch (e) {
+      console.warn("[orchestrator] draft restore failed", e);
+    } finally {
+      // Дадим React отрендерить восстановленное состояние до включения автосохранения
+      setTimeout(() => { draftHydratingRef.current = false; }, 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced автосейв
+  useEffect(() => {
+    if (draftHydratingRef.current) return;
+    const timer = setTimeout(() => {
+      try {
+        const bundle = {
+          savedAt: Date.now(),
+          title, text, models, arbiter, rewriter,
+          reviews, progress,
+          consolidated,
+          accepted: Array.from(accepted),
+          directAccepted: Array.from(directAccepted.entries()),
+          editedSuggested: Array.from(editedSuggested.entries()),
+          finalText, appliedEdits, reviewRound,
+          translation, seoMeta,
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(bundle));
+      } catch (e) {
+        // квота или приватный режим — просто игнорируем
+        console.warn("[orchestrator] draft save failed", e);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [title, text, models, arbiter, rewriter, reviews, progress, consolidated, accepted, directAccepted, editedSuggested, finalText, appliedEdits, reviewRound, translation, seoMeta]);
+
+  function resetDraft() {
+    if (!confirm("Сбросить локальный черновик оркестратора? Текущее состояние формы очистится.")) return;
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    setTitle(""); setText(""); setReviews([]); setProgress({}); setConsolidated(null);
+    setAccepted(new Set()); setDirectAccepted(new Map()); setEditedSuggested(new Map());
+    setFinalText(""); setAppliedEdits([]); setReviewRound(1); setTranslation(null); setSeoMeta(null);
+    sonnerToast.success("Черновик сброшен");
+  }
+
+
   function insertGalleryMarker(target: "text" | "final") {
     const caption = window.prompt("Подпись к галерее (можно пустую):", "");
     if (caption === null) return;
@@ -709,6 +795,16 @@ export default function AdminArticleOrchestrator() {
           className="shrink-0"
         >
           {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={resetDraft}
+          title="Очистить сохранённый локальный черновик оркестратора"
+          className="shrink-0"
+        >
+          Сбросить черновик
         </Button>
       </div>
 
