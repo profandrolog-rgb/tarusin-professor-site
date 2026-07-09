@@ -2314,17 +2314,65 @@ export default function Cabinet() {
               <Brain className="w-3.5 h-3.5" />Вдумчиво
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setCouncil((v) => !v)}
-            disabled={streaming}
-            className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
-              council ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
-            }`}
-            title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
-          >
-            <Users className="w-3.5 h-3.5" />Консилиум
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setCouncil((v) => !v)}
+              disabled={streaming}
+              className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
+                council ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
+              }`}
+              title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
+            >
+              <Users className="w-3.5 h-3.5" />Консилиум
+            </button>
+            <Popover open={councilKeysOpen} onOpenChange={setCouncilKeysOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={streaming}
+                  className="px-2 py-1.5 text-xs rounded-md border bg-background hover:bg-accent border-border flex items-center"
+                  title="Выбрать модели консилиума"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="end">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {COUNCIL_MODEL_CANDIDATES.map((key) => {
+                    const label = resolvedModels.find((m) => m.key === key)?.label ?? key;
+                    const checked = councilSelectedKeys.includes(key);
+                    const isFugu = key === "sakana-fugu";
+                    return (
+                      <div key={key} className="flex items-start gap-2">
+                        <Checkbox
+                          id={`council-key-${key}`}
+                          checked={checked}
+                          onCheckedChange={() =>
+                            setCouncilSelectedKeys((prev) =>
+                              prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+                            )
+                          }
+                        />
+                        <label
+                          htmlFor={`council-key-${key}`}
+                          className="text-sm leading-tight cursor-pointer"
+                          title={isFugu ? "Fugu Ultra дороже остальных моделей ($5/$30 за 1М токенов)" : undefined}
+                        >
+                          {label}
+                          {isFugu && (
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              Fugu Ultra дороже остальных моделей ($5/$30 за 1М токенов)
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <button
             type="button"
             onClick={() => {
