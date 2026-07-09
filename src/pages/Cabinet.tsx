@@ -416,11 +416,11 @@ export default function Cabinet() {
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
   const imageModels = resolvedModels.filter((m) => m.kind === "image");
-  const councilPanel = COUNCIL_MODEL_KEYS
+  const councilPanel = councilSelectedKeys
     .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
     .filter((id): id is string => Boolean(id))
     .filter((id, index, arr) => arr.indexOf(id) === index)
-    .slice(0, 7);
+    .slice(0, 8);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
     if (liveModelsLoading || !resolvedModels.length) return;
@@ -530,6 +530,22 @@ export default function Cabinet() {
       window.localStorage.setItem("cabinet.attachHistory", attachHistory ? "1" : "0");
     }
   }, [attachHistory]);
+  const [councilSelectedKeys, setCouncilSelectedKeys] = useState<string[]>(() => {
+    if (typeof window === "undefined") return COUNCIL_MODEL_KEYS_DEFAULT;
+    try {
+      const saved = window.localStorage.getItem("cabinet.councilKeys");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return COUNCIL_MODEL_KEYS_DEFAULT;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("cabinet.councilKeys", JSON.stringify(councilSelectedKeys));
+      } catch {}
+    }
+  }, [councilSelectedKeys]);
+  const [councilKeysOpen, setCouncilKeysOpen] = useState(false);
   const [historyCountsHint, setHistoryCountsHint] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
