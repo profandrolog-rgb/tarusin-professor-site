@@ -264,8 +264,7 @@ async function callModel(
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || e);
-      const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY/i.test(msg)
-        && !/timeout after/i.test(msg);
+      const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY|timeout after/i.test(msg);
       if (!retryable) break;
       console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);
     }
