@@ -149,13 +149,6 @@ function shouldUseProxy(model: string): boolean {
   return PROXY_MODEL_PREFIXES.some((p) => model.startsWith(p));
 }
 
-type CallPurpose = "review" | "consolidate" | "rewrite";
-
-function maxTokensForPurpose(purpose: CallPurpose): number {
-  if (purpose === "rewrite") return 24_000;
-  if (purpose === "consolidate") return 16_000;
-  return 16_000;
-}
 
 function callModelOnce(
   openrouterKey: string,
