@@ -236,6 +236,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/analytics", Component: AdminAnalytics, entry: "src/pages/AdminAnalytics.tsx" },
       { path: "admin/podcast-sources", Component: AdminPodcastSources, entry: "src/pages/AdminPodcastSources.tsx" },
       { path: "admin/article-orchestrator", Component: AdminArticleOrchestrator, entry: "src/pages/AdminArticleOrchestrator.tsx" },
+      { path: "admin/orchestrator-metrics", Component: AdminOrchestratorMetrics, entry: "src/pages/AdminOrchestratorMetrics.tsx" },
       { path: "admin/article-import", Component: AdminArticleImport, entry: "src/pages/AdminArticleImport.tsx" },
       { path: "admin/article-upload", Component: AdminArticleUpload, entry: "src/pages/AdminArticleUpload.tsx" },
       { path: "admin/patients", Component: AdminPatients, entry: "src/pages/AdminPatients.tsx" },
