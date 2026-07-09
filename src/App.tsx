@@ -83,6 +83,7 @@ const AdminSystemBackup = lazy(() => import("./pages/AdminSystemBackup"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminPodcastSources = lazy(() => import("./pages/AdminPodcastSources"));
 const AdminArticleOrchestrator = lazy(() => import("./pages/AdminArticleOrchestrator"));
+const AdminOrchestratorMetrics = lazy(() => import("./pages/AdminOrchestratorMetrics"));
 const AdminArticleImport = lazy(() => import("./pages/AdminArticleImport"));
 const AdminArticleUpload = lazy(() => import("./pages/AdminArticleUpload"));
 const AdminPatientDetail = lazy(() => import("./pages/AdminPatientDetail"));
