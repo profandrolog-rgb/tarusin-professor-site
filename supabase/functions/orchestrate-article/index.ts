@@ -117,7 +117,7 @@ function maxTokensForPurpose(purpose: CallPurpose): number {
 // HTTP-прокси для моделей с гео-ограничением (Sakana AI и т. п.).
 // Значение из секрета OPENROUTER_PROXY_URL: допустимо `http(s)://host:port`,
 // `http(s)://user:pass@host:port` или просто `host:port` — нормализуем.
-const PROXY_MODEL_PREFIXES = ["sakana/", "xiaomi/"];
+const PROXY_MODEL_PREFIXES = ["sakana/"];
 
 function normalizeProxyUrl(raw: string | undefined): string | undefined {
   if (!raw) return undefined;
