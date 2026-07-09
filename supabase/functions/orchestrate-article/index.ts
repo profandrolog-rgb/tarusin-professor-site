@@ -202,6 +202,26 @@ function callModelOnce(
 
 }
 
+// Обход недоступных провайдеров: если модель отдаёт 403 (Key limit exceeded /
+// Provider returned error / No allowed providers), автоматически подменяем её
+// на близкую по классу и продолжаем. Это позволяет консилиуму не падать целиком
+// из-за одной модели, у которой временно нет доступа.
+const MODEL_FALLBACKS: Record<string, string[]> = {
+  "xiaomi/": ["qwen/qwen3-max", "deepseek/deepseek-chat", "openai/gpt-5-mini"],
+  "sakana/": ["openai/gpt-5", "anthropic/claude-sonnet-4.5", "google/gemini-2.5-pro"],
+};
+
+function fallbacksFor(model: string): string[] {
+  for (const prefix of Object.keys(MODEL_FALLBACKS)) {
+    if (model.startsWith(prefix)) return MODEL_FALLBACKS[prefix];
+  }
+  return [];
+}
+
+function isProviderUnavailable(msg: string): boolean {
+  return /HTTP 403|Key limit exceeded|Provider returned error|No allowed providers|no endpoints found/i.test(msg);
+}
+
 async function callModel(
   openrouterKey: string,
   veniceKey: string | undefined,
@@ -211,30 +231,47 @@ async function callModel(
   temperature = 0.3,
   purpose: CallPurpose = "review",
 ): Promise<string> {
-  // Постепенно ослабляем параметры — особенно для DeepSeek/MiMo/Grok,
-  // которые часто падают на reasoning / json_object / throughput-роутинге.
   const maxTokens = maxTokensForPurpose(purpose);
   const attempts: Array<{ useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number }> = [
     { useReasoning: true,  useJsonObject: true,  useThroughput: true,  maxTokens },
     { useReasoning: false, useJsonObject: true,  useThroughput: false, maxTokens: Math.min(maxTokens, 12_000) },
     { useReasoning: false, useJsonObject: false, useThroughput: false, maxTokens: Math.min(maxTokens, 8_000) },
   ];
-  let lastErr: any = null;
-  for (let i = 0; i < attempts.length; i++) {
-    try {
-      return await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
-    } catch (e: any) {
-      lastErr = e;
-      const msg = String(e?.message || e);
-      // Ретраим «мягкие» ошибки: пустой/битый ответ провайдера, пустой content,
-      // либо несовместимый формат запроса. Таймауты не ретраим внутри той же модели.
-      const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 4\d\d|INVALID_REQUEST_BODY/i.test(msg)
-        && !/timeout after/i.test(msg);
-      if (!retryable) break;
-      console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);
+  const tryModel = async (m: string): Promise<string> => {
+    let lastErr: any = null;
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        return await callModelOnce(openrouterKey, veniceKey, origin, m, messages, temperature, attempts[i]);
+      } catch (e: any) {
+        lastErr = e;
+        const msg = String(e?.message || e);
+        if (isProviderUnavailable(msg)) break; // 403 — внутри модели ретраить бесполезно
+        const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 4\d\d|INVALID_REQUEST_BODY/i.test(msg)
+          && !/timeout after/i.test(msg);
+        if (!retryable) break;
+        console.warn(`[orchestrator] retry ${i + 1} for ${m}: ${msg.slice(0, 160)}`);
+      }
     }
+    throw lastErr ?? new Error("callModel failed");
+  };
+
+  try {
+    return await tryModel(model);
+  } catch (e: any) {
+    const msg = String(e?.message || e);
+    if (!isProviderUnavailable(msg)) throw e;
+    const fbs = fallbacksFor(model);
+    for (const fb of fbs) {
+      console.warn(`[orchestrator] ${model} недоступна (${msg.slice(0, 120)}) — обход через ${fb}`);
+      try {
+        return await tryModel(fb);
+      } catch (e2: any) {
+        const m2 = String(e2?.message || e2);
+        if (!isProviderUnavailable(m2)) throw e2;
+      }
+    }
+    throw new Error(`${model}: провайдер недоступен и все обходы не сработали — ${msg.slice(0, 200)}`);
   }
-  throw lastErr ?? new Error("callModel failed");
 }
 
 
