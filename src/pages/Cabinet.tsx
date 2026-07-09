@@ -416,11 +416,6 @@ export default function Cabinet() {
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
   const imageModels = resolvedModels.filter((m) => m.kind === "image");
-  const councilPanel = councilSelectedKeys
-    .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
-    .filter((id): id is string => Boolean(id))
-    .filter((id, index, arr) => arr.indexOf(id) === index)
-    .slice(0, 8);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
     if (liveModelsLoading || !resolvedModels.length) return;
