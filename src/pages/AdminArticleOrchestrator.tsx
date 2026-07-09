@@ -1117,6 +1117,22 @@ export default function AdminArticleOrchestrator() {
               </TabsList>
               {reviews.map((r) => (
                 <TabsContent key={r.model} value={r.model} className="space-y-3 mt-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-muted-foreground truncate">
+                      {r.model}{typeof r.ms === "number" && !r.error ? ` · ${(r.ms / 1000).toFixed(1)}s` : ""}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={pending.has(r.model)}
+                      onClick={() => runReviewOne(r.model)}
+                      title="Перезапустить ревью только этой модели"
+                    >
+                      {pending.has(r.model)
+                        ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Идёт…</>
+                        : <><RotateCw className="w-3.5 h-3.5 mr-1.5" /> Повторить</>}
+                    </Button>
+                  </div>
                   {r.error ? (
                     <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-sm text-destructive">
                       {r.error}
