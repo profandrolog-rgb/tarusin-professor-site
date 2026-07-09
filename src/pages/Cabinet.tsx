@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { copyToClipboard, messagesToMarkdown, downloadMarkdown, downloadDocx, downloadPdf, type ExportMessage } from "@/lib/cabinetExport";
 import { PubmedPanel, type PubmedFilters, DEFAULT_FILTERS as PUBMED_DEFAULT_FILTERS } from "@/components/cabinet/PubmedPanel";
 import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
@@ -45,7 +47,16 @@ const DEFAULT_MODEL =
   CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
   "google/gemini-2.5-flash";
 
-const COUNCIL_MODEL_KEYS = ["gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5", "sakana-fugu"];
+const COUNCIL_MODEL_KEYS_DEFAULT = [
+  "gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5",
+];
+
+const COUNCIL_MODEL_CANDIDATES = [
+  "gemini-flash", "gemini-pro", "claude-sonnet", "claude-opus",
+  "gpt5-mini", "gpt5", "grok-fast", "qwen-flash", "qwen-max",
+  "glm-5", "deepseek-v4-pro", "kimi-k2", "kimi-k2-thinking",
+  "mimo-v25-pro", "sakana-fugu",
+];
 
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -405,11 +416,6 @@ export default function Cabinet() {
   const fastModels = resolvedModels.filter((m) => m.tier === "fast");
   const deepModels = resolvedModels.filter((m) => m.tier === "deep");
   const imageModels = resolvedModels.filter((m) => m.kind === "image");
-  const councilPanel = COUNCIL_MODEL_KEYS
-    .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
-    .filter((id): id is string => Boolean(id))
-    .filter((id, index, arr) => arr.indexOf(id) === index)
-    .slice(0, 7);
   // Once live list is in, upgrade the bootstrap default to the resolved slug.
   useEffect(() => {
     if (liveModelsLoading || !resolvedModels.length) return;
@@ -519,6 +525,27 @@ export default function Cabinet() {
       window.localStorage.setItem("cabinet.attachHistory", attachHistory ? "1" : "0");
     }
   }, [attachHistory]);
+  const [councilSelectedKeys, setCouncilSelectedKeys] = useState<string[]>(() => {
+    if (typeof window === "undefined") return COUNCIL_MODEL_KEYS_DEFAULT;
+    try {
+      const saved = window.localStorage.getItem("cabinet.councilKeys");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return COUNCIL_MODEL_KEYS_DEFAULT;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("cabinet.councilKeys", JSON.stringify(councilSelectedKeys));
+      } catch {}
+    }
+  }, [councilSelectedKeys]);
+  const [councilKeysOpen, setCouncilKeysOpen] = useState(false);
+  const councilPanel = councilSelectedKeys
+    .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
+    .filter((id): id is string => Boolean(id))
+    .filter((id, index, arr) => arr.indexOf(id) === index)
+    .slice(0, 8);
   const [historyCountsHint, setHistoryCountsHint] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
@@ -2287,17 +2314,65 @@ export default function Cabinet() {
               <Brain className="w-3.5 h-3.5" />Вдумчиво
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setCouncil((v) => !v)}
-            disabled={streaming}
-            className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
-              council ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
-            }`}
-            title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
-          >
-            <Users className="w-3.5 h-3.5" />Консилиум
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setCouncil((v) => !v)}
+              disabled={streaming}
+              className={`px-3 py-1.5 text-xs rounded-md border flex items-center gap-1 transition-colors ${
+                council ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
+              }`}
+              title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
+            >
+              <Users className="w-3.5 h-3.5" />Консилиум
+            </button>
+            <Popover open={councilKeysOpen} onOpenChange={setCouncilKeysOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={streaming}
+                  className="px-2 py-1.5 text-xs rounded-md border bg-background hover:bg-accent border-border flex items-center"
+                  title="Выбрать модели консилиума"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="end">
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {COUNCIL_MODEL_CANDIDATES.map((key) => {
+                    const label = resolvedModels.find((m) => m.key === key)?.label ?? key;
+                    const checked = councilSelectedKeys.includes(key);
+                    const isFugu = key === "sakana-fugu";
+                    return (
+                      <div key={key} className="flex items-start gap-2">
+                        <Checkbox
+                          id={`council-key-${key}`}
+                          checked={checked}
+                          onCheckedChange={() =>
+                            setCouncilSelectedKeys((prev) =>
+                              prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+                            )
+                          }
+                        />
+                        <label
+                          htmlFor={`council-key-${key}`}
+                          className="text-sm leading-tight cursor-pointer"
+                          title={isFugu ? "Fugu Ultra дороже остальных моделей ($5/$30 за 1М токенов)" : undefined}
+                        >
+                          {label}
+                          {isFugu && (
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              Fugu Ultra дороже остальных моделей ($5/$30 за 1М токенов)
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <button
             type="button"
             onClick={() => {
