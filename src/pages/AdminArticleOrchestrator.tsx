@@ -66,7 +66,6 @@ const PANEL_KEYS: { key: string; default: boolean }[] = [
   { key: "grok-fast", default: true },
   { key: "deepseek-v4-pro", default: true },
   { key: "mimo-v25-pro", default: true },
-  { key: "sakana-fugu", default: false },
   { key: "mistral-large", default: false },
 ];
 const ARBITER_KEYS = ["claude-opus", "gpt5", "gemini-pro"];
