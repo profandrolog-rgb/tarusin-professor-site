@@ -96,18 +96,8 @@ export default function AdminArticleOrchestrator() {
     recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title?: string };
   };
 
-  const { data: liveModels } = useOpenRouterModels();
-  const { data: veniceModels } = useVeniceModels();
-  const liveModelsById = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const m of liveModels ?? []) map.set(m.id, m);
-    return map;
-  }, [liveModels]);
-  const veniceModelsById = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const m of veniceModels ?? []) map.set(m.id, m);
-    return map;
-  }, [veniceModels]);
+  const { byId: liveModelsById } = useOpenRouterModels();
+  const { byId: veniceModelsById } = useVeniceModels();
   const resolvedModels = useMemo(
     () => CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById, veniceModelsById)),
     [liveModelsById, veniceModelsById],
