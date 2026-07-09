@@ -455,6 +455,7 @@ export default function Cabinet() {
   });
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [council, setCouncil] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const [privateMode, setPrivateMode] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
   const [searchSource, setSearchSource] = useState<"web" | "pubmed">("pubmed");
@@ -2024,6 +2025,9 @@ export default function Cabinet() {
           ? `Ответ получен · reasoning ${reasoningChars} симв. · ${(streamBytes / 1024).toFixed(1)} KB`
           : "Ответ получен полностью"
       );
+      if (council) playCompletionChime();
+
+
 
 
       // Persist assistant message
@@ -2326,6 +2330,14 @@ export default function Cabinet() {
               title="Параллельный опрос Claude, GPT, Gemini, Grok + сводный ответ"
             >
               <Users className="w-3.5 h-3.5" />Консилиум
+            </button>
+            <button
+              type="button"
+              onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}
+              className="px-2 py-1.5 text-xs rounded-md border bg-background hover:bg-accent border-border flex items-center"
+              title="Звук по завершении Консилиума"
+            >
+              {soundOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
             </button>
             <Popover open={councilKeysOpen} onOpenChange={setCouncilKeysOpen}>
               <PopoverTrigger asChild>
