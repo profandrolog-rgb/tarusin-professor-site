@@ -96,11 +96,52 @@ export default function AdminArticleOrchestrator() {
     recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title?: string };
   };
 
+  const { data: liveModels } = useOpenRouterModels();
+  const { data: veniceModels } = useVeniceModels();
+  const liveModelsById = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const m of liveModels ?? []) map.set(m.id, m);
+    return map;
+  }, [liveModels]);
+  const veniceModelsById = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const m of veniceModels ?? []) map.set(m.id, m);
+    return map;
+  }, [veniceModels]);
+  const resolvedModels = useMemo(
+    () => CURATED_MODELS.map((c) => resolveCuratedModel(c, liveModelsById, veniceModelsById)),
+    [liveModelsById, veniceModelsById],
+  );
+  const PANEL = useMemo(
+    () =>
+      PANEL_KEYS.map(({ key, default: def }) => {
+        const r = resolvedModels.find((m) => m.key === key);
+        return { id: r?.id ?? key, label: r?.label ?? key, default: def };
+      }),
+    [resolvedModels],
+  );
+  const ARBITERS = useMemo(
+    () =>
+      ARBITER_KEYS.map((key) => {
+        const r = resolvedModels.find((m) => m.key === key);
+        return { id: r?.id ?? key, label: r?.label ?? key };
+      }),
+    [resolvedModels],
+  );
+  const REWRITERS = useMemo(
+    () =>
+      REWRITER_KEYS.map((key) => {
+        const r = resolvedModels.find((m) => m.key === key);
+        return { id: r?.id ?? key, label: r?.label ?? key };
+      }),
+    [resolvedModels],
+  );
+
   const [title, setTitle] = useState(incoming.title ?? "");
   const [text, setText] = useState(incoming.text ?? "");
-  const [models, setModels] = useState<string[]>(PANEL.filter((m) => m.default).map((m) => m.id));
-  const [arbiter, setArbiter] = useState(ARBITERS[0].id);
-  const [rewriter, setRewriter] = useState(REWRITERS[0].id);
+  const [models, setModels] = useState<string[]>(() => PANEL.filter((m) => m.default).map((m) => m.id));
+  const [arbiter, setArbiter] = useState(() => ARBITERS[0]?.id ?? "");
+  const [rewriter, setRewriter] = useState(() => REWRITERS[0]?.id ?? "");
   const [previewOpen, setPreviewOpen] = useState(false);
 
 
