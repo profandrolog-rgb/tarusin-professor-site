@@ -113,7 +113,15 @@ export const CURATED_MODELS: CuratedModel[] = [
     key: "gpt5",
     label: "GPT-5",
     tier: "deep",
-    candidates: ["openai/gpt-5"],
+    candidates: ["openai/gpt-5.5", "openai/gpt-5.4-pro", "openai/gpt-5"],
+    familyRegex: /^openai\/gpt-5(?:\.\d)?(?:-pro)?(?!-mini|-nano|-chat)/i,
+  },
+  {
+    key: "mistral-large",
+    label: "Mistral Large 3",
+    tier: "deep",
+    candidates: ["mistralai/mistral-large-2512", "mistralai/mistral-large"],
+    familyRegex: /^mistralai\/mistral-large/i,
   },
   {
     key: "kimi-k2-thinking",
