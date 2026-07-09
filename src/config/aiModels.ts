@@ -103,6 +103,13 @@ export const CURATED_MODELS: CuratedModel[] = [
     familyRegex: /^anthropic\/claude-opus-4/i,
   },
   {
+    key: "sakana-fugu",
+    label: "Fugu Ultra (Sakana AI)",
+    tier: "deep",
+    candidates: ["sakana/fugu-ultra"],
+    hint: "Мета-оркестратор, сам маршрутизирует по пулу моделей",
+  },
+  {
     key: "gpt5",
     label: "GPT-5",
     tier: "deep",
