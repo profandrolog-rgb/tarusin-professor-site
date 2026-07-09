@@ -162,7 +162,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[420px] px-4 py-3 overflow-visible [&_ul]:list-disc [&_ul]:pl-7 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-7 [&_ol]:my-2 [&_li]:list-item [&_li]:pl-1 [&_li]:my-1 [&_li]:marker:text-foreground",
+          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[560px] px-4 py-3 overflow-visible [&_ul]:list-disc [&_ul]:pl-7 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-7 [&_ol]:my-2 [&_li]:list-item [&_li]:pl-1 [&_li]:my-1 [&_li]:marker:text-foreground",
       },
     },
     onUpdate: ({ editor }) => {

@@ -450,7 +450,7 @@ const AdminDiseaseArticles = () => {
 
         {/* Create/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+          <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0 gap-0">
             <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0 flex flex-row items-center justify-between gap-4 space-y-0">
               <DialogTitle className="flex-1">{editing ? "Редактирование материала" : "Новый материал о заболевании"}</DialogTitle>
               <div className="flex gap-2 shrink-0">
