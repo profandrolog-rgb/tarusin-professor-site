@@ -1209,15 +1209,27 @@ export default function AdminArticleOrchestrator() {
               </Button>
               <Button
                 size="sm"
+                variant="outline"
+                onClick={optimizeSeo}
+                disabled={seoLoading || !finalText}
+                title="Подобрать заголовок, slug, ключевые слова и категорию до отправки в публикатор"
+              >
+                {seoLoading
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> SEO…</>
+                  : <><Sparkles className="w-4 h-4 mr-2" /> Оптимизировать SEO</>}
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => {
                   navigate("/admin/article-import", {
-                    state: { title, text: finalText, source: "orchestrator", existingRef },
+                    state: { title, text: finalText, source: "orchestrator", existingRef, seoMeta: seoMeta ?? undefined },
                   });
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 <Send className="w-4 h-4 mr-2" /> {existingRef ? "Переопубликовать" : "Разместить"}
               </Button>
+
 
             </div>
           </CardHeader>
