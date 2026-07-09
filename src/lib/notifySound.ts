@@ -29,10 +29,10 @@ export function playCompletionChime() {
   const ctx = getCtx();
   if (!ctx) return;
   const now = ctx.currentTime;
-  const fundamental = 523.25; // C5 — тёплая нота, не резкая
+  const fundamental = 523.25;
   const partials: [number, number][] = [
-    [fundamental, 0.16],       // основной тон
-    [fundamental * 1.5, 0.05], // квинта, тихий обертон для "колокольности"
+    [fundamental, 0.16],
+    [fundamental * 1.5, 0.05],
   ];
   partials.forEach(([freq, peakGain]) => {
     const osc = ctx.createOscillator();
