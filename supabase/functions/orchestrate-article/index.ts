@@ -313,6 +313,19 @@ function normalizeConsolidated(parsed: any): { summary: string; edits: any[] } |
   return { summary, edits };
 }
 
+// Эвристика: "содержательный summary без edits" — почти всегда невалидно.
+// Арбитр правомерно возвращает edits:[] только если явно жалуется на пустые/мусорные рецензии.
+function summarySuggestsEdits(summary: string): boolean {
+  const s = (summary || "").toLowerCase();
+  if (!s || s.length < 40) return false;
+  // Явное объяснение, что рецензии были пустые — верим и не ретраим
+  if (/(рецензии\s+(были\s+)?пуст|мусор|нечего\s+консолид|нет\s+(предложенных\s+)?правок|правки\s+отсутств)/i.test(s)) {
+    return false;
+  }
+  // Слова-триггеры, указывающие на конкретные найденные проблемы
+  return /(ошибк|неточност|устарел|термин|формулировк|переформул|заменит|уточнит|добавит|удалит|исправит|перепис|structure|заголов|раздел|abstract|дискуссии|источник|референс)/i.test(s);
+}
+
 async function consolidateWithFallback(
   openrouterKey: string,
   veniceKey: string | undefined,
@@ -325,8 +338,40 @@ async function consolidateWithFallback(
   for (const candidate of candidates) {
     try {
       const raw = await callModel(openrouterKey, veniceKey, origin, candidate, messages, 0.2, "consolidate");
-      const consolidated = normalizeConsolidated(tryParseJson(raw));
+      let consolidated = normalizeConsolidated(tryParseJson(raw));
       if (!consolidated) throw new Error(`arbiter returned non-JSON (${raw.slice(0, 180)})`);
+
+      // Repair-проход: summary содержательный, но edits пуст без явного объяснения.
+      if (consolidated.edits.length === 0 && summarySuggestsEdits(consolidated.summary)) {
+        console.warn("[orchestrator] arbiter empty-edits repair", JSON.stringify({ arbiter: candidate, summary: consolidated.summary.slice(0, 200) }));
+        const repairMessages = [
+          ...(messages as any[]),
+          { role: "assistant", content: raw },
+          {
+            role: "user",
+            content: [
+              "Твой предыдущий ответ содержит подробное summary, но пустой edits[]. Это невалидно.",
+              "Раз в summary упомянуты конкретные проблемы — вынеси их в edits[] построчно.",
+              "На каждую упомянутую в summary претензию (терминология, формулировка, факт, структура, SEO) — минимум один объект в edits с полями original/suggested/rationale/severity/category/status/supporting_models.",
+              "Если реальная цитата не найдена — оставь original: \"\" и опиши правку глобально.",
+              "Верни СТРОГО JSON того же формата.",
+            ].join("\n"),
+          },
+        ];
+        try {
+          const repairedRaw = await callModel(openrouterKey, veniceKey, origin, candidate, repairMessages, 0.15, "consolidate");
+          const repaired = normalizeConsolidated(tryParseJson(repairedRaw));
+          if (repaired && repaired.edits.length > 0) {
+            consolidated = { summary: consolidated.summary || repaired.summary, edits: repaired.edits };
+            console.log("[orchestrator] arbiter repair ok", JSON.stringify({ arbiter: candidate, edits: repaired.edits.length }));
+          } else {
+            console.warn("[orchestrator] arbiter repair still empty", JSON.stringify({ arbiter: candidate }));
+          }
+        } catch (repErr: any) {
+          console.warn("[orchestrator] arbiter repair fail", repErr?.message || String(repErr));
+        }
+      }
+
       return { consolidated, arbiter: candidate };
     } catch (e: any) {
       lastError = e?.message || String(e);
@@ -335,6 +380,7 @@ async function consolidateWithFallback(
   }
   throw new Error(`all arbiters failed: ${lastError}`);
 }
+
 
 function jsonKeepaliveResponse(
   task: () => Promise<unknown>,
