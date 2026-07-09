@@ -796,6 +796,16 @@ export default function AdminArticleOrchestrator() {
         >
           {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={resetDraft}
+          title="Очистить сохранённый локальный черновик оркестратора"
+          className="shrink-0"
+        >
+          Сбросить черновик
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
