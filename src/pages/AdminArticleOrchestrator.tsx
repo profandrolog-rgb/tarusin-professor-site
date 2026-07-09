@@ -1236,6 +1236,76 @@ export default function AdminArticleOrchestrator() {
           <CardContent>
             <ArticleDiffEditor original={text} value={finalText} onChange={setFinalText} />
 
+            {seoMeta && (
+              <div className="mt-6 border-t pt-6 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" /> SEO-мета для публикатора
+                  </h3>
+                  <Button size="sm" variant="ghost" onClick={() => setSeoMeta(null)}>
+                    Очистить
+                  </Button>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Заголовок</label>
+                    <Input value={seoMeta.title} onChange={(e) => setSeoMeta({ ...seoMeta, title: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Slug</label>
+                    <Input value={seoMeta.slug} onChange={(e) => setSeoMeta({ ...seoMeta, slug: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Категория / Возраст</label>
+                    <div className="flex gap-2">
+                      <select
+                        className="flex-1 h-9 rounded-md border bg-background px-2 text-sm"
+                        value={seoMeta.category}
+                        onChange={(e) => setSeoMeta({ ...seoMeta, category: e.target.value })}
+                      >
+                        {Object.entries(seoCategoryLabels).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                      <select
+                        className="h-9 rounded-md border bg-background px-2 text-sm"
+                        value={seoMeta.age_group}
+                        onChange={(e) => setSeoMeta({ ...seoMeta, age_group: e.target.value as "children" | "adults" })}
+                      >
+                        <option value="children">Дети</option>
+                        <option value="adults">Взрослые</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Аннотация</label>
+                    <Textarea rows={2} value={seoMeta.excerpt} onChange={(e) => setSeoMeta({ ...seoMeta, excerpt: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Ключевые слова (через запятую)</label>
+                    <Input
+                      value={seoMeta.keywords.join(", ")}
+                      onChange={(e) =>
+                        setSeoMeta({
+                          ...seoMeta,
+                          keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
+                        })
+                      }
+                    />
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {seoMeta.keywords.map((k) => (
+                        <Badge key={k} variant="secondary">{k}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Эти поля будут переданы в публикатор — там их можно ещё раз править перед сохранением.
+                </p>
+              </div>
+            )}
+
+
             {translation && (
               <div className="mt-6 border-t pt-6 space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
