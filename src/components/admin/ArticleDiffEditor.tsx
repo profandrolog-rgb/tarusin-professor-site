@@ -67,15 +67,14 @@ function renderSide(parts: ReturnType<typeof diffWords>, side: "before" | "after
 export default function ArticleDiffEditor({ original, value, onChange }: Props) {
   const [mode, setMode] = useState<Mode>("edit");
 
-  const [debouncedValue, setDebouncedValue] = useState(value);
+  const [diffValue, setDiffValue] = useState(value);
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedValue(value), 500);
-    return () => clearTimeout(t);
-  }, [value]);
+    if (mode !== "edit") setDiffValue(value);
+  }, [mode]);
 
   const parts = useMemo(
-    () => (original && debouncedValue ? diffWords(original, debouncedValue) : []),
-    [original, debouncedValue],
+    () => (original && diffValue ? diffWords(original, diffValue) : []),
+    [original, diffValue],
   );
 
   const stats = useMemo(() => {
