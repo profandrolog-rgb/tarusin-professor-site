@@ -1,7 +1,7 @@
 // Inline editor for the final article with a side-by-side / inline diff
 // view that highlights every change made during consolidation.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { diffWords } from "diff";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,9 +67,15 @@ function renderSide(parts: ReturnType<typeof diffWords>, side: "before" | "after
 export default function ArticleDiffEditor({ original, value, onChange }: Props) {
   const [mode, setMode] = useState<Mode>("edit");
 
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedValue(value), 500);
+    return () => clearTimeout(t);
+  }, [value]);
+
   const parts = useMemo(
-    () => (original && value ? diffWords(original, value) : []),
-    [original, value],
+    () => (original && debouncedValue ? diffWords(original, debouncedValue) : []),
+    [original, debouncedValue],
   );
 
   const stats = useMemo(() => {
