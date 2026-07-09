@@ -69,6 +69,14 @@ const AdminArticleImport = () => {
     text?: string;
     source?: string;
     existingRef?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" } | null;
+    seoMeta?: {
+      title?: string;
+      slug?: string;
+      excerpt?: string;
+      keywords?: string[];
+      category?: string;
+      age_group?: "children" | "adults";
+    };
   } | null;
   const existingRef = incoming?.existingRef ?? null;
 
@@ -76,12 +84,8 @@ const AdminArticleImport = () => {
   useEffect(() => {
     if (!incoming?.text) return;
     const plain = incoming.text;
-    // From orchestrator we receive Markdown — keep it as-is so MarkdownArticle
-    // renders headings, lists and [[GALLERY:...]] markers correctly.
-    // (Previously we wrapped lines in <p> with escaped <>, which left literal # on the page.)
     setContent(markdownToHtml(plain));
     if (incoming.title) {
-      // Clean filename-style titles: "name_with_underscores.docx" -> "Name with underscores"
       const cleaned = incoming.title
         .replace(/\.(docx?|txt|md|rtf)$/i, "")
         .replace(/[_\-]+/g, " ")
@@ -91,6 +95,20 @@ const AdminArticleImport = () => {
       setSlug(slugifyRu(cleaned));
     }
     setFilename(incoming.source === "orchestrator" ? "Из оркестратора" : "");
+
+    // Если SEO-мета уже подготовлена в оркестраторе — применяем её и НЕ вызываем import-article-meta.
+    if (incoming.seoMeta) {
+      const m = incoming.seoMeta;
+      if (m.title) { setTitle(m.title); setSlug(slugifyRu(m.title)); }
+      if (m.slug) setSlug(m.slug);
+      if (m.excerpt) setExcerpt(m.excerpt);
+      if (Array.isArray(m.keywords)) setKeywords(m.keywords);
+      if (m.category && categoryLabels[m.category]) setCategory(m.category);
+      if (m.age_group === "adults" || m.age_group === "children") setAgeGroup(m.age_group);
+      toast({ title: "SEO-поля перенесены из оркестратора" });
+      return;
+    }
+
     setSeoLoading(true);
     toast({ title: "Анализирую статью…", description: "ИИ заполняет SEO-поля" });
     supabase.functions
@@ -111,6 +129,7 @@ const AdminArticleImport = () => {
     // run once
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
 
   if (authLoading) return <div className="p-8 text-center">Загрузка…</div>;
