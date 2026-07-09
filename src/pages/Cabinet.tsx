@@ -541,6 +541,11 @@ export default function Cabinet() {
     }
   }, [councilSelectedKeys]);
   const [councilKeysOpen, setCouncilKeysOpen] = useState(false);
+  const councilPanel = councilSelectedKeys
+    .map((key) => resolvedModels.find((m) => m.key === key && m.available)?.id)
+    .filter((id): id is string => Boolean(id))
+    .filter((id, index, arr) => arr.indexOf(id) === index)
+    .slice(0, 8);
   const [historyCountsHint, setHistoryCountsHint] = useState<string | null>(null);
   const [systemPrompt, setSystemPrompt] = useState<string>(() => {
     if (typeof window === "undefined") return DEFAULT_SYSTEM_PROMPT;
