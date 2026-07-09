@@ -230,6 +230,47 @@ export default function AdminArticleOrchestrator() {
     seo_description: string;
   }>(null);
 
+  // --- SEO-мета для передачи в публикатор ---
+  type SeoMeta = {
+    title: string;
+    slug: string;
+    excerpt: string;
+    keywords: string[];
+    category: string;
+    age_group: "children" | "adults";
+  };
+  const [seoMeta, setSeoMeta] = useState<SeoMeta | null>(null);
+  const [seoLoading, setSeoLoading] = useState(false);
+  const seoCategoryLabels: Record<string, string> = {
+    general: "Общее", urology: "Урология", andrology: "Андрология", surgery: "Хирургия",
+    endocrinology: "Эндокринология", psychology: "Психология", sexology: "Сексология", genetics: "Генетика",
+  };
+  async function optimizeSeo() {
+    if (!finalText.trim()) return;
+    setSeoLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("import-article-meta", {
+        body: { text: finalText, filename: title || "article" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSeoMeta({
+        title: String(data.title || title || ""),
+        slug: String(data.slug || ""),
+        excerpt: String(data.excerpt || ""),
+        keywords: Array.isArray(data.keywords) ? data.keywords.map((k: any) => String(k)) : [],
+        category: seoCategoryLabels[data.category] ? String(data.category) : "general",
+        age_group: data.age_group === "adults" ? "adults" : "children",
+      });
+      sonnerToast.success("SEO готов — проверьте и правьте перед публикацией");
+    } catch (e: any) {
+      sonnerToast.error("SEO не получен", { description: e?.message || String(e) });
+    } finally {
+      setSeoLoading(false);
+    }
+  }
+
+
   // --- Перепроверка опубликованного ---
   type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title: string; updated_at: string };
   const [pickerOpen, setPickerOpen] = useState(false);
