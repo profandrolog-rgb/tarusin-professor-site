@@ -47,7 +47,16 @@ const DEFAULT_MODEL =
   CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
   "google/gemini-2.5-flash";
 
-const COUNCIL_MODEL_KEYS = ["gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5", "sakana-fugu"];
+const COUNCIL_MODEL_KEYS_DEFAULT = [
+  "gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5",
+];
+
+const COUNCIL_MODEL_CANDIDATES = [
+  "gemini-flash", "gemini-pro", "claude-sonnet", "claude-opus",
+  "gpt5-mini", "gpt5", "grok-fast", "qwen-flash", "qwen-max",
+  "glm-5", "deepseek-v4-pro", "kimi-k2", "kimi-k2-thinking",
+  "mimo-v25-pro", "sakana-fugu",
+];
 
 
 const DEFAULT_SYSTEM_PROMPT =
