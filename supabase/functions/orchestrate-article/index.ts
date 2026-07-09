@@ -236,6 +236,38 @@ function callModelOnce(
   }).finally(() => clearTimeout(timer));
 }
 
+// Fire-and-forget метрика попытки вызова модели.
+// Пишет в public.orchestrator_call_metrics через service role, не блокируя основной поток.
+let _metricsClient: ReturnType<typeof createClient> | null = null;
+function getMetricsClient() {
+  if (_metricsClient) return _metricsClient;
+  const url = Deno.env.get("SUPABASE_URL");
+  const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !srk) return null;
+  _metricsClient = createClient(url, srk, { auth: { persistSession: false } });
+  return _metricsClient;
+}
+function classifyError(msg: string): string {
+  if (/timeout after/i.test(msg)) return "timeout";
+  if (/HTTP 4\d\d/i.test(msg)) return "http_4xx";
+  if (/HTTP 5\d\d/i.test(msg)) return "http_5xx";
+  if (/empty (content|response body)/i.test(msg)) return "empty_content";
+  if (/invalid JSON|Unexpected end of JSON/i.test(msg)) return "invalid_json";
+  if (/terminated|fetch failed/i.test(msg)) return "network";
+  return "other";
+}
+function recordAttempt(row: {
+  model: string; purpose: string; attempt: number;
+  duration_ms: number; ok: boolean; error_kind?: string | null; error_message?: string | null;
+}) {
+  const c = getMetricsClient();
+  if (!c) return;
+  // Не await — не блокируем ответ клиенту.
+  c.from("orchestrator_call_metrics").insert(row).then(({ error }) => {
+    if (error) console.warn("[orchestrator] metrics insert failed:", error.message);
+  });
+}
+
 async function callModel(
   openrouterKey: string,
   veniceKey: string | undefined,
@@ -246,8 +278,6 @@ async function callModel(
   purpose: CallPurpose = "review",
 ): Promise<string> {
   const maxTokens = maxTokensForPurpose(purpose);
-  // Таймауты по задаче: rewrite/consolidate — длинная генерация, review — короткий JSON.
-  // Reasoning-тяжёлые модели получают запас +60s.
   const heavyReasoning = /(gpt-5|claude-.*-opus|gemini-.*-pro|deepseek-r1|qwen.*max|grok-4)/i.test(model);
   const baseTimeout = purpose === "rewrite" ? 320_000 : purpose === "consolidate" ? 280_000 : 200_000;
   const timeoutMs = baseTimeout + (heavyReasoning ? 60_000 : 0);
@@ -259,11 +289,18 @@ async function callModel(
   ];
   let lastErr: any = null;
   for (let i = 0; i < attempts.length; i++) {
+    const startedAt = Date.now();
     try {
-      return await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
+      const res = await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
+      recordAttempt({ model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt, ok: true });
+      return res;
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || e);
+      recordAttempt({
+        model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt,
+        ok: false, error_kind: classifyError(msg), error_message: msg.slice(0, 500),
+      });
       const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY|timeout after/i.test(msg);
       if (!retryable) break;
       console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);

@@ -806,6 +806,9 @@ export default function AdminArticleOrchestrator() {
         >
           Сбросить черновик
         </Button>
+        <Button asChild size="sm" variant="ghost" className="shrink-0">
+          <a href="/admin/orchestrator-metrics" target="_blank" rel="noreferrer">Метрики</a>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

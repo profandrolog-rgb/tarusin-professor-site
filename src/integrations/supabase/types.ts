@@ -2548,6 +2548,42 @@ export type Database = {
         }
         Relationships: []
       }
+      orchestrator_call_metrics: {
+        Row: {
+          attempt: number
+          created_at: string
+          duration_ms: number
+          error_kind: string | null
+          error_message: string | null
+          id: number
+          model: string
+          ok: boolean
+          purpose: string
+        }
+        Insert: {
+          attempt: number
+          created_at?: string
+          duration_ms: number
+          error_kind?: string | null
+          error_message?: string | null
+          id?: number
+          model: string
+          ok: boolean
+          purpose: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number
+          error_kind?: string | null
+          error_message?: string | null
+          id?: number
+          model?: string
+          ok?: boolean
+          purpose?: string
+        }
+        Relationships: []
+      }
       parents_material_leads: {
         Row: {
           consent: boolean
