@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { copyToClipboard, messagesToMarkdown, downloadMarkdown, downloadDocx, downloadPdf, type ExportMessage } from "@/lib/cabinetExport";
 import { PubmedPanel, type PubmedFilters, DEFAULT_FILTERS as PUBMED_DEFAULT_FILTERS } from "@/components/cabinet/PubmedPanel";
 import { PubmedSourceCard } from "@/components/cabinet/PubmedSourceCard";
