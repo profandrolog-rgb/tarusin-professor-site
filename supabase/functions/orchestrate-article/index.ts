@@ -246,10 +246,16 @@ async function callModel(
   purpose: CallPurpose = "review",
 ): Promise<string> {
   const maxTokens = maxTokensForPurpose(purpose);
-  const attempts: Array<{ useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number }> = [
-    { useReasoning: true,  useJsonObject: true,  useThroughput: true,  maxTokens },
-    { useReasoning: false, useJsonObject: true,  useThroughput: false, maxTokens: Math.min(maxTokens, 12_000) },
-    { useReasoning: false, useJsonObject: false, useThroughput: false, maxTokens: Math.min(maxTokens, 8_000) },
+  // Таймауты по задаче: rewrite/consolidate — длинная генерация, review — короткий JSON.
+  // Reasoning-тяжёлые модели получают запас +60s.
+  const heavyReasoning = /(gpt-5|claude-.*-opus|gemini-.*-pro|deepseek-r1|qwen.*max|grok-4)/i.test(model);
+  const baseTimeout = purpose === "rewrite" ? 320_000 : purpose === "consolidate" ? 280_000 : 200_000;
+  const timeoutMs = baseTimeout + (heavyReasoning ? 60_000 : 0);
+  const fastTimeout = Math.min(timeoutMs, 180_000);
+  const attempts: Array<{ useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number; timeoutMs?: number }> = [
+    { useReasoning: true,  useJsonObject: true,  useThroughput: true,  maxTokens, timeoutMs },
+    { useReasoning: false, useJsonObject: true,  useThroughput: true,  maxTokens: Math.min(maxTokens, 12_000), timeoutMs: fastTimeout },
+    { useReasoning: false, useJsonObject: false, useThroughput: true,  maxTokens: Math.min(maxTokens, 8_000),  timeoutMs: fastTimeout },
   ];
   let lastErr: any = null;
   for (let i = 0; i < attempts.length; i++) {
