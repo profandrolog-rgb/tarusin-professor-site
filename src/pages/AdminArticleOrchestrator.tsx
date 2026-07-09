@@ -54,33 +54,24 @@ type ModelProgress = {
   error?: string;
 };
 
-const PANEL = [
-  { id: "openai/gpt-5", label: "GPT-5", default: true },
-  { id: "anthropic/claude-opus-4-8", label: "Claude Opus 4.8", default: true },
-  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro", default: true },
-  { id: "z-ai/glm-5", label: "GLM-5", default: true },
-  { id: "moonshotai/kimi-k2", label: "Kimi K2", default: true },
-  { id: "perplexity/sonar-pro", label: "Perplexity Sonar Pro (фактчек)", default: true },
-  { id: "venice/venice-uncensored-1-2", label: "Venice (без цензуры)", default: true },
-  { id: "x-ai/grok-4.3", label: "Grok 4", default: true },
-  { id: "deepseek/deepseek-v4-pro", label: "DeepSeek V4-Pro", default: true },
-  { id: "xiaomi/mimo-v2.5-pro", label: "MiMo 2.5 Pro (Xiaomi)", default: true },
-  { id: "sakana/fugu-ultra", label: "Fugu Ultra (Sakana AI)", default: false },
+const PANEL_KEYS: { key: string; default: boolean }[] = [
+  { key: "gpt5", default: true },
+  { key: "claude-opus", default: true },
+  { key: "gemini-pro", default: true },
+  { key: "glm-5", default: true },
+  { key: "kimi-k2", default: true },
+  { key: "pplx-sonar-pro", default: true },
+  { key: "venice-uncensored", default: true },
+  { key: "grok-fast", default: true },
+  { key: "deepseek-v4-pro", default: true },
+  { key: "mimo-v25-pro", default: true },
+  { key: "sakana-fugu", default: false },
+  { key: "mistral-large", default: false },
 ];
+const ARBITER_KEYS = ["claude-opus", "gpt5", "gemini-pro"];
+const REWRITER_KEYS = ["claude-opus", "claude-sonnet", "gpt5", "grok-fast"];
 
-const ARBITERS = [
-  { id: "anthropic/claude-opus-4-8", label: "Claude Opus 4.8" },
-  { id: "openai/gpt-5", label: "GPT-5" },
-  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-];
 
-const REWRITERS = [
-  { id: "anthropic/claude-opus-4-8", label: "Claude Opus 4.8 (рекомендуется — лучше держит авторский стиль)" },
-  { id: "anthropic/claude-sonnet-4-8", label: "Claude Sonnet 4.8 (быстрее)" },
-  { id: "openai/gpt-5.5", label: "GPT-5.5" },
-  { id: "openai/gpt-5.4-pro", label: "GPT-5.4 Pro" },
-  { id: "x-ai/grok-4.3", label: "Grok 4" },
-];
 
 const SEVERITY_COLOR: Record<string, string> = {
   high: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
