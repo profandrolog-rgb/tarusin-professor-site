@@ -114,6 +114,49 @@ function maxTokensForPurpose(purpose: CallPurpose): number {
   return 16_000;
 }
 
+// HTTP-прокси для моделей с гео-ограничением (Sakana AI и т. п.).
+// Значение из секрета OPENROUTER_PROXY_URL: допустимо `http(s)://host:port`,
+// `http(s)://user:pass@host:port` или просто `host:port` — нормализуем.
+const PROXY_MODEL_PREFIXES = ["sakana/", "xiaomi/"];
+
+function normalizeProxyUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const v = raw.trim();
+  if (!v) return undefined;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `http://${v}`;
+}
+
+let _proxyClient: any = null;
+let _proxyClientTried = false;
+function getProxyClient(): any {
+  if (_proxyClientTried) return _proxyClient;
+  _proxyClientTried = true;
+  const url = normalizeProxyUrl(Deno.env.get("OPENROUTER_PROXY_URL"));
+  if (!url) return null;
+  try {
+    // @ts-ignore Deno unstable API; при недоступности просто пойдём напрямую.
+    _proxyClient = (Deno as any).createHttpClient?.({ proxy: { url } }) ?? null;
+    if (_proxyClient) console.log(`[orchestrator] proxy enabled for ${PROXY_MODEL_PREFIXES.join(",")}`);
+  } catch (e) {
+    console.warn(`[orchestrator] createHttpClient failed: ${(e as any)?.message || e}`);
+    _proxyClient = null;
+  }
+  return _proxyClient;
+}
+
+function shouldUseProxy(model: string): boolean {
+  return PROXY_MODEL_PREFIXES.some((p) => model.startsWith(p));
+}
+
+type CallPurpose = "review" | "consolidate" | "rewrite";
+
+function maxTokensForPurpose(purpose: CallPurpose): number {
+  if (purpose === "rewrite") return 24_000;
+  if (purpose === "consolidate") return 16_000;
+  return 16_000;
+}
+
 function callModelOnce(
   openrouterKey: string,
   veniceKey: string | undefined,
@@ -133,8 +176,6 @@ function callModelOnce(
   const payload: Record<string, unknown> = { model: realModel, messages, temperature };
   if (opts.maxTokens) payload.max_tokens = opts.maxTokens;
   if (!isVenice) {
-    // Многие reasoning-модели при effort=low уводят ответ в reasoning tokens
-    // и отдают пустой content. Для известных проблемных семейств не форсируем.
     const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4|sakana\/)/.test(realModel);
     if (opts.useReasoning && !skipReasoning) {
       payload.reasoning = { effort: "low" };
@@ -148,14 +189,12 @@ function callModelOnce(
   } else {
     payload.venice_parameters = { include_venice_system_prompt: false };
   }
-  // Per-request timeout: без него провайдер (например, xiaomi/mimo) может
-  // висеть бесконечно и вешать весь Promise.all — функцию потом убивает runtime,
-  // и в UI это выглядит как «анализ застрял».
   const ac = new AbortController();
   const timeoutMs = 170_000;
-
   const timer = setTimeout(() => ac.abort(), timeoutMs);
-  return fetch(url, {
+
+  const proxyClient = !isVenice && shouldUseProxy(realModel) ? getProxyClient() : null;
+  const fetchInit: RequestInit & { client?: any } = {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -164,7 +203,10 @@ function callModelOnce(
     },
     body: JSON.stringify(payload),
     signal: ac.signal,
-  }).then(async (r) => {
+  };
+  if (proxyClient) fetchInit.client = proxyClient;
+
+  return fetch(url, fetchInit as any).then(async (r) => {
     if (!r.ok) {
       const t = await r.text().catch(() => "");
       throw new Error(`HTTP ${r.status}: ${t.slice(0, 400)}`);
@@ -199,27 +241,6 @@ function callModelOnce(
     if (e?.name === "AbortError") throw new Error(`timeout after ${timeoutMs / 1000}s`);
     throw e;
   }).finally(() => clearTimeout(timer));
-
-}
-
-// Обход недоступных провайдеров: если модель отдаёт 403 (Key limit exceeded /
-// Provider returned error / No allowed providers), автоматически подменяем её
-// на близкую по классу и продолжаем. Это позволяет консилиуму не падать целиком
-// из-за одной модели, у которой временно нет доступа.
-const MODEL_FALLBACKS: Record<string, string[]> = {
-  "xiaomi/": ["qwen/qwen3-max", "deepseek/deepseek-chat", "openai/gpt-5-mini"],
-  "sakana/": ["openai/gpt-5", "anthropic/claude-sonnet-4.5", "google/gemini-2.5-pro"],
-};
-
-function fallbacksFor(model: string): string[] {
-  for (const prefix of Object.keys(MODEL_FALLBACKS)) {
-    if (model.startsWith(prefix)) return MODEL_FALLBACKS[prefix];
-  }
-  return [];
-}
-
-function isProviderUnavailable(msg: string): boolean {
-  return /HTTP 403|Key limit exceeded|Provider returned error|No allowed providers|no endpoints found/i.test(msg);
 }
 
 async function callModel(
@@ -237,42 +258,22 @@ async function callModel(
     { useReasoning: false, useJsonObject: true,  useThroughput: false, maxTokens: Math.min(maxTokens, 12_000) },
     { useReasoning: false, useJsonObject: false, useThroughput: false, maxTokens: Math.min(maxTokens, 8_000) },
   ];
-  const tryModel = async (m: string): Promise<string> => {
-    let lastErr: any = null;
-    for (let i = 0; i < attempts.length; i++) {
-      try {
-        return await callModelOnce(openrouterKey, veniceKey, origin, m, messages, temperature, attempts[i]);
-      } catch (e: any) {
-        lastErr = e;
-        const msg = String(e?.message || e);
-        if (isProviderUnavailable(msg)) break; // 403 — внутри модели ретраить бесполезно
-        const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 4\d\d|INVALID_REQUEST_BODY/i.test(msg)
-          && !/timeout after/i.test(msg);
-        if (!retryable) break;
-        console.warn(`[orchestrator] retry ${i + 1} for ${m}: ${msg.slice(0, 160)}`);
-      }
+  let lastErr: any = null;
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      return await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY/i.test(msg)
+        && !/timeout after/i.test(msg);
+      if (!retryable) break;
+      console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);
     }
-    throw lastErr ?? new Error("callModel failed");
-  };
-
-  try {
-    return await tryModel(model);
-  } catch (e: any) {
-    const msg = String(e?.message || e);
-    if (!isProviderUnavailable(msg)) throw e;
-    const fbs = fallbacksFor(model);
-    for (const fb of fbs) {
-      console.warn(`[orchestrator] ${model} недоступна (${msg.slice(0, 120)}) — обход через ${fb}`);
-      try {
-        return await tryModel(fb);
-      } catch (e2: any) {
-        const m2 = String(e2?.message || e2);
-        if (!isProviderUnavailable(m2)) throw e2;
-      }
-    }
-    throw new Error(`${model}: провайдер недоступен и все обходы не сработали — ${msg.slice(0, 200)}`);
   }
+  throw lastErr ?? new Error("callModel failed");
 }
+
 
 
 function tryParseJson(s: string): any {
