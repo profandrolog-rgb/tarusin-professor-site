@@ -15,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye, Volume2, VolumeX } from "lucide-react";
+import { playCompletionChime, isSoundEnabled, setSoundEnabled } from "@/lib/notifySound";
 import { toast as sonnerToast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
@@ -128,6 +129,7 @@ export default function AdminArticleOrchestrator() {
   );
 
   const [title, setTitle] = useState(incoming.title ?? "");
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const [text, setText] = useState(incoming.text ?? "");
   const [models, setModels] = useState<string[]>(() => PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(() => ARBITERS[0]?.id ?? "");
@@ -515,7 +517,7 @@ export default function AdminArticleOrchestrator() {
               }));
             } catch { /* ignore */ }
           } else if (evType === "done") {
-            // finished
+            playCompletionChime();
           }
         }
       }
@@ -560,6 +562,7 @@ export default function AdminArticleOrchestrator() {
         if ((e.status === "consensus" || e.status === "majority") && e.severity !== "low") auto.add(i);
       });
       setAccepted(auto);
+      playCompletionChime();
     } catch (e: any) {
       toast({ title: "Ошибка консолидации", description: e?.message || String(e), variant: "destructive" });
     } finally {
@@ -597,6 +600,7 @@ export default function AdminArticleOrchestrator() {
       // Запоминаем применённые правки — чтобы исключить их при повторном ревью
       setAppliedEdits((cur) => [...cur, ...editsAccepted]);
       toast({ title: "Статья переписана", description: `Применено правок: ${j.applied}. Голос автора сохранён. Можно запустить повторное ревью.` });
+      playCompletionChime();
     } catch (e: any) {
       toast({ title: "Ошибка переписывания", description: e?.message || String(e), variant: "destructive" });
     } finally {
@@ -687,13 +691,25 @@ export default function AdminArticleOrchestrator() {
         <ArrowLeft className="w-4 h-4" /> Назад в админку
       </Link>
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Sparkles className="w-7 h-7 text-amber-500" /> Оркестратор статей
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Параллельное ревью статьи несколькими ИИ-моделями, голосование и арбитраж, применение правок.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Sparkles className="w-7 h-7 text-amber-500" /> Оркестратор статей
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Параллельное ревью статьи несколькими ИИ-моделями, голосование и арбитраж, применение правок.
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}
+          title="Звук по завершении этапов"
+          className="shrink-0"
+        >
+          {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
