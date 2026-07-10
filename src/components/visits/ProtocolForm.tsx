@@ -1,3 +1,5 @@
+import { cloneElement, isValidElement, ReactElement } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProtocolType } from "@/lib/visits/protocolTypes";
 import { UltrashortForm } from "./forms/UltrashortForm";
 import { PostOpDay3Form } from "./forms/PostOpDay3Form";
@@ -16,6 +18,7 @@ import {
 import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
 import { ExtraUziMpsSection } from "./sections/ExtraUziMps";
 import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
+import { AdditionalNotesField } from "./AdditionalNotesField";
 
 interface Props {
   type: ProtocolType;
@@ -23,43 +26,47 @@ interface Props {
   onChange: (data: any) => void;
   birthDate?: string | null;
   patientSex?: "M" | "F" | null;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
-export function ProtocolForm({ type, data, onChange, birthDate, patientSex }: Props) {
+export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, currentVisitId }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
   const patchCycle = (p: Partial<CycleContextData>) => patch(p);
+  const includeConsent = (data?.include_consent as boolean) === true;
+
+  const historyProps = { patientId, currentVisitId };
 
   const renderForm = () => {
     switch (type) {
       case "ultrashort":
-        return <UltrashortForm data={data || {}} onChange={patch} />;
+        return <UltrashortForm data={data || {}} onChange={patch} {...historyProps} />;
       case "postop_day3":
-        return <PostOpDay3Form data={data || {}} onChange={patch} />;
+        return <PostOpDay3Form data={data || {}} onChange={patch} {...historyProps} />;
       case "postop_day7":
-        return <PostOpDay7Form data={data || {}} onChange={patch} />;
+        return <PostOpDay7Form data={data || {}} onChange={patch} {...historyProps} />;
       case "primary_short":
-        return <PrimaryShortForm data={data || {}} onChange={patch} birthDate={birthDate} />;
+        return <PrimaryShortForm data={data || {}} onChange={patch} birthDate={birthDate} {...historyProps} />;
       case "repeat_with_labs":
-        return <RepeatWithLabsForm data={data || {}} onChange={patch} />;
+        return <RepeatWithLabsForm data={data || {}} onChange={patch} {...historyProps} />;
       case "uzi_reproductive":
-        return <UziReproductiveForm data={data || {}} onChange={patch} />;
+        return <UziReproductiveForm data={data || {}} onChange={patch} {...historyProps} />;
       case "uzi_urinary":
-        return <UziUrinaryForm data={data || {}} onChange={patch} />;
+        return <UziUrinaryForm data={data || {}} onChange={patch} {...historyProps} />;
       case "uzi_bladder":
         return <UziBladderForm data={data || {}} onChange={patch} />;
 
       case "dynamic_with_uzi":
-        return <DynamicWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
+        return <DynamicWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} {...historyProps} />;
       case "repeat_with_uzi":
-        return <RepeatWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} />;
+        return <RepeatWithUziForm data={data || {}} onChange={patch} birthDate={birthDate} {...historyProps} />;
       case "online_consult":
-        return <OnlineConsultForm data={data || {}} onChange={patch} />;
+        return <OnlineConsultForm data={data || {}} onChange={patch} {...historyProps} />;
       case "peptide_program":
-        return <PeptideProgramForm data={data || {}} onChange={patch} />;
+        return <PeptideProgramForm data={data || {}} onChange={patch} {...historyProps} />;
 
 
       default:
-        // unknown / dynamic / postop_day10 / online_consult и любые будущие типы
         return <GenericFieldsForm data={data || {}} onChange={patch} />;
     }
   };
@@ -95,14 +102,36 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex }: Pr
           />
         ) : null}
         {renderForm()}
-        {/* Универсальный опциональный блок УЗДГ органов МПС — доступен в любом протоколе.
-            Не показываем для типов, которые уже содержат полный УЗИ-блок. */}
+        {/* Универсальный опциональный блок УЗДГ органов МПС */}
         {!["uzi_reproductive", "uzi_urinary", "uzi_bladder", "dynamic_with_uzi", "repeat_with_uzi"].includes(type) ? (
           <ExtraUziMpsSection
             data={data?.extra_uzi_mps}
             onChange={(p) => patch({ extra_uzi_mps: { ...(data?.extra_uzi_mps || {}), ...p } })}
           />
         ) : null}
+
+        {/* Универсальное поле «Дополнительно» — во всех протоколах */}
+        <AdditionalNotesField
+          value={data?.additional_notes || ""}
+          onChange={(v) => patch({ additional_notes: v })}
+        />
+
+        {/* Переключатель информированного согласия — по умолчанию выключено */}
+        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2">
+          <label className="flex items-start gap-2 cursor-pointer text-sm">
+            <Checkbox
+              checked={includeConsent}
+              onCheckedChange={(v) => patch({ include_consent: v === true })}
+              className="mt-0.5"
+            />
+            <span>
+              Печатать блок «Информированное добровольное согласие» в конце бланка
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                По умолчанию не печатается. Включите, если для этого визита нужно приложить согласие к протоколу.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
     </SmartTemplatesProvider>
   );

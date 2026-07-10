@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap } from "lucide-react";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 export interface OnlineConsultData {
   reason?: string;
@@ -36,11 +37,14 @@ export const EXTERNAL_GENITALIA_DEFAULT =
 interface Props {
   data: OnlineConsultData;
   onChange: (patch: Partial<OnlineConsultData>) => void;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
-export function OnlineConsultForm({ data, onChange }: Props) {
+export function OnlineConsultForm({ data, onChange, patientId, currentVisitId }: Props) {
   const set = <K extends keyof OnlineConsultData>(k: K, v: OnlineConsultData[K]) =>
     onChange({ [k]: v } as Partial<OnlineConsultData>);
+
 
   return (
     <div className="space-y-5">
@@ -85,21 +89,14 @@ export function OnlineConsultForm({ data, onChange }: Props) {
         </CardContent>
       </Card>
 
-      {/* Жалобы / Анамнез / Динамика */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="space-y-1">
-          <SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-          <Textarea rows={4} value={data.complaints || ""} onChange={(e) => set("complaints", e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <SmartFieldLabel fieldKey="anamnesis">Анамнез</SmartFieldLabel>
-          <Textarea rows={4} value={data.anamnesis || ""} onChange={(e) => set("anamnesis", e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => set("dynamics" as any, v)}>Динамика</SmartFieldLabel>
-          <Textarea rows={4} value={(data as any).dynamics || ""} onChange={(e) => set("dynamics" as any, e.target.value)} placeholder="Если первичный визит — оставьте пустым" />
-        </div>
-      </div>
+      {/* Жалобы / Анамнез / Динамика — вертикально, широкими полями */}
+      <ClinicalHistorySection
+        data={data as any}
+        onChange={(p) => onChange({ ...(data as any), ...(p as any) })}
+        rows={4}
+        patientId={patientId}
+        currentVisitId={currentVisitId}
+      />
 
       {/* Очный осмотр ранее */}
       <Card>
