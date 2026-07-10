@@ -41,6 +41,9 @@ function slugifyRu(s: string): string {
     .slice(0, 60);
 }
 
+const PUBLISHER_DRAFT_KEY = "publisher:draft:v1";
+const PUBLISHER_DRAFT_TTL_MS = 30 * 24 * 3600 * 1000; // 30 дней
+
 const AdminArticleImport = () => {
   const navigate = useNavigate();
   const { isAdmin, loading: authLoading } = useAuth();
@@ -62,6 +65,8 @@ const AdminArticleImport = () => {
   const [isPublished, setIsPublished] = useState(false);
   const [filename, setFilename] = useState("");
   const [aiReview, setAiReview] = useState<any>(null);
+  const draftHydratingRef = useRef(true);
+  const draftLoadedRef = useRef(false);
 
   const location = useLocation();
   const incoming = (location.state || null) as {
