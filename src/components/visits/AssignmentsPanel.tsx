@@ -52,6 +52,8 @@ export interface AssignmentsData {
   treatments: string[];
   referrals: string[];
   diet: string[];
+  surgeries: string[];
+  activity: string[];
 }
 
 export const EMPTY_ASSIGNMENTS: AssignmentsData = {
@@ -59,6 +61,8 @@ export const EMPTY_ASSIGNMENTS: AssignmentsData = {
   treatments: [],
   referrals: [],
   diet: [],
+  surgeries: [],
+  activity: [],
 };
 
 interface DR {
@@ -99,6 +103,8 @@ export function normalizeAssignments(raw: any): AssignmentsData {
     treatments: Array.isArray(raw.treatments) ? raw.treatments.filter(Boolean) : [],
     referrals: Array.isArray(raw.referrals) ? raw.referrals.filter(Boolean) : [],
     diet: Array.isArray(raw.diet) ? raw.diet.filter(Boolean) : [],
+    surgeries: Array.isArray(raw.surgeries) ? raw.surgeries.filter(Boolean) : [],
+    activity: Array.isArray(raw.activity) ? raw.activity.filter(Boolean) : [],
   };
 }
 
