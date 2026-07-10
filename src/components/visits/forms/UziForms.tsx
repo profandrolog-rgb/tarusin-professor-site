@@ -14,10 +14,10 @@ import { SmartFieldLabel } from "../SmartTemplates";
 import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 
-export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void }) {
+export function UziReproductiveForm({ data, onChange, patientId, currentVisitId }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void; patientId?: string | null; currentVisitId?: string | null }) {
   return (
     <div className="space-y-4">
-      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={3} patientId={patientId} currentVisitId={currentVisitId} />
       <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
@@ -29,10 +29,10 @@ export function UziReproductiveForm({ data, onChange }: { data: UziReproductiveO
   );
 }
 
-export function UziUrinaryForm({ data, onChange }: { data: UziUrinaryOnlyData; onChange: (p: Partial<UziUrinaryOnlyData>) => void }) {
+export function UziUrinaryForm({ data, onChange, patientId, currentVisitId }: { data: UziUrinaryOnlyData; onChange: (p: Partial<UziUrinaryOnlyData>) => void; patientId?: string | null; currentVisitId?: string | null }) {
   return (
     <div className="space-y-4">
-      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={2} />
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={3} patientId={patientId} currentVisitId={currentVisitId} />
       <div className="space-y-1"><SmartFieldLabel value={data.indications || ""} onSet={(v) => onChange({ indications: v })}>Показания к исследованию</SmartFieldLabel>
         <Textarea rows={2} value={data.indications || ""} onChange={(e) => onChange({ indications: e.target.value })} />
       </div>
