@@ -140,7 +140,8 @@ export default function AdminArticleOrchestrator() {
   // ("anthropic/claude-opus-4-8"), из-за чего в прогрессе появляется фантомная "В очереди" карточка.
   useEffect(() => {
     if (reviewing) return;
-    const keyToId = new Map(PANEL_KEYS.map(({ key }) => {
+    const allKeys = Array.from(new Set([...PANEL_KEYS.map(p => p.key), ...ARBITER_KEYS, ...REWRITER_KEYS]));
+    const keyToId = new Map(allKeys.map((key) => {
       const r = resolvedModels.find((m) => m.key === key);
       return [key, r?.id ?? key] as const;
     }));
@@ -1044,6 +1045,7 @@ export default function AdminArticleOrchestrator() {
                   done: <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20">Готово</Badge>,
                   error: <Badge variant="destructive">Ошибка</Badge>,
                 }[p.status];
+                const isPending = pending.has(modelId) || p.status === "running";
                 return (
                   <div key={modelId} className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-accent/30 text-sm">
                     <div className="flex-1 min-w-0">
@@ -1061,6 +1063,18 @@ export default function AdminArticleOrchestrator() {
                       </div>
                     )}
                     <div className="w-32 flex justify-end">{statusBadge}</div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2"
+                      disabled={isPending}
+                      onClick={() => runReviewOne(modelId)}
+                      title="Повторить только эту модель"
+                    >
+                      {isPending
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <RotateCw className="w-3.5 h-3.5" />}
+                    </Button>
                   </div>
                 );
               })}
