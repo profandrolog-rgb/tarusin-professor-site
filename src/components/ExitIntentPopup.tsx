@@ -55,12 +55,12 @@ const ExitIntentPopup = () => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {isEn ? "Have questions?" : "Есть вопросы?"}
+            {isEn ? "Have questions?" : "Запишитесь на консультацию к профессору"}
           </DialogTitle>
           <DialogDescription className="text-base">
             {isEn
-              ? "Book a free consultation or send us a message — we'll respond within 24 hours."
-              : "Запишитесь на бесплатную консультацию или напишите нам — ответим в течение 24 часов."}
+              ? "Book a consultation with Professor Tarusin or send us a message — we'll respond within 24 hours."
+              : "Запишитесь на консультацию к профессору Тарусину или напишите нам — ответим в течение 24 часов."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 mt-2">
