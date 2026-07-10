@@ -42,7 +42,7 @@ const CATALOGS: CatalogConfig[] = [
     title: "Препараты",
     description: "Справочник медикаментов для назначений",
     table: "medications",
-    select: "id, latin_name, trade_name, dosage_form, dosage, notes",
+    select: "id, latin_name, trade_name, dosage_form, dosage",
     displayField: "latin_name",
     searchFields: ["latin_name", "trade_name", "dosage_form"],
     fields: [
@@ -50,7 +50,6 @@ const CATALOGS: CatalogConfig[] = [
       { key: "trade_name", label: "Торговое название", type: "text" },
       { key: "dosage_form", label: "Форма выпуска", type: "text", placeholder: "табл., капс., р-р…" },
       { key: "dosage", label: "Дозировка", type: "text", placeholder: "50 мг" },
-      { key: "notes", label: "Примечания", type: "textarea" },
     ],
     orderBy: "latin_name",
     ascending: true,
