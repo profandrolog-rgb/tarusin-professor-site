@@ -34,7 +34,10 @@ interface CatalogConfig {
   hasIsActive?: boolean;
   orderBy?: string;
   ascending?: boolean;
+  /** Auto-apply a fixed filter on load AND auto-inject on insert (e.g. category = 'обследование') */
+  fixedFilter?: { field: string; value: string };
 }
+
 
 const CATALOGS: CatalogConfig[] = [
   {
