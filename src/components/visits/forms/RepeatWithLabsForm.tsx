@@ -3,26 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RepeatWithLabsData } from "@/lib/visits/protocolSchemas";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 interface Props {
   data: RepeatWithLabsData;
   onChange: (patch: Partial<RepeatWithLabsData>) => void;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
-export function RepeatWithLabsForm({ data, onChange }: Props) {
+export function RepeatWithLabsForm({ data, onChange, patientId, currentVisitId }: Props) {
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-          <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-        </div>
-        <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis" value={(data as any).anamnesis || ""} onSet={(v) => onChange({ anamnesis: v } as any)}>Анамнез</SmartFieldLabel>
-          <Textarea rows={3} value={(data as any).anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value } as any)} />
-        </div>
-        <div className="space-y-1"><SmartFieldLabel value={data.dynamics || ""} onSet={(v) => onChange({ dynamics: v })}>Динамика</SmartFieldLabel>
-          <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
-        </div>
-      </div>
+      <ClinicalHistorySection
+        data={data as any}
+        onChange={(p) => onChange(p as any)}
+        rows={4}
+        patientId={patientId}
+        currentVisitId={currentVisitId}
+      />
+
 
       <Card><CardHeader><CardTitle className="text-sm">Лабораторные данные</CardTitle></CardHeader>
         <CardContent className="space-y-3">

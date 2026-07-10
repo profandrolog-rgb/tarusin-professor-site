@@ -37,11 +37,14 @@ export const EXTERNAL_GENITALIA_DEFAULT =
 interface Props {
   data: OnlineConsultData;
   onChange: (patch: Partial<OnlineConsultData>) => void;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
-export function OnlineConsultForm({ data, onChange }: Props) {
+export function OnlineConsultForm({ data, onChange, patientId, currentVisitId }: Props) {
   const set = <K extends keyof OnlineConsultData>(k: K, v: OnlineConsultData[K]) =>
     onChange({ [k]: v } as Partial<OnlineConsultData>);
+
 
   return (
     <div className="space-y-5">
