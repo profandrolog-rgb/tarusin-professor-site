@@ -3116,6 +3116,78 @@ export type Database = {
           },
         ]
       }
+      patient_lab_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_date: string | null
+          document_type: string | null
+          file_mime: string | null
+          file_url: string | null
+          full_text: string | null
+          id: string
+          notes: string | null
+          parsed_summary: string | null
+          parsed_values: Json | null
+          patient_id: string
+          source_lab: string | null
+          title: string
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_date?: string | null
+          document_type?: string | null
+          file_mime?: string | null
+          file_url?: string | null
+          full_text?: string | null
+          id?: string
+          notes?: string | null
+          parsed_summary?: string | null
+          parsed_values?: Json | null
+          patient_id: string
+          source_lab?: string | null
+          title: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_date?: string | null
+          document_type?: string | null
+          file_mime?: string | null
+          file_url?: string | null
+          full_text?: string | null
+          id?: string
+          notes?: string | null
+          parsed_summary?: string | null
+          parsed_values?: Json | null
+          patient_id?: string
+          source_lab?: string | null
+          title?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_lab_documents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_lab_documents_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "patient_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_visits: {
         Row: {
           created_at: string
