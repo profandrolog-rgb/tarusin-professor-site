@@ -155,7 +155,7 @@ export function DynamicWithUziForm({ data, onChange, birthDate, patientId, curre
   );
 }
 
-export function RepeatWithUziForm({ data, onChange, birthDate }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void; birthDate?: string | null }) {
+export function RepeatWithUziForm({ data, onChange, birthDate, patientId, currentVisitId }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void; birthDate?: string | null; patientId?: string | null; currentVisitId?: string | null }) {
   return (
     <div className="space-y-6">
       <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={3} />
