@@ -158,7 +158,7 @@ export function DynamicWithUziForm({ data, onChange, birthDate, patientId, curre
 export function RepeatWithUziForm({ data, onChange, birthDate, patientId, currentVisitId }: { data: RepeatWithUziData; onChange: (p: Partial<RepeatWithUziData>) => void; birthDate?: string | null; patientId?: string | null; currentVisitId?: string | null }) {
   return (
     <div className="space-y-6">
-      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={3} />
+      <ClinicalHistorySection data={data as any} onChange={(p) => onChange(p as any)} rows={4} patientId={patientId} currentVisitId={currentVisitId} />
       <Card><CardHeader><CardTitle className="text-sm">Локальный статус</CardTitle></CardHeader>
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
