@@ -226,7 +226,6 @@ function CatalogEditor({ cfg }: { cfg: CatalogConfig }) {
   };
 
   const remove = async (row: any) => {
-    if (!confirm("Удалить запись?")) return;
     try {
       const { error } = await supabase.from(cfg.table as any).delete().eq("id", row.id);
       if (error) throw error;
