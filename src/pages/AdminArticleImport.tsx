@@ -341,6 +341,8 @@ const AdminArticleImport = () => {
         } as any);
         if (error) throw error;
         toast({ title: "Статья сохранена", description: isPublished ? "Опубликована" : "В черновиках" });
+        try { localStorage.removeItem(PUBLISHER_DRAFT_KEY); } catch {}
+        try { localStorage.removeItem("orchestrator:draft:v1"); } catch {}
         navigate("/admin/disease-articles");
       }
     } catch (err: any) {
