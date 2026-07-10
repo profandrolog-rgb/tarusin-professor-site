@@ -140,7 +140,8 @@ export default function AdminArticleOrchestrator() {
   // ("anthropic/claude-opus-4-8"), из-за чего в прогрессе появляется фантомная "В очереди" карточка.
   useEffect(() => {
     if (reviewing) return;
-    const keyToId = new Map(PANEL_KEYS.map(({ key }) => {
+    const allKeys = Array.from(new Set([...PANEL_KEYS.map(p => p.key), ...ARBITER_KEYS, ...REWRITER_KEYS]));
+    const keyToId = new Map(allKeys.map((key) => {
       const r = resolvedModels.find((m) => m.key === key);
       return [key, r?.id ?? key] as const;
     }));
