@@ -34,7 +34,10 @@ interface CatalogConfig {
   hasIsActive?: boolean;
   orderBy?: string;
   ascending?: boolean;
+  /** Auto-apply a fixed filter on load AND auto-inject on insert (e.g. category = 'обследование') */
+  fixedFilter?: { field: string; value: string };
 }
+
 
 const CATALOGS: CatalogConfig[] = [
   {
@@ -75,7 +78,26 @@ const CATALOGS: CatalogConfig[] = [
     ascending: true,
   },
   {
+    key: "examinations",
+    title: "Обследования",
+    description: "Каталог обследований (УЗИ, МРТ, ЭКГ и т.д.) — используется во вкладке «Обследование» назначений",
+    table: "diagnosis_recommendations",
+    select: "id, diagnosis_group, subtype, category, item_text, sort_order",
+    displayField: "item_text",
+    searchFields: ["item_text", "diagnosis_group", "subtype"],
+    fields: [
+      { key: "item_text", label: "Название обследования", type: "textarea", placeholder: "УЗИ органов малого таза" },
+      { key: "diagnosis_group", label: "Группа диагнозов", type: "text", placeholder: "общее / варикоцеле / фимоз…" },
+      { key: "subtype", label: "Подгруппа", type: "text", placeholder: "напр. первичный осмотр" },
+      { key: "sort_order", label: "Порядок сортировки", type: "number" },
+    ],
+    orderBy: "sort_order",
+    ascending: true,
+    fixedFilter: { field: "category", value: "обследование" },
+  },
+  {
     key: "physical_activity_programs",
+
     title: "Физическая нагрузка",
     description: "Программы ЛФК / кардио / реабилитации",
     table: "physical_activity_programs",
@@ -128,8 +150,10 @@ function CatalogEditor({ cfg }: { cfg: CatalogConfig }) {
     setLoading(true);
     try {
       let query = supabase.from(cfg.table as any).select(cfg.select);
+      if (cfg.fixedFilter) query = query.eq(cfg.fixedFilter.field, cfg.fixedFilter.value);
       if (cfg.orderBy) query = query.order(cfg.orderBy, { ascending: cfg.ascending ?? true });
       const { data, error } = await query.limit(2000);
+
       if (error) throw error;
       setRows((data as any[]) || []);
     } catch (e: any) {
@@ -180,6 +204,8 @@ function CatalogEditor({ cfg }: { cfg: CatalogConfig }) {
         }
       }
       if (cfg.hasIsActive) payload.is_active = form.is_active !== false;
+      if (cfg.fixedFilter) payload[cfg.fixedFilter.field] = cfg.fixedFilter.value;
+
 
       if (editing) {
         const { error } = await supabase.from(cfg.table as any).update(payload).eq("id", editing.id);
