@@ -86,7 +86,7 @@ export function PlanItemsPreviewDialog({
             {(() => {
               const selectedItems = items.filter((i) => i._selected);
               const counts: Record<VisitBucket, number> = {
-                examinations: 0, treatments: 0, referrals: 0, diet: 0,
+                examinations: 0, treatments: 0, referrals: 0, diet: 0, surgeries: 0, activity: 0,
               };
               for (const it of selectedItems) counts[bucketForPlanItem(it)]++;
               const kind = activeContext?.kind;
