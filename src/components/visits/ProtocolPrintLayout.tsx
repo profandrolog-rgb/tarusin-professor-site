@@ -742,6 +742,8 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     };
     rows.push(renderList("a-exam", "Обследование", a.examinations));
     rows.push(renderList("a-treat", "Лечение и режим", a.treatments));
+    rows.push(renderList("a-surg", "Рекомендовано оперативное лечение", a.surgeries));
+    rows.push(renderList("a-act", "Рекомендации по физической нагрузке", a.activity));
     rows.push(renderList("a-ref", "Консультации", a.referrals));
     rows.push(renderList("a-diet", "Диетические рекомендации", a.diet));
   }
