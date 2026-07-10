@@ -86,6 +86,8 @@ export function mergePlanItemsIntoAssignments(
     treatments: [...(current?.treatments ?? EMPTY_ASSIGNMENTS.treatments)],
     referrals: [...(current?.referrals ?? EMPTY_ASSIGNMENTS.referrals)],
     diet: [...(current?.diet ?? EMPTY_ASSIGNMENTS.diet)],
+    surgeries: [...(current?.surgeries ?? EMPTY_ASSIGNMENTS.surgeries)],
+    activity: [...(current?.activity ?? EMPTY_ASSIGNMENTS.activity)],
   };
   for (const it of items) {
     if (!it?.name) continue;
