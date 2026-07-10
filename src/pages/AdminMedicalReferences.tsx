@@ -150,8 +150,10 @@ function CatalogEditor({ cfg }: { cfg: CatalogConfig }) {
     setLoading(true);
     try {
       let query = supabase.from(cfg.table as any).select(cfg.select);
+      if (cfg.fixedFilter) query = query.eq(cfg.fixedFilter.field, cfg.fixedFilter.value);
       if (cfg.orderBy) query = query.order(cfg.orderBy, { ascending: cfg.ascending ?? true });
       const { data, error } = await query.limit(2000);
+
       if (error) throw error;
       setRows((data as any[]) || []);
     } catch (e: any) {
