@@ -359,7 +359,9 @@ const AdminArticleImport = () => {
           <ArrowLeft className="w-4 h-4" /> В админку
         </Button>
         <h1 className="text-2xl font-bold">📥 Импорт статьи</h1>
-        <div className="w-24" />
+        <Button variant="outline" size="sm" onClick={resetPublisherDraft} className="gap-2" title="Очистить локальный черновик публикатора">
+          <X className="w-4 h-4" /> Сбросить черновик
+        </Button>
       </div>
 
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 flex items-start gap-3">
