@@ -204,6 +204,8 @@ function CatalogEditor({ cfg }: { cfg: CatalogConfig }) {
         }
       }
       if (cfg.hasIsActive) payload.is_active = form.is_active !== false;
+      if (cfg.fixedFilter) payload[cfg.fixedFilter.field] = cfg.fixedFilter.value;
+
 
       if (editing) {
         const { error } = await supabase.from(cfg.table as any).update(payload).eq("id", editing.id);
