@@ -322,6 +322,8 @@ const AdminArticleImport = () => {
         const { error } = await supabase.from(existingRef.kind).update(payload).eq("id", existingRef.id);
         if (error) throw error;
         toast({ title: "Статья обновлена", description: "Изменения сохранены" });
+        try { localStorage.removeItem(PUBLISHER_DRAFT_KEY); } catch {}
+        try { localStorage.removeItem("orchestrator:draft:v1"); } catch {}
         const back =
           existingRef.kind === "disease_articles" ? "/admin/disease-articles" :
           existingRef.kind === "blog_posts" ? "/admin" : "/admin";
