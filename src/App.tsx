@@ -80,6 +80,7 @@ const AdminAcupunctureProtocolEditor = lazy(() => import("./pages/AdminAcupunctu
 const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
 const AdminVisitTemplates = lazy(() => import("./pages/AdminVisitTemplates"));
 const AdminSystemBackup = lazy(() => import("./pages/AdminSystemBackup"));
+const AdminMedicalReferences = lazy(() => import("./pages/AdminMedicalReferences"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminPodcastSources = lazy(() => import("./pages/AdminPodcastSources"));
 const AdminArticleOrchestrator = lazy(() => import("./pages/AdminArticleOrchestrator"));
