@@ -9,6 +9,8 @@ export const VISIT_BUCKET_LABEL: Record<VisitBucket, string> = {
   treatments: "Медикаменты",
   referrals: "Консультации",
   diet: "Диета и режим",
+  surgeries: "Оперативное лечение",
+  activity: "Физ. нагрузка",
 };
 
 export function bucketForPlanItem(it: ParsedPlanItem): VisitBucket {
