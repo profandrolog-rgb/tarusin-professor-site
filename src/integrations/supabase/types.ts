@@ -3358,6 +3358,48 @@ export type Database = {
         }
         Relationships: []
       }
+      physical_activity_programs: {
+        Row: {
+          age_range: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          restrictions: string | null
+          sort_order: number
+          updated_at: string
+          weekly_plan: string | null
+        }
+        Insert: {
+          age_range?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          restrictions?: string | null
+          sort_order?: number
+          updated_at?: string
+          weekly_plan?: string | null
+        }
+        Update: {
+          age_range?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          restrictions?: string | null
+          sort_order?: number
+          updated_at?: string
+          weekly_plan?: string | null
+        }
+        Relationships: []
+      }
       podcasts: {
         Row: {
           audio_url: string | null
@@ -4371,6 +4413,45 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      surgery_catalog: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          indications: string | null
+          is_active: boolean
+          name: string
+          notes: string | null
+          short_code: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          indications?: string | null
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          short_code?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          indications?: string | null
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          short_code?: string | null
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
