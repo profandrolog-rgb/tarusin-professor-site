@@ -85,6 +85,63 @@ const AdminArticleImport = () => {
   } | null;
   const existingRef = incoming?.existingRef ?? null;
 
+  // Восстановление черновика из localStorage. Триггеры сброса ТОЛЬКО:
+  // (1) кнопка «Сбросить черновик», (2) успешное сохранение/публикация.
+  useEffect(() => {
+    if (draftLoadedRef.current) return;
+    draftLoadedRef.current = true;
+    // Если пришли из оркестратора с явным text — приоритет за ним, черновик пропускаем.
+    if (incoming?.text) { draftHydratingRef.current = false; return; }
+    try {
+      const raw = localStorage.getItem(PUBLISHER_DRAFT_KEY);
+      if (!raw) { draftHydratingRef.current = false; return; }
+      const d = JSON.parse(raw);
+      if (!d?.savedAt || Date.now() - d.savedAt > PUBLISHER_DRAFT_TTL_MS) {
+        draftHydratingRef.current = false; return;
+      }
+      if (typeof d.title === "string") setTitle(d.title);
+      if (typeof d.slug === "string") setSlug(d.slug);
+      if (typeof d.excerpt === "string") setExcerpt(d.excerpt);
+      if (Array.isArray(d.keywords)) setKeywords(d.keywords);
+      if (typeof d.category === "string") setCategory(d.category);
+      if (d.ageGroup === "children" || d.ageGroup === "adults") setAgeGroup(d.ageGroup);
+      if (typeof d.content === "string") setContent(d.content);
+      if (typeof d.isPublished === "boolean") setIsPublished(d.isPublished);
+      if (typeof d.filename === "string") setFilename(d.filename);
+      const when = new Date(d.savedAt);
+      toast({ title: "Черновик публикатора восстановлен", description: `Автосохранение от ${when.toLocaleString("ru-RU")}` });
+    } catch (e) {
+      console.warn("[publisher] draft restore failed", e);
+    } finally {
+      setTimeout(() => { draftHydratingRef.current = false; }, 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced автосохранение — переживает уход со страницы, F5, случайное закрытие.
+  useEffect(() => {
+    if (draftHydratingRef.current) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(PUBLISHER_DRAFT_KEY, JSON.stringify({
+          savedAt: Date.now(),
+          title, slug, excerpt, keywords, category, ageGroup, content, isPublished, filename,
+        }));
+      } catch (e) { console.warn("[publisher] draft save failed", e); }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [title, slug, excerpt, keywords, category, ageGroup, content, isPublished, filename]);
+
+  function resetPublisherDraft() {
+    if (!confirm("Сбросить черновик публикатора? Все поля очистятся.")) return;
+    try { localStorage.removeItem(PUBLISHER_DRAFT_KEY); } catch {}
+    setTitle(""); setSlug(""); setExcerpt(""); setKeywords([]); setKeywordInput("");
+    setCategory("general"); setAgeGroup("children"); setContent(""); setIsPublished(false);
+    setFilename(""); setAiReview(null);
+    toast({ title: "Черновик сброшен" });
+  }
+
+
   // Auto-prefill when arriving from the Orchestrator with a finished article
   useEffect(() => {
     if (!incoming?.text) return;
