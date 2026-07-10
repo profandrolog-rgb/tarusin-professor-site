@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap } from "lucide-react";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 export interface OnlineConsultData {
   reason?: string;
