@@ -134,6 +134,24 @@ export default function AdminArticleOrchestrator() {
   const [models, setModels] = useState<string[]>(() => PANEL.filter((m) => m.default).map((m) => m.id));
   const [arbiter, setArbiter] = useState(() => ARBITERS[0]?.id ?? "");
   const [rewriter, setRewriter] = useState(() => REWRITERS[0]?.id ?? "");
+
+  // Синхронизируем выбранные модели с реальными id, когда каталог OpenRouter/Venice подгрузится.
+  // Иначе в state остаются короткие ключи ("claude-opus"), которые backend резолвит в другой id
+  // ("anthropic/claude-opus-4-8"), из-за чего в прогрессе появляется фантомная "В очереди" карточка.
+  useEffect(() => {
+    if (reviewing) return;
+    const keyToId = new Map(PANEL_KEYS.map(({ key }) => {
+      const r = resolvedModels.find((m) => m.key === key);
+      return [key, r?.id ?? key] as const;
+    }));
+    setModels((cur) => {
+      const next = cur.map((m) => keyToId.get(m) ?? m);
+      return next.some((v, i) => v !== cur[i]) ? next : cur;
+    });
+    setArbiter((cur) => keyToId.get(cur) ?? cur);
+    setRewriter((cur) => keyToId.get(cur) ?? cur);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedModels]);
   const [previewOpen, setPreviewOpen] = useState(false);
 
 
