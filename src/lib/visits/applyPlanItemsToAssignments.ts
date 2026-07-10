@@ -9,6 +9,8 @@ export const VISIT_BUCKET_LABEL: Record<VisitBucket, string> = {
   treatments: "Медикаменты",
   referrals: "Консультации",
   diet: "Диета и режим",
+  surgeries: "Оперативное лечение",
+  activity: "Физ. нагрузка",
 };
 
 export function bucketForPlanItem(it: ParsedPlanItem): VisitBucket {
@@ -84,6 +86,8 @@ export function mergePlanItemsIntoAssignments(
     treatments: [...(current?.treatments ?? EMPTY_ASSIGNMENTS.treatments)],
     referrals: [...(current?.referrals ?? EMPTY_ASSIGNMENTS.referrals)],
     diet: [...(current?.diet ?? EMPTY_ASSIGNMENTS.diet)],
+    surgeries: [...(current?.surgeries ?? EMPTY_ASSIGNMENTS.surgeries)],
+    activity: [...(current?.activity ?? EMPTY_ASSIGNMENTS.activity)],
   };
   for (const it of items) {
     if (!it?.name) continue;

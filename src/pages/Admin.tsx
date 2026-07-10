@@ -94,6 +94,13 @@ const clinicalSections = [
     href: "/admin/visit-templates",
     color: "text-teal-600",
   },
+  {
+    title: "📚 Медицинские справочники",
+    description: "Препараты, операции, программы физ. нагрузки, диеты — для назначений в протоколах",
+    icon: BookOpen,
+    href: "/admin/medical-references",
+    color: "text-emerald-600",
+  },
 ];
 
 // === САЙТ И АДМИНИСТРИРОВАНИЕ: контент, заявки, аналитика, инфраструктура ===

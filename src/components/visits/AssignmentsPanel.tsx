@@ -14,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Phone, ClipboardList, Salad } from "lucide-react";
+import { Plus, X, Phone, ClipboardList, Salad, Scissors, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 
@@ -52,6 +52,8 @@ export interface AssignmentsData {
   treatments: string[];
   referrals: string[];
   diet: string[];
+  surgeries: string[];
+  activity: string[];
 }
 
 export const EMPTY_ASSIGNMENTS: AssignmentsData = {
@@ -59,6 +61,8 @@ export const EMPTY_ASSIGNMENTS: AssignmentsData = {
   treatments: [],
   referrals: [],
   diet: [],
+  surgeries: [],
+  activity: [],
 };
 
 interface DR {
@@ -99,6 +103,8 @@ export function normalizeAssignments(raw: any): AssignmentsData {
     treatments: Array.isArray(raw.treatments) ? raw.treatments.filter(Boolean) : [],
     referrals: Array.isArray(raw.referrals) ? raw.referrals.filter(Boolean) : [],
     diet: Array.isArray(raw.diet) ? raw.diet.filter(Boolean) : [],
+    surgeries: Array.isArray(raw.surgeries) ? raw.surgeries.filter(Boolean) : [],
+    activity: Array.isArray(raw.activity) ? raw.activity.filter(Boolean) : [],
   };
 }
 
@@ -619,6 +625,113 @@ function ListEditor({ items, onChange, addPlaceholder, picker }: ListEditorProps
   );
 }
 
+function CatalogPicker({
+  title,
+  triggerLabel,
+  triggerIcon,
+  queryKey,
+  table,
+  select,
+  format,
+  onAdd,
+}: {
+  title: string;
+  triggerLabel: string;
+  triggerIcon: React.ReactNode;
+  queryKey: string;
+  table: "surgery_catalog" | "physical_activity_programs";
+  select: string;
+  format: (row: any) => { text: string; meta?: string };
+  onAdd: (texts: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const { data: rows = [] } = useQuery({
+    queryKey: [queryKey, "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(table as any)
+        .select(select)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const filtered = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    const mapped = rows.map((r: any) => ({ id: r.id, ...format(r) }));
+    return ql ? mapped.filter((i) => i.text.toLowerCase().includes(ql)) : mapped;
+  }, [rows, q, format]);
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  const apply = () => {
+    if (selected.size === 0) {
+      toast({ title: "Ничего не выбрано" });
+      return;
+    }
+    onAdd(filtered.filter((i) => selected.has(i.id)).map((i) => i.text));
+    setSelected(new Set());
+    setOpen(false);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          {triggerIcon}
+          <span className="ml-1">{triggerLabel}</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col">
+        <SheetHeader><SheetTitle>{title}</SheetTitle></SheetHeader>
+        <div className="py-3">
+          <Input placeholder="Поиск…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <ScrollArea className="flex-1 pr-3 -mr-3">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              Ничего не найдено. Добавьте записи в справочнике: Админка → Медицинские справочники.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {filtered.map((it) => (
+                <label key={it.id} className="flex gap-2 items-start text-sm cursor-pointer rounded px-2 py-1.5 hover:bg-muted/50">
+                  <Checkbox checked={selected.has(it.id)} onCheckedChange={() => toggle(it.id)} className="mt-0.5" />
+                  <span className="leading-snug flex-1">
+                    {it.text}
+                    {it.meta && <span className="text-xs text-muted-foreground ml-2">{it.meta}</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+        <SheetFooter className="pt-3 border-t">
+          <div className="flex items-center justify-between w-full gap-2">
+            <span className="text-xs text-muted-foreground">Выбрано: {selected.size}</span>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Отмена</Button>
+              <Button type="button" size="sm" onClick={apply} disabled={selected.size === 0}>Добавить</Button>
+            </div>
+          </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 interface PanelProps {
   value: AssignmentsData | undefined;
   onChange: (next: AssignmentsData) => void;
@@ -628,7 +741,9 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
   const data = normalizeAssignments(value);
   const patch = (p: Partial<AssignmentsData>) => onChange({ ...data, ...p });
 
-  const totalCount = data.examinations.length + data.treatments.length + data.referrals.length + data.diet.length;
+  const totalCount =
+    data.examinations.length + data.treatments.length + data.referrals.length +
+    data.diet.length + data.surgeries.length + data.activity.length;
 
   return (
     <Card>
@@ -637,9 +752,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
           <ClipboardList className="h-4 w-4 text-primary" />
           Назначения и консультации
           {totalCount > 0 && (
-            <span className="text-xs font-normal text-muted-foreground">
-              ({totalCount})
-            </span>
+            <span className="text-xs font-normal text-muted-foreground">({totalCount})</span>
           )}
         </CardTitle>
       </CardHeader>
@@ -648,6 +761,8 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
           <TabsList className="mb-3 flex-wrap h-auto">
             <TabsTrigger value="exam">Обследование {data.examinations.length > 0 && `(${data.examinations.length})`}</TabsTrigger>
             <TabsTrigger value="treat">Медикаменты и лечение {data.treatments.length > 0 && `(${data.treatments.length})`}</TabsTrigger>
+            <TabsTrigger value="surg">✂️ Оперативное лечение {data.surgeries.length > 0 && `(${data.surgeries.length})`}</TabsTrigger>
+            <TabsTrigger value="act">🏃 Физ. нагрузка {data.activity.length > 0 && `(${data.activity.length})`}</TabsTrigger>
             <TabsTrigger value="ref">Консультации {data.referrals.length > 0 && `(${data.referrals.length})`}</TabsTrigger>
             <TabsTrigger value="diet">🥗 Диета {data.diet.length > 0 && `(${data.diet.length})`}</TabsTrigger>
           </TabsList>
@@ -677,6 +792,52 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
                   title="Медикаменты, местное лечение, режим"
                   categories={["медикамент", "местное", "режим"]}
                   onAdd={(texts) => patch({ treatments: [...data.treatments, ...texts] })}
+                />
+              }
+            />
+          </TabsContent>
+
+          <TabsContent value="surg">
+            <ListEditor
+              items={data.surgeries}
+              onChange={(next) => patch({ surgeries: next })}
+              addPlaceholder="Добавить название операции…"
+              picker={
+                <CatalogPicker
+                  title="Каталог операций"
+                  triggerLabel="Выбрать из каталога"
+                  triggerIcon={<Scissors className="h-4 w-4" />}
+                  queryKey="surgery_catalog"
+                  table="surgery_catalog"
+                  select="id, name, short_code, indications"
+                  format={(r) => ({
+                    text: r.short_code ? `${r.name} (${r.short_code})` : r.name,
+                    meta: r.indications || undefined,
+                  })}
+                  onAdd={(texts) => patch({ surgeries: [...data.surgeries, ...texts] })}
+                />
+              }
+            />
+          </TabsContent>
+
+          <TabsContent value="act">
+            <ListEditor
+              items={data.activity}
+              onChange={(next) => patch({ activity: next })}
+              addPlaceholder="Добавить рекомендацию по нагрузке…"
+              picker={
+                <CatalogPicker
+                  title="Программы физической нагрузки"
+                  triggerLabel="Выбрать программу"
+                  triggerIcon={<Activity className="h-4 w-4" />}
+                  queryKey="physical_activity_programs"
+                  table="physical_activity_programs"
+                  select="id, name, category, age_range, description"
+                  format={(r) => ({
+                    text: r.description ? `${r.name} — ${r.description}` : r.name,
+                    meta: [r.category, r.age_range].filter(Boolean).join(" · ") || undefined,
+                  })}
+                  onAdd={(texts) => patch({ activity: [...data.activity, ...texts] })}
                 />
               }
             />
