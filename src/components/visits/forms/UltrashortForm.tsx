@@ -8,16 +8,19 @@ import { SomaticStatusSection } from "../sections/SomaticStatus";
 import { SexualFormulaSection } from "../sections/SexualFormula";
 import { SexualConstitutionSection } from "../sections/SexualConstitution";
 import type { LocalStatusData } from "../sections/LocalStatusAndrology";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 
 interface Props {
   data: UltrashortData;
   onChange: (patch: Partial<UltrashortData>) => void;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
 const SCROTUM_DEFAULT =
   "Яичко в мошонке, положение правильное, размеры по возрасту, тургор достаточный, эластичность обычная, пальпация безболезненная. Придаток яичка: положение правильное, форма типичная, подвижность обычная, пальпация безболезненная, гидатиды не пальпируются, кист головки придатка нет.";
 
-export function UltrashortForm({ data, onChange }: Props) {
+export function UltrashortForm({ data, onChange, patientId, currentVisitId }: Props) {
   // Backward compat: если local_status — строка (legacy), миграция при первом изменении
   const ls: LocalStatusData =
     data.local_status && typeof data.local_status === "object"
@@ -29,26 +32,13 @@ export function UltrashortForm({ data, onChange }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Жалобы / Анамнез / Динамика */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="space-y-1">
-          <SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-          <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-        </div>
-        <div className="space-y-1">
-          <SmartFieldLabel fieldKey="anamnesis">Краткий анамнез</SmartFieldLabel>
-          <Textarea rows={3} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
-        </div>
-        <div className="space-y-1">
-          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => onChange({ dynamics: v } as any)}>Динамика</SmartFieldLabel>
-          <Textarea
-            rows={3}
-            value={(data as any).dynamics || ""}
-            onChange={(e) => onChange({ dynamics: e.target.value } as any)}
-            placeholder="Если первичный визит — оставьте пустым"
-          />
-        </div>
-      </div>
+      <ClinicalHistorySection
+        data={data as any}
+        onChange={(p) => onChange(p as any)}
+        rows={4}
+        patientId={patientId}
+        currentVisitId={currentVisitId}
+      />
 
       {/* Общий (соматический) статус */}
       <Card>

@@ -10,6 +10,7 @@ import { NeuroStatusSection } from "../sections/NeuroStatus";
 import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { CollapsibleField } from "../CollapsibleField";
+import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 import { Button } from "@/components/ui/button";
 import { Zap, RotateCcw } from "lucide-react";
 
@@ -20,9 +21,11 @@ interface Props {
   data: PrimaryShortData;
   onChange: (patch: Partial<PrimaryShortData>) => void;
   birthDate?: string | null;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
-export function PrimaryShortForm({ data, onChange, birthDate }: Props) {
+export function PrimaryShortForm({ data, onChange, birthDate, patientId, currentVisitId }: Props) {
 
   // Backfill external_genitalia from legacy "fields" import on first render data shape
   const importedFields = ((data as any).fields || {}) as Record<string, string>;
@@ -34,18 +37,13 @@ export function PrimaryShortForm({ data, onChange, birthDate }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-          <Textarea rows={4} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-        </div>
-        <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis">Анамнез</SmartFieldLabel>
-          <Textarea rows={4} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
-        </div>
-        <div className="space-y-1">
-          <SmartFieldLabel value={(data as any).dynamics || ""} onSet={(v) => onChange({ dynamics: v } as any)}>Динамика</SmartFieldLabel>
-          <Textarea rows={4} value={(data as any).dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value } as any)} placeholder="Если первичный визит — оставьте пустым" />
-        </div>
-      </div>
+      <ClinicalHistorySection
+        data={data as any}
+        onChange={(p) => onChange(p as any)}
+        rows={4}
+        patientId={patientId}
+        currentVisitId={currentVisitId}
+      />
 
       <Card><CardHeader><CardTitle className="text-sm">Соматический статус</CardTitle></CardHeader>
         <CardContent><SomaticStatusSection data={data.somatic || {}} onChange={(p) => onChange({ somatic: { ...(data.somatic || {}), ...p } })} /></CardContent>
