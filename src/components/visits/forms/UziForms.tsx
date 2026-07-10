@@ -121,18 +121,16 @@ export function UziBladderForm({ data, onChange }: { data: UziBladderData; onCha
 }
 
 
-export function DynamicWithUziForm({ data, onChange, birthDate }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void; birthDate?: string | null }) {
+export function DynamicWithUziForm({ data, onChange, birthDate, patientId, currentVisitId }: { data: DynamicWithUziData; onChange: (p: Partial<DynamicWithUziData>) => void; birthDate?: string | null; patientId?: string | null; currentVisitId?: string | null }) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1"><SmartFieldLabel fieldKey="complaints">Жалобы</SmartFieldLabel>
-        <Textarea rows={3} value={data.complaints || ""} onChange={(e) => onChange({ complaints: e.target.value })} />
-      </div>
-      <div className="space-y-1"><SmartFieldLabel fieldKey="anamnesis" value={data.anamnesis || ""} onSet={(v) => onChange({ anamnesis: v })}>Анамнез</SmartFieldLabel>
-        <Textarea rows={3} value={data.anamnesis || ""} onChange={(e) => onChange({ anamnesis: e.target.value })} />
-      </div>
-      <div className="space-y-1"><SmartFieldLabel value={data.dynamics || ""} onSet={(v) => onChange({ dynamics: v })}>Динамика</SmartFieldLabel>
-        <Textarea rows={3} value={data.dynamics || ""} onChange={(e) => onChange({ dynamics: e.target.value })} />
-      </div>
+      <ClinicalHistorySection
+        data={data as any}
+        onChange={(p) => onChange(p as any)}
+        rows={4}
+        patientId={patientId}
+        currentVisitId={currentVisitId}
+      />
       <div className="space-y-1"><SmartFieldLabel value={data.lab_results || ""} onSet={(v) => onChange({ lab_results: v })}>Лабораторные данные</SmartFieldLabel>
         <Textarea rows={3} value={data.lab_results || ""} onChange={(e) => onChange({ lab_results: e.target.value })} />
       </div>
