@@ -27,10 +27,13 @@ interface Props {
   birthDate?: string | null;
   patientSex?: "M" | "F" | null;
   patientId?: string | null;
+  patientName?: string | null;
   currentVisitId?: string | null;
 }
 
-export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, currentVisitId }: Props) {
+import { MetabolicMapChecklistDialog } from "@/components/metabolic/MetabolicMapChecklistDialog";
+
+export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, patientName, currentVisitId }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
   const patchCycle = (p: Partial<CycleContextData>) => patch(p);
   const includeConsent = (data?.include_consent as boolean) === true;
