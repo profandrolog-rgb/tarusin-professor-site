@@ -152,13 +152,13 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "qwen-max",
-    label: "Qwen 3.7 Max",
+    label: "Qwen 3 Max",
     tier: "deep",
     candidates: [
-      "qwen/qwen3.7-max",
-      "qwen/qwen-3.7-max",
       "qwen/qwen3-max",
       "qwen/qwen-max",
+      "qwen/qwen3.7-max",
+      "qwen/qwen-3.7-max",
     ],
     familyRegex: /^qwen\/qwen[^/]*max/i,
   },
