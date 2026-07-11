@@ -114,6 +114,24 @@ function maxTokensForPurpose(purpose: CallPurpose): number {
   return 16_000;
 }
 
+function isQwenMax(model: string): boolean {
+  return /^qwen\/qwen[-.]?3?\.?7?-?max/i.test(model) || /^qwen\/qwen[^/]*max/i.test(model) || model === "qwen-max";
+}
+
+function publicModelError(model: string, msg: string): string {
+  if (/HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg)) {
+    return isQwenMax(model)
+      ? "Qwen Max сейчас ограничен провайдером Alibaba (429). Модель не зависла — внешний лимит, повторите позже."
+      : "Модель сейчас ограничена провайдером (429). Повторите позже.";
+  }
+  if (/timeout after/i.test(msg)) {
+    return isQwenMax(model)
+      ? "Qwen Max не ответил за быстрый лимит ожидания. Остановлено, чтобы не держать оркестратор."
+      : msg;
+  }
+  return msg;
+}
+
 // HTTP-прокси для моделей с гео-ограничением (Sakana AI и т. п.).
 // Значение из секрета OPENROUTER_PROXY_URL: допустимо `http(s)://host:port`,
 // `http(s)://user:pass@host:port` или просто `host:port` — нормализуем.
@@ -169,7 +187,7 @@ function callModelOnce(
   const payload: Record<string, unknown> = { model: realModel, messages, temperature };
   if (opts.maxTokens) payload.max_tokens = opts.maxTokens;
   if (!isVenice) {
-    const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4|sakana\/)/.test(realModel);
+    const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4|sakana\/|qwen\/)/.test(realModel);
     if (opts.useReasoning && !skipReasoning) {
       payload.reasoning = { effort: "low" };
     }
@@ -249,6 +267,7 @@ function getMetricsClient() {
 }
 function classifyError(msg: string): string {
   if (/timeout after/i.test(msg)) return "timeout";
+  if (/HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg)) return "rate_limit";
   if (/HTTP 4\d\d/i.test(msg)) return "http_4xx";
   if (/HTTP 5\d\d/i.test(msg)) return "http_5xx";
   if (/empty (content|response body)/i.test(msg)) return "empty_content";
@@ -282,7 +301,11 @@ async function callModel(
   const baseTimeout = purpose === "rewrite" ? 320_000 : purpose === "consolidate" ? 280_000 : 200_000;
   const timeoutMs = baseTimeout + (heavyReasoning ? 60_000 : 0);
   const fastTimeout = Math.min(timeoutMs, 180_000);
-  const attempts: Array<{ useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number; timeoutMs?: number }> = [
+  const attempts: Array<{ useReasoning: boolean; useJsonObject: boolean; useThroughput: boolean; maxTokens?: number; timeoutMs?: number }> = isQwenMax(model) ? [
+    // Qwen Max через общий пул Alibaba/OpenRouter часто уходит в 429/долгую очередь.
+    // Не держим весь оркестратор: один быстрый проход, без reasoning и без backend-ретраев.
+    { useReasoning: false, useJsonObject: true, useThroughput: true, maxTokens: Math.min(maxTokens, 10_000), timeoutMs: 75_000 },
+  ] : [
     { useReasoning: true,  useJsonObject: true,  useThroughput: true,  maxTokens, timeoutMs },
     { useReasoning: false, useJsonObject: true,  useThroughput: true,  maxTokens: Math.min(maxTokens, 12_000), timeoutMs: fastTimeout },
     { useReasoning: false, useJsonObject: false, useThroughput: true,  maxTokens: Math.min(maxTokens, 8_000),  timeoutMs: fastTimeout },
@@ -301,7 +324,7 @@ async function callModel(
         model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt,
         ok: false, error_kind: classifyError(msg), error_message: msg.slice(0, 500),
       });
-      const retryable = /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY|timeout after/i.test(msg);
+      const retryable = !isQwenMax(model) && /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY|timeout after/i.test(msg);
       if (!retryable) break;
       console.warn(`[orchestrator] retry ${i + 1} for ${model}: ${msg.slice(0, 160)}`);
     }
@@ -638,8 +661,10 @@ Deno.serve(async (req) => {
               send(`event: model_done\ndata: ${JSON.stringify(payload)}\n\n`);
             } catch (e: any) {
               const ms = Date.now() - t0;
-              console.error("[orchestrator] fail", JSON.stringify({ model, err: e?.message || String(e) }));
-              send(`event: model_done\ndata: ${JSON.stringify({ model, free_review: "", edits: [], error: e?.message || String(e), ms })}\n\n`);
+              const rawError = e?.message || String(e);
+              const safeError = publicModelError(model, rawError);
+              console.error("[orchestrator] fail", JSON.stringify({ model, err: rawError }));
+              send(`event: model_done\ndata: ${JSON.stringify({ model, free_review: "", edits: [], error: safeError, ms })}\n\n`);
             }
           }));
 
