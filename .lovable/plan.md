@@ -1,79 +1,68 @@
+# Где в проекте живёт логика qwen-max
 
-# Метаболическая карта — переделка визуализации
+Изменений не предлагаю — только карта кода по запросу.
 
-Реализую строго по прототипу `Метаболическая_карта_-_прототип.pdf`. БД, агрегатор правил, edge-функция сборки, RLS, роль `parent` — не трогаю. Меняю только UI и добавляю арсенал.
+## Единственное место обработки вызова модели
 
-## 1. Обзорная карта (замена `MetroOverview`)
+**`supabase/functions/orchestrate-article/index.ts`** — весь rewrite/review/consolidate идёт через `callModel` → `callModelOnce` (провайдер OpenRouter, endpoint `https://openrouter.ai/api/v1/chat/completions`). Alibaba DashScope напрямую не вызывается — только через OpenRouter.
 
-Компонент `PathwayTilesGrid`: 6 групп-заголовков в стиле прототипа:
-- Энергия и субстраты (Кребс, Глюкоза, Липиды)
-- Гормональные оси (ГГГ, СТГ/ИФР, Щитовидная, Надпочечники)
-- Кровь, железо, воспаление (Железо, Воспаление/белок)
-- Микронутриенты и метилирование (Метилирование, Микроэлементы, Костно-минеральный)
-- Аминокислоты и защита (Аминокислоты/мочевина, Оксидативный стресс)
-- Водно-электролитный баланс (Электролиты/КЩР)
+### 1. Определение модели (строки 117–119)
+```ts
+function isQwenMax(model: string): boolean {
+  return /^qwen\/qwen[-.]?3?\.?7?-?max/i.test(model) || /^qwen\/qwen[^/]*max/i.test(model) || model === "qwen-max";
+}
+```
 
-Группа = слоты `pathway.group` в БД (добавлю миграцией колонку `group text`). Плитка = карточка с левой цветной полосой = severity + название + мелкая подпись статуса + короткое evidence (первые 2 маркера). Сетка `grid-cols-[repeat(auto-fill,minmax(200px,1fr))]`.
+### 2. Публичное сообщение об ошибке (строки 121–133)
+Специально маппит `HTTP 429` и `timeout after …s` в user-friendly текст для qwen-max.
 
-## 2. Цепочка проблем (новый `ProblemChainSVG`)
+### 3. Спецпайплайн попыток для qwen-max в `callModel` (строки 300–312)
+```ts
+const heavyReasoning = /(gpt-5|claude-.*-opus|gemini-.*-pro|deepseek-r1|qwen.*max|grok-4)/i.test(model);
+const baseTimeout = purpose === "rewrite" ? 320_000 : purpose === "consolidate" ? 280_000 : 200_000;
+const timeoutMs = baseTimeout + (heavyReasoning ? 60_000 : 0);
+const fastTimeout = Math.min(timeoutMs, 180_000);
 
-Компактный SVG (высота ~360px) только для затронутых путей:
-- Слева — «Причины» (severe/moderate), справа — «Следствия» (эффекты из `pathway.consequences` — новое поле jsonb).
-- Связи = кривые Безье слева-направо, цвет = severity причины.
-- Норма и `no_data` не показываются.
+const attempts = isQwenMax(model) ? [
+  // один быстрый проход, без reasoning, без backend-ретраев
+  { useReasoning: false, useJsonObject: true, useThroughput: true,
+    maxTokens: Math.min(maxTokens, 10_000), timeoutMs: 75_000 },
+] : [
+  { useReasoning: true,  useJsonObject: true,  useThroughput: true,  maxTokens, timeoutMs },
+  { useReasoning: false, useJsonObject: true,  useThroughput: true,  maxTokens: Math.min(maxTokens, 12_000), timeoutMs: fastTimeout },
+  { useReasoning: false, useJsonObject: false, useThroughput: true,  maxTokens: Math.min(maxTokens, 8_000),  timeoutMs: fastTimeout },
+];
+```
 
-Данные связей: таблица `pathway_links(from_pathway_id, to_effect_key, weight)` + справочник эффектов, либо простое `pathways.consequences jsonb = [{to_slug, label}]`. Иду по второму — быстрее.
+### 4. Блокировка ретраев для qwen-max (строка 327)
+```ts
+const retryable = !isQwenMax(model) && /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY|timeout after/i.test(msg);
+if (!retryable) break;
+```
+То есть для qwen-max backend всегда делает **ровно одну** попытку — независимо от типа ошибки.
 
-## 3. Фиксированные SVG-шаблоны путей (16 шт., папка `src/components/metabolic/schemes/`)
+### 5. Спецсборка payload для qwen/* (строка 190, в `callModelOnce`)
+```ts
+const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4|sakana\/|qwen\/)/.test(realModel);
+```
+Для всех `qwen/*` `reasoning` не отправляется даже если запрошен.
 
-Каждый шаблон — React-компонент с жёсткими координатами. Принимает `values: Record<code, {value, unit, flag}>`, `highlights: Set<nodeId>`, `rxNodes: Set<nodeId>`. Заменяет `PathwaySceneSVG` (Excalidraw) для 16 стандартных путей; Excalidraw остаётся fallback для кастомных.
+### 6. Классификация 429 для метрик (строки 268–277)
+```ts
+if (/HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg)) return "rate_limit";
+```
+Пишется в таблицу `public.orchestrator_call_metrics` через service-role клиент (fire-and-forget, строки 278–288).
 
-Три архетипа:
-- **Вертикальный каскад** — HPG, СТГ/ИФР, Щитовидная, Надпочечники. 3 уровня: Гипоталамус → Гипофиз → Орган-мишень, прямые вертикальные стрелки, подписи гормонов внутри блоков.
-- **Горизонтальный конвейер** — Железо (Депо → Транспорт → Эритропоэз), Метилирование (Метионин → Гомоцистеин ↔ Реметилирование), Аминокислоты/мочевина, Липиды, Глюкоза-инсулин, Микроэлементы, Костно-минеральный, Оксидативный стресс, Воспаление, Электролиты.
-- **Кольцо** — Цикл Кребса.
+### 7. HTTP 429 как таковой
+Специальной обработки 429 (например, чтения `Retry-After` или экспоненциального backoff) нет. 429 попадает в общий блок `if (!r.ok) throw new Error(`HTTP ${r.status}: …`)` (строки 221–224). Для qwen-max он немедленно завершает вызов (см. п.4); для остальных моделей 429 **не** попадает в regex `retryable` — тоже без ретрая.
 
-Все блоки авторазмер по тексту (word-wrap max 2 строки, min-width 96, min-height 44), стрелки не пересекаются, всё внутри viewBox.
+## Смежные точки (без своей логики retry/timeout по qwen-max)
 
-## 4. ℞ Точки приложения терапии (расширение `treatment_catalog`)
+- `src/config/aiModels.ts:154–163` — определение ключа `qwen-max`, кандидатов OpenRouter (`qwen/qwen3.7-max`, `qwen/qwen-3.7-max`, `qwen/qwen3-max`, `qwen/qwen-max`) и `familyRegex`.
+- `src/pages/AdminArticleOrchestrator.tsx:64` — `{ key: "qwen-max", default: false }` (выключен по умолчанию в UI из-за 429 upstream).
+- `src/pages/Cabinet.tsx:57` — просто в списке доступных моделей кабинета.
+- `supabase/functions/ai-council/index.ts` и `ai-chat/index.ts` — упоминается только `qwen/qwen3.6-flash`; qwen-max там **не** обрабатывается.
 
-Миграция: добавить в `treatment_catalog` колонки
-- `mm_targets text[]` — коды путей и/или маркеров через которые препарат/метод применим
-- `mm_application_point text` — короткая подпись точки приложения («Депо железа», «Кофакторы ПДГ», …)
-- `mm_evidence_level text` (A/B/C/D)
-- `mm_priority int` (1..99, меньше = выше)
-- `mm_contraindications text[]`
+## Итог
 
-Селектор `pickArsenalForPathway(pathway, findings, patient)`:
-- фильтр `mm_targets && pathway.codes ∪ finding.codes`
-- фильтр возраст (`age_group`), противопоказания → пометка ⚠
-- сортировка `mm_priority ASC, mm_evidence_level`
-- запись в `map_recommendations` c `application_point`.
-
-## 5. CSV-импорт арсенала
-
-Новая админ-страница `/admin/therapy-arsenal` (пункт меню «Мой арсенал»). Drag-n-drop CSV, парсинг PapaParse, превью → upsert в `treatment_catalog` по `id`/`name`. Колонки строго те, что перечислены в ТЗ.
-
-## 6. Текстовая карта и печать A4
-
-- `TextualMap` — секция по каждому затронутому пути: краткий текст (простой/про), «Основания» (маркеры), «℞ Точки приложения» (из `map_recommendations`).
-- `AdminPatientMetabolicMapPrint` — переработать: сводная страница = сетка плиток + цепочка + список проблем по приоритету; далее по одному A4 на выбранный путь: SVG-шаблон сверху, «Что это значит» + таблица показателей + ℞ снизу.
-- Врач выбирает чекбоксами, что печатать (state в родителе, `?ids=` в URL страницы печати).
-- CSS `@page A4; page-break-after: always;` уже есть — донастрою.
-
-## 7. Итерации
-
-1. **Итерация 1** (этот заход): плиточная сетка + `pathways.group`, цепочка проблем + `pathways.consequences`, замена `MetroOverview` в `AdminPatientMetabolicMap` и `ParentMetabolicMap`.
-2. Итерация 2: 4 архетипа SVG-шаблонов (каскад, конвейер, кольцо, цепочка) + маппинг pathway.slug → template.
-3. Итерация 3: расширение `treatment_catalog` + селектор арсенала + пересборка `map_recommendations` в edge-функции.
-4. Итерация 4: CSV-импорт «Мой арсенал».
-5. Итерация 5: печать A4 (сводка + 1 путь = 1 страница, выбор чекбоксами).
-
-## Технические детали
-
-- Данные подтягиваем из существующих `metabolic_maps.aggregate_summary`, `map_findings`, `lab_results`, `map_recommendations` — схема не меняется, кроме добавлений в `pathways` и `treatment_catalog`.
-- Ничего из старого агрегатора (`src/lib/metabolic/aggregator.ts`) не ломаю.
-- `PathwaySceneSVG` остаётся для кастомных сцен; для стандартных 16 путей проверяем `slug` → рендерим фиксированный шаблон.
-- Цвета — из существующей `SEVERITY_COLORS`.
-
-**Начну с Итерации 1 сразу после подтверждения плана.**
+Вся retry/timeout/429-логика для qwen-max сосредоточена в одном файле — `supabase/functions/orchestrate-article/index.ts`, функции `isQwenMax`, `publicModelError`, `callModel`, `callModelOnce`, `classifyError`. Текущее поведение: 1 попытка, 75 s таймаут, без reasoning, без backend-ретраев, 429 → мгновенный fail с русскоязычным сообщением.
