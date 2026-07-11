@@ -52,7 +52,7 @@ export const CURATED_MODELS: CuratedModel[] = [
     key: "grok-fast",
     label: "Grok 4",
     tier: "fast",
-    candidates: ["x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
+    candidates: ["x-ai/grok-4.5", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
     familyRegex: /^x-ai\/grok-4/i,
   },
   {
@@ -110,11 +110,34 @@ export const CURATED_MODELS: CuratedModel[] = [
     hint: "Мета-оркестратор, сам маршрутизирует по пулу моделей",
   },
   {
+    key: "gpt56-terra-pro",
+    label: "GPT-5.6 Terra Pro",
+    tier: "deep",
+    candidates: ["openai/gpt-5.6-terra-pro", "openai/gpt-5.6-terra"],
+    familyRegex: /^openai\/gpt-5\.6-terra/i,
+  },
+  {
     key: "gpt5",
     label: "GPT-5",
     tier: "deep",
     candidates: ["openai/gpt-5.5", "openai/gpt-5.4-pro", "openai/gpt-5"],
     familyRegex: /^openai\/gpt-5(?:\.\d)?(?:-pro)?(?!-mini|-nano|-chat)/i,
+  },
+  {
+    key: "tencent-hy3",
+    label: "Hy3 (Tencent)",
+    tier: "deep",
+    candidates: ["tencent/hy3"],
+    familyRegex: /^tencent\/hy3/i,
+    hint: "Акцент на anti-hallucination — не выдумывает при нехватке данных",
+  },
+  {
+    key: "nemotron-3-ultra",
+    label: "Nemotron 3 Ultra (NVIDIA)",
+    tier: "deep",
+    candidates: ["nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3-ultra-550b-a55b:free"],
+    familyRegex: /^nvidia\/nemotron-3-ultra/i,
+    hint: "Заточен под агентную оркестрацию — кандидат на роль арбитра",
   },
   {
     key: "mistral-large",
@@ -145,9 +168,9 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "glm-5",
-    label: "GLM-5 (Zhipu AI)",
+    label: "GLM-5.2 (Zhipu AI)",
     tier: "deep",
-    candidates: ["z-ai/glm-5"],
+    candidates: ["z-ai/glm-5.2", "z-ai/glm-5"],
     familyRegex: /^z-ai\/glm-/i,
   },
   {
