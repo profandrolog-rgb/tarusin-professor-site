@@ -61,7 +61,7 @@ const PANEL_KEYS: { key: string; default: boolean }[] = [
   { key: "gemini-pro", default: true },
   { key: "glm-5", default: true },
   { key: "kimi-k2", default: true },
-  { key: "qwen-max", default: true },
+  { key: "qwen-max", default: false }, // временно off: Alibaba upstream часто отдаёт 429 в общем пуле OpenRouter
   { key: "pplx-sonar-pro", default: true },
   { key: "venice-uncensored", default: true },
   { key: "grok-fast", default: true },
