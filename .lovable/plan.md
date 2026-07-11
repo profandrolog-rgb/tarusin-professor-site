@@ -1,68 +1,21 @@
-# Где в проекте живёт логика qwen-max
+## Вывод
 
-Изменений не предлагаю — только карта кода по запросу.
+Панель НЕ хардкодит модели. Источник — `src/config/aiModels.ts` через `resolveCuratedModel`.
 
-## Единственное место обработки вызова модели
+**Файл панели**: `src/pages/AdminArticleOrchestrator.tsx`, строки 58–71 (`PANEL_KEYS` — только ключи и default-флаги) и 100–113 (`PANEL` собирается из `CURATED_MODELS`).
 
-**`supabase/functions/orchestrate-article/index.ts`** — весь rewrite/review/consolidate идёт через `callModel` → `callModelOnce` (провайдер OpenRouter, endpoint `https://openrouter.ai/api/v1/chat/completions`). Alibaba DashScope напрямую не вызывается — только через OpenRouter.
+**Почему на скриншоте всё ещё «Qwen 3.7 Max»**:
 
-### 1. Определение модели (строки 117–119)
-```ts
-function isQwenMax(model: string): boolean {
-  return /^qwen\/qwen[-.]?3?\.?7?-?max/i.test(model) || /^qwen\/qwen[^/]*max/i.test(model) || model === "qwen-max";
-}
-```
+1. Лейбл в `aiModels.ts` уже «Qwen 3 Max» — `rg` по `src/` не находит строки "Qwen 3.7 Max" нигде. Значит, у пользователя в браузере старый бандл — фронт после правки `aiModels.ts` не пересобран/не опубликован (или не сделан hard-refresh).
+2. Слаг `qwen/qwen3.7-max` в UI объясняется резолвером: в `resolveCuratedModel` кандидаты пробуются по порядку через `liveModelsById.get()`. Если `qwen/qwen3-max` отсутствует в живом каталоге OpenRouter, а `qwen/qwen3.7-max` присутствует — резолвер выберет `qwen3.7-max`, независимо от того, что он третий в списке. Порядок кандидатов даёт эффект только если ранний кандидат реально существует в каталоге.
+3. Кэш `useOpenRouterModels` (sessionStorage, TTL 30 мин) держит устаревший каталог до перезагрузки вкладки, но влияет только на выбор `id`, не на `label`.
 
-### 2. Публичное сообщение об ошибке (строки 121–133)
-Специально маппит `HTTP 429` и `timeout after …s` в user-friendly текст для qwen-max.
+## Что предлагаю сделать (по вашей команде)
 
-### 3. Спецпайплайн попыток для qwen-max в `callModel` (строки 300–312)
-```ts
-const heavyReasoning = /(gpt-5|claude-.*-opus|gemini-.*-pro|deepseek-r1|qwen.*max|grok-4)/i.test(model);
-const baseTimeout = purpose === "rewrite" ? 320_000 : purpose === "consolidate" ? 280_000 : 200_000;
-const timeoutMs = baseTimeout + (heavyReasoning ? 60_000 : 0);
-const fastTimeout = Math.min(timeoutMs, 180_000);
+Варианты, не более чем один нужен:
 
-const attempts = isQwenMax(model) ? [
-  // один быстрый проход, без reasoning, без backend-ретраев
-  { useReasoning: false, useJsonObject: true, useThroughput: true,
-    maxTokens: Math.min(maxTokens, 10_000), timeoutMs: 75_000 },
-] : [
-  { useReasoning: true,  useJsonObject: true,  useThroughput: true,  maxTokens, timeoutMs },
-  { useReasoning: false, useJsonObject: true,  useThroughput: true,  maxTokens: Math.min(maxTokens, 12_000), timeoutMs: fastTimeout },
-  { useReasoning: false, useJsonObject: false, useThroughput: true,  maxTokens: Math.min(maxTokens, 8_000),  timeoutMs: fastTimeout },
-];
-```
+- **Вариант A (минимальный)** — ничего не менять в коде. Просить пользователя опубликовать фронт и сделать hard-refresh; лейбл станет «Qwen 3 Max». Слаг останется `qwen/qwen3.7-max`, если в live-каталоге OpenRouter нет `qwen/qwen3-max`.
+- **Вариант B (жёстко закрепить старую модель)** — в `src/config/aiModels.ts` для `qwen-max` убрать `familyRegex` и оставить единственного кандидата `"qwen/qwen3-max"`. Тогда, если OpenRouter реально хостит `qwen/qwen3-max`, панель покажет именно его; если нет — карточка станет `available: false` и будет задизейблена, вместо «тихого» апгрейда на 3.7.
+- **Вариант C (лейбл всегда из live)** — рендерить label как `liveInfo?.name ?? c.label`. Даст «честное» имя из OpenRouter, но перепишет наши локализованные лейблы для всех моделей — рискованно.
 
-### 4. Блокировка ретраев для qwen-max (строка 327)
-```ts
-const retryable = !isQwenMax(model) && /empty content|empty response body|invalid JSON response|Unexpected end of JSON input|terminated|fetch failed|HTTP 5\d\d|INVALID_REQUEST_BODY|timeout after/i.test(msg);
-if (!retryable) break;
-```
-То есть для qwen-max backend всегда делает **ровно одну** попытку — независимо от типа ошибки.
-
-### 5. Спецсборка payload для qwen/* (строка 190, в `callModelOnce`)
-```ts
-const skipReasoning = /^(google\/gemini-.*-pro|deepseek\/|xiaomi\/|x-ai\/grok-4|sakana\/|qwen\/)/.test(realModel);
-```
-Для всех `qwen/*` `reasoning` не отправляется даже если запрошен.
-
-### 6. Классификация 429 для метрик (строки 268–277)
-```ts
-if (/HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg)) return "rate_limit";
-```
-Пишется в таблицу `public.orchestrator_call_metrics` через service-role клиент (fire-and-forget, строки 278–288).
-
-### 7. HTTP 429 как таковой
-Специальной обработки 429 (например, чтения `Retry-After` или экспоненциального backoff) нет. 429 попадает в общий блок `if (!r.ok) throw new Error(`HTTP ${r.status}: …`)` (строки 221–224). Для qwen-max он немедленно завершает вызов (см. п.4); для остальных моделей 429 **не** попадает в regex `retryable` — тоже без ретрая.
-
-## Смежные точки (без своей логики retry/timeout по qwen-max)
-
-- `src/config/aiModels.ts:154–163` — определение ключа `qwen-max`, кандидатов OpenRouter (`qwen/qwen3.7-max`, `qwen/qwen-3.7-max`, `qwen/qwen3-max`, `qwen/qwen-max`) и `familyRegex`.
-- `src/pages/AdminArticleOrchestrator.tsx:64` — `{ key: "qwen-max", default: false }` (выключен по умолчанию в UI из-за 429 upstream).
-- `src/pages/Cabinet.tsx:57` — просто в списке доступных моделей кабинета.
-- `supabase/functions/ai-council/index.ts` и `ai-chat/index.ts` — упоминается только `qwen/qwen3.6-flash`; qwen-max там **не** обрабатывается.
-
-## Итог
-
-Вся retry/timeout/429-логика для qwen-max сосредоточена в одном файле — `supabase/functions/orchestrate-article/index.ts`, функции `isQwenMax`, `publicModelError`, `callModel`, `callModelOnce`, `classifyError`. Текущее поведение: 1 попытка, 75 s таймаут, без reasoning, без backend-ретраев, 429 → мгновенный fail с русскоязычным сообщением.
+Жду вашего решения, какой вариант применять (или ничего не трогать).
