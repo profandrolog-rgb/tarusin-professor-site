@@ -118,6 +118,21 @@ function isQwenMax(model: string): boolean {
   return /^qwen\/qwen[-.]?3?\.?7?-?max/i.test(model) || /^qwen\/qwen[^/]*max/i.test(model) || model === "qwen-max";
 }
 
+// Глобальный in-memory семафор на 1 параллельный вызов qwen-max во всём процессе.
+// Alibaba (единственный провайдер qwen3.7-max в OpenRouter) быстро отдаёт 429,
+// если два запроса пересекаются по времени — сериализуем их.
+let _qwenMaxChain: Promise<unknown> = Promise.resolve();
+function withQwenMaxLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = _qwenMaxChain.then(fn, fn);
+  // Держим цепочку, но не пробрасываем ошибку в следующий ожидающий вызов.
+  _qwenMaxChain = run.catch(() => {});
+  return run;
+}
+function is429(msg: string): boolean {
+  return /HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg);
+}
+function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
 function publicModelError(model: string, msg: string): string {
   if (/HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg)) {
     return isQwenMax(model)
