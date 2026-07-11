@@ -529,6 +529,16 @@ export default function AdminArticleOrchestrator() {
     setModels((cur) => cur.includes(id) ? cur.filter((m) => m !== id) : [...cur, id]);
   };
 
+  const markUnfinishedModelsAsError = (message: string, onlyModel?: string) => {
+    setProgress((cur) => Object.fromEntries(
+      Object.entries(cur).map(([modelId, p]) => {
+        if (onlyModel && modelId !== onlyModel) return [modelId, p];
+        if (p.status === "done" || p.status === "error") return [modelId, p];
+        return [modelId, { ...p, status: "error" as const, ms: p.startedAt ? Date.now() - p.startedAt : p.ms, error: message }];
+      }),
+    ));
+  };
+
   async function runReview(opts?: { reReview?: boolean }) {
     const reReview = !!opts?.reReview;
     // База для повторного ревью — переписанная статья (если есть) или текущий text.
@@ -562,6 +572,7 @@ export default function AdminArticleOrchestrator() {
     setProgress(Object.fromEntries(models.map((m) => [m, { status: "queued" as const }])));
 
     try {
+      let streamDone = false;
       const { data: { session } } = await supabase.auth.getSession();
       const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
@@ -622,12 +633,16 @@ export default function AdminArticleOrchestrator() {
               }));
             } catch { /* ignore */ }
           } else if (evType === "done") {
+            streamDone = true;
             playCompletionChime();
           }
         }
       }
+      if (!streamDone) throw new Error("Поток оркестратора закрылся до завершения. Незавершённые модели помечены ошибкой.");
     } catch (e: any) {
-      toast({ title: "Ошибка ревью", description: e?.message || String(e), variant: "destructive" });
+      const message = e?.message || String(e);
+      markUnfinishedModelsAsError(message);
+      toast({ title: "Ошибка ревью", description: message, variant: "destructive" });
     } finally {
       setReviewing(false);
       setPending(new Set());
@@ -658,6 +673,7 @@ export default function AdminArticleOrchestrator() {
     setReviewing(true);
 
     try {
+      let streamDone = false;
       const { data: { session } } = await supabase.auth.getSession();
       const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
@@ -718,13 +734,16 @@ export default function AdminArticleOrchestrator() {
               }));
             } catch { /* ignore */ }
           } else if (evType === "done") {
+            streamDone = true;
             playCompletionChime();
           }
         }
       }
+      if (!streamDone) throw new Error("Поток оркестратора закрылся до завершения. Модель помечена ошибкой.");
     } catch (e: any) {
-      toast({ title: `Ошибка ревью (${model})`, description: e?.message || String(e), variant: "destructive" });
-      setProgress((cur) => ({ ...cur, [model]: { status: "error", error: e?.message || String(e) } }));
+      const message = e?.message || String(e);
+      toast({ title: `Ошибка ревью (${model})`, description: message, variant: "destructive" });
+      setProgress((cur) => ({ ...cur, [model]: { ...cur[model], status: "error", error: message } }));
     } finally {
       setPending((cur) => { const n = new Set(cur); n.delete(model); return n; });
       // Если больше нет активных моделей — снимаем общий флаг reviewing.
