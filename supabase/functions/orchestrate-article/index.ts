@@ -329,7 +329,29 @@ async function callModel(
   for (let i = 0; i < attempts.length; i++) {
     const startedAt = Date.now();
     try {
-      const res = await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
+      const opt = attempts[i];
+      const invoke = () => callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, opt);
+      let res: string;
+      if (isQwenMax(model)) {
+        // Сериализуем qwen-max и даём ровно один retry на 429 с паузой 8s.
+        res = await withQwenMaxLock(async () => {
+          try {
+            return await invoke();
+          } catch (e: any) {
+            const m = String(e?.message || e);
+            if (!is429(m)) throw e;
+            console.warn(`[orchestrator] qwen-max 429 — retry once in 8s`);
+            recordAttempt({
+              model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt,
+              ok: false, error_kind: "rate_limit", error_message: m.slice(0, 500),
+            });
+            await sleep(8_000);
+            return await invoke();
+          }
+        });
+      } else {
+        res = await invoke();
+      }
       recordAttempt({ model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt, ok: true });
       return res;
     } catch (e: any) {
