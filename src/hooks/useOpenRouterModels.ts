@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import type { LiveModelInfo } from "@/config/aiModels";
 
-const SS_KEY = "openrouter.models.v1";
+const SS_KEY = "openrouter.models.v2";
 const SS_TTL_MS = 30 * 60 * 1000; // 30 минут — модели меняются редко
 
 type CachePayload = { ts: number; list: LiveModelInfo[] };
