@@ -661,8 +661,10 @@ Deno.serve(async (req) => {
               send(`event: model_done\ndata: ${JSON.stringify(payload)}\n\n`);
             } catch (e: any) {
               const ms = Date.now() - t0;
-              console.error("[orchestrator] fail", JSON.stringify({ model, err: e?.message || String(e) }));
-              send(`event: model_done\ndata: ${JSON.stringify({ model, free_review: "", edits: [], error: e?.message || String(e), ms })}\n\n`);
+              const rawError = e?.message || String(e);
+              const safeError = publicModelError(model, rawError);
+              console.error("[orchestrator] fail", JSON.stringify({ model, err: rawError }));
+              send(`event: model_done\ndata: ${JSON.stringify({ model, free_review: "", edits: [], error: safeError, ms })}\n\n`);
             }
           }));
 
