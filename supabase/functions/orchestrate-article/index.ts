@@ -118,6 +118,21 @@ function isQwenMax(model: string): boolean {
   return /^qwen\/qwen[-.]?3?\.?7?-?max/i.test(model) || /^qwen\/qwen[^/]*max/i.test(model) || model === "qwen-max";
 }
 
+// Глобальный in-memory семафор на 1 параллельный вызов qwen-max во всём процессе.
+// Alibaba (единственный провайдер qwen3.7-max в OpenRouter) быстро отдаёт 429,
+// если два запроса пересекаются по времени — сериализуем их.
+let _qwenMaxChain: Promise<unknown> = Promise.resolve();
+function withQwenMaxLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = _qwenMaxChain.then(fn, fn);
+  // Держим цепочку, но не пробрасываем ошибку в следующий ожидающий вызов.
+  _qwenMaxChain = run.catch(() => {});
+  return run;
+}
+function is429(msg: string): boolean {
+  return /HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg);
+}
+function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
 function publicModelError(model: string, msg: string): string {
   if (/HTTP 429|rate-?limit|temporarily rate-limited/i.test(msg)) {
     return isQwenMax(model)
@@ -314,7 +329,29 @@ async function callModel(
   for (let i = 0; i < attempts.length; i++) {
     const startedAt = Date.now();
     try {
-      const res = await callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, attempts[i]);
+      const opt = attempts[i];
+      const invoke = () => callModelOnce(openrouterKey, veniceKey, origin, model, messages, temperature, opt);
+      let res: string;
+      if (isQwenMax(model)) {
+        // Сериализуем qwen-max и даём ровно один retry на 429 с паузой 8s.
+        res = await withQwenMaxLock(async () => {
+          try {
+            return await invoke();
+          } catch (e: any) {
+            const m = String(e?.message || e);
+            if (!is429(m)) throw e;
+            console.warn(`[orchestrator] qwen-max 429 — retry once in 8s`);
+            recordAttempt({
+              model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt,
+              ok: false, error_kind: "rate_limit", error_message: m.slice(0, 500),
+            });
+            await sleep(8_000);
+            return await invoke();
+          }
+        });
+      } else {
+        res = await invoke();
+      }
       recordAttempt({ model, purpose, attempt: i + 1, duration_ms: Date.now() - startedAt, ok: true });
       return res;
     } catch (e: any) {
