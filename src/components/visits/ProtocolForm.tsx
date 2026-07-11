@@ -27,10 +27,13 @@ interface Props {
   birthDate?: string | null;
   patientSex?: "M" | "F" | null;
   patientId?: string | null;
+  patientName?: string | null;
   currentVisitId?: string | null;
 }
 
-export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, currentVisitId }: Props) {
+import { MetabolicMapChecklistDialog } from "@/components/metabolic/MetabolicMapChecklistDialog";
+
+export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, patientName, currentVisitId }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
   const patchCycle = (p: Partial<CycleContextData>) => patch(p);
   const includeConsent = (data?.include_consent as boolean) === true;
@@ -115,6 +118,22 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
           value={data?.additional_notes || ""}
           onChange={(v) => patch({ additional_notes: v })}
         />
+
+        {/* Бланк метаболической карты — выбор исследований и печать */}
+        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm">
+            <div className="font-medium">🧬 Бланк метаболической карты</div>
+            <div className="text-xs text-muted-foreground">
+              Отметьте исследования для выдачи пациенту. Выбор сохраняется в визите.
+            </div>
+          </div>
+          <MetabolicMapChecklistDialog
+            patientName={patientName || ""}
+            birthDate={birthDate}
+            value={Array.isArray(data?.metabolic_map_checklist) ? data.metabolic_map_checklist : []}
+            onChange={(codes) => patch({ metabolic_map_checklist: codes })}
+          />
+        </div>
 
         {/* Переключатель информированного согласия — по умолчанию выключено */}
         <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2">
