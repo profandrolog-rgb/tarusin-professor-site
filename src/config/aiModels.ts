@@ -52,7 +52,8 @@ export const CURATED_MODELS: CuratedModel[] = [
     key: "grok-fast",
     label: "Grok 4",
     tier: "fast",
-    candidates: ["x-ai/grok-4.5", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
+    // grok-4.5 недоступен в нашем регионе (xAI отдаёт 403 permission-denied) — используем 4.3 как основной
+    candidates: ["x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4", "x-ai/grok-4.5"],
     familyRegex: /^x-ai\/grok-4/i,
   },
   {
