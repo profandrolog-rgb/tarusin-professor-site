@@ -68,6 +68,31 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         }
         return false;
       },
+      handlePaste: (_view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          if (it.kind === "file" && it.type.startsWith("image/")) {
+            const file = it.getAsFile();
+            if (file) {
+              event.preventDefault();
+              void uploadAndInsertImage(file, editor);
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+      handleDrop: (_view, event) => {
+        const files = (event as DragEvent).dataTransfer?.files;
+        if (!files || !files.length) return false;
+        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return false;
+        event.preventDefault();
+        for (const f of imgs) void uploadAndInsertImage(f, editor);
+        return true;
+      },
     },
   });
 
