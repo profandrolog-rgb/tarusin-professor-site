@@ -14,13 +14,18 @@ export default function AdminArticleUpload() {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [parsing, setParsing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   if (loading) return <div className="container py-12">Загрузка…</div>;
   if (!user || !isAdmin) return <div className="container py-12">Доступ запрещён</div>;
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const processFile = async (file: File) => {
     if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".docx")) {
+      toast({ title: "Только .docx", description: "Формат " + (name.split(".").pop() || "?") + " не поддерживается", variant: "destructive" });
+      return;
+    }
     setParsing(true);
     try {
       const buf = await file.arrayBuffer();
@@ -38,6 +43,11 @@ export default function AdminArticleUpload() {
     } finally {
       setParsing(false);
     }
+  };
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void processFile(file);
   };
 
   return (
