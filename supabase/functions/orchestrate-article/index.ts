@@ -202,7 +202,9 @@ function callModelOnce(
   const url = isVenice
     ? "https://api.venice.ai/api/v1/chat/completions"
     : "https://openrouter.ai/api/v1/chat/completions";
-  const realModel = isVenice ? model.slice("venice/".length) : model;
+  let realModel = isVenice ? model.slice("venice/".length) : model;
+  // grok-4.5 недоступен в нашем регионе (xAI 403 permission-denied) — прозрачно подменяем на 4.3
+  if (/^x-ai\/grok-4\.5/i.test(realModel)) realModel = "x-ai/grok-4.3";
   const key = isVenice ? veniceKey : openrouterKey;
   if (!key) throw new Error(isVenice ? "VENICE_API_KEY missing" : "OPENROUTER_API_KEY missing");
   const payload: Record<string, unknown> = { model: realModel, messages, temperature };
