@@ -90,7 +90,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow select-none">
+    <Card className="overflow-hidden border border-border/60 bg-card shadow-[0_4px_14px_-4px_rgba(0,0,0,0.25),0_0_0_1px_rgba(59,130,246,0.12)] ring-1 ring-blue-500/15 hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.25),0_0_0_1px_rgba(59,130,246,0.35)] hover:ring-blue-500/30 transition-all duration-300 ease-out select-none">
       <CardContent className="p-0">
         {/* Admin toolbar */}
         {isAdmin && (

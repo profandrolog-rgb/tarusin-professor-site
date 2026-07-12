@@ -30,7 +30,7 @@ const DiseaseBentoCard = ({ article, featured, categoryLabel }: Props) => {
   return (
     <Link
       to={`/for-parents/${article.slug}/`}
-      className={`group relative block overflow-hidden rounded-2xl border border-border/60 bg-card shadow-md ring-1 ring-black/[0.02] transition-all duration-300 ease-out will-change-transform hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-2xl hover:ring-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+      className={`group relative block overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_4px_14px_-4px_rgba(0,0,0,0.25),0_0_0_1px_rgba(59,130,246,0.12)] ring-1 ring-blue-500/15 transition-all duration-300 ease-out will-change-transform hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.25),0_0_0_1px_rgba(59,130,246,0.35)] hover:ring-blue-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         featured ? "md:col-span-2 md:row-span-2 min-h-[280px]" : "min-h-[160px]"
       }`}
     >
