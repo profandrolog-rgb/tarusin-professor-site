@@ -650,7 +650,7 @@ Deno.serve(async (req) => {
         ? body.models
             .map((m: unknown) => String(m || "").trim())
             .filter(Boolean)
-            .slice(0, 12)
+            .slice(0, 24)
         : [];
       if (!text || text.length < 50) {
         return new Response(JSON.stringify({ error: "text too short" }), {
