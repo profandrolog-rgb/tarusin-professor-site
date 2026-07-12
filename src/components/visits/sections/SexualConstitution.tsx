@@ -192,6 +192,17 @@ export function SexualConstitutionSection({ value, onChange }: Props) {
           <AgeCombobox value={d.sxage ?? null} onChange={(v) => patch({ sxage: v as any })} allowNone disabled={disabled} />
         </div>
         <div className="space-y-1">
+          <Label className="text-xs">SxFR <span className="text-muted-foreground font-normal">(частота, /нед)</span></Label>
+          <Input
+            type="number"
+            step="0.1"
+            min={0}
+            value={d.sx_fr ?? ""}
+            onChange={(e) => patch({ sx_fr: e.target.value === "" ? null : Number(e.target.value) })}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-1">
           <Label className="text-xs">Part <span className="text-muted-foreground font-normal">(партнёры, число)</span></Label>
           <Input
             type="number"
