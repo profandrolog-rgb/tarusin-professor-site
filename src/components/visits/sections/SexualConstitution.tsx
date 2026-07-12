@@ -54,6 +54,7 @@ export function computeScConstitutionScore(d: SexualConstitutionData): number {
     plusScore(d.ej) +
     plusScore(d.sx) +
     (typeof d.mast_fr === "number" ? d.mast_fr : 0) +
+    (typeof d.sx_fr === "number" ? d.sx_fr : 0) +
     (typeof d.part === "number" ? d.part : 0)
   );
 }
