@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Eye, Printer, FileDown } from "lucide-react";
 import { PrescriptionPrint, type PrescriptionLang } from "./PrescriptionPrint";
 import { exportNodeToPdf } from "@/lib/exportPdf";
+import { transliterateGOST } from "@/lib/transliterateGOST";
 
 interface PrescriptionPreviewProps {
   prescription: any;
@@ -13,6 +15,25 @@ interface PrescriptionPreviewProps {
 export function PrescriptionPreview({ prescription, trigger }: PrescriptionPreviewProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [lang, setLang] = useState<PrescriptionLang>("ru");
+
+  const autoLatin = useMemo(
+    () =>
+      prescription?.patient?.full_name_latin?.trim() ||
+      transliterateGOST(prescription?.patient?.full_name || ""),
+    [prescription?.patient?.full_name, prescription?.patient?.full_name_latin],
+  );
+  const [latinName, setLatinName] = useState<string>(autoLatin);
+  useEffect(() => {
+    setLatinName(autoLatin);
+  }, [autoLatin]);
+
+  const prescriptionForPrint = useMemo(() => {
+    if (lang !== "en") return prescription;
+    return {
+      ...prescription,
+      patient: { ...prescription.patient, full_name_latin: latinName || autoLatin },
+    };
+  }, [prescription, lang, latinName, autoLatin]);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -90,8 +111,24 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
             </span>
           )}
         </div>
+        {lang === "en" && (
+          <div className="mb-3 p-2 rounded border bg-muted/30">
+            <label className="text-[11px] font-medium text-muted-foreground block mb-1">
+              Patient full name (auto-transliterated per RF passport / ICAO 9303)
+            </label>
+            <Input
+              value={latinName}
+              onChange={(e) => setLatinName(e.target.value)}
+              placeholder={autoLatin}
+              className="h-8 text-sm"
+            />
+            <div className="text-[10px] text-muted-foreground mt-1">
+              edit if differs from passport
+            </div>
+          </div>
+        )}
         <div ref={printRef} className="flex justify-center">
-          <PrescriptionPrint prescription={prescription} lang={lang} />
+          <PrescriptionPrint prescription={prescriptionForPrint} lang={lang} />
         </div>
       </DialogContent>
     </Dialog>
