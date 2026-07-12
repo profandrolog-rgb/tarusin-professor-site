@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import BentoImageCell, { type BentoImageData } from "./BentoImageCell";
 
 interface Props {
@@ -27,12 +28,20 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
       const { error } = await supabase.storage.from("disease-media").upload(path, file);
       if (error) throw error;
       onChange({ path, x: 50, y: 50, zoom: 100 });
+      toast({ title: "Изображение загружено" });
     } catch (e: any) {
       toast({ title: "Ошибка загрузки", description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
   };
+
+  const { dragOver, handlers: dropHandlers } = useFileDrop({
+    onFiles: (files) => { void handleFile(files[0]); },
+    accept: "image/",
+    disabled: uploading,
+  });
+
 
   const updatePos = (clientX: number, clientY: number) => {
     if (!frameRef.current || !value) return;
