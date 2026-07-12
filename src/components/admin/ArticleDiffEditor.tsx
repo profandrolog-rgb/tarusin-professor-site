@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Eye, Columns, AlignLeft, Search, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Pencil, Eye, Columns, AlignLeft, Search, ChevronUp, ChevronDown, X, Copy, CheckSquare, Square } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 
 type Mode = "edit" | "inline" | "split";
 
