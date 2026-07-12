@@ -799,17 +799,41 @@ const PlaceholderGallery = ({
     }
   };
 
+  const [galleryDragOver, setGalleryDragOver] = useState(false);
+
   return (
     <div
       ref={containerRef}
       tabIndex={0}
       onPaste={handlePaste}
+      onDragOver={(e) => {
+        if (uploading || processing) return;
+        if (!e.dataTransfer?.types?.includes("Files")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setGalleryDragOver(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target) setGalleryDragOver(false);
+      }}
+      onDrop={(e) => {
+        if (uploading || processing) return;
+        const files = e.dataTransfer?.files;
+        if (!files || !files.length) return;
+        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setGalleryDragOver(false);
+        startCropFlow(imgs);
+      }}
       className={
-        hasExisting
+        (hasExisting
           ? "mt-2 mb-8 rounded-lg border border-dashed flex flex-col items-center text-center px-4 py-4 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 bg-slate-50/50"
-          : "my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+          : "my-8 rounded-lg border-2 border-dashed flex flex-col items-center justify-center text-center px-4 py-8 not-prose outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20") +
+        (galleryDragOver ? " ring-2 ring-primary/60 bg-primary/10 border-primary" : "")
       }
-      style={{ borderColor: "#E2EBF5", minHeight: hasExisting ? undefined : 200 }}
+      style={{ borderColor: galleryDragOver ? undefined : "#E2EBF5", minHeight: hasExisting ? undefined : 200 }}
     >
       {hasExisting ? (
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3 font-semibold">
