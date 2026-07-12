@@ -31,6 +31,7 @@ export const DEFAULT_SEXUAL_CONSTITUTION: SexualConstitutionData = {
   mast_fr: null,
   sx: "",
   sxage: null,
+  sx_fr: null,
   part: null,
   prev: null,
   score: 0,
