@@ -297,8 +297,19 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
 
   const preview = resolveMaterialPreview(draft);
 
+  const { dragOver, handlers: dropHandlers } = useFileDrop({
+    onFiles: (files) => { void handleUpload(files[0]); },
+    accept: "image/",
+    disabled: uploading,
+  });
+
   return (
-    <Card ref={setNodeRef} style={style} className="overflow-hidden">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`overflow-hidden transition ${dragOver ? "ring-2 ring-primary bg-primary/5" : ""}`}
+      {...dropHandlers}
+    >
       <CardContent className="p-4">
         <div className="flex gap-3 items-start">
           <button {...attributes} {...listeners} className="mt-1 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Перетащить" type="button">
