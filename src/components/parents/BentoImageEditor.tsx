@@ -94,7 +94,10 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
 
       <div
         ref={frameRef}
-        className="relative aspect-square rounded-lg overflow-hidden ring-2 ring-primary/40 shadow-sm cursor-crosshair select-none touch-none"
+        tabIndex={0}
+        className={`relative aspect-square rounded-lg overflow-hidden ring-2 shadow-sm cursor-crosshair select-none touch-none outline-none transition ${
+          dragOver ? "ring-primary bg-primary/10" : "ring-primary/40"
+        }`}
         onPointerDown={(e) => {
           if (!value?.path) return;
           dragging.current = true;
@@ -106,6 +109,7 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
         }}
         onPointerUp={() => { dragging.current = false; }}
         onPointerCancel={() => { dragging.current = false; }}
+        {...dropHandlers}
       >
         <BentoImageCell image={value} rounded="" className="absolute inset-0" />
         {value?.path && (
@@ -113,6 +117,16 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
             className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow ring-1 ring-primary bg-primary/60 pointer-events-none"
             style={{ left: `${value.x ?? 50}%`, top: `${value.y ?? 50}%` }}
           />
+        )}
+        {!value?.path && !uploading && (
+          <div className="absolute inset-0 flex items-center justify-center text-[10px] text-muted-foreground/70 pointer-events-none">
+            {dragOver ? "Отпустите — загрузится" : "Перетащите картинку / Ctrl+V"}
+          </div>
+        )}
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/60 pointer-events-none">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
         )}
       </div>
 
