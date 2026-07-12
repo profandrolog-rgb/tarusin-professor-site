@@ -266,10 +266,33 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   );
 
   return (
-    <div ref={containerRef} className="border border-input rounded-md bg-background relative">
+    <div
+      ref={containerRef}
+      className={`border rounded-md bg-background relative transition-colors ${
+        dragOver ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-input"
+      }`}
+      onDragOver={(e) => {
+        if (e.dataTransfer?.types?.includes("Files")) {
+          e.preventDefault();
+          setDragOver(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target) setDragOver(false);
+      }}
+      onDrop={(e) => {
+        const files = e.dataTransfer?.files;
+        if (!files || !files.length) return;
+        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return;
+        e.preventDefault();
+        setDragOver(false);
+        for (const f of imgs) void uploadAndInsertImage(f, editor);
+      }}
+    >
       {/* Spacer when toolbar is fixed */}
       {isToolbarFixed && <div className="h-[42px]" />}
-      
+
       {/* Toolbar */}
       <div
         ref={toolbarRef}
@@ -280,8 +303,16 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       >
         {toolbarContent}
       </div>
-      
+
       <EditorContent editor={editor} />
+
+      {dragOver && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/10 backdrop-blur-[1px] rounded-md">
+          <div className="text-sm font-medium text-primary bg-background/90 border border-primary/40 rounded-md px-3 py-1.5 shadow">
+            Отпустите — изображение загрузится в статью
+          </div>
+        </div>
+      )}
     </div>
   );
 };
