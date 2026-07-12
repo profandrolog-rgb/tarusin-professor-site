@@ -1,8 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Eye, Printer, FileDown } from "lucide-react";
-import { PrescriptionPrint } from "./PrescriptionPrint";
+import { PrescriptionPrint, type PrescriptionLang } from "./PrescriptionPrint";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 
 interface PrescriptionPreviewProps {
@@ -12,14 +12,16 @@ interface PrescriptionPreviewProps {
 
 export function PrescriptionPreview({ prescription, trigger }: PrescriptionPreviewProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [lang, setLang] = useState<PrescriptionLang>("ru");
 
   const handlePrint = () => {
     const printContent = printRef.current;
     if (!printContent) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
+    const title = lang === "en" ? "Prescription" : "Рецепт";
     printWindow.document.write(`
-      <html><head><title>Рецепт</title>
+      <html><head><title>${title}</title>
       <style>
         @page{size:A4 portrait;margin:0}
         body{margin:0;padding:0;display:flex;justify-content:flex-end}
@@ -43,25 +45,53 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
       </DialogTrigger>
       <DialogContent className="max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Предпросмотр рецепта</DialogTitle>
+          <DialogTitle>
+            {lang === "en" ? "Prescription preview" : "Предпросмотр рецепта"}
+          </DialogTitle>
         </DialogHeader>
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4 items-center">
+          <div className="inline-flex rounded-md border overflow-hidden" role="group" aria-label="Язык бланка">
+            <button
+              type="button"
+              onClick={() => setLang("ru")}
+              className={`px-3 py-1.5 text-xs font-medium transition ${lang === "ru" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+              title="Русский"
+            >
+              RU
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("en")}
+              className={`px-3 py-1.5 text-xs font-medium border-l transition ${lang === "en" ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+              title="English"
+            >
+              EN
+            </button>
+          </div>
           <Button onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" /> Печать
+            <Printer className="h-4 w-4 mr-2" />
+            {lang === "en" ? "Print" : "Печать"}
           </Button>
           <Button
             variant="outline"
             onClick={async () => {
               if (!printRef.current) return;
               const name = prescription?.patient_name?.replace(/\s+/g, "_") || "prescription";
-              await exportNodeToPdf(printRef.current, `${name}_рецепт.pdf`);
+              const suffix = lang === "en" ? "prescription" : "рецепт";
+              await exportNodeToPdf(printRef.current, `${name}_${suffix}.pdf`);
             }}
           >
-            <FileDown className="h-4 w-4 mr-2" /> Скачать PDF
+            <FileDown className="h-4 w-4 mr-2" />
+            {lang === "en" ? "Download PDF" : "Скачать PDF"}
           </Button>
+          {lang === "en" && (
+            <span className="text-[11px] text-muted-foreground ml-1">
+              MHH препаратов подставится после утверждения батч-перевода каталога
+            </span>
+          )}
         </div>
         <div ref={printRef} className="flex justify-center">
-          <PrescriptionPrint prescription={prescription} />
+          <PrescriptionPrint prescription={prescription} lang={lang} />
         </div>
       </DialogContent>
     </Dialog>

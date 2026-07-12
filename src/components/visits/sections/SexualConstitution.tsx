@@ -13,6 +13,7 @@ export interface SexualConstitutionData {
   mast_fr?: number | null;
   sx?: "+" | "-" | "";
   sxage?: number | string | null;
+  sx_fr?: number | null;
   part?: number | null;
   prev?: number | null;
   score?: number;
@@ -30,6 +31,7 @@ export const DEFAULT_SEXUAL_CONSTITUTION: SexualConstitutionData = {
   mast_fr: null,
   sx: "",
   sxage: null,
+  sx_fr: null,
   part: null,
   prev: null,
   score: 0,
@@ -52,6 +54,7 @@ export function computeScConstitutionScore(d: SexualConstitutionData): number {
     plusScore(d.ej) +
     plusScore(d.sx) +
     (typeof d.mast_fr === "number" ? d.mast_fr : 0) +
+    (typeof d.sx_fr === "number" ? d.sx_fr : 0) +
     (typeof d.part === "number" ? d.part : 0)
   );
 }
@@ -190,6 +193,17 @@ export function SexualConstitutionSection({ value, onChange }: Props) {
           <AgeCombobox value={d.sxage ?? null} onChange={(v) => patch({ sxage: v as any })} allowNone disabled={disabled} />
         </div>
         <div className="space-y-1">
+          <Label className="text-xs">SxFR <span className="text-muted-foreground font-normal">(частота, /нед)</span></Label>
+          <Input
+            type="number"
+            step="0.1"
+            min={0}
+            value={d.sx_fr ?? ""}
+            onChange={(e) => patch({ sx_fr: e.target.value === "" ? null : Number(e.target.value) })}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-1">
           <Label className="text-xs">Part <span className="text-muted-foreground font-normal">(партнёры, число)</span></Label>
           <Input
             type="number"
@@ -254,6 +268,7 @@ export function formatSexualConstitution(value?: SexualConstitutionData | string
   push("MastFR", value.mast_fr, "/нед");
   push("Sx", value.sx === "-" ? "−" : value.sx);
   push("Sxage", value.sxage);
+  push("SxFR", value.sx_fr, "/нед");
   if (typeof value.part === "number") push("Part", value.part);
   if (typeof value.prev === "number") push("Prev", value.prev, "%");
   const score = computeScConstitutionScore(value);
