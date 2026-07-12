@@ -12,6 +12,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFileDrop } from "@/hooks/useFileDrop";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -296,8 +297,19 @@ const MaterialRow = ({ item, saving, onSave, onDelete }: RowProps) => {
 
   const preview = resolveMaterialPreview(draft);
 
+  const { dragOver, handlers: dropHandlers } = useFileDrop({
+    onFiles: (files) => { void handleUpload(files[0]); },
+    accept: "image/",
+    disabled: uploading,
+  });
+
   return (
-    <Card ref={setNodeRef} style={style} className="overflow-hidden">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`overflow-hidden transition ${dragOver ? "ring-2 ring-primary bg-primary/5" : ""}`}
+      {...dropHandlers}
+    >
       <CardContent className="p-4">
         <div className="flex gap-3 items-start">
           <button {...attributes} {...listeners} className="mt-1 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Перетащить" type="button">
@@ -463,8 +475,24 @@ const HandoutRow = ({ item, saving, onSave, onDelete, allSlugs }: HandoutProps) 
   const seoTitleLen = (draft.seo_title || "").length;
   const seoDescLen = (draft.seo_description || "").length;
 
+  const { dragOver, handlers: dropHandlers } = useFileDrop({
+    onFiles: (files) => {
+      for (const f of files) {
+        if (f.type === "application/pdf") void handlePdfUpload(f);
+        else if (f.type.startsWith("image/")) void handleImageUpload(f);
+      }
+    },
+    accept: ["image/", "application/pdf"],
+    disabled: uploadingPdf || uploadingImg || uploadingOg,
+  });
+
   return (
-    <Card ref={setNodeRef} style={style} className="overflow-hidden border-primary/20">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`overflow-hidden border-primary/20 transition ${dragOver ? "ring-2 ring-primary bg-primary/5" : ""}`}
+      {...dropHandlers}
+    >
       <CardContent className="p-4">
         <div className="flex gap-3 items-start">
           <button {...attributes} {...listeners} className="mt-1 p-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing" aria-label="Перетащить" type="button">
