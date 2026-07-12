@@ -13,6 +13,7 @@ export interface SexualConstitutionData {
   mast_fr?: number | null;
   sx?: "+" | "-" | "";
   sxage?: number | string | null;
+  sx_fr?: number | null;
   part?: number | null;
   prev?: number | null;
   score?: number;
