@@ -267,6 +267,7 @@ export function formatSexualConstitution(value?: SexualConstitutionData | string
   push("MastFR", value.mast_fr, "/нед");
   push("Sx", value.sx === "-" ? "−" : value.sx);
   push("Sxage", value.sxage);
+  push("SxFR", value.sx_fr, "/нед");
   if (typeof value.part === "number") push("Part", value.part);
   if (typeof value.prev === "number") push("Prev", value.prev, "%");
   const score = computeScConstitutionScore(value);
