@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Eye, Printer, FileDown } from "lucide-react";
 import { PrescriptionPrint, type PrescriptionLang } from "./PrescriptionPrint";
 import { exportNodeToPdf } from "@/lib/exportPdf";
+import { transliterateGOST } from "@/lib/transliterateGOST";
 
 interface PrescriptionPreviewProps {
   prescription: any;
@@ -13,6 +15,25 @@ interface PrescriptionPreviewProps {
 export function PrescriptionPreview({ prescription, trigger }: PrescriptionPreviewProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [lang, setLang] = useState<PrescriptionLang>("ru");
+
+  const autoLatin = useMemo(
+    () =>
+      prescription?.patient?.full_name_latin?.trim() ||
+      transliterateGOST(prescription?.patient?.full_name || ""),
+    [prescription?.patient?.full_name, prescription?.patient?.full_name_latin],
+  );
+  const [latinName, setLatinName] = useState<string>(autoLatin);
+  useEffect(() => {
+    setLatinName(autoLatin);
+  }, [autoLatin]);
+
+  const prescriptionForPrint = useMemo(() => {
+    if (lang !== "en") return prescription;
+    return {
+      ...prescription,
+      patient: { ...prescription.patient, full_name_latin: latinName || autoLatin },
+    };
+  }, [prescription, lang, latinName, autoLatin]);
 
   const handlePrint = () => {
     const printContent = printRef.current;
