@@ -22,6 +22,25 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   const [uploading, setUploading] = useState(false);
   const [isToolbarFixed, setIsToolbarFixed] = useState(false);
   const [toolbarWidth, setToolbarWidth] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+
+  const uploadAndInsertImage = useCallback(async (file: File, editorInstance: ReturnType<typeof useEditor>) => {
+    if (!editorInstance) return;
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() || file.type.split("/").pop() || "png").toLowerCase();
+      const path = `${storageFolder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from(storageBucket).upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from(storageBucket).getPublicUrl(path);
+      editorInstance.chain().focus().setImage({ src: data.publicUrl, alt: file.name || "image" }).run();
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    } finally {
+      setUploading(false);
+    }
+  }, [storageBucket, storageFolder]);
 
   const editor = useEditor({
     extensions: [
