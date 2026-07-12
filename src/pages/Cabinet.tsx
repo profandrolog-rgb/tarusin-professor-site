@@ -54,9 +54,11 @@ const COUNCIL_MODEL_KEYS_DEFAULT = [
 
 const COUNCIL_MODEL_CANDIDATES = [
   "gemini-flash", "gemini-pro", "claude-sonnet", "claude-opus",
-  "gpt5-mini", "gpt5", "grok-fast", "qwen-flash", "qwen-max",
+  "gpt5-mini", "gpt5", "gpt56-terra-pro",
+  "grok-fast", "qwen-flash", "qwen-max",
   "glm-5", "deepseek-v4-pro", "kimi-k2", "kimi-k2-thinking",
   "mimo-v25-pro", "mistral-large",
+  "tencent-hy3", "nemotron-3-ultra",
 ];
 
 
