@@ -57,10 +57,13 @@ type ModelProgress = {
 
 const PANEL_KEYS: { key: string; default: boolean }[] = [
   { key: "gpt5", default: true },
+  { key: "gpt56-terra-pro", default: true },
   { key: "claude-opus", default: true },
   { key: "gemini-pro", default: true },
   { key: "glm-5", default: true },
   { key: "kimi-k2", default: true },
+  { key: "tencent-hy3", default: true },
+  { key: "nemotron-3-ultra", default: true },
   { key: "qwen-max", default: false }, // временно off: Alibaba upstream часто отдаёт 429 в общем пуле OpenRouter
   { key: "pplx-sonar-pro", default: true },
   { key: "venice-uncensored", default: true },
@@ -69,8 +72,8 @@ const PANEL_KEYS: { key: string; default: boolean }[] = [
   { key: "mimo-v25-pro", default: true },
   { key: "mistral-large", default: false },
 ];
-const ARBITER_KEYS = ["claude-opus", "gpt5", "gemini-pro"];
-const REWRITER_KEYS = ["claude-opus", "claude-sonnet", "gpt5", "grok-fast"];
+const ARBITER_KEYS = ["claude-opus", "gpt5", "gpt56-terra-pro", "gemini-pro", "nemotron-3-ultra"];
+const REWRITER_KEYS = ["claude-opus", "claude-sonnet", "gpt5", "gpt56-terra-pro", "grok-fast"];
 
 
 
