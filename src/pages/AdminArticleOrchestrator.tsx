@@ -486,22 +486,40 @@ export default function AdminArticleOrchestrator() {
     editedSuggested.has(key) ? editedSuggested.get(key)! : fallback;
 
   const copyToClipboard = async (value: string, successMessage: string) => {
+    if (!value) {
+      sonnerToast.error("Нечего копировать");
+      return;
+    }
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(value);
-      sonnerToast.success(successMessage);
-    } catch {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        ok = true;
+      }
+    } catch { /* fallthrough to legacy */ }
+    if (!ok) {
       const area = document.createElement("textarea");
       area.value = value;
       area.style.position = "fixed";
-      area.style.left = "-9999px";
+      area.style.top = "0";
+      area.style.left = "0";
+      area.style.opacity = "0";
+      area.setAttribute("readonly", "");
       document.body.appendChild(area);
+      const prevSelection = document.getSelection()?.rangeCount ? document.getSelection()!.getRangeAt(0) : null;
       area.focus();
       area.select();
-      const ok = document.execCommand("copy");
+      area.setSelectionRange(0, value.length);
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
       document.body.removeChild(area);
-      if (!ok) throw new Error("Копирование заблокировано браузером");
-      sonnerToast.success(successMessage);
+      if (prevSelection) {
+        const sel = document.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(prevSelection);
+      }
     }
+    if (ok) sonnerToast.success(`${successMessage} (${value.length.toLocaleString("ru-RU")} симв.)`);
+    else sonnerToast.error("Браузер заблокировал копирование — выделите текст вручную и Ctrl+C");
   };
 
   const setSuggested = (key: string, val: string) => {
