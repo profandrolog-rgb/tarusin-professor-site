@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Eye, Columns, AlignLeft, Search, ChevronUp, ChevronDown, X } from "lucide-react";
+import { Pencil, Eye, Columns, AlignLeft, Search, ChevronUp, ChevronDown, X, Copy, CheckSquare, Square } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 
 type Mode = "edit" | "inline" | "split";
 
@@ -230,7 +231,77 @@ export default function ArticleDiffEditor({ original, value, onChange }: Props) 
             <Columns className="w-4 h-4 mr-1.5" /> До / после
           </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {mode === "edit" && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const el = textareaRef.current;
+                  if (!el) return;
+                  el.focus();
+                  el.setSelectionRange(0, el.value.length);
+                }}
+                title="Выделить весь текст"
+              >
+                <CheckSquare className="w-4 h-4 mr-1.5" /> Выделить всё
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const el = textareaRef.current;
+                  if (!el) return;
+                  const pos = el.selectionEnd;
+                  el.setSelectionRange(pos, pos);
+                  el.blur();
+                }}
+                title="Снять выделение"
+              >
+                <Square className="w-4 h-4 mr-1.5" /> Снять
+              </Button>
+            </>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const text = mode === "split" ? diffValue : value;
+              if (!text) {
+                sonnerToast.error("Нечего копировать");
+                return;
+              }
+              let ok = false;
+              try {
+                if (navigator.clipboard && window.isSecureContext) {
+                  await navigator.clipboard.writeText(text);
+                  ok = true;
+                }
+              } catch { /* fallthrough */ }
+              if (!ok) {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.top = "0";
+                ta.style.left = "0";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { ok = document.execCommand("copy"); } catch { ok = false; }
+                document.body.removeChild(ta);
+              }
+              if (ok) sonnerToast.success(`Скопировано (${text.length.toLocaleString("ru-RU")} символов)`);
+              else sonnerToast.error("Браузер заблокировал копирование");
+            }}
+            title="Скопировать весь текст"
+          >
+            <Copy className="w-4 h-4 mr-1.5" /> Копировать
+          </Button>
           <Button type="button" size="sm" variant={searchOpen ? "default" : "outline"} onClick={() => setSearchOpen((v) => !v)}>
             <Search className="w-4 h-4 mr-1.5" /> Найти
           </Button>

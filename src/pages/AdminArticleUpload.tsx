@@ -14,13 +14,18 @@ export default function AdminArticleUpload() {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [parsing, setParsing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   if (loading) return <div className="container py-12">Загрузка…</div>;
   if (!user || !isAdmin) return <div className="container py-12">Доступ запрещён</div>;
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const processFile = async (file: File) => {
     if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".docx")) {
+      toast({ title: "Только .docx", description: "Формат " + (name.split(".").pop() || "?") + " не поддерживается", variant: "destructive" });
+      return;
+    }
     setParsing(true);
     try {
       const buf = await file.arrayBuffer();
@@ -38,6 +43,11 @@ export default function AdminArticleUpload() {
     } finally {
       setParsing(false);
     }
+  };
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void processFile(file);
   };
 
   return (
@@ -61,8 +71,22 @@ export default function AdminArticleUpload() {
         <CardHeader><CardTitle>1. Загрузить .docx</CardTitle></CardHeader>
         <CardContent>
           <div
-            className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-10 text-center cursor-pointer hover:bg-primary/10 transition"
+            className={`rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition ${
+              dragOver
+                ? "border-primary bg-primary/15 ring-2 ring-primary/40"
+                : "border-primary/40 bg-primary/5 hover:bg-primary/10"
+            }`}
             onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDragOver(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) void processFile(file);
+            }}
           >
             {parsing ? (
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -72,7 +96,9 @@ export default function AdminArticleUpload() {
             ) : (
               <div className="flex flex-col items-center gap-2">
                 <Upload className="w-10 h-10 text-primary" />
-                <div className="font-medium">Перетащите или нажмите для выбора .docx</div>
+                <div className="font-medium">
+                  {dragOver ? "Отпустите файл — я приму .docx" : "Перетащите .docx сюда или нажмите для выбора"}
+                </div>
                 <div className="text-xs text-muted-foreground">Word-документ с текстом статьи</div>
               </div>
             )}

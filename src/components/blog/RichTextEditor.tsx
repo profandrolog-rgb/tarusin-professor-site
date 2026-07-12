@@ -22,6 +22,25 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   const [uploading, setUploading] = useState(false);
   const [isToolbarFixed, setIsToolbarFixed] = useState(false);
   const [toolbarWidth, setToolbarWidth] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
+
+  const uploadAndInsertImage = useCallback(async (file: File, editorInstance: ReturnType<typeof useEditor>) => {
+    if (!editorInstance) return;
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() || file.type.split("/").pop() || "png").toLowerCase();
+      const path = `${storageFolder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from(storageBucket).upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from(storageBucket).getPublicUrl(path);
+      editorInstance.chain().focus().setImage({ src: data.publicUrl, alt: file.name || "image" }).run();
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    } finally {
+      setUploading(false);
+    }
+  }, [storageBucket, storageFolder]);
 
   const editor = useEditor({
     extensions: [
@@ -48,6 +67,31 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
           return true;
         }
         return false;
+      },
+      handlePaste: (_view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i];
+          if (it.kind === "file" && it.type.startsWith("image/")) {
+            const file = it.getAsFile();
+            if (file) {
+              event.preventDefault();
+              void uploadAndInsertImage(file, editor);
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+      handleDrop: (_view, event) => {
+        const files = (event as DragEvent).dataTransfer?.files;
+        if (!files || !files.length) return false;
+        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return false;
+        event.preventDefault();
+        for (const f of imgs) void uploadAndInsertImage(f, editor);
+        return true;
       },
     },
   });
@@ -222,10 +266,33 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   );
 
   return (
-    <div ref={containerRef} className="border border-input rounded-md bg-background relative">
+    <div
+      ref={containerRef}
+      className={`border rounded-md bg-background relative transition-colors ${
+        dragOver ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-input"
+      }`}
+      onDragOver={(e) => {
+        if (e.dataTransfer?.types?.includes("Files")) {
+          e.preventDefault();
+          setDragOver(true);
+        }
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target) setDragOver(false);
+      }}
+      onDrop={(e) => {
+        const files = e.dataTransfer?.files;
+        if (!files || !files.length) return;
+        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return;
+        e.preventDefault();
+        setDragOver(false);
+        for (const f of imgs) void uploadAndInsertImage(f, editor);
+      }}
+    >
       {/* Spacer when toolbar is fixed */}
       {isToolbarFixed && <div className="h-[42px]" />}
-      
+
       {/* Toolbar */}
       <div
         ref={toolbarRef}
@@ -236,8 +303,16 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       >
         {toolbarContent}
       </div>
-      
+
       <EditorContent editor={editor} />
+
+      {dragOver && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/10 backdrop-blur-[1px] rounded-md">
+          <div className="text-sm font-medium text-primary bg-background/90 border border-primary/40 rounded-md px-3 py-1.5 shadow">
+            Отпустите — изображение загрузится в статью
+          </div>
+        </div>
+      )}
     </div>
   );
 };
