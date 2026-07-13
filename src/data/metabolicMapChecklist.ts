@@ -17,7 +17,40 @@ export const CATS: Record<string, string> = {
 
 export type ChecklistItem = { code: string; label: string; cats: (keyof typeof CATS)[] };
 
+/**
+ * Совместимость с прошлой версией чек-листа: раньше коды писались с суффиксом
+ * (напр. CHOL_S, PROG_S, SE_OX). В визитах пациентов эти коды уже сохранены
+ * в `protocol_data.metabolic_map_checklist`; без миграции они бы «пропадали»
+ * из диалога и печатного бланка. Здесь оставляем алиасы старое → новое.
+ */
+export const LEGACY_CODE_ALIASES: Record<string, string> = {
+  CHOL_S: "CHOL",
+  PROG_S: "PROG",
+  OHP17_S: "OHP17",
+  CORT_S: "CORT",
+  DHEAS_S: "DHEAS",
+  TESTO_S: "TESTO",
+  E2_S: "E2",
+  SE_OX: "SE",
+};
+
+/**
+ * Нормализует набор кодов (уникальные значения, старые коды → новые).
+ * Используется в диалоге и печати, чтобы визиты, сохранённые до переработки
+ * структуры, продолжали корректно подсвечиваться и попадать в бланк.
+ */
+export function normalizeChecklistCodes(codes: readonly string[] | null | undefined): string[] {
+  if (!Array.isArray(codes)) return [];
+  const out = new Set<string>();
+  for (const c of codes) {
+    if (!c) continue;
+    out.add(LEGACY_CODE_ALIASES[c] ?? c);
+  }
+  return Array.from(out);
+}
+
 export const METABOLIC_MAP_ITEMS: ChecklistItem[] = [
+
   { code: "LH", label: "ЛГ (лютеинизирующий гормон)", cats: ["horm"] },
   { code: "FSH", label: "ФСГ (фолликулостимулирующий гормон)", cats: ["horm"] },
   { code: "TESTO", label: "Тестостерон общий", cats: ["horm","steroid"] },

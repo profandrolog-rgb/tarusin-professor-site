@@ -132,9 +132,10 @@ const ParentsMaterialLanding = () => {
 
   const gateRequired = !!item.gated && !unlocked;
 
-  const triggerDownload = async () => {
+  const triggerDownload = async (preopened?: Window | null) => {
     if (!item.file_path) {
       toast.error(isEn ? "PDF not available yet" : "PDF пока не прикреплён");
+      preopened?.close();
       return;
     }
     setDownloading(true);
@@ -144,7 +145,23 @@ const ParentsMaterialLanding = () => {
       // счётчик не критичен
     }
     const url = parentsMediaPublicUrl(item.file_path)!;
-    window.open(url, "_blank", "noopener,noreferrer");
+    // Если окно уже открыто внутри пользовательского жеста — просто направляем его.
+    // Иначе используем невидимый <a download>-фолбэк, чтобы обойти popup-блокировщики.
+    if (preopened && !preopened.closed) {
+      try { preopened.location.href = url; } catch { preopened.close(); }
+    } else {
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      if (!w) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    }
     setDownloading(false);
   };
 
@@ -161,6 +178,9 @@ const ParentsMaterialLanding = () => {
       toast.error(isEn ? "Please provide email or phone" : "Укажите email или телефон");
       return;
     }
+    // ВАЖНО: открываем окно СИНХРОННО внутри пользовательского жеста,
+    // иначе Safari/Firefox/Chrome блокируют popup после await-цепочки.
+    const preopened = window.open("about:blank", "_blank", "noopener,noreferrer");
     setSubmittingLead(true);
     try {
       const { error } = await supabase.from("parents_material_leads" as any).insert({
@@ -175,13 +195,15 @@ const ParentsMaterialLanding = () => {
       try { window.localStorage.setItem(unlockKey(item.id), "1"); } catch { /* ignore */ }
       setUnlocked(true);
       toast.success(isEn ? "Thanks! Starting download…" : "Спасибо! Начинаю скачивание…");
-      await triggerDownload();
+      await triggerDownload(preopened);
     } catch (err: any) {
+      preopened?.close();
       toast.error(err?.message || (isEn ? "Failed to submit" : "Не удалось отправить"));
     } finally {
       setSubmittingLead(false);
     }
   };
+
 
 
   const pageUrl = `${SITE_URL}/for-parents/materials/${item.slug}/`;

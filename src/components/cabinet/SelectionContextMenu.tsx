@@ -185,17 +185,25 @@ export function SelectionContextMenu({
 
   const [noProtocolPrompt, setNoProtocolPrompt] = useState<null | { items: ParsedPlanItem[] }>(null);
 
+  // Считаем «свежим» протокол, созданный за последние 24 часа. Всё, что старше,
+  // трактуется как исторический — назначения туда молча дописывать нельзя,
+  // иначе можно перезаписать давно закрытую медкарту (см. Project monitoring #586b3075).
+  const RECENT_VISIT_HOURS = 24;
+
   async function findLatestVisitId(patientId: string): Promise<string | null> {
+    const cutoff = new Date(Date.now() - RECENT_VISIT_HOURS * 3600 * 1000).toISOString();
     const { data } = await supabase
       .from("patient_visits")
-      .select("id")
+      .select("id, created_at, visit_date")
       .eq("patient_id", patientId)
+      .or(`created_at.gte.${cutoff},visit_date.gte.${cutoff}`)
       .order("visit_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     return (data as any)?.id ?? null;
   }
+
 
   async function createDraftVisit(patientId: string, protocolType: string): Promise<string | null> {
     const { data, error } = await supabase
