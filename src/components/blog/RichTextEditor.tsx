@@ -281,11 +281,18 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         if (e.currentTarget === e.target) setDragOver(false);
       }}
       onDrop={(e) => {
-        // Drop обработку изображений полностью делает Tiptap (editorProps.handleDrop),
-        // здесь только сбрасываем визуальное состояние подсветки контейнера,
-        // чтобы избежать двойной загрузки картинки в storage.
         setDragOver(false);
+        // Если событие уже обработано Tiptap (editorProps.handleDrop → preventDefault),
+        // не запускаем повторную загрузку — иначе одна картинка окажется в статье дважды.
+        if (e.defaultPrevented) return;
+        const files = e.dataTransfer?.files;
+        if (!files || !files.length) return;
+        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imgs.length) return;
+        e.preventDefault();
+        for (const f of imgs) void uploadAndInsertImage(f, editor);
       }}
+
 
     >
       {/* Spacer when toolbar is fixed */}
