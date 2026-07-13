@@ -747,6 +747,15 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(renderList("a-ref", "Консультации", a.referrals));
     rows.push(renderList("a-diet", "Диетические рекомендации", a.diet));
   }
+  // Универсальное поле «Дополнительно» — печатается в конце протокола, если заполнено
+  if (typeof d.additional_notes === "string" && d.additional_notes.trim()) {
+    rows.push(
+      <Section key="add-notes" title="Дополнительно">
+        <Field label="Дополнительно" value={d.additional_notes} />
+      </Section>
+    );
+  }
+
   if (visit.next_visit_date) {
     rows.push(
       <Field
@@ -1023,9 +1032,12 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           </div>
         </div>
 
-        {/* CONSENT */}
-        <ConsentBlock patient={visit.patient} />
+        {/* CONSENT — печатается только если врач явно включил тумблер в форме визита */}
+        {(visit.protocol_data as any)?.include_consent === true && (
+          <ConsentBlock patient={visit.patient} />
+        )}
       </div>
+
     </>
   );
 }

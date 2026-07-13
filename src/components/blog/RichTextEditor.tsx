@@ -281,14 +281,12 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         if (e.currentTarget === e.target) setDragOver(false);
       }}
       onDrop={(e) => {
-        const files = e.dataTransfer?.files;
-        if (!files || !files.length) return;
-        const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
-        if (!imgs.length) return;
-        e.preventDefault();
+        // Drop обработку изображений полностью делает Tiptap (editorProps.handleDrop),
+        // здесь только сбрасываем визуальное состояние подсветки контейнера,
+        // чтобы избежать двойной загрузки картинки в storage.
         setDragOver(false);
-        for (const f of imgs) void uploadAndInsertImage(f, editor);
       }}
+
     >
       {/* Spacer when toolbar is fixed */}
       {isToolbarFixed && <div className="h-[42px]" />}
