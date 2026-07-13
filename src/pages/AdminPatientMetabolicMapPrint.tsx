@@ -13,9 +13,22 @@ import { fetchPathwayTexts, pickText, REGISTER_LABEL, type PathwayText, type Reg
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { RxBlock, type RxRec } from "@/components/metabolic/RxBlock";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
+import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
+import { SteroidHubSVG } from "@/components/metabolic/schemes/SteroidHubSVG";
+import { VitDSchemeSVG } from "@/components/metabolic/schemes/VitDSchemeSVG";
+import { EndoDisruptorsSchemeSVG } from "@/components/metabolic/schemes/EndoDisruptorsSchemeSVG";
 import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
 import { templateToScene } from "@/lib/metabolic/templateToScene";
 import { buildAutoScene } from "@/lib/metabolic/autoLayout";
+
+// Единый набор кастомных схем — идентично AdminPatientMetabolicMap.tsx,
+// чтобы печатный PDF выглядел ровно как на экране.
+const CUSTOM_SCHEMES: Record<string, (props: { values?: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> }) => JSX.Element> = {
+  steroidogenesis: SteroidHubSVG,
+  vit_d_bone: VitDSchemeSVG,
+  endocrine_disruptors: EndoDisruptorsSchemeSVG,
+};
+
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null };
 type Pathway = {
