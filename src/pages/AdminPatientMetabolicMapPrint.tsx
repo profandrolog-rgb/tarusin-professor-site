@@ -250,6 +250,31 @@ export default function AdminPatientMetabolicMapPrint() {
               {/* Схема сверху — тот же рендер, что и в карточке (единая подсветка) */}
               <div className="mb-4">
                 {(() => {
+                  const rxSet = new Set<string>(
+                    recs.filter((r) => r.pathway_id === pw.id)
+                      .map((r) => r.target_node_id)
+                      .filter(Boolean) as string[],
+                  );
+                  const highlightsMap = new Map(Array.from(affectedNodes).map((n) => [n, st]));
+
+                  // 1) Кастомные статичные схемы
+                  const CustomScheme = CUSTOM_SCHEMES[pw.slug];
+                  if (CustomScheme) return <CustomScheme />;
+
+                  // 2) Статичный SVG-шаблон пути с подсветкой data-sev
+                  if (hasPathwaySvgTemplate(pw.slug)) {
+                    return (
+                      <PathwayTemplateSVG
+                        slug={pw.slug}
+                        highlights={highlightsMap}
+                        rxNodes={rxSet}
+                        overlayScene={schemas.get(pw.slug) || null}
+                        maxHeight={320}
+                      />
+                    );
+                  }
+
+                  // 3) Fallback: сохранённая сцена / шаблон / авто-раскладка
                   const tpl = getTemplate(pw.slug);
                   const anyPw = pw as any;
                   const scene: SceneJson =
@@ -258,21 +283,17 @@ export default function AdminPatientMetabolicMapPrint() {
                     (anyPw.svg_scene && Array.isArray(anyPw.svg_scene.elements) && anyPw.svg_scene.elements.length > 0
                       ? anyPw.svg_scene
                       : buildAutoScene(pw.nodes || [], pw.edges || []));
-                  const rxSet = new Set<string>(
-                    recs.filter((r) => r.pathway_id === pw.id)
-                      .map((r) => r.target_node_id)
-                      .filter(Boolean) as string[],
-                  );
                   return (
                     <PathwaySceneSVG
                       scene={scene}
-                      highlights={new Map(Array.from(affectedNodes).map((n) => [n, st]))}
+                      highlights={highlightsMap}
                       rxNodes={rxSet}
                       maxHeight={320}
                     />
                   );
                 })()}
               </div>
+
 
 
               {/* Объяснение */}
