@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { METABOLIC_MAP_ITEMS, CATS, type ChecklistItem } from "@/data/metabolicMapChecklist";
+import { METABOLIC_MAP_ITEMS, CATS, normalizeChecklistCodes, type ChecklistItem } from "@/data/metabolicMapChecklist";
 
 export type ChecklistPrintMode = "patient" | "doctor";
 
@@ -151,7 +151,7 @@ export function MetabolicMapChecklistPrint({
   extraNote,
 }: Props) {
   const now = date || new Date();
-  const selected = new Set(selectedCodes || []);
+  const selected = new Set(normalizeChecklistCodes(selectedCodes));
   const activeCatSet = new Set(activeCats || []);
   const birth = birthDate ? new Date(birthDate) : null;
   const age = birth ? calcAge(birth, now) : null;

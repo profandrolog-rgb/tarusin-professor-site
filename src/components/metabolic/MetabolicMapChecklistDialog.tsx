@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Printer, FileDown, FlaskConical } from "lucide-react";
-import { METABOLIC_MAP_ITEMS, CATS, type ChecklistItem } from "@/data/metabolicMapChecklist";
+import { METABOLIC_MAP_ITEMS, CATS, normalizeChecklistCodes, type ChecklistItem } from "@/data/metabolicMapChecklist";
 import {
   MetabolicMapChecklistPrint,
   type ChecklistPrintMode,
@@ -44,7 +44,7 @@ export function MetabolicMapChecklistDialog({
   const [extraNote, setExtraNote] = useState("");
   const printRef = useRef<HTMLDivElement>(null);
 
-  const selectedSet = useMemo(() => new Set(value || []), [value]);
+  const selectedSet = useMemo(() => new Set(normalizeChecklistCodes(value)), [value]);
 
   const visibleItems = useMemo(
     () =>
