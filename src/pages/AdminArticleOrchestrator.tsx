@@ -811,10 +811,10 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
-  async function runConsolidation() {
+  async function runConsolidation(opts?: { silentIfEmpty?: boolean }) {
     const valid = reviews.filter((r) => !r.error && (r.edits.length || r.free_review));
     if (!valid.length) {
-      toast({ title: "Нет валидных рецензий", variant: "destructive" });
+      if (!opts?.silentIfEmpty) toast({ title: "Нет валидных рецензий", variant: "destructive" });
       return;
     }
     setConsolidating(true);
