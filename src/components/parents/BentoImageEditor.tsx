@@ -70,15 +70,27 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
             {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
           </Button>
           {value?.path && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs text-destructive"
-              onClick={() => onChange(null)}
-            >
-              <Trash2 className="w-3 h-3" />
-            </Button>
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => setAnnotatorOpen(true)}
+                title="Аннотировать (стрелки, овалы, подписи)"
+              >
+                <PenLine className="w-3 h-3" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-destructive"
+                onClick={() => onChange(null)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </>
           )}
         </div>
       </div>
