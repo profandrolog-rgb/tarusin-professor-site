@@ -213,6 +213,8 @@ export default function AdminArticleOrchestrator() {
   };
 
   const [reviews, setReviews] = useState<ModelReview[]>([]);
+  const reviewsRef = useRef<ModelReview[]>([]);
+  useEffect(() => { reviewsRef.current = reviews; }, [reviews]);
   const [reviewing, setReviewing] = useState(false);
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, ModelProgress>>({});
@@ -560,6 +562,24 @@ export default function AdminArticleOrchestrator() {
     ));
   };
 
+  // Досрочная остановка ожидания моделей и передача арбитру.
+  // Не отменяет фоновый стрим — просто фиксирует состояние UI и сразу запускает консолидацию.
+  const abortReviewRef = useRef<AbortController | null>(null);
+  const autoArbiterRef = useRef(true);
+  function forceFinishAndConsolidate() {
+    markUnfinishedModelsAsError("Пропущено — отправлено арбитру досрочно");
+    try { abortReviewRef.current?.abort(); } catch { /* noop */ }
+    setReviewing(false);
+    setPending(new Set());
+    // даём React обновить successReviews, затем зовём арбитра
+    setTimeout(() => { void runConsolidation(); }, 50);
+  }
+
+  // Многократный сигнал (n колокольчиков) — короткие последовательные chime.
+  function playChimes(n: number) {
+    for (let i = 0; i < n; i++) setTimeout(() => playCompletionChime(), i * 380);
+  }
+
   async function runReview(opts?: { reReview?: boolean }) {
     const reReview = !!opts?.reReview;
     // База для повторного ревью — переписанная статья (если есть) или текущий text.
@@ -594,10 +614,13 @@ export default function AdminArticleOrchestrator() {
 
     try {
       let streamDone = false;
+      const ctrl = new AbortController();
+      abortReviewRef.current = ctrl;
       const { data: { session } } = await supabase.auth.getSession();
       const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
         method: "POST",
+        signal: ctrl.signal,
         headers: {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
@@ -655,18 +678,27 @@ export default function AdminArticleOrchestrator() {
             } catch { /* ignore */ }
           } else if (evType === "done") {
             streamDone = true;
-            playCompletionChime();
+            playChimes(1); // один колокольчик — первичный анализ завершён
           }
         }
       }
       if (!streamDone) throw new Error("Поток оркестратора закрылся до завершения. Незавершённые модели помечены ошибкой.");
     } catch (e: any) {
-      const message = e?.message || String(e);
-      markUnfinishedModelsAsError(message);
-      toast({ title: "Ошибка ревью", description: message, variant: "destructive" });
+      if (e?.name === "AbortError") {
+        // Тихо — пользователь сам оборвал ожидание кнопкой «Досрочно к арбитру».
+      } else {
+        const message = e?.message || String(e);
+        markUnfinishedModelsAsError(message);
+        toast({ title: "Ошибка ревью", description: message, variant: "destructive" });
+      }
     } finally {
       setReviewing(false);
       setPending(new Set());
+      abortReviewRef.current = null;
+      // Автоматически передаём арбитру, если есть хоть одна успешная модель.
+      if (autoArbiterRef.current) {
+        setTimeout(() => { void runConsolidation({ silentIfEmpty: true }); }, 120);
+      }
     }
   }
 
@@ -775,10 +807,11 @@ export default function AdminArticleOrchestrator() {
     }
   }
 
-  async function runConsolidation() {
-    const valid = reviews.filter((r) => !r.error && (r.edits.length || r.free_review));
+  async function runConsolidation(opts?: { silentIfEmpty?: boolean }) {
+    const src = reviewsRef.current.length ? reviewsRef.current : reviews;
+    const valid = src.filter((r) => !r.error && (r.edits.length || r.free_review));
     if (!valid.length) {
-      toast({ title: "Нет валидных рецензий", variant: "destructive" });
+      if (!opts?.silentIfEmpty) toast({ title: "Нет валидных рецензий", variant: "destructive" });
       return;
     }
     setConsolidating(true);
@@ -808,7 +841,7 @@ export default function AdminArticleOrchestrator() {
         if ((e.status === "consensus" || e.status === "majority") && e.severity !== "low") auto.add(i);
       });
       setAccepted(auto);
-      playCompletionChime();
+      playChimes(3); // три колокольчика — арбитр закончил работу
     } catch (e: any) {
       toast({ title: "Ошибка консолидации", description: e?.message || String(e), variant: "destructive" });
     } finally {
@@ -1065,9 +1098,21 @@ export default function AdminArticleOrchestrator() {
       {Object.keys(progress).length > 0 && (
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
               <span>Прогресс ревью ({Object.values(progress).filter(p => p.status === "done" || p.status === "error").length}/{Object.keys(progress).length})</span>
-              {reviewing && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+              <div className="flex items-center gap-2">
+                {reviewing && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                {(reviewing || pending.size > 0) && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={forceFinishAndConsolidate}
+                    title="Не ждать зависшие модели — передать арбитру уже полученные мнения"
+                  >
+                    <GitMerge className="w-3.5 h-3.5 mr-1.5" /> Досрочно к арбитру
+                  </Button>
+                )}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1164,8 +1209,17 @@ export default function AdminArticleOrchestrator() {
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Идёт…</>
                   : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью {reviewRound > 1 ? `(раунд ${reviewRound + 1})` : "(с правками)"}</>}
               </Button>
+              {(reviewing || pending.size > 0) && (
+                <Button
+                  onClick={forceFinishAndConsolidate}
+                  variant="secondary"
+                  title="Не ждать зависшие модели — передать арбитру уже полученные мнения"
+                >
+                  <GitMerge className="w-4 h-4 mr-2" /> Досрочно к арбитру ({successReviews.length})
+                </Button>
+              )}
               <Button
-                onClick={runConsolidation}
+                onClick={() => runConsolidation()}
                 disabled={consolidating || successReviews.length < 1}
                 variant="outline"
               >
