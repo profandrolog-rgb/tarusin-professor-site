@@ -207,12 +207,14 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
     const { error } = await supabase
       .from("image_annotations")
       .upsert(
-        {
-          image_path: imagePath,
-          bucket,
-          label,
-          annotation_data: payload as unknown as Record<string, unknown>,
-        },
+        [
+          {
+            image_path: imagePath,
+            bucket,
+            label,
+            annotation_data: payload as unknown as Record<string, unknown>,
+          },
+        ],
         { onConflict: "image_path,label" },
       );
     setSaving(false);
