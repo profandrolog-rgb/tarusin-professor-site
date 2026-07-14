@@ -1191,12 +1191,14 @@ const PlaceholderGallery = ({
             <DialogTitle>Аннотирование фото</DialogTitle>
           </DialogHeader>
           {annotatingFile && (
-            <ImageAnnotator
-              imagePath={`${ARTICLE_IMAGES_FOLDER}/${annotatingFile}`}
-              bucket={ARTICLE_IMAGES_BUCKET}
-              onClose={() => setAnnotatingFile(null)}
-              onSaved={() => setAnnotatingFile(null)}
-            />
+            <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Загрузка редактора…</div>}>
+              <ImageAnnotator
+                imagePath={`${ARTICLE_IMAGES_FOLDER}/${annotatingFile}`}
+                bucket={ARTICLE_IMAGES_BUCKET}
+                onClose={() => setAnnotatingFile(null)}
+                onSaved={() => setAnnotatingFile(null)}
+              />
+            </Suspense>
           )}
         </DialogContent>
       </Dialog>
