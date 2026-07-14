@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
-import { Upload, Trash2, Loader2 } from "lucide-react";
+import { Upload, Trash2, Loader2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useFileDrop } from "@/hooks/useFileDrop";
 import BentoImageCell, { type BentoImageData } from "./BentoImageCell";
+import ImageAnnotator from "@/components/annotations/ImageAnnotator";
 
 interface Props {
   value: BentoImageData | null;
@@ -16,6 +18,7 @@ interface Props {
 
 const BentoImageEditor = ({ value, onChange, label }: Props) => {
   const [uploading, setUploading] = useState(false);
+  const [annotatorOpen, setAnnotatorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -67,15 +70,27 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
             {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
           </Button>
           {value?.path && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs text-destructive"
-              onClick={() => onChange(null)}
-            >
-              <Trash2 className="w-3 h-3" />
-            </Button>
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => setAnnotatorOpen(true)}
+                title="Аннотировать (стрелки, овалы, подписи)"
+              >
+                <PenLine className="w-3 h-3" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-xs text-destructive"
+                onClick={() => onChange(null)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -144,6 +159,22 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
           <span className="text-[10px] text-muted-foreground w-8 text-right">{value.zoom ?? 100}%</span>
         </div>
       )}
+
+      <Dialog open={annotatorOpen} onOpenChange={setAnnotatorOpen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Аннотировать изображение</DialogTitle>
+          </DialogHeader>
+          {value?.path && annotatorOpen && (
+            <ImageAnnotator
+              imagePath={value.path}
+              bucket="disease-media"
+              initialLabel="site"
+              onClose={() => setAnnotatorOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

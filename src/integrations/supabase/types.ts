@@ -1715,6 +1715,39 @@ export type Database = {
         }
         Relationships: []
       }
+      image_annotations: {
+        Row: {
+          annotation_data: Json
+          bucket: string
+          created_at: string
+          created_by: string | null
+          id: string
+          image_path: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          annotation_data?: Json
+          bucket?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_path: string
+          label?: string
+          updated_at?: string
+        }
+        Update: {
+          annotation_data?: Json
+          bucket?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_path?: string
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       image_references: {
         Row: {
           created_at: string
