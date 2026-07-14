@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
-import { Upload, Trash2, Loader2 } from "lucide-react";
+import { Upload, Trash2, Loader2, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useFileDrop } from "@/hooks/useFileDrop";
 import BentoImageCell, { type BentoImageData } from "./BentoImageCell";
+import ImageAnnotator from "@/components/annotations/ImageAnnotator";
 
 interface Props {
   value: BentoImageData | null;
