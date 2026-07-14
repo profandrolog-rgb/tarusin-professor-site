@@ -345,6 +345,7 @@ const PlaceholderGallery = ({
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
+  const [annotatingFile, setAnnotatingFile] = useState<string | null>(null);
 
   // --- Интерактивное кадрирование ---
   interface CropQueueItem {
