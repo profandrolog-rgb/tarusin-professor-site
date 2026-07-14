@@ -98,7 +98,7 @@
     "react-i18next": "^17.0.2",
     "react-image-crop": "^11.0.10",
     "react-input-mask": "3.0.0-alpha.2",
-    "react-konva": "^19.2.5",
+    "react-konva": "18.2.16",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.1",
