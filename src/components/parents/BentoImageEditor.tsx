@@ -166,12 +166,14 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
             <DialogTitle>Аннотировать изображение</DialogTitle>
           </DialogHeader>
           {value?.path && annotatorOpen && (
-            <ImageAnnotator
-              imagePath={value.path}
-              bucket="disease-media"
-              initialLabel="site"
-              onClose={() => setAnnotatorOpen(false)}
-            />
+            <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Загрузка редактора…</div>}>
+              <ImageAnnotator
+                imagePath={value.path}
+                bucket="disease-media"
+                initialLabel="site"
+                onClose={() => setAnnotatorOpen(false)}
+              />
+            </Suspense>
           )}
         </DialogContent>
       </Dialog>
