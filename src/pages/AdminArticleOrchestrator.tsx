@@ -560,6 +560,24 @@ export default function AdminArticleOrchestrator() {
     ));
   };
 
+  // Досрочная остановка ожидания моделей и передача арбитру.
+  // Не отменяет фоновый стрим — просто фиксирует состояние UI и сразу запускает консолидацию.
+  const abortReviewRef = useRef<AbortController | null>(null);
+  const autoArbiterRef = useRef(true);
+  function forceFinishAndConsolidate() {
+    markUnfinishedModelsAsError("Пропущено — отправлено арбитру досрочно");
+    try { abortReviewRef.current?.abort(); } catch { /* noop */ }
+    setReviewing(false);
+    setPending(new Set());
+    // даём React обновить successReviews, затем зовём арбитра
+    setTimeout(() => { void runConsolidation(); }, 50);
+  }
+
+  // Многократный сигнал (n колокольчиков) — короткие последовательные chime.
+  function playChimes(n: number) {
+    for (let i = 0; i < n; i++) setTimeout(() => playCompletionChime(), i * 380);
+  }
+
   async function runReview(opts?: { reReview?: boolean }) {
     const reReview = !!opts?.reReview;
     // База для повторного ревью — переписанная статья (если есть) или текущий text.
