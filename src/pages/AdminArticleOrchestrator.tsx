@@ -676,18 +676,33 @@ export default function AdminArticleOrchestrator() {
             } catch { /* ignore */ }
           } else if (evType === "done") {
             streamDone = true;
-            playCompletionChime();
+            playChimes(1); // один колокольчик — первичный анализ завершён
           }
         }
       }
       if (!streamDone) throw new Error("Поток оркестратора закрылся до завершения. Незавершённые модели помечены ошибкой.");
     } catch (e: any) {
-      const message = e?.message || String(e);
-      markUnfinishedModelsAsError(message);
-      toast({ title: "Ошибка ревью", description: message, variant: "destructive" });
+      if (e?.name === "AbortError") {
+        // Тихо — пользователь сам оборвал ожидание кнопкой «Досрочно к арбитру».
+      } else {
+        const message = e?.message || String(e);
+        markUnfinishedModelsAsError(message);
+        toast({ title: "Ошибка ревью", description: message, variant: "destructive" });
+      }
     } finally {
       setReviewing(false);
       setPending(new Set());
+      abortReviewRef.current = null;
+      // Автоматически передаём арбитру, если есть хоть одна успешная модель.
+      if (autoArbiterRef.current) {
+        setTimeout(() => {
+          setReviews((cur) => {
+            const ok = cur.filter((r) => !r.error && (r.edits?.length || r.free_review));
+            if (ok.length && !consolidating && !consolidated) void runConsolidation();
+            return cur;
+          });
+        }, 80);
+      }
     }
   }
 
