@@ -159,6 +159,22 @@ const BentoImageEditor = ({ value, onChange, label }: Props) => {
           <span className="text-[10px] text-muted-foreground w-8 text-right">{value.zoom ?? 100}%</span>
         </div>
       )}
+
+      <Dialog open={annotatorOpen} onOpenChange={setAnnotatorOpen}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Аннотировать изображение</DialogTitle>
+          </DialogHeader>
+          {value?.path && annotatorOpen && (
+            <ImageAnnotator
+              imagePath={value.path}
+              bucket="disease-media"
+              initialLabel="site"
+              onClose={() => setAnnotatorOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
