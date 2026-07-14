@@ -695,13 +695,7 @@ export default function AdminArticleOrchestrator() {
       abortReviewRef.current = null;
       // Автоматически передаём арбитру, если есть хоть одна успешная модель.
       if (autoArbiterRef.current) {
-        setTimeout(() => {
-          setReviews((cur) => {
-            const ok = cur.filter((r) => !r.error && (r.edits?.length || r.free_review));
-            if (ok.length && !consolidating && !consolidated) void runConsolidation();
-            return cur;
-          });
-        }, 80);
+        setTimeout(() => { void runConsolidation({ silentIfEmpty: true }); }, 120);
       }
     }
   }
