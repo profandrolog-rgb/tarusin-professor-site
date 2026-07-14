@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import ImageAnnotator from "@/components/annotations/ImageAnnotator";
 import {
   DndContext,
   closestCenter,
@@ -343,6 +345,7 @@ const PlaceholderGallery = ({
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
+  const [annotatingFile, setAnnotatingFile] = useState<string | null>(null);
 
   // --- Интерактивное кадрирование ---
   interface CropQueueItem {
@@ -863,6 +866,16 @@ const PlaceholderGallery = ({
                 />
                 <button
                   type="button"
+                  onClick={() => setAnnotatingFile(it.filename)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 left-1 bg-blue-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Аннотировать (стрелки, овалы, подписи)"
+                  aria-label="Аннотировать фото"
+                >
+                  <PenLine className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => deleteExisting(it.filename)}
                   disabled={deletingFile !== null || uploading}
                   className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
@@ -1171,6 +1184,22 @@ const PlaceholderGallery = ({
           </div>
         );
       })()}
+
+      <Dialog open={!!annotatingFile} onOpenChange={(o) => !o && setAnnotatingFile(null)}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Аннотирование фото</DialogTitle>
+          </DialogHeader>
+          {annotatingFile && (
+            <ImageAnnotator
+              imagePath={`${ARTICLE_IMAGES_FOLDER}/${annotatingFile}`}
+              bucket={ARTICLE_IMAGES_BUCKET}
+              onClose={() => setAnnotatingFile(null)}
+              onSaved={() => setAnnotatingFile(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
