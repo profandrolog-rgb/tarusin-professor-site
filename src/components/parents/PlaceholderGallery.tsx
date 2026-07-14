@@ -1184,6 +1184,22 @@ const PlaceholderGallery = ({
           </div>
         );
       })()}
+
+      <Dialog open={!!annotatingFile} onOpenChange={(o) => !o && setAnnotatingFile(null)}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Аннотирование фото</DialogTitle>
+          </DialogHeader>
+          {annotatingFile && (
+            <ImageAnnotator
+              imagePath={`${ARTICLE_IMAGES_FOLDER}/${annotatingFile}`}
+              bucket={ARTICLE_IMAGES_BUCKET}
+              onClose={() => setAnnotatingFile(null)}
+              onSaved={() => setAnnotatingFile(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
