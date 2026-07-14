@@ -866,6 +866,16 @@ const PlaceholderGallery = ({
                 />
                 <button
                   type="button"
+                  onClick={() => setAnnotatingFile(it.filename)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 left-1 bg-blue-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Аннотировать (стрелки, овалы, подписи)"
+                  aria-label="Аннотировать фото"
+                >
+                  <PenLine className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => deleteExisting(it.filename)}
                   disabled={deletingFile !== null || uploading}
                   className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
