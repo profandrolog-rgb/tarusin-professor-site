@@ -1194,6 +1194,15 @@ export default function AdminArticleOrchestrator() {
                   ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Идёт…</>
                   : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью {reviewRound > 1 ? `(раунд ${reviewRound + 1})` : "(с правками)"}</>}
               </Button>
+              {(reviewing || pending.size > 0) && (
+                <Button
+                  onClick={forceFinishAndConsolidate}
+                  variant="secondary"
+                  title="Не ждать зависшие модели — передать арбитру уже полученные мнения"
+                >
+                  <GitMerge className="w-4 h-4 mr-2" /> Досрочно к арбитру ({successReviews.length})
+                </Button>
+              )}
               <Button
                 onClick={() => runConsolidation()}
                 disabled={consolidating || successReviews.length < 1}
