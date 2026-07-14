@@ -212,7 +212,7 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
             image_path: imagePath,
             bucket,
             label,
-            annotation_data: payload as unknown as Record<string, unknown>,
+            annotation_data: payload as unknown as never,
           },
         ],
         { onConflict: "image_path,label" },
