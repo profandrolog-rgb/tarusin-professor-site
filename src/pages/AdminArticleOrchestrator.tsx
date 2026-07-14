@@ -612,10 +612,13 @@ export default function AdminArticleOrchestrator() {
 
     try {
       let streamDone = false;
+      const ctrl = new AbortController();
+      abortReviewRef.current = ctrl;
       const { data: { session } } = await supabase.auth.getSession();
       const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
         method: "POST",
+        signal: ctrl.signal,
         headers: {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
