@@ -1095,9 +1095,21 @@ export default function AdminArticleOrchestrator() {
       {Object.keys(progress).length > 0 && (
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
               <span>Прогресс ревью ({Object.values(progress).filter(p => p.status === "done" || p.status === "error").length}/{Object.keys(progress).length})</span>
-              {reviewing && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+              <div className="flex items-center gap-2">
+                {reviewing && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
+                {(reviewing || pending.size > 0) && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={forceFinishAndConsolidate}
+                    title="Не ждать зависшие модели — передать арбитру уже полученные мнения"
+                  >
+                    <GitMerge className="w-3.5 h-3.5 mr-1.5" /> Досрочно к арбитру
+                  </Button>
+                )}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
