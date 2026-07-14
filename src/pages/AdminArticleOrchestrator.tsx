@@ -844,7 +844,7 @@ export default function AdminArticleOrchestrator() {
         if ((e.status === "consensus" || e.status === "majority") && e.severity !== "low") auto.add(i);
       });
       setAccepted(auto);
-      playCompletionChime();
+      playChimes(3); // три колокольчика — арбитр закончил работу
     } catch (e: any) {
       toast({ title: "Ошибка консолидации", description: e?.message || String(e), variant: "destructive" });
     } finally {
