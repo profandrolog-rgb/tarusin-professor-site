@@ -577,7 +577,8 @@ export default function AdminArticleOrchestrator() {
 
   // Многократный сигнал (n колокольчиков) — короткие последовательные chime.
   function playChimes(n: number) {
-    for (let i = 0; i < n; i++) setTimeout(() => playCompletionChime(), i * 380);
+    // Интервал > длительности звука (0.8с), иначе сигналы сливаются в один тон.
+    for (let i = 0; i < n; i++) setTimeout(() => playCompletionChime(), i * 900);
   }
 
   async function runReview(opts?: { reReview?: boolean }) {
