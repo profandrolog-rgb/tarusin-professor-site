@@ -808,7 +808,8 @@ export default function AdminArticleOrchestrator() {
   }
 
   async function runConsolidation(opts?: { silentIfEmpty?: boolean }) {
-    const valid = reviews.filter((r) => !r.error && (r.edits.length || r.free_review));
+    const src = reviewsRef.current.length ? reviewsRef.current : reviews;
+    const valid = src.filter((r) => !r.error && (r.edits.length || r.free_review));
     if (!valid.length) {
       if (!opts?.silentIfEmpty) toast({ title: "Нет валидных рецензий", variant: "destructive" });
       return;
