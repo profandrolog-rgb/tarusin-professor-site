@@ -215,6 +215,8 @@ export default function AdminArticleOrchestrator() {
   const [reviews, setReviews] = useState<ModelReview[]>([]);
   const reviewsRef = useRef<ModelReview[]>([]);
   useEffect(() => { reviewsRef.current = reviews; }, [reviews]);
+  const abortReviewRef = useRef<AbortController | null>(null);
+  const autoArbiterRef = useRef(true);
   const [reviewing, setReviewing] = useState(false);
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, ModelProgress>>({});
