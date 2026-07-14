@@ -566,8 +566,6 @@ export default function AdminArticleOrchestrator() {
 
   // Досрочная остановка ожидания моделей и передача арбитру.
   // Не отменяет фоновый стрим — просто фиксирует состояние UI и сразу запускает консолидацию.
-  const abortReviewRef = useRef<AbortController | null>(null);
-  const autoArbiterRef = useRef(true);
   function forceFinishAndConsolidate() {
     markUnfinishedModelsAsError("Пропущено — отправлено арбитру досрочно");
     try { abortReviewRef.current?.abort(); } catch { /* noop */ }
