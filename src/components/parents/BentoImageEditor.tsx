@@ -18,6 +18,7 @@ interface Props {
 
 const BentoImageEditor = ({ value, onChange, label }: Props) => {
   const [uploading, setUploading] = useState(false);
+  const [annotatorOpen, setAnnotatorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
