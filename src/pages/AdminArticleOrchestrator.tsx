@@ -1201,7 +1201,7 @@ export default function AdminArticleOrchestrator() {
                   : <><RotateCw className="w-4 h-4 mr-2" /> Повторное ревью {reviewRound > 1 ? `(раунд ${reviewRound + 1})` : "(с правками)"}</>}
               </Button>
               <Button
-                onClick={runConsolidation}
+                onClick={() => runConsolidation()}
                 disabled={consolidating || successReviews.length < 1}
                 variant="outline"
               >
