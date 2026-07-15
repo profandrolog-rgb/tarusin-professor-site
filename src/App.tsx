@@ -58,6 +58,10 @@ const AdminPatientVisitDetail = lazy(() => import("./pages/AdminPatientVisitDeta
 const AdminPatientVisitPrint = lazy(() => import("./pages/AdminPatientVisitPrint"));
 const AdminDiseaseArticles = lazy(() => import("./pages/AdminDiseaseArticles"));
 const AdminParentsMaterials = lazy(() => import("./pages/AdminParentsMaterials"));
+const AdminResearchReviews = lazy(() => import("./pages/AdminResearchReviews"));
+const AdminResearchReviewEditor = lazy(() => import("./pages/AdminResearchReviewEditor"));
+const lazyForDoctorsResearchList = page(() => import("./pages/ForDoctorsResearchList"));
+const lazyForDoctorsResearchDetail = page(() => import("./pages/ForDoctorsResearchDetail"));
 const ParentsMaterialLanding = lazy(() => import("./pages/ParentsMaterialLanding"));
 const AdminPatientCards = lazy(() => import("./pages/AdminPatientCards"));
 const AdminConsultations = lazy(() => import("./pages/AdminConsultations"));
@@ -137,6 +141,8 @@ const ruPublicChildren: RouteRecord[] = [
     getStaticPaths: diseaseStaticPaths,
   },
   { path: "for-doctors", lazy: lazyForDoctors, entry: "src/pages/ForDoctors.tsx" },
+  { path: "for-doctors/research", lazy: lazyForDoctorsResearchList, entry: "src/pages/ForDoctorsResearchList.tsx" },
+  { path: "for-doctors/research/:slug", lazy: lazyForDoctorsResearchDetail, entry: "src/pages/ForDoctorsResearchDetail.tsx" },
   { path: "media", lazy: lazyMedia, entry: "src/pages/Media.tsx" },
   { path: "videos", lazy: lazyVideos, entry: "src/pages/Videos.tsx" },
   { path: "reviews", lazy: lazyReviews, entry: "src/pages/Reviews.tsx" },
@@ -166,6 +172,8 @@ const enPublicChildren: RouteRecord[] = [
   { path: "for-parents/materials/:slug", lazy: lazyParentsMaterialLanding, entry: "src/pages/ParentsMaterialLanding.tsx" },
   { path: "for-parents/:slug", lazy: lazyDiseaseDetail, entry: "src/pages/DiseaseDetailPage.tsx" },
   { path: "for-doctors", lazy: lazyForDoctors, entry: "src/pages/ForDoctors.tsx" },
+  { path: "for-doctors/research", lazy: lazyForDoctorsResearchList, entry: "src/pages/ForDoctorsResearchList.tsx" },
+  { path: "for-doctors/research/:slug", lazy: lazyForDoctorsResearchDetail, entry: "src/pages/ForDoctorsResearchDetail.tsx" },
   { path: "media", lazy: lazyMedia, entry: "src/pages/Media.tsx" },
   { path: "videos", lazy: lazyVideos, entry: "src/pages/Videos.tsx" },
   { path: "reviews", lazy: lazyReviews, entry: "src/pages/Reviews.tsx" },
@@ -211,6 +219,8 @@ export const routes: RouteRecord[] = [
       { path: "admin/visit-templates", Component: AdminVisitTemplates, entry: "src/pages/AdminVisitTemplates.tsx" },
       { path: "admin/disease-articles", Component: AdminDiseaseArticles, entry: "src/pages/AdminDiseaseArticles.tsx" },
       { path: "admin/parents-materials", Component: AdminParentsMaterials, entry: "src/pages/AdminParentsMaterials.tsx" },
+      { path: "admin/research-reviews", Component: AdminResearchReviews, entry: "src/pages/AdminResearchReviews.tsx" },
+      { path: "admin/research-reviews/:id", Component: AdminResearchReviewEditor, entry: "src/pages/AdminResearchReviewEditor.tsx" },
       { path: "admin/patient-cards", Component: AdminPatientCards, entry: "src/pages/AdminPatientCards.tsx" },
       { path: "admin/consultations", Component: AdminConsultations, entry: "src/pages/AdminConsultations.tsx" },
       { path: "admin/self-check", Component: AdminSelfCheck, entry: "src/pages/AdminSelfCheck.tsx" },

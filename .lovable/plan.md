@@ -1,66 +1,102 @@
-# План: инструмент аннотирования изображений (стрелки/овалы/подписи)
+# План: раздел «Мои исследования и литературные обзоры»
 
-## Куда встраиваю
-Основная точка интеграции — **атлас УЗИ-снимков** (`AdminAcupointsAtlas` / связанный поток загрузки медиа в `disease-media` bucket, используемый и для статей, и для материалов для родителей, и для галерей). Это самый естественный кандидат: там уже есть галерея загруженных изображений и клинический контекст (атлас — прямой аналог "медицинского разметочного инструмента").
+Полностью зеркалит редакторский/SEO-пайплайн статей для родителей, но с академическим тоном и отдельным «Научным» system-промптом, который нельзя смешивать с промптом блога.
 
-Дополнительно точка вызова редактора будет добавлена в `BentoImageEditor` (материалы для родителей / статьи), чтобы одно изображение можно было пометить с разными `label` для разных целей ("для атласа", "для сайта", "для книги").
+## 1. База данных (одна миграция)
 
-Просмотрщик `<ImageWithAnnotations>` подключается к любой карточке, которая уже рендерит изображение из `disease-media` (Bento-карточки, галерея статей, атлас) — как опциональный оверлей.
+Таблица `public.research_reviews`:
+- `id uuid pk`, `slug text unique not null`
+- `title text`, `annotation text`
+- `content text` (TipTap HTML, как у остальных статей)
+- `topic text` (для фильтра тем), `cover_image_path text null`
+- `references_list jsonb default '[]'::jsonb` — `[{number, authors, title, journal, year, volume_issue, pages, doi_or_pmid, verified}]`
+- `fact_check_report jsonb default '[]'::jsonb` — `[{quote, issue, suggested_fix, confidence}]` (админ-only)
+- `source_type text check in ('manual_import','orchestrator_generated')`
+- `seo_title text`, `seo_meta_description text` (правятся вручную)
+- `status text check in ('draft','in_review','published') default 'draft'`
+- `author_id uuid`, `created_at`, `updated_at`, `published_at`
+- Триггер `updated_at`.
 
-## База данных
-Новая таблица `public.image_annotations`:
+GRANTs + RLS:
+- `GRANT SELECT` для `anon` только на строки `status='published'` (через policy).
+- `GRANT ALL` для `authenticated` с ролью `admin`/`editor` (через `has_role`), плюс `service_role`.
+- Индекс по `slug`, `status`, `published_at desc`.
 
-- `id uuid pk`
-- `image_path text not null` — путь в bucket `disease-media` (универсальный ключ, работает и для атласа, и для Bento, и для галереи материалов родителей; не завязываемся на конкретный `image_id` из десятка разных таблиц)
-- `bucket text not null default 'disease-media'`
-- `label text not null default 'default'` — "atlas" / "site" / "book" / произвольный
-- `annotation_data jsonb not null` — массив объектов вида `{ type: 'arrow'|'ellipse'|'text', ...geometry, color, strokeWidth, text? }`, плюс `imageWidth/imageHeight` для нормализации координат
-- `created_by uuid references auth.users`
-- `created_at`, `updated_at`
-- Уникальный индекс `(image_path, label)` — один набор на пару "картинка+назначение"
-- GRANT + RLS: чтение всем `authenticated` (админам видно всё, обычные — только свои); запись/обновление/удаление — только `admin` через `has_role`. Публичное чтение (для показа читателям сайта) — `anon SELECT` разрешён, т.к. это оверлей поверх и так публичной картинки атласа.
+## 2. Edge-функции (Supabase)
 
-## Компоненты
+- `research-review-import` (Стратегия A): вход `{topic, raw_text}` → Claude Sonnet через Lovable AI Gateway с константой `RESEARCH_MODE_SYSTEM_PROMPT` → возвращает `{title, annotation, content, references_list, fact_check_report}` → сохраняет строку `status='draft'`, `source_type='manual_import'`.
+- `research-review-orchestrate` (Стратегия B): тема → web_search + PubMed (используем существующие `ai-pubmed` / `smart-search`) → агрегация → rewrite по «Научному промпту» → fact-check-проход → сохраняет `status='draft'`, `source_type='orchestrator_generated'`. Использует инфраструктуру `orchestrate-article`, но подключает СВОЙ system-промпт.
 
-### `src/components/annotations/ImageAnnotator.tsx`
-Редактор на `react-konva`.
-- Toolbar: инструменты `select | arrow | ellipse | text | delete`, палитра (red/yellow/green/blue/white), слайдер толщины (1–8), undo/redo (стек `past/future`), "Очистить всё", "Сохранить".
-- Один `<Stage>` с двумя слоями: фон (Konva.Image из public URL) + слой фигур. Координаты хранятся нормализованными (0..1) относительно `imageWidth/imageHeight`, чтобы разметка не ломалась при разном отображаемом размере.
-- Мышь + touch (`Stage` из react-konva уже поддерживает pointer events).
-- Пропсы: `imagePath`, `label`, `onSaved?`.
-- Загрузка при mount: `select ... where image_path=? and label=?` → hydrate state.
-- Сохранение: upsert по `(image_path, label)`.
+Файл `supabase/functions/_shared/researchModePrompt.ts` содержит константу с полным текстом промпта из ТЗ и жирный комментарий-предупреждение: «НЕ смешивать с промптом блога для родителей — противоположные требования к личному голосу».
 
-### `src/components/annotations/ImageWithAnnotations.tsx`
-Статичный просмотрщик.
-- SVG-оверлей поверх `<img>`. Никаких Konva-раннтаймов на клиенте-читателе — только SVG, чтобы вес был минимален.
-- Пропсы: `imagePath`, `label?` (если не указан — берём все и показываем переключатель), `showAnnotations` (по умолчанию `true`), `className`.
-- Если наборов несколько — маленький сегментный переключатель в углу; если один — просто рендерим.
+## 3. Админка
 
-### `src/components/annotations/annotationTypes.ts`
-Общие типы (`AnnotationShape`, `AnnotationDoc`) + утилиты рендеринга SVG (используются и в просмотрщике, и как fallback).
+Маршрут `/admin/research-reviews`:
+- Список обзоров (title, status, обновлено, действия: править / in_review / опубликовать / удалить).
+- Кнопка «Новый обзор» → диалог с двумя вкладками:
+  - **A. Причесать готовый текст** — поля тема, текст → «Обработать».
+  - **B. Полный поиск и написание** — поле темы/вопроса → «Запустить оркестратор» (прогресс-бар этапов).
+- Редактор обзора: тот же TipTap, что и в статьях для родителей (переиспользуем `RichTextEditor`), плюс блоки:
+  - редактор `references_list` (нумерация, автор, журнал, год, DOI/PMID, чекбокс verified),
+  - просмотр/правка `fact_check_report` (сворачиваемый, админ-only),
+  - поля `seo_title`, `seo_meta_description`, `slug`, `topic`, обложка,
+  - плейсхолдеры иллюстраций `[[illustration:img-N]]` через существующий механизм.
+- Экран **in_review**: превью публичной страницы + fact_check_report + кнопки «Вернуть в draft» / «Опубликовать». Автопубликации нет.
 
-## Интеграция
+## 4. Публичная часть
 
-1. **Атлас УЗИ (`AdminAcupointsAtlas` и/или карточка снимка)** — рядом с каждой картинкой кнопка "Разметить" (иконка карандаша), открывает `Dialog` с `ImageAnnotator`. Публичная страница атласа показывает `ImageWithAnnotations` с `label="atlas"`.
-2. **`BentoImageEditor`** — в контекстное меню ячейки добавляется пункт "Аннотации…", открывающий тот же диалог. `label` выбирается в самом редакторе (input сверху toolbar) — так одна и та же картинка может иметь наборы "atlas" / "site" / "book".
-3. Публичные Bento-карточки (`BentoImageCell`) получают опциональный проп `annotationLabel`; если задан — рендерят `ImageWithAnnotations` вместо голого `<img>`.
+- `/for-doctors/research` — список опубликованных обзоров с фильтром по темам (отдельная вкладка в разделе для врачей).
+- `/for-doctors/research/:slug` — страница обзора:
+  - заголовок, аннотация,
+  - HTML контента с DOMPurify, автоматическая замена ссылок вида `[N]` на `<a href="#ref-N">`,
+  - список литературы в конце с якорями `#ref-N`,
+  - иллюстрации через существующий плейсхолдер-механизм,
+  - `fact_check_report` НЕ выводится.
 
-## Зависимости
-`bun add konva react-konva` (react-konva тянет konva как peer).
+## 5. SEO (полный паритет с пайплайном статей для родителей)
 
-## Технические детали / что не делаю
-- **Не** флатчу разметку в PNG — оригинал остаётся чистым, как и просил.
-- **Не** плодю отдельную страницу-редактор — только диалог поверх существующих потоков.
-- **Не** трогаю `client.ts` / `types.ts` — типы регенерируются после миграции.
-- Координаты нормализованные (0..1), чтобы шкала на телефоне и десктопе совпадала.
-- Для undo/redo — простой массив снапшотов `annotation_data`, лимит 50.
+На странице обзора через `PageMeta` + `JsonLd`:
+- Уникальные `seo_title` / `seo_meta_description` из БД (fallback: `title` / `annotation`).
+- Canonical `https://tarusin.pro/for-doctors/research/{slug}/`.
+- hreflang ru/en/x-default через существующий `getAlternates`.
+- OG/Twitter теги (image = обложка обзора при наличии).
+- JSON-LD: `Person` (автор — проф. Тарусин) + `MedicalScholarlyArticle` (headline, abstract, datePublished, author, citation из `references_list`).
+- `scripts/generate-sitemap.ts`: подгружает опубликованные `research_reviews` и добавляет URL `/for-doctors/research/{slug}/` в sitemap при билде (тот же механизм, что уже используется).
+- Slug человекочитаемый, генерируется из темы (с ручной правкой).
 
-## Порядок работ (после аппрува плана)
-1. Миграция `image_annotations` (+ GRANT + RLS).
-2. Установка `konva`/`react-konva`.
-3. Файлы: `annotationTypes.ts`, `ImageAnnotator.tsx`, `ImageWithAnnotations.tsx`.
-4. Кнопка "Разметить" в атласе УЗИ + пункт меню в `BentoImageEditor`.
-5. Проп `annotationLabel` в `BentoImageCell` для публичного показа.
+## 6. Архитектурная гарантия
 
-Скажу тебе точные экраны, где нажимать, после того как ты одобришь план.
+`RESEARCH_MODE_SYSTEM_PROMPT` — отдельная константа в `supabase/functions/_shared/researchModePrompt.ts`, импортируется ТОЛЬКО в `research-review-import` и в ветку research оркестратора. В файле — комментарий с явным запретом смешивания с `EDITORIAL_FIXED_PROMPT` из `orchestrate-article`.
+
+## Технические детали
+
+- Модель для стратегии A: Claude Sonnet через Lovable AI Gateway (`anthropic/claude-sonnet-4.5` или ближайший доступный в каталоге; при отсутствии — fallback на `openai/gpt-5.5` с логом-предупреждением).
+- Ветка B использует существующий пайплайн `orchestrate-article`, но принимает флаг `mode: 'research'`, который подменяет system-промпт и меняет пункт назначения на `research_reviews`.
+- Все правки автора идут через тот же `useDebouncedAutoSave` + ручное «Сохранить»/«Опубликовать».
+- Роли: доступ к админке — `admin`/`editor` (через `has_role`).
+
+## Что затрагивается в коде
+
+- Новая миграция БД.
+- Новые файлы:
+  - `supabase/functions/_shared/researchModePrompt.ts`
+  - `supabase/functions/research-review-import/index.ts`
+  - `supabase/functions/research-review-orchestrate/index.ts`
+  - `src/pages/AdminResearchReviews.tsx` (список + диалог создания)
+  - `src/pages/AdminResearchReviewEditor.tsx` (редактор + in_review)
+  - `src/pages/ForDoctorsResearchList.tsx`
+  - `src/pages/ForDoctorsResearchDetail.tsx`
+  - компоненты `ResearchReferencesEditor.tsx`, `ResearchFactCheckPanel.tsx`
+- Правки:
+  - `src/App.tsx` — маршруты `/admin/research-reviews`, `/admin/research-reviews/:id`, `/for-doctors/research`, `/for-doctors/research/:slug`.
+  - `src/pages/ForDoctors.tsx` — вкладка «Мои исследования и литературные обзоры».
+  - `src/pages/Admin.tsx` — карточка входа в новый раздел админки.
+  - `scripts/generate-sitemap.ts` — подтянуть опубликованные обзоры.
+
+## Уточнения / допущения
+
+- Двуязычность: пока делаю только RU-контент, но hreflang ru/en/x-default выставляю по существующему паттерну (без автоперевода). Если нужен полноценный EN-контент/перевод — скажите, добавлю связку через `content_translations`.
+- Иллюстрации: использую тот же плейсхолдер `[[illustration:img-N]]` и текущий механизм подстановки, без отдельной галереи под этот раздел.
+- Ветка B: реализую поверх текущего `orchestrate-article` (флаг `mode:'research'`); если хотите полностью отдельный оркестратор — скажите, вынесу.
+
+Подтвердите план — начну реализацию.

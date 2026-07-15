@@ -148,6 +148,13 @@ const siteSections = [
     color: "text-fuchsia-500",
   },
   {
+    title: "Литературные обзоры для врачей",
+    description: "Раздел /for-doctors/research — научные обзоры (стратегии A и B, факт-чек, in_review → публикация)",
+    icon: BookOpen,
+    href: "/admin/research-reviews",
+    color: "text-indigo-500",
+  },
+  {
     title: "Наши исследования",
     description: "Публикации и научные статьи",
     icon: FileText,
