@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,15 +34,42 @@ const ForDoctorsResearchDetail = () => {
     },
   });
 
+  // Аналитика: просмотр обзора (GA4 + Яндекс.Метрика).
+  useEffect(() => {
+    if (!review?.slug) return;
+    try {
+      const w = window as any;
+      w.gtag?.("event", "research_review_view", {
+        review_slug: review.slug,
+        review_title: review.title,
+        topic: review.topic || "",
+      });
+      w.ym?.(107724120, "reachGoal", "research_review_view", { slug: review.slug });
+    } catch { /* no-op */ }
+  }, [review?.slug, review?.title, review?.topic]);
+
   const html = useMemo(() => {
     if (!review?.content) return "";
-    // Заменяем [N] на <a href="#ref-N">[N]</a> для навигации к списку литературы.
+    // Заменяем [N] на <a href="#ref-N" data-ref="N">[N]</a> для навигации к списку литературы.
     const withAnchors = String(review.content).replace(
       /\[(\d+)\]/g,
-      (_m, n) => `<a href="#ref-${n}" class="text-primary hover:underline">[${n}]</a>`,
+      (_m, n) => `<a href="#ref-${n}" data-ref="${n}" class="text-primary hover:underline">[${n}]</a>`,
     );
-    return DOMPurify.sanitize(withAnchors, { ADD_ATTR: ["target", "rel"] });
+    return DOMPurify.sanitize(withAnchors, { ADD_ATTR: ["target", "rel", "data-ref"] });
   }, [review?.content]);
+
+  // Аналитика: клик по номеру источника в теле статьи.
+  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest("a[data-ref]") as HTMLAnchorElement | null;
+    if (!anchor) return;
+    const refNum = anchor.dataset.ref;
+    try {
+      const w = window as any;
+      w.gtag?.("event", "research_reference_click", { review_slug: review?.slug, ref_number: refNum });
+      w.ym?.(107724120, "reachGoal", "research_reference_click", { slug: review?.slug, ref: refNum });
+    } catch { /* no-op */ }
+  };
 
   if (isLoading) return <div className="p-6"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!review) return <div className="max-w-3xl mx-auto p-6">Обзор не найден.</div>;
@@ -107,6 +134,7 @@ const ForDoctorsResearchDetail = () => {
       </header>
 
       <div
+        onClick={handleContentClick}
         className="prose prose-sm md:prose-base max-w-none text-foreground"
         dangerouslySetInnerHTML={{ __html: html }}
       />
