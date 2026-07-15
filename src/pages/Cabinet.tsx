@@ -48,17 +48,27 @@ const DEFAULT_MODEL =
   CURATED_MODELS.find((m) => m.key === DEFAULT_MODEL_KEY)?.candidates[0] ??
   "google/gemini-2.5-flash";
 
+// Полный пул моделей для консилиума — синхронизирован с оркестратором мед. статей.
+// Всё, что подключено к orchestrate-article, должно быть доступно и в консилиуме.
 const COUNCIL_MODEL_KEYS_DEFAULT = [
-  "gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "glm-5",
+  "gpt5", "gpt56-terra-pro", "claude-opus", "gemini-pro",
+  "glm-5", "kimi-k2", "tencent-hy3", "nemotron-3-ultra",
+  "grok-fast", "deepseek-v4-pro", "mimo-v25-pro",
+  "pplx-sonar-pro", "venice-uncensored",
 ];
 
 const COUNCIL_MODEL_CANDIDATES = [
-  "gemini-flash", "gemini-pro", "claude-sonnet", "claude-opus",
-  "gpt5-mini", "gpt5", "gpt56-terra-pro",
-  "grok-fast", "qwen-flash", "qwen-max",
-  "glm-5", "deepseek-v4-pro", "kimi-k2", "kimi-k2-thinking",
-  "mimo-v25-pro", "mistral-large",
-  "tencent-hy3", "nemotron-3-ultra",
+  // Fast
+  "gemini-flash", "claude-sonnet", "gpt5-mini", "grok-fast", "qwen-flash", "kimi-k2",
+  // Deep
+  "gemini-pro", "claude-opus", "gpt5", "gpt56-terra-pro",
+  "qwen-max", "glm-5", "deepseek-v4-pro", "kimi-k2-thinking",
+  "mimo-v25-pro", "mistral-large", "tencent-hy3", "nemotron-3-ultra",
+  // Поиск/цитаты
+  "pplx-sonar", "pplx-sonar-pro", "pplx-sonar-reasoning", "pplx-deep-research",
+  // Venice (uncensored)
+  "venice-uncensored", "venice-gemma-uncensored", "venice-llama-405b",
+  "venice-qwen3-235b", "venice-deepseek-r1",
 ];
 
 
