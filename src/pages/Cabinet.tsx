@@ -1691,7 +1691,18 @@ export default function Cabinet() {
     // Прикрепить содержимое активного протокола пациента (жалобы/анамнез/статус)
     // к текущему сообщению — так модель видит клинический контекст, о котором
     // пишет пользователь в соседней вкладке.
-    if (attachProtocol) {
+    // Патч: контекст пациента (активный протокол + полная ретроспектива) вставляем
+    // ОДИН РАЗ на диалог. При повторных сообщениях этот блок уже присутствует
+    // в истории `messages` — повторная инъекция удваивает контекст, что
+    // приводит к переполнению окна модели и «отказу» на второй вопрос.
+    const protocolAlreadyAttached = messages.some(
+      (m) => m.role === "user" && typeof m.content === "string" && m.content.includes("[Контекст пациента из активного протокола"),
+    );
+    const historyAlreadyAttached = messages.some(
+      (m) => m.role === "user" && typeof m.content === "string" && m.content.includes("[Полная ретроспектива пациента"),
+    );
+
+    if (attachProtocol && !protocolAlreadyAttached) {
       const ctx = getActiveContext();
       if (ctx) {
         try {
@@ -1707,7 +1718,7 @@ export default function Cabinet() {
     }
 
     // Полная ретроспектива пациента: все прошлые визиты/УЗИ/анализы/заключения + таблицы динамики
-    if (attachHistory && pendingPatient.id) {
+    if (attachHistory && pendingPatient.id && !historyAlreadyAttached) {
       try {
         toast.info("Собираю всю историю пациента…", { duration: 2000 });
         const { text: historyText, counts } = await fetchPatientHistory(pendingPatient.id, pendingPatient.name || undefined);
@@ -1724,6 +1735,7 @@ export default function Cabinet() {
         toast.error(`Не удалось собрать историю: ${e?.message || e}`);
       }
     }
+
 
     const attachmentsForSend = await Promise.all(attachments.map(async (a) => {
       if (a.dataUrl || !a.path) return a;
@@ -2441,24 +2453,25 @@ export default function Cabinet() {
             <SelectContent>
               <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Быстрые</div>
               {fastModels.map((m) => (
-                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                <SelectItem key={m.key} value={m.id} title={buildModelTooltip(m)}>
                   <span className="flex items-center gap-1">
                     <span>{m.emoji}</span>
                     <span>{m.label}</span>
-                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                    {!m.available && <span className="text-[10px] text-amber-600 ml-1" title="Слаг не найден в live-списке OpenRouter — будет использован серверный fallback">⚠ fallback</span>}
                   </span>
                 </SelectItem>
               ))}
               <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Глубокие</div>
               {deepModels.map((m) => (
-                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                <SelectItem key={m.key} value={m.id} title={buildModelTooltip(m)}>
                   <span className="flex items-center gap-1">
                     <span>{m.emoji}</span>
                     <span>{m.label}</span>
-                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                    {!m.available && <span className="text-[10px] text-amber-600 ml-1" title="Слаг не найден в live-списке OpenRouter — будет использован серверный fallback">⚠ fallback</span>}
                   </span>
                 </SelectItem>
               ))}
+
               {imageModels.length > 0 && (
                 <>
                   <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/50 pt-2">🎨 Иллюстрации</div>
