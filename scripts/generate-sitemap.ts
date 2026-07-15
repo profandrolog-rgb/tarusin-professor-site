@@ -83,6 +83,24 @@ async function fetchDynamicEntries(): Promise<SitemapEntry[]> {
     }
 
 
+    // Литературные обзоры для врачей — /for-doctors/research/{slug}/
+    const { data: researchReviews } = await supabase
+      .from("research_reviews")
+      .select("slug, updated_at")
+      .eq("status", "published");
+    if (researchReviews) {
+      for (const rr of researchReviews as Array<{ slug: string | null; updated_at: string | null }>) {
+        if (rr.slug) {
+          entries.push({
+            path: `/for-doctors/research/${rr.slug}/`,
+            lastmod: rr.updated_at?.slice(0, 10),
+            changefreq: "monthly",
+            priority: "0.7",
+          });
+        }
+      }
+    }
+
     try {
       const { allChecklists } = await import("../src/data/checklists/index");
       for (const c of allChecklists) {
