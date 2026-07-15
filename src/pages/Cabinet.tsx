@@ -2453,24 +2453,25 @@ export default function Cabinet() {
             <SelectContent>
               <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Быстрые</div>
               {fastModels.map((m) => (
-                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                <SelectItem key={m.key} value={m.id} title={buildModelTooltip(m)}>
                   <span className="flex items-center gap-1">
                     <span>{m.emoji}</span>
                     <span>{m.label}</span>
-                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                    {!m.available && <span className="text-[10px] text-amber-600 ml-1" title="Слаг не найден в live-списке OpenRouter — будет использован серверный fallback">⚠ fallback</span>}
                   </span>
                 </SelectItem>
               ))}
               <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">Глубокие</div>
               {deepModels.map((m) => (
-                <SelectItem key={m.key} value={m.id} disabled={!m.available} title={buildModelTooltip(m)}>
+                <SelectItem key={m.key} value={m.id} title={buildModelTooltip(m)}>
                   <span className="flex items-center gap-1">
                     <span>{m.emoji}</span>
                     <span>{m.label}</span>
-                    {!m.available && <span className="text-[10px] text-destructive ml-1">недоступно</span>}
+                    {!m.available && <span className="text-[10px] text-amber-600 ml-1" title="Слаг не найден в live-списке OpenRouter — будет использован серверный fallback">⚠ fallback</span>}
                   </span>
                 </SelectItem>
               ))}
+
               {imageModels.length > 0 && (
                 <>
                   <div className="px-2 py-1 mt-1 text-[10px] uppercase tracking-wide text-muted-foreground border-t border-border/50 pt-2">🎨 Иллюстрации</div>
