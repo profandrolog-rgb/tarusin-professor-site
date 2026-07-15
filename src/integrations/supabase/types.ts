@@ -4354,6 +4354,66 @@ export type Database = {
         }
         Relationships: []
       }
+      research_reviews: {
+        Row: {
+          annotation: string
+          author_id: string | null
+          content: string
+          cover_image_path: string | null
+          created_at: string
+          fact_check_report: Json
+          id: string
+          published_at: string | null
+          references_list: Json
+          seo_meta_description: string | null
+          seo_title: string | null
+          slug: string
+          source_type: string
+          status: string
+          title: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          annotation?: string
+          author_id?: string | null
+          content?: string
+          cover_image_path?: string | null
+          created_at?: string
+          fact_check_report?: Json
+          id?: string
+          published_at?: string | null
+          references_list?: Json
+          seo_meta_description?: string | null
+          seo_title?: string | null
+          slug: string
+          source_type?: string
+          status?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          annotation?: string
+          author_id?: string | null
+          content?: string
+          cover_image_path?: string | null
+          created_at?: string
+          fact_check_report?: Json
+          id?: string
+          published_at?: string | null
+          references_list?: Json
+          seo_meta_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          source_type?: string
+          status?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       review_platforms: {
         Row: {
           created_at: string
