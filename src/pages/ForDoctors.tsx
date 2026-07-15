@@ -135,6 +135,30 @@ const ForDoctors = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12 md:py-16">
+        {/* Литературные обзоры — новая секция */}
+        <section className="mb-12">
+          <Link to="/for-doctors/research" className="block group">
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 hover:shadow-lg transition-shadow">
+              <CardContent className="p-6 md:p-8 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="w-7 h-7 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl md:text-2xl font-bold mb-1 group-hover:text-primary transition-colors">
+                    {isEn ? "My research and literature reviews" : "Мои исследования и литературные обзоры"}
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    {isEn
+                      ? "Scholarly reviews in pediatric urology, andrology and reproduction — with references and fact-checking."
+                      : "Научные обзоры в детской урологии, андрологии и репродуктологии — со ссылками на первоисточники."}
+                  </p>
+                </div>
+                <ExternalLink className="w-5 h-5 text-primary hidden md:block" />
+              </CardContent>
+            </Card>
+          </Link>
+        </section>
+
         {/* Resume Section */}
         <section className="mb-16">
           <Card className="bg-secondary border-none">
