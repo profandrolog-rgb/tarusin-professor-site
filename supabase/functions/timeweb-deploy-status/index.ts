@@ -41,7 +41,36 @@ Deno.serve(async (req) => {
     // Нормализуем ответ: API может возвращать { deploys: [...] } или { deploy: [...] }
     const deploys = body?.deploys ?? body?.deploy ?? body?.data ?? [];
     const app = appBody?.app ?? appBody ?? null;
-    return new Response(JSON.stringify({ deploys, app }), {
+
+    // Опционально подтягиваем детали/логи одного деплоя: ?deploy_id=... или ?logs=1 (последний failure).
+    const url = new URL(req.url);
+    const wantLogs = url.searchParams.get("logs") === "1" || url.searchParams.get("deploy_id");
+    let deploy_details: any = null;
+    if (wantLogs) {
+      const targetId = url.searchParams.get("deploy_id")
+        || deploys.find((d: any) => d.status === "failure")?.id
+        || deploys[0]?.id;
+      if (targetId) {
+        const paths = [
+          `/api/v1/apps/${TIMEWEB_APP_ID}/logs?deploy_id=${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}/log`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploy_logs?deploy_id=${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/log?deploy_id=${targetId}`,
+          `/api/v2/apps/${TIMEWEB_APP_ID}/deploys/${targetId}`,
+        ];
+        const probes: any[] = [];
+        for (const p of paths) {
+          try {
+            const r = await fetch(`https://api.timeweb.cloud${p}`, { headers: auth });
+            const t = await r.text();
+            probes.push({ path: p, status: r.status, body: t.slice(0, 4000) });
+          } catch (e) { probes.push({ path: p, error: String(e) }); }
+        }
+        deploy_details = { target_deploy_id: targetId, probes };
+      }
+    }
+
+    return new Response(JSON.stringify({ deploys, app, deploy_details }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
