@@ -51,14 +51,21 @@ Deno.serve(async (req) => {
         || deploys.find((d: any) => d.status === "failure")?.id
         || deploys[0]?.id;
       if (targetId) {
-        try {
-          const detRes = await fetch(
-            `https://api.timeweb.cloud/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}`,
-            { headers: auth },
-          );
-          const detText = await detRes.text();
-          try { deploy_details = JSON.parse(detText); } catch { deploy_details = detText; }
-        } catch (e) { deploy_details = { error: String(e) }; }
+        const paths = [
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploy-logs/${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}/logs`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploy/${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}`,
+        ];
+        const probes: any[] = [];
+        for (const p of paths) {
+          try {
+            const r = await fetch(`https://api.timeweb.cloud${p}`, { headers: auth });
+            const t = await r.text();
+            probes.push({ path: p, status: r.status, body: t.slice(0, 4000) });
+          } catch (e) { probes.push({ path: p, error: String(e) }); }
+        }
+        deploy_details = { target_deploy_id: targetId, probes };
       }
     }
 
