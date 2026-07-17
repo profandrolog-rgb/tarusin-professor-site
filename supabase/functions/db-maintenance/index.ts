@@ -30,13 +30,18 @@ async function isAdmin(req: Request): Promise<boolean> {
     console.log("[db-maintenance] no bearer token");
     return false;
   }
-  const token = auth.slice("Bearer ".length);
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-  const { data: userData, error: userErr } = await admin.auth.getUser(token);
+  // Use user-context client to resolve the caller (works reliably even when
+  // service-role getUser(token) is finicky in edge runtime).
+  const userClient = createClient(SUPABASE_URL, ANON, {
+    global: { headers: { Authorization: auth } },
+    auth: { persistSession: false },
+  });
+  const { data: userData, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userData?.user) {
-    console.log("[db-maintenance] auth failure", JSON.stringify(userErr), "user:", !!userData?.user);
+    console.log("[db-maintenance] auth failure", userErr?.message, "user:", !!userData?.user);
     return false;
   }
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
   const { data, error } = await admin
     .from("user_roles")
     .select("role")
