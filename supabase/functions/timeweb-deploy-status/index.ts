@@ -52,10 +52,11 @@ Deno.serve(async (req) => {
         || deploys[0]?.id;
       if (targetId) {
         const paths = [
-          `/api/v1/apps/${TIMEWEB_APP_ID}/deploy-logs/${targetId}`,
-          `/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}/logs`,
-          `/api/v1/apps/${TIMEWEB_APP_ID}/deploy/${targetId}`,
-          `/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/logs?deploy_id=${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}/log`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/deploy_logs?deploy_id=${targetId}`,
+          `/api/v1/apps/${TIMEWEB_APP_ID}/log?deploy_id=${targetId}`,
+          `/api/v2/apps/${TIMEWEB_APP_ID}/deploys/${targetId}`,
         ];
         const probes: any[] = [];
         for (const p of paths) {
