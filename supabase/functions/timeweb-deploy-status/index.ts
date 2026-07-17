@@ -41,7 +41,28 @@ Deno.serve(async (req) => {
     // Нормализуем ответ: API может возвращать { deploys: [...] } или { deploy: [...] }
     const deploys = body?.deploys ?? body?.deploy ?? body?.data ?? [];
     const app = appBody?.app ?? appBody ?? null;
-    return new Response(JSON.stringify({ deploys, app }), {
+
+    // Опционально подтягиваем детали/логи одного деплоя: ?deploy_id=... или ?logs=1 (последний failure).
+    const url = new URL(req.url);
+    const wantLogs = url.searchParams.get("logs") === "1" || url.searchParams.get("deploy_id");
+    let deploy_details: any = null;
+    if (wantLogs) {
+      const targetId = url.searchParams.get("deploy_id")
+        || deploys.find((d: any) => d.status === "failure")?.id
+        || deploys[0]?.id;
+      if (targetId) {
+        try {
+          const detRes = await fetch(
+            `https://api.timeweb.cloud/api/v1/apps/${TIMEWEB_APP_ID}/deploys/${targetId}`,
+            { headers: auth },
+          );
+          const detText = await detRes.text();
+          try { deploy_details = JSON.parse(detText); } catch { deploy_details = detText; }
+        } catch (e) { deploy_details = { error: String(e) }; }
+      }
+    }
+
+    return new Response(JSON.stringify({ deploys, app, deploy_details }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
