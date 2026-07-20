@@ -246,6 +246,10 @@ const AdminResearchReviewEditor = () => {
       }
 
       toast.info("Оркестратор запущен в фоне. Прогресс — в карточке ниже.");
+      setTimeout(() => {
+        document.getElementById("orchestrator-progress")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+
       // Дальнейший опрос ведёт useEffect по статусу.
     } catch (e: any) {
       toast.error(e?.message || "Ошибка оркестратора");
