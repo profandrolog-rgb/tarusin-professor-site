@@ -105,6 +105,7 @@ async function runPipeline(params: {
   addEventListener('beforeunload', onUnload);
 
   try {
+    currentStep = 'searching';
     await markStatus('searching');
 
     const searchPrompt = `Найди свежие систематические обзоры, мета-анализы и клинические руководства по теме: "${topic}".
@@ -120,6 +121,7 @@ ${materials_context ? `Учитывай контекст уже загружен
       searchResult = '(поиск литературы не выполнен — использовать только материалы пользователя)';
     }
 
+    currentStep = 'writing';
     await markStatus('writing');
 
     const markersList = Array.isArray(materials_list) && materials_list.length
@@ -146,6 +148,7 @@ ${materials_context ? `Учитывай контекст уже загружен
     }
     if (!parsed) throw lastErr ?? new Error('all writer models failed');
 
+    currentStep = 'fact_checking';
     await markStatus('fact_checking');
 
     const content = String(parsed.content || '');
