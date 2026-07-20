@@ -2,18 +2,12 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Wand2, Rocket, Undo2 } from 'lucide-react';
+import { Loader2, Wand2, Rocket, Undo2, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { makeEntry, restoreBefore, type RefinementEntry } from '@/lib/research/refinementDiff';
 
-export interface RefinementEntry {
-  id: string;
-  action: string;
-  prompt?: string;
-  diff_summary?: string;
-  snapshot_content: string;
-  created_at: string;
-}
+export type { RefinementEntry } from '@/lib/research/refinementDiff';
 
 const ACTIONS: { key: string; label: string }[] = [
   { key: 'shorten', label: 'Сократить' },
@@ -30,7 +24,7 @@ interface Props {
   materialsContext: string;
   history: RefinementEntry[];
   onApply: (newContent: string, entry: RefinementEntry) => void;
-  onRollback: (entry: RefinementEntry) => void;
+  onRollback: (content: string) => void;
   onOrchestrate: () => Promise<void>;
   orchestrating: boolean;
 }
@@ -57,14 +51,14 @@ export default function RefinementChat(p: Props) {
       });
       if (error) throw error;
       if (!data?.new_content) throw new Error('пустой ответ');
-      const entry: RefinementEntry = {
-        id: crypto.randomUUID(),
+      const entry = makeEntry({
         action: action || 'custom',
         prompt: custom_prompt,
         diff_summary: data.diff_summary,
-        snapshot_content: p.currentContent,
-        created_at: new Date().toISOString(),
-      };
+        before: p.currentContent,
+        after: data.new_content,
+        historyLength: p.history.length,
+      });
       p.onApply(data.new_content, entry);
       toast.success('Правка применена');
       if (!action) setCustomPrompt('');
@@ -73,6 +67,17 @@ export default function RefinementChat(p: Props) {
     } finally {
       setBusy(false);
     }
+  }
+
+  function handleRollback(idx: number) {
+    if (!confirm('Откатить контент к состоянию до этой правки?')) return;
+    const restored = restoreBefore(p.history, idx);
+    if (restored == null) {
+      toast.error('Не удалось восстановить: ближайший снапшот не найден');
+      return;
+    }
+    p.onRollback(restored);
+    toast.success('Откат выполнен');
   }
 
   return (
@@ -89,13 +94,7 @@ export default function RefinementChat(p: Props) {
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-2">
           {ACTIONS.map(a => (
-            <Button
-              key={a.key}
-              variant="outline"
-              size="sm"
-              onClick={() => run(a.key)}
-              disabled={busy}
-            >
+            <Button key={a.key} variant="outline" size="sm" onClick={() => run(a.key)} disabled={busy}>
               {a.label}
             </Button>
           ))}
@@ -106,13 +105,9 @@ export default function RefinementChat(p: Props) {
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             rows={2}
-            placeholder="Свободный запрос к модели: например, «добавь раздел про диагностику у подростков»…"
+            placeholder="Свободный запрос к модели: «добавь раздел про диагностику у подростков»…"
           />
-          <Button
-            size="sm"
-            onClick={() => run('', customPrompt)}
-            disabled={busy || !customPrompt.trim()}
-          >
+          <Button size="sm" onClick={() => run('', customPrompt)} disabled={busy || !customPrompt.trim()}>
             {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Wand2 className="w-4 h-4 mr-1" />}
             Применить
           </Button>
@@ -120,19 +115,26 @@ export default function RefinementChat(p: Props) {
 
         {p.history.length > 0 && (
           <div className="space-y-1.5 pt-2 border-t">
-            <h4 className="text-sm font-semibold">История правок</h4>
-            {p.history.slice().reverse().map(h => (
-              <div key={h.id} className="flex items-start gap-2 text-xs border rounded px-2 py-1.5 bg-muted/20">
-                <div className="flex-1">
-                  <div className="font-medium">{h.action}{h.prompt ? `: ${h.prompt.slice(0, 100)}` : ''}</div>
-                  {h.diff_summary && <div className="text-muted-foreground">{h.diff_summary}</div>}
-                  <div className="text-muted-foreground">{new Date(h.created_at).toLocaleString('ru-RU')}</div>
+            <h4 className="text-sm font-semibold">История правок (снапшоты каждые 5 шагов)</h4>
+            {p.history.map((h, i) => {
+              const idx = i;
+              return (
+                <div key={h.id} className="flex items-start gap-2 text-xs border rounded px-2 py-1.5 bg-muted/20">
+                  {h.is_snapshot && <Camera className="w-3.5 h-3.5 text-primary mt-0.5" />}
+                  <div className="flex-1">
+                    <div className="font-medium">
+                      #{idx + 1} · {h.action}{h.prompt ? `: ${h.prompt.slice(0, 100)}` : ''}
+                      {h.is_pre_orchestrate && <span className="ml-2 text-primary">(перед оркестратором)</span>}
+                    </div>
+                    {h.diff_summary && <div className="text-muted-foreground">{h.diff_summary}</div>}
+                    <div className="text-muted-foreground">{new Date(h.created_at).toLocaleString('ru-RU')}</div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => handleRollback(idx)} title="Откатить к состоянию до этой правки">
+                    <Undo2 className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => p.onRollback(h)} title="Откатить к состоянию до этой правки">
-                  <Undo2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
+              );
+            }).reverse()}
           </div>
         )}
       </CardContent>

@@ -1,37 +1,42 @@
 // Первичный мультимодальный анализ материалов научного обзора.
-// Использует Lovable AI Gateway (google/gemini-3.1-pro-preview).
-// Материалы: файлы (PDF/image/audio), YouTube-ссылки, PubMed, произвольные URL.
+// Модель — из RESEARCH_AI_MODEL (default google/gemini-3.1-pro-preview).
+// Материалы: файлы в YC Object Storage (PDF/image/audio/docx/pptx), YouTube, PubMed, URL, свободный текст.
+// Каждому материалу присваивается стабильный маркер [M1], [M2]… для сквозной атрибуции в тексте обзора.
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import mammoth from 'npm:mammoth@1.9.0';
+import JSZip from 'npm:jszip@3.10.1';
+import { downloadFromYc } from '../_shared/ycStorage.ts';
 
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const MODEL = 'google/gemini-3.1-pro-preview';
+const MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
 
 interface Material {
   id: string;
+  marker?: string;
   kind: 'file' | 'youtube' | 'pubmed' | 'url' | 'text';
   name?: string;
   mime?: string;
-  storage_path?: string; // for kind=file
-  url?: string;          // for kind=youtube|pubmed|url
-  text?: string;         // for kind=text or extracted content
+  objectKey?: string;   // ключ в YC
+  url?: string;
+  text?: string;
 }
 
-const SYSTEM_PROMPT = `Ты — научный редактор медицинского журнала. Тебе даны разнородные материалы (статьи, презентации, видео, изображения, ссылки).
-Твоя задача:
-1. Извлечь суть каждого материала (2–4 предложения).
-2. Свести всё в единый черновой план обзора (структура: Введение → Разделы → Выводы).
-3. Выделить ключевые тезисы (5–15 буллетов).
-4. Собрать список источников с максимально полными библиографическими данными (авторы, название, журнал, год, DOI/PMID).
+const SYSTEM_PROMPT = `Ты — научный редактор медицинского журнала. Тебе даны разнородные материалы (статьи, презентации, видео, изображения, ссылки), каждый помечен стабильным идентификатором [M1], [M2], [M3]…
 
-Верни строгий JSON:
+Задачи:
+1. Извлечь суть каждого материала (2–4 предложения). В поле per_material.marker верни ровно тот идентификатор [M#], который стоит на материале.
+2. Собрать единый черновой план обзора (Введение → Разделы → Выводы). В плане после каждого тезиса, взятого из материала, ставь его маркер, например: «— повышение уровня X ассоциировано с Y [M2]».
+3. Ключевые тезисы (5–15 буллетов) — тоже с маркерами источников.
+4. Собрать библиографию по РЕАЛЬНО присутствующим в материалах источникам (авторы, название, журнал, год, DOI/PMID). Не добавлять источники из общих знаний — только из материалов. В каждом элементе — поле marker.
+
+Верни СТРОГИЙ JSON:
 {
-  "summary": "коротко общее содержание всех материалов, 200-400 слов",
-  "per_material": [{"id":"...", "summary":"..."}],
-  "draft_outline": "план обзора в markdown",
-  "key_points": ["..."],
-  "detected_sources": [{"authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}]
+  "summary": "общее содержание материалов, 200-400 слов, с маркерами",
+  "per_material": [{"marker":"[M1]", "summary":"..."}],
+  "draft_outline": "план обзора в markdown, с маркерами",
+  "key_points": ["тезис [M2]", "..."],
+  "detected_sources": [{"marker":"[M3]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}]
 }`;
 
 async function toBase64(bytes: Uint8Array): Promise<string> {
@@ -43,24 +48,37 @@ async function toBase64(bytes: Uint8Array): Promise<string> {
   return btoa(binary);
 }
 
-async function buildBlockForMaterial(
-  m: Material,
-  supabase: ReturnType<typeof createClient>,
-): Promise<any[]> {
-  const label = `[Материал ${m.id}${m.name ? `: ${m.name}` : ''}]`;
+async function extractPptxText(bytes: Uint8Array): Promise<string> {
+  try {
+    const zip = await JSZip.loadAsync(bytes);
+    const slides: { name: string; text: string }[] = [];
+    for (const name of Object.keys(zip.files)) {
+      if (/^ppt\/slides\/slide\d+\.xml$/.test(name)) {
+        const xml = await zip.files[name].async('string');
+        const text = xml.replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g, (_m, t) => t + '\n')
+          .replace(/<[^>]+>/g, '').replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        slides.push({ name, text });
+      }
+    }
+    slides.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    return slides.map((s, i) => `--- Слайд ${i + 1} ---\n${s.text}`).join('\n\n');
+  } catch (e) {
+    return `(не удалось извлечь текст PPTX: ${(e as Error).message})`;
+  }
+}
+
+async function buildBlockForMaterial(m: Material): Promise<any[]> {
+  const label = `[Материал ${m.marker || m.id}${m.name ? `: ${m.name}` : ''}]`;
 
   if (m.kind === 'text' && m.text) {
     return [{ type: 'text', text: `${label}\n${m.text}` }];
   }
 
   if (m.kind === 'youtube' && m.url) {
-    // Gemini через OpenRouter принимает youtube URL как image_url c пометкой (best effort);
-    // если модель не поймёт — оставим текстовое упоминание.
     return [{ type: 'text', text: `${label}\nYouTube-ссылка (проанализируй по URL, если доступно): ${m.url}` }];
   }
 
   if ((m.kind === 'url' || m.kind === 'pubmed') && m.url) {
-    // Пытаемся вытащить контент через Firecrawl (если ключ есть); иначе просто URL.
     const fcKey = Deno.env.get('FIRECRAWL_API_KEY');
     const lovKey = Deno.env.get('LOVABLE_API_KEY');
     try {
@@ -94,40 +112,51 @@ async function buildBlockForMaterial(
     } catch (e) {
       console.warn(`Firecrawl fetch failed for ${m.url}:`, (e as Error).message);
     }
-    return [{ type: 'text', text: `${label}\nURL (скачать не удалось): ${m.url}` }];
+    return [{ type: 'text', text: `${label}\nURL: ${m.url}` }];
   }
 
-  if (m.kind === 'file' && m.storage_path) {
-    // Скачиваем из приватного бакета
-    const { data, error } = await supabase.storage.from('research-materials').download(m.storage_path);
-    if (error || !data) {
-      return [{ type: 'text', text: `${label}\nФайл не удалось скачать: ${m.storage_path}` }];
+  if (m.kind === 'file' && m.objectKey) {
+    let bytes: Uint8Array; let ctype: string;
+    try {
+      const dl = await downloadFromYc(m.objectKey);
+      bytes = dl.bytes; ctype = dl.contentType;
+    } catch (e) {
+      return [{ type: 'text', text: `${label}\nФайл не удалось скачать: ${(e as Error).message}` }];
     }
-    const bytes = new Uint8Array(await data.arrayBuffer());
-    const mime = m.mime || 'application/octet-stream';
-    const b64 = await toBase64(bytes);
+    const mime = m.mime || ctype || 'application/octet-stream';
 
     if (mime.startsWith('image/')) {
       return [
         { type: 'text', text: label },
-        { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } },
+        { type: 'image_url', image_url: { url: `data:${mime};base64,${await toBase64(bytes)}` } },
       ];
     }
     if (mime === 'application/pdf') {
       return [
         { type: 'text', text: label },
-        { type: 'file', file: { filename: m.name || 'document.pdf', file_data: `data:${mime};base64,${b64}` } },
+        { type: 'file', file: { filename: m.name || 'document.pdf', file_data: `data:${mime};base64,${await toBase64(bytes)}` } },
       ];
     }
     if (mime.startsWith('audio/')) {
       const format = mime.includes('mp3') ? 'mp3' : mime.includes('wav') ? 'wav' : mime.includes('m4a') ? 'm4a' : 'webm';
       return [
         { type: 'text', text: label },
-        { type: 'input_audio', input_audio: { data: b64, format } },
+        { type: 'input_audio', input_audio: { data: await toBase64(bytes), format } },
       ];
     }
-    // DOCX/PPTX/прочее — просим клиента предварительно извлечь текст.
-    return [{ type: 'text', text: `${label}\n(файл типа ${mime} — извлечённый текст должен передаваться отдельным материалом kind=text)` }];
+    if (mime.includes('wordprocessingml') || (m.name || '').toLowerCase().endsWith('.docx')) {
+      try {
+        const { value } = await mammoth.extractRawText({ buffer: bytes });
+        return [{ type: 'text', text: `${label}\n(DOCX, извлечённый текст)\n\n${String(value || '').slice(0, 40000)}` }];
+      } catch (e) {
+        return [{ type: 'text', text: `${label}\nDOCX не удалось разобрать: ${(e as Error).message}` }];
+      }
+    }
+    if (mime.includes('presentationml') || (m.name || '').toLowerCase().endsWith('.pptx')) {
+      const txt = await extractPptxText(bytes);
+      return [{ type: 'text', text: `${label}\n(PPTX, извлечённый текст)\n\n${txt.slice(0, 40000)}` }];
+    }
+    return [{ type: 'text', text: `${label}\n(файл типа ${mime} — тип не поддерживается для извлечения)` }];
   }
 
   return [{ type: 'text', text: `${label}\n(пустой материал)` }];
@@ -152,26 +181,24 @@ Deno.serve(async (req) => {
     const lovKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovKey) throw new Error('LOVABLE_API_KEY missing');
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    // Присваиваем/сохраняем маркеры [M1], [M2], … по порядку в списке.
+    const enriched: Material[] = (materials as Material[]).map((m, i) => ({
+      ...m, marker: m.marker || `[M${i + 1}]`,
+    }));
 
     const userContent: any[] = [];
     if (topic) userContent.push({ type: 'text', text: `Тема обзора: ${topic}` });
     if (instructions) userContent.push({ type: 'text', text: `Дополнительные указания: ${instructions}` });
+    userContent.push({ type: 'text', text: `Список маркеров:\n${enriched.map(m => `${m.marker} — ${m.name || m.url || (m.text?.slice(0, 60)) || m.kind}`).join('\n')}` });
 
-    for (const m of materials as Material[]) {
-      const blocks = await buildBlockForMaterial(m, supabase);
+    for (const m of enriched) {
+      const blocks = await buildBlockForMaterial(m);
       userContent.push(...blocks);
     }
 
     const res = await fetch(GATEWAY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Lovable-API-Key': lovKey,
-      },
+      headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': lovKey },
       body: JSON.stringify({
         model: MODEL,
         messages: [
@@ -196,7 +223,7 @@ Deno.serve(async (req) => {
       const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { summary: raw };
     }
 
-    return new Response(JSON.stringify({ ok: true, analysis: parsed }), {
+    return new Response(JSON.stringify({ ok: true, analysis: parsed, materials_with_markers: enriched }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {

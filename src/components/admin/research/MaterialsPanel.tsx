@@ -5,21 +5,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
+import { requestSignedUrl, uploadWithProgress, deleteObject } from '@/lib/research/uploadToYc';
 
 export interface Material {
   id: string;
+  marker?: string;
   kind: MaterialKind;
   name?: string;
   mime?: string;
-  storage_path?: string;
+  objectKey?: string;
   url?: string;
   text?: string;
   size?: number;
 }
+
+const MAX_FILE = 50 * 1024 * 1024;      // 50 MB per file
+const MAX_TOTAL = 200 * 1024 * 1024;    // 200 MB total per review
 
 interface Props {
   reviewId: string;
@@ -40,39 +45,71 @@ const IconFor = ({ kind }: { kind: MaterialKind }) => {
   return <Upload className="w-4 h-4" />;
 };
 
+function fmtBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} КБ`;
+  return `${(n / 1024 / 1024).toFixed(1)} МБ`;
+}
+
 export default function MaterialsPanel(p: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [urlInput, setUrlInput] = useState('');
   const [textInput, setTextInput] = useState('');
+  const [progress, setProgress] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
+
+  const totalBytes = p.materials.reduce((s, m) => s + (m.size || 0), 0);
+
+  function assignMarkers(list: Material[]): Material[] {
+    return list.map((m, i) => ({ ...m, marker: m.marker || `[M${i + 1}]` }));
+  }
 
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length) return;
     setUploading(true);
+    const toUpload = Array.from(files);
     const added: Material[] = [];
-    for (const f of Array.from(files)) {
-      if (f.size > 25 * 1024 * 1024) {
-        toast.error(`${f.name}: файл больше 25 МБ`);
+    let running = totalBytes;
+
+    for (const f of toUpload) {
+      if (f.size > MAX_FILE) {
+        toast.error(`${f.name}: файл больше 50 МБ`);
         continue;
       }
-      const path = `${p.reviewId}/${Date.now()}-${f.name.replace(/[^\w.\-]+/g, '_')}`;
-      const { error } = await supabase.storage.from('research-materials').upload(path, f, { upsert: false });
-      if (error) {
-        toast.error(`${f.name}: ${error.message}`);
+      if (running + f.size > MAX_TOTAL) {
+        toast.error(`${f.name}: суммарный лимит 200 МБ на обзор превышен`);
         continue;
       }
-      added.push({
-        id: crypto.randomUUID(),
-        kind: 'file',
-        name: f.name,
-        mime: f.type || 'application/octet-stream',
-        storage_path: path,
-        size: f.size,
-      });
+      const key = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setProgress(prev => ({ ...prev, [key]: 0 }));
+      try {
+        const sig = await requestSignedUrl({
+          operation: 'put',
+          review_id: p.reviewId,
+          filename: f.name,
+        });
+        await uploadWithProgress(sig.url, f, (pct) => setProgress(prev => ({ ...prev, [key]: pct })));
+        added.push({
+          id: crypto.randomUUID(),
+          kind: 'file',
+          name: f.name,
+          mime: f.type || 'application/octet-stream',
+          objectKey: sig.objectKey,
+          size: f.size,
+        });
+        running += f.size;
+      } catch (e: any) {
+        toast.error(`${f.name}: ${e?.message || 'ошибка загрузки'}`);
+      } finally {
+        setProgress(prev => {
+          const { [key]: _, ...rest } = prev;
+          return rest;
+        });
+      }
     }
     setUploading(false);
     if (added.length) {
-      p.onChange([...p.materials, ...added]);
+      p.onChange(assignMarkers([...p.materials, ...added]));
       toast.success(`Загружено файлов: ${added.length}`);
     }
     if (fileInput.current) fileInput.current.value = '';
@@ -86,35 +123,44 @@ export default function MaterialsPanel(p: Props) {
       toast.error('Похоже, это не ссылка');
       return;
     }
-    p.onChange([...p.materials, { id: crypto.randomUUID(), kind, url: u, name: u.slice(0, 80) }]);
+    p.onChange(assignMarkers([...p.materials, { id: crypto.randomUUID(), kind, url: u, name: u.slice(0, 80) }]));
     setUrlInput('');
   }
 
   function addText() {
     const t = textInput.trim();
     if (!t) return;
-    p.onChange([...p.materials, { id: crypto.randomUUID(), kind: 'text', text: t, name: t.slice(0, 60) + (t.length > 60 ? '…' : '') }]);
+    p.onChange(assignMarkers([...p.materials, {
+      id: crypto.randomUUID(), kind: 'text', text: t,
+      name: t.slice(0, 60) + (t.length > 60 ? '…' : ''),
+      size: new Blob([t]).size,
+    }]));
     setTextInput('');
   }
 
-  function remove(id: string) {
+  async function remove(id: string) {
     const m = p.materials.find(x => x.id === id);
-    if (m?.storage_path) {
-      supabase.storage.from('research-materials').remove([m.storage_path]).catch(() => {});
+    if (m?.objectKey) {
+      try { await deleteObject(m.objectKey); } catch (e: any) {
+        console.warn('delete YC failed:', e?.message);
+      }
     }
-    p.onChange(p.materials.filter(x => x.id !== id));
+    // Пересчитать маркеры чтобы не было дырок [M2], [M4] → [M1], [M2].
+    const remaining = p.materials.filter(x => x.id !== id).map((x, i) => ({ ...x, marker: `[M${i + 1}]` }));
+    p.onChange(remaining);
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Материалы для обзора ({p.materials.length})</span>
-          <Button
-            size="sm"
-            onClick={p.onAnalyze}
-            disabled={p.analyzing || p.materials.length === 0}
-          >
+        <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+          <span>
+            Материалы для обзора ({p.materials.length}) —{' '}
+            <span className={totalBytes > MAX_TOTAL * 0.9 ? 'text-destructive' : 'text-muted-foreground'}>
+              {fmtBytes(totalBytes)} / 200 МБ
+            </span>
+          </span>
+          <Button size="sm" onClick={p.onAnalyze} disabled={p.analyzing || p.materials.length === 0}>
             {p.analyzing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
             Проанализировать
           </Button>
@@ -122,7 +168,7 @@ export default function MaterialsPanel(p: Props) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label className="text-sm">Файлы (PDF, изображения, аудио — до 25 МБ)</Label>
+          <Label className="text-sm">Файлы (PDF, DOCX, PPTX, изображения, аудио — до 50 МБ каждый, 200 МБ суммарно)</Label>
           <div className="flex items-center gap-2 mt-1">
             <input
               ref={fileInput}
@@ -137,9 +183,19 @@ export default function MaterialsPanel(p: Props) {
               Выбрать файлы
             </Button>
             <span className="text-xs text-muted-foreground">
-              DOCX/PPTX — экспортируйте в PDF или вставьте текст ниже
+              Загрузка напрямую в Yandex Object Storage через presigned URL
             </span>
           </div>
+          {Object.entries(progress).length > 0 && (
+            <div className="mt-2 space-y-1">
+              {Object.entries(progress).map(([k, pct]) => (
+                <div key={k} className="flex items-center gap-2 text-xs">
+                  <Progress value={pct} className="h-1.5 flex-1" />
+                  <span className="w-10 text-right text-muted-foreground">{pct}%</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -162,7 +218,7 @@ export default function MaterialsPanel(p: Props) {
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               rows={2}
-              placeholder="Вставьте цитату, тезисы или содержание DOCX/PPTX…"
+              placeholder="Вставьте цитату, тезисы или содержание документа…"
             />
             <Button variant="outline" size="sm" onClick={addText}><FileText className="w-4 h-4 mr-1" /> Добавить</Button>
           </div>
@@ -173,8 +229,10 @@ export default function MaterialsPanel(p: Props) {
             {p.materials.map(m => (
               <div key={m.id} className="flex items-center gap-2 border rounded px-2 py-1.5 bg-muted/30">
                 <IconFor kind={m.kind} />
+                <Badge variant="outline" className="text-xs font-mono">{m.marker || ''}</Badge>
                 <Badge variant="secondary" className="text-xs">{kindLabel(m.kind)}</Badge>
                 <span className="text-sm flex-1 truncate">{m.name || m.url || m.text}</span>
+                {m.size ? <span className="text-xs text-muted-foreground">{fmtBytes(m.size)}</span> : null}
                 <Button variant="ghost" size="sm" onClick={() => remove(m.id)}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
@@ -196,7 +254,7 @@ export default function MaterialsPanel(p: Props) {
         {p.analysis && (
           <div className="border rounded p-3 bg-primary/5 space-y-2">
             <h4 className="font-semibold text-sm">Первичный анализ</h4>
-            {p.analysis.summary && <p className="text-sm">{p.analysis.summary}</p>}
+            {p.analysis.summary && <p className="text-sm whitespace-pre-wrap">{p.analysis.summary}</p>}
             {Array.isArray(p.analysis.key_points) && p.analysis.key_points.length > 0 && (
               <ul className="text-sm list-disc pl-5 space-y-0.5">
                 {p.analysis.key_points.map((k: string, i: number) => <li key={i}>{k}</li>)}
@@ -210,10 +268,13 @@ export default function MaterialsPanel(p: Props) {
             )}
             {Array.isArray(p.analysis.detected_sources) && p.analysis.detected_sources.length > 0 && (
               <details className="text-sm">
-                <summary className="cursor-pointer font-medium">Найдено источников: {p.analysis.detected_sources.length}</summary>
+                <summary className="cursor-pointer font-medium">Источников: {p.analysis.detected_sources.length}</summary>
                 <ul className="text-xs mt-1 space-y-1">
                   {p.analysis.detected_sources.map((s: any, i: number) => (
-                    <li key={i}>{[s.authors, s.title, s.journal, s.year, s.doi_or_pmid].filter(Boolean).join('. ')}</li>
+                    <li key={i}>
+                      {s.marker ? <span className="font-mono text-primary mr-1">{s.marker}</span> : null}
+                      {[s.authors, s.title, s.journal, s.year, s.doi_or_pmid].filter(Boolean).join('. ')}
+                    </li>
                   ))}
                 </ul>
               </details>

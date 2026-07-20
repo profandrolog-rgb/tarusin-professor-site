@@ -252,3 +252,34 @@ video::-webkit-media-controls-overflow-button {
     border-radius: 2px;
   }
 }
+
+/* --- Research review: print & source markers --- */
+.review-print-root { display: none; }
+mark.source-marker {
+  background: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85em;
+  padding: 0 0.2em;
+  border-radius: 3px;
+}
+@media print {
+  body.printing-review .no-print,
+  body.printing-review header,
+  body.printing-review nav,
+  body.printing-review footer,
+  body.printing-review [data-sonner-toaster] { display: none !important; }
+  body.printing-review .review-print-root { display: block !important; }
+  body.printing-review .review-print {
+    font-family: "Times New Roman", serif;
+    color: #000; background: #fff;
+    padding: 20mm; max-width: 210mm; margin: 0 auto;
+    font-size: 12pt; line-height: 1.55;
+  }
+  body.printing-review .review-print h1 { font-size: 20pt; text-align: center; margin-bottom: 12pt; }
+  body.printing-review .review-print h2 { font-size: 14pt; margin-top: 12pt; }
+  body.printing-review .review-print .review-print-author,
+  body.printing-review .review-print .review-print-date { text-align: center; font-style: italic; }
+  body.printing-review mark.source-marker { display: none; }
+  @page { margin: 15mm; }
+}

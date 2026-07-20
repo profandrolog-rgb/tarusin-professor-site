@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import RichTextEditor from "@/components/blog/RichTextEditor";
-import MaterialsPanel, { type Material } from "@/components/admin/research/MaterialsPanel";
-import RefinementChat, { type RefinementEntry } from "@/components/admin/research/RefinementChat";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus } from "lucide-react";
+import { stripMarkers } from "@/lib/research/markers";
+import type { Material } from "@/components/admin/research/MaterialsPanel";
+import type { RefinementEntry } from "@/lib/research/refinementDiff";
+
+const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
+const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
+const PublishBar = lazy(() => import("@/components/admin/research/PublishBar"));
+const ReviewPrintView = lazy(() => import("@/components/admin/research/ReviewPrintView"));
 
 interface Ref {
   number: number;
@@ -25,13 +31,15 @@ interface Ref {
   doi_or_pmid?: string;
   verified?: boolean;
 }
-interface FactCheck { quote: string; issue: string; suggested_fix: string; confidence: string }
+
+const Fallback = <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const [instructions, setInstructions] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -57,6 +65,7 @@ const AdminResearchReviewEditor = () => {
       title: row.title,
       annotation: row.annotation,
       content: row.content,
+      content_with_markers: row.content_with_markers ?? row.content,
       topic: row.topic,
       references_list: row.references_list,
       fact_check_report: row.fact_check_report,
@@ -87,10 +96,7 @@ const AdminResearchReviewEditor = () => {
   async function analyzeMaterials() {
     if (!row) return;
     const materials: Material[] = row.source_materials || [];
-    if (materials.length === 0) {
-      toast.error("Добавьте хотя бы один материал");
-      return;
-    }
+    if (materials.length === 0) { toast.error("Добавьте хотя бы один материал"); return; }
     setAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke("research-materials-analyze", {
@@ -99,6 +105,10 @@ const AdminResearchReviewEditor = () => {
       if (error) throw error;
       if (!data?.analysis) throw new Error("пустой ответ");
       setAnalysis(data.analysis);
+      if (Array.isArray(data.materials)) {
+        update({ source_materials: data.materials });
+        saveSilently({ source_materials: data.materials });
+      }
       toast.success("Анализ готов");
     } catch (e: any) {
       toast.error(e?.message || "Ошибка анализа");
@@ -109,23 +119,27 @@ const AdminResearchReviewEditor = () => {
 
   async function orchestrate() {
     if (!row) return;
-    if (!row.topic && !analysis) {
-      toast.error("Укажите тему обзора или сначала запустите анализ материалов");
-      return;
-    }
+    if (!row.topic && !analysis) { toast.error("Укажите тему обзора или запустите анализ материалов"); return; }
     if (row.content && !confirm("Текущий текст обзора будет перезаписан. Продолжить?")) return;
     setOrchestrating(true);
     try {
+      const materials: Material[] = row.source_materials || [];
       const materials_context = analysis
         ? [
             analysis.summary,
             analysis.draft_outline,
             Array.isArray(analysis.key_points) ? "Ключевые тезисы:\n- " + analysis.key_points.join("\n- ") : "",
-            Array.isArray(analysis.detected_sources) ? "Источники:\n" + analysis.detected_sources.map((s: any) => `- ${[s.authors, s.title, s.journal, s.year, s.doi_or_pmid].filter(Boolean).join(". ")}`).join("\n") : "",
+            Array.isArray(analysis.detected_sources)
+              ? "Источники:\n" + analysis.detected_sources.map((s: any) =>
+                  `- ${s.marker || ""} ${[s.authors, s.title, s.journal, s.year, s.doi_or_pmid].filter(Boolean).join(". ")}`
+                ).join("\n")
+              : "",
           ].filter(Boolean).join("\n\n")
-        : "";
+        : materials.map(m => `${m.marker || ""} ${m.name || m.url || m.kind}${m.text ? ": " + m.text.slice(0, 500) : ""}`).join("\n");
+      const materials_list = materials.map(m => ({ marker: m.marker, name: m.name, url: m.url, kind: m.kind }));
+
       const { data, error } = await supabase.functions.invoke("research-review-orchestrate", {
-        body: { topic: row.topic || row.title, materials_context, review_id: row.id },
+        body: { topic: row.topic || row.title, materials_context, materials_list, review_id: row.id },
       });
       if (error) throw error;
       if (!data?.review) throw new Error("пустой ответ оркестратора");
@@ -140,34 +154,49 @@ const AdminResearchReviewEditor = () => {
 
   function applyRefinement(newContent: string, entry: RefinementEntry) {
     const nextHistory = [...(row.refinement_history || []), entry];
-    const patch = { content: newContent, refinement_history: nextHistory };
+    const patch = { content: newContent, content_with_markers: newContent, refinement_history: nextHistory };
     setRow({ ...row, ...patch });
     saveSilently(patch);
   }
 
-  function rollback(entry: RefinementEntry) {
-    if (!confirm("Откатить контент к состоянию до этой правки?")) return;
-    const patch = { content: entry.snapshot_content };
+  function rollback(newContent: string) {
+    const patch = { content: newContent, content_with_markers: newContent };
     setRow({ ...row, ...patch });
     saveSilently(patch);
-    toast.success("Откат выполнен");
+  }
+
+  function stripMarkersHandler() {
+    const src = row.content_with_markers || row.content || "";
+    const cleaned = stripMarkers(src);
+    const patch = { content: cleaned, content_with_markers: src };
+    setRow({ ...row, ...patch });
+    saveSilently(patch);
+    toast.success("Маркеры убраны. Размеченная версия сохранена в content_with_markers.");
+  }
+
+  function printReview() {
+    document.body.classList.add("printing-review");
+    setTimeout(() => {
+      window.print();
+      document.body.classList.remove("printing-review");
+    }, 100);
   }
 
   if (loading) return <div className="p-6"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!row) return <div className="p-6">Не найдено</div>;
 
   const refs: Ref[] = Array.isArray(row.references_list) ? row.references_list : [];
-  const fc: FactCheck[] = Array.isArray(row.fact_check_report) ? row.fact_check_report : [];
+  const fcReport = row.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
   const materials: Material[] = Array.isArray(row.source_materials) ? row.source_materials : [];
   const history: RefinementEntry[] = Array.isArray(row.refinement_history) ? row.refinement_history : [];
 
   const materialsContextForRefine = analysis
     ? [analysis.summary, Array.isArray(analysis.key_points) ? analysis.key_points.join("\n") : ""].filter(Boolean).join("\n\n")
-    : "";
+    : materials.map(m => `${m.marker || ""} ${m.name || m.url || m.kind}`).join("\n");
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2 no-print">
         <div className="flex items-center gap-3">
           <Link to="/admin/research-reviews"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" /> Список</Button></Link>
           <Badge variant={row.status === "published" ? "default" : row.status === "in_review" ? "secondary" : "outline"}>
@@ -202,30 +231,46 @@ const AdminResearchReviewEditor = () => {
         </div>
       </div>
 
-      <MaterialsPanel
-        reviewId={row.id}
-        materials={materials}
-        onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
-        instructions={instructions}
-        onInstructionsChange={setInstructions}
-        onAnalyze={analyzeMaterials}
-        analyzing={analyzing}
-        analysis={analysis}
-      />
+      <Suspense fallback={Fallback}>
+        <MaterialsPanel
+          reviewId={row.id}
+          materials={materials}
+          onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
+          instructions={instructions}
+          onInstructionsChange={setInstructions}
+          onAnalyze={analyzeMaterials}
+          analyzing={analyzing}
+          analysis={analysis}
+        />
+      </Suspense>
 
-      <RefinementChat
-        reviewId={row.id}
-        title={row.title || ""}
-        currentContent={row.content || ""}
-        materialsContext={materialsContextForRefine}
-        history={history}
-        onApply={applyRefinement}
-        onRollback={rollback}
-        onOrchestrate={orchestrate}
-        orchestrating={orchestrating}
-      />
+      <Suspense fallback={Fallback}>
+        <RefinementChat
+          reviewId={row.id}
+          title={row.title || ""}
+          currentContent={row.content || ""}
+          materialsContext={materialsContextForRefine}
+          history={history}
+          onApply={applyRefinement}
+          onRollback={rollback}
+          onOrchestrate={orchestrate}
+          orchestrating={orchestrating}
+        />
+      </Suspense>
 
-      <Card>
+      <Suspense fallback={Fallback}>
+        <PublishBar
+          title={row.title || ""}
+          annotation={row.annotation}
+          content={row.content || ""}
+          contentWithMarkers={row.content_with_markers}
+          references={refs}
+          onStripMarkers={stripMarkersHandler}
+          onPrint={printReview}
+        />
+      </Suspense>
+
+      <Card className="no-print">
         <CardHeader><CardTitle>Основное</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div><Label>Заголовок</Label><Input value={row.title || ""} onChange={(e) => update({ title: e.target.value })} /></div>
@@ -235,15 +280,17 @@ const AdminResearchReviewEditor = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="no-print">
         <CardHeader><CardTitle>Текст обзора</CardTitle></CardHeader>
         <CardContent>
           <RichTextEditor content={row.content || ""} onChange={(html) => update({ content: html })} storageBucket="disease-media" storageFolder="research-images" />
-          <p className="text-xs text-muted-foreground mt-2">Ссылки на источники в тексте — в квадратных скобках: [1], [2]. На публичной странице они станут якорями к списку литературы.</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
+          </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="no-print">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Список литературы ({refs.length})</CardTitle>
@@ -285,47 +332,70 @@ const AdminResearchReviewEditor = () => {
         </CardContent>
       </Card>
 
-      <Collapsible>
+      <Collapsible className="no-print">
         <Card>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer">
               <CardTitle className="flex items-center justify-between">
-                <span>Отчёт факт-чека ({fc.length}) — только для админа</span>
+                <span>Отчёт факт-чека — только для админа</span>
                 <ChevronDown className="w-4 h-4" />
               </CardTitle>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="space-y-3">
-              {fc.length === 0 && <p className="text-sm text-muted-foreground">Замечаний нет.</p>}
-              {fc.map((f, i) => (
-                <div key={i} className="border rounded p-3 space-y-2 bg-muted/20">
-                  <Textarea rows={2} placeholder="Цитата" value={f.quote || ""} onChange={(e) => { const a = [...fc]; a[i] = { ...f, quote: e.target.value }; update({ fact_check_report: a }); }} />
-                  <Textarea rows={2} placeholder="Что не так" value={f.issue || ""} onChange={(e) => { const a = [...fc]; a[i] = { ...f, issue: e.target.value }; update({ fact_check_report: a }); }} />
-                  <Textarea rows={2} placeholder="Предлагаемая правка" value={f.suggested_fix || ""} onChange={(e) => { const a = [...fc]; a[i] = { ...f, suggested_fix: e.target.value }; update({ fact_check_report: a }); }} />
-                  <div className="flex items-center gap-2">
-                    <Input className="w-64" placeholder="Уверенность" value={f.confidence || ""} onChange={(e) => { const a = [...fc]; a[i] = { ...f, confidence: e.target.value }; update({ fact_check_report: a }); }} />
-                    <Button variant="ghost" size="sm" onClick={() => update({ fact_check_report: fc.filter((_, j) => j !== i) })}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <Button size="sm" variant="outline" onClick={() => update({ fact_check_report: [...fc, { quote: "", issue: "", suggested_fix: "", confidence: "" }] })}>
-                <Plus className="w-4 h-4 mr-1" /> Добавить замечание
-              </Button>
+            <CardContent className="space-y-3 text-sm">
+              <div>
+                <h4 className="font-semibold text-green-700 dark:text-green-400">Подтверждено ({fcReport.verified?.length || 0})</h4>
+                <ul className="list-disc pl-5 text-muted-foreground">
+                  {(fcReport.verified || []).map((v: any, i: number) => (
+                    <li key={i}><span className="font-mono text-primary">{v.marker}</span> {v.claim}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-destructive">Не найдено в источнике ({fcReport.not_found_in_source?.length || 0})</h4>
+                <ul className="list-disc pl-5">
+                  {(fcReport.not_found_in_source || []).map((v: any, i: number) => (
+                    <li key={i}><span className="font-mono">{v.marker}</span> {v.claim} — <em>{v.reason}</em></li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-amber-700 dark:text-amber-400">Утверждения без маркера ({fcReport.unmarked_claims?.length || 0})</h4>
+                <ul className="list-disc pl-5">
+                  {(fcReport.unmarked_claims || []).map((v: string, i: number) => <li key={i}>{v}</li>)}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold text-muted-foreground">Материалы без ссылок в тексте ({fcReport.missing_markers?.length || 0})</h4>
+                <ul className="list-disc pl-5">
+                  {(fcReport.missing_markers || []).map((v: any, i: number) => (
+                    <li key={i}><span className="font-mono">{v.marker}</span> — {v.name}</li>
+                  ))}
+                </ul>
+              </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
       </Collapsible>
 
-      <Card>
+      <Card className="no-print">
         <CardHeader><CardTitle>SEO</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div><Label>SEO title (≤60 симв.)</Label><Input value={row.seo_title || ""} onChange={(e) => update({ seo_title: e.target.value })} maxLength={70} /></div>
           <div><Label>Meta description (≤160 симв.)</Label><Textarea value={row.seo_meta_description || ""} onChange={(e) => update({ seo_meta_description: e.target.value })} rows={2} maxLength={200} /></div>
         </CardContent>
       </Card>
+
+      <Suspense fallback={null}>
+        <ReviewPrintView
+          ref={printRef}
+          title={row.title || ""}
+          annotation={row.annotation}
+          content={row.content || ""}
+          references={refs}
+        />
+      </Suspense>
     </div>
   );
 };
