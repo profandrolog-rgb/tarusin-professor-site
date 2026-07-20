@@ -1,6 +1,9 @@
 // Стратегия B — «Полный поиск и написание».
 // Три звонка: (1) поиск литературы Perplexity, (2) написание обзора с обязательными маркерами [M#],
 // (3) механический факт-чек соответствия маркеров содержимому материалов.
+//
+// Работает в фоне через EdgeRuntime.waitUntil, чтобы обойти 150-секундный idle-timeout.
+// Клиент получает мгновенный ответ { queued: true } и опрашивает research_reviews по review_id.
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -61,29 +64,28 @@ async function callGateway(model: string, messages: any[], key: string, maxToken
   return String(j?.choices?.[0]?.message?.content ?? '');
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+async function runPipeline(params: {
+  topic: string;
+  materials_context: string;
+  materials_list: any[];
+  review_id: string | null;
+  authorId: string | null;
+  orKey: string;
+  lovKey: string;
+  admin: any;
+}) {
+  const { topic, materials_context, materials_list, review_id, authorId, orKey, lovKey, admin } = params;
+
+  const markStatus = async (status: string, extra?: any) => {
+    if (!review_id) return;
+    await admin.from('research_reviews').update({
+      fact_check_report: { orchestrator_status: status, updated_at: new Date().toISOString(), ...(extra || {}) },
+    }).eq('id', review_id);
+  };
+
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    await markStatus('searching');
 
-    const { topic, materials_context, materials_list, review_id } = await req.json();
-    if (!topic && !materials_context) {
-      return new Response(JSON.stringify({ error: 'topic or materials_context required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const orKey = Deno.env.get('OPENROUTER_API_KEY');
-    const lovKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!orKey) throw new Error('OPENROUTER_API_KEY missing');
-    if (!lovKey) throw new Error('LOVABLE_API_KEY missing');
-
-    // (1) Perplexity — свежая литература по теме и материалам.
     const searchPrompt = `Найди свежие систематические обзоры, мета-анализы и клинические руководства по теме: "${topic}".
 ${materials_context ? `Учитывай контекст уже загруженных материалов:\n${String(materials_context).slice(0, 4000)}\n` : ''}
 Приоритет: PubMed/PMC, Cochrane, профильные журналы (последние 5 лет).
@@ -97,7 +99,8 @@ ${materials_context ? `Учитывай контекст уже загружен
       searchResult = '(поиск литературы не выполнен — использовать только материалы пользователя)';
     }
 
-    // (2) Написание обзора с маркерами.
+    await markStatus('writing');
+
     const markersList = Array.isArray(materials_list) && materials_list.length
       ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
       : '';
@@ -122,7 +125,8 @@ ${materials_context ? `Учитывай контекст уже загружен
     }
     if (!parsed) throw lastErr ?? new Error('all writer models failed');
 
-    // (3) Механический факт-чек: для каждого маркера — есть ли утверждение в материале.
+    await markStatus('fact_checking');
+
     const content = String(parsed.content || '');
     const markerHits = Array.from(content.matchAll(/\[M(\d+)\]/g));
     const markersInContent = new Set(markerHits.map(m => `[M${m[1]}]`));
@@ -157,7 +161,6 @@ ${content.slice(0, 20000)}`;
       console.warn('fact-check step failed:', (e as any)?.message);
     }
 
-    // Маркеры из materials_list, отсутствующие в тексте — фиксируем отдельно.
     if (Array.isArray(materials_list)) {
       for (const m of materials_list) {
         if (m?.marker && !markersInContent.has(m.marker)) {
@@ -165,23 +168,16 @@ ${content.slice(0, 20000)}`;
         }
       }
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const userRes = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } },
-    }).auth.getUser();
-    const authorId = userRes.data?.user?.id ?? null;
+    factCheck.orchestrator_status = 'done';
+    factCheck.updated_at = new Date().toISOString();
 
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
     const annotation = String(parsed.annotation || '').slice(0, 2000);
     const refs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
 
     if (review_id) {
-      const { data: updated, error } = await supabase.from('research_reviews').update({
-        title,
-        annotation,
-        content,
+      await admin.from('research_reviews').update({
+        title, annotation, content,
         content_with_markers: content,
         topic: topic || null,
         references_list: refs,
@@ -189,36 +185,90 @@ ${content.slice(0, 20000)}`;
         source_type: 'orchestrator_generated',
         seo_title: title.slice(0, 60),
         seo_meta_description: annotation.slice(0, 160),
-      }).eq('id', review_id).select().single();
-      if (error) throw error;
-      return new Response(JSON.stringify({ ok: true, review: updated }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }).eq('id', review_id);
+    } else {
+      const baseSlug = slugify(title);
+      let slug = baseSlug;
+      for (let i = 2; i < 50; i++) {
+        const { data: dup } = await admin.from('research_reviews').select('id').eq('slug', slug).maybeSingle();
+        if (!dup) break;
+        slug = `${baseSlug}-${i}`;
+      }
+      await admin.from('research_reviews').insert({
+        slug, title, annotation, content,
+        content_with_markers: content,
+        topic: topic || null,
+        references_list: refs,
+        fact_check_report: factCheck,
+        source_type: 'orchestrator_generated',
+        seo_title: title.slice(0, 60),
+        seo_meta_description: annotation.slice(0, 160),
+        status: 'draft',
+        author_id: authorId,
+      });
+    }
+  } catch (e: any) {
+    console.error('orchestrator pipeline failed:', e);
+    await markStatus('error', { error: String(e?.message || e).slice(0, 500) });
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const baseSlug = slugify(title);
-    let slug = baseSlug;
-    for (let i = 2; i < 50; i++) {
-      const { data: dup } = await supabase.from('research_reviews').select('id').eq('slug', slug).maybeSingle();
-      if (!dup) break;
-      slug = `${baseSlug}-${i}`;
+    const { topic, materials_context, materials_list, review_id } = await req.json();
+    if (!topic && !materials_context) {
+      return new Response(JSON.stringify({ error: 'topic or materials_context required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const { data: inserted, error } = await supabase.from('research_reviews').insert({
-      slug, title, annotation, content,
-      content_with_markers: content,
-      topic: topic || null,
-      references_list: refs,
-      fact_check_report: factCheck,
-      source_type: 'orchestrator_generated',
-      seo_title: title.slice(0, 60),
-      seo_meta_description: annotation.slice(0, 160),
-      status: 'draft',
-      author_id: authorId,
-    }).select().single();
-    if (error) throw error;
+    const orKey = Deno.env.get('OPENROUTER_API_KEY');
+    const lovKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!orKey) throw new Error('OPENROUTER_API_KEY missing');
+    if (!lovKey) throw new Error('LOVABLE_API_KEY missing');
 
-    return new Response(JSON.stringify({ ok: true, review: inserted }), {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const userRes = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    }).auth.getUser();
+    const authorId = userRes.data?.user?.id ?? null;
+
+    // Отметим статус сразу, чтобы клиент увидел «запущено»
+    if (review_id) {
+      await admin.from('research_reviews').update({
+        fact_check_report: { orchestrator_status: 'queued', updated_at: new Date().toISOString() },
+      }).eq('id', review_id);
+    }
+
+    const task = runPipeline({
+      topic: topic || '',
+      materials_context: materials_context || '',
+      materials_list: materials_list || [],
+      review_id: review_id || null,
+      authorId,
+      orKey, lovKey, admin,
+    });
+
+    // @ts-ignore EdgeRuntime is available in Supabase Edge Functions
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(task);
+    } else {
+      // Fallback: не блокируем ответ
+      task.catch((e) => console.error(e));
+    }
+
+    return new Response(JSON.stringify({ ok: true, queued: true, review_id: review_id || null }), {
+      status: 202,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
