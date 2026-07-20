@@ -202,6 +202,8 @@ ${content.slice(0, 20000)}`;
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
     const annotation = String(parsed.annotation || '').slice(0, 2000);
     const refs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
+    const seoTitle = String(parsed.seo_title || title || '').trim();
+    const seoDesc = String(parsed.seo_meta_description || annotation || '').trim();
 
     if (review_id) {
       await admin.from('research_reviews').update({
@@ -211,8 +213,8 @@ ${content.slice(0, 20000)}`;
         references_list: refs,
         fact_check_report: factCheck,
         source_type: 'orchestrator_generated',
-        seo_title: title.slice(0, 60),
-        seo_meta_description: annotation.slice(0, 160),
+        seo_title: seoTitle,
+        seo_meta_description: seoDesc,
       }).eq('id', review_id);
     } else {
       const baseSlug = slugify(title);
@@ -229,8 +231,8 @@ ${content.slice(0, 20000)}`;
         references_list: refs,
         fact_check_report: factCheck,
         source_type: 'orchestrator_generated',
-        seo_title: title.slice(0, 60),
-        seo_meta_description: annotation.slice(0, 160),
+        seo_title: seoTitle,
+        seo_meta_description: seoDesc,
         status: 'draft',
         author_id: authorId,
       });
