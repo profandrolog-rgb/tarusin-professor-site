@@ -49,6 +49,10 @@ const AdminResearchReviewEditor = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any | null>(null);
   const [orchestrating, setOrchestrating] = useState(false);
+  const [timers, setTimers] = useState<StepTimers>({});
+  const chimedRef = useRef(false);
+  const prevStatusRef = useRef<OrchestratorStatus>(undefined);
+  const pollingRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -58,6 +62,85 @@ const AdminResearchReviewEditor = () => {
       setLoading(false);
     })();
   }, [id]);
+
+  // Load persisted timers per review
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const raw = localStorage.getItem(`research_orchestrator:v1:${id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.timers) setTimers(parsed.timers);
+      }
+    } catch { /* noop */ }
+  }, [id]);
+
+  const status: OrchestratorStatus = row?.fact_check_report?.orchestrator_status;
+  const lastStep: string | undefined = row?.fact_check_report?.last_step;
+  const orchestratorError: string | undefined = row?.fact_check_report?.error;
+  const searchResult: string | undefined = row?.fact_check_report?.search_result;
+
+  // Sync step timers with pipeline status transitions
+  useEffect(() => {
+    if (!status) return;
+    setTimers((prev) => {
+      const next: StepTimers = { ...prev };
+      const now = Date.now();
+      const startIf = (k: keyof StepTimers) => {
+        if (!next[k]?.startedAt) next[k] = { ...(next[k] || {}), startedAt: now };
+      };
+      const finishIf = (k: keyof StepTimers) => {
+        if (next[k]?.startedAt && !next[k]?.finishedAt) next[k] = { ...(next[k] || {}), finishedAt: now };
+      };
+      if (status === "searching") startIf("searching");
+      if (status === "writing") { startIf("searching"); finishIf("searching"); startIf("writing"); }
+      if (status === "fact_checking") { finishIf("searching"); finishIf("writing"); startIf("writing"); startIf("fact_checking"); }
+      if (status === "done") { finishIf("searching"); finishIf("writing"); finishIf("fact_checking"); }
+      return next;
+    });
+  }, [status]);
+
+  // Persist timers
+  useEffect(() => {
+    if (!id) return;
+    try { localStorage.setItem(`research_orchestrator:v1:${id}`, JSON.stringify({ timers, savedAt: Date.now() })); } catch { /* noop */ }
+  }, [id, timers]);
+
+  // Chime on completion + toasts for terminal states
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const wasActive = prev === "searching" || prev === "writing" || prev === "fact_checking" || prev === "queued";
+    if (wasActive && status === "done" && !chimedRef.current) {
+      chimedRef.current = true;
+      playCompletionChime();
+      toast.success("Обзор готов");
+    }
+    if (wasActive && (status === "error" || status === "interrupted")) {
+      const step = lastStep || "?";
+      const msg = status === "interrupted"
+        ? `Оркестратор был прерван на шаге «${step}»`
+        : "Оркестратор упал: " + (orchestratorError || "неизвестно");
+      toast.error(msg, { action: { label: "Повторить", onClick: () => orchestrate() }, duration: 20000 });
+    }
+    if (status !== "done") chimedRef.current = false;
+    prevStatusRef.current = status;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  // Auto-poll while orchestrator is active (resumes after F5)
+  useEffect(() => {
+    if (!row?.id) return;
+    const active = status === "searching" || status === "writing" || status === "fact_checking" || status === "queued";
+    if (!active) { setOrchestrating(false); pollingRef.current = false; return; }
+    if (pollingRef.current) return;
+    pollingRef.current = true;
+    setOrchestrating(true);
+    const int = setInterval(async () => {
+      const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
+      if (fresh) setRow(fresh);
+    }, 5000);
+    return () => { clearInterval(int); pollingRef.current = false; };
+  }, [row?.id, status]);
 
   function update(patch: any) { setRow((r: any) => ({ ...r, ...patch })); }
 
