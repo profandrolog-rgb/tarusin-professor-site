@@ -208,6 +208,12 @@ const AdminResearchReviewEditor = () => {
     if (!row) return;
     if (!row.topic && !analysis) { toast.error("Укажите тему обзора или запустите анализ материалов"); return; }
     if (row.content && !confirm("Текущий текст обзора будет перезаписан. Продолжить?")) return;
+
+    // Reset timers/chime for a fresh run
+    setTimers({});
+    chimedRef.current = false;
+    try { localStorage.removeItem(`research_orchestrator:v1:${row.id}`); } catch { /* noop */ }
+
     setOrchestrating(true);
     try {
       const materials: Material[] = row.source_materials || [];
@@ -239,48 +245,8 @@ const AdminResearchReviewEditor = () => {
         return;
       }
 
-      toast.info("Оркестратор запущен в фоне. Ожидаю результат…");
-      // Опрос статуса раз в 5 сек, максимум 10 минут. Если статус не менялся > 7 мин — считаем зависшим.
-      const deadline = Date.now() + 10 * 60 * 1000;
-      const STUCK_MS = 7 * 60 * 1000;
-      const poll = async () => {
-        let lastStatus: string | undefined;
-        let lastStatusChangeAt = Date.now();
-        while (Date.now() < deadline) {
-          await new Promise(r => setTimeout(r, 5000));
-          const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
-          if (!fresh) continue;
-          const status = (fresh as any).fact_check_report?.orchestrator_status;
-          if (status !== lastStatus) { lastStatus = status; lastStatusChangeAt = Date.now(); }
-          if (status === "done" || !status) {
-            setRow(fresh);
-            toast.success("Обзор готов");
-            return;
-          }
-          if (status === "error" || status === "interrupted") {
-            setRow(fresh);
-            const step = (fresh as any).fact_check_report?.last_step || "?";
-            const msg = status === "interrupted"
-              ? `Оркестратор был прерван на шаге «${step}»`
-              : "Оркестратор упал: " + ((fresh as any).fact_check_report?.error || "неизвестно");
-            toast.error(msg, { action: { label: "Повторить", onClick: () => orchestrate() }, duration: 20000 });
-            return;
-          }
-          if (Date.now() - lastStatusChangeAt > STUCK_MS) {
-            setRow(fresh);
-            toast.error(
-              `Статус оркестратора не менялся более 7 минут (последний: ${status || "?"}). Возможно, воркер прерван.`,
-              { action: { label: "Повторить", onClick: () => orchestrate() }, duration: 20000 },
-            );
-            return;
-          }
-        }
-        toast.error("Оркестратор не ответил за 10 минут. Проверьте логи функции.", {
-          action: { label: "Повторить", onClick: () => orchestrate() }, duration: 20000,
-        });
-      };
-      poll().finally(() => setOrchestrating(false));
-      return;
+      toast.info("Оркестратор запущен в фоне. Прогресс — в карточке ниже.");
+      // Дальнейший опрос ведёт useEffect по статусу.
     } catch (e: any) {
       toast.error(e?.message || "Ошибка оркестратора");
       setOrchestrating(false);
