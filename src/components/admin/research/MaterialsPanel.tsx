@@ -199,14 +199,8 @@ export default function MaterialsPanel(p: Props) {
               PDF · DOCX · PPTX · XLSX · изображения · аудио · схемы · интеллект-карты
             </div>
           </div>
-          <div className="flex items-center justify-between gap-2 mt-2">
-            <span className="text-xs text-muted-foreground">
-              Прямая загрузка в Yandex Object Storage через presigned URL
-            </span>
-            <Button variant="ghost" size="sm" onClick={configureCors} disabled={configuringCors} title="Разово настроить CORS на бакете (при первой загрузке или после смены домена)">
-              {configuringCors ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Settings2 className="w-3.5 h-3.5 mr-1" />}
-              Настроить CORS хранилища
-            </Button>
+          <div className="mt-2 text-xs text-muted-foreground">
+            Прямая загрузка в Yandex Object Storage через presigned URL
           </div>
           {Object.entries(progress).length > 0 && (
             <div className="mt-2 space-y-1">
