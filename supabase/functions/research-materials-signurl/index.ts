@@ -36,11 +36,33 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const operation = String(body.operation || '').toLowerCase();
+
+    // Разовая настройка CORS на бакете (доступна admin/editor).
+    if (operation === 'init_cors') {
+      const { bucket, accessKey, secretKey } = ycConfig();
+      const origins: string[] = Array.isArray(body.origins) && body.origins.length
+        ? body.origins.map((o: any) => String(o))
+        : [
+            'https://tarusin.pro',
+            'https://www.tarusin.pro',
+            'https://tarusin-professor-site.lovable.app',
+            'https://id-preview--916ade1a-4d84-4ea3-9e8f-55c484246550.lovable.app',
+            'https://916ade1a-4d84-4ea3-9e8f-55c484246550.lovableproject.com',
+            'http://localhost:8080',
+          ];
+      const r = await setBucketCors(bucket, accessKey, secretKey, origins);
+      return new Response(JSON.stringify({ ok: r.ok, status: r.status, body: r.body, origins }), {
+        status: r.ok ? 200 : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (!['put', 'get', 'delete'].includes(operation)) {
       return new Response(JSON.stringify({ error: 'invalid operation' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
 
     let objectKey: string = String(body.objectKey || '').trim();
     if (operation === 'put') {
