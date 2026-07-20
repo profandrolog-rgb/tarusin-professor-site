@@ -184,7 +184,7 @@ export default function AdminArticleOrchestrator() {
           const { data: { session } } = await supabase.auth.getSession();
           const fd = new FormData();
           fd.append("file", blob, `dict.${mime === "audio/webm" ? "webm" : "mp4"}`);
-          const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/ai-transcribe`, {
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-transcribe`, {
             method: "POST",
             headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
             body: fd,
@@ -618,7 +618,7 @@ export default function AdminArticleOrchestrator() {
       const ctrl = new AbortController();
       abortReviewRef.current = ctrl;
       const { data: { session } } = await supabase.auth.getSession();
-      const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
         method: "POST",
         signal: ctrl.signal,
@@ -729,7 +729,7 @@ export default function AdminArticleOrchestrator() {
     try {
       let streamDone = false;
       const { data: { session } } = await supabase.auth.getSession();
-      const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -818,7 +818,7 @@ export default function AdminArticleOrchestrator() {
     setConsolidating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -865,7 +865,7 @@ export default function AdminArticleOrchestrator() {
     setRewriting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const url = `https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/orchestrate-article`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/orchestrate-article`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
@@ -896,7 +896,7 @@ export default function AdminArticleOrchestrator() {
     setTestingConn(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/test-claude-connection`, {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-claude-connection`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${session?.access_token}`, "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -917,7 +917,7 @@ export default function AdminArticleOrchestrator() {
     setFormatProgress(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(`https://bpbwkizvvythqotcyfii.supabase.co/functions/v1/format-disease-article`, {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/format-disease-article`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${session?.access_token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ text: finalText }),
