@@ -76,12 +76,33 @@ async function runPipeline(params: {
 }) {
   const { topic, materials_context, materials_list, review_id, authorId, orKey, lovKey, admin } = params;
 
+  let currentStep: 'queued' | 'searching' | 'writing' | 'fact_checking' | 'done' | 'error' = 'queued';
+
   const markStatus = async (status: string, extra?: any) => {
     if (!review_id) return;
     await admin.from('research_reviews').update({
-      fact_check_report: { orchestrator_status: status, updated_at: new Date().toISOString(), ...(extra || {}) },
+      fact_check_report: { orchestrator_status: status, last_step: currentStep, updated_at: new Date().toISOString(), ...(extra || {}) },
     }).eq('id', review_id);
   };
+
+  // При завершении воркера (shutdown / beforeunload) фиксируем прерывание с указанием последнего шага.
+  const onUnload = () => {
+    if (!review_id) return;
+    if (currentStep === 'done' || currentStep === 'error') return;
+    try {
+      admin.from('research_reviews').update({
+        fact_check_report: {
+          orchestrator_status: 'interrupted',
+          last_step: currentStep,
+          updated_at: new Date().toISOString(),
+        },
+      }).eq('id', review_id).then(() => {}, (e: any) => console.warn('unload mark failed:', e?.message));
+    } catch (e) {
+      console.warn('unload handler error:', (e as any)?.message);
+    }
+  };
+  // @ts-ignore addEventListener доступен в глобальном скоупе Deno / EdgeRuntime
+  addEventListener('beforeunload', onUnload);
 
   try {
     await markStatus('searching');
