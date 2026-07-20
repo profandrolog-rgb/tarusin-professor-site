@@ -1,0 +1,57 @@
+// Загрузка файла в Яндекс Object Storage через presigned PUT.
+// XHR используется вместо fetch ради прогресса (fetch upload progress пока нестабилен).
+
+import { supabase } from '@/integrations/supabase/client';
+
+export interface SignUrlResult {
+  url: string;
+  objectKey: string;
+  expiresIn: number;
+  method: 'GET' | 'PUT' | 'DELETE';
+}
+
+export async function requestSignedUrl(params: {
+  operation: 'put' | 'get' | 'delete';
+  review_id?: string;
+  filename?: string;
+  objectKey?: string;
+}): Promise<SignUrlResult> {
+  const { data, error } = await supabase.functions.invoke('research-materials-signurl', { body: params });
+  if (error) throw new Error(error.message || 'signurl invoke failed');
+  if (!data?.url) throw new Error(data?.error || 'no url in signurl response');
+  return data as SignUrlResult;
+}
+
+export function uploadWithProgress(
+  url: string,
+  file: File,
+  onProgress?: (pct: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url, true);
+    if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`upload failed: ${xhr.status} ${xhr.responseText?.slice(0, 200) || ''}`));
+    };
+    xhr.onerror = () => reject(new Error('network error during upload'));
+    xhr.send(file);
+  });
+}
+
+export async function deleteObject(objectKey: string): Promise<void> {
+  const { url } = await requestSignedUrl({ operation: 'delete', objectKey });
+  const res = await fetch(url, { method: 'DELETE' });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`delete failed: ${res.status}`);
+  }
+}
+
+export async function getDownloadUrl(objectKey: string): Promise<string> {
+  const { url } = await requestSignedUrl({ operation: 'get', objectKey });
+  return url;
+}
