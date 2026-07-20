@@ -14,6 +14,10 @@ import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus } from "
 import { stripMarkers } from "@/lib/research/markers";
 import type { Material } from "@/components/admin/research/MaterialsPanel";
 import type { RefinementEntry } from "@/lib/research/refinementDiff";
+import { playCompletionChime } from "@/lib/notifySound";
+import OrchestratorProgress, { type OrchestratorStatus, type StepTimers } from "@/components/admin/research/OrchestratorProgress";
+import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtifacts";
+import FactCheckFixList from "@/components/admin/research/FactCheckFixList";
 
 const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
 const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
