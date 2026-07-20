@@ -142,12 +142,42 @@ const AdminResearchReviewEditor = () => {
         body: { topic: row.topic || row.title, materials_context, materials_list, review_id: row.id },
       });
       if (error) throw error;
-      if (!data?.review) throw new Error("пустой ответ оркестратора");
-      setRow(data.review);
-      toast.success("Обзор готов");
+      if (!data?.queued && !data?.review) throw new Error("пустой ответ оркестратора");
+
+      // Если функция вернула готовый результат (старое поведение) — применим сразу
+      if (data?.review) {
+        setRow(data.review);
+        toast.success("Обзор готов");
+        setOrchestrating(false);
+        return;
+      }
+
+      toast.info("Оркестратор запущен в фоне. Ожидаю результат…");
+      // Опрос статуса раз в 5 сек, максимум 10 минут
+      const deadline = Date.now() + 10 * 60 * 1000;
+      const poll = async () => {
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 5000));
+          const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
+          if (!fresh) continue;
+          const status = (fresh as any).fact_check_report?.orchestrator_status;
+          if (status === "done" || !status) {
+            setRow(fresh);
+            toast.success("Обзор готов");
+            return;
+          }
+          if (status === "error") {
+            toast.error("Оркестратор упал: " + ((fresh as any).fact_check_report?.error || "неизвестно"));
+            setRow(fresh);
+            return;
+          }
+        }
+        toast.error("Оркестратор не ответил за 10 минут. Проверьте логи функции.");
+      };
+      poll().finally(() => setOrchestrating(false));
+      return;
     } catch (e: any) {
       toast.error(e?.message || "Ошибка оркестратора");
-    } finally {
       setOrchestrating(false);
     }
   }
