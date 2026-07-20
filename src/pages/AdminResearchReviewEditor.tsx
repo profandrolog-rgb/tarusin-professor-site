@@ -510,9 +510,41 @@ const AdminResearchReviewEditor = () => {
 
       <Card className="no-print">
         <CardHeader><CardTitle>SEO</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div><Label>SEO title (≤60 симв.)</Label><Input value={row.seo_title || ""} onChange={(e) => update({ seo_title: e.target.value })} maxLength={70} /></div>
-          <div><Label>Meta description (≤160 симв.)</Label><Textarea value={row.seo_meta_description || ""} onChange={(e) => update({ seo_meta_description: e.target.value })} rows={2} maxLength={200} /></div>
+        <CardContent className="space-y-4">
+          {(() => {
+            const t = row.seo_title || "";
+            const d = row.seo_meta_description || "";
+            const tOver = t.length > 60;
+            const dOver = d.length > 160;
+            return (
+              <>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label>SEO title</Label>
+                    <span className={`text-xs tabular-nums ${tOver ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                      {t.length} / 60
+                    </span>
+                  </div>
+                  <Input value={t} onChange={(e) => update({ seo_title: e.target.value })} />
+                  <p className="text-xs text-muted-foreground">
+                    Рекомендация: до 60 символов законченной фразой. Ограничение не блокирует сохранение.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label>Meta description</Label>
+                    <span className={`text-xs tabular-nums ${dOver ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                      {d.length} / 160
+                    </span>
+                  </div>
+                  <Textarea value={d} onChange={(e) => update({ seo_meta_description: e.target.value })} rows={2} />
+                  <p className="text-xs text-muted-foreground">
+                    Рекомендация: до 160 символов законченным предложением.
+                  </p>
+                </div>
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 
