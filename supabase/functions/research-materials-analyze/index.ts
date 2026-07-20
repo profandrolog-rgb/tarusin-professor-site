@@ -145,6 +145,10 @@ async function buildBlockForMaterial(m: Material): Promise<any[]> {
       ];
     }
     if (mime.includes('wordprocessingml') || (m.name || '').toLowerCase().endsWith('.docx')) {
+      // Предпочитаем текст, извлечённый через research-materials-extract при загрузке — экономим CPU.
+      if (m.text && m.text.trim().length > 0) {
+        return [{ type: 'text', text: `${label}\n(DOCX)\n\n${m.text.slice(0, 40000)}` }];
+      }
       try {
         const { value } = await mammoth.extractRawText({ buffer: bytes });
         return [{ type: 'text', text: `${label}\n(DOCX, извлечённый текст)\n\n${String(value || '').slice(0, 40000)}` }];
@@ -153,6 +157,9 @@ async function buildBlockForMaterial(m: Material): Promise<any[]> {
       }
     }
     if (mime.includes('presentationml') || (m.name || '').toLowerCase().endsWith('.pptx')) {
+      if (m.text && m.text.trim().length > 0) {
+        return [{ type: 'text', text: `${label}\n(PPTX)\n\n${m.text.slice(0, 40000)}` }];
+      }
       const txt = await extractPptxText(bytes);
       return [{ type: 'text', text: `${label}\n(PPTX, извлечённый текст)\n\n${txt.slice(0, 40000)}` }];
     }
