@@ -76,14 +76,36 @@ async function runPipeline(params: {
 }) {
   const { topic, materials_context, materials_list, review_id, authorId, orKey, lovKey, admin } = params;
 
+  let currentStep: 'queued' | 'searching' | 'writing' | 'fact_checking' | 'done' | 'error' = 'queued';
+
   const markStatus = async (status: string, extra?: any) => {
     if (!review_id) return;
     await admin.from('research_reviews').update({
-      fact_check_report: { orchestrator_status: status, updated_at: new Date().toISOString(), ...(extra || {}) },
+      fact_check_report: { orchestrator_status: status, last_step: currentStep, updated_at: new Date().toISOString(), ...(extra || {}) },
     }).eq('id', review_id);
   };
 
+  // При завершении воркера (shutdown / beforeunload) фиксируем прерывание с указанием последнего шага.
+  const onUnload = () => {
+    if (!review_id) return;
+    if (currentStep === 'done' || currentStep === 'error') return;
+    try {
+      admin.from('research_reviews').update({
+        fact_check_report: {
+          orchestrator_status: 'interrupted',
+          last_step: currentStep,
+          updated_at: new Date().toISOString(),
+        },
+      }).eq('id', review_id).then(() => {}, (e: any) => console.warn('unload mark failed:', e?.message));
+    } catch (e) {
+      console.warn('unload handler error:', (e as any)?.message);
+    }
+  };
+  // @ts-ignore addEventListener доступен в глобальном скоупе Deno / EdgeRuntime
+  addEventListener('beforeunload', onUnload);
+
   try {
+    currentStep = 'searching';
     await markStatus('searching');
 
     const searchPrompt = `Найди свежие систематические обзоры, мета-анализы и клинические руководства по теме: "${topic}".
@@ -99,6 +121,7 @@ ${materials_context ? `Учитывай контекст уже загружен
       searchResult = '(поиск литературы не выполнен — использовать только материалы пользователя)';
     }
 
+    currentStep = 'writing';
     await markStatus('writing');
 
     const markersList = Array.isArray(materials_list) && materials_list.length
@@ -125,6 +148,7 @@ ${materials_context ? `Учитывай контекст уже загружен
     }
     if (!parsed) throw lastErr ?? new Error('all writer models failed');
 
+    currentStep = 'fact_checking';
     await markStatus('fact_checking');
 
     const content = String(parsed.content || '');
@@ -207,9 +231,16 @@ ${content.slice(0, 20000)}`;
         author_id: authorId,
       });
     }
+    currentStep = 'done';
   } catch (e: any) {
+    currentStep = 'error';
     console.error('orchestrator pipeline failed:', e);
     await markStatus('error', { error: String(e?.message || e).slice(0, 500) });
+  } finally {
+    try {
+      // @ts-ignore
+      removeEventListener('beforeunload', onUnload);
+    } catch { /* noop */ }
   }
 }
 

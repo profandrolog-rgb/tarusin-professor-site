@@ -45,6 +45,32 @@ export function uploadWithProgress(
   });
 }
 
+/** Загрузка + (для DOCX/PPTX) вызов research-materials-extract для получения текста.
+ *  Возвращает objectKey и извлечённый текст (если поддерживается тип). */
+export async function uploadResearchFile(
+  reviewId: string,
+  f: File,
+  onProgress?: (pct: number) => void,
+): Promise<{ objectKey: string; text?: string }> {
+  const sig = await requestSignedUrl({ operation: 'put', review_id: reviewId, filename: f.name });
+  await uploadWithProgress(sig.url, f, onProgress);
+  const n = f.name.toLowerCase();
+  const isDocx = f.type.includes('wordprocessingml') || n.endsWith('.docx');
+  const isPptx = f.type.includes('presentationml') || n.endsWith('.pptx');
+  let text: string | undefined;
+  if (isDocx || isPptx) {
+    try {
+      const { data } = await supabase.functions.invoke('research-materials-extract', {
+        body: { objectKey: sig.objectKey, mime: f.type, name: f.name },
+      });
+      if (data?.text) text = String(data.text);
+    } catch (e: any) {
+      console.warn('research-materials-extract failed:', e?.message);
+    }
+  }
+  return { objectKey: sig.objectKey, text };
+}
+
 export async function initYcBucketCors(): Promise<{ ok: boolean; status: number; body: string }> {
   const { data, error } = await supabase.functions.invoke('research-materials-signurl', {
     body: { operation: 'init_cors' },

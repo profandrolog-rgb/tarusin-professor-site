@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen, Settings2 } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
-import { requestSignedUrl, uploadWithProgress, deleteObject, initYcBucketCors } from '@/lib/research/uploadToYc';
+import { requestSignedUrl, uploadWithProgress, deleteObject, initYcBucketCors, uploadResearchFile } from '@/lib/research/uploadToYc';
 
 
 export interface Material {
@@ -100,19 +100,15 @@ export default function MaterialsPanel(p: Props) {
       const key = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setProgress(prev => ({ ...prev, [key]: 0 }));
       try {
-        const sig = await requestSignedUrl({
-          operation: 'put',
-          review_id: p.reviewId,
-          filename: f.name,
-        });
-        await uploadWithProgress(sig.url, f, (pct) => setProgress(prev => ({ ...prev, [key]: pct })));
+        const res = await uploadResearchFile(p.reviewId, f, (pct) => setProgress(prev => ({ ...prev, [key]: pct })));
         added.push({
           id: crypto.randomUUID(),
           kind: 'file',
           name: f.name,
           mime: f.type || 'application/octet-stream',
-          objectKey: sig.objectKey,
+          objectKey: res.objectKey,
           size: f.size,
+          text: res.text,
         });
         running += f.size;
       } catch (e: any) {
