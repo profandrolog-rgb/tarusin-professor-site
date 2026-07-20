@@ -1,0 +1,1 @@
+ALTER TABLE public.research_reviews ADD COLUMN IF NOT EXISTS content_with_markers text;
