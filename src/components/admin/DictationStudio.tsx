@@ -125,7 +125,7 @@ export default function DictationStudio({ onAssembled, initialTitle }: Props) {
       const { data: { session } } = await supabase.auth.getSession();
       const fd = new FormData();
       fd.append("file", wav, `frag-${idx}.wav`);
-      const resp = await fetch("${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-transcribe", {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-transcribe`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
         body: fd,
@@ -285,7 +285,7 @@ export default function DictationStudio({ onAssembled, initialTitle }: Props) {
       }
       const finalRaw = fragments.map((f) => f.text).join("\n").trim();
       const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch("${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clean-dictation", {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clean-dictation`, {
         method: "POST",
         headers: { Authorization: `Bearer ${session?.access_token ?? ""}`, "Content-Type": "application/json" },
         body: JSON.stringify({ raw: finalRaw, dictationId: did }),
