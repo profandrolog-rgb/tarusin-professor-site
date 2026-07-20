@@ -231,9 +231,16 @@ ${content.slice(0, 20000)}`;
         author_id: authorId,
       });
     }
+    currentStep = 'done';
   } catch (e: any) {
+    currentStep = 'error';
     console.error('orchestrator pipeline failed:', e);
     await markStatus('error', { error: String(e?.message || e).slice(0, 500) });
+  } finally {
+    try {
+      // @ts-ignore
+      removeEventListener('beforeunload', onUnload);
+    } catch { /* noop */ }
   }
 }
 
