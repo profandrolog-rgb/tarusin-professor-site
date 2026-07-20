@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen, Settings2 } from 'lucide-react';
+import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
-import { requestSignedUrl, uploadWithProgress, deleteObject, initYcBucketCors, uploadResearchFile } from '@/lib/research/uploadToYc';
+import { deleteObject, uploadResearchFile } from '@/lib/research/uploadToYc';
 
 
 export interface Material {
