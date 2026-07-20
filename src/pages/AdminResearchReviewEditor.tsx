@@ -279,18 +279,20 @@ const AdminResearchReviewEditor = () => {
         </div>
       </div>
 
-      <Suspense fallback={Fallback}>
-        <MaterialsPanel
-          reviewId={row.id}
-          materials={materials}
-          onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
-          instructions={instructions}
-          onInstructionsChange={setInstructions}
-          onAnalyze={analyzeMaterials}
-          analyzing={analyzing}
-          analysis={analysis}
-        />
-      </Suspense>
+      <div id="materials-panel" className="scroll-mt-4">
+        <Suspense fallback={Fallback}>
+          <MaterialsPanel
+            reviewId={row.id}
+            materials={materials}
+            onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
+            instructions={instructions}
+            onInstructionsChange={setInstructions}
+            onAnalyze={analyzeMaterials}
+            analyzing={analyzing}
+            analysis={analysis}
+          />
+        </Suspense>
+      </div>
 
       <Suspense fallback={Fallback}>
         <RefinementChat
@@ -298,6 +300,8 @@ const AdminResearchReviewEditor = () => {
           title={row.title || ""}
           currentContent={row.content || ""}
           materialsContext={materialsContextForRefine}
+          materials={materials}
+          onMaterialsChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
           history={history}
           onApply={applyRefinement}
           onRollback={rollback}
