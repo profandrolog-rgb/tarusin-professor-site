@@ -30,13 +30,13 @@ async function isAdmin(req: Request): Promise<boolean> {
     console.log("[db-maintenance] no bearer token");
     return false;
   }
-  // Use user-context client to resolve the caller (works reliably even when
-  // service-role getUser(token) is finicky in edge runtime).
-  const userClient = createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: auth } },
+  const token = auth.slice("Bearer ".length).trim();
+  // Pass the token explicitly — the edge runtime's getUser() without an
+  // argument reads from cookies/session and returns "Auth session missing".
+  const anonClient = createClient(SUPABASE_URL, ANON, {
     auth: { persistSession: false },
   });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
+  const { data: userData, error: userErr } = await anonClient.auth.getUser(token);
   if (userErr || !userData?.user) {
     console.log("[db-maintenance] auth failure", userErr?.message, "user:", !!userData?.user);
     return false;
