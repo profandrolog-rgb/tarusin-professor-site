@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen } from 'lucide-react';
+import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen, Settings2 } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
-import { requestSignedUrl, uploadWithProgress, deleteObject } from '@/lib/research/uploadToYc';
+import { requestSignedUrl, uploadWithProgress, deleteObject, initYcBucketCors } from '@/lib/research/uploadToYc';
+
 
 export interface Material {
   id: string;
@@ -57,12 +58,28 @@ export default function MaterialsPanel(p: Props) {
   const [textInput, setTextInput] = useState('');
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [configuringCors, setConfiguringCors] = useState(false);
 
   const totalBytes = p.materials.reduce((s, m) => s + (m.size || 0), 0);
 
   function assignMarkers(list: Material[]): Material[] {
     return list.map((m, i) => ({ ...m, marker: m.marker || `[M${i + 1}]` }));
   }
+
+  async function configureCors() {
+    setConfiguringCors(true);
+    try {
+      const r = await initYcBucketCors();
+      if (r?.ok) toast.success('CORS хранилища настроен. Повторите загрузку.');
+      else toast.error(`Не удалось настроить CORS: ${r?.status} ${(r?.body || '').slice(0, 120)}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Ошибка настройки CORS');
+    } finally {
+      setConfiguringCors(false);
+    }
+  }
+
 
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length) return;
@@ -169,7 +186,21 @@ export default function MaterialsPanel(p: Props) {
       <CardContent className="space-y-4">
         <div>
           <Label className="text-sm">Файлы (PDF, DOCX, PPTX, изображения, аудио — до 50 МБ каждый, 200 МБ суммарно)</Label>
-          <div className="flex items-center gap-2 mt-1">
+          <div
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+            onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+            onDrop={(e) => {
+              e.preventDefault(); e.stopPropagation(); setDragOver(false);
+              if (e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);
+            }}
+            onClick={() => fileInput.current?.click()}
+            role="button"
+            tabIndex={0}
+            className={`mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+              dragOver ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/40'
+            }`}
+          >
             <input
               ref={fileInput}
               type="file"
@@ -178,13 +209,22 @@ export default function MaterialsPanel(p: Props) {
               onChange={(e) => handleFiles(e.target.files)}
               className="hidden"
             />
-            <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
-              Выбрать файлы
-            </Button>
+            <Upload className={`w-8 h-8 mx-auto mb-2 ${dragOver ? 'text-primary' : 'text-muted-foreground'}`} />
+            <div className="text-sm font-medium">
+              {uploading ? 'Загрузка…' : dragOver ? 'Отпустите, чтобы загрузить' : 'Перетащите файлы сюда или нажмите'}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              PDF · DOCX · PPTX · XLSX · изображения · аудио · схемы · интеллект-карты
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-2">
             <span className="text-xs text-muted-foreground">
-              Загрузка напрямую в Yandex Object Storage через presigned URL
+              Прямая загрузка в Yandex Object Storage через presigned URL
             </span>
+            <Button variant="ghost" size="sm" onClick={configureCors} disabled={configuringCors} title="Разово настроить CORS на бакете (при первой загрузке или после смены домена)">
+              {configuringCors ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Settings2 className="w-3.5 h-3.5 mr-1" />}
+              Настроить CORS хранилища
+            </Button>
           </div>
           {Object.entries(progress).length > 0 && (
             <div className="mt-2 space-y-1">
@@ -197,6 +237,7 @@ export default function MaterialsPanel(p: Props) {
             </div>
           )}
         </div>
+
 
         <div>
           <Label className="text-sm">Ссылка (YouTube, PubMed, любой URL)</Label>
