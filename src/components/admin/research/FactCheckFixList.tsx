@@ -66,12 +66,13 @@ export default function FactCheckFixList({ content, factCheck, onApply }: Props)
     }
     const entry: RefinementEntry = {
       id: crypto.randomUUID(),
-      at: new Date().toISOString(),
-      type: "fact_check_fix",
-      instruction: `Применены правки факт-чека: ${applied.length} шт.`,
-      previous_snapshot: content,
-      note: applied.map((a) => `${a.marker || ""} ${a.claim}`).join("\n"),
-    } as unknown as RefinementEntry;
+      action: "fact_check_fix",
+      prompt: `Применены правки факт-чека: ${applied.length} шт.`,
+      diff_summary: applied.map((a) => `${a.marker || ""} ${a.claim}`).join("\n").slice(0, 500),
+      snapshot_content: content,
+      is_snapshot: true,
+      created_at: new Date().toISOString(),
+    };
     onApply(next, entry);
     toast.success(`Применено правок: ${applied.length}${skipped.length ? `, не найдено дословно: ${skipped.length}` : ""}`);
     // reset accepted flags for applied entries
