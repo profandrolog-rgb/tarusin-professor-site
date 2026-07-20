@@ -1,81 +1,121 @@
-# Маршрутизация всех обращений Supabase через api.tarusin.pro
 
-## 1. Что нашёл (все места с прямым доменом или сборкой URL)
+## Задача 1 — SEO-поля без обрезания
 
-### 1.1 Хардкод прямого домена — жёсткий блокер
-`vite.config.ts` через `define` перезаписывает env-переменные на прямой домен, а комментарий рядом прямо запрещает менять их на `api.tarusin.pro`. Это отменяет любую попытку переключиться через `.env` или через панель Timeweb.
+### Что поменяю
 
-- `vite.config.ts:24` — `SUPABASE_URL_FORCED = "https://bpbwkizvvythqotcyfii.supabase.co"`
-- `vite.config.ts:27` — `SUPABASE_PROJECT_ID_FORCED = "bpbwkizvvythqotcyfii"`
-- `vite.config.ts:39–41` — `define: { "import.meta.env.VITE_SUPABASE_URL": … }`
-- `.env:3` — `VITE_SUPABASE_URL="https://bpbwkizvvythqotcyfii.supabase.co"`
-- `.env:1` — `VITE_SUPABASE_PROJECT_ID="bpbwkizvvythqotcyfii"` (сам ID нужен, но URL из него нигде не собирается)
+**`supabase/functions/research-review-orchestrate/index.ts`** (строки 210–211, 228–229)
+- Убрать `.slice(0, 60)` / `.slice(0, 160)` — записывать `seo_title` и `seo_meta_description` целиком.
+- Значения брать из `parsed.seo_title` / `parsed.seo_meta_description`, если модель их вернула; иначе fallback на `title` / `annotation` целиком (без обрезания).
 
-### 1.2 Клиент Supabase — корректен
-`src/integrations/supabase/client.ts:5` читает строго `import.meta.env.VITE_SUPABASE_URL`. Отдельный `functionsUrl` не задаётся — значит `supabase.functions.invoke(...)` использует базовый URL клиента. После смены URL все `.invoke(...)` автоматически пойдут через прокси.
+**Промпт написания** (строки 168–174 того же файла)
+- В требования к JSON добавить обязательные поля `seo_title` (≤60 символов, законченная фраза) и `seo_meta_description` (≤160 символов, законченная фраза).
+- Явное правило: «Если не помещается — переформулируй короче. Не обрывай на полуслове, не ставь многоточие вместо окончания.»
 
-### 1.3 Захардкоженный прямой домен внутри компонентов (9 мест, 2 файла)
-Обходят env-переменную и всегда бьют напрямую:
+**`supabase/functions/import-article-meta/index.ts`** — там аналогичный промпт извлечения SEO. Обновить формулировку про «уложиться» законченной фразой (сейчас просто «до 80/200 символов»).
 
-- `src/pages/AdminArticleOrchestrator.tsx`
-  - `:187` — `ai-transcribe`
-  - `:621`, `:732`, `:821`, `:868` — `orchestrate-article`
-  - `:899` — `test-claude-connection`
-  - `:920` — `format-disease-article`
-- `src/components/admin/DictationStudio.tsx`
-  - `:128` — `ai-transcribe`
-  - `:288` — `clean-dictation`
+**`src/pages/AdminResearchReviewEditor.tsx`** (строки 437–438)
+- Убрать `maxLength={70}` и `maxLength={200}`.
+- Под каждым полем добавить счётчик `X / 60` (title) и `X / 160` (description). Подсветка `text-destructive`, если превышено, иначе `text-muted-foreground`. Никаких блокировок сохранения.
 
-### 1.4 Сборка URL из VITE_SUPABASE_URL — корректно, само переедет на прокси
-Ничего править не нужно, но перечисляю чтобы было видно охват:
+---
 
-- Edge Functions: `src/pages/Cabinet.tsx:40–44,611`, `src/pages/CabinetAgent.tsx:15`, `src/components/PatientChatbot.tsx:10`, `src/components/portal/PatientPortalChat.tsx:12`, `src/components/cabinet/BatchAnalysisDialog.tsx:167,203`, `src/pages/AdminSystemBackup.tsx:70,131,161`
-- Storage (публичные объекты): `src/components/parents/PlaceholderGallery.tsx:49`, `src/components/parents/ImageGallery.tsx:17` — `${VITE_SUPABASE_URL}/storage/v1/object/public/...`
-- SSG-лоадеры (билд-тайм): `src/loaders/parentsLoader.ts:5`, `src/loaders/diseaseLoader.ts:4`
+## Задача 2 — Оркестратор обзоров с видимой работой
 
-Сборка `URL из VITE_SUPABASE_PROJECT_ID` в коде **не встречается** — ID используется только как значение переменной, URL нигде из него не конструируется.
+Логику edge-функции не трогаю (уже пишет `orchestrator_status`, `last_step`, `error` в `fact_check_report`). Изменения только в UI редактора обзоров.
 
-### 1.5 Не трогаем
-- `src/lib/proxyImage.ts` — это уже прокси для Unsplash/YouTube, к Supabase отношения не имеет.
-- Загрузка в Яндекс Object Storage (`src/lib/research/uploadToYc.ts`, `supabase/functions/_shared/ycStorage.ts`) — прямые обращения к S3, как и договаривались.
+### Новый компонент
 
-## 2. Предлагаемые правки (реализацию не запускаю)
+**`src/components/admin/research/OrchestratorProgress.tsx`** — карточка «Прогресс обзора» по образцу блока «Прогресс ревью» из `AdminArticleOrchestrator.tsx`.
 
-1. **`vite.config.ts`** — убрать «форс» URL и ANON-ключа. Оставить только `SUPABASE_PROJECT_ID` в define (либо снять и его — он и так есть в `.env`). Удалить устаревший комментарий про поломку `api.tarusin.pro`. Смысл: перестать перекрывать env-переменные, чтобы сборка использовала значение из `.env`/панели хостинга.
-
-2. **`.env`** — заменить `VITE_SUPABASE_URL` на `https://api.tarusin.pro`. `VITE_SUPABASE_PUBLISHABLE_KEY` и `VITE_SUPABASE_PROJECT_ID` не трогать.
-
-3. **`src/pages/AdminArticleOrchestrator.tsx`** — 7 хардкодов заменить на `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/<name>` (или, лучше, `supabase.functions.invoke("<name>", { body })`, чтобы вообще исключить возможность повторить ошибку).
-
-4. **`src/components/admin/DictationStudio.tsx`** — 2 хардкода заменить аналогично.
-
-5. **Проверка на билд-хостинге (Timeweb)** — убедиться, что в панели переменных Timeweb `VITE_SUPABASE_URL` тоже `https://api.tarusin.pro` либо переменная там не задана (иначе перекроет `.env`). Это не код, а конфиг деплоя — сделаем вручную после правок.
-
-## 3. Что должен уметь прокси api.tarusin.pro (для двойной проверки)
-
-Раз клиент теперь ходит через один базовый URL, прокси обязан прозрачно проксировать все пути Supabase, а не только `/functions/v1/*`:
-
-- `/auth/v1/*` — вход/refresh токена (иначе `supabase.auth` сломается)
-- `/rest/v1/*` — все запросы через PostgREST (`.from(...).select(...)` и т.д.)
-- `/storage/v1/*` — публичные и подписанные ссылки на файлы (`ImageGallery`, `PlaceholderGallery`, `patient_documents` и др.)
-- `/realtime/v1/*` — WebSocket (если используется подписка)
-- `/functions/v1/*` — Edge Functions
-
-Все заголовки `apikey`, `Authorization`, `x-client-info`, `Content-Type` должны пробрасываться без изменений, CORS-заголовки — не подменяться.
-
-## 4. Оценка риска
-
-- Больше всего рискует SSG-билд (`parentsLoader`, `diseaseLoader`), потому что билд-контейнер Timeweb должен уметь достучаться до `api.tarusin.pro`. Проверим первым же успешным деплоем: если билд встанет на fetch, дадим фолбэк на прямой домен только внутри loader'ов через отдельную серверную переменную.
-- Публичные картинки из `/storage/v1/object/public/...` начнут ходить через прокси — нужно, чтобы прокси не резал `Cache-Control` (иначе просядет производительность галерей).
-- Ошибка HTTP 504 от `research-review-orchestrate` идёт от самого рантайма Supabase (`IDLE_TIMEOUT 150s`), а не из-за прямого домена — переезд на прокси её не устранит; она уже решается фоновой обработкой, которую сделали в прошлом шаге. Здесь я её только упоминаю, чтобы не путать причины.
-
-## 5. Итог — что меняется по файлам
-
+Три этапа (маппятся на `last_step`):
 ```text
-vite.config.ts                                    — снять define для URL и ANON, поправить комментарий
-.env                                              — VITE_SUPABASE_URL = https://api.tarusin.pro
-src/pages/AdminArticleOrchestrator.tsx            — 7 хардкодов → env/invoke
-src/components/admin/DictationStudio.tsx          — 2 хардкода → env/invoke
+Поиск литературы  →  Написание обзора  →  Проверка источников
 ```
 
-Жду подтверждения, чтобы приступить.
+Для каждого этапа:
+- Статус-бейдж по цветовой схеме оригинала: `queued` → «В очереди» (outline), `active` → «Анализирует» (амбер, с `Loader2 animate-spin`), `done` → «Готово» (emerald), `error`/`interrupted` → «Ошибка» (red).
+- Живой таймер в секундах (`useEffect` + `setInterval(1000)` пока этап `active`, замораживается по завершении).
+- Кнопка `RotateCw` — повтор только этого этапа (пока в MVP она перезапускает весь оркестратор, т.к. edge-функция не умеет частично; кнопка отображается, но с тултипом «пока перезапускает целиком». Если позже разделим — трогать нужно только эту кнопку).
+- Общая полоса прогресса внизу (`Progress` из shadcn): `done_steps / 3 * 100`.
+
+Пропсы: `{ status, lastStep, error, elapsedByStep, onRetryAll, onRetryStep }`.
+
+### Новый компонент
+
+**`src/components/admin/research/OrchestratorArtifacts.tsx`** — блок «Результаты этапов» по образцу «Мнения моделей» с `Tabs`:
+
+- **Вкладка «Найденная литература»** — вывод `fact_check_report.search_result` (сырой текст от Perplexity, `<pre className="whitespace-pre-wrap text-sm">`). Требует, чтобы edge-функция дополнительно сохранила это поле (см. ниже).
+- **Вкладка «Черновик обзора»** — `row.content_with_markers` c подсветкой маркеров через существующий `highlightMarkers` из `@/lib/research/markers`. Только просмотр (readonly HTML preview с `dangerouslySetInnerHTML`).
+- **Вкладка «Проверка источников»** — структурированный вывод `fact_check_report`: три подсекции с иконками — «✓ Подтверждено» (verified, emerald), «⚠ Не найдено в источнике» (not_found_in_source, red), «○ Без маркера» (unmarked_claims, amber). Каждый пункт в мини-карточке.
+
+Пропсы: `{ searchResult, content, factCheck }`.
+
+### Новый компонент
+
+**`src/components/admin/research/FactCheckFixList.tsx`** — «Список правок» по образцу «Консолидированное мнение арбитра» (строки 1414+ в AdminArticleOrchestrator).
+
+Для каждого элемента `not_found_in_source`:
+```text
+┌ Карточка правки ─────────────────────────┐
+│  Маркер: [M5]   Причина: не найдено в M5 │
+│  ┌ − До ──────────────────────────┐      │
+│  │ border-red-500/30 bg-red-500/5 │      │
+│  │ <исходное утверждение>         │      │
+│  └────────────────────────────────┘      │
+│  ┌ + После ───────────────────────┐      │
+│  │ border-emerald-500/30 bg-...   │      │
+│  │ <Textarea для правки>          │      │
+│  └────────────────────────────────┘      │
+│  [x] Принять   [✎ Правка вручную]       │
+└──────────────────────────────────────────┘
+[Применить принятые правки (N)]
+```
+
+Действие «Применить»: находит утверждение в `row.content_with_markers` (по подстроке), заменяет на исправленный вариант, вызывает `applyRefinement(newContent, entry)` с `entry.type = "fact_check_fix"`.
+
+Пропсы: `{ content, factCheck, onApply }`.
+
+### Правки в `src/pages/AdminResearchReviewEditor.tsx`
+
+1. Добавить `import { playCompletionChime } from "@/lib/notifySound"` и вызывать в `poll()`, когда статус переходит в `done`.
+2. Опрос в `orchestrate()` заменить на постоянный, живущий пока страница открыта: вынести в `useEffect`, который слушает `row.fact_check_report.orchestrator_status`. Пока `status ∈ {searching, writing, fact_checking}` — polling 5 сек. Так прогресс восстановится после F5.
+3. LocalStorage-сохранение состояния прогона:
+   - Ключ: `research_orchestrator:draft:v1:${id}`, TTL 7 дней.
+   - Сохраняем: `topic`, `analysis`, `instructions`, отметку времени старта, отметки времени начала каждого этапа (для таймеров).
+   - Восстанавливаем при монтировании.
+4. Вставить `<OrchestratorProgress />` над `<PublishBar />` (виден всегда, когда `fact_check_report?.orchestrator_status` не пустой либо `orchestrating`).
+5. Вставить `<OrchestratorArtifacts />` под прогрессом (появляется, как только есть первый артефакт).
+6. Вставить `<FactCheckFixList />` под артефактами (появляется, когда `fact_check_report.not_found_in_source.length > 0` и статус `done`).
+7. `onRetryAll` = `orchestrate()`; `onRetryStep` = `orchestrate()` пока (см. выше).
+
+### Мелкая правка в edge-функции
+
+Только одна: сохранить сырой результат поиска в отчёт, чтобы вкладка «Найденная литература» имела что показывать.
+
+В `runPipeline` после `searchResult = await callOpenRouter(...)` добавить:
+```ts
+await markStatus('writing', { search_result: searchResult.slice(0, 20000) });
+```
+Больше в оркестраторе ничего не меняется — фоновая логика, `EdgeRuntime.waitUntil`, три вызова, статусы остаются как есть.
+
+---
+
+## Технические детали
+
+- Все три новых компонента — обычные React + shadcn, без стейт-менеджера. Стили — те же классы, что в `AdminArticleOrchestrator` (`border-red-500/30 bg-red-500/5`, `border-emerald-500/30 bg-emerald-500/5`, `bg-amber-500/15 …`), чтобы визуально совпадало.
+- Таймеры этапов: массив `{ searching?: number; writing?: number; fact_checking?: number }` в `useState`. При смене `last_step` фиксируется `startedAt` текущего шага; таймер — `Date.now() - startedAt`.
+- Persist таймеров: те же `startedAt` кладутся в тот же LocalStorage-объект, чтобы после F5 продолжить отсчёт.
+- Звук: `playCompletionChime()` только при переходе `active → done` (не при монтировании страницы с уже готовым обзором); флаг «уже сыграли» в `useRef`.
+- Никаких изменений в схеме БД. Всё живёт внутри JSONB-поля `fact_check_report`.
+
+## Файлы
+
+Новые:
+- `src/components/admin/research/OrchestratorProgress.tsx`
+- `src/components/admin/research/OrchestratorArtifacts.tsx`
+- `src/components/admin/research/FactCheckFixList.tsx`
+
+Изменённые:
+- `supabase/functions/research-review-orchestrate/index.ts` (SEO без обрезания + сохранить search_result)
+- `supabase/functions/import-article-meta/index.ts` (уточнить промпт)
+- `src/pages/AdminResearchReviewEditor.tsx` (счётчики SEO, интеграция трёх компонентов, чайм, persist)
