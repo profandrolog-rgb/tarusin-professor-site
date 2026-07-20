@@ -1,121 +1,79 @@
-
 ## Задача 1 — SEO-поля без обрезания
 
-### Что поменяю
+**`supabase/functions/research-review-orchestrate/index.ts`**
+- Убрать все `.slice(0, 60)` / `.slice(0, 160)` на SEO title и meta description при сохранении в `research_reviews`.
+- В промпте генерации SEO-полей добавить явное требование: «уложиться в ≤60 символов для title и ≤160 для description законченной фразой; если не помещается — переформулировать короче, не обрывать». Указать, что обрезание запрещено.
 
-**`supabase/functions/research-review-orchestrate/index.ts`** (строки 210–211, 228–229)
-- Убрать `.slice(0, 60)` / `.slice(0, 160)` — записывать `seo_title` и `seo_meta_description` целиком.
-- Значения брать из `parsed.seo_title` / `parsed.seo_meta_description`, если модель их вернула; иначе fallback на `title` / `annotation` целиком (без обрезания).
+**`supabase/functions/import-article-meta/index.ts`**
+- Аналогично: убрать жёсткое обрезание, обновить промпт теми же правилами (для консистентности с обзорами).
 
-**Промпт написания** (строки 168–174 того же файла)
-- В требования к JSON добавить обязательные поля `seo_title` (≤60 символов, законченная фраза) и `seo_meta_description` (≤160 символов, законченная фраза).
-- Явное правило: «Если не помещается — переформулируй короче. Не обрывай на полуслове, не ставь многоточие вместо окончания.»
-
-**`supabase/functions/import-article-meta/index.ts`** — там аналогичный промпт извлечения SEO. Обновить формулировку про «уложиться» законченной фразой (сейчас просто «до 80/200 символов»).
-
-**`src/pages/AdminResearchReviewEditor.tsx`** (строки 437–438)
-- Убрать `maxLength={70}` и `maxLength={200}`.
-- Под каждым полем добавить счётчик `X / 60` (title) и `X / 160` (description). Подсветка `text-destructive`, если превышено, иначе `text-muted-foreground`. Никаких блокировок сохранения.
+**`src/pages/AdminResearchReviewEditor.tsx`**
+- Рядом с полями SEO Title и Meta Description показать счётчик `N / 60` и `N / 160`.
+- При превышении — подсветка счётчика классом `text-destructive` (поле не блокируем, сохранение разрешено).
+- Никакого клиентского `slice` при сохранении.
 
 ---
 
-## Задача 2 — Оркестратор обзоров с видимой работой
+## Задача 2 — Оркестратор обзоров с видимыми этапами
 
-Логику edge-функции не трогаю (уже пишет `orchestrator_status`, `last_step`, `error` в `fact_check_report`). Изменения только в UI редактора обзоров.
+Логика бэкенда (`research-review-orchestrate`, `EdgeRuntime.waitUntil`, `orchestrator_status`) не меняется. Меняем только клиент и небольшое расширение payload'а статусов.
 
-### Новый компонент
+### Новые компоненты (по образцу `AdminArticleOrchestrator.tsx`)
 
-**`src/components/admin/research/OrchestratorProgress.tsx`** — карточка «Прогресс обзора» по образцу блока «Прогресс ревью» из `AdminArticleOrchestrator.tsx`.
+**`src/components/admin/research/OrchestratorProgress.tsx`**
+- Тип `StageProgress = { id: 'search' | 'draft' | 'factcheck'; label: string; status: 'queued'|'running'|'done'|'error'; startedAt?: number; finishedAt?: number; error?: string }`.
+- Три строки-этапа: «Поиск литературы» → «Написание обзора» → «Проверка источников».
+- Для каждого: статус-бейдж (В очереди / Анализирует / Готово / Ошибка), живой таймер (`useEffect` + `setInterval` 1 с, считает `Date.now() - startedAt` пока `running`, фиксирует при `done`).
+- Кнопка повтора этапа с иконкой `RotateCw` (callback `onRetryStage(stageId)`).
+- Общая полоса прогресса внизу (`<Progress value={doneCount/3*100} />`).
 
-Три этапа (маппятся на `last_step`):
-```text
-Поиск литературы  →  Написание обзора  →  Проверка источников
-```
+**`src/components/admin/research/OrchestratorArtifacts.tsx`**
+- `Tabs` с тремя вкладками:
+  - «Найденная литература» — сырой ответ Perplexity (markdown/список источников).
+  - «Черновик обзора» — текст с маркерами `[M#]` (readonly preview).
+  - «Проверка источников» — структурированный `fact_check_report`, сгруппированный: «Подтверждено» / «Не найдено в источнике» / «Без маркера».
+- Пропсы: `search`, `draft`, `factCheck`.
 
-Для каждого этапа:
-- Статус-бейдж по цветовой схеме оригинала: `queued` → «В очереди» (outline), `active` → «Анализирует» (амбер, с `Loader2 animate-spin`), `done` → «Готово» (emerald), `error`/`interrupted` → «Ошибка» (red).
-- Живой таймер в секундах (`useEffect` + `setInterval(1000)` пока этап `active`, замораживается по завершении).
-- Кнопка `RotateCw` — повтор только этого этапа (пока в MVP она перезапускает весь оркестратор, т.к. edge-функция не умеет частично; кнопка отображается, но с тултипом «пока перезапускает целиком». Если позже разделим — трогать нужно только эту кнопку).
-- Общая полоса прогресса внизу (`Progress` из shadcn): `done_steps / 3 * 100`.
+**`src/components/admin/research/FactCheckFixList.tsx`**
+- Список правок из `fact_check_report.fixes: { id, quote, suggestion, reason, marker? }[]`.
+- Каждая карточка: диф «− До» (классы `border-red-500/30 bg-red-500/5`) и «+ После» (`border-emerald-500/30 bg-emerald-500/5`), чекбокс «Принять», кнопка `Pencil` для ручной правки предложенного текста (inline `Textarea`).
+- Итоговая кнопка «Применить принятые правки» → callback `onApply(acceptedFixes)`, который в редакторе делает `content.replaceAll(quote, suggestion)` и записывает в `content_with_markers`.
 
-Пропсы: `{ status, lastStep, error, elapsedByStep, onRetryAll, onRetryStep }`.
+### Изменения в бэкенде (минимальные, чтобы вкладки было чем наполнять)
 
-### Новый компонент
+**`supabase/functions/research-review-orchestrate/index.ts`**
+- В `orchestrator_status` (jsonb) писать структуру:
+  ```
+  {
+    stages: { search: {...}, draft: {...}, factcheck: {...} },
+    artifacts: { search_raw, draft_markdown, fact_check_report },
+    updated_at
+  }
+  ```
+- На старте каждого этапа — `status: 'running'`, `startedAt`. По завершении — `done`/`error` + `finishedAt` + сохранение артефакта.
+- `fact_check_report` расширить до `{ summary, fixes: [{id, quote, suggestion, reason, marker?, verdict}] }`.
+- Добавить необязательный параметр `stage` во входе: если указан, гоняется только этот этап (для кнопки «повторить этап»).
 
-**`src/components/admin/research/OrchestratorArtifacts.tsx`** — блок «Результаты этапов» по образцу «Мнения моделей» с `Tabs`:
+### Интеграция в `src/pages/AdminResearchReviewEditor.tsx`
 
-- **Вкладка «Найденная литература»** — вывод `fact_check_report.search_result` (сырой текст от Perplexity, `<pre className="whitespace-pre-wrap text-sm">`). Требует, чтобы edge-функция дополнительно сохранила это поле (см. ниже).
-- **Вкладка «Черновик обзора»** — `row.content_with_markers` c подсветкой маркеров через существующий `highlightMarkers` из `@/lib/research/markers`. Только просмотр (readonly HTML preview с `dangerouslySetInnerHTML`).
-- **Вкладка «Проверка источников»** — структурированный вывод `fact_check_report`: три подсекции с иконками — «✓ Подтверждено» (verified, emerald), «⚠ Не найдено в источнике» (not_found_in_source, red), «○ Без маркера» (unmarked_claims, amber). Каждый пункт в мини-карточке.
+- Ключ `RESEARCH_ORCH_KEY = 'research-orchestrator-state:<reviewId>'`, TTL 7 дней (по образцу `DRAFT_KEY`).
+- На маунте: если в БД `orchestrator_status.status ∈ {queued, running}` — поднять состояние из БД + localStorage, запустить polling. Иначе — гидратировать из localStorage только для показа последнего результата.
+- Polling каждые 2–3 с через `supabase.from('research_reviews').select('orchestrator_status')`; на каждом апдейте — сохранять в localStorage.
+- По окончании (`status = done`) — `playCompletionChime()` из `@/lib/notifySound` (один раз, флаг в state).
+- Определение «застряло» (7 минут) — уже есть, оставляем.
+- Показ:
+  - `<OrchestratorProgress stages={...} onRetryStage={...} />`
+  - `<OrchestratorArtifacts search draft factCheck />`
+  - `<FactCheckFixList fixes onApply={applyFixesToContent} />`
+- Кнопка «Повторить этап» → вызов той же функции `research-review-orchestrate` с `{ reviewId, stage }`.
+- Кнопка «Применить принятые правки» модифицирует поле `content` в форме редактора (пользователь потом сохраняет).
 
-Пропсы: `{ searchResult, content, factCheck }`.
-
-### Новый компонент
-
-**`src/components/admin/research/FactCheckFixList.tsx`** — «Список правок» по образцу «Консолидированное мнение арбитра» (строки 1414+ в AdminArticleOrchestrator).
-
-Для каждого элемента `not_found_in_source`:
-```text
-┌ Карточка правки ─────────────────────────┐
-│  Маркер: [M5]   Причина: не найдено в M5 │
-│  ┌ − До ──────────────────────────┐      │
-│  │ border-red-500/30 bg-red-500/5 │      │
-│  │ <исходное утверждение>         │      │
-│  └────────────────────────────────┘      │
-│  ┌ + После ───────────────────────┐      │
-│  │ border-emerald-500/30 bg-...   │      │
-│  │ <Textarea для правки>          │      │
-│  └────────────────────────────────┘      │
-│  [x] Принять   [✎ Правка вручную]       │
-└──────────────────────────────────────────┘
-[Применить принятые правки (N)]
-```
-
-Действие «Применить»: находит утверждение в `row.content_with_markers` (по подстроке), заменяет на исправленный вариант, вызывает `applyRefinement(newContent, entry)` с `entry.type = "fact_check_fix"`.
-
-Пропсы: `{ content, factCheck, onApply }`.
-
-### Правки в `src/pages/AdminResearchReviewEditor.tsx`
-
-1. Добавить `import { playCompletionChime } from "@/lib/notifySound"` и вызывать в `poll()`, когда статус переходит в `done`.
-2. Опрос в `orchestrate()` заменить на постоянный, живущий пока страница открыта: вынести в `useEffect`, который слушает `row.fact_check_report.orchestrator_status`. Пока `status ∈ {searching, writing, fact_checking}` — polling 5 сек. Так прогресс восстановится после F5.
-3. LocalStorage-сохранение состояния прогона:
-   - Ключ: `research_orchestrator:draft:v1:${id}`, TTL 7 дней.
-   - Сохраняем: `topic`, `analysis`, `instructions`, отметку времени старта, отметки времени начала каждого этапа (для таймеров).
-   - Восстанавливаем при монтировании.
-4. Вставить `<OrchestratorProgress />` над `<PublishBar />` (виден всегда, когда `fact_check_report?.orchestrator_status` не пустой либо `orchestrating`).
-5. Вставить `<OrchestratorArtifacts />` под прогрессом (появляется, как только есть первый артефакт).
-6. Вставить `<FactCheckFixList />` под артефактами (появляется, когда `fact_check_report.not_found_in_source.length > 0` и статус `done`).
-7. `onRetryAll` = `orchestrate()`; `onRetryStep` = `orchestrate()` пока (см. выше).
-
-### Мелкая правка в edge-функции
-
-Только одна: сохранить сырой результат поиска в отчёт, чтобы вкладка «Найденная литература» имела что показывать.
-
-В `runPipeline` после `searchResult = await callOpenRouter(...)` добавить:
-```ts
-await markStatus('writing', { search_result: searchResult.slice(0, 20000) });
-```
-Больше в оркестраторе ничего не меняется — фоновая логика, `EdgeRuntime.waitUntil`, три вызова, статусы остаются как есть.
+### Что НЕ трогаем
+- Три фоновых вызова через `EdgeRuntime.waitUntil`.
+- `beforeunload → interrupted`.
+- Механику `research-materials-extract`, `MaterialsPanel`, `RefinementChat`.
+- Дизайн-токены и шрифты.
 
 ---
 
-## Технические детали
-
-- Все три новых компонента — обычные React + shadcn, без стейт-менеджера. Стили — те же классы, что в `AdminArticleOrchestrator` (`border-red-500/30 bg-red-500/5`, `border-emerald-500/30 bg-emerald-500/5`, `bg-amber-500/15 …`), чтобы визуально совпадало.
-- Таймеры этапов: массив `{ searching?: number; writing?: number; fact_checking?: number }` в `useState`. При смене `last_step` фиксируется `startedAt` текущего шага; таймер — `Date.now() - startedAt`.
-- Persist таймеров: те же `startedAt` кладутся в тот же LocalStorage-объект, чтобы после F5 продолжить отсчёт.
-- Звук: `playCompletionChime()` только при переходе `active → done` (не при монтировании страницы с уже готовым обзором); флаг «уже сыграли» в `useRef`.
-- Никаких изменений в схеме БД. Всё живёт внутри JSONB-поля `fact_check_report`.
-
-## Файлы
-
-Новые:
-- `src/components/admin/research/OrchestratorProgress.tsx`
-- `src/components/admin/research/OrchestratorArtifacts.tsx`
-- `src/components/admin/research/FactCheckFixList.tsx`
-
-Изменённые:
-- `supabase/functions/research-review-orchestrate/index.ts` (SEO без обрезания + сохранить search_result)
-- `supabase/functions/import-article-meta/index.ts` (уточнить промпт)
-- `src/pages/AdminResearchReviewEditor.tsx` (счётчики SEO, интеграция трёх компонентов, чайм, persist)
+Жду подтверждения — начну с задачи 1 и параллельно создам три новых компонента для задачи 2.
