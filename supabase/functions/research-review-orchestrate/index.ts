@@ -122,7 +122,7 @@ ${materials_context ? `Учитывай контекст уже загружен
     }
 
     currentStep = 'writing';
-    await markStatus('writing');
+    await markStatus('writing', { search_result: String(searchResult || '').slice(0, 20000) });
 
     const markersList = Array.isArray(materials_list) && materials_list.length
       ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
