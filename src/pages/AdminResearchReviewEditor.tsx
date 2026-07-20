@@ -332,6 +332,18 @@ const AdminResearchReviewEditor = () => {
         </div>
       </div>
 
+      {(status || orchestrating) && (
+        <div id="orchestrator-progress" className="scroll-mt-4">
+          <OrchestratorProgress
+            status={status}
+            lastStep={lastStep}
+            error={orchestratorError}
+            timers={timers}
+            onRetryAll={orchestrate}
+          />
+        </div>
+      )}
+
       <div id="materials-panel" className="scroll-mt-4">
         <Suspense fallback={Fallback}>
           <MaterialsPanel
@@ -363,15 +375,7 @@ const AdminResearchReviewEditor = () => {
         />
       </Suspense>
 
-      {(status || orchestrating) && (
-        <OrchestratorProgress
-          status={status}
-          lastStep={lastStep}
-          error={orchestratorError}
-          timers={timers}
-          onRetryAll={orchestrate}
-        />
-      )}
+
 
       <OrchestratorArtifacts
         searchResult={searchResult}
