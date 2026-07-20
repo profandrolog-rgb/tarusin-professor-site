@@ -1,15 +1,18 @@
 // Стратегия B — «Полный поиск и написание».
-// Принимает {topic}, запускает поиск (Perplexity Sonar с реальным поиском)
-// -> написание по научному промпту -> сохранение черновика.
+// Три звонка: (1) поиск литературы Perplexity, (2) написание обзора Gemini/Claude,
+// (3) факт-чек и правки Gemini. Принимает опциональный materials_context — текст первичного
+// анализа мультимодальных материалов (см. research-materials-analyze).
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { RESEARCH_MODE_SYSTEM_PROMPT } from '../_shared/researchModePrompt.ts';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const SEARCH_MODEL = 'perplexity/sonar-pro';
 const WRITE_PRIMARY = 'anthropic/claude-sonnet-4.5';
 const WRITE_FALLBACKS = ['anthropic/claude-sonnet-4.6', 'openai/gpt-5.5'];
+const FACTCHECK_MODEL = 'google/gemini-3.1-pro-preview';
 
 function slugify(s: string): string {
   const map: Record<string, string> = {
@@ -37,6 +40,20 @@ async function callOpenRouter(model: string, messages: any[], apiKey: string, te
   return String(j?.choices?.[0]?.message?.content ?? '');
 }
 
+async function callGateway(model: string, messages: any[], key: string, maxTokens = 8000) {
+  const res = await fetch(GATEWAY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': key },
+    body: JSON.stringify({ model, messages, max_tokens: maxTokens, response_format: { type: 'json_object' } }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`${model} gateway ${res.status}: ${t.slice(0, 300)}`);
+  }
+  const j = await res.json();
+  return String(j?.choices?.[0]?.message?.content ?? '');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -47,31 +64,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { topic } = await req.json();
-    if (!topic) {
-      return new Response(JSON.stringify({ error: 'topic required' }), {
+    const { topic, materials_context, review_id } = await req.json();
+    if (!topic && !materials_context) {
+      return new Response(JSON.stringify({ error: 'topic or materials_context required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const apiKey = Deno.env.get('OPENROUTER_API_KEY');
-    if (!apiKey) throw new Error('OPENROUTER_API_KEY missing');
+    const orKey = Deno.env.get('OPENROUTER_API_KEY');
+    const lovKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!orKey) throw new Error('OPENROUTER_API_KEY missing');
+    if (!lovKey) throw new Error('LOVABLE_API_KEY missing');
 
-    // Шаг 1: поиск литературы через Perplexity (real-time web + PubMed).
+    // Шаг 1: поиск литературы через Perplexity.
     const searchPrompt = `Найди свежие систематические обзоры, мета-анализы и клинические руководства по теме: "${topic}".
+${materials_context ? `Учитывай контекст уже загруженных материалов:\n${String(materials_context).slice(0, 4000)}\n` : ''}
 Приоритет: PubMed/PMC, Cochrane, профильные журналы (последние 5 лет).
-Верни: (1) краткий синтез данных (300-600 слов, на русском), (2) 10-20 источников в формате Vancouver с DOI/PMID где возможно.`;
+Верни: (1) краткий синтез данных (300-600 слов, на русском), (2) 10-20 источников в формате Vancouver с DOI/PMID.`;
 
     let searchResult = '';
     try {
-      searchResult = await callOpenRouter(SEARCH_MODEL, [{ role: 'user', content: searchPrompt }], apiKey, 0.1, 6000);
+      searchResult = await callOpenRouter(SEARCH_MODEL, [{ role: 'user', content: searchPrompt }], orKey, 0.1, 6000);
     } catch (e) {
-      console.warn('research-review-orchestrate: perplexity search failed, continuing without:', (e as any)?.message);
-      searchResult = '(поиск литературы не выполнен — модель поиска недоступна; используй только известные данные)';
+      console.warn('perplexity search failed:', (e as any)?.message);
+      searchResult = '(поиск литературы не выполнен — использовать только известные данные и контекст материалов)';
     }
 
-    // Шаг 2: написание обзора по научному промпту.
-    const writePrompt = `Тема обзора: ${topic}\n\nРезультаты поиска литературы:\n\n${searchResult}\n\nНапиши полный научный обзор по правилам, приведённым в системной инструкции. Верни строгий JSON.`;
+    // Шаг 2: написание обзора.
+    const writePrompt = `Тема обзора: ${topic}\n\n${materials_context ? `Контекст загруженных пользователем материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы:\n\n${searchResult}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни строгий JSON.`;
 
     let parsed: any = null;
     let lastErr: any = null;
@@ -80,17 +100,44 @@ Deno.serve(async (req) => {
         const raw = await callOpenRouter(model, [
           { role: 'system', content: RESEARCH_MODE_SYSTEM_PROMPT },
           { role: 'user', content: writePrompt },
-        ], apiKey, 0.2, 14000);
+        ], orKey, 0.2, 14000);
         const m = raw.match(/\{[\s\S]*\}/);
         if (!m) throw new Error('no JSON in response');
         parsed = JSON.parse(m[0]);
         break;
       } catch (e) {
         lastErr = e;
-        console.warn(`research-review-orchestrate: ${model} failed:`, (e as any)?.message);
+        console.warn(`writer ${model} failed:`, (e as any)?.message);
       }
     }
     if (!parsed) throw lastErr ?? new Error('all writer models failed');
+
+    // Шаг 3: факт-чек через Gemini (сверка с материалами и источниками).
+    try {
+      const fcPrompt = `Проверь текст научного обзора на:
+- фактические неточности,
+- расхождения с приведёнными источниками,
+- расхождения с контекстом материалов пользователя.
+
+Верни JSON вида {"fact_check_report": [{"quote":"...","issue":"...","suggested_fix":"...","confidence":"high|medium|low"}]}. Если проблем нет — верни {"fact_check_report": []}.
+
+Материалы пользователя:
+${materials_context ? String(materials_context).slice(0, 6000) : '(не приложены)'}
+
+Найденные источники:
+${String(searchResult).slice(0, 6000)}
+
+Текст обзора:
+${String(parsed.content || '').slice(0, 20000)}`;
+
+      const fcRaw = await callGateway(FACTCHECK_MODEL, [{ role: 'user', content: fcPrompt }], lovKey, 6000);
+      const fcJson = JSON.parse(fcRaw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      if (Array.isArray(fcJson.fact_check_report)) {
+        parsed.fact_check_report = [...(parsed.fact_check_report || []), ...fcJson.fact_check_report];
+      }
+    } catch (e) {
+      console.warn('fact-check step failed:', (e as any)?.message);
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -99,7 +146,27 @@ Deno.serve(async (req) => {
     }).auth.getUser();
     const authorId = userRes.data?.user?.id ?? null;
 
-    const title = String(parsed.title || topic).slice(0, 300);
+    const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
+
+    // Если передан review_id — обновляем существующий; иначе создаём новый.
+    if (review_id) {
+      const { data: updated, error } = await supabase.from('research_reviews').update({
+        title,
+        annotation: String(parsed.annotation || '').slice(0, 2000),
+        content: String(parsed.content || ''),
+        topic: topic || null,
+        references_list: Array.isArray(parsed.references_list) ? parsed.references_list : [],
+        fact_check_report: Array.isArray(parsed.fact_check_report) ? parsed.fact_check_report : [],
+        source_type: 'orchestrator_generated',
+        seo_title: title.slice(0, 60),
+        seo_meta_description: String(parsed.annotation || '').slice(0, 160),
+      }).eq('id', review_id).select().single();
+      if (error) throw error;
+      return new Response(JSON.stringify({ ok: true, review: updated }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const baseSlug = slugify(title);
     let slug = baseSlug;
     for (let i = 2; i < 50; i++) {
@@ -109,11 +176,10 @@ Deno.serve(async (req) => {
     }
 
     const { data: inserted, error } = await supabase.from('research_reviews').insert({
-      slug,
-      title,
+      slug, title,
       annotation: String(parsed.annotation || '').slice(0, 2000),
       content: String(parsed.content || ''),
-      topic,
+      topic: topic || null,
       references_list: Array.isArray(parsed.references_list) ? parsed.references_list : [],
       fact_check_report: Array.isArray(parsed.fact_check_report) ? parsed.fact_check_report : [],
       source_type: 'orchestrator_generated',
