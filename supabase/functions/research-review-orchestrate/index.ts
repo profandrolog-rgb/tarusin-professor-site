@@ -1,7 +1,6 @@
 // Стратегия B — «Полный поиск и написание».
-// Три звонка: (1) поиск литературы Perplexity, (2) написание обзора Gemini/Claude,
-// (3) факт-чек и правки Gemini. Принимает опциональный materials_context — текст первичного
-// анализа мультимодальных материалов (см. research-materials-analyze).
+// Три звонка: (1) поиск литературы Perplexity, (2) написание обзора с обязательными маркерами [M#],
+// (3) механический факт-чек соответствия маркеров содержимому материалов.
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -12,7 +11,15 @@ const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const SEARCH_MODEL = 'perplexity/sonar-pro';
 const WRITE_PRIMARY = 'anthropic/claude-sonnet-4.5';
 const WRITE_FALLBACKS = ['anthropic/claude-sonnet-4.6', 'openai/gpt-5.5'];
-const FACTCHECK_MODEL = 'google/gemini-3.1-pro-preview';
+const FACTCHECK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
+
+const MARKER_RULES = `
+ЖЁСТКИЕ ПРАВИЛА ПРОВЕНАНСА ИСТОЧНИКОВ:
+- После КАЖДОГО фактического утверждения, взятого из материалов пользователя, ставь маркер вида [M1], [M2] (номер материала).
+- Утверждения без опоры на материалы — БЕЗ маркера (или общеизвестный факт).
+- ЗАПРЕЩЕНО добавлять источники, отсутствующие в списке материалов пользователя. Список литературы references_list формируется только из этих источников.
+- Внутри одного предложения допустимо несколько маркеров: [M1][M3].
+`;
 
 function slugify(s: string): string {
   const map: Record<string, string> = {
@@ -64,7 +71,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { topic, materials_context, review_id } = await req.json();
+    const { topic, materials_context, materials_list, review_id } = await req.json();
     if (!topic && !materials_context) {
       return new Response(JSON.stringify({ error: 'topic or materials_context required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -76,7 +83,7 @@ Deno.serve(async (req) => {
     if (!orKey) throw new Error('OPENROUTER_API_KEY missing');
     if (!lovKey) throw new Error('LOVABLE_API_KEY missing');
 
-    // Шаг 1: поиск литературы через Perplexity.
+    // (1) Perplexity — свежая литература по теме и материалам.
     const searchPrompt = `Найди свежие систематические обзоры, мета-анализы и клинические руководства по теме: "${topic}".
 ${materials_context ? `Учитывай контекст уже загруженных материалов:\n${String(materials_context).slice(0, 4000)}\n` : ''}
 Приоритет: PubMed/PMC, Cochrane, профильные журналы (последние 5 лет).
@@ -87,18 +94,21 @@ ${materials_context ? `Учитывай контекст уже загружен
       searchResult = await callOpenRouter(SEARCH_MODEL, [{ role: 'user', content: searchPrompt }], orKey, 0.1, 6000);
     } catch (e) {
       console.warn('perplexity search failed:', (e as any)?.message);
-      searchResult = '(поиск литературы не выполнен — использовать только известные данные и контекст материалов)';
+      searchResult = '(поиск литературы не выполнен — использовать только материалы пользователя)';
     }
 
-    // Шаг 2: написание обзора.
-    const writePrompt = `Тема обзора: ${topic}\n\n${materials_context ? `Контекст загруженных пользователем материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы:\n\n${searchResult}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни строгий JSON.`;
+    // (2) Написание обзора с маркерами.
+    const markersList = Array.isArray(materials_list) && materials_list.length
+      ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
+      : '';
+    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}]}. В content обязательны маркеры [M#] по правилам выше.`;
 
     let parsed: any = null;
     let lastErr: any = null;
     for (const model of [WRITE_PRIMARY, ...WRITE_FALLBACKS]) {
       try {
         const raw = await callOpenRouter(model, [
-          { role: 'system', content: RESEARCH_MODE_SYSTEM_PROMPT },
+          { role: 'system', content: RESEARCH_MODE_SYSTEM_PROMPT + '\n\n' + MARKER_RULES },
           { role: 'user', content: writePrompt },
         ], orKey, 0.2, 14000);
         const m = raw.match(/\{[\s\S]*\}/);
@@ -112,31 +122,48 @@ ${materials_context ? `Учитывай контекст уже загружен
     }
     if (!parsed) throw lastErr ?? new Error('all writer models failed');
 
-    // Шаг 3: факт-чек через Gemini (сверка с материалами и источниками).
-    try {
-      const fcPrompt = `Проверь текст научного обзора на:
-- фактические неточности,
-- расхождения с приведёнными источниками,
-- расхождения с контекстом материалов пользователя.
+    // (3) Механический факт-чек: для каждого маркера — есть ли утверждение в материале.
+    const content = String(parsed.content || '');
+    const markerHits = Array.from(content.matchAll(/\[M(\d+)\]/g));
+    const markersInContent = new Set(markerHits.map(m => `[M${m[1]}]`));
 
-Верни JSON вида {"fact_check_report": [{"quote":"...","issue":"...","suggested_fix":"...","confidence":"high|medium|low"}]}. Если проблем нет — верни {"fact_check_report": []}.
+    let factCheck: any = { verified: [], not_found_in_source: [], unmarked_claims: [], missing_markers: [] };
+    try {
+      const fcPrompt = `Ты — механический факт-чекер. Даны: контекст материалов пользователя (с маркерами [M#]) и текст обзора с маркерами. Для КАЖДОГО маркера в тексте обзора найди утверждение (одно-два предложения вокруг маркера) и проверь, содержится ли оно (по смыслу) в соответствующем материале.
+Также найди утверждения БЕЗ маркеров, которые выглядят как факт из материалов.
+
+Верни СТРОГИЙ JSON:
+{
+  "verified": [{"claim":"...", "marker":"[M2]"}],
+  "not_found_in_source": [{"claim":"...", "marker":"[M5]", "reason":"..."}],
+  "unmarked_claims": ["утверждение без маркера, похоже на факт"]
+}
 
 Материалы пользователя:
-${materials_context ? String(materials_context).slice(0, 6000) : '(не приложены)'}
-
-Найденные источники:
-${String(searchResult).slice(0, 6000)}
+${materials_context ? String(materials_context).slice(0, 8000) : '(не приложены)'}
 
 Текст обзора:
-${String(parsed.content || '').slice(0, 20000)}`;
+${content.slice(0, 20000)}`;
 
       const fcRaw = await callGateway(FACTCHECK_MODEL, [{ role: 'user', content: fcPrompt }], lovKey, 6000);
       const fcJson = JSON.parse(fcRaw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-      if (Array.isArray(fcJson.fact_check_report)) {
-        parsed.fact_check_report = [...(parsed.fact_check_report || []), ...fcJson.fact_check_report];
-      }
+      factCheck = {
+        verified: Array.isArray(fcJson.verified) ? fcJson.verified : [],
+        not_found_in_source: Array.isArray(fcJson.not_found_in_source) ? fcJson.not_found_in_source : [],
+        unmarked_claims: Array.isArray(fcJson.unmarked_claims) ? fcJson.unmarked_claims : [],
+        missing_markers: [],
+      };
     } catch (e) {
       console.warn('fact-check step failed:', (e as any)?.message);
+    }
+
+    // Маркеры из materials_list, отсутствующие в тексте — фиксируем отдельно.
+    if (Array.isArray(materials_list)) {
+      for (const m of materials_list) {
+        if (m?.marker && !markersInContent.has(m.marker)) {
+          factCheck.missing_markers.push({ marker: m.marker, name: m.name || m.url || m.kind });
+        }
+      }
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -147,19 +174,21 @@ ${String(parsed.content || '').slice(0, 20000)}`;
     const authorId = userRes.data?.user?.id ?? null;
 
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
+    const annotation = String(parsed.annotation || '').slice(0, 2000);
+    const refs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
 
-    // Если передан review_id — обновляем существующий; иначе создаём новый.
     if (review_id) {
       const { data: updated, error } = await supabase.from('research_reviews').update({
         title,
-        annotation: String(parsed.annotation || '').slice(0, 2000),
-        content: String(parsed.content || ''),
+        annotation,
+        content,
+        content_with_markers: content,
         topic: topic || null,
-        references_list: Array.isArray(parsed.references_list) ? parsed.references_list : [],
-        fact_check_report: Array.isArray(parsed.fact_check_report) ? parsed.fact_check_report : [],
+        references_list: refs,
+        fact_check_report: factCheck,
         source_type: 'orchestrator_generated',
         seo_title: title.slice(0, 60),
-        seo_meta_description: String(parsed.annotation || '').slice(0, 160),
+        seo_meta_description: annotation.slice(0, 160),
       }).eq('id', review_id).select().single();
       if (error) throw error;
       return new Response(JSON.stringify({ ok: true, review: updated }), {
@@ -176,15 +205,14 @@ ${String(parsed.content || '').slice(0, 20000)}`;
     }
 
     const { data: inserted, error } = await supabase.from('research_reviews').insert({
-      slug, title,
-      annotation: String(parsed.annotation || '').slice(0, 2000),
-      content: String(parsed.content || ''),
+      slug, title, annotation, content,
+      content_with_markers: content,
       topic: topic || null,
-      references_list: Array.isArray(parsed.references_list) ? parsed.references_list : [],
-      fact_check_report: Array.isArray(parsed.fact_check_report) ? parsed.fact_check_report : [],
+      references_list: refs,
+      fact_check_report: factCheck,
       source_type: 'orchestrator_generated',
       seo_title: title.slice(0, 60),
-      seo_meta_description: String(parsed.annotation || '').slice(0, 160),
+      seo_meta_description: annotation.slice(0, 160),
       status: 'draft',
       author_id: authorId,
     }).select().single();
