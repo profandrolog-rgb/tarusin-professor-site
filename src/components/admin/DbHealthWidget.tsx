@@ -26,10 +26,17 @@ export function DbHealthWidget() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
   const load = useCallback(async () => {
-    const token = session?.access_token;
+    // Always pull the freshest session from the client — the one held in
+    // AuthProvider state can be stale after a silent refresh or a revoke.
+    let { data: { session: live } } = await supabase.auth.getSession();
+    if (!live?.access_token) {
+      const refreshed = await supabase.auth.refreshSession();
+      live = refreshed.data.session ?? null;
+    }
+    const token = live?.access_token;
     if (!token) {
       setStats(null);
-      setErr("Нет активной сессии администратора.");
+      setErr("Нет активной сессии администратора. Войдите заново.");
       return;
     }
 
@@ -41,6 +48,20 @@ export function DbHealthWidget() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (error) {
+        // Stale token → try one refresh + retry before surfacing the error.
+        const refreshed = await supabase.auth.refreshSession();
+        const newToken = refreshed.data.session?.access_token;
+        if (newToken && newToken !== token) {
+          const retry = await supabase.functions.invoke("db-maintenance", {
+            body: { action: "stats" },
+            headers: { Authorization: `Bearer ${newToken}` },
+          });
+          if (!retry.error) {
+            setStats(retry.data as Stats);
+            setUpdatedAt(new Date());
+            return;
+          }
+        }
         setStats(null);
         setErr(error.message ?? "Не удалось получить статус базы данных.");
         return;
