@@ -58,12 +58,28 @@ export default function MaterialsPanel(p: Props) {
   const [textInput, setTextInput] = useState('');
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [configuringCors, setConfiguringCors] = useState(false);
 
   const totalBytes = p.materials.reduce((s, m) => s + (m.size || 0), 0);
 
   function assignMarkers(list: Material[]): Material[] {
     return list.map((m, i) => ({ ...m, marker: m.marker || `[M${i + 1}]` }));
   }
+
+  async function configureCors() {
+    setConfiguringCors(true);
+    try {
+      const r = await initYcBucketCors();
+      if (r?.ok) toast.success('CORS хранилища настроен. Повторите загрузку.');
+      else toast.error(`Не удалось настроить CORS: ${r?.status} ${(r?.body || '').slice(0, 120)}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Ошибка настройки CORS');
+    } finally {
+      setConfiguringCors(false);
+    }
+  }
+
 
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length) return;
