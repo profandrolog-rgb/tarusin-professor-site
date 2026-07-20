@@ -3,7 +3,7 @@
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { presignYcUrl, ycConfig } from '../_shared/ycStorage.ts';
+import { presignYcUrl, ycConfig, setBucketCors } from '../_shared/ycStorage.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
