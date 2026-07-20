@@ -246,6 +246,10 @@ const AdminResearchReviewEditor = () => {
       }
 
       toast.info("Оркестратор запущен в фоне. Прогресс — в карточке ниже.");
+      setTimeout(() => {
+        document.getElementById("orchestrator-progress")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+
       // Дальнейший опрос ведёт useEffect по статусу.
     } catch (e: any) {
       toast.error(e?.message || "Ошибка оркестратора");
@@ -332,6 +336,18 @@ const AdminResearchReviewEditor = () => {
         </div>
       </div>
 
+      {(status || orchestrating) && (
+        <div id="orchestrator-progress" className="scroll-mt-4">
+          <OrchestratorProgress
+            status={status}
+            lastStep={lastStep}
+            error={orchestratorError}
+            timers={timers}
+            onRetryAll={orchestrate}
+          />
+        </div>
+      )}
+
       <div id="materials-panel" className="scroll-mt-4">
         <Suspense fallback={Fallback}>
           <MaterialsPanel
@@ -363,15 +379,7 @@ const AdminResearchReviewEditor = () => {
         />
       </Suspense>
 
-      {(status || orchestrating) && (
-        <OrchestratorProgress
-          status={status}
-          lastStep={lastStep}
-          error={orchestratorError}
-          timers={timers}
-          onRetryAll={orchestrate}
-        />
-      )}
+
 
       <OrchestratorArtifacts
         searchResult={searchResult}
