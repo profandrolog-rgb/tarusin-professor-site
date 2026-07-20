@@ -4359,6 +4359,7 @@ export type Database = {
           annotation: string
           author_id: string | null
           content: string
+          content_with_markers: string | null
           cover_image_path: string | null
           created_at: string
           fact_check_report: Json
@@ -4380,6 +4381,7 @@ export type Database = {
           annotation?: string
           author_id?: string | null
           content?: string
+          content_with_markers?: string | null
           cover_image_path?: string | null
           created_at?: string
           fact_check_report?: Json
@@ -4401,6 +4403,7 @@ export type Database = {
           annotation?: string
           author_id?: string | null
           content?: string
+          content_with_markers?: string | null
           cover_image_path?: string | null
           created_at?: string
           fact_check_report?: Json
