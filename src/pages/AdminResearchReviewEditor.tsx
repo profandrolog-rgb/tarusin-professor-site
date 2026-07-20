@@ -363,6 +363,30 @@ const AdminResearchReviewEditor = () => {
         />
       </Suspense>
 
+      {(status || orchestrating) && (
+        <OrchestratorProgress
+          status={status}
+          lastStep={lastStep}
+          error={orchestratorError}
+          timers={timers}
+          onRetryAll={orchestrate}
+        />
+      )}
+
+      <OrchestratorArtifacts
+        searchResult={searchResult}
+        content={row.content_with_markers || row.content}
+        factCheck={fcReport}
+      />
+
+      {status === "done" && (fcReport.not_found_in_source?.length ?? 0) > 0 && (
+        <FactCheckFixList
+          content={row.content_with_markers || row.content || ""}
+          factCheck={fcReport}
+          onApply={applyRefinement}
+        />
+      )}
+
       <Suspense fallback={Fallback}>
         <PublishBar
           title={row.title || ""}
