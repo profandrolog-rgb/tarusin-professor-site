@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen, Settings2 } from 'lucide-react';
+import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
-import { requestSignedUrl, uploadWithProgress, deleteObject, initYcBucketCors, uploadResearchFile } from '@/lib/research/uploadToYc';
+import { deleteObject, uploadResearchFile } from '@/lib/research/uploadToYc';
 
 
 export interface Material {
@@ -59,25 +59,11 @@ export default function MaterialsPanel(p: Props) {
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [configuringCors, setConfiguringCors] = useState(false);
 
   const totalBytes = p.materials.reduce((s, m) => s + (m.size || 0), 0);
 
   function assignMarkers(list: Material[]): Material[] {
     return list.map((m, i) => ({ ...m, marker: m.marker || `[M${i + 1}]` }));
-  }
-
-  async function configureCors() {
-    setConfiguringCors(true);
-    try {
-      const r = await initYcBucketCors();
-      if (r?.ok) toast.success('CORS хранилища настроен. Повторите загрузку.');
-      else toast.error(`Не удалось настроить CORS: ${r?.status} ${(r?.body || '').slice(0, 120)}`);
-    } catch (e: any) {
-      toast.error(e?.message || 'Ошибка настройки CORS');
-    } finally {
-      setConfiguringCors(false);
-    }
   }
 
 
@@ -213,14 +199,8 @@ export default function MaterialsPanel(p: Props) {
               PDF · DOCX · PPTX · XLSX · изображения · аудио · схемы · интеллект-карты
             </div>
           </div>
-          <div className="flex items-center justify-between gap-2 mt-2">
-            <span className="text-xs text-muted-foreground">
-              Прямая загрузка в Yandex Object Storage через presigned URL
-            </span>
-            <Button variant="ghost" size="sm" onClick={configureCors} disabled={configuringCors} title="Разово настроить CORS на бакете (при первой загрузке или после смены домена)">
-              {configuringCors ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Settings2 className="w-3.5 h-3.5 mr-1" />}
-              Настроить CORS хранилища
-            </Button>
+          <div className="mt-2 text-xs text-muted-foreground">
+            Прямая загрузка в Yandex Object Storage через presigned URL
           </div>
           {Object.entries(progress).length > 0 && (
             <div className="mt-2 space-y-1">

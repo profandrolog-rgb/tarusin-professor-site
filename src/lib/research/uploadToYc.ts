@@ -39,7 +39,7 @@ export function uploadWithProgress(
       else reject(new Error(`upload failed: ${xhr.status} ${xhr.responseText?.slice(0, 200) || ''}`));
     };
     xhr.onerror = () => reject(new Error(
-      'CORS/network: браузер не смог загрузить в Yandex Object Storage. Нажмите «Настроить CORS хранилища» и повторите.'
+      'CORS/network: браузер не смог загрузить в Yandex Object Storage. Проверьте настройки CORS бакета или сетевое соединение.'
     ));
     xhr.send(file);
   });
@@ -70,15 +70,6 @@ export async function uploadResearchFile(
   }
   return { objectKey: sig.objectKey, text };
 }
-
-export async function initYcBucketCors(): Promise<{ ok: boolean; status: number; body: string }> {
-  const { data, error } = await supabase.functions.invoke('research-materials-signurl', {
-    body: { operation: 'init_cors' },
-  });
-  if (error) throw new Error(error.message || 'init_cors failed');
-  return data;
-}
-
 
 export async function deleteObject(objectKey: string): Promise<void> {
   const { url } = await requestSignedUrl({ operation: 'delete', objectKey });
