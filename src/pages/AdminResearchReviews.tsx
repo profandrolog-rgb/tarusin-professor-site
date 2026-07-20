@@ -4,11 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
@@ -17,11 +12,7 @@ import { ru } from "date-fns/locale";
 
 const AdminResearchReviews = () => {
   const nav = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [aTopic, setATopic] = useState("");
-  const [aText, setAText] = useState("");
-  const [bTopic, setBTopic] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const { data: reviews = [], refetch } = useQuery({
     queryKey: ["admin-research-reviews"],
@@ -35,52 +26,33 @@ const AdminResearchReviews = () => {
     },
   });
 
-  async function runImport() {
-    if (!aTopic.trim() || !aText.trim()) {
-      toast.error("Заполните тему и текст");
-      return;
-    }
-    setLoading(true);
+  async function createEmpty() {
+    setCreating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("research-review-import", {
-        body: { topic: aTopic, raw_text: aText },
-      });
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) throw new Error("Не авторизован");
+      const slug = `draft-${Date.now()}`;
+      const { data, error } = await supabase
+        .from("research_reviews" as any)
+        .insert({
+          slug,
+          title: "Новый обзор",
+          topic: "",
+          status: "draft",
+          source_type: "manual",
+          content: "",
+          created_by: uid,
+        } as any)
+        .select("id")
+        .single();
       if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success("Черновик создан");
-      setOpen(false);
-      setATopic("");
-      setAText("");
       await refetch();
-      nav(`/admin/research-reviews/${(data as any).review.id}`);
+      nav(`/admin/research-reviews/${(data as any).id}`);
     } catch (e: any) {
-      toast.error(e?.message || "Ошибка обработки");
+      toast.error(e?.message || "Не удалось создать обзор");
     } finally {
-      setLoading(false);
-    }
-  }
-
-  async function runOrchestrate() {
-    if (!bTopic.trim()) {
-      toast.error("Укажите тему");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("research-review-orchestrate", {
-        body: { topic: bTopic },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success("Обзор сгенерирован");
-      setOpen(false);
-      setBTopic("");
-      await refetch();
-      nav(`/admin/research-reviews/${(data as any).review.id}`);
-    } catch (e: any) {
-      toast.error(e?.message || "Ошибка оркестратора");
-    } finally {
-      setLoading(false);
+      setCreating(false);
     }
   }
 
@@ -106,47 +78,10 @@ const AdminResearchReviews = () => {
           <Link to="/admin"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" /> Админка</Button></Link>
           <h1 className="text-2xl font-bold">Мои исследования и литературные обзоры</h1>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-1" /> Новый обзор</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Создание черновика обзора</DialogTitle></DialogHeader>
-            <Tabs defaultValue="a">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="a">A. Причесать готовый текст</TabsTrigger>
-                <TabsTrigger value="b">B. Полный поиск и написание</TabsTrigger>
-              </TabsList>
-              <TabsContent value="a" className="space-y-3 pt-3">
-                <div>
-                  <Label>Тема</Label>
-                  <Input value={aTopic} onChange={(e) => setATopic(e.target.value)} placeholder="Например: Микрохирургическое лечение варикоцеле у подростков" />
-                </div>
-                <div>
-                  <Label>Исходный текст</Label>
-                  <Textarea value={aText} onChange={(e) => setAText(e.target.value)} rows={12} placeholder="Вставьте готовый текст исследования..." />
-                </div>
-                <Button onClick={runImport} disabled={loading} className="w-full">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Обработать через Claude Sonnet
-                </Button>
-              </TabsContent>
-              <TabsContent value="b" className="space-y-3 pt-3">
-                <div>
-                  <Label>Тема / вопрос для обзора</Label>
-                  <Textarea value={bTopic} onChange={(e) => setBTopic(e.target.value)} rows={5} placeholder="Например: Современные подходы к диагностике тестикулярного микролитиаза у детей" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Пайплайн: поиск литературы (Perplexity Sonar + PubMed) → синтез → написание обзора (Claude Sonnet) → факт-чек. Занимает 1-3 минуты.
-                </p>
-                <Button onClick={runOrchestrate} disabled={loading} className="w-full">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Запустить оркестратор
-                </Button>
-              </TabsContent>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={createEmpty} disabled={creating}>
+          {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-1" />}
+          Новый обзор
+        </Button>
       </div>
 
       <Card>
