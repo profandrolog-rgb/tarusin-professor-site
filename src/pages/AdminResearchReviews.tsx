@@ -40,9 +40,9 @@ const AdminResearchReviews = () => {
           title: "Новый обзор",
           topic: "",
           status: "draft",
-          source_type: "manual",
+          source_type: "manual_import",
           content: "",
-          created_by: uid,
+          author_id: uid,
         } as any)
         .select("id")
         .single();
