@@ -122,12 +122,16 @@ ${materials_context ? `Учитывай контекст уже загружен
     }
 
     currentStep = 'writing';
-    await markStatus('writing');
+    await markStatus('writing', { search_result: String(searchResult || '').slice(0, 20000) });
 
     const markersList = Array.isArray(materials_list) && materials_list.length
       ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
       : '';
-    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}]}. В content обязательны маркеры [M#] по правилам выше.`;
+    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}],"seo_title":"...","seo_meta_description":"..."}. В content обязательны маркеры [M#] по правилам выше.
+
+Требования к SEO-полям:
+- seo_title: до 60 символов, ЗАКОНЧЕННАЯ фраза на русском, без обрыва на полуслове и без многоточия. Если не помещается — переформулируй короче, а не отрезай.
+- seo_meta_description: до 160 символов, ЗАКОНЧЕННОЕ предложение (или два), без обрыва и многоточия. Если не помещается — переформулируй короче.`;
 
     let parsed: any = null;
     let lastErr: any = null;
@@ -198,6 +202,8 @@ ${content.slice(0, 20000)}`;
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
     const annotation = String(parsed.annotation || '').slice(0, 2000);
     const refs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
+    const seoTitle = String(parsed.seo_title || title || '').trim();
+    const seoDesc = String(parsed.seo_meta_description || annotation || '').trim();
 
     if (review_id) {
       await admin.from('research_reviews').update({
@@ -207,8 +213,8 @@ ${content.slice(0, 20000)}`;
         references_list: refs,
         fact_check_report: factCheck,
         source_type: 'orchestrator_generated',
-        seo_title: title.slice(0, 60),
-        seo_meta_description: annotation.slice(0, 160),
+        seo_title: seoTitle,
+        seo_meta_description: seoDesc,
       }).eq('id', review_id);
     } else {
       const baseSlug = slugify(title);
@@ -225,8 +231,8 @@ ${content.slice(0, 20000)}`;
         references_list: refs,
         fact_check_report: factCheck,
         source_type: 'orchestrator_generated',
-        seo_title: title.slice(0, 60),
-        seo_meta_description: annotation.slice(0, 160),
+        seo_title: seoTitle,
+        seo_meta_description: seoDesc,
         status: 'draft',
         author_id: authorId,
       });
