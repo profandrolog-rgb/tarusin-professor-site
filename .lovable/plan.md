@@ -1,102 +1,68 @@
-# План: раздел «Мои исследования и литературные обзоры»
+# Мультимодальный загрузчик материалов для научных обзоров
 
-Полностью зеркалит редакторский/SEO-пайплайн статей для родителей, но с академическим тоном и отдельным «Научным» system-промптом, который нельзя смешивать с промптом блога.
+Встраиваю новый блок «Материалы и черновик» прямо в `AdminResearchReviewEditor` над существующей карточкой «Основное». Всю тяжёлую работу выполняют 3 новых Edge Function, финальную оркестрацию — обновлённый `research-review-orchestrate`.
 
-## 1. База данных (одна миграция)
+## Что появится на странице обзора
 
-Таблица `public.research_reviews`:
-- `id uuid pk`, `slug text unique not null`
-- `title text`, `annotation text`
-- `content text` (TipTap HTML, как у остальных статей)
-- `topic text` (для фильтра тем), `cover_image_path text null`
-- `references_list jsonb default '[]'::jsonb` — `[{number, authors, title, journal, year, volume_issue, pages, doi_or_pmid, verified}]`
-- `fact_check_report jsonb default '[]'::jsonb` — `[{quote, issue, suggested_fix, confidence}]` (админ-only)
-- `source_type text check in ('manual_import','orchestrator_generated')`
-- `seo_title text`, `seo_meta_description text` (правятся вручную)
-- `status text check in ('draft','in_review','published') default 'draft'`
-- `author_id uuid`, `created_at`, `updated_at`, `published_at`
-- Триггер `updated_at`.
+**Секция 1 — «Материалы»**
+- Drop-zone для файлов: PDF, DOCX, PPTX, изображения (PNG/JPG/WEBP), аудио (mp3/m4a/webm). Загрузка в приватный бакет `research-materials` через signed URL.
+- Поле «Добавить ссылку»: авто-определение YouTube / PubMed-PMC / обычного веб-URL.
+- Список добавленных материалов с типом, названием, превью и кнопкой удаления.
+- Многострочное поле «Дополнительный контекст / инструкции».
 
-GRANTs + RLS:
-- `GRANT SELECT` для `anon` только на строки `status='published'` (через policy).
-- `GRANT ALL` для `authenticated` с ролью `admin`/`editor` (через `has_role`), плюс `service_role`.
-- Индекс по `slug`, `status`, `published_at desc`.
+**Секция 2 — «Первичный анализ» (1 звонок)**
+- Кнопка «Проанализировать материалы» → вызывает `research-materials-analyze`.
+- Результат: краткое саммари, ключевые тезисы, черновой план обзора, распознанные источники (готовые к включению в references_list).
 
-## 2. Edge-функции (Supabase)
+**Секция 3 — «Что сделать с материалом» (обе опции в одном UI)**
+- Быстрые кнопки: **Сократить · Углубить · Расширить/Дополнить · Объединить (для мерджа с уже сгенерированным контентом обзора) · Переписать научнее**.
+- Поле свободного промпта + кнопка «Применить».
+- Каждое действие — 1 звонок в `research-materials-refine`, история правок в чат-ленте (можно откатиться к предыдущей версии).
 
-- `research-review-import` (Стратегия A): вход `{topic, raw_text}` → Claude Sonnet через Lovable AI Gateway с константой `RESEARCH_MODE_SYSTEM_PROMPT` → возвращает `{title, annotation, content, references_list, fact_check_report}` → сохраняет строку `status='draft'`, `source_type='manual_import'`.
-- `research-review-orchestrate` (Стратегия B): тема → web_search + PubMed (используем существующие `ai-pubmed` / `smart-search`) → агрегация → rewrite по «Научному промпту» → fact-check-проход → сохраняет `status='draft'`, `source_type='orchestrator_generated'`. Использует инфраструктуру `orchestrate-article`, но подключает СВОЙ system-промпт.
-
-Файл `supabase/functions/_shared/researchModePrompt.ts` содержит константу с полным текстом промпта из ТЗ и жирный комментарий-предупреждение: «НЕ смешивать с промптом блога для родителей — противоположные требования к личному голосу».
-
-## 3. Админка
-
-Маршрут `/admin/research-reviews`:
-- Список обзоров (title, status, обновлено, действия: править / in_review / опубликовать / удалить).
-- Кнопка «Новый обзор» → диалог с двумя вкладками:
-  - **A. Причесать готовый текст** — поля тема, текст → «Обработать».
-  - **B. Полный поиск и написание** — поле темы/вопроса → «Запустить оркестратор» (прогресс-бар этапов).
-- Редактор обзора: тот же TipTap, что и в статьях для родителей (переиспользуем `RichTextEditor`), плюс блоки:
-  - редактор `references_list` (нумерация, автор, журнал, год, DOI/PMID, чекбокс verified),
-  - просмотр/правка `fact_check_report` (сворачиваемый, админ-only),
-  - поля `seo_title`, `seo_meta_description`, `slug`, `topic`, обложка,
-  - плейсхолдеры иллюстраций `[[illustration:img-N]]` через существующий механизм.
-- Экран **in_review**: превью публичной страницы + fact_check_report + кнопки «Вернуть в draft» / «Опубликовать». Автопубликации нет.
-
-## 4. Публичная часть
-
-- `/for-doctors/research` — список опубликованных обзоров с фильтром по темам (отдельная вкладка в разделе для врачей).
-- `/for-doctors/research/:slug` — страница обзора:
-  - заголовок, аннотация,
-  - HTML контента с DOMPurify, автоматическая замена ссылок вида `[N]` на `<a href="#ref-N">`,
-  - список литературы в конце с якорями `#ref-N`,
-  - иллюстрации через существующий плейсхолдер-механизм,
-  - `fact_check_report` НЕ выводится.
-
-## 5. SEO (полный паритет с пайплайном статей для родителей)
-
-На странице обзора через `PageMeta` + `JsonLd`:
-- Уникальные `seo_title` / `seo_meta_description` из БД (fallback: `title` / `annotation`).
-- Canonical `https://tarusin.pro/for-doctors/research/{slug}/`.
-- hreflang ru/en/x-default через существующий `getAlternates`.
-- OG/Twitter теги (image = обложка обзора при наличии).
-- JSON-LD: `Person` (автор — проф. Тарусин) + `MedicalScholarlyArticle` (headline, abstract, datePublished, author, citation из `references_list`).
-- `scripts/generate-sitemap.ts`: подгружает опубликованные `research_reviews` и добавляет URL `/for-doctors/research/{slug}/` в sitemap при билде (тот же механизм, что уже используется).
-- Slug человекочитаемый, генерируется из темы (с ручной правкой).
-
-## 6. Архитектурная гарантия
-
-`RESEARCH_MODE_SYSTEM_PROMPT` — отдельная константа в `supabase/functions/_shared/researchModePrompt.ts`, импортируется ТОЛЬКО в `research-review-import` и в ветку research оркестратора. В файле — комментарий с явным запретом смешивания с `EDITORIAL_FIXED_PROMPT` из `orchestrate-article`.
+**Секция 4 — «В оркестратор» (3 звонка)**
+- Кнопка «Отправить в оркестратор» → обновлённый `research-review-orchestrate`:
+  1. **Поиск литературы** (Perplexity Sonar по теме + материалам).
+  2. **Написание обзора** (Gemini 3.1 Pro Preview с полным контекстом материалов и научным промптом).
+  3. **Факт-чек и правки** (Gemini повторным проходом сверяет с материалами и источниками, возвращает `fact_check_report`).
+- Результат подставляется в поля `title / annotation / content / references_list / fact_check_report` текущего обзора (перезапись с confirm).
+- После оркестрации доступен тот же чат правок (кнопки + свободный промпт) — контекст сохраняется.
 
 ## Технические детали
 
-- Модель для стратегии A: Claude Sonnet через Lovable AI Gateway (`anthropic/claude-sonnet-4.5` или ближайший доступный в каталоге; при отсутствии — fallback на `openai/gpt-5.5` с логом-предупреждением).
-- Ветка B использует существующий пайплайн `orchestrate-article`, но принимает флаг `mode: 'research'`, который подменяет system-промпт и меняет пункт назначения на `research_reviews`.
-- Все правки автора идут через тот же `useDebouncedAutoSave` + ручное «Сохранить»/«Опубликовать».
-- Роли: доступ к админке — `admin`/`editor` (через `has_role`).
+**Новые Edge Functions:**
+- `research-materials-analyze` — принимает `{materials: [...], instructions}`, готовит multimodal message для Gemini 3.1 Pro Preview через AI Gateway. Логика подготовки контента по типу:
+  - `file/pdf|image|audio` → скачивает по signed URL, base64 → `image_url` / `input_audio` / `file` block.
+  - `file/docx|pptx` → извлекает текст (mammoth для DOCX, jszip+xml для PPTX) → text block с пометкой источника.
+  - `youtube` → URL передаётся Gemini напрямую (Gemini умеет youtube.com). Если Gemini вернёт ошибку/пусто — фолбэк на `ai-transcribe`.
+  - `pubmed` (URL с PMID/PMC) → вызывает существующую `ai-pubmed-fulltext`, вставляет полученный markdown как text block.
+  - `url` → Firecrawl `/v2/scrape` (formats: markdown, summary), вставляет как text block с указанием источника.
+- `research-materials-refine` — принимает `{current_content, action, custom_prompt, materials_context}`, 1 звонок в Gemini, возвращает `{new_content, diff_summary}`.
+- Обновление `research-review-orchestrate` — добавляется параметр `materials_context` (текст из первичного анализа) и третий проход факт-чека.
 
-## Что затрагивается в коде
+**Хранение состояния:**
+- Новое поле в `research_reviews`: `source_materials jsonb` — массив материалов (тип, url/path, имя, короткое саммари) для отображения истории.
+- Новое поле `refinement_history jsonb` — лента правок (action, prompt, timestamp, snapshot_content).
+- Миграция + GRANT для `authenticated`/`service_role`.
+- Storage bucket `research-materials` (приватный, RLS на роль admin/editor).
 
-- Новая миграция БД.
-- Новые файлы:
-  - `supabase/functions/_shared/researchModePrompt.ts`
-  - `supabase/functions/research-review-import/index.ts`
-  - `supabase/functions/research-review-orchestrate/index.ts`
-  - `src/pages/AdminResearchReviews.tsx` (список + диалог создания)
-  - `src/pages/AdminResearchReviewEditor.tsx` (редактор + in_review)
-  - `src/pages/ForDoctorsResearchList.tsx`
-  - `src/pages/ForDoctorsResearchDetail.tsx`
-  - компоненты `ResearchReferencesEditor.tsx`, `ResearchFactCheckPanel.tsx`
-- Правки:
-  - `src/App.tsx` — маршруты `/admin/research-reviews`, `/admin/research-reviews/:id`, `/for-doctors/research`, `/for-doctors/research/:slug`.
-  - `src/pages/ForDoctors.tsx` — вкладка «Мои исследования и литературные обзоры».
-  - `src/pages/Admin.tsx` — карточка входа в новый раздел админки.
-  - `scripts/generate-sitemap.ts` — подтянуть опубликованные обзоры.
+**Frontend:**
+- Новый компонент `src/components/admin/research/MaterialsPanel.tsx` (drop-zone, список, добавление ссылок).
+- Новый компонент `src/components/admin/research/RefinementChat.tsx` (кнопки действий + свободный промпт, история).
+- Интеграция в `AdminResearchReviewEditor.tsx` (две новые карточки перед «Основное»).
+- Утилиты `src/lib/research/materialTypes.ts`, `detectMaterialType.ts` (регэкспы YouTube/PubMed).
 
-## Уточнения / допущения
+**Модель и промпты:**
+- Основная модель для всех новых вызовов: `google/gemini-3.1-pro-preview` через Lovable AI Gateway (multimodal T,I,A,V → T).
+- Промпты хранятся в `supabase/functions/_shared/researchModePrompt.ts` (добавляю новые пресеты для analyze/refine).
 
-- Двуязычность: пока делаю только RU-контент, но hreflang ru/en/x-default выставляю по существующему паттерну (без автоперевода). Если нужен полноценный EN-контент/перевод — скажите, добавлю связку через `content_translations`.
-- Иллюстрации: использую тот же плейсхолдер `[[illustration:img-N]]` и текущий механизм подстановки, без отдельной галереи под этот раздел.
-- Ветка B: реализую поверх текущего `orchestrate-article` (флаг `mode:'research'`); если хотите полностью отдельный оркестратор — скажите, вынесу.
+**Ограничения MVP:**
+- Формат «интеллект-карт» (`.mm`, XMind) — поддерживаю через экспорт в изображение/PDF. Про сырые бинарники MindMeister/XMind явно скажу в UI.
+- Схемы (drawio, excalidraw) — как экспортированные PNG/SVG.
+- Максимум 20 материалов за раз, суммарно ≤ 50 МБ (лимит Gemini на inline base64).
 
-Подтвердите план — начну реализацию.
+## Не входит в этот этап
+- Публичный UI для парента/врача — только админский редактор.
+- Автоматическое добавление галерей внутрь `content` (галереи админ добавляет сам через RichTextEditor). Форматирование и стили обзоров уже единые.
+- Автоперевод обзоров на EN — существующая translate-queue отработает после публикации.
+
+Продолжаю с реализации в этом порядке: миграция БД → 3 edge function → компоненты → интеграция в редактор.

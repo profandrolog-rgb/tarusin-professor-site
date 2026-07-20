@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import RichTextEditor from "@/components/blog/RichTextEditor";
+import MaterialsPanel, { type Material } from "@/components/admin/research/MaterialsPanel";
+import RefinementChat, { type RefinementEntry } from "@/components/admin/research/RefinementChat";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus } from "lucide-react";
 
@@ -27,10 +29,14 @@ interface FactCheck { quote: string; issue: string; suggested_fix: string; confi
 
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
-  const nav = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
+
+  const [instructions, setInstructions] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<any | null>(null);
+  const [orchestrating, setOrchestrating] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -57,6 +63,8 @@ const AdminResearchReviewEditor = () => {
       seo_title: row.seo_title,
       seo_meta_description: row.seo_meta_description,
       cover_image_path: row.cover_image_path,
+      source_materials: row.source_materials || [],
+      refinement_history: row.refinement_history || [],
     };
     if (newStatus) {
       payload.status = newStatus;
@@ -71,11 +79,91 @@ const AdminResearchReviewEditor = () => {
     }
   }
 
+  async function saveSilently(patch: any) {
+    if (!row) return;
+    await supabase.from("research_reviews" as any).update(patch).eq("id", row.id);
+  }
+
+  async function analyzeMaterials() {
+    if (!row) return;
+    const materials: Material[] = row.source_materials || [];
+    if (materials.length === 0) {
+      toast.error("Добавьте хотя бы один материал");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("research-materials-analyze", {
+        body: { materials, instructions, topic: row.topic },
+      });
+      if (error) throw error;
+      if (!data?.analysis) throw new Error("пустой ответ");
+      setAnalysis(data.analysis);
+      toast.success("Анализ готов");
+    } catch (e: any) {
+      toast.error(e?.message || "Ошибка анализа");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function orchestrate() {
+    if (!row) return;
+    if (!row.topic && !analysis) {
+      toast.error("Укажите тему обзора или сначала запустите анализ материалов");
+      return;
+    }
+    if (row.content && !confirm("Текущий текст обзора будет перезаписан. Продолжить?")) return;
+    setOrchestrating(true);
+    try {
+      const materials_context = analysis
+        ? [
+            analysis.summary,
+            analysis.draft_outline,
+            Array.isArray(analysis.key_points) ? "Ключевые тезисы:\n- " + analysis.key_points.join("\n- ") : "",
+            Array.isArray(analysis.detected_sources) ? "Источники:\n" + analysis.detected_sources.map((s: any) => `- ${[s.authors, s.title, s.journal, s.year, s.doi_or_pmid].filter(Boolean).join(". ")}`).join("\n") : "",
+          ].filter(Boolean).join("\n\n")
+        : "";
+      const { data, error } = await supabase.functions.invoke("research-review-orchestrate", {
+        body: { topic: row.topic || row.title, materials_context, review_id: row.id },
+      });
+      if (error) throw error;
+      if (!data?.review) throw new Error("пустой ответ оркестратора");
+      setRow(data.review);
+      toast.success("Обзор готов");
+    } catch (e: any) {
+      toast.error(e?.message || "Ошибка оркестратора");
+    } finally {
+      setOrchestrating(false);
+    }
+  }
+
+  function applyRefinement(newContent: string, entry: RefinementEntry) {
+    const nextHistory = [...(row.refinement_history || []), entry];
+    const patch = { content: newContent, refinement_history: nextHistory };
+    setRow({ ...row, ...patch });
+    saveSilently(patch);
+  }
+
+  function rollback(entry: RefinementEntry) {
+    if (!confirm("Откатить контент к состоянию до этой правки?")) return;
+    const patch = { content: entry.snapshot_content };
+    setRow({ ...row, ...patch });
+    saveSilently(patch);
+    toast.success("Откат выполнен");
+  }
+
   if (loading) return <div className="p-6"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!row) return <div className="p-6">Не найдено</div>;
 
   const refs: Ref[] = Array.isArray(row.references_list) ? row.references_list : [];
   const fc: FactCheck[] = Array.isArray(row.fact_check_report) ? row.fact_check_report : [];
+  const materials: Material[] = Array.isArray(row.source_materials) ? row.source_materials : [];
+  const history: RefinementEntry[] = Array.isArray(row.refinement_history) ? row.refinement_history : [];
+
+  const materialsContextForRefine = analysis
+    ? [analysis.summary, Array.isArray(analysis.key_points) ? analysis.key_points.join("\n") : ""].filter(Boolean).join("\n\n")
+    : "";
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-4">
@@ -113,6 +201,29 @@ const AdminResearchReviewEditor = () => {
           )}
         </div>
       </div>
+
+      <MaterialsPanel
+        reviewId={row.id}
+        materials={materials}
+        onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
+        instructions={instructions}
+        onInstructionsChange={setInstructions}
+        onAnalyze={analyzeMaterials}
+        analyzing={analyzing}
+        analysis={analysis}
+      />
+
+      <RefinementChat
+        reviewId={row.id}
+        title={row.title || ""}
+        currentContent={row.content || ""}
+        materialsContext={materialsContextForRefine}
+        history={history}
+        onApply={applyRefinement}
+        onRollback={rollback}
+        onOrchestrate={orchestrate}
+        orchestrating={orchestrating}
+      />
 
       <Card>
         <CardHeader><CardTitle>Основное</CardTitle></CardHeader>

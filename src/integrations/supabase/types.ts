@@ -4365,9 +4365,11 @@ export type Database = {
           id: string
           published_at: string | null
           references_list: Json
+          refinement_history: Json
           seo_meta_description: string | null
           seo_title: string | null
           slug: string
+          source_materials: Json
           source_type: string
           status: string
           title: string
@@ -4384,9 +4386,11 @@ export type Database = {
           id?: string
           published_at?: string | null
           references_list?: Json
+          refinement_history?: Json
           seo_meta_description?: string | null
           seo_title?: string | null
           slug: string
+          source_materials?: Json
           source_type?: string
           status?: string
           title?: string
@@ -4403,9 +4407,11 @@ export type Database = {
           id?: string
           published_at?: string | null
           references_list?: Json
+          refinement_history?: Json
           seo_meta_description?: string | null
           seo_title?: string | null
           slug?: string
+          source_materials?: Json
           source_type?: string
           status?: string
           title?: string
