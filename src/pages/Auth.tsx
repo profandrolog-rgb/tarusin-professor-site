@@ -140,7 +140,7 @@ const Auth = () => {
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input id="signin-email" type="email" placeholder="email@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10" />
                     </div>
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                    <p className="text-sm text-destructive min-h-5">{errors.email || "\u00A0"}</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">{isEn ? "Password" : "Пароль"}</Label>
@@ -148,7 +148,7 @@ const Auth = () => {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input id="signin-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" />
                     </div>
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                    <p className="text-sm text-destructive min-h-5">{errors.password || "\u00A0"}</p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{isEn ? "Signing in..." : "Вход..."}</> : (isEn ? "Sign In" : "Войти")}
