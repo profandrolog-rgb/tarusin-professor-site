@@ -132,17 +132,23 @@ const AdminResearchReviewEditor = () => {
   // Auto-poll while orchestrator is active (resumes after F5)
   useEffect(() => {
     if (!row?.id) return;
-    const active = status === "searching" || status === "writing" || status === "fact_checking" || status === "queued";
-    if (!active) { setOrchestrating(false); pollingRef.current = false; return; }
+    const statusActive = status === "searching" || status === "writing" || status === "fact_checking" || status === "queued";
+    const recentlyStarted = orchestrating && Date.now() - orchestratingStartedAtRef.current < 10_000;
+    const active = statusActive || orchestrating;
+    if (!active) { pollingRef.current = false; return; }
+    if (!statusActive && !recentlyStarted) {
+      setOrchestrating(false);
+      pollingRef.current = false;
+      return;
+    }
     if (pollingRef.current) return;
     pollingRef.current = true;
-    setOrchestrating(true);
     const int = setInterval(async () => {
       const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
       if (fresh) setRow(fresh);
     }, 5000);
     return () => { clearInterval(int); pollingRef.current = false; };
-  }, [row?.id, status]);
+  }, [row?.id, status, orchestrating]);
 
   function update(patch: any) { setRow((r: any) => ({ ...r, ...patch })); }
 
