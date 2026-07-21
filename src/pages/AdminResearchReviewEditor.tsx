@@ -435,6 +435,14 @@ const AdminResearchReviewEditor = () => {
         <GalleryPanel
           slug={row.slug || ""}
           materials={materials}
+          value={Array.isArray(row.gallery_images) ? row.gallery_images : []}
+          onChange={(imgs) => {
+            const patch = { gallery_images: imgs };
+            setRow({ ...row, ...patch });
+            saveSilently(patch);
+          }}
+          content={row.content || ""}
+          contentWithMarkers={row.content_with_markers || ""}
           onInsertMarker={(marker) => {
             const current: string = row.content || "";
             const next = current
@@ -446,6 +454,7 @@ const AdminResearchReviewEditor = () => {
           }}
         />
       </Suspense>
+
 
       <Suspense fallback={Fallback}>
         <RefinementChat
