@@ -28,6 +28,14 @@ export interface GalleryImage {
 interface Props {
   slug: string;
   materials: Material[];
+  /** Сохранённый список галерей (row.gallery_images). */
+  value: GalleryImage[];
+  /** Патчит row.gallery_images и сохраняет строку. */
+  onChange: (images: GalleryImage[]) => void;
+  /** Текст обзора без маркеров провенанса — для проверки использования файла. */
+  content: string;
+  /** Текст с маркерами [M#] — для проверки использования файла. */
+  contentWithMarkers: string;
   /** Вставляет готовый маркер [[GALLERY: ...]] в текст обзора. */
   onInsertMarker: (marker: string) => void;
 }
@@ -35,12 +43,6 @@ interface Props {
 function publicUrl(filename: string): string {
   const safe = filename.split("/").map(encodeURIComponent).join("/");
   return `${STORAGE_BASE}/${FOLDER}/${safe}`;
-}
-
-function detectKind(filename: string): GalleryImageKind {
-  if (/-infographic-/i.test(filename)) return "infographic";
-  if (/-patient-full-/i.test(filename)) return "patient-full";
-  return "normal";
 }
 
 function safeSlugPart(slug: string): string {
@@ -52,11 +54,14 @@ function safeSlugPart(slug: string): string {
     .slice(0, 60) || "review";
 }
 
-export default function GalleryPanel({ slug, materials, onInsertMarker }: Props) {
-  const [images, setImages] = useState<GalleryImage[]>([]);
+export default function GalleryPanel({
+  slug, materials, value, onChange, content, contentWithMarkers, onInsertMarker,
+}: Props) {
+  const images = value;
   const [caption, setCaption] = useState("Иллюстрации");
   const [uploading, setUploading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const marker = useMemo(
@@ -100,36 +105,72 @@ export default function GalleryPanel({ slug, materials, onInsertMarker }: Props)
     }
     setUploading(false);
     if (added.length) {
-      setImages((prev) => [...prev, ...added]);
+      onChange([...images, ...added]);
       toast.success(`Добавлено: ${added.length}`);
     }
     if (fileInput.current) fileInput.current.value = "";
   }
 
-  function updateImage(id: string, patch: Partial<GalleryImage>) {
-    setImages((prev) =>
-      prev.map((im) => {
-        if (im.id !== id) return im;
-        // Смена типа переименовывает файл через маркеры в имени.
-        if (patch.kind && patch.kind !== im.kind) {
-          const renamed = im.filename
-            .replace(/-(normal|infographic|patient-full)-/i, `-${patch.kind}-`);
-          return { ...im, ...patch, filename: renamed };
-        }
-        return { ...im, ...patch };
-      }),
-    );
-  }
-
-  async function removeImage(id: string) {
+  /** Меняет подпись мгновенно; смену kind сопровождает реальным move в бакете. */
+  async function updateImage(id: string, patch: Partial<GalleryImage>) {
     const im = images.find((x) => x.id === id);
     if (!im) return;
-    setImages((prev) => prev.filter((x) => x.id !== id));
+
+    if (patch.kind && patch.kind !== im.kind) {
+      const newFilename = im.filename.replace(
+        /-(normal|infographic|patient-full)-/i,
+        `-${patch.kind}-`,
+      );
+      if (newFilename === im.filename) {
+        onChange(images.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+        return;
+      }
+      const oldPath = `${FOLDER}/${im.filename}`;
+      const newPath = `${FOLDER}/${newFilename}`;
+      setRenamingId(id);
+      const { error } = await supabase.storage.from(BUCKET).move(oldPath, newPath);
+      setRenamingId(null);
+      if (error) {
+        toast.error(`Не удалось сменить тип: ${error.message}`);
+        return;
+      }
+      onChange(images.map((x) => (x.id === id ? { ...x, ...patch, filename: newFilename } : x)));
+      return;
+    }
+
+    onChange(images.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+
+  function isUsedInContent(filename: string): boolean {
+    return (content || "").includes(filename) || (contentWithMarkers || "").includes(filename);
+  }
+
+  async function performDelete(id: string) {
+    const im = images.find((x) => x.id === id);
+    if (!im) return;
+    onChange(images.filter((x) => x.id !== id));
     try {
       await supabase.storage.from(BUCKET).remove([`${FOLDER}/${im.filename}`]);
     } catch (e: any) {
       console.warn("remove failed:", e?.message);
     }
+  }
+
+  function removeImage(id: string) {
+    const im = images.find((x) => x.id === id);
+    if (!im) return;
+    if (isUsedInContent(im.filename)) {
+      toast.warning("Изображение используется в тексте обзора", {
+        description: "После удаления в опубликованной галерее останется пустое место.",
+        duration: 10000,
+        action: {
+          label: "Всё равно удалить",
+          onClick: () => { void performDelete(id); },
+        },
+      });
+      return;
+    }
+    void performDelete(id);
   }
 
   function insert() {
@@ -182,39 +223,52 @@ export default function GalleryPanel({ slug, materials, onInsertMarker }: Props)
 
         {images.length > 0 && (
           <div className="space-y-2">
-            {images.map((im) => (
-              <div key={im.id} className="flex items-center gap-2 border rounded p-2">
-                <img
-                  src={publicUrl(im.filename)}
-                  alt=""
-                  className="w-16 h-16 object-cover rounded shrink-0"
-                />
-                <div className="flex-1 min-w-0 space-y-1">
-                  <Input
-                    value={im.caption}
-                    onChange={(e) => updateImage(im.id, { caption: e.target.value })}
-                    placeholder="Подпись к фото"
-                    className="h-8"
+            {images.map((im) => {
+              const renaming = renamingId === im.id;
+              const used = isUsedInContent(im.filename);
+              return (
+                <div key={im.id} className="flex items-center gap-2 border rounded p-2">
+                  <img
+                    src={publicUrl(im.filename)}
+                    alt=""
+                    className="w-16 h-16 object-cover rounded shrink-0"
                   />
-                  <div className="flex items-center gap-2">
-                    <Select value={im.kind} onValueChange={(v) => updateImage(im.id, { kind: v as GalleryImageKind })}>
-                      <SelectTrigger className="h-8 w-40 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="normal">обычное</SelectItem>
-                        <SelectItem value="infographic">инфографика</SelectItem>
-                        <SelectItem value="patient-full">ростовое фото</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Badge variant="outline" className="text-[10px] font-mono truncate max-w-[240px]">{im.filename}</Badge>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <Input
+                      value={im.caption}
+                      onChange={(e) => updateImage(im.id, { caption: e.target.value })}
+                      placeholder="Подпись к фото"
+                      className="h-8"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={im.kind}
+                        onValueChange={(v) => updateImage(im.id, { kind: v as GalleryImageKind })}
+                        disabled={renaming}
+                      >
+                        <SelectTrigger className="h-8 w-40 text-xs">
+                          {renaming
+                            ? <span className="flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />переименование…</span>
+                            : <SelectValue />}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">обычное</SelectItem>
+                          <SelectItem value="infographic">инфографика</SelectItem>
+                          <SelectItem value="patient-full">ростовое фото</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Badge variant="outline" className="text-[10px] font-mono truncate max-w-[240px]">{im.filename}</Badge>
+                      {used && (
+                        <Badge variant="secondary" className="text-[10px]">в тексте</Badge>
+                      )}
+                    </div>
                   </div>
+                  <Button variant="ghost" size="sm" onClick={() => removeImage(im.id)} disabled={renaming}>
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => removeImage(im.id)}>
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -231,7 +285,7 @@ export default function GalleryPanel({ slug, materials, onInsertMarker }: Props)
           materials={materials}
           slug={slug}
           onPicked={(items) => {
-            setImages((prev) => [...prev, ...items]);
+            onChange([...images, ...items]);
             toast.success(`Добавлено из материалов: ${items.length}`);
           }}
         />
