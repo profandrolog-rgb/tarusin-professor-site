@@ -20,6 +20,14 @@ import { playCompletionChime, isSoundEnabled, setSoundEnabled } from "@/lib/noti
 import { toast as sonnerToast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { htmlToMarkdown, markdownToHtml } from "@/lib/markdown/galleryMarkers";
+import {
+  markerDiff,
+  listMarkers,
+  countMarkers,
+  restoreLostMarkersInSuggestion,
+  restoreLostGalleryMarkers,
+  MARKER_RE,
+} from "@/lib/research/markerProtection";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
 import { CURATED_MODELS, resolveCuratedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
