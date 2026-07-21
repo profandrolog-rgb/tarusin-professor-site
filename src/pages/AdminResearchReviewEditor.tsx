@@ -46,7 +46,7 @@ const AdminResearchReviewEditor = () => {
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
-  const contentEditorRef = useRef<Editor | null>(null);
+  const [contentEditor, setContentEditor] = useState<Editor | null>(null);
 
   const [instructions, setInstructions] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
