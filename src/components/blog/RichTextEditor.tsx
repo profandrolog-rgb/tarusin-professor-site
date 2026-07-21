@@ -579,8 +579,6 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       }}
       onDrop={(e) => {
         setDragOver(false);
-        // Если событие уже обработано Tiptap (editorProps.handleDrop → preventDefault),
-        // не запускаем повторную загрузку — иначе одна картинка окажется в статье дважды.
         if (e.defaultPrevented) return;
         const files = e.dataTransfer?.files;
         if (!files || !files.length) return;
@@ -589,8 +587,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         e.preventDefault();
         for (const f of imgs) void uploadAndInsertImage(f, editor);
       }}
-
-
+      onContextMenu={handleContextMenu}
     >
       {/* Spacer when toolbar is fixed */}
       {isToolbarFixed && <div className="h-[42px]" />}
