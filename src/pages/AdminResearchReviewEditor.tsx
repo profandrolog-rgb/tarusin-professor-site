@@ -594,6 +594,12 @@ const AdminResearchReviewEditor = () => {
             onAnalyze={analyzeMaterials}
             analyzing={analyzing}
             analysis={analysis}
+            onInsertTable={async (md) => {
+              const { marked } = await import("marked");
+              const html = await marked.parse(md, { gfm: true, breaks: false });
+              contentEditor?.chain().focus().insertContent(html).run();
+              toast.success("Таблица вставлена в текст обзора");
+            }}
           />
         </Suspense>
       </div>
