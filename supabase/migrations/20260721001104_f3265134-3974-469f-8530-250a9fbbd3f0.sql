@@ -1,0 +1,1 @@
+ALTER TABLE public.research_reviews ADD COLUMN IF NOT EXISTS orchestrator_state jsonb;

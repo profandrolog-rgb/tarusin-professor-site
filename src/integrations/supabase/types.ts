@@ -4364,6 +4364,7 @@ export type Database = {
           created_at: string
           fact_check_report: Json
           id: string
+          orchestrator_state: Json | null
           published_at: string | null
           references_list: Json
           refinement_history: Json
@@ -4386,6 +4387,7 @@ export type Database = {
           created_at?: string
           fact_check_report?: Json
           id?: string
+          orchestrator_state?: Json | null
           published_at?: string | null
           references_list?: Json
           refinement_history?: Json
@@ -4408,6 +4410,7 @@ export type Database = {
           created_at?: string
           fact_check_report?: Json
           id?: string
+          orchestrator_state?: Json | null
           published_at?: string | null
           references_list?: Json
           refinement_history?: Json
