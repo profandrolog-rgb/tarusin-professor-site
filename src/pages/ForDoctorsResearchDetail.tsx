@@ -20,6 +20,8 @@ interface Ref {
 
 const ForDoctorsResearchDetail = () => {
   const { slug } = useParams();
+  const { isAdmin } = useAuth();
+  const [liveContent, setLiveContent] = useState<string | null>(null);
 
   const { data: review, isLoading } = useQuery({
     queryKey: ["research-review", slug],
