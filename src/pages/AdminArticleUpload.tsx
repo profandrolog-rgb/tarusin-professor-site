@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Upload, Loader2, FileText, Sparkles } from "lucide-react";
 
 export default function AdminArticleUpload() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isEditor, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -17,7 +17,7 @@ export default function AdminArticleUpload() {
   const [dragOver, setDragOver] = useState(false);
 
   if (loading) return <div className="container py-12">Загрузка…</div>;
-  if (!user || !isAdmin) return <div className="container py-12">Доступ запрещён</div>;
+  if (!user || (!isAdmin && !isEditor)) return <div className="container py-12">Доступ запрещён</div>;
 
   const processFile = async (file: File) => {
     if (!file) return;

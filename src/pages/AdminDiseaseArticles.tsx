@@ -51,8 +51,9 @@ const emptyForm = {
 };
 
 const AdminDiseaseArticles = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isEditor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const canEdit = isAdmin || isEditor;
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -74,10 +75,10 @@ const AdminDiseaseArticles = () => {
   const articleEditorRef = useRef<ArticleMarkdownEditorHandle>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !canEdit)) {
       navigate("/auth", { state: { from: "/admin/disease-articles" } });
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, canEdit, authLoading, navigate]);
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -90,8 +91,8 @@ const AdminDiseaseArticles = () => {
   };
 
   useEffect(() => {
-    if (user && isAdmin) fetchArticles();
-  }, [user, isAdmin]);
+    if (user && canEdit) fetchArticles();
+  }, [user, canEdit]);
 
   const generateSlug = (title: string) =>
     title.toLowerCase()
@@ -249,7 +250,7 @@ const AdminDiseaseArticles = () => {
     if (!error) fetchArticles();
   };
 
-  if (authLoading || !user || !isAdmin) {
+  if (authLoading || !user || !canEdit) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -59,6 +59,12 @@ const clearCache = (userId?: string) => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const withTimeout = (ms: number) => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), ms);
+  return { signal: controller.signal, clear: () => window.clearTimeout(timer) };
+};
+
 /**
  * Один запрос всех ролей пользователя из user_roles.
  * Возвращает null при сетевой ошибке (после ретраев), Roles при успехе (пустой массив = все false).
@@ -67,10 +73,13 @@ const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
   const delays = [0, 500, 1000, 2000];
   for (let i = 0; i < delays.length; i++) {
     if (delays[i]) await sleep(delays[i]);
+    const timeout = withTimeout(8000);
     const { data, error } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .abortSignal(timeout.signal);
+    timeout.clear();
     if (!error) {
       const set = new Set((data ?? []).map((r: any) => r.role));
       return {
@@ -154,7 +163,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       handleSession(nextSession);
     });
 
-    return () => subscription.unsubscribe();
+    const fallback = window.setTimeout(() => {
+      if (lastUserIdRef.current !== undefined) return;
+      supabase.auth.getSession().then(({ data }) => handleSession(data.session));
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(fallback);
+      subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

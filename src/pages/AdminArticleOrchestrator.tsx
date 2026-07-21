@@ -90,7 +90,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function AdminArticleOrchestrator() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isEditor, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const location = useLocation();
@@ -548,7 +548,7 @@ export default function AdminArticleOrchestrator() {
   };
 
   if (loading) return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>;
-  if (!user || !isAdmin) { navigate("/auth"); return null; }
+  if (!user || (!isAdmin && !isEditor)) { navigate("/auth"); return null; }
 
   const toggleModel = (id: string) => {
     setModels((cur) => cur.includes(id) ? cur.filter((m) => m !== id) : [...cur, id]);
