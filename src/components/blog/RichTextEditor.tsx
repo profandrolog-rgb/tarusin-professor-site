@@ -136,6 +136,12 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     }
   }, [content, editor]);
 
+  useEffect(() => {
+    if (!onEditorReady) return;
+    onEditorReady(editor ?? null);
+    return () => onEditorReady(null);
+  }, [editor, onEditorReady]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
