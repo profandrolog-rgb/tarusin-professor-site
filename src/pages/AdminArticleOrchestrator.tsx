@@ -1618,6 +1618,85 @@ export default function AdminArticleOrchestrator() {
                             {e.rationale}
                           </div>
                         )}
+
+                        {/* Блок 4: восстановление [M#] маркеров */}
+                        {hasLostMarkers && !unrestorable && !acceptedWithoutMk && (
+                          <div className="text-[11px] px-2 py-1 rounded bg-blue-500/10 border border-blue-500/30 text-blue-800 dark:text-blue-300">
+                            Маркер {restore.restored.join(", ")} восстановлен автоматически — будет дописан к концу правки.
+                          </div>
+                        )}
+                        {unrestorable && !acceptedWithoutMk && (
+                          <div className="space-y-2">
+                            <div className="text-[11px] px-2 py-1 rounded bg-red-500/15 border border-red-500/40 text-red-800 dark:text-red-300 font-medium">
+                              Правка удаляет предложение с маркером {restore.restored.join(", ")}. Выберите действие.
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  const anchor = window.prompt(
+                                    `К какому предложению отнести маркер ${restore.restored.join(" ")}? Введите текст правки:`,
+                                    "",
+                                  );
+                                  if (!anchor?.trim()) return;
+                                  const tail = restore.restored.join(" ");
+                                  setSuggested(key, `${anchor.trim()} ${tail}`);
+                                }}
+                              >
+                                Вернуть маркер
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setAcceptWithoutMarker((cur) => new Set(cur).add(key));
+                                  setAccepted((cur) => new Set(cur).add(i));
+                                }}
+                              >
+                                Принять без маркера
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setAccepted((cur) => {
+                                    const n = new Set(cur);
+                                    n.delete(i);
+                                    return n;
+                                  });
+                                }}
+                              >
+                                Отклонить правку
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        {acceptedWithoutMk && (
+                          <div className="text-[11px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/40 text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
+                            <span>Принято без маркера {restore.restored.join(", ")} — метка будет утрачена в тексте.</span>
+                            <button
+                              type="button"
+                              className="underline"
+                              onClick={(ev) => {
+                                ev.preventDefault();
+                                setAcceptWithoutMarker((cur) => {
+                                  const n = new Set(cur);
+                                  n.delete(key);
+                                  return n;
+                                });
+                              }}
+                            >
+                              отменить
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </label>
                   </div>
