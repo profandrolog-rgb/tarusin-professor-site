@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
     // Отметим статус сразу, чтобы клиент увидел «запущено»
     if (review_id) {
       await admin.from('research_reviews').update({
-        fact_check_report: { orchestrator_status: 'queued', updated_at: new Date().toISOString() },
+        orchestrator_state: { orchestrator_status: 'queued', last_step: 'queued', updated_at: new Date().toISOString() },
       }).eq('id', review_id);
     }
 
