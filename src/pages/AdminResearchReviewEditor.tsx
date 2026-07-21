@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus } from "lucide-react";
 import { stripMarkers } from "@/lib/research/markers";
 import type { Material } from "@/components/admin/research/MaterialsPanel";
-import type { RefinementEntry } from "@/lib/research/refinementDiff";
+import { makeEntry, type RefinementEntry } from "@/lib/research/refinementDiff";
 import { playCompletionChime } from "@/lib/notifySound";
 import OrchestratorProgress, { type OrchestratorStatus, type StepTimers } from "@/components/admin/research/OrchestratorProgress";
 import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtifacts";
@@ -244,7 +244,23 @@ const AdminResearchReviewEditor = () => {
   async function orchestrate() {
     if (!row) return;
     if (!row.topic && !analysis) { toast.error("Укажите тему обзора или запустите анализ материалов"); return; }
-    if (row.content && !confirm("Текущий текст обзора будет перезаписан. Продолжить?")) return;
+
+    // Страховка от потери: если контент есть — сохраняем снапшот в историю правок до перезаписи.
+    let savedSnapshot = false;
+    if (row.content) {
+      const currentContent: string = row.content_with_markers || row.content;
+      const snapshotEntry = makeEntry({
+        action: "before_orchestrate",
+        before: currentContent,
+        after: currentContent,
+        historyLength: (row.refinement_history || []).length,
+        preOrchestrate: true,
+      });
+      const nextHistory = [...(row.refinement_history || []), snapshotEntry];
+      setRow((r: any) => ({ ...r, refinement_history: nextHistory }));
+      await saveSilently({ refinement_history: nextHistory });
+      savedSnapshot = true;
+    }
 
     // Reset timers/chime for a fresh run
     setTimers({});
@@ -289,6 +305,7 @@ const AdminResearchReviewEditor = () => {
       }
 
       toast.info("Оркестратор запущен в фоне. Прогресс — в карточке ниже.");
+      if (savedSnapshot) toast.success("Предыдущая версия сохранена в истории правок");
       setTimeout(() => {
         document.getElementById("orchestrator-progress")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
