@@ -304,12 +304,115 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     }
     editor.commands.setContent(html, { emitUpdate: true });
     onChange(html);
-    setSpellIssues(remaining);
+    // Убираем применённые: оставляем raw \ (spellIssues \ remaining)
+    const applied = new Set(spellIssues.filter((s) => !remaining.includes(s)));
+    setRawSpellIssues((prev) => prev.filter((s) => !applied.has(s)));
     if (remaining.length) toast.warning(`Применено, ${remaining.length} фрагментов не найдено`);
     else toast.success("Все правки применены");
   }, [editor, spellIssues, onChange]);
 
+  const addIssueToDictionary = useCallback(async (iss: SpellIssue) => {
+    const words = String(iss.fragment).match(wordRe) || [];
+    const word = words[0];
+    if (!word) return;
+    const ok = await dict.add(word);
+    if (ok) {
+      toast.success(`«${word}» добавлено в словарь`);
+      setRawSpellIssues((prev) => prev.filter((x) => x !== iss));
+    }
+  }, [dict, wordRe]);
+
+  // ── Контекстное меню правого клика ──────────────────────────────────────
+  const getWordAtPoint = useCallback((x: number, y: number): string | null => {
+    const anyDoc = document as any;
+    let node: Node | null = null; let offset = 0;
+    if (typeof anyDoc.caretPositionFromPoint === "function") {
+      const pos = anyDoc.caretPositionFromPoint(x, y);
+      if (!pos) return null;
+      node = pos.offsetNode; offset = pos.offset;
+    } else if (typeof document.caretRangeFromPoint === "function") {
+      const range = document.caretRangeFromPoint(x, y);
+      if (!range) return null;
+      node = range.startContainer; offset = range.startOffset;
+    }
+    if (!node || node.nodeType !== 3) return null;
+    const text = (node as Text).data;
+    const isWord = (ch: string) => /[A-Za-zА-Яа-яЁё\-]/.test(ch);
+    let start = offset; while (start > 0 && isWord(text[start - 1])) start--;
+    let end = offset; while (end < text.length && isWord(text[end])) end++;
+    const w = text.slice(start, end).replace(/^-+|-+$/g, "");
+    return w.length >= 2 ? w : null;
+  }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    const w = getWordAtPoint(e.clientX, e.clientY);
+    if (!w) return; // отдаём браузеру
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, word: w });
+  }, [getWordAtPoint]);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [ctxMenu]);
+
+  const ctxAddToDict = useCallback(async () => {
+    if (!ctxMenu) return;
+    const w = ctxMenu.word;
+    const ok = await dict.add(w);
+    if (ok) {
+      toast.success(`«${w}» добавлено в словарь`);
+      const lo = w.toLowerCase();
+      setRawSpellIssues((prev) => prev.filter((i) => {
+        const words = (i.fragment.match(wordRe) || []).map((x) => x.toLowerCase());
+        return !words.includes(lo);
+      }));
+    }
+    setCtxMenu(null);
+  }, [ctxMenu, dict, wordRe]);
+
+  const ctxRemoveFromDict = useCallback(async () => {
+    if (!ctxMenu) return;
+    const w = ctxMenu.word;
+    const ok = await dict.remove(w);
+    if (ok) toast.success(`«${w}» убрано из словаря`);
+    setCtxMenu(null);
+  }, [ctxMenu, dict]);
+
+  const ctxIgnoreInSession = useCallback(() => {
+    if (!ctxMenu) return;
+    const lo = ctxMenu.word.toLowerCase();
+    setSessionIgnored((prev) => new Set(prev).add(lo));
+    toast.info(`«${ctxMenu.word}» игнорируется в этом тексте`);
+    setCtxMenu(null);
+  }, [ctxMenu]);
+
+  const ctxExec = useCallback(async (cmd: "copy" | "cut" | "paste") => {
+    setCtxMenu(null);
+    editor?.chain().focus().run();
+    if (cmd === "paste") {
+      try {
+        const t = await navigator.clipboard.readText();
+        if (t) editor?.chain().focus().insertContent(t).run();
+      } catch { toast.error("Браузер запретил вставку из буфера"); }
+      return;
+    }
+    try { document.execCommand(cmd); } catch { /* ignore */ }
+  }, [editor]);
+
+  const openDictionary = useCallback(() => navigate("/admin/spellcheck-dictionary"), [navigate]);
+
   if (!editor) return null;
+
 
   const toolbarContent = (
     <>
