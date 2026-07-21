@@ -918,7 +918,14 @@ export default function AdminArticleOrchestrator() {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "rewrite", text, edits: editsAccepted, rewriter }),
+        body: JSON.stringify({
+          action: "rewrite",
+          text,
+          edits: editsAccepted,
+          rewriter,
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
+        }),
       });
       const j = await resp.json();
       if (!resp.ok || j?.error) throw new Error(j?.error || `HTTP ${resp.status}`);
