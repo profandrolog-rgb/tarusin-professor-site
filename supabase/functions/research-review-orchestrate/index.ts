@@ -5,16 +5,22 @@
 // Работает в фоне через EdgeRuntime.waitUntil, чтобы обойти 150-секундный idle-timeout.
 // Клиент получает мгновенный ответ { queued: true } и опрашивает research_reviews по review_id.
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { RESEARCH_MODE_SYSTEM_PROMPT } from '../_shared/researchModePrompt.ts';
+import { callWithFallback, extractCompletion } from '../_shared/aiCallWithFallback.ts';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const SEARCH_MODEL = 'perplexity/sonar-pro';
-const WRITE_PRIMARY = 'anthropic/claude-sonnet-4.5';
-const WRITE_FALLBACKS = ['anthropic/claude-sonnet-4.6', 'openai/gpt-5.5'];
-const FACTCHECK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
+
+// По задаче: разные этапы — разные модели. Общий fallback — RESEARCH_AI_MODEL.
+const GLOBAL_FALLBACK = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
+const SEARCH_MODEL =
+  Deno.env.get('RESEARCH_SEARCH_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'perplexity/sonar-pro';
+const WRITE_MODEL =
+  Deno.env.get('RESEARCH_WRITE_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'anthropic/claude-opus-4-8';
+const FACTCHECK_MODEL =
+  Deno.env.get('RESEARCH_FACTCHECK_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'tencent/hy3';
 
 const MARKER_RULES = `
 ЖЁСТКИЕ ПРАВИЛА ПРОВЕНАНСА И БИБЛИОГРАФИИ:
@@ -45,33 +51,6 @@ function slugify(s: string): string {
     .replace(/^-|-$/g, '').slice(0, 80) || `review-${Date.now()}`;
 }
 
-async function callOpenRouter(model: string, messages: any[], apiKey: string, temperature = 0.2, maxTokens = 12000) {
-  const res = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, messages, temperature, max_tokens: maxTokens }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    throw new Error(`${model} ${res.status}: ${t.slice(0, 300)}`);
-  }
-  const j = await res.json();
-  return String(j?.choices?.[0]?.message?.content ?? '');
-}
-
-async function callGateway(model: string, messages: any[], key: string, maxTokens = 8000) {
-  const res = await fetch(GATEWAY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': key },
-    body: JSON.stringify({ model, messages, max_tokens: maxTokens, response_format: { type: 'json_object' } }),
-  });
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    throw new Error(`${model} gateway ${res.status}: ${t.slice(0, 300)}`);
-  }
-  const j = await res.json();
-  return String(j?.choices?.[0]?.message?.content ?? '');
-}
 
 async function runPipeline(params: {
   topic: string;
