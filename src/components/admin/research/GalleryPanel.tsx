@@ -39,8 +39,10 @@ interface Props {
   contentWithMarkers: string;
   /** Экземпляр TipTap-редактора обзора для вставки блока-заполнителя в позицию курсора. */
   editor?: Editor | null;
-  /** Fallback: если редактор недоступен — добавить готовый маркер [[GALLERY: ...]] в конец текста. */
+  /** Дописывает маркер [[GALLERY: ...]] и в content, и в content_with_markers (fallback, без редактора). */
   onAppendMarker: (marker: string) => void;
+  /** Дописывает маркер только в content_with_markers (редактор уже вставил блок в content). */
+  onAppendToMarkersOnly: (marker: string) => void;
 }
 
 function publicUrl(filename: string): string {
