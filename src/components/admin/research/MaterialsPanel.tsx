@@ -116,11 +116,11 @@ export default function MaterialsPanel(p: Props) {
             if (ext.images.length || ext.tables.length) {
               material.extractedImages = ext.images;
               material.extractedTables = ext.tables;
-              // Триггерим обновление списка (передаём копию актуального массива).
-              p.onChange(prevList => {
-                const list = Array.isArray(prevList) ? prevList : p.materials;
-                return assignMarkers(list.map(m => m.id === material.id ? { ...m, extractedImages: ext.images, extractedTables: ext.tables } : m));
-              } as any);
+              // Мутируем текущий локальный список и передаём обновлённую копию.
+              const updated = assignMarkers(p.materials.map(m => m.id === material.id ? { ...m, extractedImages: ext.images, extractedTables: ext.tables } : m));
+              // Если материал ещё не вошёл в родительский стейт — добавим в мутацию отдельным путём.
+              const exists = updated.some(m => m.id === material.id);
+              p.onChange(exists ? updated : [...updated, material]);
               toast.success(`«${f.name}»: извлечено изображений — ${ext.images.length}, таблиц — ${ext.tables.length}`);
             }
           }).catch((e) => {
