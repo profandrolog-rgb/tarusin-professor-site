@@ -147,18 +147,33 @@ const ForDoctorsResearchDetail = () => {
         <section className="border-t pt-6 space-y-3">
           <h2 className="text-xl font-semibold">Список литературы</h2>
           <ol className="space-y-2 text-sm">
-            {refs.map((r) => (
-              <li key={r.number} id={`ref-${r.number}`} className="scroll-mt-20">
-                <span className="font-semibold">{r.number}.</span>{" "}
-                {r.authors && <span>{r.authors}. </span>}
-                {r.title && <span className="italic">{r.title}. </span>}
-                {r.journal && <span>{r.journal} </span>}
-                {r.year && <span>{r.year}</span>}
-                {r.volume_issue && <span>;{r.volume_issue}</span>}
-                {r.pages && <span>:{r.pages}</span>}
-                {r.doi_or_pmid && <span>. {r.doi_or_pmid}</span>}
-              </li>
-            ))}
+            {refs.map((r) => {
+              const clean = (v?: string) => {
+                const s = (v ?? "").trim();
+                if (!s) return "";
+                if (/^(не\s*применимо|автор\s*материала|н\/д|n\/a)$/i.test(s)) return "";
+                return s;
+              };
+              const authors = clean(r.authors);
+              const title = clean(r.title);
+              const journal = clean(r.journal);
+              const year = clean(r.year);
+              const vol = clean(r.volume_issue);
+              const pages = clean(r.pages);
+              const doi = clean(r.doi_or_pmid);
+              return (
+                <li key={r.number} id={`ref-${r.number}`} className="scroll-mt-20">
+                  <span className="font-semibold">{r.number}.</span>{" "}
+                  {authors && <span>{authors}. </span>}
+                  {title && <span className="italic">{title}. </span>}
+                  {journal && <span>{journal} </span>}
+                  {year && <span>{year}</span>}
+                  {vol && <span>;{vol}</span>}
+                  {pages && <span>:{pages}</span>}
+                  {doi && <span>. {doi}</span>}
+                </li>
+              );
+            })}
           </ol>
         </section>
       )}
