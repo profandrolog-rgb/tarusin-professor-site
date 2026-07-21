@@ -24,9 +24,14 @@ interface RichTextEditorProps {
   onEditorReady?: (editor: Editor | null) => void;
   /** Показывать кнопку «Галерея» и обрабатывать вставку блока-заполнителя. */
   onInsertGalleryClick?: () => void;
+  /**
+   * Разрешать ли редактирование содержимого галереи прямо из плашки.
+   * false — плашка read-only, изображения загружаются на публичной странице.
+   */
+  allowGalleryUpload?: boolean;
 }
 
-const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images", ownerSlug = "gallery", onEditorReady, onInsertGalleryClick }: RichTextEditorProps) => {
+const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images", ownerSlug = "gallery", onEditorReady, onInsertGalleryClick, allowGalleryUpload = true }: RichTextEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
