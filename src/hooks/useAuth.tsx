@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode, useRef } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -15,103 +16,137 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+type Roles = { admin: boolean; editor: boolean; surgeon: boolean; parent: boolean };
+
+const EMPTY_ROLES: Roles = { admin: false, editor: false, surgeon: false, parent: false };
+const CACHE_PREFIX = "auth_roles_v1:";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const readCache = (userId: string): Roles | null => {
+  try {
+    const raw = sessionStorage.getItem(CACHE_PREFIX + userId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return {
+      admin: !!parsed.admin,
+      editor: !!parsed.editor,
+      surgeon: !!parsed.surgeon,
+      parent: !!parsed.parent,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeCache = (userId: string, roles: Roles) => {
+  try {
+    sessionStorage.setItem(CACHE_PREFIX + userId, JSON.stringify(roles));
+  } catch {}
+};
+
+const clearCache = (userId?: string) => {
+  try {
+    if (userId) {
+      sessionStorage.removeItem(CACHE_PREFIX + userId);
+    } else {
+      for (const key of Object.keys(sessionStorage)) {
+        if (key.startsWith(CACHE_PREFIX)) sessionStorage.removeItem(key);
+      }
+    }
+  } catch {}
+};
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Один запрос всех ролей пользователя из user_roles.
+ * Возвращает null при сетевой ошибке (после ретраев), Roles при успехе (пустой массив = все false).
+ */
+const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
+  const delays = [0, 500, 1000, 2000];
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i]) await sleep(delays[i]);
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (!error) {
+      const set = new Set((data ?? []).map((r: any) => r.role));
+      return {
+        admin: set.has("admin"),
+        editor: set.has("editor"),
+        surgeon: set.has("surgeon"),
+        parent: set.has("parent"),
+      };
+    }
+    console.error(`Error loading roles (attempt ${i + 1}):`, error);
+  }
+  return null;
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isEditor, setIsEditor] = useState(false);
-  const [isSurgeon, setIsSurgeon] = useState(false);
-  const [isParent, setIsParent] = useState(false);
+  const [roles, setRoles] = useState<Roles>(EMPTY_ROLES);
   const [loading, setLoading] = useState(true);
-  const rolesPromiseRef = useRef<{ userId: string; promise: Promise<[boolean, boolean, boolean, boolean]> } | null>(null);
+  const inflightRef = useRef<string | null>(null);
 
-  const checkRole = async (userId: string, role: string) => {
+  const refreshRoles = async (userId: string, opts: { hasCache: boolean }) => {
+    if (inflightRef.current === userId) return;
+    inflightRef.current = userId;
     try {
-      const { data, error } = await supabase.rpc("has_role", {
-        _user_id: userId,
-        _role: role as any,
-      });
-      if (error) {
-        console.error(`Error checking ${role} role:`, error);
-        return false;
+      const result = await fetchRolesWithRetry(userId);
+      if (result) {
+        setRoles(result);
+        writeCache(userId, result);
+      } else if (!opts.hasCache) {
+        // Ни кэша, ни ответа — не сбрасываем в false, показываем предупреждение
+        toast.error("Не удалось проверить права доступа, попробуйте обновить страницу");
       }
-      return data === true;
-    } catch (err) {
-      console.error(`Error checking ${role} role:`, err);
-      return false;
+    } finally {
+      inflightRef.current = null;
     }
   };
 
-  const loadRoles = (userId: string) => {
-    if (rolesPromiseRef.current?.userId === userId) {
-      return rolesPromiseRef.current.promise;
+  const handleSession = (nextSession: Session | null) => {
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (nextSession?.user) {
+      const userId = nextSession.user.id;
+      const cached = readCache(userId);
+      if (cached) {
+        setRoles(cached);
+        setLoading(false);
+        // фоновое обновление
+        refreshRoles(userId, { hasCache: true });
+      } else {
+        refreshRoles(userId, { hasCache: false }).finally(() => setLoading(false));
+      }
+    } else {
+      setRoles(EMPTY_ROLES);
+      setLoading(false);
     }
-    const promise = Promise.all([
-      checkRole(userId, "admin"),
-      checkRole(userId, "editor"),
-      checkRole(userId, "surgeon"),
-      checkRole(userId, "parent"),
-    ]) as Promise<[boolean, boolean, boolean, boolean]>;
-    rolesPromiseRef.current = { userId, promise };
-    return promise;
   };
-
-  const applyRoles = ([admin, editor, surgeon, parent]: [boolean, boolean, boolean, boolean]) => {
-    setIsAdmin(admin);
-    setIsEditor(editor);
-    setIsSurgeon(surgeon);
-    setIsParent(parent);
-  };
-
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "INITIAL_SESSION") return;
-        setSession(session);
-        setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "INITIAL_SESSION") return;
+      if (event === "SIGNED_OUT") clearCache();
+      handleSession(nextSession);
+    });
 
-        if (session?.user) {
-          loadRoles(session.user.id).then(applyRoles).finally(() => setLoading(false));
-        } else {
-          setIsAdmin(false);
-          setIsEditor(false);
-          setIsSurgeon(false);
-          setIsParent(false);
-          rolesPromiseRef.current = null;
-          setLoading(false);
-        }
-
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        loadRoles(session.user.id).then((roles) => {
-          applyRoles(roles);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
-      }
+    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      handleSession(existing);
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
@@ -120,14 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
+      options: { emailRedirectTo: redirectUrl },
     });
     return { error };
   };
 
   const signOut = async () => {
+    clearCache();
     await supabase.auth.signOut();
   };
 
@@ -136,17 +170,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         session,
-        isAdmin,
-        isEditor,
-        isSurgeon,
-        isParent,
+        isAdmin: roles.admin,
+        isEditor: roles.editor,
+        isSurgeon: roles.surgeon,
+        isParent: roles.parent,
         loading,
         signIn,
         signUp,
         signOut,
       }}
     >
-
       {children}
     </AuthContext.Provider>
   );
