@@ -1,10 +1,16 @@
 // Итеративные правки контента обзора через AI-чат.
-// Модель — из RESEARCH_AI_MODEL. Маркеры источников [M#] сохраняются.
+// Приоритет — скорость (частые итеративные правки).
+// Модель: RESEARCH_REFINE_MODEL → RESEARCH_AI_MODEL → default. Маркеры [M#] сохраняются.
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
+import { callWithFallback, extractCompletion } from '../_shared/aiCallWithFallback.ts';
 
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
+const PRIMARY_MODEL =
+  Deno.env.get('RESEARCH_REFINE_MODEL') ||
+  Deno.env.get('RESEARCH_AI_MODEL') ||
+  'anthropic/claude-sonnet-4.8';
+const FALLBACK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
 
 const ACTION_PROMPTS: Record<string, string> = {
   shorten: 'Сократи текст обзора в 1.5–2 раза, сохрани все ключевые тезисы и маркеры источников [M#].',
@@ -56,11 +62,15 @@ Deno.serve(async (req) => {
       `Инструкция:\n${instruction}`,
     ].filter(Boolean).join('\n\n---\n\n');
 
-    const res = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': lovKey },
-      body: JSON.stringify({
-        model: MODEL,
+    const result = await callWithFallback({
+      url: GATEWAY_URL,
+      headers: { 'Lovable-API-Key': lovKey },
+      primary: PRIMARY_MODEL,
+      fallback: FALLBACK_MODEL,
+      timeoutMs: 120_000,
+      label: 'refine',
+      buildBody: (model) => ({
+        model,
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: userText },
@@ -69,21 +79,14 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (!res.ok) {
-      const t = await res.text().catch(() => '');
-      return new Response(JSON.stringify({ error: 'gateway_error', status: res.status, details: t.slice(0, 500) }), {
-        status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const j = await res.json();
-    const raw = String(j?.choices?.[0]?.message?.content ?? '{}');
+    const raw = extractCompletion(result.json) || '{}';
     let parsed: any;
     try { parsed = JSON.parse(raw); } catch {
       const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { new_content: raw, diff_summary: '' };
     }
 
-    return new Response(JSON.stringify({ ok: true, ...parsed }), {
+    console.log(`refine done: model=${result.modelUsed} fallback=${result.wasFallback}`);
+    return new Response(JSON.stringify({ ok: true, ...parsed, model_used: result.modelUsed, was_fallback: result.wasFallback }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
