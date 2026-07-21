@@ -1,17 +1,16 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
 import { Image as ImageIcon, Pencil } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import GalleryEditorDialog, {
+  type GalleryImage,
+} from "@/components/gallery/GalleryEditorDialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  parseGalleryFileEntries,
+  buildGalleryMarkerFromEntries,
+} from "@/lib/markdown/galleryMarkers";
+import type { GalleryKind } from "@/components/gallery/galleryKinds";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -19,94 +18,148 @@ declare module "@tiptap/core" {
       insertGalleryPlaceholder: (caption: string) => ReturnType;
     };
   }
+  interface NodeConfig<Options, Storage> {}
 }
 
-const GalleryView = ({ node, updateAttributes, editor }: NodeViewProps) => {
+export interface GalleryPlaceholderOptions {
+  bucket: string;
+  folder: string;
+  ownerSlug: string;
+}
+
+const detectKindFromFilename = (filename: string): GalleryKind => {
+  const m = filename.match(
+    /-(surgery|ultrasound|patient-full|patient|urology-closeup|urology|infographic|anatomy|normal|default)-/i,
+  );
+  return ((m?.[1]?.toLowerCase() || "default") as GalleryKind);
+};
+
+function useThumbUrl(bucket: string, folder: string) {
+  const base = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}`;
+  return (filename: string) => {
+    const safe = filename.split("/").map(encodeURIComponent).join("/");
+    return `${base}/${folder}/${safe}`;
+  };
+}
+
+const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProps) => {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<string>(node.attrs.caption || "");
   const editable = editor.isEditable;
-  const caption = node.attrs.caption || "Без подписи";
+  const caption: string = node.attrs.caption || "Без подписи";
+  const filesRaw: string = node.attrs.files || "";
+  const opts = (extension.options || {}) as GalleryPlaceholderOptions;
+  const bucket = opts.bucket || "disease-media";
+  const folder = opts.folder || "article-images";
+  const ownerSlug = opts.ownerSlug || "gallery";
+  const publicUrl = useThumbUrl(bucket, folder);
+
+  const entries = useMemo(() => parseGalleryFileEntries(filesRaw), [filesRaw]);
+  const initialImages: GalleryImage[] = useMemo(
+    () => entries.map((e) => ({
+      id: crypto.randomUUID(),
+      filename: e.filename,
+      caption: e.caption || "",
+      kind: detectKindFromFilename(e.filename),
+    })),
+    [entries],
+  );
+
+  const thumbs = entries.slice(0, 4);
+  const extra = Math.max(0, entries.length - thumbs.length);
 
   return (
     <NodeViewWrapper
       as="div"
       contentEditable={false}
-      className="my-4 flex items-center gap-3 px-4 bg-slate-50 select-none"
-      style={{
-        height: 80,
-        border: "2px dashed #E2EBF5",
-        borderRadius: 8,
-      }}
+      className="my-4 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-3 select-none"
       data-gallery-placeholder=""
       data-caption={node.attrs.caption || ""}
       data-files={node.attrs.files || ""}
     >
-      <ImageIcon className="w-6 h-6 shrink-0 text-slate-500" />
-      <div className="flex-1 min-w-0">
-        <div className="text-[11px] uppercase tracking-wider text-slate-500">Галерея</div>
-        <div className="text-sm font-bold text-slate-800 truncate">{caption}</div>
-      </div>
-      {editable && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-1.5 shrink-0 bg-white"
-          onClick={() => {
-            setDraft(node.attrs.caption || "");
-            setOpen(true);
-          }}
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          Изменить подпись
-        </Button>
-      )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Подпись к галерее</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label>Подпись</Label>
-            <Input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  updateAttributes({ caption: draft.trim() });
-                  setOpen(false);
-                }
-              }}
-            />
+      <div className="flex items-start gap-3">
+        <ImageIcon className="w-5 h-5 shrink-0 text-slate-500 mt-1" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] uppercase tracking-wider text-slate-500">
+            Галерея · {entries.length} фото
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Отмена
-            </Button>
-            <Button
-              onClick={() => {
-                updateAttributes({ caption: draft.trim() });
-                setOpen(false);
-              }}
-            >
-              Сохранить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="text-sm font-bold text-slate-800 truncate">{caption}</div>
+          {thumbs.length > 0 ? (
+            <div className="mt-2 flex gap-2 flex-wrap">
+              {thumbs.map((t, i) => (
+                <div key={i} className="relative">
+                  <img
+                    src={publicUrl(t.filename)}
+                    alt={t.caption || ""}
+                    className="w-16 h-16 object-cover rounded border border-slate-200 bg-white"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.25"; }}
+                    draggable={false}
+                  />
+                  {i === thumbs.length - 1 && extra > 0 && (
+                    <div className="absolute inset-0 rounded flex items-center justify-center bg-black/55 text-white text-xs font-semibold">
+                      +{extra}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-2 text-xs text-slate-500 italic">Изображения ещё не добавлены</div>
+          )}
+        </div>
+        {editable && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 shrink-0 bg-white"
+            onClick={() => setOpen(true)}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Редактировать галерею
+          </Button>
+        )}
+      </div>
+
+      <GalleryEditorDialog
+        open={open}
+        onOpenChange={setOpen}
+        bucket={bucket}
+        folder={folder}
+        ownerSlug={ownerSlug}
+        initialCaption={node.attrs.caption || ""}
+        initialImages={initialImages}
+        onSave={({ caption: cap, images }) => {
+          const marker = buildGalleryMarkerFromEntries(
+            cap,
+            images.map((i) => ({ filename: i.filename, caption: i.caption })),
+          );
+          // Синхронизируем атрибуты плашки: подпись + отформатированный список файлов.
+          const files = images
+            .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
+            .join("|");
+          updateAttributes({ caption: cap, files });
+          // Уведомляем внешний слушатель (например, редактор обзоров) для синхронизации маркеров.
+          editor.emit("galleryPlaceholderUpdated" as any, { marker, caption: cap, images });
+        }}
+      />
     </NodeViewWrapper>
   );
 };
 
-export const GalleryPlaceholder = Node.create({
+export const GalleryPlaceholder = Node.create<GalleryPlaceholderOptions>({
   name: "galleryPlaceholder",
   group: "block",
   atom: true,
   selectable: true,
   draggable: true,
+
+  addOptions() {
+    return {
+      bucket: "disease-media",
+      folder: "article-images",
+      ownerSlug: "gallery",
+    };
+  },
 
   addAttributes() {
     return {
@@ -118,8 +171,6 @@ export const GalleryPlaceholder = Node.create({
       files: {
         default: "",
         parseHTML: (el) => el.getAttribute("data-files") || "",
-        // ВАЖНО: всегда отдаём data-files, даже пустой — иначе TipTap может выкинуть
-        // атрибут при сериализации и список файлов потеряется.
         renderHTML: (attrs) => ({ "data-files": attrs.files ?? "" }),
       },
     };
