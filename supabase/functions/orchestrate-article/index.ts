@@ -14,6 +14,18 @@
 // Models prefixed with "venice/" go to Venice API; everything else through OpenRouter.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { voicePromptBlock, type VoiceMode } from "../_shared/voicePrompts.ts";
+
+// Блок защиты меток источников [M#] и галерей [[GALLERY: ...]] — прикладывается только
+// для консилиума научных обзоров, где эти метки обязаны сохраниться.
+const MARKER_PROTECTION_BLOCK = `
+ЗАЩИТА ТЕХНИЧЕСКИХ МЕТОК (обязательна для научных обзоров):
+1. Маркеры источников [M1], [M2], [M17]… НЕЛЬЗЯ удалять, менять номер, переносить, объединять,
+   помещать в кавычки/скобки. В каждой правке поле "suggested" ОБЯЗАНО содержать все маркеры [M#],
+   которые были в поле "original".
+2. Блочные метки галерей [[GALLERY: caption="..."]] НЕЛЬЗЯ удалять, переносить в другой раздел,
+   переписывать подпись. Оставляй их ровно там, где стояли.
+3. Правки, удаляющие маркер, будут автоматически отклонены.`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
