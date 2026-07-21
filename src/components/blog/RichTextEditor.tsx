@@ -172,14 +172,37 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     }
   };
 
+  const navigate = useNavigate();
+  const dict = useSpellcheckDictionary();
+  const [sessionIgnored, setSessionIgnored] = useState<Set<string>>(new Set());
+
   // Spellcheck panel state
   const [spellOpen, setSpellOpen] = useState(false);
   const [spellLoading, setSpellLoading] = useState(false);
-  const [spellIssues, setSpellIssues] = useState<SpellIssue[]>([]);
+  const [rawSpellIssues, setRawSpellIssues] = useState<SpellIssue[]>([]);
   const [spellModel, setSpellModel] = useState<string | undefined>(undefined);
   const checkedHashRef = useRef<string | null>(null);
   const inflightHashRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
+
+  // Контекстное меню правого клика
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; word: string } | null>(null);
+
+  const wordRe = useMemo(() => /[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\-]{2,}/g, []);
+  const issueContainsIgnored = useCallback((iss: SpellIssue) => {
+    const words = String(iss.fragment).match(wordRe) || [];
+    for (const w of words) {
+      const lo = w.toLowerCase();
+      if (dict.has(lo) || sessionIgnored.has(lo)) return true;
+    }
+    return false;
+  }, [dict, sessionIgnored, wordRe]);
+
+  const spellIssues = useMemo(
+    () => rawSpellIssues.filter((i) => !issueContainsIgnored(i)),
+    [rawSpellIssues, issueContainsIgnored],
+  );
+  const setSpellIssues: typeof setRawSpellIssues = setRawSpellIssues;
 
   const hashText = (s: string) => {
     let h = 0;
