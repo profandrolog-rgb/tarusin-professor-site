@@ -333,17 +333,37 @@ export default function AdminArticleOrchestrator() {
 
   async function loadForRecheck(item: PubItem) {
     try {
+      if (item.kind === "research_reviews") {
+        // Научный обзор: контент хранится в поле content (HTML). Конвертируем в markdown.
+        const { data, error } = await supabase
+          .from("research_reviews" as any)
+          .select("title, content, voice_mode")
+          .eq("id", item.id)
+          .maybeSingle();
+        if (error) throw error;
+        const html = (data as any)?.content || "";
+        const md = /<[a-z][\s\S]*>/i.test(html) ? htmlToMarkdown(html) : html;
+        setTitle((data as any)?.title || item.title);
+        setText(md);
+        setExistingRef({ id: item.id, kind: item.kind });
+        const vm = (data as any)?.voice_mode as "impersonal" | "own_data" | "authorial" | undefined;
+        if (vm) setResearchVoiceMode(vm);
+        setPickerOpen(false);
+        setReviews([]); setConsolidated(null); setAccepted(new Set()); setDirectAccepted(new Map());
+        setEditedSuggested(new Map()); setFinalText(""); setAppliedEdits([]); setReviewRound(1);
+        sonnerToast.success("Обзор загружен на консилиум", { description: "Режим голоса: " + (vm || "impersonal") });
+        return;
+      }
       const field = item.kind === "disease_articles" ? "article_content" : "content";
       const { data, error } = await supabase.from(item.kind).select(`title, ${field}`).eq("id", item.id).maybeSingle();
       if (error) throw error;
       const html = (data as any)?.[field] || "";
-      // если в БД уже markdown — htmlToMarkdown вернёт его почти без изменений
       const md = /<[a-z][\s\S]*>/i.test(html) ? htmlToMarkdown(html) : html;
       setTitle((data as any)?.title || item.title);
       setText(md);
       setExistingRef({ id: item.id, kind: item.kind });
+      setResearchVoiceMode(null);
       setPickerOpen(false);
-      // сброс предыдущих результатов
       setReviews([]); setConsolidated(null); setAccepted(new Set()); setDirectAccepted(new Map());
       setEditedSuggested(new Map()); setFinalText(""); setAppliedEdits([]); setReviewRound(1);
       sonnerToast.success("Статья загружена", { description: "Можно запускать ревью" });
@@ -361,8 +381,26 @@ export default function AdminArticleOrchestrator() {
       title: incoming.recheck.title || "",
       updated_at: "",
     });
+    if (incoming.voiceMode) setResearchVoiceMode(incoming.voiceMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Кнопка «Принять и вернуть в научный редактор» (Блок 4).
+  async function acceptAndReturnToReview() {
+    if (!existingRef || existingRef.kind !== "research_reviews") return;
+    try {
+      const html = markdownToHtml(finalText || text);
+      const { error } = await supabase
+        .from("research_reviews" as any)
+        .update({ content: html, content_with_markers: html, workflow_state: "editing" })
+        .eq("id", existingRef.id);
+      if (error) throw error;
+      sonnerToast.success("Правки применены, обзор возвращён в редактор");
+      navigate(`/admin/research-reviews/${existingRef.id}`);
+    } catch (e: any) {
+      sonnerToast.error("Не удалось вернуть обзор", { description: e?.message || String(e) });
+    }
+  }
 
   // --- Персистентность прогона в localStorage (переживает F5, hot-reload, случайные уходы) ---
   const DRAFT_KEY = "orchestrator:draft:v1";
