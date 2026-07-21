@@ -143,7 +143,7 @@ ${materials_context ? `Учитывай контекст уже загружен
     const markersList = Array.isArray(materials_list) && materials_list.length
       ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
       : '';
-    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}],"seo_title":"...","seo_meta_description":"..."}. В content обязательны маркеры [M#] по правилам выше.
+    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n${voicePromptBlock(voiceMode)}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}],"seo_title":"...","seo_meta_description":"..."}. В content обязательны маркеры [M#] по правилам выше.
 
 Требования к SEO-полям:
 - seo_title: до 60 символов, ЗАКОНЧЕННАЯ фраза на русском, без обрыва на полуслове и без многоточия. Если не помещается — переформулируй короче, а не отрезай.
