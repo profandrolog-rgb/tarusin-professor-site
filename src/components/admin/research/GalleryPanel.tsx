@@ -37,8 +37,10 @@ interface Props {
   content: string;
   /** Текст с маркерами [M#] — для проверки использования файла. */
   contentWithMarkers: string;
-  /** Вставляет готовый маркер [[GALLERY: ...]] в текст обзора. */
-  onInsertMarker: (marker: string) => void;
+  /** Экземпляр TipTap-редактора обзора для вставки блока-заполнителя в позицию курсора. */
+  editor?: Editor | null;
+  /** Fallback: если редактор недоступен — добавить готовый маркер [[GALLERY: ...]] в конец текста. */
+  onAppendMarker: (marker: string) => void;
 }
 
 function publicUrl(filename: string): string {
