@@ -15,11 +15,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye, Volume2, VolumeX, Users } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye, Volume2, VolumeX, Users, Shield } from "lucide-react";
+
 import { playCompletionChime, isSoundEnabled, setSoundEnabled } from "@/lib/notifySound";
 import { toast as sonnerToast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { htmlToMarkdown, markdownToHtml } from "@/lib/markdown/galleryMarkers";
+import {
+  markerDiff,
+  listMarkers,
+  countMarkers,
+  restoreLostMarkersInSuggestion,
+  restoreLostGalleryMarkers,
+  MARKER_RE,
+} from "@/lib/research/markerProtection";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
 import { CURATED_MODELS, resolveCuratedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
@@ -249,6 +258,10 @@ export default function AdminArticleOrchestrator() {
   const [formatting, setFormatting] = useState(false);
   const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
   const [translating, setTranslating] = useState(false);
+  // Блок 4: сет ключей правок, для которых пользователь явно согласился принять «без маркера».
+  const [acceptWithoutMarker, setAcceptWithoutMarker] = useState<Set<string>>(new Set());
+  // Блок 4: модалка финальной сверки перед применением.
+  const [pendingApply, setPendingApply] = useState<{ edits: EditItem[]; lost: string[] } | null>(null);
   const [translation, setTranslation] = useState<null | {
     title: string;
     slug: string;
@@ -392,7 +405,7 @@ export default function AdminArticleOrchestrator() {
       // Защита маркеров: сверяем оригинал (то, что пришло на консилиум = text)
       // с итогом (finalText) и, если arbiter/rewriter потерял [M#] или [[GALLERY]],
       // предупреждаем и восстанавливаем блочные метки автоматически.
-      const { markerDiff, restoreLostGalleryMarkers } = await import("@/lib/research/markerProtection");
+      // Функции защиты маркеров уже импортированы наверху.
       const originalMd = text;
       let finalMd = finalText || text;
       const restored = restoreLostGalleryMarkers(originalMd, finalMd);
@@ -914,17 +927,48 @@ export default function AdminArticleOrchestrator() {
   }
 
 
-  async function rewriteWithVoice(editsArg?: EditItem[]) {
-    const editsAccepted = editsArg ?? (consolidated
+  async function rewriteWithVoice(editsArg?: EditItem[], skipMarkerConfirm = false) {
+    const rawAccepted = editsArg ?? (consolidated
       ? consolidated.edits
           .map((e, i) => ({ ...e, suggested: getSuggested(`cons::${i}`, e.suggested), _i: i }))
           .filter((e) => accepted.has((e as any)._i))
           .map(({ _i, ...rest }: any) => rest)
       : []);
-    if (!editsAccepted.length) {
+    if (!rawAccepted.length) {
       toast({ title: "Не выбраны правки", variant: "destructive" });
       return;
     }
+    // Блок 4: авто-восстановление маркеров источников в каждой правке,
+    // если модель не пометила себя как «без маркера».
+    const editsAccepted: EditItem[] = rawAccepted.map((e: EditItem, idx: number) => {
+      const key = `cons::${idx}`;
+      if (acceptWithoutMarker.has(key)) return e;
+      if (!e.suggested?.trim()) return e; // пустая правка (удаление) — не восстанавливаем
+      const { fixed } = restoreLostMarkersInSuggestion(e.original || "", e.suggested);
+      return { ...e, suggested: fixed };
+    });
+
+    // Блок 4: финальная сверка. Считаем маркеры в исходнике vs в симуляции применения.
+    if (!skipMarkerConfirm) {
+      let simulated = text;
+      for (const e of editsAccepted) {
+        if (e.original && simulated.includes(e.original)) {
+          simulated = simulated.replace(e.original, e.suggested || "");
+        }
+      }
+      const diff = markerDiff(text, simulated);
+      // Убираем из списка потерь те, что пользователь явно принял без маркера.
+      const stillLost = diff.lost.filter((mk) => {
+        return !editsAccepted.some((e, i) =>
+          acceptWithoutMarker.has(`cons::${i}`) && (e.original || "").includes(mk),
+        );
+      });
+      if (stillLost.length) {
+        setPendingApply({ edits: editsAccepted, lost: stillLost });
+        return;
+      }
+    }
+
     setRewriting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1449,6 +1493,14 @@ export default function AdminArticleOrchestrator() {
               </div>
               {consolidated.edits.map((e, i) => {
                 const isAccepted = accepted.has(i);
+                const key = `cons::${i}`;
+                // Блок 4: анализ маркеров источника этой правки.
+                const currentSuggested = getSuggested(key, e.suggested);
+                const restore = restoreLostMarkersInSuggestion(e.original || "", currentSuggested);
+                const hasLostMarkers = restore.restored.length > 0;
+                const isDeletion = !currentSuggested.trim();
+                const unrestorable = hasLostMarkers && isDeletion;
+                const acceptedWithoutMk = acceptWithoutMarker.has(key);
                 // ищем контекст (абзац) вокруг original в исходном тексте
                 let context: { before: string; after: string } | null = null;
                 if (e.original && text.includes(e.original)) {
@@ -1460,7 +1512,13 @@ export default function AdminArticleOrchestrator() {
                 return (
                   <div
                     key={i}
-                    className={`p-3 rounded-md border transition-colors ${isAccepted ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}
+                    className={`p-3 rounded-md border transition-colors ${
+                      unrestorable && !acceptedWithoutMk
+                        ? "border-red-500 bg-red-500/10 ring-2 ring-red-500/30"
+                        : isAccepted
+                        ? "border-emerald-500/50 bg-emerald-500/5"
+                        : "border-border"
+                    }`}
                   >
                     <label className="flex gap-3 cursor-pointer">
                       <Checkbox
@@ -1559,6 +1617,85 @@ export default function AdminArticleOrchestrator() {
                         {e.rationale && (
                           <div className="text-xs text-muted-foreground italic border-l-2 border-muted pl-2">
                             {e.rationale}
+                          </div>
+                        )}
+
+                        {/* Блок 4: восстановление [M#] маркеров */}
+                        {hasLostMarkers && !unrestorable && !acceptedWithoutMk && (
+                          <div className="text-[11px] px-2 py-1 rounded bg-blue-500/10 border border-blue-500/30 text-blue-800 dark:text-blue-300">
+                            Маркер {restore.restored.join(", ")} восстановлен автоматически — будет дописан к концу правки.
+                          </div>
+                        )}
+                        {unrestorable && !acceptedWithoutMk && (
+                          <div className="space-y-2">
+                            <div className="text-[11px] px-2 py-1 rounded bg-red-500/15 border border-red-500/40 text-red-800 dark:text-red-300 font-medium">
+                              Правка удаляет предложение с маркером {restore.restored.join(", ")}. Выберите действие.
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  const anchor = window.prompt(
+                                    `К какому предложению отнести маркер ${restore.restored.join(" ")}? Введите текст правки:`,
+                                    "",
+                                  );
+                                  if (!anchor?.trim()) return;
+                                  const tail = restore.restored.join(" ");
+                                  setSuggested(key, `${anchor.trim()} ${tail}`);
+                                }}
+                              >
+                                Вернуть маркер
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setAcceptWithoutMarker((cur) => new Set(cur).add(key));
+                                  setAccepted((cur) => new Set(cur).add(i));
+                                }}
+                              >
+                                Принять без маркера
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setAccepted((cur) => {
+                                    const n = new Set(cur);
+                                    n.delete(i);
+                                    return n;
+                                  });
+                                }}
+                              >
+                                Отклонить правку
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        {acceptedWithoutMk && (
+                          <div className="text-[11px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/40 text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
+                            <span>Принято без маркера {restore.restored.join(", ")} — метка будет утрачена в тексте.</span>
+                            <button
+                              type="button"
+                              className="underline"
+                              onClick={(ev) => {
+                                ev.preventDefault();
+                                setAcceptWithoutMarker((cur) => {
+                                  const n = new Set(cur);
+                                  n.delete(key);
+                                  return n;
+                                });
+                              }}
+                            >
+                              отменить
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1883,6 +2020,44 @@ export default function AdminArticleOrchestrator() {
                 ))
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Блок 4: финальная сверка маркеров перед применением */}
+      <Dialog open={!!pendingApply} onOpenChange={(o) => { if (!o) setPendingApply(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Shield className="w-5 h-5" /> Пропадут маркеры источников
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Если применить выбранные правки, в тексте пропадут следующие маркеры цитирования:
+            </p>
+            <div className="p-2 rounded bg-red-500/10 border border-red-500/40 font-mono text-red-700 dark:text-red-300">
+              {pendingApply?.lost.join(", ")}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Вернитесь к правкам, чтобы явно вернуть маркер к нужному предложению
+              или принять правку «без маркера».
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPendingApply(null)}>
+              Вернуться к правкам
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                const edits = pendingApply?.edits ?? [];
+                setPendingApply(null);
+                rewriteWithVoice(edits, true);
+              }}
+            >
+              Всё равно применить
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
