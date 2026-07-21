@@ -61,7 +61,6 @@ export default function PublishBar(p: Props) {
       toast.info('Маркеров нет — очищать нечего');
       return;
     }
-    if (!confirm(`Убрать все маркеры источников из текста (${markerCount})? Размеченная версия сохранится в поле «Контент с маркерами».`)) return;
     p.onStripMarkers();
   }
 
