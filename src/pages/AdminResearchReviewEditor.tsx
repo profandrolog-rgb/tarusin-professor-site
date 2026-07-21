@@ -440,7 +440,9 @@ const AdminResearchReviewEditor = () => {
       </div>
 
       <Suspense fallback={Fallback}>
-        <GalleryPanel
+        <GalleryDialog
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
           slug={row.slug || ""}
           materials={materials}
           value={Array.isArray(row.gallery_images) ? row.gallery_images : []}
@@ -449,24 +451,8 @@ const AdminResearchReviewEditor = () => {
             setRow({ ...row, ...patch });
             saveSilently(patch);
           }}
-          content={row.content || ""}
-          contentWithMarkers={row.content_with_markers || ""}
           editor={contentEditor}
-          onAppendMarker={(marker) => {
-            setRow((r: any) => {
-              const currentContent: string = r?.content || "";
-              const currentMarkers: string = r?.content_with_markers || currentContent;
-              const nextContent = currentContent
-                ? `${currentContent}\n<p>${marker}</p>`
-                : `<p>${marker}</p>`;
-              const nextMarkers = currentMarkers
-                ? `${currentMarkers}\n<p>${marker}</p>`
-                : `<p>${marker}</p>`;
-              const patch = { content: nextContent, content_with_markers: nextMarkers };
-              saveSilently(patch);
-              return { ...r, ...patch };
-            });
-          }}
+          savedPos={savedCursorPos}
           onAppendToMarkersOnly={(marker) => {
             setRow((r: any) => {
               const currentMarkers: string = r?.content_with_markers || r?.content || "";
@@ -474,6 +460,17 @@ const AdminResearchReviewEditor = () => {
                 ? `${currentMarkers}\n<p>${marker}</p>`
                 : `<p>${marker}</p>`;
               const patch = { content_with_markers: nextMarkers };
+              saveSilently(patch);
+              return { ...r, ...patch };
+            });
+          }}
+          onAppendMarker={(marker) => {
+            setRow((r: any) => {
+              const currentContent: string = r?.content || "";
+              const currentMarkers: string = r?.content_with_markers || currentContent;
+              const nextContent = currentContent ? `${currentContent}\n<p>${marker}</p>` : `<p>${marker}</p>`;
+              const nextMarkers = currentMarkers ? `${currentMarkers}\n<p>${marker}</p>` : `<p>${marker}</p>`;
+              const patch = { content: nextContent, content_with_markers: nextMarkers };
               saveSilently(patch);
               return { ...r, ...patch };
             });
