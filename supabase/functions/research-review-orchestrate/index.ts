@@ -277,6 +277,8 @@ ${content.slice(0, 20000)}`;
         source_type: 'orchestrator_generated',
         seo_title: seoTitle,
         seo_meta_description: seoDesc,
+        // Автопереход жизненного цикла: писать → редактировать
+        workflow_state: 'editing',
       }).eq('id', review_id);
     } else {
       const baseSlug = slugify(title);
@@ -296,6 +298,8 @@ ${content.slice(0, 20000)}`;
         seo_title: seoTitle,
         seo_meta_description: seoDesc,
         status: 'draft',
+        workflow_state: 'editing',
+        voice_mode: voiceMode,
         author_id: authorId,
       });
     }
