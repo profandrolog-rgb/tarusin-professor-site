@@ -544,6 +544,13 @@ const AdminResearchReviewEditor = () => {
             storageBucket="disease-media"
             storageFolder="article-images"
             onEditorReady={setContentEditor}
+            onInsertGalleryClick={() => {
+              const pos = contentEditor && !contentEditor.isDestroyed
+                ? contentEditor.state.selection.from
+                : null;
+              setSavedCursorPos(pos);
+              setGalleryOpen(true);
+            }}
           />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
