@@ -525,7 +525,13 @@ const AdminResearchReviewEditor = () => {
       <Card className="no-print">
         <CardHeader><CardTitle>Текст обзора</CardTitle></CardHeader>
         <CardContent>
-          <RichTextEditor content={row.content || ""} onChange={(html) => update({ content: html })} storageBucket="disease-media" storageFolder="research-images" />
+          <RichTextEditor
+            content={row.content || ""}
+            onChange={(html) => update({ content: html })}
+            storageBucket="disease-media"
+            storageFolder="article-images"
+            onEditorReady={(ed) => { contentEditorRef.current = ed; }}
+          />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
           </p>
