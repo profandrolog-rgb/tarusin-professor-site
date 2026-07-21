@@ -1,11 +1,12 @@
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { GalleryPlaceholder } from "@/components/parents/tiptap/GalleryPlaceholderNode";
 
 interface RichTextEditorProps {
   content: string;
@@ -13,6 +14,10 @@ interface RichTextEditorProps {
   placeholder?: string;
   storageBucket?: string;
   storageFolder?: string;
+  /** Даёт родителю доступ к экземпляру редактора для вставки в позицию курсора. */
+  onEditorReady?: (editor: Editor | null) => void;
+  /** Показывать кнопку «Галерея» и обрабатывать вставку блока-заполнителя. */
+  onInsertGalleryClick?: () => void;
 }
 
 const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images" }: RichTextEditorProps) => {
