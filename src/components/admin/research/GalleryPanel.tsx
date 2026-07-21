@@ -182,9 +182,30 @@ export default function GalleryPanel({
 
   function insert() {
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
-    onInsertMarker(marker);
-    toast.success("Маркер галереи вставлен в конец текста");
+    const cleanCaption = caption.trim().replace(/"/g, "'");
+    if (editor && !editor.isDestroyed) {
+      const hasSelection = editor.state.selection.from > 0;
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "galleryPlaceholder",
+          attrs: { caption: cleanCaption, files: filesStr },
+        })
+        .run();
+      // Дополнительно добавляем текстовый маркер в размеченную версию (см. родитель).
+      onAppendMarker(marker);
+      if (hasSelection) {
+        toast.success("Галерея вставлена в позицию курсора");
+      } else {
+        toast.warning("Курсор не был установлен — галерея вставлена в конец текста");
+      }
+    } else {
+      onAppendMarker(marker);
+      toast.warning("Редактор недоступен — галерея добавлена в конец текста");
+    }
   }
+
 
   return (
     <Card>
