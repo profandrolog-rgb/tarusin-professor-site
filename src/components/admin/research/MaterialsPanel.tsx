@@ -73,6 +73,9 @@ export default function MaterialsPanel(p: Props) {
   }
 
 
+  const [extracting, setExtracting] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length) return;
     setUploading(true);
@@ -93,7 +96,7 @@ export default function MaterialsPanel(p: Props) {
       setProgress(prev => ({ ...prev, [key]: 0 }));
       try {
         const res = await uploadResearchFile(p.reviewId, f, (pct) => setProgress(prev => ({ ...prev, [key]: pct })));
-        added.push({
+        const material: Material = {
           id: crypto.randomUUID(),
           kind: 'file',
           name: f.name,
@@ -101,8 +104,31 @@ export default function MaterialsPanel(p: Props) {
           objectKey: res.objectKey,
           size: f.size,
           text: res.text,
-        });
+        };
+        added.push(material);
         running += f.size;
+
+        // Асинхронное извлечение изображений и таблиц.
+        const lc = f.name.toLowerCase();
+        if (/\.(docx|pptx|pdf)$/i.test(lc)) {
+          setExtracting(prev => ({ ...prev, [material.id]: true }));
+          extractFromFile(f, p.reviewId).then((ext) => {
+            if (ext.images.length || ext.tables.length) {
+              material.extractedImages = ext.images;
+              material.extractedTables = ext.tables;
+              // Триггерим обновление списка (передаём копию актуального массива).
+              p.onChange(prevList => {
+                const list = Array.isArray(prevList) ? prevList : p.materials;
+                return assignMarkers(list.map(m => m.id === material.id ? { ...m, extractedImages: ext.images, extractedTables: ext.tables } : m));
+              } as any);
+              toast.success(`«${f.name}»: извлечено изображений — ${ext.images.length}, таблиц — ${ext.tables.length}`);
+            }
+          }).catch((e) => {
+            console.warn('extractFromFile failed:', e?.message);
+          }).finally(() => {
+            setExtracting(prev => { const { [material.id]: _, ...rest } = prev; return rest; });
+          });
+        }
       } catch (e: any) {
         toast.error(`${f.name}: ${e?.message || 'ошибка загрузки'}`);
       } finally {
