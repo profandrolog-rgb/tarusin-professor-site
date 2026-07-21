@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState, lazy, Suspense, useCallback } from "react";
 import type { Editor } from "@tiptap/react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus, Users, Lock, Undo2, ImagePlus } from "lucide-react";
 import { stripMarkers } from "@/lib/research/markers";
 import type { Material } from "@/components/admin/research/MaterialsPanel";
 import { makeEntry, type RefinementEntry } from "@/lib/research/refinementDiff";
@@ -19,9 +20,9 @@ import { playCompletionChime } from "@/lib/notifySound";
 import OrchestratorProgress, { type OrchestratorStatus, type StepTimers } from "@/components/admin/research/OrchestratorProgress";
 import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtifacts";
 import FactCheckFixList from "@/components/admin/research/FactCheckFixList";
+import { GALLERY_RE } from "@/lib/markdown/galleryMarkers";
 
 const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
-const GalleryEditorDialog = lazy(() => import("@/components/gallery/GalleryEditorDialog"));
 const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
 const PublishBar = lazy(() => import("@/components/admin/research/PublishBar"));
 const ReviewPrintView = lazy(() => import("@/components/admin/research/ReviewPrintView"));
@@ -38,17 +39,42 @@ interface Ref {
   verified?: boolean;
 }
 
+type WorkflowState = "draft" | "writing" | "editing" | "consilium" | "published";
+type VoiceMode = "impersonal" | "own_data" | "authorial";
+
+const WORKFLOW_LABEL: Record<WorkflowState, string> = {
+  draft: "Черновик",
+  writing: "В написании",
+  editing: "Научное редактирование",
+  consilium: "На консилиуме",
+  published: "Опубликован",
+};
+
+const WORKFLOW_VARIANT: Record<WorkflowState, "default" | "secondary" | "outline" | "destructive"> = {
+  draft: "outline",
+  writing: "secondary",
+  editing: "secondary",
+  consilium: "destructive",
+  published: "default",
+};
+
+const VOICE_LABEL: Record<VoiceMode, string> = {
+  impersonal: "Безличный (по умолчанию для обзоров)",
+  own_data: "Безличный + собственные данные («мы»/«наша серия» только по материалам)",
+  authorial: "Авторский (для диктовок и статей)",
+};
+
 const Fallback = <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [contentEditor, setContentEditor] = useState<Editor | null>(null);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [savedCursorPos, setSavedCursorPos] = useState<number | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   const [instructions, setInstructions] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -69,7 +95,6 @@ const AdminResearchReviewEditor = () => {
     })();
   }, [id]);
 
-  // Load persisted timers per review
   useEffect(() => {
     if (!id) return;
     try {
@@ -81,7 +106,6 @@ const AdminResearchReviewEditor = () => {
     } catch { /* noop */ }
   }, [id]);
 
-  // Обратная совместимость: старые обзоры хранят статус в fact_check_report
   const orchStateRaw: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : null;
   const legacyState: any = row?.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
   const orchState: any = orchStateRaw && Object.keys(orchStateRaw).length > 0 ? orchStateRaw : legacyState;
@@ -91,18 +115,18 @@ const AdminResearchReviewEditor = () => {
   const searchResult: string | undefined = orchState.search_result;
   const modelsUsed: Record<string, string> | undefined = orchState.models_used && typeof orchState.models_used === "object" ? orchState.models_used : undefined;
 
-  // Sync step timers with pipeline status transitions
+  const workflowState: WorkflowState = (row?.workflow_state as WorkflowState) || "draft";
+  const voiceMode: VoiceMode = (row?.voice_mode as VoiceMode) || "impersonal";
+  const isConsilium = workflowState === "consilium";
+  const readOnly = isConsilium;
+
   useEffect(() => {
     if (!status) return;
     setTimers((prev) => {
       const next: StepTimers = { ...prev };
       const now = Date.now();
-      const startIf = (k: keyof StepTimers) => {
-        if (!next[k]?.startedAt) next[k] = { ...(next[k] || {}), startedAt: now };
-      };
-      const finishIf = (k: keyof StepTimers) => {
-        if (next[k]?.startedAt && !next[k]?.finishedAt) next[k] = { ...(next[k] || {}), finishedAt: now };
-      };
+      const startIf = (k: keyof StepTimers) => { if (!next[k]?.startedAt) next[k] = { ...(next[k] || {}), startedAt: now }; };
+      const finishIf = (k: keyof StepTimers) => { if (next[k]?.startedAt && !next[k]?.finishedAt) next[k] = { ...(next[k] || {}), finishedAt: now }; };
       if (status === "searching") startIf("searching");
       if (status === "writing") { startIf("searching"); finishIf("searching"); startIf("writing"); }
       if (status === "fact_checking") { finishIf("searching"); finishIf("writing"); startIf("writing"); startIf("fact_checking"); }
@@ -111,20 +135,18 @@ const AdminResearchReviewEditor = () => {
     });
   }, [status]);
 
-  // Persist timers
   useEffect(() => {
     if (!id) return;
     try { localStorage.setItem(`research_orchestrator:v1:${id}`, JSON.stringify({ timers, savedAt: Date.now() })); } catch { /* noop */ }
   }, [id, timers]);
 
-  // Chime on completion + toasts for terminal states
   useEffect(() => {
     const prev = prevStatusRef.current;
     const wasActive = prev === "searching" || prev === "writing" || prev === "fact_checking" || prev === "queued";
     if (wasActive && status === "done" && !chimedRef.current) {
       chimedRef.current = true;
       playCompletionChime();
-      toast.success("Обзор готов");
+      toast.success("Обзор готов. Переведён на научное редактирование.");
     }
     if (wasActive && (status === "error" || status === "interrupted")) {
       const step = lastStep || "?";
@@ -138,18 +160,13 @@ const AdminResearchReviewEditor = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  // Auto-poll while orchestrator is active (resumes after F5)
   useEffect(() => {
     if (!row?.id) return;
     const statusActive = status === "searching" || status === "writing" || status === "fact_checking" || status === "queued";
     const recentlyStarted = orchestrating && Date.now() - orchestratingStartedAtRef.current < 30_000;
     const active = statusActive || orchestrating;
     if (!active) { pollingRef.current = false; return; }
-    if (!statusActive && !recentlyStarted) {
-      setOrchestrating(false);
-      pollingRef.current = false;
-      return;
-    }
+    if (!statusActive && !recentlyStarted) { setOrchestrating(false); pollingRef.current = false; return; }
     if (pollingRef.current) return;
     pollingRef.current = true;
     const int = setInterval(async () => {
@@ -169,7 +186,6 @@ const AdminResearchReviewEditor = () => {
     return () => { clearInterval(int); pollingRef.current = false; };
   }, [row?.id, status, orchestrating]);
 
-  // Watchdog: если оркестратор крутится > 30с, а реального статуса всё нет — сбросить
   useEffect(() => {
     if (!orchestrating) return;
     const t = setTimeout(() => {
@@ -185,7 +201,21 @@ const AdminResearchReviewEditor = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orchestrating, status]);
 
-  function update(patch: any) { setRow((r: any) => ({ ...r, ...patch })); }
+  // Блок 6: предупреждение при закрытии с несохранёнными изменениями
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  function update(patch: any) {
+    setRow((r: any) => ({ ...r, ...patch }));
+    setDirty(true);
+  }
 
   async function save(newStatus?: string) {
     if (!row) return;
@@ -204,6 +234,8 @@ const AdminResearchReviewEditor = () => {
       cover_image_path: row.cover_image_path,
       source_materials: row.source_materials || [],
       refinement_history: row.refinement_history || [],
+      workflow_state: row.workflow_state || "draft",
+      voice_mode: row.voice_mode || "impersonal",
     };
     if (newStatus) {
       payload.status = newStatus;
@@ -214,6 +246,7 @@ const AdminResearchReviewEditor = () => {
     if (error) toast.error(error.message);
     else {
       toast.success(newStatus ? `Статус: ${newStatus}` : "Сохранено");
+      setDirty(false);
       if (newStatus) setRow({ ...row, ...payload });
     }
   }
@@ -221,6 +254,59 @@ const AdminResearchReviewEditor = () => {
   async function saveSilently(patch: any) {
     if (!row) return;
     await supabase.from("research_reviews" as any).update(patch).eq("id", row.id);
+  }
+
+  // Блок 6: автосохранение с задержкой 3с
+  useEffect(() => {
+    if (!dirty || !row?.id) return;
+    const t = setTimeout(async () => {
+      const payload: any = {
+        title: row.title,
+        annotation: row.annotation,
+        content: row.content,
+        content_with_markers: row.content_with_markers ?? row.content,
+        topic: row.topic,
+        references_list: row.references_list,
+        seo_title: row.seo_title,
+        seo_meta_description: row.seo_meta_description,
+        workflow_state: row.workflow_state || "draft",
+        voice_mode: row.voice_mode || "impersonal",
+      };
+      const { error } = await supabase.from("research_reviews" as any).update(payload).eq("id", row.id);
+      if (!error) setDirty(false);
+    }, 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, row?.title, row?.annotation, row?.content, row?.seo_title, row?.seo_meta_description]);
+
+  async function setWorkflow(next: WorkflowState) {
+    if (!row) return;
+    const patch: any = { workflow_state: next };
+    if (next === "published" && !row.published_at) {
+      patch.published_at = new Date().toISOString();
+      patch.status = "published";
+    }
+    if (next !== "published" && row.status === "published") {
+      patch.status = "draft";
+    }
+    const { error } = await supabase.from("research_reviews" as any).update(patch).eq("id", row.id);
+    if (error) { toast.error(error.message); return; }
+    setRow((r: any) => ({ ...r, ...patch }));
+    toast.success(`Состояние: ${WORKFLOW_LABEL[next]}`);
+  }
+
+  async function sendToConsilium() {
+    if (!row) return;
+    if (dirty) {
+      await save();
+    }
+    await setWorkflow("consilium");
+    navigate("/admin/orchestrator", {
+      state: {
+        recheck: { id: row.id, kind: "research_reviews", title: row.title },
+        voiceMode: row.voice_mode || "impersonal",
+      },
+    });
   }
 
   async function analyzeMaterials() {
@@ -249,9 +335,9 @@ const AdminResearchReviewEditor = () => {
 
   async function orchestrate() {
     if (!row) return;
+    if (readOnly) { toast.error("Обзор на консилиуме — недоступно"); return; }
     if (!row.topic && !analysis) { toast.error("Укажите тему обзора или запустите анализ материалов"); return; }
 
-    // Страховка от потери: если контент есть — сохраняем снапшот в историю правок до перезаписи.
     let savedSnapshot = false;
     if (row.content) {
       const currentContent: string = row.content_with_markers || row.content;
@@ -268,17 +354,16 @@ const AdminResearchReviewEditor = () => {
       savedSnapshot = true;
     }
 
-    // Reset timers/chime for a fresh run
     setTimers({});
     chimedRef.current = false;
     try { localStorage.removeItem(`research_orchestrator:v1:${row.id}`); } catch { /* noop */ }
 
     setOrchestrating(true);
     orchestratingStartedAtRef.current = Date.now();
-    // Оптимистичный статус: панель и таймеры должны стартовать немедленно, не дожидаясь опроса.
     setRow((r: any) => ({
       ...r,
       orchestrator_state: { orchestrator_status: "queued", last_step: "queued", updated_at: new Date().toISOString() },
+      workflow_state: "writing",
     }));
     try {
       const materials: Material[] = row.source_materials || [];
@@ -297,12 +382,17 @@ const AdminResearchReviewEditor = () => {
       const materials_list = materials.map(m => ({ marker: m.marker, name: m.name, url: m.url, kind: m.kind }));
 
       const { data, error } = await supabase.functions.invoke("research-review-orchestrate", {
-        body: { topic: row.topic || row.title, materials_context, materials_list, review_id: row.id },
+        body: {
+          topic: row.topic || row.title,
+          materials_context,
+          materials_list,
+          review_id: row.id,
+          voice_mode: row.voice_mode || "impersonal",
+        },
       });
       if (error) throw error;
       if (!data?.queued && !data?.review) throw new Error("пустой ответ оркестратора");
 
-      // Если функция вернула готовый результат (старое поведение) — применим сразу
       if (data?.review) {
         setRow(data.review);
         toast.success("Обзор готов");
@@ -315,8 +405,6 @@ const AdminResearchReviewEditor = () => {
       setTimeout(() => {
         document.getElementById("orchestrator-progress")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
-
-      // Дальнейший опрос ведёт useEffect по статусу.
     } catch (e: any) {
       toast.error(e?.message || "Ошибка оркестратора");
       setOrchestrating(false);
@@ -325,9 +413,7 @@ const AdminResearchReviewEditor = () => {
 
   function applyRefinement(newContent: string, entry: RefinementEntry) {
     const nextHistory = [...(row.refinement_history || []), entry];
-    // Патчим только чистый контент. Размеченную версию не трогаем — там маркеры [M#].
     const patch: Record<string, unknown> = { content: newContent, refinement_history: nextHistory };
-    // Обратная совместимость: если размеченной версии ещё не было, синхронизируем один раз.
     if (!row.content_with_markers) patch.content_with_markers = newContent;
     setRow({ ...row, ...patch });
     saveSilently(patch);
@@ -357,6 +443,32 @@ const AdminResearchReviewEditor = () => {
     }, 100);
   }
 
+  // Блок 5: вставка метки галереи в позицию курсора с валидацией уникальности подписи.
+  const insertGalleryMarker = useCallback(() => {
+    if (readOnly) { toast.error("Обзор на консилиуме — недоступно"); return; }
+    const caption = window.prompt("Подпись галереи (обязательна, должна быть уникальной):", "");
+    if (!caption) return;
+    const trimmed = caption.trim();
+    if (!trimmed) { toast.error("Подпись не может быть пустой"); return; }
+    // Проверка уникальности внутри обзора
+    const src = (row?.content_with_markers || row?.content || "") as string;
+    const re = new RegExp(GALLERY_RE.source, "g");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) !== null) {
+      if ((m[1] || "").trim().toLowerCase() === trimmed.toLowerCase()) {
+        toast.error(`Подпись «${trimmed}» уже используется в этом обзоре`);
+        return;
+      }
+    }
+    if (contentEditor && !contentEditor.isDestroyed) {
+      contentEditor.chain().focus().insertContent({
+        type: "galleryPlaceholder",
+        attrs: { caption: trimmed, files: "" },
+      }).run();
+      toast.success("Метка галереи вставлена. Загрузите изображения на публичной странице обзора.");
+    }
+  }, [contentEditor, readOnly, row?.content, row?.content_with_markers]);
+
   if (loading) return <div className="p-6"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!row) return <div className="p-6">Не найдено</div>;
 
@@ -374,37 +486,82 @@ const AdminResearchReviewEditor = () => {
       <div className="flex items-center justify-between flex-wrap gap-2 no-print">
         <div className="flex items-center gap-3">
           <Link to="/admin/research-reviews"><Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 mr-1" /> Список</Button></Link>
-          <Badge variant={row.status === "published" ? "default" : row.status === "in_review" ? "secondary" : "outline"}>
-            {row.status === "published" ? "Опубликован" : row.status === "in_review" ? "На проверке" : "Черновик"}
-          </Badge>
+          <Badge variant={WORKFLOW_VARIANT[workflowState]}>{WORKFLOW_LABEL[workflowState]}</Badge>
+          {dirty && <span className="text-xs text-muted-foreground">есть несохранённые изменения</span>}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => save()} disabled={saving}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => save()} disabled={saving || readOnly}>
             <Save className="w-4 h-4 mr-1" /> Сохранить
           </Button>
-          {row.status === "draft" && (
-            <Button variant="secondary" size="sm" onClick={() => save("in_review")} disabled={saving}>
-              <Eye className="w-4 h-4 mr-1" /> На проверку
+          {contentEditor && !readOnly && (
+            <Button variant="outline" size="sm" onClick={() => contentEditor.chain().focus().undo().run()}>
+              <Undo2 className="w-4 h-4 mr-1" /> Отменить
             </Button>
           )}
-          {row.status === "in_review" && (
+        </div>
+      </div>
+
+      {/* Блок 1: жизненный цикл */}
+      <Card className="no-print">
+        <CardHeader><CardTitle className="text-base">Состояние работы</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap gap-2 items-center">
+          {workflowState === "draft" && (
+            <Button size="sm" onClick={() => setWorkflow("writing")}>В работу (написание)</Button>
+          )}
+          {workflowState === "writing" && (
             <>
-              <Button variant="outline" size="sm" onClick={() => save("draft")}>Вернуть в draft</Button>
-              <Button size="sm" onClick={() => save("published")}>
-                <Send className="w-4 h-4 mr-1" /> Опубликовать
-              </Button>
+              <Button size="sm" onClick={() => setWorkflow("editing")}>На научное редактирование</Button>
+              <Button size="sm" variant="outline" onClick={() => setWorkflow("draft")}>Вернуть в черновик</Button>
             </>
           )}
-          {row.status === "published" && (
+          {workflowState === "editing" && (
+            <>
+              <Button size="sm" onClick={sendToConsilium}><Users className="w-4 h-4 mr-1" />На консилиум</Button>
+              <Button size="sm" onClick={() => setWorkflow("published")}><Send className="w-4 h-4 mr-1" />Опубликовать</Button>
+              <Button size="sm" variant="outline" onClick={() => setWorkflow("writing")}>Вернуть на доработку</Button>
+            </>
+          )}
+          {workflowState === "consilium" && (
+            <>
+              <div className="w-full mb-2 flex items-center gap-2 rounded-md border border-amber-400/60 bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
+                <Lock className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                <span className="text-sm text-amber-800 dark:text-amber-300">Обзор на консилиуме — редактирование заблокировано.</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setWorkflow("editing")}>Снять с консилиума</Button>
+            </>
+          )}
+          {workflowState === "published" && (
             <>
               <Link to={`/for-doctors/research/${row.slug}`} target="_blank">
                 <Button variant="outline" size="sm">Открыть на сайте</Button>
               </Link>
-              <Button variant="outline" size="sm" onClick={() => save("draft")}>Снять с публикации</Button>
+              <Button size="sm" variant="outline" onClick={() => setWorkflow("editing")}>Снять с публикации</Button>
             </>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* Блок 2: режим голоса */}
+      <Card className="no-print">
+        <CardHeader><CardTitle className="text-base">Режим голоса</CardTitle></CardHeader>
+        <CardContent>
+          <Select
+            value={voiceMode}
+            onValueChange={(v) => update({ voice_mode: v as VoiceMode })}
+            disabled={readOnly}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(VOICE_LABEL) as VoiceMode[]).map((k) => (
+                <SelectItem key={k} value={k}>{VOICE_LABEL[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            Режим передаётся в промпты написания, доработки и в консилиум статей.
+          </p>
+        </CardContent>
+      </Card>
 
       {(() => {
         const contentStr: string = row.content_with_markers || row.content || "";
@@ -442,62 +599,6 @@ const AdminResearchReviewEditor = () => {
       </div>
 
       <Suspense fallback={Fallback}>
-        <GalleryEditorDialog
-          open={galleryOpen}
-          onOpenChange={setGalleryOpen}
-          bucket="disease-media"
-          folder="article-images"
-          ownerSlug={row.slug || "review"}
-          initialCaption="Иллюстрации"
-          initialImages={Array.isArray(row.gallery_images) ? row.gallery_images : []}
-          onSave={({ caption, images }) => {
-            // 1) Держим row.gallery_images в актуальном состоянии — используется в разделе «Материалы».
-            const patch = { gallery_images: images };
-            setRow((r: any) => ({ ...(r || {}), ...patch }));
-            saveSilently(patch);
-
-            // 2) Вставляем плашку в редактор в сохранённой позиции курсора.
-            const filesStr = images
-              .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
-              .join("|");
-            const cleanCaption = (caption || "").trim().replace(/"/g, "'");
-            if (contentEditor && !contentEditor.isDestroyed) {
-              const chain = contentEditor.chain().focus();
-              if (typeof savedCursorPos === "number" && savedCursorPos >= 0) {
-                chain.insertContentAt(savedCursorPos, {
-                  type: "galleryPlaceholder",
-                  attrs: { caption: cleanCaption, files: filesStr },
-                });
-              } else {
-                chain.insertContent({
-                  type: "galleryPlaceholder",
-                  attrs: { caption: cleanCaption, files: filesStr },
-                });
-              }
-              chain.run();
-              toast.success("Галерея вставлена");
-            } else {
-              // Fallback: добавим блок в конец обоих текстов.
-              const block = `<div data-gallery-placeholder data-caption="${cleanCaption}" data-files="${filesStr}">Галерея</div>`;
-              setRow((r: any) => {
-                const c = r?.content || "";
-                const cm = r?.content_with_markers || c;
-                const p = {
-                  content: c ? `${c}\n${block}` : block,
-                  content_with_markers: cm ? `${cm}\n${block}` : block,
-                };
-                saveSilently(p);
-                return { ...r, ...p };
-              });
-              toast.warning("Редактор недоступен — галерея добавлена в конец текста");
-            }
-          }}
-        />
-      </Suspense>
-
-
-
-      <Suspense fallback={Fallback}>
         <RefinementChat
           reviewId={row.id}
           title={row.title || ""}
@@ -512,8 +613,6 @@ const AdminResearchReviewEditor = () => {
           orchestrating={orchestrating}
         />
       </Suspense>
-
-
 
       <OrchestratorArtifacts
         searchResult={searchResult}
@@ -544,15 +643,22 @@ const AdminResearchReviewEditor = () => {
       <Card className="no-print">
         <CardHeader><CardTitle>Основное</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <div><Label>Заголовок</Label><Input value={row.title || ""} onChange={(e) => update({ title: e.target.value })} /></div>
-          <div><Label>Slug (URL)</Label><Input value={row.slug || ""} onChange={(e) => update({ slug: e.target.value })} /></div>
-          <div><Label>Тема (фильтр)</Label><Input value={row.topic || ""} onChange={(e) => update({ topic: e.target.value })} /></div>
-          <div><Label>Аннотация</Label><Textarea value={row.annotation || ""} onChange={(e) => update({ annotation: e.target.value })} rows={4} /></div>
+          <div><Label>Заголовок</Label><Input value={row.title || ""} onChange={(e) => update({ title: e.target.value })} disabled={readOnly} /></div>
+          <div><Label>Slug (URL)</Label><Input value={row.slug || ""} onChange={(e) => update({ slug: e.target.value })} disabled={readOnly} /></div>
+          <div><Label>Тема (фильтр)</Label><Input value={row.topic || ""} onChange={(e) => update({ topic: e.target.value })} disabled={readOnly} /></div>
+          <div><Label>Аннотация</Label><Textarea value={row.annotation || ""} onChange={(e) => update({ annotation: e.target.value })} rows={4} disabled={readOnly} /></div>
         </CardContent>
       </Card>
 
       <Card className="no-print">
-        <CardHeader><CardTitle>Текст обзора</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Текст обзора</CardTitle>
+            <Button size="sm" variant="outline" onClick={insertGalleryMarker} disabled={readOnly}>
+              <ImagePlus className="w-4 h-4 mr-1" /> Место для галереи
+            </Button>
+          </div>
+        </CardHeader>
         <CardContent>
           <RichTextEditor
             content={row.content || ""}
@@ -561,16 +667,10 @@ const AdminResearchReviewEditor = () => {
             storageFolder="article-images"
             ownerSlug={row.slug || "review"}
             onEditorReady={setContentEditor}
-            onInsertGalleryClick={() => {
-              const pos = contentEditor && !contentEditor.isDestroyed
-                ? contentEditor.state.selection.from
-                : null;
-              setSavedCursorPos(pos);
-              setGalleryOpen(true);
-            }}
           />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
+            Заливать изображения в галереи можно на публичной странице обзора — там доступен полноценный редактор.
           </p>
         </CardContent>
       </Card>
@@ -579,7 +679,7 @@ const AdminResearchReviewEditor = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Список литературы ({refs.length})</CardTitle>
-            <Button size="sm" variant="outline" onClick={() => update({ references_list: [...refs, { number: refs.length + 1, verified: false }] })}>
+            <Button size="sm" variant="outline" onClick={() => update({ references_list: [...refs, { number: refs.length + 1, verified: false }] })} disabled={readOnly}>
               <Plus className="w-4 h-4 mr-1" /> Добавить
             </Button>
           </div>
@@ -588,27 +688,23 @@ const AdminResearchReviewEditor = () => {
           {refs.map((r, i) => (
             <div key={i} className={`border rounded p-3 space-y-2 ${r.verified ? "" : "border-amber-400/60 bg-amber-50/40 dark:bg-amber-900/10"}`}>
               <div className="flex items-center gap-2">
-                <Input className="w-16" type="number" value={r.number ?? i + 1} onChange={(e) => {
-                  const arr = [...refs]; arr[i] = { ...r, number: Number(e.target.value) }; update({ references_list: arr });
-                }} />
-                <Input placeholder="Авторы" value={r.authors || ""} onChange={(e) => {
-                  const arr = [...refs]; arr[i] = { ...r, authors: e.target.value }; update({ references_list: arr });
-                }} />
-                <Button variant="ghost" size="sm" onClick={() => update({ references_list: refs.filter((_, j) => j !== i) })}>
+                <Input className="w-16" type="number" value={r.number ?? i + 1} onChange={(e) => { const arr = [...refs]; arr[i] = { ...r, number: Number(e.target.value) }; update({ references_list: arr }); }} disabled={readOnly} />
+                <Input placeholder="Авторы" value={r.authors || ""} onChange={(e) => { const arr = [...refs]; arr[i] = { ...r, authors: e.target.value }; update({ references_list: arr }); }} disabled={readOnly} />
+                <Button variant="ghost" size="sm" onClick={() => update({ references_list: refs.filter((_, j) => j !== i) })} disabled={readOnly}>
                   <Trash2 className="w-4 h-4 text-destructive" />
                 </Button>
               </div>
-              <Input placeholder="Название статьи" value={r.title || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, title: e.target.value }; update({ references_list: a }); }} />
+              <Input placeholder="Название статьи" value={r.title || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, title: e.target.value }; update({ references_list: a }); }} disabled={readOnly} />
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Input placeholder="Журнал" value={r.journal || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, journal: e.target.value }; update({ references_list: a }); }} />
-                <Input placeholder="Год" value={r.year || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, year: e.target.value }; update({ references_list: a }); }} />
-                <Input placeholder="Том(номер)" value={r.volume_issue || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, volume_issue: e.target.value }; update({ references_list: a }); }} />
-                <Input placeholder="Страницы" value={r.pages || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, pages: e.target.value }; update({ references_list: a }); }} />
+                <Input placeholder="Журнал" value={r.journal || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, journal: e.target.value }; update({ references_list: a }); }} disabled={readOnly} />
+                <Input placeholder="Год" value={r.year || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, year: e.target.value }; update({ references_list: a }); }} disabled={readOnly} />
+                <Input placeholder="Том(номер)" value={r.volume_issue || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, volume_issue: e.target.value }; update({ references_list: a }); }} disabled={readOnly} />
+                <Input placeholder="Страницы" value={r.pages || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, pages: e.target.value }; update({ references_list: a }); }} disabled={readOnly} />
               </div>
               <div className="flex items-center gap-3">
-                <Input placeholder="DOI / PMID" value={r.doi_or_pmid || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, doi_or_pmid: e.target.value }; update({ references_list: a }); }} />
+                <Input placeholder="DOI / PMID" value={r.doi_or_pmid || ""} onChange={(e) => { const a = [...refs]; a[i] = { ...r, doi_or_pmid: e.target.value }; update({ references_list: a }); }} disabled={readOnly} />
                 <label className="flex items-center gap-1 text-sm whitespace-nowrap">
-                  <input type="checkbox" checked={!!r.verified} onChange={(e) => { const a = [...refs]; a[i] = { ...r, verified: e.target.checked }; update({ references_list: a }); }} />
+                  <input type="checkbox" checked={!!r.verified} onChange={(e) => { const a = [...refs]; a[i] = { ...r, verified: e.target.checked }; update({ references_list: a }); }} disabled={readOnly} />
                   проверено
                 </label>
               </div>
@@ -681,10 +777,8 @@ const AdminResearchReviewEditor = () => {
                       {t.length} / 60
                     </span>
                   </div>
-                  <Input value={t} onChange={(e) => update({ seo_title: e.target.value })} />
-                  <p className="text-xs text-muted-foreground">
-                    Рекомендация: до 60 символов законченной фразой. Ограничение не блокирует сохранение.
-                  </p>
+                  <Input value={t} onChange={(e) => update({ seo_title: e.target.value })} disabled={readOnly} />
+                  <p className="text-xs text-muted-foreground">Рекомендация: до 60 символов законченной фразой.</p>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
@@ -693,10 +787,8 @@ const AdminResearchReviewEditor = () => {
                       {d.length} / 160
                     </span>
                   </div>
-                  <Textarea value={d} onChange={(e) => update({ seo_meta_description: e.target.value })} rows={2} />
-                  <p className="text-xs text-muted-foreground">
-                    Рекомендация: до 160 символов законченным предложением.
-                  </p>
+                  <Textarea value={d} onChange={(e) => update({ seo_meta_description: e.target.value })} rows={2} disabled={readOnly} />
+                  <p className="text-xs text-muted-foreground">Рекомендация: до 160 символов законченным предложением.</p>
                 </div>
               </>
             );
