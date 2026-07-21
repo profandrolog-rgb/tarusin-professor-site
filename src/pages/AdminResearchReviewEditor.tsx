@@ -147,12 +147,12 @@ const AdminResearchReviewEditor = () => {
     if (pollingRef.current) return;
     pollingRef.current = true;
     const int = setInterval(async () => {
-      const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
+      const { data } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
+      const fresh: any = data;
       if (!fresh) return;
       setRow((prev: any) => {
-        // Не затирать оптимистичный queued, если из БД пришло пусто и с момента запуска <30с
         const freshHasState = fresh.orchestrator_state && typeof fresh.orchestrator_state === "object" && Object.keys(fresh.orchestrator_state).length > 0;
-        const freshHasLegacy = fresh.fact_check_report && typeof fresh.fact_check_report === "object" && (fresh.fact_check_report as any).orchestrator_status;
+        const freshHasLegacy = fresh.fact_check_report && typeof fresh.fact_check_report === "object" && fresh.fact_check_report.orchestrator_status;
         const withinOptimisticWindow = orchestrating && Date.now() - orchestratingStartedAtRef.current < 30_000;
         if (!freshHasState && !freshHasLegacy && withinOptimisticWindow && prev?.orchestrator_state) {
           return { ...fresh, orchestrator_state: prev.orchestrator_state };
