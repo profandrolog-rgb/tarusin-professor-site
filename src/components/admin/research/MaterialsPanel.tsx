@@ -167,10 +167,7 @@ export default function MaterialsPanel(p: Props) {
           const restored = [...p.materials];
           const idx = restored.findIndex(x => x.id === id);
           if (idx === -1) {
-            // p.materials здесь — closure момента вызова remove; используем актуальный список через onChange
-            const merged = [...remaining];
-            // вставляем m обратно в конец, потом пересчитываем маркеры
-            merged.push(m);
+            const merged: Material[] = [...remaining, m];
             p.onChange(merged.map((x, i) => ({ ...x, marker: `[M${i + 1}]` })));
           }
         },
