@@ -548,6 +548,16 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       >
         {spellLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <SpellCheck className="w-4 h-4" />}
       </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8"
+        onClick={openDictionary}
+        title="Словарь"
+      >
+        <BookOpen className="w-4 h-4" />
+      </Button>
     </>
   );
 
