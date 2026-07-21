@@ -4500,6 +4500,30 @@ export type Database = {
           },
         ]
       }
+      spellcheck_dictionary: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          word: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          word: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          word?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string

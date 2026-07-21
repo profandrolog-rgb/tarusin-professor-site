@@ -2,12 +2,14 @@ import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images, SpellCheck } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images, SpellCheck, BookOpen, Copy, Scissors, ClipboardPaste, BookPlus, BookMinus, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GalleryPlaceholder } from "@/components/parents/tiptap/GalleryPlaceholderNode";
 import SpellCheckPanel, { type SpellIssue } from "@/components/blog/SpellCheckPanel";
+import { useSpellcheckDictionary } from "@/hooks/useSpellcheckDictionary";
 import { toast } from "sonner";
 
 interface RichTextEditorProps {
@@ -170,14 +172,37 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     }
   };
 
+  const navigate = useNavigate();
+  const dict = useSpellcheckDictionary();
+  const [sessionIgnored, setSessionIgnored] = useState<Set<string>>(new Set());
+
   // Spellcheck panel state
   const [spellOpen, setSpellOpen] = useState(false);
   const [spellLoading, setSpellLoading] = useState(false);
-  const [spellIssues, setSpellIssues] = useState<SpellIssue[]>([]);
+  const [rawSpellIssues, setRawSpellIssues] = useState<SpellIssue[]>([]);
   const [spellModel, setSpellModel] = useState<string | undefined>(undefined);
   const checkedHashRef = useRef<string | null>(null);
   const inflightHashRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
+
+  // Контекстное меню правого клика
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; word: string } | null>(null);
+
+  const wordRe = useMemo(() => /[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\-]{2,}/g, []);
+  const issueContainsIgnored = useCallback((iss: SpellIssue) => {
+    const words = String(iss.fragment).match(wordRe) || [];
+    for (const w of words) {
+      const lo = w.toLowerCase();
+      if (dict.has(lo) || sessionIgnored.has(lo)) return true;
+    }
+    return false;
+  }, [dict, sessionIgnored, wordRe]);
+
+  const spellIssues = useMemo(
+    () => rawSpellIssues.filter((i) => !issueContainsIgnored(i)),
+    [rawSpellIssues, issueContainsIgnored],
+  );
+  const setSpellIssues: typeof setRawSpellIssues = setRawSpellIssues;
 
   const hashText = (s: string) => {
     let h = 0;
@@ -279,12 +304,115 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     }
     editor.commands.setContent(html, { emitUpdate: true });
     onChange(html);
-    setSpellIssues(remaining);
+    // Убираем применённые: оставляем raw \ (spellIssues \ remaining)
+    const applied = new Set(spellIssues.filter((s) => !remaining.includes(s)));
+    setRawSpellIssues((prev) => prev.filter((s) => !applied.has(s)));
     if (remaining.length) toast.warning(`Применено, ${remaining.length} фрагментов не найдено`);
     else toast.success("Все правки применены");
   }, [editor, spellIssues, onChange]);
 
+  const addIssueToDictionary = useCallback(async (iss: SpellIssue) => {
+    const words = String(iss.fragment).match(wordRe) || [];
+    const word = words[0];
+    if (!word) return;
+    const ok = await dict.add(word);
+    if (ok) {
+      toast.success(`«${word}» добавлено в словарь`);
+      setRawSpellIssues((prev) => prev.filter((x) => x !== iss));
+    }
+  }, [dict, wordRe]);
+
+  // ── Контекстное меню правого клика ──────────────────────────────────────
+  const getWordAtPoint = useCallback((x: number, y: number): string | null => {
+    const anyDoc = document as any;
+    let node: Node | null = null; let offset = 0;
+    if (typeof anyDoc.caretPositionFromPoint === "function") {
+      const pos = anyDoc.caretPositionFromPoint(x, y);
+      if (!pos) return null;
+      node = pos.offsetNode; offset = pos.offset;
+    } else if (typeof document.caretRangeFromPoint === "function") {
+      const range = document.caretRangeFromPoint(x, y);
+      if (!range) return null;
+      node = range.startContainer; offset = range.startOffset;
+    }
+    if (!node || node.nodeType !== 3) return null;
+    const text = (node as Text).data;
+    const isWord = (ch: string) => /[A-Za-zА-Яа-яЁё\-]/.test(ch);
+    let start = offset; while (start > 0 && isWord(text[start - 1])) start--;
+    let end = offset; while (end < text.length && isWord(text[end])) end++;
+    const w = text.slice(start, end).replace(/^-+|-+$/g, "");
+    return w.length >= 2 ? w : null;
+  }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    const w = getWordAtPoint(e.clientX, e.clientY);
+    if (!w) return; // отдаём браузеру
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, word: w });
+  }, [getWordAtPoint]);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = () => setCtxMenu(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [ctxMenu]);
+
+  const ctxAddToDict = useCallback(async () => {
+    if (!ctxMenu) return;
+    const w = ctxMenu.word;
+    const ok = await dict.add(w);
+    if (ok) {
+      toast.success(`«${w}» добавлено в словарь`);
+      const lo = w.toLowerCase();
+      setRawSpellIssues((prev) => prev.filter((i) => {
+        const words = (i.fragment.match(wordRe) || []).map((x) => x.toLowerCase());
+        return !words.includes(lo);
+      }));
+    }
+    setCtxMenu(null);
+  }, [ctxMenu, dict, wordRe]);
+
+  const ctxRemoveFromDict = useCallback(async () => {
+    if (!ctxMenu) return;
+    const w = ctxMenu.word;
+    const ok = await dict.remove(w);
+    if (ok) toast.success(`«${w}» убрано из словаря`);
+    setCtxMenu(null);
+  }, [ctxMenu, dict]);
+
+  const ctxIgnoreInSession = useCallback(() => {
+    if (!ctxMenu) return;
+    const lo = ctxMenu.word.toLowerCase();
+    setSessionIgnored((prev) => new Set(prev).add(lo));
+    toast.info(`«${ctxMenu.word}» игнорируется в этом тексте`);
+    setCtxMenu(null);
+  }, [ctxMenu]);
+
+  const ctxExec = useCallback(async (cmd: "copy" | "cut" | "paste") => {
+    setCtxMenu(null);
+    editor?.chain().focus().run();
+    if (cmd === "paste") {
+      try {
+        const t = await navigator.clipboard.readText();
+        if (t) editor?.chain().focus().insertContent(t).run();
+      } catch { toast.error("Браузер запретил вставку из буфера"); }
+      return;
+    }
+    try { document.execCommand(cmd); } catch { /* ignore */ }
+  }, [editor]);
+
+  const openDictionary = useCallback(() => navigate("/admin/spellcheck-dictionary"), [navigate]);
+
   if (!editor) return null;
+
 
   const toolbarContent = (
     <>
@@ -420,6 +548,16 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       >
         {spellLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <SpellCheck className="w-4 h-4" />}
       </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8"
+        onClick={openDictionary}
+        title="Словарь"
+      >
+        <BookOpen className="w-4 h-4" />
+      </Button>
     </>
   );
 
@@ -441,8 +579,6 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       }}
       onDrop={(e) => {
         setDragOver(false);
-        // Если событие уже обработано Tiptap (editorProps.handleDrop → preventDefault),
-        // не запускаем повторную загрузку — иначе одна картинка окажется в статье дважды.
         if (e.defaultPrevented) return;
         const files = e.dataTransfer?.files;
         if (!files || !files.length) return;
@@ -451,8 +587,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         e.preventDefault();
         for (const f of imgs) void uploadAndInsertImage(f, editor);
       }}
-
-
+      onContextMenu={handleContextMenu}
     >
       {/* Spacer when toolbar is fixed */}
       {isToolbarFixed && <div className="h-[42px]" />}
@@ -476,10 +611,50 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
           loading={spellLoading}
           model={spellModel}
           onApply={applyIssue}
-          onDismiss={(idx) => setSpellIssues((prev) => prev.filter((_, i) => i !== idx))}
+          onDismiss={(idx) => {
+            const target = spellIssues[idx];
+            if (!target) return;
+            setRawSpellIssues((prev) => prev.filter((x) => x !== target));
+          }}
           onApplyAll={applyAll}
           onClose={() => setSpellOpen(false)}
+          onAddToDictionary={addIssueToDictionary}
+          onOpenDictionary={openDictionary}
         />
+      )}
+
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+          <div
+            className="fixed z-[61] min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-md py-1 text-sm"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          >
+            <div className="px-3 py-1.5 text-xs text-muted-foreground truncate">«{ctxMenu.word}»</div>
+            {dict.has(ctxMenu.word) ? (
+              <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={ctxRemoveFromDict}>
+                <BookMinus className="w-4 h-4" /> Убрать из словаря
+              </button>
+            ) : (
+              <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={ctxAddToDict}>
+                <BookPlus className="w-4 h-4" /> Добавить в словарь
+              </button>
+            )}
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={ctxIgnoreInSession}>
+              <EyeOff className="w-4 h-4" /> Игнорировать в этом тексте
+            </button>
+            <div className="h-px my-1 bg-border" />
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={() => ctxExec("copy")}>
+              <Copy className="w-4 h-4" /> Копировать
+            </button>
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={() => ctxExec("cut")}>
+              <Scissors className="w-4 h-4" /> Вырезать
+            </button>
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={() => ctxExec("paste")}>
+              <ClipboardPaste className="w-4 h-4" /> Вставить
+            </button>
+          </div>
+        </>
       )}
 
       {dragOver && (

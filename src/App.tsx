@@ -82,6 +82,7 @@ const AdminAcupointsAtlas = lazy(() => import("./pages/AdminAcupointsAtlas"));
 const AdminAcupunctureProtocols = lazy(() => import("./pages/AdminAcupunctureProtocols"));
 const AdminAcupunctureProtocolEditor = lazy(() => import("./pages/AdminAcupunctureProtocolEditor"));
 const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
+const AdminSpellcheckDictionary = lazy(() => import("./pages/AdminSpellcheckDictionary"));
 const AdminVisitTemplates = lazy(() => import("./pages/AdminVisitTemplates"));
 const AdminSystemBackup = lazy(() => import("./pages/AdminSystemBackup"));
 const AdminMedicalReferences = lazy(() => import("./pages/AdminMedicalReferences"));
@@ -243,6 +244,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/treatment-templates/new", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/treatment-templates/:id", Component: TreatmentTemplateEditor, entry: "src/pages/TreatmentTemplateEditor.tsx" },
       { path: "admin/system-settings", Component: AdminSystemSettings, entry: "src/pages/AdminSystemSettings.tsx" },
+      { path: "admin/spellcheck-dictionary", Component: AdminSpellcheckDictionary, entry: "src/pages/AdminSpellcheckDictionary.tsx" },
       { path: "admin/medical-references", Component: AdminMedicalReferences, entry: "src/pages/AdminMedicalReferences.tsx" },
       { path: "admin/system-backup", Component: AdminSystemBackup, entry: "src/pages/AdminSystemBackup.tsx" },
       { path: "admin/analytics", Component: AdminAnalytics, entry: "src/pages/AdminAnalytics.tsx" },

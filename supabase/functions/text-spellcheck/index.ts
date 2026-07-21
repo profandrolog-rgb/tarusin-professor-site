@@ -4,6 +4,7 @@
 
 import { corsHeaders } from "../_shared/cors.ts";
 import { callWithFallback, extractCompletion } from "../_shared/aiCallWithFallback.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const PRIMARY_MODEL =
@@ -11,6 +12,12 @@ const PRIMARY_MODEL =
   Deno.env.get("RESEARCH_AI_MODEL") ||
   "anthropic/claude-sonnet-4.8";
 const FALLBACK_MODEL = Deno.env.get("RESEARCH_AI_MODEL") || "google/gemini-3.1-pro-preview";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SERVICE_KEY =
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+  Deno.env.get("SUPABASE_ANON_KEY") ||
+  "";
 
 function stripHtml(html: string): string {
   return String(html || "")
@@ -26,6 +33,36 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+// Извлечь уникальные слова длиной ≥ 3 (кириллица/латиница/дефис)
+function extractWords(text: string): Set<string> {
+  const set = new Set<string>();
+  const re = /[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\-]{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) set.add(m[0].toLowerCase());
+  return set;
+}
+
+async function loadRelevantDictionary(textWords: Set<string>): Promise<string[]> {
+  if (!SUPABASE_URL || !SERVICE_KEY) return [];
+  try {
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+    const { data, error } = await sb
+      .from("spellcheck_dictionary")
+      .select("word")
+      .limit(10000);
+    if (error) throw error;
+    const dict = new Set<string>((data || []).map((r: any) => String(r.word || "").toLowerCase()));
+    const relevant: string[] = [];
+    for (const w of textWords) if (dict.has(w)) relevant.push(w);
+    // На случай мультисловных записей — оставим первые 200 из полного словаря, если пересечение пустое
+    if (!relevant.length && dict.size <= 300) return Array.from(dict);
+    return relevant.slice(0, 300);
+  } catch (e) {
+    console.warn("[text-spellcheck] dictionary load failed:", (e as Error).message);
+    return [];
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
@@ -39,13 +76,21 @@ Deno.serve(async (req) => {
     const lovKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovKey) throw new Error("LOVABLE_API_KEY missing");
 
+    const textWords = extractWords(raw);
+    const dictWords = await loadRelevantDictionary(textWords);
+    const dictSet = new Set(dictWords.map((w) => w.toLowerCase()));
+
+    const dictBlock = dictWords.length
+      ? `\n\nЛИЧНЫЙ СЛОВАРЬ (эти слова написаны верно, не считай их ошибкой ни в каком регистре и падеже):\n${dictWords.join(", ")}`
+      : "";
+
     const system = `Ты — корректор научно-медицинского текста на русском языке.
 Проверяй только: орфографию, пунктуацию, согласование слов и опечатки.
 НЕ считай ошибкой:
 - медицинскую, анатомическую, эмбриологическую, эндокринологическую и урологическую терминологию;
 - латинские и англоязычные термины, аббревиатуры, названия генов, гормонов, синдромов;
 - стилистику, порядок слов, длину предложений;
-- маркеры вида [M1], [M2], [1], [2] и HTML-теги.
+- маркеры вида [M1], [M2], [1], [2] и HTML-теги.${dictBlock}
 
 Верни СТРОГО валидный JSON без пояснений и без markdown:
 {"issues":[{"fragment":"как в тексте","correction":"как правильно","type":"орфография|пунктуация|согласование|опечатка","explanation":"кратко"}]}
@@ -80,9 +125,20 @@ Deno.serve(async (req) => {
     } catch {
       parsed = { issues: [] };
     }
-    const issues = Array.isArray(parsed.issues) ? parsed.issues.filter((i: any) => i?.fragment && i?.correction) : [];
+    let issues: any[] = Array.isArray(parsed.issues)
+      ? parsed.issues.filter((i: any) => i?.fragment && i?.correction)
+      : [];
 
-    return new Response(JSON.stringify({ issues, model: modelUsed }), {
+    // Пост-фильтр: если модель пометила слово из словаря — выкидываем находку.
+    if (dictSet.size) {
+      issues = issues.filter((i: any) => {
+        const words = extractWords(String(i.fragment));
+        for (const w of words) if (dictSet.has(w)) return false;
+        return true;
+      });
+    }
+
+    return new Response(JSON.stringify({ issues, model: modelUsed, dictionary_used: dictWords.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
