@@ -74,22 +74,27 @@ const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
   for (let i = 0; i < delays.length; i++) {
     if (delays[i]) await sleep(delays[i]);
     const timeout = withTimeout(8000);
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .abortSignal(timeout.signal);
-    timeout.clear();
-    if (!error) {
-      const set = new Set((data ?? []).map((r: any) => r.role));
-      return {
-        admin: set.has("admin"),
-        editor: set.has("editor"),
-        surgeon: set.has("surgeon"),
-        parent: set.has("parent"),
-      };
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .abortSignal(timeout.signal);
+      if (!error) {
+        const set = new Set((data ?? []).map((r: any) => r.role));
+        return {
+          admin: set.has("admin"),
+          editor: set.has("editor"),
+          surgeon: set.has("surgeon"),
+          parent: set.has("parent"),
+        };
+      }
+      console.error(`Error loading roles (attempt ${i + 1}):`, error);
+    } catch (error) {
+      console.error(`Error loading roles (attempt ${i + 1}):`, error);
+    } finally {
+      timeout.clear();
     }
-    console.error(`Error loading roles (attempt ${i + 1}):`, error);
   }
   return null;
 };
