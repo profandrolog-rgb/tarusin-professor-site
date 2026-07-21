@@ -9,6 +9,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { RESEARCH_MODE_SYSTEM_PROMPT } from '../_shared/researchModePrompt.ts';
 import { callWithFallback, extractCompletion } from '../_shared/aiCallWithFallback.ts';
+import { voicePromptBlock, type VoiceMode } from '../_shared/voicePrompts.ts';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
