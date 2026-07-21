@@ -19,7 +19,7 @@ const AdminResearchReviews = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("research_reviews" as any)
-        .select("id, slug, title, status, updated_at, source_type, topic")
+        .select("id, slug, title, status, workflow_state, voice_mode, updated_at, source_type, topic")
         .order("updated_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as any[];
