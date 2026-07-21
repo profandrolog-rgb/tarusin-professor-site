@@ -4363,6 +4363,7 @@ export type Database = {
           cover_image_path: string | null
           created_at: string
           fact_check_report: Json
+          gallery_images: Json
           id: string
           orchestrator_state: Json | null
           published_at: string | null
@@ -4386,6 +4387,7 @@ export type Database = {
           cover_image_path?: string | null
           created_at?: string
           fact_check_report?: Json
+          gallery_images?: Json
           id?: string
           orchestrator_state?: Json | null
           published_at?: string | null
@@ -4409,6 +4411,7 @@ export type Database = {
           cover_image_path?: string | null
           created_at?: string
           fact_check_report?: Json
+          gallery_images?: Json
           id?: string
           orchestrator_state?: Json | null
           published_at?: string | null
