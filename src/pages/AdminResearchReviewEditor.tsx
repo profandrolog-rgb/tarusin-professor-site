@@ -244,7 +244,23 @@ const AdminResearchReviewEditor = () => {
   async function orchestrate() {
     if (!row) return;
     if (!row.topic && !analysis) { toast.error("Укажите тему обзора или запустите анализ материалов"); return; }
-    if (row.content && !confirm("Текущий текст обзора будет перезаписан. Продолжить?")) return;
+
+    // Страховка от потери: если контент есть — сохраняем снапшот в историю правок до перезаписи.
+    let savedSnapshot = false;
+    if (row.content) {
+      const currentContent: string = row.content_with_markers || row.content;
+      const snapshotEntry = makeEntry({
+        action: "before_orchestrate",
+        before: currentContent,
+        after: currentContent,
+        historyLength: (row.refinement_history || []).length,
+        preOrchestrate: true,
+      });
+      const nextHistory = [...(row.refinement_history || []), snapshotEntry];
+      setRow((r: any) => ({ ...r, refinement_history: nextHistory }));
+      await saveSilently({ refinement_history: nextHistory });
+      savedSnapshot = true;
+    }
 
     // Reset timers/chime for a fresh run
     setTimers({});
