@@ -66,10 +66,17 @@ const AdminResearchReviews = () => {
     }
   }
 
-  const statusLabel = (s: string) =>
-    s === "published" ? "Опубликован" : s === "in_review" ? "На проверке" : "Черновик";
-  const statusVariant = (s: string): "default" | "secondary" | "outline" =>
-    s === "published" ? "default" : s === "in_review" ? "secondary" : "outline";
+  const wfLabel = (s: string) =>
+    s === "published" ? "Опубликован" :
+    s === "consilium" ? "На консилиуме" :
+    s === "editing" ? "Научное редактирование" :
+    s === "writing" ? "В написании" :
+    "Черновик";
+  const wfVariant = (s: string): "default" | "secondary" | "outline" | "destructive" =>
+    s === "published" ? "default" :
+    s === "consilium" ? "destructive" :
+    s === "editing" || s === "writing" ? "secondary" :
+    "outline";
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -93,7 +100,7 @@ const AdminResearchReviews = () => {
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{r.title || "(без названия)"}</div>
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                  <Badge variant={statusVariant(r.status)}>{statusLabel(r.status)}</Badge>
+                  <Badge variant={wfVariant(r.workflow_state || "draft")}>{wfLabel(r.workflow_state || "draft")}</Badge>
                   {r.topic && <span>· {r.topic}</span>}
                   <span>· {format(new Date(r.updated_at), "d MMM yyyy HH:mm", { locale: ru })}</span>
                   <span>· {r.source_type === "orchestrator_generated" ? "оркестратор" : "импорт"}</span>
