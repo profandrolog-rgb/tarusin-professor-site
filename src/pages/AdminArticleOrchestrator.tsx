@@ -97,8 +97,10 @@ export default function AdminArticleOrchestrator() {
   const incoming = (location.state || {}) as {
     text?: string;
     title?: string;
-    recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title?: string };
+    recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" | "research_reviews"; title?: string };
+    voiceMode?: "impersonal" | "own_data" | "authorial";
   };
+  const [researchVoiceMode, setResearchVoiceMode] = useState<"impersonal" | "own_data" | "authorial" | null>(null);
 
   const { byId: liveModelsById } = useOpenRouterModels();
   const { byId: veniceModelsById } = useVeniceModels();
