@@ -76,10 +76,11 @@ const AdminResearchReviewEditor = () => {
     } catch { /* noop */ }
   }, [id]);
 
-  const status: OrchestratorStatus = row?.fact_check_report?.orchestrator_status;
-  const lastStep: string | undefined = row?.fact_check_report?.last_step;
-  const orchestratorError: string | undefined = row?.fact_check_report?.error;
-  const searchResult: string | undefined = row?.fact_check_report?.search_result;
+  const orchState: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : {};
+  const status: OrchestratorStatus = orchState.orchestrator_status;
+  const lastStep: string | undefined = orchState.last_step;
+  const orchestratorError: string | undefined = orchState.error;
+  const searchResult: string | undefined = orchState.search_result;
 
   // Sync step timers with pipeline status transitions
   useEffect(() => {
