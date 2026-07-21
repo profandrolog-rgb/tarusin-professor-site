@@ -82,6 +82,7 @@ const AdminAcupointsAtlas = lazy(() => import("./pages/AdminAcupointsAtlas"));
 const AdminAcupunctureProtocols = lazy(() => import("./pages/AdminAcupunctureProtocols"));
 const AdminAcupunctureProtocolEditor = lazy(() => import("./pages/AdminAcupunctureProtocolEditor"));
 const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
+const AdminSpellcheckDictionary = lazy(() => import("./pages/AdminSpellcheckDictionary"));
 const AdminVisitTemplates = lazy(() => import("./pages/AdminVisitTemplates"));
 const AdminSystemBackup = lazy(() => import("./pages/AdminSystemBackup"));
 const AdminMedicalReferences = lazy(() => import("./pages/AdminMedicalReferences"));
