@@ -883,6 +883,13 @@ Deno.serve(async (req) => {
         `   ПРАВКА: ${e.suggested || ""}\n` +
         (e.rationale ? `   ОБОСНОВАНИЕ: ${e.rationale}` : "")
       )).join("\n\n");
+      const voiceMode = (body.voice_mode as VoiceMode | undefined) || undefined;
+      const isResearchReview = body.kind === "research_reviews" || !!voiceMode;
+      const extraBlocks = [
+        voiceMode ? voicePromptBlock(voiceMode) : "",
+        isResearchReview ? MARKER_PROTECTION_BLOCK : "",
+      ].filter(Boolean).join("\n\n");
+
       const userMsg = [
         "ИСХОДНАЯ СТАТЬЯ (сохраняем голос автора):",
         text,
@@ -893,7 +900,7 @@ Deno.serve(async (req) => {
       ].filter(Boolean).join("\n");
       return jsonKeepaliveResponse(async () => {
         const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
-          { role: "system", content: REWRITE_SYSTEM },
+          { role: "system", content: REWRITE_SYSTEM + (extraBlocks ? "\n\n" + extraBlocks : "") },
           { role: "user", content: userMsg },
         ], 0.4, "rewrite");
         const parsed = tryParseJson(raw);
