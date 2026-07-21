@@ -59,11 +59,12 @@ async function runPipeline(params: {
   materials_list: any[];
   review_id: string | null;
   authorId: string | null;
+  voiceMode: VoiceMode;
   orKey: string;
   lovKey: string;
   admin: any;
 }) {
-  const { topic, materials_context, materials_list, review_id, authorId, orKey, lovKey, admin } = params;
+  const { topic, materials_context, materials_list, review_id, authorId, voiceMode, orKey, lovKey, admin } = params;
 
   let currentStep: 'queued' | 'searching' | 'writing' | 'fact_checking' | 'done' | 'error' = 'queued';
   // Локальный аккумулятор операционного состояния — попадает целиком в orchestrator_state.
