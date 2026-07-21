@@ -60,7 +60,7 @@ function safeSlugPart(slug: string): string {
 }
 
 export default function GalleryPanel({
-  slug, materials, value, onChange, content, contentWithMarkers, editor, onAppendMarker,
+  slug, materials, value, onChange, content, contentWithMarkers, editor, onAppendMarker, onAppendToMarkersOnly,
 }: Props) {
   const images = value;
   const [caption, setCaption] = useState("Иллюстрации");
