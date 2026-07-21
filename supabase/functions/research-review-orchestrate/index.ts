@@ -77,11 +77,17 @@ async function runPipeline(params: {
   const { topic, materials_context, materials_list, review_id, authorId, orKey, lovKey, admin } = params;
 
   let currentStep: 'queued' | 'searching' | 'writing' | 'fact_checking' | 'done' | 'error' = 'queued';
+  // Локальный аккумулятор операционного состояния — попадает целиком в orchestrator_state.
+  const state: Record<string, any> = {};
 
   const markStatus = async (status: string, extra?: any) => {
     if (!review_id) return;
+    Object.assign(state, extra || {});
+    state.orchestrator_status = status;
+    state.last_step = currentStep;
+    state.updated_at = new Date().toISOString();
     await admin.from('research_reviews').update({
-      fact_check_report: { orchestrator_status: status, last_step: currentStep, updated_at: new Date().toISOString(), ...(extra || {}) },
+      orchestrator_state: { ...state },
     }).eq('id', review_id);
   };
 
@@ -91,7 +97,8 @@ async function runPipeline(params: {
     if (currentStep === 'done' || currentStep === 'error') return;
     try {
       admin.from('research_reviews').update({
-        fact_check_report: {
+        orchestrator_state: {
+          ...state,
           orchestrator_status: 'interrupted',
           last_step: currentStep,
           updated_at: new Date().toISOString(),
@@ -196,7 +203,6 @@ ${content.slice(0, 20000)}`;
         }
       }
     }
-    factCheck.orchestrator_status = 'done';
     factCheck.updated_at = new Date().toISOString();
 
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
@@ -238,6 +244,7 @@ ${content.slice(0, 20000)}`;
       });
     }
     currentStep = 'done';
+    await markStatus('done');
   } catch (e: any) {
     currentStep = 'error';
     console.error('orchestrator pipeline failed:', e);
@@ -282,7 +289,7 @@ Deno.serve(async (req) => {
     // Отметим статус сразу, чтобы клиент увидел «запущено»
     if (review_id) {
       await admin.from('research_reviews').update({
-        fact_check_report: { orchestrator_status: 'queued', updated_at: new Date().toISOString() },
+        orchestrator_state: { orchestrator_status: 'queued', last_step: 'queued', updated_at: new Date().toISOString() },
       }).eq('id', review_id);
     }
 
