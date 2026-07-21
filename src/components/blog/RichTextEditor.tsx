@@ -170,6 +170,65 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     }
   };
 
+  // Spellcheck panel state
+  const [spellOpen, setSpellOpen] = useState(false);
+  const [spellLoading, setSpellLoading] = useState(false);
+  const [spellIssues, setSpellIssues] = useState<SpellIssue[]>([]);
+  const [spellModel, setSpellModel] = useState<string | undefined>(undefined);
+
+  const runSpellcheck = useCallback(async () => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    if (!html || html.replace(/<[^>]+>/g, "").trim().length < 3) {
+      toast.error("Нечего проверять — текст пуст");
+      return;
+    }
+    setSpellOpen(true);
+    setSpellLoading(true);
+    setSpellIssues([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("text-spellcheck", { body: { html } });
+      if (error) throw error;
+      const issues: SpellIssue[] = Array.isArray(data?.issues) ? data.issues : [];
+      setSpellIssues(issues);
+      setSpellModel(data?.model);
+      if (!issues.length) toast.success("Ошибок не найдено");
+    } catch (e: any) {
+      toast.error(e?.message || "Ошибка проверки орфографии");
+      setSpellOpen(false);
+    } finally {
+      setSpellLoading(false);
+    }
+  }, [editor]);
+
+  const applyIssue = useCallback((iss: SpellIssue) => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    if (!html.includes(iss.fragment)) {
+      toast.warning("Фрагмент не найден в тексте — возможно, уже изменён");
+      return;
+    }
+    const nextHtml = html.replace(iss.fragment, iss.correction);
+    editor.commands.setContent(nextHtml, true);
+    onChange(nextHtml);
+    setSpellIssues((prev) => prev.filter((x) => x !== iss));
+  }, [editor, onChange]);
+
+  const applyAll = useCallback(() => {
+    if (!editor) return;
+    let html = editor.getHTML();
+    const remaining: SpellIssue[] = [];
+    for (const iss of spellIssues) {
+      if (html.includes(iss.fragment)) html = html.replace(iss.fragment, iss.correction);
+      else remaining.push(iss);
+    }
+    editor.commands.setContent(html, true);
+    onChange(html);
+    setSpellIssues(remaining);
+    if (remaining.length) toast.warning(`Применено, ${remaining.length} фрагментов не найдено`);
+    else toast.success("Все правки применены");
+  }, [editor, spellIssues, onChange]);
+
   if (!editor) return null;
 
   const toolbarContent = (
