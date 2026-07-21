@@ -167,7 +167,11 @@ turndownService.addRule("galleryTextMarker", {
 
 export function htmlToMarkdown(html: string): string {
   if (!html) return "";
-  return turndownService.turndown(galleryDivsToMarkers(html)).trim();
+  // Turndown экранирует "[" и "]" в тексте — маркеры [M1] превратятся в "\[M1\]" и
+  // потеряются на публичной странице. Защищаем их приватными Unicode-токенами.
+  const protectedHtml = protectSourceMarkers(galleryDivsToMarkers(html));
+  const md = turndownService.turndown(protectedHtml).trim();
+  return unprotectSourceMarkers(md);
 }
 
 type GallerySnapshot = {
