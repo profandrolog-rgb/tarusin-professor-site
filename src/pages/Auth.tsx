@@ -169,7 +169,7 @@ const Auth = () => {
                         </div>
                       ))}
                     </RadioGroup>
-                    {errors.userType && <p className="text-sm text-destructive">{errors.userType}</p>}
+                    <p className="text-sm text-destructive min-h-5">{errors.userType || "\u00A0"}</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
