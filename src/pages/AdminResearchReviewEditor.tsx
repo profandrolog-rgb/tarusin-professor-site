@@ -136,7 +136,7 @@ const AdminResearchReviewEditor = () => {
   useEffect(() => {
     if (!row?.id) return;
     const statusActive = status === "searching" || status === "writing" || status === "fact_checking" || status === "queued";
-    const recentlyStarted = orchestrating && Date.now() - orchestratingStartedAtRef.current < 10_000;
+    const recentlyStarted = orchestrating && Date.now() - orchestratingStartedAtRef.current < 30_000;
     const active = statusActive || orchestrating;
     if (!active) { pollingRef.current = false; return; }
     if (!statusActive && !recentlyStarted) {
@@ -148,10 +148,36 @@ const AdminResearchReviewEditor = () => {
     pollingRef.current = true;
     const int = setInterval(async () => {
       const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
-      if (fresh) setRow(fresh);
+      if (!fresh) return;
+      setRow((prev: any) => {
+        // Не затирать оптимистичный queued, если из БД пришло пусто и с момента запуска <30с
+        const freshHasState = fresh.orchestrator_state && typeof fresh.orchestrator_state === "object" && Object.keys(fresh.orchestrator_state).length > 0;
+        const freshHasLegacy = fresh.fact_check_report && typeof fresh.fact_check_report === "object" && (fresh.fact_check_report as any).orchestrator_status;
+        const withinOptimisticWindow = orchestrating && Date.now() - orchestratingStartedAtRef.current < 30_000;
+        if (!freshHasState && !freshHasLegacy && withinOptimisticWindow && prev?.orchestrator_state) {
+          return { ...fresh, orchestrator_state: prev.orchestrator_state };
+        }
+        return fresh;
+      });
     }, 5000);
     return () => { clearInterval(int); pollingRef.current = false; };
   }, [row?.id, status, orchestrating]);
+
+  // Watchdog: если оркестратор крутится > 30с, а реального статуса всё нет — сбросить
+  useEffect(() => {
+    if (!orchestrating) return;
+    const t = setTimeout(() => {
+      if (!status) {
+        setOrchestrating(false);
+        toast.error("Оркестратор не ответил, статус неизвестен", {
+          action: { label: "Повторить", onClick: () => orchestrate() },
+          duration: 20000,
+        });
+      }
+    }, 30_000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orchestrating, status]);
 
   function update(patch: any) { setRow((r: any) => ({ ...r, ...patch })); }
 
