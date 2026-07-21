@@ -108,16 +108,35 @@ ${materials_context ? `Учитывай контекст уже загружен
 Приоритет: PubMed/PMC, Cochrane, профильные журналы (последние 5 лет).
 Верни: (1) краткий синтез данных (300-600 слов, на русском), (2) 10-20 источников в формате Vancouver с DOI/PMID.`;
 
+    const modelsUsed: Record<string, string> = {};
+
     let searchResult = '';
     try {
-      searchResult = await callOpenRouter(SEARCH_MODEL, [{ role: 'user', content: searchPrompt }], orKey, 0.1, 6000);
+      const r = await callWithFallback({
+        url: OPENROUTER_URL,
+        headers: { Authorization: `Bearer ${orKey}` },
+        primary: SEARCH_MODEL,
+        fallback: GLOBAL_FALLBACK,
+        timeoutMs: 120_000,
+        label: 'search',
+        buildBody: (model) => ({
+          model,
+          messages: [{ role: 'user', content: searchPrompt }],
+          temperature: 0.1,
+          max_tokens: 6000,
+        }),
+      });
+      searchResult = extractCompletion(r.json);
+      modelsUsed.searching = r.modelUsed;
+      console.log(`search done: model=${r.modelUsed} fallback=${r.wasFallback}`);
     } catch (e) {
-      console.warn('perplexity search failed:', (e as any)?.message);
+      console.warn('search failed:', (e as any)?.message);
       searchResult = '(поиск литературы не выполнен — использовать только материалы пользователя)';
+      modelsUsed.searching = `${SEARCH_MODEL} (не выполнено)`;
     }
 
     currentStep = 'writing';
-    await markStatus('writing', { search_result: String(searchResult || '').slice(0, 20000) });
+    await markStatus('writing', { search_result: String(searchResult || '').slice(0, 20000), models_used: { ...modelsUsed } });
 
     const markersList = Array.isArray(materials_list) && materials_list.length
       ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
@@ -129,26 +148,36 @@ ${materials_context ? `Учитывай контекст уже загружен
 - seo_meta_description: до 160 символов, ЗАКОНЧЕННОЕ предложение (или два), без обрыва и многоточия. Если не помещается — переформулируй короче.`;
 
     let parsed: any = null;
-    let lastErr: any = null;
-    for (const model of [WRITE_PRIMARY, ...WRITE_FALLBACKS]) {
-      try {
-        const raw = await callOpenRouter(model, [
-          { role: 'system', content: RESEARCH_MODE_SYSTEM_PROMPT + '\n\n' + MARKER_RULES },
-          { role: 'user', content: writePrompt },
-        ], orKey, 0.2, 14000);
-        const m = raw.match(/\{[\s\S]*\}/);
-        if (!m) throw new Error('no JSON in response');
-        parsed = JSON.parse(m[0]);
-        break;
-      } catch (e) {
-        lastErr = e;
-        console.warn(`writer ${model} failed:`, (e as any)?.message);
-      }
+    try {
+      const wr = await callWithFallback({
+        url: OPENROUTER_URL,
+        headers: { Authorization: `Bearer ${orKey}` },
+        primary: WRITE_MODEL,
+        fallback: GLOBAL_FALLBACK,
+        timeoutMs: 120_000,
+        label: 'write',
+        buildBody: (model) => ({
+          model,
+          messages: [
+            { role: 'system', content: RESEARCH_MODE_SYSTEM_PROMPT + '\n\n' + MARKER_RULES },
+            { role: 'user', content: writePrompt },
+          ],
+          temperature: 0.2,
+          max_tokens: 14000,
+        }),
+      });
+      const raw = extractCompletion(wr.json);
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('no JSON in writer response');
+      parsed = JSON.parse(m[0]);
+      modelsUsed.writing = wr.modelUsed;
+      console.log(`write done: model=${wr.modelUsed} fallback=${wr.wasFallback}`);
+    } catch (e) {
+      throw new Error(`writer failed: ${(e as any)?.message}`);
     }
-    if (!parsed) throw lastErr ?? new Error('all writer models failed');
 
     currentStep = 'fact_checking';
-    await markStatus('fact_checking');
+    await markStatus('fact_checking', { models_used: { ...modelsUsed } });
 
     const content = String(parsed.content || '');
     const markerHits = Array.from(content.matchAll(/\[M(\d+)\]/g));
@@ -157,7 +186,7 @@ ${materials_context ? `Учитывай контекст уже загружен
     let factCheck: any = { verified: [], not_found_in_source: [], unmarked_claims: [], missing_markers: [] };
     try {
       const fcPrompt = `Ты — механический факт-чекер. Даны: контекст материалов пользователя (с маркерами [M#]) и текст обзора с маркерами. Для КАЖДОГО маркера в тексте обзора найди утверждение (одно-два предложения вокруг маркера) и проверь, содержится ли оно (по смыслу) в соответствующем материале.
-Также найди утверждения БЕЗ маркеров, которые выглядят как факт из материалов.
+Также найди утверждения БЕЗ маркеров, которые выглядят как факт из материалов. Если утверждение не найдено в материалах — так и напиши, НЕ придумывай подтверждение.
 
 Верни СТРОГИЙ JSON:
 {
@@ -172,7 +201,21 @@ ${materials_context ? String(materials_context).slice(0, 8000) : '(не прил
 Текст обзора:
 ${content.slice(0, 20000)}`;
 
-      const fcRaw = await callGateway(FACTCHECK_MODEL, [{ role: 'user', content: fcPrompt }], lovKey, 6000);
+      const fc = await callWithFallback({
+        url: GATEWAY_URL,
+        headers: { 'Lovable-API-Key': lovKey },
+        primary: FACTCHECK_MODEL,
+        fallback: GLOBAL_FALLBACK,
+        timeoutMs: 120_000,
+        label: 'factcheck',
+        buildBody: (model) => ({
+          model,
+          messages: [{ role: 'user', content: fcPrompt }],
+          max_tokens: 6000,
+          response_format: { type: 'json_object' },
+        }),
+      });
+      const fcRaw = extractCompletion(fc.json);
       const fcJson = JSON.parse(fcRaw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       factCheck = {
         verified: Array.isArray(fcJson.verified) ? fcJson.verified : [],
@@ -180,9 +223,13 @@ ${content.slice(0, 20000)}`;
         unmarked_claims: Array.isArray(fcJson.unmarked_claims) ? fcJson.unmarked_claims : [],
         missing_markers: [],
       };
+      modelsUsed.fact_checking = fc.modelUsed;
+      console.log(`factcheck done: model=${fc.modelUsed} fallback=${fc.wasFallback}`);
     } catch (e) {
       console.warn('fact-check step failed:', (e as any)?.message);
+      modelsUsed.fact_checking = `${FACTCHECK_MODEL} (не выполнено)`;
     }
+
 
     if (Array.isArray(materials_list)) {
       for (const m of materials_list) {
