@@ -2,12 +2,14 @@ import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images, SpellCheck } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images, SpellCheck, BookOpen, Copy, Scissors, ClipboardPaste, BookPlus, BookMinus, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { GalleryPlaceholder } from "@/components/parents/tiptap/GalleryPlaceholderNode";
 import SpellCheckPanel, { type SpellIssue } from "@/components/blog/SpellCheckPanel";
+import { useSpellcheckDictionary } from "@/hooks/useSpellcheckDictionary";
 import { toast } from "sonner";
 
 interface RichTextEditorProps {
