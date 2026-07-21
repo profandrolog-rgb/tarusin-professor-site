@@ -203,7 +203,6 @@ ${content.slice(0, 20000)}`;
         }
       }
     }
-    factCheck.orchestrator_status = 'done';
     factCheck.updated_at = new Date().toISOString();
 
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
@@ -245,6 +244,7 @@ ${content.slice(0, 20000)}`;
       });
     }
     currentStep = 'done';
+    await markStatus('done');
   } catch (e: any) {
     currentStep = 'error';
     console.error('orchestrator pipeline failed:', e);
