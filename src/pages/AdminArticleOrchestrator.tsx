@@ -389,7 +389,24 @@ export default function AdminArticleOrchestrator() {
   async function acceptAndReturnToReview() {
     if (!existingRef || existingRef.kind !== "research_reviews") return;
     try {
-      const html = markdownToHtml(finalText || text);
+      // Защита маркеров: сверяем оригинал (то, что пришло на консилиум = text)
+      // с итогом (finalText) и, если arbiter/rewriter потерял [M#] или [[GALLERY]],
+      // предупреждаем и восстанавливаем блочные метки автоматически.
+      const { markerDiff, restoreLostGalleryMarkers } = await import("@/lib/research/markerProtection");
+      const originalMd = text;
+      let finalMd = finalText || text;
+      const restored = restoreLostGalleryMarkers(originalMd, finalMd);
+      finalMd = restored.fixed;
+      const diff = markerDiff(originalMd, finalMd);
+      if (diff.lost.length) {
+        sonnerToast.warning(
+          `После консилиума пропали маркеры источников: ${diff.lost.join(", ")}. Проверьте текст перед публикацией.`,
+        );
+      }
+      if (restored.restored.length) {
+        sonnerToast.info(`Восстановил метки галерей: ${restored.restored.join(", ")}`);
+      }
+      const html = markdownToHtml(finalMd);
       const { error } = await supabase
         .from("research_reviews" as any)
         .update({ content: html, content_with_markers: html, workflow_state: "editing" })
