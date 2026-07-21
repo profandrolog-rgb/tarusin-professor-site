@@ -25,6 +25,11 @@ export interface GalleryPlaceholderOptions {
   bucket: string;
   folder: string;
   ownerSlug: string;
+  /**
+   * Разрешать ли редактирование галереи прямо из плашки в редакторе.
+   * false — метка отображается «read-only», заполнение делается на публичной странице.
+   */
+  allowUpload: boolean;
 }
 
 const detectKindFromFilename = (filename: string): GalleryKind => {
