@@ -2,11 +2,13 @@ import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images, SpellCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GalleryPlaceholder } from "@/components/parents/tiptap/GalleryPlaceholderNode";
+import SpellCheckPanel, { type SpellIssue } from "@/components/blog/SpellCheckPanel";
+import { toast } from "sonner";
 
 interface RichTextEditorProps {
   content: string;
@@ -62,6 +64,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       attributes: {
         class:
           "min-h-[200px] p-3 text-sm text-foreground focus:outline-none prose prose-sm max-w-none",
+        spellcheck: "false",
       },
       handleKeyDown: (view, event) => {
         if (event.key === "Tab") {
@@ -166,6 +169,65 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  // Spellcheck panel state
+  const [spellOpen, setSpellOpen] = useState(false);
+  const [spellLoading, setSpellLoading] = useState(false);
+  const [spellIssues, setSpellIssues] = useState<SpellIssue[]>([]);
+  const [spellModel, setSpellModel] = useState<string | undefined>(undefined);
+
+  const runSpellcheck = useCallback(async () => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    if (!html || html.replace(/<[^>]+>/g, "").trim().length < 3) {
+      toast.error("Нечего проверять — текст пуст");
+      return;
+    }
+    setSpellOpen(true);
+    setSpellLoading(true);
+    setSpellIssues([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("text-spellcheck", { body: { html } });
+      if (error) throw error;
+      const issues: SpellIssue[] = Array.isArray(data?.issues) ? data.issues : [];
+      setSpellIssues(issues);
+      setSpellModel(data?.model);
+      if (!issues.length) toast.success("Ошибок не найдено");
+    } catch (e: any) {
+      toast.error(e?.message || "Ошибка проверки орфографии");
+      setSpellOpen(false);
+    } finally {
+      setSpellLoading(false);
+    }
+  }, [editor]);
+
+  const applyIssue = useCallback((iss: SpellIssue) => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    if (!html.includes(iss.fragment)) {
+      toast.warning("Фрагмент не найден в тексте — возможно, уже изменён");
+      return;
+    }
+    const nextHtml = html.replace(iss.fragment, iss.correction);
+    editor.commands.setContent(nextHtml, { emitUpdate: true });
+    onChange(nextHtml);
+    setSpellIssues((prev) => prev.filter((x) => x !== iss));
+  }, [editor, onChange]);
+
+  const applyAll = useCallback(() => {
+    if (!editor) return;
+    let html = editor.getHTML();
+    const remaining: SpellIssue[] = [];
+    for (const iss of spellIssues) {
+      if (html.includes(iss.fragment)) html = html.replace(iss.fragment, iss.correction);
+      else remaining.push(iss);
+    }
+    editor.commands.setContent(html, { emitUpdate: true });
+    onChange(html);
+    setSpellIssues(remaining);
+    if (remaining.length) toast.warning(`Применено, ${remaining.length} фрагментов не найдено`);
+    else toast.success("Все правки применены");
+  }, [editor, spellIssues, onChange]);
 
   if (!editor) return null;
 
@@ -290,6 +352,19 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
           </Button>
         </>
       )}
+
+      <div className="w-px h-6 bg-border mx-1" />
+      <Button
+        type="button"
+        size="icon"
+        variant={spellOpen ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={runSpellcheck}
+        disabled={spellLoading}
+        title="Проверить орфографию"
+      >
+        {spellLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <SpellCheck className="w-4 h-4" />}
+      </Button>
     </>
   );
 
@@ -339,6 +414,18 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       </div>
 
       <EditorContent editor={editor} />
+
+      {spellOpen && (
+        <SpellCheckPanel
+          issues={spellIssues}
+          loading={spellLoading}
+          model={spellModel}
+          onApply={applyIssue}
+          onDismiss={(idx) => setSpellIssues((prev) => prev.filter((_, i) => i !== idx))}
+          onApplyAll={applyAll}
+          onClose={() => setSpellOpen(false)}
+        />
+      )}
 
       {dragOver && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/10 backdrop-blur-[1px] rounded-md">

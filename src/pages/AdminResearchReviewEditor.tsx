@@ -21,7 +21,7 @@ import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtif
 import FactCheckFixList from "@/components/admin/research/FactCheckFixList";
 
 const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
-const GalleryPanel = lazy(() => import("@/components/admin/research/GalleryPanel"));
+const GalleryDialog = lazy(() => import("@/components/admin/research/GalleryDialog"));
 const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
 const PublishBar = lazy(() => import("@/components/admin/research/PublishBar"));
 const ReviewPrintView = lazy(() => import("@/components/admin/research/ReviewPrintView"));
@@ -47,6 +47,8 @@ const AdminResearchReviewEditor = () => {
   const [row, setRow] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [contentEditor, setContentEditor] = useState<Editor | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [savedCursorPos, setSavedCursorPos] = useState<number | null>(null);
 
   const [instructions, setInstructions] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -440,7 +442,9 @@ const AdminResearchReviewEditor = () => {
       </div>
 
       <Suspense fallback={Fallback}>
-        <GalleryPanel
+        <GalleryDialog
+          open={galleryOpen}
+          onOpenChange={setGalleryOpen}
           slug={row.slug || ""}
           materials={materials}
           value={Array.isArray(row.gallery_images) ? row.gallery_images : []}
@@ -449,24 +453,8 @@ const AdminResearchReviewEditor = () => {
             setRow({ ...row, ...patch });
             saveSilently(patch);
           }}
-          content={row.content || ""}
-          contentWithMarkers={row.content_with_markers || ""}
           editor={contentEditor}
-          onAppendMarker={(marker) => {
-            setRow((r: any) => {
-              const currentContent: string = r?.content || "";
-              const currentMarkers: string = r?.content_with_markers || currentContent;
-              const nextContent = currentContent
-                ? `${currentContent}\n<p>${marker}</p>`
-                : `<p>${marker}</p>`;
-              const nextMarkers = currentMarkers
-                ? `${currentMarkers}\n<p>${marker}</p>`
-                : `<p>${marker}</p>`;
-              const patch = { content: nextContent, content_with_markers: nextMarkers };
-              saveSilently(patch);
-              return { ...r, ...patch };
-            });
-          }}
+          savedPos={savedCursorPos}
           onAppendToMarkersOnly={(marker) => {
             setRow((r: any) => {
               const currentMarkers: string = r?.content_with_markers || r?.content || "";
@@ -474,6 +462,17 @@ const AdminResearchReviewEditor = () => {
                 ? `${currentMarkers}\n<p>${marker}</p>`
                 : `<p>${marker}</p>`;
               const patch = { content_with_markers: nextMarkers };
+              saveSilently(patch);
+              return { ...r, ...patch };
+            });
+          }}
+          onAppendMarker={(marker) => {
+            setRow((r: any) => {
+              const currentContent: string = r?.content || "";
+              const currentMarkers: string = r?.content_with_markers || currentContent;
+              const nextContent = currentContent ? `${currentContent}\n<p>${marker}</p>` : `<p>${marker}</p>`;
+              const nextMarkers = currentMarkers ? `${currentMarkers}\n<p>${marker}</p>` : `<p>${marker}</p>`;
+              const patch = { content: nextContent, content_with_markers: nextMarkers };
               saveSilently(patch);
               return { ...r, ...patch };
             });
@@ -545,6 +544,13 @@ const AdminResearchReviewEditor = () => {
             storageBucket="disease-media"
             storageFolder="article-images"
             onEditorReady={setContentEditor}
+            onInsertGalleryClick={() => {
+              const pos = contentEditor && !contentEditor.isDestroyed
+                ? contentEditor.state.selection.from
+                : null;
+              setSavedCursorPos(pos);
+              setGalleryOpen(true);
+            }}
           />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
