@@ -13,8 +13,9 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
-  const { user, isAdmin, isSurgeon, signOut } = useAuth();
+  const { user, isAdmin, isEditor, isSurgeon, signOut } = useAuth();
   const { t, i18n } = useTranslation();
+  const hasAdminPanelAccess = isAdmin || isEditor;
 
   const mainNavItems = [
     { label: t("nav.home"), href: "#hero", isAnchor: true },
@@ -101,7 +102,7 @@ const Header = () => {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                {isAdmin && (
+                {hasAdminPanelAccess && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="w-full flex items-center">
                       <Settings className="w-4 h-4 mr-2" />
@@ -109,7 +110,7 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {!isAdmin && isSurgeon && (
+                {!hasAdminPanelAccess && isSurgeon && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin/operations-journal" className="w-full flex items-center">
                       <Settings className="w-4 h-4 mr-2" />
@@ -192,13 +193,13 @@ const Header = () => {
                 </Button>
               </Link>
               <div className="border-t border-border my-2" />
-              {isAdmin && (
+              {hasAdminPanelAccess && (
                 <Link to="/admin" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
                   <Settings className="w-4 h-4" />
                   {t("nav.adminPanel")}
                 </Link>
               )}
-              {!isAdmin && isSurgeon && (
+              {!hasAdminPanelAccess && isSurgeon && (
                 <Link to="/admin/operations-journal" onClick={() => setIsMenuOpen(false)} className="px-4 py-3 text-left text-sm font-medium text-primary hover:bg-secondary rounded-lg transition-colors flex items-center gap-2">
                   <Settings className="w-4 h-4" />
                   {t("nav.opsJournal")}

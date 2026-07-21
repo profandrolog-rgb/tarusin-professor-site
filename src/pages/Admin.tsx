@@ -260,19 +260,39 @@ const analyticsServices = [
 ];
 
 const Admin = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isEditor, loading } = useAuth();
   const navigate = useNavigate();
+  const hasAdminPanelAccess = isAdmin || isEditor;
+  const visibleSiteSections = isAdmin
+    ? siteSections
+    : siteSections.filter((section) =>
+        [
+          "/team",
+          "/clinical-cases",
+          "/admin/disease-articles",
+          "/admin/parents-materials",
+          "/admin/research-reviews",
+          "/research",
+          "/blog",
+          "/admin/podcast-sources",
+          "/admin/article-upload",
+          "/admin/article-orchestrator",
+          "/admin/article-import",
+          "/travel-notes",
+          "/admin/certificates",
+        ].includes(section.href),
+      );
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
+    if (!loading && (!user || !hasAdminPanelAccess)) {
       navigate("/auth", { state: { from: "/admin" } });
     }
-  }, [user, isAdmin, loading, navigate]);
+  }, [user, hasAdminPanelAccess, loading, navigate]);
 
   // Прогреваем чанки админ-страниц, чтобы клики по карточкам открывались мгновенно.
   useEffect(() => {
-    if (user && isAdmin) warmAdminChunks();
-  }, [user, isAdmin]);
+    if (user && hasAdminPanelAccess) warmAdminChunks();
+  }, [user, hasAdminPanelAccess]);
 
   if (loading) {
     return (
@@ -282,7 +302,7 @@ const Admin = () => {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !hasAdminPanelAccess) {
     return null;
   }
 
@@ -306,12 +326,14 @@ const Admin = () => {
           </p>
         </div>
 
-        <div className="mb-10">
-          <DbHealthWidget />
-        </div>
+        {isAdmin && (
+          <div className="mb-10">
+            <DbHealthWidget />
+          </div>
+        )}
 
         {/* Analytics Section */}
-        <div className="mb-10">
+        {isAdmin && <div className="mb-10">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold text-foreground">Аналитика и счётчики</h2>
@@ -388,15 +410,17 @@ const Admin = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Recent visits widget */}
-        <div className="mb-8">
-          <RecentVisitsWidget />
-        </div>
+        {isAdmin && (
+          <div className="mb-8">
+            <RecentVisitsWidget />
+          </div>
+        )}
 
         {/* Clinical Work — pinned to top */}
-        <section className="mb-10">
+        {isAdmin && <section className="mb-10">
           <div className="flex items-center gap-2 mb-1">
             <Stethoscope className="w-5 h-5 text-primary" />
             <h2 className="text-xl font-semibold text-foreground">Клиническая работа</h2>
@@ -423,7 +447,7 @@ const Admin = () => {
               </Link>
             ))}
           </div>
-        </section>
+        </section>}
 
         {/* Site Content & Administration */}
         <section>
@@ -435,7 +459,7 @@ const Admin = () => {
             Контент, заявки, аналитика, инфраструктура
           </p>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {siteSections.map((section) => (
+            {visibleSiteSections.map((section) => (
               <Link key={section.href} to={section.href}>
                 <Card className="h-full hover:shadow-md transition-shadow cursor-pointer hover:border-primary/40">
                   <CardHeader>
