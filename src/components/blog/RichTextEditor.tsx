@@ -64,6 +64,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       attributes: {
         class:
           "min-h-[200px] p-3 text-sm text-foreground focus:outline-none prose prose-sm max-w-none",
+        spellcheck: "false",
       },
       handleKeyDown: (view, event) => {
         if (event.key === "Tab") {
