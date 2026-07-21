@@ -765,6 +765,13 @@ Deno.serve(async (req) => {
           ).join("\n")
         : "";
 
+      const voiceMode = (body.voice_mode as VoiceMode | undefined) || undefined;
+      const isResearchReview = body.kind === "research_reviews" || !!voiceMode;
+      const extraBlocks = [
+        voiceMode ? voicePromptBlock(voiceMode) : "",
+        isResearchReview ? MARKER_PROTECTION_BLOCK : "",
+      ].filter(Boolean).join("\n\n");
+
       const userMsg = [
         title ? `ЗАГОЛОВОК: ${title}` : "",
         "СТАТЬЯ (на ревью):",
@@ -774,7 +781,7 @@ Deno.serve(async (req) => {
       ].filter(Boolean).join("\n\n");
 
       const messages = [
-        { role: "system", content: REVIEW_SYSTEM },
+        { role: "system", content: REVIEW_SYSTEM + (extraBlocks ? "\n\n" + extraBlocks : "") },
         { role: "user", content: userMsg },
       ];
 
