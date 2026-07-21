@@ -82,11 +82,7 @@ function protectSourceMarkers(input: string): string {
 }
 function unprotectSourceMarkers(input: string): string {
   if (!input) return input;
-  const re = new RegExp(
-    `${MARKER_TOKEN_PREFIX.replace(/[\uE050\uE051\uE052]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)}(\\d+)${MARKER_TOKEN_SUFFIX.replace(/[\uE050\uE051\uE052]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)}`,
-    "g",
-  );
-  return input.replace(re, (_m, n) => `[M${n}]`);
+  return input.replace(/\uE050SRCMRK\uE051(\d+)\uE052/g, (_m, n) => `[M${n}]`);
 }
 
 export function markdownToHtml(md: string): string {
