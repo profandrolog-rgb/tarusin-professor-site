@@ -400,7 +400,7 @@ export default function AdminArticleOrchestrator() {
       // Защита маркеров: сверяем оригинал (то, что пришло на консилиум = text)
       // с итогом (finalText) и, если arbiter/rewriter потерял [M#] или [[GALLERY]],
       // предупреждаем и восстанавливаем блочные метки автоматически.
-      const { markerDiff, restoreLostGalleryMarkers } = await import("@/lib/research/markerProtection");
+      // Функции защиты маркеров уже импортированы наверху.
       const originalMd = text;
       let finalMd = finalText || text;
       const restored = restoreLostGalleryMarkers(originalMd, finalMd);
