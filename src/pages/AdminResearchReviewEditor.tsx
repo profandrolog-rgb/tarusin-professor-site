@@ -21,7 +21,7 @@ import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtif
 import FactCheckFixList from "@/components/admin/research/FactCheckFixList";
 
 const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
-const GalleryPanel = lazy(() => import("@/components/admin/research/GalleryPanel"));
+const GalleryDialog = lazy(() => import("@/components/admin/research/GalleryDialog"));
 const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
 const PublishBar = lazy(() => import("@/components/admin/research/PublishBar"));
 const ReviewPrintView = lazy(() => import("@/components/admin/research/ReviewPrintView"));
