@@ -74,7 +74,11 @@ const ForDoctorsResearchDetail = () => {
   if (isLoading) return <div className="p-6"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   if (!review) return <div className="max-w-3xl mx-auto p-6">Обзор не найден.</div>;
 
-  const refs: Ref[] = Array.isArray(review.references_list) ? review.references_list : [];
+  const rawRefs: Ref[] = Array.isArray(review.references_list) ? review.references_list : [];
+  const refs: Ref[] = rawRefs.filter((r) => {
+    const fields = [r.authors, r.title, r.journal, r.year, r.volume_issue, r.pages, r.doi_or_pmid];
+    return fields.some((f) => typeof f === "string" && f.trim() && !/^не\s*применимо$/i.test(f.trim()) && !/^автор\s*материала$/i.test(f.trim()) && !/^н\/д$/i.test(f.trim()));
+  });
   const canonicalPath = `/for-doctors/research/${review.slug}/`;
   const url = `${SITE_URL}${canonicalPath}`;
 
