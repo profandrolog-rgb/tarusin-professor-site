@@ -1,4 +1,5 @@
 import { ReactNode, lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
 import { ClientOnly } from "vite-react-ssg";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -13,6 +14,17 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
+  const location = useLocation();
+  const isWorkspaceRoute =
+    location.pathname === "/auth" ||
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/cabinet") ||
+    location.pathname.startsWith("/portal");
+
+  if (isWorkspaceRoute) {
+    return <main className="w-full min-h-screen bg-background">{children}</main>;
+  }
+
   return (
     <SidebarProvider defaultOpen={false}>
       <AppSidebar />

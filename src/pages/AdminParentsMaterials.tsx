@@ -87,8 +87,9 @@ function emptyDraft(kind: ParentsMaterialKind): Omit<ParentsMaterial, "id" | "cr
 }
 
 const AdminParentsMaterials = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isEditor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const canEdit = isAdmin || isEditor;
 
   const [items, setItems] = useState<ParentsMaterial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,10 +97,10 @@ const AdminParentsMaterials = () => {
   const [savingId, setSavingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !canEdit)) {
       navigate("/auth", { state: { from: "/admin/parents-materials" } });
     }
-  }, [user, isAdmin, authLoading, navigate]);
+  }, [user, canEdit, authLoading, navigate]);
 
   const load = async () => {
     setLoading(true);
@@ -113,7 +114,7 @@ const AdminParentsMaterials = () => {
     setLoading(false);
   };
 
-  useEffect(() => { if (user && isAdmin) load(); }, [user, isAdmin]);
+  useEffect(() => { if (user && canEdit) load(); }, [user, canEdit]);
 
   const addNew = async () => {
     const draft = emptyDraft(activeKind);
@@ -171,7 +172,7 @@ const AdminParentsMaterials = () => {
     await Promise.all(updates.map((u) => supabase.from("parents_materials" as any).update({ sort_order: u.sort_order }).eq("id", u.id)));
   };
 
-  if (authLoading || !user || !isAdmin) {
+  if (authLoading || !user || !canEdit) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 

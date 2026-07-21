@@ -46,7 +46,7 @@ const PUBLISHER_DRAFT_TTL_MS = 30 * 24 * 3600 * 1000; // 30 дней
 
 const AdminArticleImport = () => {
   const navigate = useNavigate();
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, isEditor, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -195,8 +195,8 @@ const AdminArticleImport = () => {
 
 
   if (authLoading) return <div className="p-8 text-center">Загрузка…</div>;
-  if (!isAdmin) {
-    return <div className="p-8 text-center text-destructive">Доступ только для администраторов</div>;
+  if (!isAdmin && !isEditor) {
+    return <div className="p-8 text-center text-destructive">Доступ только для администраторов и редакторов</div>;
   }
 
   const handleAutoLoad = () => fileRef.current?.click();

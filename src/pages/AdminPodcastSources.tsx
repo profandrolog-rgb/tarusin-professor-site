@@ -58,8 +58,9 @@ function downloadText(filename: string, text: string) {
 }
 
 const AdminPodcastSources = () => {
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isEditor, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const canEdit = isAdmin || isEditor;
 
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Item[]>([]);
@@ -69,11 +70,11 @@ const AdminPodcastSources = () => {
   const [onlyPublished, setOnlyPublished] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) navigate("/auth", { state: { from: "/admin/podcast-sources" } });
-  }, [user, isAdmin, authLoading, navigate]);
+    if (!authLoading && (!user || !canEdit)) navigate("/auth", { state: { from: "/admin/podcast-sources" } });
+  }, [user, canEdit, authLoading, navigate]);
 
   useEffect(() => {
-    if (!user || !isAdmin) return;
+    if (!user || !canEdit) return;
     (async () => {
       setLoading(true);
       try {
@@ -140,7 +141,7 @@ const AdminPodcastSources = () => {
         setLoading(false);
       }
     })();
-  }, [user, isAdmin]);
+  }, [user, canEdit]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
