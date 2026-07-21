@@ -1,15 +1,20 @@
 // Первичный мультимодальный анализ материалов научного обзора.
-// Модель — из RESEARCH_AI_MODEL (default google/gemini-3.1-pro-preview).
+// Модель: RESEARCH_ANALYZE_MODEL → RESEARCH_AI_MODEL → default.
+// Только мультимодальный Gemini умеет одновременно аудио/изображения/PDF/видео.
 // Материалы: файлы в YC Object Storage (PDF/image/audio/docx/pptx), YouTube, PubMed, URL, свободный текст.
-// Каждому материалу присваивается стабильный маркер [M1], [M2]… для сквозной атрибуции в тексте обзора.
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import mammoth from 'npm:mammoth@1.9.0';
 import JSZip from 'npm:jszip@3.10.1';
 import { downloadFromYc } from '../_shared/ycStorage.ts';
+import { callWithFallback, extractCompletion } from '../_shared/aiCallWithFallback.ts';
 
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
+const PRIMARY_MODEL =
+  Deno.env.get('RESEARCH_ANALYZE_MODEL') ||
+  Deno.env.get('RESEARCH_AI_MODEL') ||
+  'google/gemini-3-flash-preview';
+const FALLBACK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-2.5-flash';
 
 interface Material {
   id: string;
