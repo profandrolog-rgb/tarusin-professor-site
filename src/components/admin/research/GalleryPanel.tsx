@@ -186,18 +186,23 @@ export default function GalleryPanel({
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
     const cleanCaption = caption.trim().replace(/"/g, "'");
     if (editor && !editor.isDestroyed) {
-      const hasSelection = editor.state.selection.from > 0;
-      editor
-        .chain()
-        .focus()
+      const wasFocused = editor.isFocused;
+      const chain = editor.chain();
+      if (!wasFocused) {
+        // Курсор не был установлен пользователем — вставляем в конец документа.
+        chain.focus("end");
+      } else {
+        chain.focus();
+      }
+      chain
         .insertContent({
           type: "galleryPlaceholder",
           attrs: { caption: cleanCaption, files: filesStr },
         })
         .run();
-      // Дополнительно добавляем текстовый маркер в размеченную версию (см. родитель).
-      onAppendMarker(marker);
-      if (hasSelection) {
+      // Редактор сам обновит content через onChange. Синхронизируем только размеченную версию.
+      onAppendToMarkersOnly(marker);
+      if (wasFocused) {
         toast.success("Галерея вставлена в позицию курсора");
       } else {
         toast.warning("Курсор не был установлен — галерея вставлена в конец текста");
@@ -207,6 +212,7 @@ export default function GalleryPanel({
       toast.warning("Редактор недоступен — галерея добавлена в конец текста");
     }
   }
+
 
 
   return (
