@@ -208,12 +208,6 @@ Deno.serve(async (req) => {
       userContent.push(...blocks);
     }
 
-    const res = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': lovKey },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
     let result;
     try {
       result = await callWithFallback({
