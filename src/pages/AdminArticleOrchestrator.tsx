@@ -1627,13 +1627,17 @@ export default function AdminArticleOrchestrator() {
               <Button
                 size="sm"
                 onClick={() => {
+                  if (existingRef?.kind === "research_reviews") {
+                    void acceptAndReturnToReview();
+                    return;
+                  }
                   navigate("/admin/article-import", {
                     state: { title, text: finalText, source: "orchestrator", existingRef, seoMeta: seoMeta ?? undefined },
                   });
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                <Send className="w-4 h-4 mr-2" /> {existingRef ? "Переопубликовать" : "Разместить"}
+                <Send className="w-4 h-4 mr-2" /> {existingRef?.kind === "research_reviews" ? "Принять и вернуть в научный редактор" : existingRef ? "Переопубликовать" : "Разместить"}
               </Button>
 
 
