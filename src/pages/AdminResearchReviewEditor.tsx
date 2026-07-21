@@ -322,13 +322,17 @@ const AdminResearchReviewEditor = () => {
 
   function applyRefinement(newContent: string, entry: RefinementEntry) {
     const nextHistory = [...(row.refinement_history || []), entry];
-    const patch = { content: newContent, content_with_markers: newContent, refinement_history: nextHistory };
+    // Патчим только чистый контент. Размеченную версию не трогаем — там маркеры [M#].
+    const patch: Record<string, unknown> = { content: newContent, refinement_history: nextHistory };
+    // Обратная совместимость: если размеченной версии ещё не было, синхронизируем один раз.
+    if (!row.content_with_markers) patch.content_with_markers = newContent;
     setRow({ ...row, ...patch });
     saveSilently(patch);
   }
 
   function rollback(newContent: string) {
-    const patch = { content: newContent, content_with_markers: newContent };
+    const patch: Record<string, unknown> = { content: newContent };
+    if (!row.content_with_markers) patch.content_with_markers = newContent;
     setRow({ ...row, ...patch });
     saveSilently(patch);
   }
