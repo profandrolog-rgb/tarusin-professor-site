@@ -109,8 +109,11 @@ export default function OrchestratorProgress({ status, lastStep, error, timers, 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {!anyStarted && (
-          <p className="text-sm text-muted-foreground">Оркестратор ещё не запускался. Нажмите «Написать обзор с ИИ».</p>
+        {!anyStarted && hasExistingContent && (
+          <p className="text-sm text-muted-foreground">Обзор создан ранее, детали прогона не сохранены.</p>
+        )}
+        {!anyStarted && !hasExistingContent && (
+          <p className="text-sm text-muted-foreground">Оркестратор ещё не запускался. Нажмите «Отправить в оркестратор (3 звонка)».</p>
         )}
 
         {STEPS.map((step, i) => {
