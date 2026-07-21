@@ -445,12 +445,18 @@ const AdminResearchReviewEditor = () => {
           }}
           content={row.content || ""}
           contentWithMarkers={row.content_with_markers || ""}
-          onInsertMarker={(marker) => {
-            const current: string = row.content || "";
-            const next = current
-              ? `${current}\n<p>${marker}</p>`
+          editor={contentEditorRef.current}
+          onAppendMarker={(marker) => {
+            // Дописываем маркер в конец обеих версий, не затирая существующее.
+            const currentContent: string = row.content || "";
+            const currentMarkers: string = row.content_with_markers || currentContent;
+            const nextContent = currentContent
+              ? `${currentContent}\n<p>${marker}</p>`
               : `<p>${marker}</p>`;
-            const patch = { content: next, content_with_markers: next };
+            const nextMarkers = currentMarkers
+              ? `${currentMarkers}\n<p>${marker}</p>`
+              : `<p>${marker}</p>`;
+            const patch = { content: nextContent, content_with_markers: nextMarkers };
             setRow({ ...row, ...patch });
             saveSilently(patch);
           }}
