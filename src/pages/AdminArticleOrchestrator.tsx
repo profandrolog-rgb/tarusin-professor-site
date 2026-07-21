@@ -19,7 +19,7 @@ import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Sq
 
 import { playCompletionChime, isSoundEnabled, setSoundEnabled } from "@/lib/notifySound";
 import { toast as sonnerToast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { htmlToMarkdown, markdownToHtml } from "@/lib/markdown/galleryMarkers";
 import {
   markerDiff,
