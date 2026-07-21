@@ -2021,6 +2021,44 @@ export default function AdminArticleOrchestrator() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Блок 4: финальная сверка маркеров перед применением */}
+      <Dialog open={!!pendingApply} onOpenChange={(o) => { if (!o) setPendingApply(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Shield className="w-5 h-5" /> Пропадут маркеры источников
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Если применить выбранные правки, в тексте пропадут следующие маркеры цитирования:
+            </p>
+            <div className="p-2 rounded bg-red-500/10 border border-red-500/40 font-mono text-red-700 dark:text-red-300">
+              {pendingApply?.lost.join(", ")}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Вернитесь к правкам, чтобы явно вернуть маркер к нужному предложению
+              или принять правку «без маркера».
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPendingApply(null)}>
+              Вернуться к правкам
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                const edits = pendingApply?.edits ?? [];
+                setPendingApply(null);
+                rewriteWithVoice(edits, true);
+              }}
+            >
+              Всё равно применить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
