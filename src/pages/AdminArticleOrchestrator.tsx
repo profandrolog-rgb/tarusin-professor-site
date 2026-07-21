@@ -257,6 +257,10 @@ export default function AdminArticleOrchestrator() {
   const [formatting, setFormatting] = useState(false);
   const [formatProgress, setFormatProgress] = useState<{ index: number; total: number } | null>(null);
   const [translating, setTranslating] = useState(false);
+  // Блок 4: сет ключей правок, для которых пользователь явно согласился принять «без маркера».
+  const [acceptWithoutMarker, setAcceptWithoutMarker] = useState<Set<string>>(new Set());
+  // Блок 4: модалка финальной сверки перед применением.
+  const [pendingApply, setPendingApply] = useState<{ edits: EditItem[]; lost: string[] } | null>(null);
   const [translation, setTranslation] = useState<null | {
     title: string;
     slug: string;
