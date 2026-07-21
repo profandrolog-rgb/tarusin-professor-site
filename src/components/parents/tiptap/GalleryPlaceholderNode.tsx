@@ -163,6 +163,7 @@ export const GalleryPlaceholder = Node.create<GalleryPlaceholderOptions>({
       bucket: "disease-media",
       folder: "article-images",
       ownerSlug: "gallery",
+      allowUpload: true,
     };
   },
 
