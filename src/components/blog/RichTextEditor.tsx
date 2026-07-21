@@ -611,10 +611,50 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
           loading={spellLoading}
           model={spellModel}
           onApply={applyIssue}
-          onDismiss={(idx) => setSpellIssues((prev) => prev.filter((_, i) => i !== idx))}
+          onDismiss={(idx) => {
+            const target = spellIssues[idx];
+            if (!target) return;
+            setRawSpellIssues((prev) => prev.filter((x) => x !== target));
+          }}
           onApplyAll={applyAll}
           onClose={() => setSpellOpen(false)}
+          onAddToDictionary={addIssueToDictionary}
+          onOpenDictionary={openDictionary}
         />
+      )}
+
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+          <div
+            className="fixed z-[61] min-w-[220px] rounded-md border border-border bg-popover text-popover-foreground shadow-md py-1 text-sm"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          >
+            <div className="px-3 py-1.5 text-xs text-muted-foreground truncate">«{ctxMenu.word}»</div>
+            {dict.has(ctxMenu.word) ? (
+              <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={ctxRemoveFromDict}>
+                <BookMinus className="w-4 h-4" /> Убрать из словаря
+              </button>
+            ) : (
+              <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={ctxAddToDict}>
+                <BookPlus className="w-4 h-4" /> Добавить в словарь
+              </button>
+            )}
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={ctxIgnoreInSession}>
+              <EyeOff className="w-4 h-4" /> Игнорировать в этом тексте
+            </button>
+            <div className="h-px my-1 bg-border" />
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={() => ctxExec("copy")}>
+              <Copy className="w-4 h-4" /> Копировать
+            </button>
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={() => ctxExec("cut")}>
+              <Scissors className="w-4 h-4" /> Вырезать
+            </button>
+            <button className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-accent text-left" onClick={() => ctxExec("paste")}>
+              <ClipboardPaste className="w-4 h-4" /> Вставить
+            </button>
+          </div>
+        </>
       )}
 
       {dragOver && (
