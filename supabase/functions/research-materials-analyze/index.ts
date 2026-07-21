@@ -214,28 +214,44 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userContent },
-        ],
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!res.ok) {
-      const t = await res.text().catch(() => '');
-      return new Response(JSON.stringify({ error: 'gateway_error', status: res.status, details: t.slice(0, 500) }), {
-        status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    let result;
+    try {
+      result = await callWithFallback({
+        url: GATEWAY_URL,
+        headers: { 'Lovable-API-Key': lovKey },
+        primary: PRIMARY_MODEL,
+        fallback: FALLBACK_MODEL,
+        timeoutMs: 120_000,
+        label: 'analyze',
+        buildBody: (model) => ({
+          model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userContent },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: 'gateway_error', details: String(e?.message || e).slice(0, 500) }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const j = await res.json();
-    const raw = String(j?.choices?.[0]?.message?.content ?? '{}');
+    const raw = extractCompletion(result.json) || '{}';
     let parsed: any;
     try { parsed = JSON.parse(raw); } catch {
       const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { summary: raw };
     }
+    console.log(`analyze done: model=${result.modelUsed} fallback=${result.wasFallback}`);
 
-    return new Response(JSON.stringify({ ok: true, analysis: parsed, materials_with_markers: enriched }), {
+    return new Response(JSON.stringify({
+      ok: true,
+      analysis: parsed,
+      materials_with_markers: enriched,
+      model_used: result.modelUsed,
+      was_fallback: result.wasFallback,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
