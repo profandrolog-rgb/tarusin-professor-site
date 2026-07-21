@@ -175,7 +175,6 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   const [spellLoading, setSpellLoading] = useState(false);
   const [spellIssues, setSpellIssues] = useState<SpellIssue[]>([]);
   const [spellModel, setSpellModel] = useState<string | undefined>(undefined);
-  const [spellChecked, setSpellChecked] = useState(false);
   const checkedHashRef = useRef<string | null>(null);
   const inflightHashRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
@@ -202,7 +201,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       const issues: SpellIssue[] = Array.isArray(data?.issues) ? data.issues : [];
       setSpellIssues(issues);
       setSpellModel(data?.model);
-      setSpellChecked(true);
+
       checkedHashRef.current = h;
     } catch (e: any) {
       if (!opts?.silent) toast.error(e?.message || "Ошибка проверки орфографии");
