@@ -505,7 +505,7 @@ const AdminResearchReviewEditor = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {refs.map((r, i) => (
-            <div key={i} className="border rounded p-3 space-y-2">
+            <div key={i} className={`border rounded p-3 space-y-2 ${r.verified ? "" : "border-amber-400/60 bg-amber-50/40 dark:bg-amber-900/10"}`}>
               <div className="flex items-center gap-2">
                 <Input className="w-16" type="number" value={r.number ?? i + 1} onChange={(e) => {
                   const arr = [...refs]; arr[i] = { ...r, number: Number(e.target.value) }; update({ references_list: arr });
