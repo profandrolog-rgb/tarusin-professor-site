@@ -553,6 +553,51 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       )}
 
       <div className="w-px h-6 bg-border mx-1" />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant={editor.isActive("table") ? "default" : "ghost"}
+            className="h-8 gap-1 px-2"
+            title="Таблица"
+          >
+            <TableIcon className="w-4 h-4" />
+            <ChevronDown className="w-3 h-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            <TableIcon className="w-4 h-4 mr-2" /> Вставить таблицу 3×3
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled={!editor.can().addRowAfter()} onClick={() => editor.chain().focus().addRowAfter().run()}>
+            <RowsIcon className="w-4 h-4 mr-2" /> Строка ниже
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={!editor.can().addRowBefore()} onClick={() => editor.chain().focus().addRowBefore().run()}>
+            <RowsIcon className="w-4 h-4 mr-2" /> Строка выше
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={!editor.can().deleteRow()} onClick={() => editor.chain().focus().deleteRow().run()}>
+            <RowsIcon className="w-4 h-4 mr-2" /> Удалить строку
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled={!editor.can().addColumnAfter()} onClick={() => editor.chain().focus().addColumnAfter().run()}>
+            <ColumnsIcon className="w-4 h-4 mr-2" /> Столбец справа
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={!editor.can().addColumnBefore()} onClick={() => editor.chain().focus().addColumnBefore().run()}>
+            <ColumnsIcon className="w-4 h-4 mr-2" /> Столбец слева
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={!editor.can().deleteColumn()} onClick={() => editor.chain().focus().deleteColumn().run()}>
+            <ColumnsIcon className="w-4 h-4 mr-2" /> Удалить столбец
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem disabled={!editor.can().deleteTable()} onClick={() => editor.chain().focus().deleteTable().run()}>
+            <XIcon className="w-4 h-4 mr-2 text-destructive" /> Удалить таблицу
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="w-px h-6 bg-border mx-1" />
       <Button
         type="button"
         size="icon"
