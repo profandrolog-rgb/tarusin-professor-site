@@ -69,16 +69,39 @@ export function stripGalleryMarkers(content: string): string {
 
 marked.setOptions({ gfm: true, breaks: false });
 
+// Защита маркеров источников [M#] при конвертации: и marked, и Turndown могут
+// экранировать/пожирать квадратные скобки. Перед парсингом заменяем маркеры на
+// уникальные токены с приватными Unicode-символами, после — возвращаем.
+const MARKER_TOKEN_PREFIX = "\uE050SRCMRK\uE051";
+const MARKER_TOKEN_SUFFIX = "\uE052";
+const SOURCE_MARKER_RE = /\[M(\d+)\]/g;
+
+function protectSourceMarkers(input: string): string {
+  if (!input) return input;
+  return input.replace(SOURCE_MARKER_RE, (_m, n) => `${MARKER_TOKEN_PREFIX}${n}${MARKER_TOKEN_SUFFIX}`);
+}
+function unprotectSourceMarkers(input: string): string {
+  if (!input) return input;
+  const re = new RegExp(
+    `${MARKER_TOKEN_PREFIX.replace(/[\uE050\uE051\uE052]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)}(\\d+)${MARKER_TOKEN_SUFFIX.replace(/[\uE050\uE051\uE052]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`)}`,
+    "g",
+  );
+  return input.replace(re, (_m, n) => `[M${n}]`);
+}
+
 export function markdownToHtml(md: string): string {
   if (!md) return "";
+  // Защищаем [M#] от возможной интерпретации marked как ссылки/сноски.
+  const protectedMd = protectSourceMarkers(md);
   // Replace gallery markers with HTML placeholders BEFORE markdown parsing.
   // Wrapped in their own paragraphs (blank lines) so marked treats them as block-level.
-  const prepared = md.replace(
+  const prepared = protectedMd.replace(
     GALLERY_RE,
     (_m, caption: string, files: string) =>
       `\n\n<div data-gallery-placeholder data-caption="${escapeHtml(caption)}" data-files="${escapeHtml((files || "").replace(/^\|/, "").trim())}">Галерея</div>\n\n`
   );
-  return marked.parse(prepared, { async: false }) as string;
+  const html = marked.parse(prepared, { async: false }) as string;
+  return unprotectSourceMarkers(html);
 }
 
 function readHtmlAttr(attrs: string, name: string): string {
