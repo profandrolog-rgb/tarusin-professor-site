@@ -39,6 +39,8 @@ interface Props {
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
   analysis: any | null;
+  /** Вставка markdown-таблицы в позицию курсора редактора. */
+  onInsertTable?: (markdown: string) => void;
 }
 
 const IconFor = ({ kind }: { kind: MaterialKind }) => {
