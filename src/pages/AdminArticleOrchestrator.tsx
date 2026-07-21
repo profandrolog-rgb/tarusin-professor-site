@@ -926,17 +926,48 @@ export default function AdminArticleOrchestrator() {
   }
 
 
-  async function rewriteWithVoice(editsArg?: EditItem[]) {
-    const editsAccepted = editsArg ?? (consolidated
+  async function rewriteWithVoice(editsArg?: EditItem[], skipMarkerConfirm = false) {
+    const rawAccepted = editsArg ?? (consolidated
       ? consolidated.edits
           .map((e, i) => ({ ...e, suggested: getSuggested(`cons::${i}`, e.suggested), _i: i }))
           .filter((e) => accepted.has((e as any)._i))
           .map(({ _i, ...rest }: any) => rest)
       : []);
-    if (!editsAccepted.length) {
+    if (!rawAccepted.length) {
       toast({ title: "Не выбраны правки", variant: "destructive" });
       return;
     }
+    // Блок 4: авто-восстановление маркеров источников в каждой правке,
+    // если модель не пометила себя как «без маркера».
+    const editsAccepted: EditItem[] = rawAccepted.map((e: EditItem, idx: number) => {
+      const key = `cons::${idx}`;
+      if (acceptWithoutMarker.has(key)) return e;
+      if (!e.suggested?.trim()) return e; // пустая правка (удаление) — не восстанавливаем
+      const { fixed } = restoreLostMarkersInSuggestion(e.original || "", e.suggested);
+      return { ...e, suggested: fixed };
+    });
+
+    // Блок 4: финальная сверка. Считаем маркеры в исходнике vs в симуляции применения.
+    if (!skipMarkerConfirm) {
+      let simulated = text;
+      for (const e of editsAccepted) {
+        if (e.original && simulated.includes(e.original)) {
+          simulated = simulated.replace(e.original, e.suggested || "");
+        }
+      }
+      const diff = markerDiff(text, simulated);
+      // Убираем из списка потерь те, что пользователь явно принял без маркера.
+      const stillLost = diff.lost.filter((mk) => {
+        return !editsAccepted.some((e, i) =>
+          acceptWithoutMarker.has(`cons::${i}`) && (e.original || "").includes(mk),
+        );
+      });
+      if (stillLost.length) {
+        setPendingApply({ edits: editsAccepted, lost: stillLost });
+        return;
+      }
+    }
+
     setRewriting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
