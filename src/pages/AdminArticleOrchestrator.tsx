@@ -389,7 +389,24 @@ export default function AdminArticleOrchestrator() {
   async function acceptAndReturnToReview() {
     if (!existingRef || existingRef.kind !== "research_reviews") return;
     try {
-      const html = markdownToHtml(finalText || text);
+      // Защита маркеров: сверяем оригинал (то, что пришло на консилиум = text)
+      // с итогом (finalText) и, если arbiter/rewriter потерял [M#] или [[GALLERY]],
+      // предупреждаем и восстанавливаем блочные метки автоматически.
+      const { markerDiff, restoreLostGalleryMarkers } = await import("@/lib/research/markerProtection");
+      const originalMd = text;
+      let finalMd = finalText || text;
+      const restored = restoreLostGalleryMarkers(originalMd, finalMd);
+      finalMd = restored.fixed;
+      const diff = markerDiff(originalMd, finalMd);
+      if (diff.lost.length) {
+        sonnerToast.warning(
+          `После консилиума пропали маркеры источников: ${diff.lost.join(", ")}. Проверьте текст перед публикацией.`,
+        );
+      }
+      if (restored.restored.length) {
+        sonnerToast.info(`Восстановил метки галерей: ${restored.restored.join(", ")}`);
+      }
+      const html = markdownToHtml(finalMd);
       const { error } = await supabase
         .from("research_reviews" as any)
         .update({ content: html, content_with_markers: html, workflow_state: "editing" })
@@ -672,6 +689,8 @@ export default function AdminArticleOrchestrator() {
           text: baseText,
           models,
           applied_edits: reReview ? appliedEdits : [],
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
         }),
       });
       if (!resp.ok || !resp.body) {
@@ -782,6 +801,8 @@ export default function AdminArticleOrchestrator() {
           text: baseText,
           models: [model],
           applied_edits: reviewRound > 1 ? appliedEdits : [],
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
         }),
       });
       if (!resp.ok || !resp.body) {
@@ -870,6 +891,8 @@ export default function AdminArticleOrchestrator() {
           text,
           reviews: valid.map(({ model, free_review, edits }) => ({ model, free_review, edits })),
           arbiter,
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
         }),
       });
       const j = await resp.json();
@@ -912,7 +935,14 @@ export default function AdminArticleOrchestrator() {
           "Authorization": `Bearer ${session?.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "rewrite", text, edits: editsAccepted, rewriter }),
+        body: JSON.stringify({
+          action: "rewrite",
+          text,
+          edits: editsAccepted,
+          rewriter,
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
+        }),
       });
       const j = await resp.json();
       if (!resp.ok || j?.error) throw new Error(j?.error || `HTTP ${resp.status}`);

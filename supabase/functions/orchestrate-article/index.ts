@@ -14,6 +14,18 @@
 // Models prefixed with "venice/" go to Venice API; everything else through OpenRouter.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { voicePromptBlock, type VoiceMode } from "../_shared/voicePrompts.ts";
+
+// Блок защиты меток источников [M#] и галерей [[GALLERY: ...]] — прикладывается только
+// для консилиума научных обзоров, где эти метки обязаны сохраниться.
+const MARKER_PROTECTION_BLOCK = `
+ЗАЩИТА ТЕХНИЧЕСКИХ МЕТОК (обязательна для научных обзоров):
+1. Маркеры источников [M1], [M2], [M17]… НЕЛЬЗЯ удалять, менять номер, переносить, объединять,
+   помещать в кавычки/скобки. В каждой правке поле "suggested" ОБЯЗАНО содержать все маркеры [M#],
+   которые были в поле "original".
+2. Блочные метки галерей [[GALLERY: caption="..."]] НЕЛЬЗЯ удалять, переносить в другой раздел,
+   переписывать подпись. Оставляй их ровно там, где стояли.
+3. Правки, удаляющие маркер, будут автоматически отклонены.`;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -753,6 +765,13 @@ Deno.serve(async (req) => {
           ).join("\n")
         : "";
 
+      const voiceMode = (body.voice_mode as VoiceMode | undefined) || undefined;
+      const isResearchReview = body.kind === "research_reviews" || !!voiceMode;
+      const extraBlocks = [
+        voiceMode ? voicePromptBlock(voiceMode) : "",
+        isResearchReview ? MARKER_PROTECTION_BLOCK : "",
+      ].filter(Boolean).join("\n\n");
+
       const userMsg = [
         title ? `ЗАГОЛОВОК: ${title}` : "",
         "СТАТЬЯ (на ревью):",
@@ -762,7 +781,7 @@ Deno.serve(async (req) => {
       ].filter(Boolean).join("\n\n");
 
       const messages = [
-        { role: "system", content: REVIEW_SYSTEM },
+        { role: "system", content: REVIEW_SYSTEM + (extraBlocks ? "\n\n" + extraBlocks : "") },
         { role: "user", content: userMsg },
       ];
 
@@ -825,6 +844,13 @@ Deno.serve(async (req) => {
         `EDITS: ${JSON.stringify(r.edits || [], null, 0)}`
       )).join("\n\n");
 
+      const voiceMode = (body.voice_mode as VoiceMode | undefined) || undefined;
+      const isResearchReview = body.kind === "research_reviews" || !!voiceMode;
+      const extraBlocks = [
+        voiceMode ? voicePromptBlock(voiceMode) : "",
+        isResearchReview ? MARKER_PROTECTION_BLOCK : "",
+      ].filter(Boolean).join("\n\n");
+
       const userMsg = [
         "ИСХОДНАЯ СТАТЬЯ:",
         text,
@@ -834,7 +860,7 @@ Deno.serve(async (req) => {
       ].join("\n");
 
       const messages = [
-        { role: "system", content: ARBITER_SYSTEM },
+        { role: "system", content: ARBITER_SYSTEM + (extraBlocks ? "\n\n" + extraBlocks : "") },
         { role: "user", content: userMsg },
       ];
       return jsonKeepaliveResponse(async () => {
@@ -857,6 +883,13 @@ Deno.serve(async (req) => {
         `   ПРАВКА: ${e.suggested || ""}\n` +
         (e.rationale ? `   ОБОСНОВАНИЕ: ${e.rationale}` : "")
       )).join("\n\n");
+      const voiceMode = (body.voice_mode as VoiceMode | undefined) || undefined;
+      const isResearchReview = body.kind === "research_reviews" || !!voiceMode;
+      const extraBlocks = [
+        voiceMode ? voicePromptBlock(voiceMode) : "",
+        isResearchReview ? MARKER_PROTECTION_BLOCK : "",
+      ].filter(Boolean).join("\n\n");
+
       const userMsg = [
         "ИСХОДНАЯ СТАТЬЯ (сохраняем голос автора):",
         text,
@@ -867,7 +900,7 @@ Deno.serve(async (req) => {
       ].filter(Boolean).join("\n");
       return jsonKeepaliveResponse(async () => {
         const raw = await callModel(openrouterKey, veniceKey, origin, rewriter, [
-          { role: "system", content: REWRITE_SYSTEM },
+          { role: "system", content: REWRITE_SYSTEM + (extraBlocks ? "\n\n" + extraBlocks : "") },
           { role: "user", content: userMsg },
         ], 0.4, "rewrite");
         const parsed = tryParseJson(raw);

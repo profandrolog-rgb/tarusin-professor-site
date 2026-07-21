@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import ResearchContent from "@/components/research/ResearchContent";
 import { SITE_URL } from "@/lib/i18nUrls";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Ref {
   number: number; authors?: string; title?: string; journal?: string;
@@ -19,6 +20,8 @@ interface Ref {
 
 const ForDoctorsResearchDetail = () => {
   const { slug } = useParams();
+  const { isAdmin } = useAuth();
+  const [liveContent, setLiveContent] = useState<string | null>(null);
 
   const { data: review, isLoading } = useQuery({
     queryKey: ["research-review", slug],
@@ -49,13 +52,13 @@ const ForDoctorsResearchDetail = () => {
   }, [review?.slug, review?.title, review?.topic]);
 
   const htmlWithRefs = useMemo(() => {
-    if (!review?.content) return "";
-    // Заменяем [N] на <a href="#ref-N" data-ref="N">[N]</a> для навигации к списку литературы.
-    return String(review.content).replace(
+    const src = liveContent ?? review?.content;
+    if (!src) return "";
+    return String(src).replace(
       /\[(\d+)\]/g,
       (_m, n) => `<a href="#ref-${n}" data-ref="${n}" class="text-primary hover:underline">[${n}]</a>`,
     );
-  }, [review?.content]);
+  }, [liveContent, review?.content]);
 
   // Аналитика: клик по номеру источника в теле статьи.
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -136,7 +139,16 @@ const ForDoctorsResearchDetail = () => {
         )}
       </header>
 
-      <ResearchContent html={htmlWithRefs} onFragmentClick={handleContentClick} />
+      <ResearchContent
+        html={htmlWithRefs}
+        onFragmentClick={handleContentClick}
+        admin={isAdmin ? {
+          reviewId: review.id,
+          reviewSlug: review.slug,
+          fullContent: liveContent ?? review.content ?? "",
+          onContentChange: setLiveContent,
+        } : undefined}
+      />
 
       {refs.length > 0 && (
         <section className="border-t pt-6 space-y-3">
