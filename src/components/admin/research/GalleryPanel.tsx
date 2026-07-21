@@ -58,7 +58,7 @@ function safeSlugPart(slug: string): string {
 }
 
 export default function GalleryPanel({
-  slug, materials, value, onChange, content, contentWithMarkers, onInsertMarker,
+  slug, materials, value, onChange, content, contentWithMarkers, editor, onAppendMarker,
 }: Props) {
   const images = value;
   const [caption, setCaption] = useState("Иллюстрации");
@@ -67,6 +67,10 @@ export default function GalleryPanel({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  const filesStr = useMemo(
+    () => images.map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`).join("|"),
+    [images],
+  );
   const marker = useMemo(
     () =>
       buildGalleryMarkerFromEntries(
