@@ -1055,7 +1055,14 @@ export default function AdminArticleOrchestrator() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {existingRef && (
+            {existingRef && existingRef.kind === "research_reviews" && (
+              <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300">
+                <Users className="w-3 h-3" />
+                Научный обзор на консилиуме: «{title}»{researchVoiceMode ? ` · режим голоса: ${researchVoiceMode}` : ""} — после ревью нажмите «Принять и вернуть в научный редактор»
+                <button className="ml-auto underline" onClick={() => { setExistingRef(null); setResearchVoiceMode(null); }}>отменить</button>
+              </div>
+            )}
+            {existingRef && existingRef.kind !== "research_reviews" && (
               <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300">
                 <RefreshCw className="w-3 h-3" />
                 Режим перепроверки опубликованной статьи · при «Разместить» обновится существующая запись
