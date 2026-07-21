@@ -1492,6 +1492,14 @@ export default function AdminArticleOrchestrator() {
               </div>
               {consolidated.edits.map((e, i) => {
                 const isAccepted = accepted.has(i);
+                const key = `cons::${i}`;
+                // Блок 4: анализ маркеров источника этой правки.
+                const currentSuggested = getSuggested(key, e.suggested);
+                const restore = restoreLostMarkersInSuggestion(e.original || "", currentSuggested);
+                const hasLostMarkers = restore.restored.length > 0;
+                const isDeletion = !currentSuggested.trim();
+                const unrestorable = hasLostMarkers && isDeletion;
+                const acceptedWithoutMk = acceptWithoutMarker.has(key);
                 // ищем контекст (абзац) вокруг original в исходном тексте
                 let context: { before: string; after: string } | null = null;
                 if (e.original && text.includes(e.original)) {
@@ -1503,7 +1511,13 @@ export default function AdminArticleOrchestrator() {
                 return (
                   <div
                     key={i}
-                    className={`p-3 rounded-md border transition-colors ${isAccepted ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}
+                    className={`p-3 rounded-md border transition-colors ${
+                      unrestorable && !acceptedWithoutMk
+                        ? "border-red-500 bg-red-500/10 ring-2 ring-red-500/30"
+                        : isAccepted
+                        ? "border-emerald-500/50 bg-emerald-500/5"
+                        : "border-border"
+                    }`}
                   >
                     <label className="flex gap-3 cursor-pointer">
                       <Checkbox
