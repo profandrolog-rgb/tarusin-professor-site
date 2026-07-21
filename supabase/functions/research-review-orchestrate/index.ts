@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { topic, materials_context, materials_list, review_id } = await req.json();
+    const { topic, materials_context, materials_list, review_id, voice_mode: voiceModeIn } = await req.json();
     if (!topic && !materials_context) {
       return new Response(JSON.stringify({ error: 'topic or materials_context required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -346,10 +346,22 @@ Deno.serve(async (req) => {
     }).auth.getUser();
     const authorId = userRes.data?.user?.id ?? null;
 
+    // Разрешённые значения режима голоса; по умолчанию — impersonal (научный обзор).
+    let voiceMode: VoiceMode = (['impersonal','own_data','authorial'] as const).includes(voiceModeIn)
+      ? voiceModeIn as VoiceMode
+      : 'impersonal';
+
     // Отметим статус сразу, чтобы клиент увидел «запущено»
     if (review_id) {
+      // Подхватываем voice_mode из БД, если не передан явно.
+      if (!voiceModeIn) {
+        const { data: row } = await admin.from('research_reviews').select('voice_mode').eq('id', review_id).maybeSingle();
+        const dbMode = (row as any)?.voice_mode;
+        if (dbMode && (['impersonal','own_data','authorial'] as const).includes(dbMode)) voiceMode = dbMode;
+      }
       await admin.from('research_reviews').update({
         orchestrator_state: { orchestrator_status: 'queued', last_step: 'queued', updated_at: new Date().toISOString() },
+        workflow_state: 'writing',
       }).eq('id', review_id);
     }
 
@@ -359,6 +371,7 @@ Deno.serve(async (req) => {
       materials_list: materials_list || [],
       review_id: review_id || null,
       authorId,
+      voiceMode,
       orKey, lovKey, admin,
     });
 
