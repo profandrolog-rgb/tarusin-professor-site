@@ -17,12 +17,21 @@ const WRITE_FALLBACKS = ['anthropic/claude-sonnet-4.6', 'openai/gpt-5.5'];
 const FACTCHECK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
 
 const MARKER_RULES = `
-ЖЁСТКИЕ ПРАВИЛА ПРОВЕНАНСА ИСТОЧНИКОВ:
+ЖЁСТКИЕ ПРАВИЛА ПРОВЕНАНСА И БИБЛИОГРАФИИ:
+
+Маркеры [M#] — это ВНУТРЕННЯЯ метка провенанса (откуда взято утверждение из материалов пользователя). Они НЕ являются библиографическими ссылками и НЕ выводятся читателю как сноски.
 - После КАЖДОГО фактического утверждения, взятого из материалов пользователя, ставь маркер вида [M1], [M2] (номер материала).
-- Утверждения без опоры на материалы — БЕЗ маркера (или общеизвестный факт).
-- ЗАПРЕЩЕНО добавлять источники, отсутствующие в списке материалов пользователя. Список литературы references_list формируется только из этих источников.
-- Внутри одного предложения допустимо несколько маркеров: [M1][M3].
+- Утверждения без опоры на материалы пользователя — БЕЗ маркера (если это общеизвестный факт или данные из результатов поиска Perplexity).
+- ДЕДУПЛИКАЦИЯ: если несколько подряд идущих предложений опираются на один и тот же материал, ставь маркер один раз в конце этого фрагмента, а не после каждого предложения. Маркер обязателен при смене источника и в конце абзаца. Не ставь один и тот же [M#] три раза подряд.
+
+references_list — это РЕАЛЬНАЯ библиография для читателя (реальные научные публикации).
+- Включай сюда ТОЛЬКО настоящие публикации: (а) источники, найденные Perplexity на этапе поиска литературы (с DOI/PMID/журналом), (б) реальные научные публикации, если они действительно присутствуют в материалах пользователя как цитируемые работы.
+- НЕ включай в references_list загруженные пользователем файлы, заметки, диктовки, презентации, собственные материалы — они уже отражены маркерами [M#] и не являются публикациями.
+- НЕ выдумывай источники. Не пиши заглушек типа «Автор материала», «Не применимо», «н/д». Если поле неизвестно — оставь его пустой строкой "".
+- Каждому источнику проставляй поле "verified": false (автор проверит вручную).
+- Формат: {"authors":"...","title":"...","journal":"...","year":"...","volume_issue":"...","pages":"...","doi_or_pmid":"...","verified":false}.
 `;
+
 
 function slugify(s: string): string {
   const map: Record<string, string> = {
@@ -207,7 +216,26 @@ ${content.slice(0, 20000)}`;
 
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
     const annotation = String(parsed.annotation || '').slice(0, 2000);
-    const refs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
+    const rawRefs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
+    const isPlaceholder = (s: any) => typeof s === "string" && /^(не\s*применимо|автор\s*материала|н\/д|n\/a|—|-)$/i.test(s.trim());
+    const cleanField = (s: any) => {
+      if (typeof s !== "string") return "";
+      const t = s.trim();
+      return isPlaceholder(t) ? "" : t;
+    };
+    const refs = rawRefs
+      .map((r: any, i: number) => ({
+        number: typeof r?.number === "number" ? r.number : i + 1,
+        authors: cleanField(r?.authors),
+        title: cleanField(r?.title),
+        journal: cleanField(r?.journal),
+        year: cleanField(r?.year),
+        volume_issue: cleanField(r?.volume_issue),
+        pages: cleanField(r?.pages),
+        doi_or_pmid: cleanField(r?.doi_or_pmid),
+        verified: r?.verified === true,
+      }))
+      .filter((r: any) => r.authors || r.title || r.journal || r.doi_or_pmid);
     const seoTitle = String(parsed.seo_title || title || '').trim();
     const seoDesc = String(parsed.seo_meta_description || annotation || '').trim();
 
