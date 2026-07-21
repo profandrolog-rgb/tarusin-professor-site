@@ -76,7 +76,10 @@ const AdminResearchReviewEditor = () => {
     } catch { /* noop */ }
   }, [id]);
 
-  const orchState: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : {};
+  // Обратная совместимость: старые обзоры хранят статус в fact_check_report
+  const orchStateRaw: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : null;
+  const legacyState: any = row?.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
+  const orchState: any = orchStateRaw && Object.keys(orchStateRaw).length > 0 ? orchStateRaw : legacyState;
   const status: OrchestratorStatus = orchState.orchestrator_status;
   const lastStep: string | undefined = orchState.last_step;
   const orchestratorError: string | undefined = orchState.error;
