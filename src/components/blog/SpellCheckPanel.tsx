@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, SpellCheck as SpellCheckIcon, Loader2 } from "lucide-react";
+import { Check, X, SpellCheck as SpellCheckIcon, Loader2, BookPlus } from "lucide-react";
 
 export interface SpellIssue {
   fragment: string;
@@ -15,11 +15,13 @@ interface Props {
   model?: string;
   onApply: (issue: SpellIssue) => void;
   onDismiss: (idx: number) => void;
+  onAddToDictionary?: (issue: SpellIssue) => void;
   onApplyAll: () => void;
   onClose: () => void;
+  onOpenDictionary?: () => void;
 }
 
-export default function SpellCheckPanel({ issues, loading, model, onApply, onDismiss, onApplyAll, onClose }: Props) {
+export default function SpellCheckPanel({ issues, loading, model, onApply, onDismiss, onAddToDictionary, onApplyAll, onClose, onOpenDictionary }: Props) {
   return (
     <div className="mt-3 border border-input rounded-md bg-muted/30">
       <div className="flex items-center justify-between px-3 py-2 border-b border-input">
@@ -31,6 +33,11 @@ export default function SpellCheckPanel({ issues, loading, model, onApply, onDis
           {model && <span className="text-[10px] text-muted-foreground">· {model}</span>}
         </div>
         <div className="flex items-center gap-2">
+          {onOpenDictionary && (
+            <Button size="sm" variant="ghost" className="h-7" onClick={onOpenDictionary} title="Словарь">
+              Словарь
+            </Button>
+          )}
           {!loading && issues.length > 1 && (
             <Button size="sm" variant="outline" className="h-7" onClick={onApplyAll}>Применить все</Button>
           )}
@@ -58,6 +65,11 @@ export default function SpellCheckPanel({ issues, loading, model, onApply, onDis
               <Button size="sm" variant="outline" className="h-7" onClick={() => onApply(iss)} title="Применить">
                 <Check className="w-3.5 h-3.5" />
               </Button>
+              {onAddToDictionary && (
+                <Button size="sm" variant="outline" className="h-7" onClick={() => onAddToDictionary(iss)} title="Добавить в словарь">
+                  <BookPlus className="w-3.5 h-3.5" />
+                </Button>
+              )}
               <Button size="sm" variant="ghost" className="h-7" onClick={() => onDismiss(idx)} title="Пропустить">
                 <X className="w-3.5 h-3.5" />
               </Button>
