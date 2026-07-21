@@ -21,7 +21,7 @@ import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtif
 import FactCheckFixList from "@/components/admin/research/FactCheckFixList";
 
 const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
-const GalleryDialog = lazy(() => import("@/components/admin/research/GalleryDialog"));
+const GalleryEditorDialog = lazy(() => import("@/components/gallery/GalleryEditorDialog"));
 const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
 const PublishBar = lazy(() => import("@/components/admin/research/PublishBar"));
 const ReviewPrintView = lazy(() => import("@/components/admin/research/ReviewPrintView"));
@@ -442,43 +442,59 @@ const AdminResearchReviewEditor = () => {
       </div>
 
       <Suspense fallback={Fallback}>
-        <GalleryDialog
+        <GalleryEditorDialog
           open={galleryOpen}
           onOpenChange={setGalleryOpen}
-          slug={row.slug || ""}
-          materials={materials}
-          value={Array.isArray(row.gallery_images) ? row.gallery_images : []}
-          onChange={(imgs) => {
-            const patch = { gallery_images: imgs };
-            setRow({ ...row, ...patch });
+          bucket="disease-media"
+          folder="article-images"
+          ownerSlug={row.slug || "review"}
+          initialCaption="Иллюстрации"
+          initialImages={Array.isArray(row.gallery_images) ? row.gallery_images : []}
+          onSave={({ caption, images }) => {
+            // 1) Держим row.gallery_images в актуальном состоянии — используется в разделе «Материалы».
+            const patch = { gallery_images: images };
+            setRow((r: any) => ({ ...(r || {}), ...patch }));
             saveSilently(patch);
-          }}
-          editor={contentEditor}
-          savedPos={savedCursorPos}
-          onAppendToMarkersOnly={(marker) => {
-            setRow((r: any) => {
-              const currentMarkers: string = r?.content_with_markers || r?.content || "";
-              const nextMarkers = currentMarkers
-                ? `${currentMarkers}\n<p>${marker}</p>`
-                : `<p>${marker}</p>`;
-              const patch = { content_with_markers: nextMarkers };
-              saveSilently(patch);
-              return { ...r, ...patch };
-            });
-          }}
-          onAppendMarker={(marker) => {
-            setRow((r: any) => {
-              const currentContent: string = r?.content || "";
-              const currentMarkers: string = r?.content_with_markers || currentContent;
-              const nextContent = currentContent ? `${currentContent}\n<p>${marker}</p>` : `<p>${marker}</p>`;
-              const nextMarkers = currentMarkers ? `${currentMarkers}\n<p>${marker}</p>` : `<p>${marker}</p>`;
-              const patch = { content: nextContent, content_with_markers: nextMarkers };
-              saveSilently(patch);
-              return { ...r, ...patch };
-            });
+
+            // 2) Вставляем плашку в редактор в сохранённой позиции курсора.
+            const filesStr = images
+              .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
+              .join("|");
+            const cleanCaption = (caption || "").trim().replace(/"/g, "'");
+            if (contentEditor && !contentEditor.isDestroyed) {
+              const chain = contentEditor.chain().focus();
+              if (typeof savedCursorPos === "number" && savedCursorPos >= 0) {
+                chain.insertContentAt(savedCursorPos, {
+                  type: "galleryPlaceholder",
+                  attrs: { caption: cleanCaption, files: filesStr },
+                });
+              } else {
+                chain.insertContent({
+                  type: "galleryPlaceholder",
+                  attrs: { caption: cleanCaption, files: filesStr },
+                });
+              }
+              chain.run();
+              toast.success("Галерея вставлена");
+            } else {
+              // Fallback: добавим блок в конец обоих текстов.
+              const block = `<div data-gallery-placeholder data-caption="${cleanCaption}" data-files="${filesStr}">Галерея</div>`;
+              setRow((r: any) => {
+                const c = r?.content || "";
+                const cm = r?.content_with_markers || c;
+                const p = {
+                  content: c ? `${c}\n${block}` : block,
+                  content_with_markers: cm ? `${cm}\n${block}` : block,
+                };
+                saveSilently(p);
+                return { ...r, ...p };
+              });
+              toast.warning("Редактор недоступен — галерея добавлена в конец текста");
+            }
           }}
         />
       </Suspense>
+
 
 
       <Suspense fallback={Fallback}>
@@ -543,6 +559,7 @@ const AdminResearchReviewEditor = () => {
             onChange={(html) => update({ content: html })}
             storageBucket="disease-media"
             storageFolder="article-images"
+            ownerSlug={row.slug || "review"}
             onEditorReady={setContentEditor}
             onInsertGalleryClick={() => {
               const pos = contentEditor && !contentEditor.isDestroyed

@@ -18,13 +18,15 @@ interface RichTextEditorProps {
   placeholder?: string;
   storageBucket?: string;
   storageFolder?: string;
+  /** Slug статьи/обзора — используется при редактировании галереи через плашку. */
+  ownerSlug?: string;
   /** Даёт родителю доступ к экземпляру редактора для вставки в позицию курсора. */
   onEditorReady?: (editor: Editor | null) => void;
   /** Показывать кнопку «Галерея» и обрабатывать вставку блока-заполнителя. */
   onInsertGalleryClick?: () => void;
 }
 
-const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images", onEditorReady, onInsertGalleryClick }: RichTextEditorProps) => {
+const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images", ownerSlug = "gallery", onEditorReady, onInsertGalleryClick }: RichTextEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,7 +58,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false }),
       Underline,
       Image.configure({ inline: false, allowBase64: false }),
-      GalleryPlaceholder,
+      GalleryPlaceholder.configure({ bucket: storageBucket, folder: storageFolder, ownerSlug }),
     ],
     content,
     onUpdate: ({ editor }) => {
