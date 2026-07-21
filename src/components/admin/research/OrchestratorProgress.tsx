@@ -27,6 +27,7 @@ interface Props {
   lastStep?: string;
   error?: string;
   timers: StepTimers;
+  hasExistingContent?: boolean;
   onRetryAll: () => void;
 }
 
