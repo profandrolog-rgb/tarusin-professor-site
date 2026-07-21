@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen } from 'lucide-react';
+import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen, ImageIcon, Table as TableIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
-import { deleteObject, uploadResearchFile } from '@/lib/research/uploadToYc';
+import { deleteObject, uploadResearchFile, getDownloadUrl } from '@/lib/research/uploadToYc';
+import { extractFromFile, type ExtractedImage, type ExtractedTable } from '@/lib/materials/extract';
 
 
 export interface Material {
@@ -22,6 +23,8 @@ export interface Material {
   url?: string;
   text?: string;
   size?: number;
+  extractedImages?: ExtractedImage[];
+  extractedTables?: ExtractedTable[];
 }
 
 const MAX_FILE = 50 * 1024 * 1024;      // 50 MB per file
@@ -36,6 +39,8 @@ interface Props {
   onAnalyze: () => Promise<void>;
   analyzing: boolean;
   analysis: any | null;
+  /** Вставка markdown-таблицы в позицию курсора редактора. */
+  onInsertTable?: (markdown: string) => void;
 }
 
 const IconFor = ({ kind }: { kind: MaterialKind }) => {
@@ -68,6 +73,9 @@ export default function MaterialsPanel(p: Props) {
   }
 
 
+  const [extracting, setExtracting] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length) return;
     setUploading(true);
@@ -88,7 +96,7 @@ export default function MaterialsPanel(p: Props) {
       setProgress(prev => ({ ...prev, [key]: 0 }));
       try {
         const res = await uploadResearchFile(p.reviewId, f, (pct) => setProgress(prev => ({ ...prev, [key]: pct })));
-        added.push({
+        const material: Material = {
           id: crypto.randomUUID(),
           kind: 'file',
           name: f.name,
@@ -96,8 +104,31 @@ export default function MaterialsPanel(p: Props) {
           objectKey: res.objectKey,
           size: f.size,
           text: res.text,
-        });
+        };
+        added.push(material);
         running += f.size;
+
+        // Асинхронное извлечение изображений и таблиц.
+        const lc = f.name.toLowerCase();
+        if (/\.(docx|pptx|pdf)$/i.test(lc)) {
+          setExtracting(prev => ({ ...prev, [material.id]: true }));
+          extractFromFile(f, p.reviewId).then((ext) => {
+            if (ext.images.length || ext.tables.length) {
+              material.extractedImages = ext.images;
+              material.extractedTables = ext.tables;
+              // Мутируем текущий локальный список и передаём обновлённую копию.
+              const updated = assignMarkers(p.materials.map(m => m.id === material.id ? { ...m, extractedImages: ext.images, extractedTables: ext.tables } : m));
+              // Если материал ещё не вошёл в родительский стейт — добавим в мутацию отдельным путём.
+              const exists = updated.some(m => m.id === material.id);
+              p.onChange(exists ? updated : [...updated, material]);
+              toast.success(`«${f.name}»: извлечено изображений — ${ext.images.length}, таблиц — ${ext.tables.length}`);
+            }
+          }).catch((e) => {
+            console.warn('extractFromFile failed:', e?.message);
+          }).finally(() => {
+            setExtracting(prev => { const { [material.id]: _, ...rest } = prev; return rest; });
+          });
+        }
       } catch (e: any) {
         toast.error(`${f.name}: ${e?.message || 'ошибка загрузки'}`);
       } finally {
@@ -269,18 +300,68 @@ export default function MaterialsPanel(p: Props) {
 
         {p.materials.length > 0 && (
           <div className="space-y-1.5">
-            {p.materials.map(m => (
-              <div key={m.id} className="flex items-center gap-2 border rounded px-2 py-1.5 bg-muted/30">
-                <IconFor kind={m.kind} />
-                <Badge variant="outline" className="text-xs font-mono">{m.marker || ''}</Badge>
-                <Badge variant="secondary" className="text-xs">{kindLabel(m.kind)}</Badge>
-                <span className="text-sm flex-1 truncate">{m.name || m.url || m.text}</span>
-                {m.size ? <span className="text-xs text-muted-foreground">{fmtBytes(m.size)}</span> : null}
-                <Button variant="ghost" size="sm" onClick={() => remove(m.id)}>
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
+            {p.materials.map(m => {
+              const imgCount = m.extractedImages?.length || 0;
+              const tblCount = m.extractedTables?.length || 0;
+              const isOpen = expanded[m.id];
+              const isExtracting = extracting[m.id];
+              return (
+                <div key={m.id} className="border rounded bg-muted/30">
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <IconFor kind={m.kind} />
+                    <Badge variant="outline" className="text-xs font-mono">{m.marker || ''}</Badge>
+                    <Badge variant="secondary" className="text-xs">{kindLabel(m.kind)}</Badge>
+                    <span className="text-sm flex-1 truncate">{m.name || m.url || m.text}</span>
+                    {isExtracting && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                    {imgCount > 0 && (
+                      <Badge variant="outline" className="text-xs gap-1"><ImageIcon className="w-3 h-3" />{imgCount}</Badge>
+                    )}
+                    {tblCount > 0 && (
+                      <Badge variant="outline" className="text-xs gap-1"><TableIcon className="w-3 h-3" />{tblCount}</Badge>
+                    )}
+                    {(imgCount > 0 || tblCount > 0) && (
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setExpanded(e => ({ ...e, [m.id]: !e[m.id] }))}>
+                        {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </Button>
+                    )}
+                    {m.size ? <span className="text-xs text-muted-foreground">{fmtBytes(m.size)}</span> : null}
+                    <Button variant="ghost" size="sm" onClick={() => remove(m.id)}>
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                  {isOpen && (
+                    <div className="border-t px-2 py-2 space-y-2 bg-background/50">
+                      {imgCount > 0 && (
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Извлечённые изображения — доступны в диалоге вставки галереи</div>
+                          <div className="grid grid-cols-6 gap-1.5">
+                            {m.extractedImages!.slice(0, 24).map((img, i) => (
+                              <ExtractedThumb key={i} img={img} />
+                            ))}
+                            {imgCount > 24 && <span className="text-xs text-muted-foreground self-center">и ещё {imgCount - 24}</span>}
+                          </div>
+                        </div>
+                      )}
+                      {tblCount > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Извлечённые таблицы</div>
+                          {m.extractedTables!.map((t, i) => (
+                            <div key={i} className="flex items-start gap-2 border rounded p-2 bg-muted/20">
+                              <pre className="text-xs whitespace-pre-wrap flex-1 max-h-24 overflow-auto font-mono">{t.markdown.split('\n').slice(0, 4).join('\n')}{t.markdown.split('\n').length > 4 ? '\n…' : ''}</pre>
+                              {p.onInsertTable && (
+                                <Button size="sm" variant="outline" onClick={() => p.onInsertTable!(t.markdown)}>
+                                  Вставить
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -326,5 +407,26 @@ export default function MaterialsPanel(p: Props) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ExtractedThumb({ img }: { img: ExtractedImage }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [err, setErr] = useState(false);
+  const requested = useRef(false);
+  if (!requested.current) {
+    requested.current = true;
+    getDownloadUrl(img.objectKey).then(setUrl).catch(() => setErr(true));
+  }
+  return (
+    <div className="aspect-square rounded border bg-muted overflow-hidden relative" title={`Стр./слайд ${img.pageOrSlide ?? "?"}, ${img.width}×${img.height}`}>
+      {url && !err ? (
+        <img src={url} alt="" loading="lazy" onError={() => setErr(true)} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
+        </div>
+      )}
+    </div>
   );
 }
