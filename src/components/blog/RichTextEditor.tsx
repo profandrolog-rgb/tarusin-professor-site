@@ -209,7 +209,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       return;
     }
     const nextHtml = html.replace(iss.fragment, iss.correction);
-    editor.commands.setContent(nextHtml, true);
+    editor.commands.setContent(nextHtml, { emitUpdate: true });
     onChange(nextHtml);
     setSpellIssues((prev) => prev.filter((x) => x !== iss));
   }, [editor, onChange]);
@@ -222,7 +222,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       if (html.includes(iss.fragment)) html = html.replace(iss.fragment, iss.correction);
       else remaining.push(iss);
     }
-    editor.commands.setContent(html, true);
+    editor.commands.setContent(html, { emitUpdate: true });
     onChange(html);
     setSpellIssues(remaining);
     if (remaining.length) toast.warning(`Применено, ${remaining.length} фрагментов не найдено`);
