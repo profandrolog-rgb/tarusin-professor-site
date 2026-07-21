@@ -223,6 +223,12 @@ const AdminResearchReviewEditor = () => {
     try { localStorage.removeItem(`research_orchestrator:v1:${row.id}`); } catch { /* noop */ }
 
     setOrchestrating(true);
+    orchestratingStartedAtRef.current = Date.now();
+    // Оптимистичный статус: панель и таймеры должны стартовать немедленно, не дожидаясь опроса.
+    setRow((r: any) => ({
+      ...r,
+      orchestrator_state: { orchestrator_status: "queued", last_step: "queued", updated_at: new Date().toISOString() },
+    }));
     try {
       const materials: Material[] = row.source_materials || [];
       const materials_context = analysis
