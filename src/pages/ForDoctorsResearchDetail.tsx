@@ -139,7 +139,16 @@ const ForDoctorsResearchDetail = () => {
         )}
       </header>
 
-      <ResearchContent html={htmlWithRefs} onFragmentClick={handleContentClick} />
+      <ResearchContent
+        html={htmlWithRefs}
+        onFragmentClick={handleContentClick}
+        admin={isAdmin ? {
+          reviewId: review.id,
+          reviewSlug: review.slug,
+          fullContent: liveContent ?? review.content ?? "",
+          onContentChange: setLiveContent,
+        } : undefined}
+      />
 
       {refs.length > 0 && (
         <section className="border-t pt-6 space-y-3">
