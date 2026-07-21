@@ -672,6 +672,8 @@ export default function AdminArticleOrchestrator() {
           text: baseText,
           models,
           applied_edits: reReview ? appliedEdits : [],
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
         }),
       });
       if (!resp.ok || !resp.body) {
