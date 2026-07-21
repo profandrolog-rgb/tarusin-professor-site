@@ -298,7 +298,7 @@ ${content.slice(0, 20000)}`;
       });
     }
     currentStep = 'done';
-    await markStatus('done');
+    await markStatus('done', { models_used: { ...modelsUsed } });
   } catch (e: any) {
     currentStep = 'error';
     console.error('orchestrator pipeline failed:', e);
