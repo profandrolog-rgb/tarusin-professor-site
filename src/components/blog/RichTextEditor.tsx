@@ -69,6 +69,10 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       Underline,
       Image.configure({ inline: false, allowBase64: false }),
       GalleryPlaceholder.configure({ bucket: storageBucket, folder: storageFolder, ownerSlug, allowUpload: allowGalleryUpload }),
+      Table.configure({ resizable: true, HTMLAttributes: { class: "article-table" } }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content,
     onUpdate: ({ editor }) => {
