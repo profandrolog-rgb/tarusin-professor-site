@@ -274,8 +274,25 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         className="hidden"
         onChange={handleImageUpload}
       />
+
+      {onInsertGalleryClick && (
+        <>
+          <div className="w-px h-6 bg-border mx-1" />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={onInsertGalleryClick}
+            title="Вставить галерею в позицию курсора"
+          >
+            <Images className="w-4 h-4" />
+          </Button>
+        </>
+      )}
     </>
   );
+
 
   return (
     <div
