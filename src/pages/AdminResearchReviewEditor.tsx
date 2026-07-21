@@ -87,6 +87,7 @@ const AdminResearchReviewEditor = () => {
   const lastStep: string | undefined = orchState.last_step;
   const orchestratorError: string | undefined = orchState.error;
   const searchResult: string | undefined = orchState.search_result;
+  const modelsUsed: Record<string, string> | undefined = orchState.models_used && typeof orchState.models_used === "object" ? orchState.models_used : undefined;
 
   // Sync step timers with pipeline status transitions
   useEffect(() => {
@@ -417,6 +418,7 @@ const AdminResearchReviewEditor = () => {
               timers={timers}
               hasExistingContent={hasExistingContent}
               onRetryAll={orchestrate}
+              modelsUsed={modelsUsed as any}
             />
           </div>
         );

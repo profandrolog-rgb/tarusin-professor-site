@@ -69,7 +69,7 @@ function formatSec(ms: number) {
   return `${m} мин ${rem.toString().padStart(2, "0")} с`;
 }
 
-export default function OrchestratorProgress({ status, lastStep, error, timers, hasExistingContent, onRetryAll }: Props) {
+export default function OrchestratorProgress({ status, lastStep, error, timers, hasExistingContent, onRetryAll, modelsUsed }: Props) {
   const [tick, setTick] = useState(0);
   const hasActive = status === "searching" || status === "writing" || status === "fact_checking";
 
@@ -197,6 +197,11 @@ export default function OrchestratorProgress({ status, lastStep, error, timers, 
                     </TooltipProvider>
                   </div>
                 </div>
+                {modelsUsed?.[step.key] && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 font-mono truncate" title={modelsUsed[step.key]}>
+                    {modelsUsed[step.key]}
+                  </p>
+                )}
                 {st === "error" && error && (i === STEPS.findIndex((s) => stepState(s.key, status) === "error")) && (
                   <p className="text-xs text-red-600 dark:text-red-400 mt-0.5 line-clamp-2">{error}</p>
                 )}
