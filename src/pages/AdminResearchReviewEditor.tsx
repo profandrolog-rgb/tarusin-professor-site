@@ -49,6 +49,7 @@ const AdminResearchReviewEditor = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any | null>(null);
   const [orchestrating, setOrchestrating] = useState(false);
+  const orchestratingStartedAtRef = useRef<number>(0);
   const [timers, setTimers] = useState<StepTimers>({});
   const chimedRef = useRef(false);
   const prevStatusRef = useRef<OrchestratorStatus>(undefined);
