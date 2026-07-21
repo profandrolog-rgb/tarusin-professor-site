@@ -47,6 +47,8 @@ const AdminResearchReviewEditor = () => {
   const [row, setRow] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const [contentEditor, setContentEditor] = useState<Editor | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [savedCursorPos, setSavedCursorPos] = useState<number | null>(null);
 
   const [instructions, setInstructions] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
