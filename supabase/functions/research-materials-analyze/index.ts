@@ -1,15 +1,20 @@
 // Первичный мультимодальный анализ материалов научного обзора.
-// Модель — из RESEARCH_AI_MODEL (default google/gemini-3.1-pro-preview).
+// Модель: RESEARCH_ANALYZE_MODEL → RESEARCH_AI_MODEL → default.
+// Только мультимодальный Gemini умеет одновременно аудио/изображения/PDF/видео.
 // Материалы: файлы в YC Object Storage (PDF/image/audio/docx/pptx), YouTube, PubMed, URL, свободный текст.
-// Каждому материалу присваивается стабильный маркер [M1], [M2]… для сквозной атрибуции в тексте обзора.
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 import mammoth from 'npm:mammoth@1.9.0';
 import JSZip from 'npm:jszip@3.10.1';
 import { downloadFromYc } from '../_shared/ycStorage.ts';
+import { callWithFallback, extractCompletion } from '../_shared/aiCallWithFallback.ts';
 
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
+const PRIMARY_MODEL =
+  Deno.env.get('RESEARCH_ANALYZE_MODEL') ||
+  Deno.env.get('RESEARCH_AI_MODEL') ||
+  'google/gemini-3-flash-preview';
+const FALLBACK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-2.5-flash';
 
 interface Material {
   id: string;
@@ -203,34 +208,44 @@ Deno.serve(async (req) => {
       userContent.push(...blocks);
     }
 
-    const res = await fetch(GATEWAY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Lovable-API-Key': lovKey },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userContent },
-        ],
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!res.ok) {
-      const t = await res.text().catch(() => '');
-      return new Response(JSON.stringify({ error: 'gateway_error', status: res.status, details: t.slice(0, 500) }), {
-        status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    let result;
+    try {
+      result = await callWithFallback({
+        url: GATEWAY_URL,
+        headers: { 'Lovable-API-Key': lovKey },
+        primary: PRIMARY_MODEL,
+        fallback: FALLBACK_MODEL,
+        timeoutMs: 120_000,
+        label: 'analyze',
+        buildBody: (model) => ({
+          model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userContent },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: 'gateway_error', details: String(e?.message || e).slice(0, 500) }), {
+        status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const j = await res.json();
-    const raw = String(j?.choices?.[0]?.message?.content ?? '{}');
+    const raw = extractCompletion(result.json) || '{}';
     let parsed: any;
     try { parsed = JSON.parse(raw); } catch {
       const m = raw.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { summary: raw };
     }
+    console.log(`analyze done: model=${result.modelUsed} fallback=${result.wasFallback}`);
 
-    return new Response(JSON.stringify({ ok: true, analysis: parsed, materials_with_markers: enriched }), {
+    return new Response(JSON.stringify({
+      ok: true,
+      analysis: parsed,
+      materials_with_markers: enriched,
+      model_used: result.modelUsed,
+      was_fallback: result.wasFallback,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
