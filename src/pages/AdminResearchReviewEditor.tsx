@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Save, Eye, Send, ChevronDown, Loader2, Trash2, Plus } from "lucide-react";
 import { stripMarkers } from "@/lib/research/markers";
 import type { Material } from "@/components/admin/research/MaterialsPanel";
-import type { RefinementEntry } from "@/lib/research/refinementDiff";
+import { makeEntry, type RefinementEntry } from "@/lib/research/refinementDiff";
 import { playCompletionChime } from "@/lib/notifySound";
 import OrchestratorProgress, { type OrchestratorStatus, type StepTimers } from "@/components/admin/research/OrchestratorProgress";
 import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtifacts";
