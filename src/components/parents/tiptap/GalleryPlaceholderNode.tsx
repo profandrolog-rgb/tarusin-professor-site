@@ -111,7 +111,7 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
             <div className="mt-2 text-xs text-slate-500 italic">Изображения ещё не добавлены</div>
           )}
         </div>
-        {editable && (
+        {editable && (opts.allowUpload ?? true) && (
           <Button
             type="button"
             variant="outline"
