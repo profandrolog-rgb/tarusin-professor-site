@@ -20,7 +20,7 @@ interface RichTextEditorProps {
   onInsertGalleryClick?: () => void;
 }
 
-const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images" }: RichTextEditorProps) => {
+const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images", onEditorReady, onInsertGalleryClick }: RichTextEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
