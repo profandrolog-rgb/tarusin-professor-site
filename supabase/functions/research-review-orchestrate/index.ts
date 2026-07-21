@@ -216,7 +216,26 @@ ${content.slice(0, 20000)}`;
 
     const title = String(parsed.title || topic || 'Обзор').slice(0, 300);
     const annotation = String(parsed.annotation || '').slice(0, 2000);
-    const refs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
+    const rawRefs = Array.isArray(parsed.references_list) ? parsed.references_list : [];
+    const isPlaceholder = (s: any) => typeof s === "string" && /^(не\s*применимо|автор\s*материала|н\/д|n\/a|—|-)$/i.test(s.trim());
+    const cleanField = (s: any) => {
+      if (typeof s !== "string") return "";
+      const t = s.trim();
+      return isPlaceholder(t) ? "" : t;
+    };
+    const refs = rawRefs
+      .map((r: any, i: number) => ({
+        number: typeof r?.number === "number" ? r.number : i + 1,
+        authors: cleanField(r?.authors),
+        title: cleanField(r?.title),
+        journal: cleanField(r?.journal),
+        year: cleanField(r?.year),
+        volume_issue: cleanField(r?.volume_issue),
+        pages: cleanField(r?.pages),
+        doi_or_pmid: cleanField(r?.doi_or_pmid),
+        verified: r?.verified === true,
+      }))
+      .filter((r: any) => r.authors || r.title || r.journal || r.doi_or_pmid);
     const seoTitle = String(parsed.seo_title || title || '').trim();
     const seoDesc = String(parsed.seo_meta_description || annotation || '').trim();
 
