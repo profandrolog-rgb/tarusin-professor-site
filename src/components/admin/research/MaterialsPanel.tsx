@@ -419,7 +419,7 @@ function ExtractedThumb({ img }: { img: ExtractedImage }) {
     getDownloadUrl(img.objectKey).then(setUrl).catch(() => setErr(true));
   }
   return (
-    <div className="aspect-square rounded border bg-muted overflow-hidden relative" title={`Стр. ${img.page ?? '?'}, ${img.width}×${img.height}`}>
+    <div className="aspect-square rounded border bg-muted overflow-hidden relative" title={`Стр./слайд ${img.pageOrSlide ?? "?"}, ${img.width}×${img.height}`}>
       {url && !err ? (
         <img src={url} alt="" loading="lazy" onError={() => setErr(true)} className="w-full h-full object-cover" />
       ) : (
