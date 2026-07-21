@@ -25,6 +25,11 @@ export interface GalleryPlaceholderOptions {
   bucket: string;
   folder: string;
   ownerSlug: string;
+  /**
+   * Разрешать ли редактирование галереи прямо из плашки в редакторе.
+   * false — метка отображается «read-only», заполнение делается на публичной странице.
+   */
+  allowUpload: boolean;
 }
 
 const detectKindFromFilename = (filename: string): GalleryKind => {
@@ -106,7 +111,7 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
             <div className="mt-2 text-xs text-slate-500 italic">Изображения ещё не добавлены</div>
           )}
         </div>
-        {editable && (
+        {editable && (opts.allowUpload ?? true) && (
           <Button
             type="button"
             variant="outline"
@@ -158,6 +163,7 @@ export const GalleryPlaceholder = Node.create<GalleryPlaceholderOptions>({
       bucket: "disease-media",
       folder: "article-images",
       ownerSlug: "gallery",
+      allowUpload: true,
     };
   },
 

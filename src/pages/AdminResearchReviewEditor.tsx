@@ -667,6 +667,7 @@ const AdminResearchReviewEditor = () => {
             storageFolder="article-images"
             ownerSlug={row.slug || "review"}
             onEditorReady={setContentEditor}
+            allowGalleryUpload={false}
           />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
