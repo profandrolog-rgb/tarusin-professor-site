@@ -159,7 +159,6 @@ export default function RefinementChat(p: Props) {
   }
 
   function handleRollback(idx: number) {
-    if (!confirm('Откатить контент к состоянию до этой правки?')) return;
     const restored = restoreBefore(p.history, idx);
     if (restored == null) { toast.error('Не удалось восстановить: ближайший снапшот не найден'); return; }
     p.onRollback(restored);

@@ -59,6 +59,7 @@ export default function MaterialsPanel(p: Props) {
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const pendingDeletions = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const totalBytes = p.materials.reduce((s, m) => s + (m.size || 0), 0);
 
@@ -137,16 +138,44 @@ export default function MaterialsPanel(p: Props) {
     setTextInput('');
   }
 
-  async function remove(id: string) {
+  function remove(id: string) {
     const m = p.materials.find(x => x.id === id);
-    if (m?.objectKey) {
-      try { await deleteObject(m.objectKey); } catch (e: any) {
-        console.warn('delete YC failed:', e?.message);
-      }
-    }
-    // Пересчитать маркеры чтобы не было дырок [M2], [M4] → [M1], [M2].
+    if (!m) return;
+    // Убираем из списка сразу, пересчитываем маркеры.
     const remaining = p.materials.filter(x => x.id !== id).map((x, i) => ({ ...x, marker: `[M${i + 1}]` }));
     p.onChange(remaining);
+
+    // Отложенное фактическое удаление из бакета через 8 сек, с возможностью отмены.
+    const timer = setTimeout(async () => {
+      pendingDeletions.current.delete(id);
+      if (m.objectKey) {
+        try { await deleteObject(m.objectKey); } catch (e: any) {
+          console.warn('delete YC failed:', e?.message);
+        }
+      }
+    }, 8000);
+    pendingDeletions.current.set(id, timer);
+
+    toast(`Материал «${m.name || m.marker || m.kind}» удалён`, {
+      duration: 8000,
+      action: {
+        label: 'Отменить',
+        onClick: () => {
+          const t = pendingDeletions.current.get(id);
+          if (t) { clearTimeout(t); pendingDeletions.current.delete(id); }
+          // Возвращаем материал на исходную позицию по id (через merge + пересчёт маркеров).
+          const restored = [...p.materials];
+          const idx = restored.findIndex(x => x.id === id);
+          if (idx === -1) {
+            // p.materials здесь — closure момента вызова remove; используем актуальный список через onChange
+            const merged = [...remaining];
+            // вставляем m обратно в конец, потом пересчитываем маркеры
+            merged.push(m);
+            p.onChange(merged.map((x, i) => ({ ...x, marker: `[M${i + 1}]` })));
+          }
+        },
+      },
+    });
   }
 
   return (
