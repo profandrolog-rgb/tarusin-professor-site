@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import DOMPurify from "dompurify";
+import ResearchContent from "@/components/research/ResearchContent";
 import { SITE_URL } from "@/lib/i18nUrls";
 
 interface Ref {
@@ -48,14 +48,13 @@ const ForDoctorsResearchDetail = () => {
     } catch { /* no-op */ }
   }, [review?.slug, review?.title, review?.topic]);
 
-  const html = useMemo(() => {
+  const htmlWithRefs = useMemo(() => {
     if (!review?.content) return "";
     // Заменяем [N] на <a href="#ref-N" data-ref="N">[N]</a> для навигации к списку литературы.
-    const withAnchors = String(review.content).replace(
+    return String(review.content).replace(
       /\[(\d+)\]/g,
       (_m, n) => `<a href="#ref-${n}" data-ref="${n}" class="text-primary hover:underline">[${n}]</a>`,
     );
-    return DOMPurify.sanitize(withAnchors, { ADD_ATTR: ["target", "rel", "data-ref"] });
   }, [review?.content]);
 
   // Аналитика: клик по номеру источника в теле статьи.
@@ -137,11 +136,7 @@ const ForDoctorsResearchDetail = () => {
         )}
       </header>
 
-      <div
-        onClick={handleContentClick}
-        className="prose prose-sm md:prose-base max-w-none text-foreground"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <ResearchContent html={htmlWithRefs} onFragmentClick={handleContentClick} />
 
       {refs.length > 0 && (
         <section className="border-t pt-6 space-y-3">
