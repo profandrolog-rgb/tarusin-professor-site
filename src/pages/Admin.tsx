@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -27,7 +27,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RecentVisitsWidget } from "@/components/visits/RecentVisitsWidget";
 import { DbHealthWidget } from "@/components/admin/DbHealthWidget";
-import { warmAdminChunks } from "@/lib/prefetchAdmin";
 
 // === КЛИНИЧЕСКАЯ РАБОТА: пациенты, протоколы, ИИ, назначения ===
 const clinicalSections = [
@@ -262,6 +261,7 @@ const analyticsServices = [
 const Admin = () => {
   const { user, isAdmin, isEditor, loading } = useAuth();
   const navigate = useNavigate();
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const hasAdminPanelAccess = isAdmin || isEditor;
   const visibleSiteSections = isAdmin
     ? siteSections
@@ -288,11 +288,6 @@ const Admin = () => {
       navigate("/auth", { state: { from: "/admin" } });
     }
   }, [user, hasAdminPanelAccess, loading, navigate]);
-
-  // Прогреваем чанки админ-страниц, чтобы клики по карточкам открывались мгновенно.
-  useEffect(() => {
-    if (user && hasAdminPanelAccess) warmAdminChunks();
-  }, [user, hasAdminPanelAccess]);
 
   if (loading) {
     return (
@@ -327,8 +322,17 @@ const Admin = () => {
         </div>
 
         {isAdmin && (
-          <div className="mb-10">
+          <div className="mb-8 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowDiagnostics((v) => !v)}>
+              {showDiagnostics ? "Скрыть диагностику" : "Показать диагностику"}
+            </Button>
+          </div>
+        )}
+
+        {isAdmin && showDiagnostics && (
+          <div className="mb-10 space-y-6">
             <DbHealthWidget />
+            <RecentVisitsWidget />
           </div>
         )}
 
@@ -411,13 +415,6 @@ const Admin = () => {
             </div>
           </div>
         </div>}
-
-        {/* Recent visits widget */}
-        {isAdmin && (
-          <div className="mb-8">
-            <RecentVisitsWidget />
-          </div>
-        )}
 
         {/* Clinical Work — pinned to top */}
         {isAdmin && <section className="mb-10">

@@ -34,6 +34,9 @@ function shouldSkipWarmup(): boolean {
 }
 
 export function warmAdminChunks() {
+  // Отключено: автопрогрев админ-чанков мешал интерактивности после входа.
+  // Чанки должны грузиться только по реальному клику пользователя.
+  return;
   if (warmed) return;
   if (shouldSkipWarmup()) return;
   warmed = true;
