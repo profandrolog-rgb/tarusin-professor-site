@@ -52,6 +52,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false }),
       Underline,
       Image.configure({ inline: false, allowBase64: false }),
+      GalleryPlaceholder,
     ],
     content,
     onUpdate: ({ editor }) => {
