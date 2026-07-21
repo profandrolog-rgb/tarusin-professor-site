@@ -175,31 +175,86 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
   const [spellLoading, setSpellLoading] = useState(false);
   const [spellIssues, setSpellIssues] = useState<SpellIssue[]>([]);
   const [spellModel, setSpellModel] = useState<string | undefined>(undefined);
+  const checkedHashRef = useRef<string | null>(null);
+  const inflightHashRef = useRef<string | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
-  const runSpellcheck = useCallback(async () => {
-    if (!editor) return;
-    const html = editor.getHTML();
-    if (!html || html.replace(/<[^>]+>/g, "").trim().length < 3) {
-      toast.error("Нечего проверять — текст пуст");
-      return;
-    }
+  const hashText = (s: string) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return String(h);
+  };
+  const plainOf = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+  const runSpellcheckCore = useCallback(async (html: string, opts?: { silent?: boolean }) => {
+    const plain = plainOf(html);
+    if (plain.length < 3) return;
+    const h = hashText(plain);
+    if (inflightHashRef.current === h) return;
+    if (checkedHashRef.current === h) return;
+    inflightHashRef.current = h;
     setSpellOpen(true);
     setSpellLoading(true);
-    setSpellIssues([]);
     try {
       const { data, error } = await supabase.functions.invoke("text-spellcheck", { body: { html } });
       if (error) throw error;
       const issues: SpellIssue[] = Array.isArray(data?.issues) ? data.issues : [];
       setSpellIssues(issues);
       setSpellModel(data?.model);
-      if (!issues.length) toast.success("Ошибок не найдено");
+
+      checkedHashRef.current = h;
     } catch (e: any) {
-      toast.error(e?.message || "Ошибка проверки орфографии");
-      setSpellOpen(false);
+      if (!opts?.silent) toast.error(e?.message || "Ошибка проверки орфографии");
     } finally {
+      inflightHashRef.current = null;
       setSpellLoading(false);
     }
-  }, [editor]);
+  }, []);
+
+  const runSpellcheck = useCallback(async () => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    if (plainOf(html).length < 3) {
+      toast.error("Нечего проверять — текст пуст");
+      return;
+    }
+    // Принудительный запуск сбрасывает кэш хеша
+    checkedHashRef.current = null;
+    await runSpellcheckCore(html);
+  }, [editor, runSpellcheckCore]);
+
+  // Автозапуск при появлении текста в редакторе (первое открытие, а также
+  // после подстановки текста оркестратором).
+  useEffect(() => {
+    if (!editor) return;
+    const html = editor.getHTML();
+    const plain = plainOf(html);
+    if (plain.length < 3) return;
+    const h = hashText(plain);
+    if (checkedHashRef.current === h) return;
+    void runSpellcheckCore(html, { silent: true });
+  }, [editor, content, runSpellcheckCore]);
+
+  // Дебаунс при редактировании: 20 сек тишины и текст реально изменился.
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => {
+      if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = window.setTimeout(() => {
+        const html = editor.getHTML();
+        const plain = plainOf(html);
+        if (plain.length < 3) return;
+        const h = hashText(plain);
+        if (checkedHashRef.current === h) return;
+        void runSpellcheckCore(html, { silent: true });
+      }, 20_000);
+    };
+    editor.on("update", handler);
+    return () => {
+      editor.off("update", handler);
+      if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+    };
+  }, [editor, runSpellcheckCore]);
 
   const applyIssue = useCallback((iss: SpellIssue) => {
     if (!editor) return;
