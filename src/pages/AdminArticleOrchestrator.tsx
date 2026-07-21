@@ -302,7 +302,7 @@ export default function AdminArticleOrchestrator() {
 
 
   // --- Перепроверка опубликованного ---
-  type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title: string; updated_at: string };
+  type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" | "research_reviews"; title: string; updated_at: string };
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerLoading, setPickerLoading] = useState(false);
   const [pickerItems, setPickerItems] = useState<PubItem[]>([]);
