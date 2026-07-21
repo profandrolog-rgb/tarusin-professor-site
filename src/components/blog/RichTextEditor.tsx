@@ -352,6 +352,19 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
           </Button>
         </>
       )}
+
+      <div className="w-px h-6 bg-border mx-1" />
+      <Button
+        type="button"
+        size="icon"
+        variant={spellOpen ? "default" : "ghost"}
+        className="h-8 w-8"
+        onClick={runSpellcheck}
+        disabled={spellLoading}
+        title="Проверить орфографию"
+      >
+        {spellLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <SpellCheck className="w-4 h-4" />}
+      </Button>
     </>
   );
 
