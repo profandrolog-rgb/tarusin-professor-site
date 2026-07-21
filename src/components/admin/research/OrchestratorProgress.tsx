@@ -29,6 +29,7 @@ interface Props {
   timers: StepTimers;
   hasExistingContent?: boolean;
   onRetryAll: () => void;
+  modelsUsed?: Partial<Record<keyof StepTimers, string>>;
 }
 
 const STEPS: Array<{
