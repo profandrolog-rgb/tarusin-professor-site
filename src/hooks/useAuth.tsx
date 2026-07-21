@@ -85,12 +85,24 @@ const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
   return null;
 };
 
+const rolesEqual = (a: Roles, b: Roles) =>
+  a.admin === b.admin && a.editor === b.editor && a.surgeon === b.surgeon && a.parent === b.parent;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<Roles>(EMPTY_ROLES);
   const [loading, setLoading] = useState(true);
   const inflightRef = useRef<string | null>(null);
+  const rolesRef = useRef<Roles>(EMPTY_ROLES);
+  const lastUserIdRef = useRef<string | null | undefined>(undefined);
+
+  const applyRoles = (next: Roles) => {
+    if (!rolesEqual(rolesRef.current, next)) {
+      rolesRef.current = next;
+      setRoles(next);
+    }
+  };
 
   const refreshRoles = async (userId: string, opts: { hasCache: boolean }) => {
     if (inflightRef.current === userId) return;
@@ -98,10 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await fetchRolesWithRetry(userId);
       if (result) {
-        setRoles(result);
+        applyRoles(result);
         writeCache(userId, result);
       } else if (!opts.hasCache) {
-        // Ни кэша, ни ответа — не сбрасываем в false, показываем предупреждение
         toast.error("Не удалось проверить права доступа, попробуйте обновить страницу");
       }
     } finally {
@@ -110,35 +121,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const handleSession = (nextSession: Session | null) => {
+    const nextUserId = nextSession?.user?.id ?? null;
+    // Дедуп: одинаковая сессия — не гоняем повторный fetch ролей.
+    const isSameUser = lastUserIdRef.current === nextUserId;
+    lastUserIdRef.current = nextUserId;
+
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
 
     if (nextSession?.user) {
       const userId = nextSession.user.id;
+      if (isSameUser && !loading) return;
       const cached = readCache(userId);
       if (cached) {
-        setRoles(cached);
+        applyRoles(cached);
         setLoading(false);
-        // фоновое обновление
         refreshRoles(userId, { hasCache: true });
       } else {
         refreshRoles(userId, { hasCache: false }).finally(() => setLoading(false));
       }
     } else {
-      setRoles(EMPTY_ROLES);
+      applyRoles(EMPTY_ROLES);
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Полагаемся только на onAuthStateChange (включая INITIAL_SESSION),
+    // чтобы избежать двойной загрузки ролей при монтировании.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (event === "INITIAL_SESSION") return;
       if (event === "SIGNED_OUT") clearCache();
       handleSession(nextSession);
-    });
-
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
-      handleSession(existing);
     });
 
     return () => subscription.unsubscribe();
