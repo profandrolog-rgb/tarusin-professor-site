@@ -76,7 +76,10 @@ const AdminResearchReviewEditor = () => {
     } catch { /* noop */ }
   }, [id]);
 
-  const orchState: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : {};
+  // Обратная совместимость: старые обзоры хранят статус в fact_check_report
+  const orchStateRaw: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : null;
+  const legacyState: any = row?.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
+  const orchState: any = orchStateRaw && Object.keys(orchStateRaw).length > 0 ? orchStateRaw : legacyState;
   const status: OrchestratorStatus = orchState.orchestrator_status;
   const lastStep: string | undefined = orchState.last_step;
   const orchestratorError: string | undefined = orchState.error;
@@ -133,7 +136,7 @@ const AdminResearchReviewEditor = () => {
   useEffect(() => {
     if (!row?.id) return;
     const statusActive = status === "searching" || status === "writing" || status === "fact_checking" || status === "queued";
-    const recentlyStarted = orchestrating && Date.now() - orchestratingStartedAtRef.current < 10_000;
+    const recentlyStarted = orchestrating && Date.now() - orchestratingStartedAtRef.current < 30_000;
     const active = statusActive || orchestrating;
     if (!active) { pollingRef.current = false; return; }
     if (!statusActive && !recentlyStarted) {
@@ -144,11 +147,37 @@ const AdminResearchReviewEditor = () => {
     if (pollingRef.current) return;
     pollingRef.current = true;
     const int = setInterval(async () => {
-      const { data: fresh } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
-      if (fresh) setRow(fresh);
+      const { data } = await supabase.from("research_reviews" as any).select("*").eq("id", row.id).single();
+      const fresh: any = data;
+      if (!fresh) return;
+      setRow((prev: any) => {
+        const freshHasState = fresh.orchestrator_state && typeof fresh.orchestrator_state === "object" && Object.keys(fresh.orchestrator_state).length > 0;
+        const freshHasLegacy = fresh.fact_check_report && typeof fresh.fact_check_report === "object" && fresh.fact_check_report.orchestrator_status;
+        const withinOptimisticWindow = orchestrating && Date.now() - orchestratingStartedAtRef.current < 30_000;
+        if (!freshHasState && !freshHasLegacy && withinOptimisticWindow && prev?.orchestrator_state) {
+          return { ...fresh, orchestrator_state: prev.orchestrator_state };
+        }
+        return fresh;
+      });
     }, 5000);
     return () => { clearInterval(int); pollingRef.current = false; };
   }, [row?.id, status, orchestrating]);
+
+  // Watchdog: если оркестратор крутится > 30с, а реального статуса всё нет — сбросить
+  useEffect(() => {
+    if (!orchestrating) return;
+    const t = setTimeout(() => {
+      if (!status) {
+        setOrchestrating(false);
+        toast.error("Оркестратор не ответил, статус неизвестен", {
+          action: { label: "Повторить", onClick: () => orchestrate() },
+          duration: 20000,
+        });
+      }
+    }, 30_000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orchestrating, status]);
 
   function update(patch: any) { setRow((r: any) => ({ ...r, ...patch })); }
 
@@ -350,17 +379,24 @@ const AdminResearchReviewEditor = () => {
         </div>
       </div>
 
-      {(status || orchestrating) && (
-        <div id="orchestrator-progress" className="scroll-mt-4">
-          <OrchestratorProgress
-            status={status}
-            lastStep={lastStep}
-            error={orchestratorError}
-            timers={timers}
-            onRetryAll={orchestrate}
-          />
-        </div>
-      )}
+      {(() => {
+        const contentStr: string = row.content_with_markers || row.content || "";
+        const hasExistingContent = /\[M\d+\]/.test(contentStr);
+        const showPanel = !!status || orchestrating || hasExistingContent;
+        if (!showPanel) return null;
+        return (
+          <div id="orchestrator-progress" className="scroll-mt-4">
+            <OrchestratorProgress
+              status={status}
+              lastStep={lastStep}
+              error={orchestratorError}
+              timers={timers}
+              hasExistingContent={hasExistingContent}
+              onRetryAll={orchestrate}
+            />
+          </div>
+        );
+      })()}
 
       <div id="materials-panel" className="scroll-mt-4">
         <Suspense fallback={Fallback}>
