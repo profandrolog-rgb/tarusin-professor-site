@@ -3,8 +3,69 @@ import TurndownService from "turndown";
 // @ts-ignore - turndown-plugin-gfm has no types but exports `gfm`
 import { gfm as turndownGfm } from "turndown-plugin-gfm";
 
-const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
-const GALLERY_DIV_RE = /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
+export const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
+export const GALLERY_DIV_RE = /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
+
+/** Сегмент HTML/markdown-контента: либо кусок текста, либо распознанная галерея. */
+export type GallerySegment =
+  | { type: "text"; content: string }
+  | { type: "gallery"; marker: string; caption: string; files: string[] };
+
+/**
+ * Разбивает произвольный контент (HTML или markdown) на сегменты по маркерам галерей.
+ * Понимает и текстовые маркеры [[GALLERY: ...]], и HTML-плейсхолдеры
+ * <div data-gallery-placeholder data-caption="..." data-files="...">.
+ * Используется одинаково в статьях для родителей и научных обзорах.
+ */
+export function splitContentByGallery(content: string): GallerySegment[] {
+  if (!content) return [];
+  type Hit = { start: number; end: number; caption: string; files: string[]; marker: string };
+  const hits: Hit[] = [];
+
+  const textRe = new RegExp(GALLERY_RE.source, "g");
+  let m: RegExpExecArray | null;
+  while ((m = textRe.exec(content)) !== null) {
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      caption: m[1] || "",
+      files: (m[2] || "").split("|").map((s) => s.trim()).filter(Boolean),
+      marker: m[0],
+    });
+  }
+
+  const divRe = new RegExp(GALLERY_DIV_RE.source, "gi");
+  let d: RegExpExecArray | null;
+  while ((d = divRe.exec(content)) !== null) {
+    const attrs = d[1] || "";
+    hits.push({
+      start: d.index,
+      end: d.index + d[0].length,
+      caption: readHtmlAttr(attrs, "data-caption"),
+      files: readHtmlAttr(attrs, "data-files").split("|").map((s) => s.trim()).filter(Boolean),
+      marker: d[0],
+    });
+  }
+
+  hits.sort((a, b) => a.start - b.start);
+
+  const out: GallerySegment[] = [];
+  let cursor = 0;
+  for (const h of hits) {
+    if (h.start < cursor) continue; // защита от пересечений
+    if (h.start > cursor) out.push({ type: "text", content: content.slice(cursor, h.start) });
+    out.push({ type: "gallery", marker: h.marker, caption: h.caption, files: h.files });
+    cursor = h.end;
+  }
+  if (cursor < content.length) out.push({ type: "text", content: content.slice(cursor) });
+  return out;
+}
+
+/** Убирает все маркеры галерей из текста/HTML (для экспорта в форматы без картинок). */
+export function stripGalleryMarkers(content: string): string {
+  if (!content) return "";
+  return content.replace(GALLERY_RE, "").replace(GALLERY_DIV_RE, "");
+}
 
 marked.setOptions({ gfm: true, breaks: false });
 

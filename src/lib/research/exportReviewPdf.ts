@@ -1,4 +1,7 @@
 import { stripMarkers } from './markers';
+import { stripGalleryMarkers } from '@/lib/markdown/galleryMarkers';
+
+const clean = (s: string) => stripGalleryMarkers(stripMarkers(s || ''));
 
 interface RefRow {
   number?: number;
@@ -28,8 +31,8 @@ export async function exportReviewPdf(params: {
   root.style.cssText = 'position:fixed;left:-99999px;top:0;width:794px;background:#fff;color:#111;font-family:"Times New Roman",serif;padding:40px;';
   root.innerHTML = `
     <h1 style="text-align:center;font-size:22px;margin:0 0 16px">${escapeHtml(title || 'Обзор')}</h1>
-    ${annotation ? `<div style="font-style:italic;margin-bottom:16px">${stripMarkers(annotation)}</div>` : ''}
-    <div style="font-size:14px;line-height:1.55">${stripMarkers(content || '')}</div>
+    ${annotation ? `<div style="font-style:italic;margin-bottom:16px">${clean(annotation)}</div>` : ''}
+    <div style="font-size:14px;line-height:1.55">${clean(content || '')}</div>
     ${references?.length ? `
       <h2 style="font-size:16px;margin-top:24px">Список литературы</h2>
       <ol style="font-size:12px;padding-left:20px">

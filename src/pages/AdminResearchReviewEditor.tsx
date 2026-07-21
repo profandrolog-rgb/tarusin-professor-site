@@ -20,6 +20,7 @@ import OrchestratorArtifacts from "@/components/admin/research/OrchestratorArtif
 import FactCheckFixList from "@/components/admin/research/FactCheckFixList";
 
 const MaterialsPanel = lazy(() => import("@/components/admin/research/MaterialsPanel"));
+const GalleryPanel = lazy(() => import("@/components/admin/research/GalleryPanel"));
 const RefinementChat = lazy(() => import("@/components/admin/research/RefinementChat"));
 const PublishBar = lazy(() => import("@/components/admin/research/PublishBar"));
 const ReviewPrintView = lazy(() => import("@/components/admin/research/ReviewPrintView"));
@@ -429,6 +430,22 @@ const AdminResearchReviewEditor = () => {
           />
         </Suspense>
       </div>
+
+      <Suspense fallback={Fallback}>
+        <GalleryPanel
+          slug={row.slug || ""}
+          materials={materials}
+          onInsertMarker={(marker) => {
+            const current: string = row.content || "";
+            const next = current
+              ? `${current}\n<p>${marker}</p>`
+              : `<p>${marker}</p>`;
+            const patch = { content: next, content_with_markers: next };
+            setRow({ ...row, ...patch });
+            saveSilently(patch);
+          }}
+        />
+      </Suspense>
 
       <Suspense fallback={Fallback}>
         <RefinementChat
