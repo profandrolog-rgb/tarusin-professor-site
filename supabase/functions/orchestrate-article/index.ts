@@ -844,6 +844,13 @@ Deno.serve(async (req) => {
         `EDITS: ${JSON.stringify(r.edits || [], null, 0)}`
       )).join("\n\n");
 
+      const voiceMode = (body.voice_mode as VoiceMode | undefined) || undefined;
+      const isResearchReview = body.kind === "research_reviews" || !!voiceMode;
+      const extraBlocks = [
+        voiceMode ? voicePromptBlock(voiceMode) : "",
+        isResearchReview ? MARKER_PROTECTION_BLOCK : "",
+      ].filter(Boolean).join("\n\n");
+
       const userMsg = [
         "ИСХОДНАЯ СТАТЬЯ:",
         text,
@@ -853,7 +860,7 @@ Deno.serve(async (req) => {
       ].join("\n");
 
       const messages = [
-        { role: "system", content: ARBITER_SYSTEM },
+        { role: "system", content: ARBITER_SYSTEM + (extraBlocks ? "\n\n" + extraBlocks : "") },
         { role: "user", content: userMsg },
       ];
       return jsonKeepaliveResponse(async () => {
