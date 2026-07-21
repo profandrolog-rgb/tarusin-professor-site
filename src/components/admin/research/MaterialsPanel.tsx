@@ -409,3 +409,24 @@ export default function MaterialsPanel(p: Props) {
     </Card>
   );
 }
+
+function ExtractedThumb({ img }: { img: ExtractedImage }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [err, setErr] = useState(false);
+  const requested = useRef(false);
+  if (!requested.current) {
+    requested.current = true;
+    getDownloadUrl(img.objectKey).then(setUrl).catch(() => setErr(true));
+  }
+  return (
+    <div className="aspect-square rounded border bg-muted overflow-hidden relative" title={`Стр. ${img.page ?? '?'}, ${img.width}×${img.height}`}>
+      {url && !err ? (
+        <img src={url} alt="" loading="lazy" onError={() => setErr(true)} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
+        </div>
+      )}
+    </div>
+  );
+}
