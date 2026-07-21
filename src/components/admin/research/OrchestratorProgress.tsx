@@ -68,7 +68,7 @@ function formatSec(ms: number) {
   return `${m} мин ${rem.toString().padStart(2, "0")} с`;
 }
 
-export default function OrchestratorProgress({ status, lastStep, error, timers, onRetryAll }: Props) {
+export default function OrchestratorProgress({ status, lastStep, error, timers, hasExistingContent, onRetryAll }: Props) {
   const [tick, setTick] = useState(0);
   const hasActive = status === "searching" || status === "writing" || status === "fact_checking";
 
