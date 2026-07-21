@@ -52,13 +52,13 @@ const ForDoctorsResearchDetail = () => {
   }, [review?.slug, review?.title, review?.topic]);
 
   const htmlWithRefs = useMemo(() => {
-    if (!review?.content) return "";
-    // Заменяем [N] на <a href="#ref-N" data-ref="N">[N]</a> для навигации к списку литературы.
-    return String(review.content).replace(
+    const src = liveContent ?? review?.content;
+    if (!src) return "";
+    return String(src).replace(
       /\[(\d+)\]/g,
       (_m, n) => `<a href="#ref-${n}" data-ref="${n}" class="text-primary hover:underline">[${n}]</a>`,
     );
-  }, [review?.content]);
+  }, [liveContent, review?.content]);
 
   // Аналитика: клик по номеру источника в теле статьи.
   const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
