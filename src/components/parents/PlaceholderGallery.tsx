@@ -339,6 +339,8 @@ const PlaceholderGallery = ({
   fullContent,
   existingFiles,
   onContentChange,
+  ownerTable = "disease_articles",
+  contentColumn = "article_content",
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
