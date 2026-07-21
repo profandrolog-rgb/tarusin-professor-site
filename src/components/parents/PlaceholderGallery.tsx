@@ -389,16 +389,16 @@ const PlaceholderGallery = ({
   const persistEntries = async (
     writer: ExistingItem[] | ((current: ExistingItem[]) => ExistingItem[]),
   ): Promise<boolean> => {
-    const { data: fresh, error: fetchErr } = await supabase
-      .from("disease_articles")
-      .select("article_content")
+    const { data: fresh, error: fetchErr } = await (supabase as any)
+      .from(ownerTable)
+      .select(contentColumn)
       .eq("id", articleId)
       .maybeSingle();
     if (fetchErr || !fresh) {
-      toast.error("Не удалось прочитать статью: " + (fetchErr?.message || "нет данных"));
+      toast.error("Не удалось прочитать запись: " + (fetchErr?.message || "нет данных"));
       return false;
     }
-    const baseContent = (fresh as any).article_content || fullContent;
+    const baseContent = (fresh as any)[contentColumn] || fullContent;
     const currentFiles = parseMarkerFilesFromContent(baseContent);
     const nextEntries =
       typeof writer === "function" ? writer(currentFiles) : writer;
@@ -406,11 +406,11 @@ const PlaceholderGallery = ({
     const result = upsertGalleryEntriesInContent(baseContent, caption, nextEntries, marker);
     const newContent = result.content;
     if (!result.found) {
-      toast.warning("Маркер галереи не найден в статье — добавил в конец, чтобы фото не потерялись");
+      toast.warning("Маркер галереи не найден — добавил в конец, чтобы фото не потерялись");
     }
-    const { error, data: updated } = await supabase
-      .from("disease_articles")
-      .update({ article_content: newContent })
+    const { error, data: updated } = await (supabase as any)
+      .from(ownerTable)
+      .update({ [contentColumn]: newContent })
       .eq("id", articleId)
       .select("id");
     if (error) {
