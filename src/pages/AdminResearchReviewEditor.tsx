@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
+import type { Editor } from "@tiptap/react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ const AdminResearchReviewEditor = () => {
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const [contentEditor, setContentEditor] = useState<Editor | null>(null);
 
   const [instructions, setInstructions] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -320,13 +322,17 @@ const AdminResearchReviewEditor = () => {
 
   function applyRefinement(newContent: string, entry: RefinementEntry) {
     const nextHistory = [...(row.refinement_history || []), entry];
-    const patch = { content: newContent, content_with_markers: newContent, refinement_history: nextHistory };
+    // Патчим только чистый контент. Размеченную версию не трогаем — там маркеры [M#].
+    const patch: Record<string, unknown> = { content: newContent, refinement_history: nextHistory };
+    // Обратная совместимость: если размеченной версии ещё не было, синхронизируем один раз.
+    if (!row.content_with_markers) patch.content_with_markers = newContent;
     setRow({ ...row, ...patch });
     saveSilently(patch);
   }
 
   function rollback(newContent: string) {
-    const patch = { content: newContent, content_with_markers: newContent };
+    const patch: Record<string, unknown> = { content: newContent };
+    if (!row.content_with_markers) patch.content_with_markers = newContent;
     setRow({ ...row, ...patch });
     saveSilently(patch);
   }
@@ -443,12 +449,18 @@ const AdminResearchReviewEditor = () => {
           }}
           content={row.content || ""}
           contentWithMarkers={row.content_with_markers || ""}
-          onInsertMarker={(marker) => {
-            const current: string = row.content || "";
-            const next = current
-              ? `${current}\n<p>${marker}</p>`
+          editor={contentEditor}
+          onAppendMarker={(marker) => {
+            // Дописываем маркер в конец обеих версий, не затирая существующее.
+            const currentContent: string = row.content || "";
+            const currentMarkers: string = row.content_with_markers || currentContent;
+            const nextContent = currentContent
+              ? `${currentContent}\n<p>${marker}</p>`
               : `<p>${marker}</p>`;
-            const patch = { content: next, content_with_markers: next };
+            const nextMarkers = currentMarkers
+              ? `${currentMarkers}\n<p>${marker}</p>`
+              : `<p>${marker}</p>`;
+            const patch = { content: nextContent, content_with_markers: nextMarkers };
             setRow({ ...row, ...patch });
             saveSilently(patch);
           }}
@@ -513,7 +525,13 @@ const AdminResearchReviewEditor = () => {
       <Card className="no-print">
         <CardHeader><CardTitle>Текст обзора</CardTitle></CardHeader>
         <CardContent>
-          <RichTextEditor content={row.content || ""} onChange={(html) => update({ content: html })} storageBucket="disease-media" storageFolder="research-images" />
+          <RichTextEditor
+            content={row.content || ""}
+            onChange={(html) => update({ content: html })}
+            storageBucket="disease-media"
+            storageFolder="article-images"
+            onEditorReady={setContentEditor}
+          />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
           </p>

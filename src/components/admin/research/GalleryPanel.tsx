@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import type { Editor } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,8 +37,10 @@ interface Props {
   content: string;
   /** Текст с маркерами [M#] — для проверки использования файла. */
   contentWithMarkers: string;
-  /** Вставляет готовый маркер [[GALLERY: ...]] в текст обзора. */
-  onInsertMarker: (marker: string) => void;
+  /** Экземпляр TipTap-редактора обзора для вставки блока-заполнителя в позицию курсора. */
+  editor?: Editor | null;
+  /** Fallback: если редактор недоступен — добавить готовый маркер [[GALLERY: ...]] в конец текста. */
+  onAppendMarker: (marker: string) => void;
 }
 
 function publicUrl(filename: string): string {
@@ -55,7 +58,7 @@ function safeSlugPart(slug: string): string {
 }
 
 export default function GalleryPanel({
-  slug, materials, value, onChange, content, contentWithMarkers, onInsertMarker,
+  slug, materials, value, onChange, content, contentWithMarkers, editor, onAppendMarker,
 }: Props) {
   const images = value;
   const [caption, setCaption] = useState("Иллюстрации");
@@ -64,6 +67,10 @@ export default function GalleryPanel({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  const filesStr = useMemo(
+    () => images.map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`).join("|"),
+    [images],
+  );
   const marker = useMemo(
     () =>
       buildGalleryMarkerFromEntries(
@@ -175,9 +182,30 @@ export default function GalleryPanel({
 
   function insert() {
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
-    onInsertMarker(marker);
-    toast.success("Маркер галереи вставлен в конец текста");
+    const cleanCaption = caption.trim().replace(/"/g, "'");
+    if (editor && !editor.isDestroyed) {
+      const hasSelection = editor.state.selection.from > 0;
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: "galleryPlaceholder",
+          attrs: { caption: cleanCaption, files: filesStr },
+        })
+        .run();
+      // Дополнительно добавляем текстовый маркер в размеченную версию (см. родитель).
+      onAppendMarker(marker);
+      if (hasSelection) {
+        toast.success("Галерея вставлена в позицию курсора");
+      } else {
+        toast.warning("Курсор не был установлен — галерея вставлена в конец текста");
+      }
+    } else {
+      onAppendMarker(marker);
+      toast.warning("Редактор недоступен — галерея добавлена в конец текста");
+    }
   }
+
 
   return (
     <Card>

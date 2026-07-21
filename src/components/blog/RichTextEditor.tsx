@@ -1,11 +1,12 @@
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, ImagePlus, Loader2, List, ListOrdered, Quote, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { GalleryPlaceholder } from "@/components/parents/tiptap/GalleryPlaceholderNode";
 
 interface RichTextEditorProps {
   content: string;
@@ -13,9 +14,13 @@ interface RichTextEditorProps {
   placeholder?: string;
   storageBucket?: string;
   storageFolder?: string;
+  /** Даёт родителю доступ к экземпляру редактора для вставки в позицию курсора. */
+  onEditorReady?: (editor: Editor | null) => void;
+  /** Показывать кнопку «Галерея» и обрабатывать вставку блока-заполнителя. */
+  onInsertGalleryClick?: () => void;
 }
 
-const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images" }: RichTextEditorProps) => {
+const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disease-media", storageFolder = "article-images", onEditorReady, onInsertGalleryClick }: RichTextEditorProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,6 +52,7 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       StarterKit.configure({ heading: { levels: [2, 3, 4] }, codeBlock: false }),
       Underline,
       Image.configure({ inline: false, allowBase64: false }),
+      GalleryPlaceholder,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -129,6 +135,12 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
       editor.commands.setContent(content || "");
     }
   }, [content, editor]);
+
+  useEffect(() => {
+    if (!onEditorReady) return;
+    onEditorReady(editor ?? null);
+    return () => onEditorReady(null);
+  }, [editor, onEditorReady]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -262,8 +274,25 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
         className="hidden"
         onChange={handleImageUpload}
       />
+
+      {onInsertGalleryClick && (
+        <>
+          <div className="w-px h-6 bg-border mx-1" />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={onInsertGalleryClick}
+            title="Вставить галерею в позицию курсора"
+          >
+            <Images className="w-4 h-4" />
+          </Button>
+        </>
+      )}
     </>
   );
+
 
   return (
     <div
