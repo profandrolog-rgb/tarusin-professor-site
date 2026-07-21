@@ -29,7 +29,7 @@ export async function extractPptx(
       const mime = MIME_BY_EXT[ext];
       if (!mime) continue;
       const bytes = await entry.async("uint8array");
-      const blob = new Blob([bytes], { type: mime });
+      const blob = new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], { type: mime });
       const { keep, w, h } = await shouldKeepImage(blob);
       if (!keep) continue;
       idx += 1;
