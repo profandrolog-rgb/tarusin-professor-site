@@ -1,6 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
 import { stripMarkers } from './markers';
+import { stripGalleryMarkers } from '@/lib/markdown/galleryMarkers';
 
 interface RefRow {
   number?: number;
@@ -15,7 +16,7 @@ interface RefRow {
 }
 
 function htmlToParagraphs(html: string): Paragraph[] {
-  const clean = stripMarkers(html || '')
+  const clean = stripGalleryMarkers(stripMarkers(html || ''))
     .replace(/<\/(p|h1|h2|h3|h4|li|div)>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<[^>]+>/g, '')
