@@ -874,6 +874,8 @@ export default function AdminArticleOrchestrator() {
           text,
           reviews: valid.map(({ model, free_review, edits }) => ({ model, free_review, edits })),
           arbiter,
+          kind: existingRef?.kind,
+          voice_mode: existingRef?.kind === "research_reviews" ? researchVoiceMode : undefined,
         }),
       });
       const j = await resp.json();
