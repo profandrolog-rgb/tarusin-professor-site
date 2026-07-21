@@ -451,18 +451,30 @@ const AdminResearchReviewEditor = () => {
           contentWithMarkers={row.content_with_markers || ""}
           editor={contentEditor}
           onAppendMarker={(marker) => {
-            // Дописываем маркер в конец обеих версий, не затирая существующее.
-            const currentContent: string = row.content || "";
-            const currentMarkers: string = row.content_with_markers || currentContent;
-            const nextContent = currentContent
-              ? `${currentContent}\n<p>${marker}</p>`
-              : `<p>${marker}</p>`;
-            const nextMarkers = currentMarkers
-              ? `${currentMarkers}\n<p>${marker}</p>`
-              : `<p>${marker}</p>`;
-            const patch = { content: nextContent, content_with_markers: nextMarkers };
-            setRow({ ...row, ...patch });
-            saveSilently(patch);
+            setRow((r: any) => {
+              const currentContent: string = r?.content || "";
+              const currentMarkers: string = r?.content_with_markers || currentContent;
+              const nextContent = currentContent
+                ? `${currentContent}\n<p>${marker}</p>`
+                : `<p>${marker}</p>`;
+              const nextMarkers = currentMarkers
+                ? `${currentMarkers}\n<p>${marker}</p>`
+                : `<p>${marker}</p>`;
+              const patch = { content: nextContent, content_with_markers: nextMarkers };
+              saveSilently(patch);
+              return { ...r, ...patch };
+            });
+          }}
+          onAppendToMarkersOnly={(marker) => {
+            setRow((r: any) => {
+              const currentMarkers: string = r?.content_with_markers || r?.content || "";
+              const nextMarkers = currentMarkers
+                ? `${currentMarkers}\n<p>${marker}</p>`
+                : `<p>${marker}</p>`;
+              const patch = { content_with_markers: nextMarkers };
+              saveSilently(patch);
+              return { ...r, ...patch };
+            });
           }}
         />
       </Suspense>
