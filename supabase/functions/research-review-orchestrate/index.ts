@@ -9,6 +9,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { RESEARCH_MODE_SYSTEM_PROMPT } from '../_shared/researchModePrompt.ts';
 import { callWithFallback, extractCompletion } from '../_shared/aiCallWithFallback.ts';
+import { voicePromptBlock, type VoiceMode } from '../_shared/voicePrompts.ts';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
@@ -58,11 +59,12 @@ async function runPipeline(params: {
   materials_list: any[];
   review_id: string | null;
   authorId: string | null;
+  voiceMode: VoiceMode;
   orKey: string;
   lovKey: string;
   admin: any;
 }) {
-  const { topic, materials_context, materials_list, review_id, authorId, orKey, lovKey, admin } = params;
+  const { topic, materials_context, materials_list, review_id, authorId, voiceMode, orKey, lovKey, admin } = params;
 
   let currentStep: 'queued' | 'searching' | 'writing' | 'fact_checking' | 'done' | 'error' = 'queued';
   // Локальный аккумулятор операционного состояния — попадает целиком в orchestrator_state.
@@ -141,7 +143,7 @@ ${materials_context ? `Учитывай контекст уже загружен
     const markersList = Array.isArray(materials_list) && materials_list.length
       ? `Маркеры доступных материалов:\n${materials_list.map((m: any) => `${m.marker} — ${m.name || m.url || m.kind}`).join('\n')}\n\n`
       : '';
-    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}],"seo_title":"...","seo_meta_description":"..."}. В content обязательны маркеры [M#] по правилам выше.
+    const writePrompt = `Тема обзора: ${topic}\n\n${markersList}${materials_context ? `Контекст загруженных материалов:\n${materials_context}\n\n` : ''}Результаты поиска литературы (Perplexity):\n${searchResult}\n\n${MARKER_RULES}\n${voicePromptBlock(voiceMode)}\n\nНапиши полный научный обзор по правилам системной инструкции. Верни СТРОГИЙ JSON: {"title","annotation","content","references_list":[{"marker":"[M1]","authors":"...","title":"...","journal":"...","year":"...","doi_or_pmid":"..."}],"seo_title":"...","seo_meta_description":"..."}. В content обязательны маркеры [M#] по правилам выше.
 
 Требования к SEO-полям:
 - seo_title: до 60 символов, ЗАКОНЧЕННАЯ фраза на русском, без обрыва на полуслове и без многоточия. Если не помещается — переформулируй короче, а не отрезай.
@@ -275,6 +277,8 @@ ${content.slice(0, 20000)}`;
         source_type: 'orchestrator_generated',
         seo_title: seoTitle,
         seo_meta_description: seoDesc,
+        // Автопереход жизненного цикла: писать → редактировать
+        workflow_state: 'editing',
       }).eq('id', review_id);
     } else {
       const baseSlug = slugify(title);
@@ -294,6 +298,8 @@ ${content.slice(0, 20000)}`;
         seo_title: seoTitle,
         seo_meta_description: seoDesc,
         status: 'draft',
+        workflow_state: 'editing',
+        voice_mode: voiceMode,
         author_id: authorId,
       });
     }
@@ -321,7 +327,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { topic, materials_context, materials_list, review_id } = await req.json();
+    const { topic, materials_context, materials_list, review_id, voice_mode: voiceModeIn } = await req.json();
     if (!topic && !materials_context) {
       return new Response(JSON.stringify({ error: 'topic or materials_context required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -340,10 +346,22 @@ Deno.serve(async (req) => {
     }).auth.getUser();
     const authorId = userRes.data?.user?.id ?? null;
 
+    // Разрешённые значения режима голоса; по умолчанию — impersonal (научный обзор).
+    let voiceMode: VoiceMode = (['impersonal','own_data','authorial'] as const).includes(voiceModeIn)
+      ? voiceModeIn as VoiceMode
+      : 'impersonal';
+
     // Отметим статус сразу, чтобы клиент увидел «запущено»
     if (review_id) {
+      // Подхватываем voice_mode из БД, если не передан явно.
+      if (!voiceModeIn) {
+        const { data: row } = await admin.from('research_reviews').select('voice_mode').eq('id', review_id).maybeSingle();
+        const dbMode = (row as any)?.voice_mode;
+        if (dbMode && (['impersonal','own_data','authorial'] as const).includes(dbMode)) voiceMode = dbMode;
+      }
       await admin.from('research_reviews').update({
         orchestrator_state: { orchestrator_status: 'queued', last_step: 'queued', updated_at: new Date().toISOString() },
+        workflow_state: 'writing',
       }).eq('id', review_id);
     }
 
@@ -353,6 +371,7 @@ Deno.serve(async (req) => {
       materials_list: materials_list || [],
       review_id: review_id || null,
       authorId,
+      voiceMode,
       orKey, lovKey, admin,
     });
 

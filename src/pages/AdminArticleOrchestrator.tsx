@@ -15,11 +15,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, GitMerge, FileCheck2, Copy, Send, Mic, Square, RotateCw, Plug, Wand2, Pencil, Languages, RefreshCw, FileSearch, ImagePlus, Eye, Volume2, VolumeX, Users } from "lucide-react";
 import { playCompletionChime, isSoundEnabled, setSoundEnabled } from "@/lib/notifySound";
 import { toast as sonnerToast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
+import { htmlToMarkdown, markdownToHtml } from "@/lib/markdown/galleryMarkers";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
 import { CURATED_MODELS, resolveCuratedModel } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
@@ -97,8 +97,10 @@ export default function AdminArticleOrchestrator() {
   const incoming = (location.state || {}) as {
     text?: string;
     title?: string;
-    recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title?: string };
+    recheck?: { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" | "research_reviews"; title?: string };
+    voiceMode?: "impersonal" | "own_data" | "authorial";
   };
+  const [researchVoiceMode, setResearchVoiceMode] = useState<"impersonal" | "own_data" | "authorial" | null>(null);
 
   const { byId: liveModelsById } = useOpenRouterModels();
   const { byId: veniceModelsById } = useVeniceModels();
@@ -300,7 +302,7 @@ export default function AdminArticleOrchestrator() {
 
 
   // --- Перепроверка опубликованного ---
-  type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles"; title: string; updated_at: string };
+  type PubItem = { id: string; kind: "disease_articles" | "blog_posts" | "research_articles" | "research_reviews"; title: string; updated_at: string };
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerLoading, setPickerLoading] = useState(false);
   const [pickerItems, setPickerItems] = useState<PubItem[]>([]);
@@ -331,17 +333,37 @@ export default function AdminArticleOrchestrator() {
 
   async function loadForRecheck(item: PubItem) {
     try {
+      if (item.kind === "research_reviews") {
+        // Научный обзор: контент хранится в поле content (HTML). Конвертируем в markdown.
+        const { data, error } = await supabase
+          .from("research_reviews" as any)
+          .select("title, content, voice_mode")
+          .eq("id", item.id)
+          .maybeSingle();
+        if (error) throw error;
+        const html = (data as any)?.content || "";
+        const md = /<[a-z][\s\S]*>/i.test(html) ? htmlToMarkdown(html) : html;
+        setTitle((data as any)?.title || item.title);
+        setText(md);
+        setExistingRef({ id: item.id, kind: item.kind });
+        const vm = (data as any)?.voice_mode as "impersonal" | "own_data" | "authorial" | undefined;
+        if (vm) setResearchVoiceMode(vm);
+        setPickerOpen(false);
+        setReviews([]); setConsolidated(null); setAccepted(new Set()); setDirectAccepted(new Map());
+        setEditedSuggested(new Map()); setFinalText(""); setAppliedEdits([]); setReviewRound(1);
+        sonnerToast.success("Обзор загружен на консилиум", { description: "Режим голоса: " + (vm || "impersonal") });
+        return;
+      }
       const field = item.kind === "disease_articles" ? "article_content" : "content";
       const { data, error } = await supabase.from(item.kind).select(`title, ${field}`).eq("id", item.id).maybeSingle();
       if (error) throw error;
       const html = (data as any)?.[field] || "";
-      // если в БД уже markdown — htmlToMarkdown вернёт его почти без изменений
       const md = /<[a-z][\s\S]*>/i.test(html) ? htmlToMarkdown(html) : html;
       setTitle((data as any)?.title || item.title);
       setText(md);
       setExistingRef({ id: item.id, kind: item.kind });
+      setResearchVoiceMode(null);
       setPickerOpen(false);
-      // сброс предыдущих результатов
       setReviews([]); setConsolidated(null); setAccepted(new Set()); setDirectAccepted(new Map());
       setEditedSuggested(new Map()); setFinalText(""); setAppliedEdits([]); setReviewRound(1);
       sonnerToast.success("Статья загружена", { description: "Можно запускать ревью" });
@@ -359,8 +381,26 @@ export default function AdminArticleOrchestrator() {
       title: incoming.recheck.title || "",
       updated_at: "",
     });
+    if (incoming.voiceMode) setResearchVoiceMode(incoming.voiceMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Кнопка «Принять и вернуть в научный редактор» (Блок 4).
+  async function acceptAndReturnToReview() {
+    if (!existingRef || existingRef.kind !== "research_reviews") return;
+    try {
+      const html = markdownToHtml(finalText || text);
+      const { error } = await supabase
+        .from("research_reviews" as any)
+        .update({ content: html, content_with_markers: html, workflow_state: "editing" })
+        .eq("id", existingRef.id);
+      if (error) throw error;
+      sonnerToast.success("Правки применены, обзор возвращён в редактор");
+      navigate(`/admin/research-reviews/${existingRef.id}`);
+    } catch (e: any) {
+      sonnerToast.error("Не удалось вернуть обзор", { description: e?.message || String(e) });
+    }
+  }
 
   // --- Персистентность прогона в localStorage (переживает F5, hot-reload, случайные уходы) ---
   const DRAFT_KEY = "orchestrator:draft:v1";
@@ -1015,7 +1055,14 @@ export default function AdminArticleOrchestrator() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {existingRef && (
+            {existingRef && existingRef.kind === "research_reviews" && (
+              <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300">
+                <Users className="w-3 h-3" />
+                Научный обзор на консилиуме: «{title}»{researchVoiceMode ? ` · режим голоса: ${researchVoiceMode}` : ""} — после ревью нажмите «Принять и вернуть в научный редактор»
+                <button className="ml-auto underline" onClick={() => { setExistingRef(null); setResearchVoiceMode(null); }}>отменить</button>
+              </div>
+            )}
+            {existingRef && existingRef.kind !== "research_reviews" && (
               <div className="flex items-center gap-2 text-xs px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300">
                 <RefreshCw className="w-3 h-3" />
                 Режим перепроверки опубликованной статьи · при «Разместить» обновится существующая запись
@@ -1580,13 +1627,17 @@ export default function AdminArticleOrchestrator() {
               <Button
                 size="sm"
                 onClick={() => {
+                  if (existingRef?.kind === "research_reviews") {
+                    void acceptAndReturnToReview();
+                    return;
+                  }
                   navigate("/admin/article-import", {
                     state: { title, text: finalText, source: "orchestrator", existingRef, seoMeta: seoMeta ?? undefined },
                   });
                 }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                <Send className="w-4 h-4 mr-2" /> {existingRef ? "Переопубликовать" : "Разместить"}
+                <Send className="w-4 h-4 mr-2" /> {existingRef?.kind === "research_reviews" ? "Принять и вернуть в научный редактор" : existingRef ? "Переопубликовать" : "Разместить"}
               </Button>
 
 

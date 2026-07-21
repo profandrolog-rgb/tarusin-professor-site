@@ -845,6 +845,7 @@ export type Database = {
           sort_order: number | null
           title: string
           updated_at: string
+          voice_mode: string
         }
         Insert: {
           card_annotation?: string | null
@@ -858,6 +859,7 @@ export type Database = {
           sort_order?: number | null
           title: string
           updated_at?: string
+          voice_mode?: string
         }
         Update: {
           card_annotation?: string | null
@@ -871,6 +873,7 @@ export type Database = {
           sort_order?: number | null
           title?: string
           updated_at?: string
+          voice_mode?: string
         }
         Relationships: []
       }
@@ -1441,6 +1444,7 @@ export type Database = {
           title: string
           updated_at: string
           video_path: string | null
+          voice_mode: string
         }
         Insert: {
           age_group?: string
@@ -1463,6 +1467,7 @@ export type Database = {
           title: string
           updated_at?: string
           video_path?: string | null
+          voice_mode?: string
         }
         Update: {
           age_group?: string
@@ -1485,6 +1490,7 @@ export type Database = {
           title?: string
           updated_at?: string
           video_path?: string | null
+          voice_mode?: string
         }
         Relationships: []
       }
@@ -4325,6 +4331,7 @@ export type Database = {
           sort_order: number | null
           title: string
           updated_at: string
+          voice_mode: string
         }
         Insert: {
           age_group?: string
@@ -4338,6 +4345,7 @@ export type Database = {
           sort_order?: number | null
           title: string
           updated_at?: string
+          voice_mode?: string
         }
         Update: {
           age_group?: string
@@ -4351,6 +4359,7 @@ export type Database = {
           sort_order?: number | null
           title?: string
           updated_at?: string
+          voice_mode?: string
         }
         Relationships: []
       }
@@ -4363,7 +4372,6 @@ export type Database = {
           cover_image_path: string | null
           created_at: string
           fact_check_report: Json
-          gallery_images: Json
           id: string
           orchestrator_state: Json | null
           published_at: string | null
@@ -4378,6 +4386,8 @@ export type Database = {
           title: string
           topic: string | null
           updated_at: string
+          voice_mode: string
+          workflow_state: string
         }
         Insert: {
           annotation?: string
@@ -4387,7 +4397,6 @@ export type Database = {
           cover_image_path?: string | null
           created_at?: string
           fact_check_report?: Json
-          gallery_images?: Json
           id?: string
           orchestrator_state?: Json | null
           published_at?: string | null
@@ -4402,6 +4411,8 @@ export type Database = {
           title?: string
           topic?: string | null
           updated_at?: string
+          voice_mode?: string
+          workflow_state?: string
         }
         Update: {
           annotation?: string
@@ -4411,7 +4422,6 @@ export type Database = {
           cover_image_path?: string | null
           created_at?: string
           fact_check_report?: Json
-          gallery_images?: Json
           id?: string
           orchestrator_state?: Json | null
           published_at?: string | null
@@ -4426,6 +4436,8 @@ export type Database = {
           title?: string
           topic?: string | null
           updated_at?: string
+          voice_mode?: string
+          workflow_state?: string
         }
         Relationships: []
       }
