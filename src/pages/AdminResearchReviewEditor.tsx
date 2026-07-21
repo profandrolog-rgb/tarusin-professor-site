@@ -449,7 +449,7 @@ const AdminResearchReviewEditor = () => {
           }}
           content={row.content || ""}
           contentWithMarkers={row.content_with_markers || ""}
-          editor={contentEditorRef.current}
+          editor={contentEditor}
           onAppendMarker={(marker) => {
             // Дописываем маркер в конец обеих версий, не затирая существующее.
             const currentContent: string = row.content || "";
@@ -530,7 +530,7 @@ const AdminResearchReviewEditor = () => {
             onChange={(html) => update({ content: html })}
             storageBucket="disease-media"
             storageFolder="article-images"
-            onEditorReady={(ed) => { contentEditorRef.current = ed; }}
+            onEditorReady={setContentEditor}
           />
           <p className="text-xs text-muted-foreground mt-2">
             Маркеры источников — в формате [M1], [M2] (см. панель материалов). На публичной странице ссылки на литературу — [1], [2].
