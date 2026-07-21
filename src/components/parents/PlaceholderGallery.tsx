@@ -42,6 +42,10 @@ interface Props {
   fullContent: string;
   existingFiles?: string[];
   onContentChange?: (newContent: string) => void;
+  /** Таблица-владелец. По умолчанию — статьи для родителей. */
+  ownerTable?: "disease_articles" | "research_reviews";
+  /** Название текстовой колонки, в которой хранится HTML/markdown с маркером. */
+  contentColumn?: string;
 }
 
 const ARTICLE_IMAGES_FOLDER = "article-images";
