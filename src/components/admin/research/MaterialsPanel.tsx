@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen } from 'lucide-react';
+import { Loader2, Trash2, Upload, Link2, FileText, Sparkles, Youtube, BookOpen, ImageIcon, Table as TableIcon, ChevronDown, ChevronRight } from 'lucide-react';
 import { detectUrlKind, acceptedFileMimes, kindLabel, type MaterialKind } from '@/lib/research/detectMaterialType';
-import { deleteObject, uploadResearchFile } from '@/lib/research/uploadToYc';
+import { deleteObject, uploadResearchFile, getDownloadUrl } from '@/lib/research/uploadToYc';
+import { extractFromFile, type ExtractedImage, type ExtractedTable } from '@/lib/materials/extract';
 
 
 export interface Material {
@@ -22,6 +23,8 @@ export interface Material {
   url?: string;
   text?: string;
   size?: number;
+  extractedImages?: ExtractedImage[];
+  extractedTables?: ExtractedTable[];
 }
 
 const MAX_FILE = 50 * 1024 * 1024;      // 50 MB per file
