@@ -305,6 +305,7 @@ const AdminResearchReviewEditor = () => {
       }
 
       toast.info("Оркестратор запущен в фоне. Прогресс — в карточке ниже.");
+      if (savedSnapshot) toast.success("Предыдущая версия сохранена в истории правок");
       setTimeout(() => {
         document.getElementById("orchestrator-progress")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
