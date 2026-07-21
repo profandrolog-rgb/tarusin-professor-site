@@ -415,6 +415,18 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
 
       <EditorContent editor={editor} />
 
+      {spellOpen && (
+        <SpellCheckPanel
+          issues={spellIssues}
+          loading={spellLoading}
+          model={spellModel}
+          onApply={applyIssue}
+          onDismiss={(idx) => setSpellIssues((prev) => prev.filter((_, i) => i !== idx))}
+          onApplyAll={applyAll}
+          onClose={() => setSpellOpen(false)}
+        />
+      )}
+
       {dragOver && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-primary/10 backdrop-blur-[1px] rounded-md">
           <div className="text-sm font-medium text-primary bg-background/90 border border-primary/40 rounded-md px-3 py-1.5 shadow">
