@@ -24,11 +24,10 @@ const LAB_FIELDS = new Set([
   'labs', 'analyses', 'analiz', 'analizes',
 ]);
 
-const EXTRACTION_MODELS = [
-  'google/gemini-3-flash-preview',
-  'google/gemini-3.1-pro-preview',
-  'openai/gpt-5-mini',
-];
+const DEFAULT_EXTRACTION_MODELS =
+  'google/gemini-3-flash-preview,google/gemini-3.1-pro-preview,openai/gpt-5-mini,google/gemini-2.5-flash,google/gemini-2.5-pro';
+const EXTRACTION_MODELS = (Deno.env.get('LAB_EXTRACTION_MODELS') || DEFAULT_EXTRACTION_MODELS)
+  .split(',').map((s) => s.trim()).filter(Boolean);
 
 const SYSTEM = `Ты — медицинский парсер лабораторных данных из свободного текста визита.
 Извлекай ТОЛЬКО значения, явно присутствующие в тексте. Не выдумывай.
