@@ -31,6 +31,7 @@ import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQ
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
+import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
 
 interface Visit {
   id: string;
