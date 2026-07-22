@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Printer, FileDown } from "lucide-react";
 import {
   SEVERITY_LABEL,
@@ -20,6 +21,9 @@ import { EndoDisruptorsSchemeSVG } from "@/components/metabolic/schemes/EndoDisr
 import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
 import { templateToScene } from "@/lib/metabolic/templateToScene";
 import { buildAutoScene } from "@/lib/metabolic/autoLayout";
+import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
+import { buildCatalogIndex, resolveCode } from "@/lib/metabolic/resolveLabCodes";
+import { computeAllAggregates } from "@/lib/metabolic/aggregateNodes";
 
 // Единый набор кастомных схем — идентично AdminPatientMetabolicMap.tsx,
 // чтобы печатный PDF выглядел ровно как на экране.
@@ -70,22 +74,33 @@ export default function AdminPatientMetabolicMapPrint() {
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [recs, setRecs] = useState<any[]>([]);
   const [schemas, setSchemas] = useState<Map<string, SceneJson>>(new Map());
+  const [labRows, setLabRows] = useState<any[]>([]);
+  const [catalogRows, setCatalogRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [includeEmpty, setIncludeEmpty] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const [{ data: p }, { data: pw }, { data: m }, txs] = await Promise.all([
+      const [{ data: p }, { data: pw }, { data: m }, txs, { data: labs }, { data: cat }] = await Promise.all([
         supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
         (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true),
         (supabase as any).from("metabolic_maps").select("id, aggregate_summary").eq("patient_id", id).maybeSingle(),
         fetchPathwayTexts(),
+        supabase.from("lab_results")
+          .select("id, test_date, test_code, test_name, value, unit, reference_min, reference_max")
+          .eq("patient_id", id)
+          .order("test_date", { ascending: false, nullsFirst: false })
+          .limit(500),
+        (supabase as any).from("lab_tests_catalog").select("code, name, aliases, unit"),
       ]);
       setPatient(p as any);
       setPathways(((pw as any) || []) as Pathway[]);
       setSummary((m?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(txs);
+      setLabRows(labs || []);
+      setCatalogRows(cat || []);
 
       // Персональные рабочие копии схем этого пациента из map_schemas.
       if (m?.id) {
@@ -123,7 +138,7 @@ export default function AdminPatientMetabolicMapPrint() {
     })();
   }, [id]);
 
-  const selected = useMemo(() => {
+  const selectedAll = useMemo(() => {
     const bySlug = new Map(pathways.map((p) => [p.slug, p]));
     return paths.map((s) => bySlug.get(s)).filter(Boolean) as Pathway[];
   }, [pathways, paths]);
@@ -143,6 +158,66 @@ export default function AdminPatientMetabolicMapPrint() {
     }
     return m;
   }, [findings]);
+
+  // Значения показателей по узлам для CUSTOM_SCHEMES (как на экране).
+  const labCodesById = useMemo(() => {
+    const catalog = buildCatalogIndex(catalogRows);
+    const m = new Map<string, string>();
+    for (const l of labRows) {
+      const code = (l.test_code && String(l.test_code).trim())
+        ? String(l.test_code).toUpperCase().trim()
+        : resolveCode(l.test_name, catalog);
+      if (code) m.set(l.id, code);
+    }
+    return m;
+  }, [labRows, catalogRows]);
+
+  const nodeValuesByPathway = useMemo(() => {
+    const out = new Map<string, Map<string, { text: string; sev?: Severity }>>();
+    for (const [slug, codeMap] of Object.entries(CODE_NODE_MAP as Record<string, Record<string, string>>)) {
+      const perNode = new Map<string, { text: string; sev?: Severity }>();
+      for (const l of labRows) {
+        const code = labCodesById.get(l.id);
+        if (!code) continue;
+        const nodeId = codeMap[code];
+        if (!nodeId || perNode.has(nodeId)) continue;
+        const v = l.value == null ? "" : String(l.value);
+        const u = l.unit ? ` ${l.unit}` : "";
+        perNode.set(nodeId, { text: `${v}${u}`.trim() });
+      }
+      if (perNode.size) out.set(slug, perNode);
+    }
+    const aggregates = computeAllAggregates(labRows as any);
+    if (aggregates.size) {
+      for (const pw of pathways) {
+        const nodeIds = new Set<string>((pw.nodes || []).map((n: any) => n?.id).filter(Boolean));
+        let perNode = out.get(pw.slug);
+        for (const [aggNodeId, entry] of aggregates.entries()) {
+          if (!nodeIds.has(aggNodeId)) continue;
+          if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+          perNode.set(aggNodeId, { text: (entry as any).text });
+        }
+      }
+    }
+    for (const f of findings) {
+      if (!f.node_id) continue;
+      const pw = pathways.find((p) => p.id === f.pathway_id);
+      if (!pw) continue;
+      let perNode = out.get(pw.slug);
+      if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+      const sev: Severity = (f.severity as Severity) || "moderate";
+      perNode.set(f.node_id, { text: f.label || "", sev });
+    }
+    return out;
+  }, [labRows, labCodesById, findings, pathways]);
+
+  const selected = useMemo(() => {
+    if (includeEmpty) return selectedAll;
+    return selectedAll.filter((pw) => {
+      const st = summaryByPathway.get(pw.id)?.status;
+      return st && st !== "no_data";
+    });
+  }, [selectedAll, summaryByPathway, includeEmpty]);
 
   const doPdf = async () => {
     const node = document.getElementById("print-root");
@@ -171,7 +246,14 @@ export default function AdminPatientMetabolicMapPrint() {
       `}</style>
 
       <div className="no-print sticky top-0 z-10 bg-background border-b py-3 px-4 flex items-center gap-2 justify-end">
-        <span className="text-sm text-muted-foreground mr-auto">Режим: {REGISTER_LABEL[register]} · листов: {selected.length + 1}</span>
+        <span className="text-sm text-muted-foreground mr-auto">
+          Режим: {REGISTER_LABEL[register]} · листов: {selected.length + 1}
+          {selectedAll.length !== selected.length && ` (скрыто пустых: ${selectedAll.length - selected.length})`}
+        </span>
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox checked={includeEmpty} onCheckedChange={(v) => setIncludeEmpty(!!v)} />
+          Печатать пустые пути
+        </label>
         <Button variant="outline" onClick={doPdf} disabled={exporting}>
           {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileDown className="w-4 h-4 mr-2" />}
           Скачать PDF
@@ -259,7 +341,19 @@ export default function AdminPatientMetabolicMapPrint() {
 
                   // 1) Кастомные статичные схемы
                   const CustomScheme = CUSTOM_SCHEMES[pw.slug];
-                  if (CustomScheme) return <CustomScheme />;
+                  if (CustomScheme) {
+                    const pwNodeValues = nodeValuesByPathway.get(pw.slug);
+                    const vals: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> = {};
+                    if (pwNodeValues) {
+                      for (const [nodeId, entry] of pwNodeValues.entries()) {
+                        if (!entry?.text) continue;
+                        const sev = entry.sev;
+                        const st = sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe" ? sev : "nodata";
+                        vals[nodeId] = { value: entry.text, status: st };
+                      }
+                    }
+                    return <CustomScheme values={Object.keys(vals).length ? vals : undefined} />;
+                  }
 
                   // 2) Статичный SVG-шаблон пути с подсветкой data-sev
                   if (hasPathwaySvgTemplate(pw.slug)) {

@@ -17,15 +17,24 @@ export default function AdminPatientVisitPrint() {
 
   useEffect(() => {
     if (!id) return;
-    supabase
-      .from("patient_visits")
-      .select("*, patient:patients(full_name, birth_date, history_number)")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setVisit(data);
-        setLoading(false);
-      });
+    (async () => {
+      const { data } = await supabase
+        .from("patient_visits")
+        .select("*, patient:patients(full_name, birth_date, history_number)")
+        .eq("id", id)
+        .maybeSingle();
+      let labs: any[] = [];
+      if (data?.id) {
+        const { data: labRows } = await supabase
+          .from("lab_results")
+          .select("test_name, value, unit, reference_min, reference_max, test_date")
+          .eq("visit_id", data.id)
+          .order("test_name");
+        labs = labRows || [];
+      }
+      setVisit(data ? { ...data, recognizedLabs: labs } : null);
+      setLoading(false);
+    })();
   }, [id]);
 
   const handlePdf = async () => {

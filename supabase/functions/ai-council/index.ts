@@ -12,24 +12,19 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEFAULT_PANEL = [
-  "google/gemini-3-flash-preview",
-  "anthropic/claude-sonnet-4.5",
-  "openai/gpt-5-mini",
-  "x-ai/grok-4.3",
-  "qwen/qwen3.6-flash",
-  "z-ai/glm-5",
-];
-const DEFAULT_SUMMARIZER = "google/gemini-3-flash-preview";
+// Модели вынесены в env, чтобы можно было менять без деплоя.
+// AI_COUNCIL_PANEL — участники консилиума (через запятую).
+// AI_COUNCIL_SUMMARIZER — модель для сводки.
+// AI_COUNCIL_FALLBACKS — глобальные фолбэки (пробуются, если модель не отвечает).
+const DEFAULT_PANEL = (Deno.env.get("AI_COUNCIL_PANEL") ||
+  "google/gemini-2.5-flash,google/gemini-2.5-pro,anthropic/claude-sonnet-4.5,openai/gpt-5-mini,x-ai/grok-4.3,qwen/qwen3.6-flash"
+).split(",").map((s) => s.trim()).filter(Boolean);
 
-const GLOBAL_FALLBACK_MODELS = [
-  "google/gemini-3-flash-preview",
-  "anthropic/claude-sonnet-4.5",
-  "openai/gpt-5-mini",
-  "deepseek/deepseek-v4-flash",
-  "qwen/qwen3.6-flash",
-  "z-ai/glm-5",
-];
+const DEFAULT_SUMMARIZER = Deno.env.get("AI_COUNCIL_SUMMARIZER") || "google/gemini-2.5-flash";
+
+const GLOBAL_FALLBACK_MODELS = (Deno.env.get("AI_COUNCIL_FALLBACKS") ||
+  "google/gemini-2.5-flash,google/gemini-2.5-pro,anthropic/claude-sonnet-4.5,openai/gpt-5-mini"
+).split(",").map((s) => s.trim()).filter(Boolean);
 
 const MODEL_FALLBACKS: Record<string, string[]> = {
   "google/gemini-2.5-pro": ["google/gemini-3.1-pro-preview", "google/gemini-3-flash-preview"],

@@ -26,21 +26,45 @@ serve(async (req) => {
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) throw new Error("Admin only");
 
-    const { complaints, medical_history, patient_name } = await req.json();
+    const { complaints, medical_history, patient_name, patient_id, consultation_case_id } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI not configured");
 
+    // Подтягиваем распознанные анализы, чтобы ИИ видел цифры, а не только текст жалоб.
+    let labsBlock = "";
+    try {
+      const svc = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      let q = svc.from("lab_results")
+        .select("test_name, value, unit, reference_min, reference_max, test_date")
+        .order("test_date", { ascending: false, nullsFirst: false })
+        .limit(80);
+      if (consultation_case_id) q = q.eq("consultation_case_id", consultation_case_id);
+      else if (patient_id) q = q.eq("patient_id", patient_id);
+      const { data: labs } = await q;
+      if (labs && labs.length) {
+        labsBlock = "\n\nЛабораторные данные:\n" + labs.map((l: any) => {
+          const ref = (l.reference_min != null || l.reference_max != null)
+            ? ` [норма ${l.reference_min ?? "?"}–${l.reference_max ?? "?"}]`
+            : "";
+          const date = l.test_date ? ` (${l.test_date})` : "";
+          return `• ${l.test_name}: ${l.value ?? "—"} ${l.unit || ""}${ref}${date}`;
+        }).join("\n");
+      }
+    } catch (e) {
+      console.warn("analyze-consultation labs fetch failed:", e);
+    }
+
     const systemPrompt = `Вы — опытный детский андролог-уролог, ассистент профессора Тарусина Дмитрия Игоревича. 
-Ваша задача — проанализировать жалобы и анамнез пациента и предоставить предварительную оценку.
+Ваша задача — проанализировать жалобы, анамнез и лабораторные данные пациента и предоставить предварительную оценку.
 
 ВАЖНО:
 - Это ПРЕДВАРИТЕЛЬНАЯ оценка, которая будет проверена врачом
 - Не ставьте окончательный диагноз
-- Укажите возможные направления обследования
+- Опирайтесь на конкретные значения из лабораторных данных, если они переданы
 - Отметьте что требует срочного внимания
 - Используйте профессиональную но понятную терминологию
-- Структурируйте ответ: 1) Анализ жалоб 2) Предварительная оценка 3) Рекомендуемые обследования 4) На что обратить внимание
+- Структурируйте ответ: 1) Анализ жалоб 2) Оценка лабораторных данных 3) Предварительная оценка 4) Рекомендуемые обследования 5) На что обратить внимание
 
 Формат ответа — структурированный текст на русском языке.`;
 
@@ -50,7 +74,7 @@ serve(async (req) => {
 ${complaints || "не указаны"}
 
 Анамнез / история обращений:
-${medical_history || "не указан"}`;
+${medical_history || "не указан"}${labsBlock}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

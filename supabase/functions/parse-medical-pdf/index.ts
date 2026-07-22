@@ -133,6 +133,22 @@ async function extractWithFallback(fileDataUrl: string, fileName: string) {
   throw new Error(`Не удалось разобрать PDF ни одной моделью: ${last}`);
 }
 
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isValidPastDate(s: string | null | undefined): string | null {
+  if (!s || typeof s !== 'string') return null;
+  const m = s.match(/^\d{4}-\d{2}-\d{2}$/);
+  if (!m) return null;
+  const d = new Date(s + 'T00:00:00Z');
+  if (isNaN(+d)) return null;
+  if (d.getTime() > Date.now() + 24 * 3600 * 1000) return null; // future date → invalid
+  return s;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -142,11 +158,13 @@ Deno.serve(async (req) => {
       file_name,
       patient_id,
       consultation_case_id,
+      visit_id,
     }: {
       file_data: string;
       file_name: string;
       patient_id?: string;
       consultation_case_id?: string;
+      visit_id?: string;
     } = body;
 
     if (!file_data || !file_name) {
@@ -170,9 +188,32 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // AI extraction
-    const parsed = await extractWithFallback(file_data, file_name);
-    const docDate: string | null = parsed.document_date || null;
+    // Cache lookup by (patient_id, file_hash) — skips AI on re-upload of the same file.
+    const fileHash = await sha256Hex(file_data);
+    let parsed: any = null;
+    if (patient_id) {
+      const { data: cached } = await supabase
+        .from('parsed_pdf_cache')
+        .select('result')
+        .eq('patient_id', patient_id)
+        .eq('file_hash', fileHash)
+        .maybeSingle();
+      if (cached?.result) {
+        parsed = cached.result;
+        console.log('parse-medical-pdf cache hit', JSON.stringify({ patient_id, fileHash, fileName: file_name }));
+      }
+    }
+
+    if (!parsed) {
+      parsed = await extractWithFallback(file_data, file_name);
+      if (patient_id) {
+        await supabase
+          .from('parsed_pdf_cache')
+          .upsert({ patient_id, file_hash: fileHash, result: parsed }, { onConflict: 'patient_id,file_hash' });
+      }
+    }
+
+    const docDate: string | null = isValidPastDate(parsed.document_date);
     const testDate = docDate || new Date().toISOString().slice(0, 10);
 
     // Load catalog for synonym matching
@@ -197,7 +238,18 @@ Deno.serve(async (req) => {
     for (const lr of parsed.lab_results || []) {
       if (typeof lr.value !== 'number' || !lr.analyte) continue;
       const target = normalize(lr.analyte);
-      const match = cat.find((c: any) => c._norm.some((n: string) => n && (n === target || (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target)))));
+      const match = cat.find((c: any) => c._norm.some((n: string) => {
+        if (!n) return false;
+        if (n === target) return true;
+        // Short abbreviations (<=3 chars, e.g. ТТГ, АЛТ) — token-level equality only.
+        if (n.length <= 3) {
+          return new RegExp(`(^|[^a-zа-я0-9])${n}([^a-zа-я0-9]|$)`, 'i').test(target);
+        }
+        if (target.length <= 3) {
+          return new RegExp(`(^|[^a-zа-я0-9])${target}([^a-zа-я0-9]|$)`, 'i').test(n);
+        }
+        return (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target));
+      }));
 
       // Reference: prefer AI numeric; fallback — parse ref_text
       let refMin: number | null = typeof lr.ref_low === 'number' ? lr.ref_low : null;
@@ -211,6 +263,7 @@ Deno.serve(async (req) => {
       const row: any = {
         patient_id: patient_id || null,
         consultation_case_id: consultation_case_id || null,
+        visit_id: visit_id || null,
         test_group: match?.name?.split(' ')[0] || 'Загружено',
         test_name: match?.name || lr.analyte,
         test_code: null,

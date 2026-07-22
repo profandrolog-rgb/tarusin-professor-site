@@ -3,6 +3,15 @@ import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { formatSexualConstitution } from "./sections/SexualConstitution";
 
+interface RecognizedLab {
+  test_name: string;
+  value: number | null;
+  unit: string | null;
+  reference_min: number | null;
+  reference_max: number | null;
+  test_date: string | null;
+}
+
 interface VisitForPrint {
   visit_date: string;
   protocol_type: ProtocolType;
@@ -11,6 +20,7 @@ interface VisitForPrint {
   icd_code: string | null;
   next_visit_date: string | null;
   patient: { full_name: string; birth_date: string; history_number: string | null } | null;
+  recognizedLabs?: RecognizedLab[];
 }
 
 function calcAge(birth: string, ref: Date) {
@@ -426,10 +436,49 @@ function pushUnknownScalars(rows: React.ReactNode[], d: any) {
   });
 }
 
+function RecognizedLabsSection({ labs }: { labs: RecognizedLab[] }) {
+  if (!labs?.length) return null;
+  return (
+    <Section title={`Распознанные анализы (${labs.length})`}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10pt" }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid #999" }}>
+            <th style={{ textAlign: "left", padding: "2px 4px" }}>Показатель</th>
+            <th style={{ textAlign: "right", padding: "2px 4px" }}>Знач.</th>
+            <th style={{ textAlign: "left", padding: "2px 4px" }}>Ед.</th>
+            <th style={{ textAlign: "left", padding: "2px 4px" }}>Норма</th>
+            <th style={{ textAlign: "left", padding: "2px 4px" }}>Дата</th>
+          </tr>
+        </thead>
+        <tbody>
+          {labs.map((r, i) => {
+            const out = r.value != null && (
+              (r.reference_min != null && r.value < r.reference_min) ||
+              (r.reference_max != null && r.value > r.reference_max)
+            );
+            return (
+              <tr key={i} style={{ borderBottom: "1px dotted #ccc" }}>
+                <td style={{ padding: "2px 4px" }}>{r.test_name}</td>
+                <td style={{ padding: "2px 4px", textAlign: "right", fontWeight: out ? 700 : 400 }}>{r.value ?? "—"}</td>
+                <td style={{ padding: "2px 4px" }}>{r.unit || ""}</td>
+                <td style={{ padding: "2px 4px" }}>{r.reference_min ?? "?"}–{r.reference_max ?? "?"}</td>
+                <td style={{ padding: "2px 4px" }}>{r.test_date || ""}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Section>
+  );
+}
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
   const rows: React.ReactNode[] = [];
+  if (visit.recognizedLabs?.length) {
+    rows.push(<RecognizedLabsSection key="__recognized_labs" labs={visit.recognizedLabs} />);
+  }
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);

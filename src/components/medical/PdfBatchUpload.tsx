@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Props {
   patientId?: string;
   consultationCaseId?: string;
+  visitId?: string;
   onComplete?: (summary: FileStatus[]) => void;
 }
 
@@ -37,7 +38,7 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export default function PdfBatchUpload({ patientId, consultationCaseId, onComplete }: Props) {
+export default function PdfBatchUpload({ patientId, consultationCaseId, visitId, onComplete }: Props) {
   const { toast } = useToast();
   const [files, setFiles] = useState<FileStatus[]>([]);
   const [parseEnabled, setParseEnabled] = useState(true);
@@ -79,6 +80,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, onComple
             file_name: updated[i].file.name,
             patient_id: patientId,
             consultation_case_id: consultationCaseId,
+            visit_id: visitId,
           },
         });
         if (error) throw error;

@@ -135,8 +135,8 @@ export default function AdminPatientDetail() {
       <Helmet><title>{`Назначения — ${patient.full_name}`}</title><meta name="robots" content="noindex" /></Helmet>
 
       <div className="container mx-auto px-4 py-8 space-y-6">
-        <Link to="/admin/treatment-plans" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-4 h-4"/>К листам назначений
+        <Link to="/admin/patients" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="w-4 h-4"/>К списку пациентов
         </Link>
 
         <div className="flex items-center justify-between flex-wrap gap-3">

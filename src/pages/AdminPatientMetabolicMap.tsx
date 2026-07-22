@@ -32,6 +32,7 @@ import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic
 import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggregateNodes";
 import { computeIndices } from "@/lib/metabolic/metaIndices";
 import { IndicesGauges } from "@/components/metabolic/IndicesGauges";
+import IndicesInterpretation from "@/components/metabolic/IndicesInterpretation";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
@@ -672,11 +673,18 @@ export default function AdminPatientMetabolicMap() {
               Расчётные показатели из спектра. Зелёная зона — цель, жёлтая — пограничная, красная — вне нормы. Стрелка — значение пациента.
             </p>
             <IndicesGauges indices={metaIndices} patientSex={patient?.sex ?? null} />
+            <IndicesInterpretation patientId={id!} indices={metaIndices} patientSex={patient?.sex ?? null} />
+
           </section>
         )}
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Метаболические пути</h2>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-xl font-semibold">Метаболические пути</h2>
+            <span className="text-xs text-muted-foreground">
+              Учтено {labCodesById.size} анализов из {labRows.length}
+            </span>
+          </div>
           {pathways.length === 0 ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
           ) : (
@@ -840,6 +848,14 @@ export default function AdminPatientMetabolicMap() {
                           {legacyText.actions && <p><span className="font-medium">Что делать:</span> {legacyText.actions}</p>}
                         </div>
                       ) : null}
+                      {!aiForPath && ai && (
+                        <div className="text-xs text-muted-foreground border-t border-dashed pt-2 flex items-center justify-between gap-2">
+                          <span>ИИ-интерпретация по этому пути не сформирована.</span>
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-xs gap-1" onClick={handleAiBuild} disabled={aiBusy}>
+                            <Sparkles className="w-3 h-3" />Регенерировать
+                          </Button>
+                        </div>
+                      )}
                       {aiForPath && (
                         <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
                           <div className="flex items-center gap-2">
