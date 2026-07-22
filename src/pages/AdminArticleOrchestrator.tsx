@@ -326,16 +326,19 @@ export default function AdminArticleOrchestrator() {
     setPickerOpen(true);
     setPickerLoading(true);
     try {
-      const [d, b, r] = await Promise.all([
+      const [d, b, r, rr] = await Promise.all([
         supabase.from("disease_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
         supabase.from("blog_posts").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
         supabase.from("research_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("research_reviews" as any).select("id,title,updated_at,workflow_state,status").or("workflow_state.eq.published,status.eq.published").order("updated_at", { ascending: false }).limit(200),
       ]);
       const items: PubItem[] = [
         ...((d.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "disease_articles" as const, title: x.title, updated_at: x.updated_at })),
         ...((b.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "blog_posts" as const, title: x.title, updated_at: x.updated_at })),
         ...((r.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "research_articles" as const, title: x.title, updated_at: x.updated_at })),
+        ...((rr.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "research_reviews" as const, title: x.title, updated_at: x.updated_at })),
       ];
+
       setPickerItems(items);
     } catch (e: any) {
       sonnerToast.error("Не удалось загрузить список", { description: e?.message || String(e) });
