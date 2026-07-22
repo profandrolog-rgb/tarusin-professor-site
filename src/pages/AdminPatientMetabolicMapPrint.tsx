@@ -74,22 +74,33 @@ export default function AdminPatientMetabolicMapPrint() {
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [recs, setRecs] = useState<any[]>([]);
   const [schemas, setSchemas] = useState<Map<string, SceneJson>>(new Map());
+  const [labRows, setLabRows] = useState<any[]>([]);
+  const [catalogRows, setCatalogRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [includeEmpty, setIncludeEmpty] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const [{ data: p }, { data: pw }, { data: m }, txs] = await Promise.all([
+      const [{ data: p }, { data: pw }, { data: m }, txs, { data: labs }, { data: cat }] = await Promise.all([
         supabase.from("patients").select("id, full_name, birth_date, history_number").eq("id", id).maybeSingle(),
         (supabase as any).from("pathways").select("id, slug, name, description, nodes, edges, svg_scene").eq("is_active", true),
         (supabase as any).from("metabolic_maps").select("id, aggregate_summary").eq("patient_id", id).maybeSingle(),
         fetchPathwayTexts(),
+        supabase.from("lab_results")
+          .select("id, test_date, test_code, test_name, value, unit, reference_min, reference_max")
+          .eq("patient_id", id)
+          .order("test_date", { ascending: false, nullsFirst: false })
+          .limit(500),
+        (supabase as any).from("lab_tests_catalog").select("code, name, aliases, unit"),
       ]);
       setPatient(p as any);
       setPathways(((pw as any) || []) as Pathway[]);
       setSummary((m?.aggregate_summary?.pathways as PathwaySummary[]) || []);
       setTexts(txs);
+      setLabRows(labs || []);
+      setCatalogRows(cat || []);
 
       // Персональные рабочие копии схем этого пациента из map_schemas.
       if (m?.id) {
@@ -127,7 +138,7 @@ export default function AdminPatientMetabolicMapPrint() {
     })();
   }, [id]);
 
-  const selected = useMemo(() => {
+  const selectedAll = useMemo(() => {
     const bySlug = new Map(pathways.map((p) => [p.slug, p]));
     return paths.map((s) => bySlug.get(s)).filter(Boolean) as Pathway[];
   }, [pathways, paths]);
