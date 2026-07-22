@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState, lazy, Suspense } from "react";
+import { useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
+import { getDownloadUrl } from "@/lib/research/uploadToYc";
 import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
@@ -366,6 +367,121 @@ const PlaceholderGallery = ({
   const [crop, setCrop] = useState<Crop | undefined>(undefined);
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const cropImgRef = useRef<HTMLImageElement | null>(null);
+
+  // --- «Из материалов обзора»: изображения, извлечённые из PDF/DOCX/PPTX ---
+  interface ExtractedFromMaterial {
+    key: string;               // объектный ключ в YC
+    materialName: string;      // имя исходного файла (atlas.pdf)
+    materialMarker: string;    // [M1], [M2]…
+    pageOrSlide?: number;
+    index: number;
+    mime: string;
+    width: number;
+    height: number;
+  }
+  const isResearch = ownerTable === "research_reviews";
+  const [showFromMaterials, setShowFromMaterials] = useState(false);
+  const [materialImages, setMaterialImages] = useState<ExtractedFromMaterial[] | null>(null);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    if (!isResearch || !showFromMaterials || materialImages !== null) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingMaterials(true);
+      try {
+        const { data, error } = await supabase
+          .from("research_reviews")
+          .select("source_materials")
+          .eq("id", articleId)
+          .maybeSingle();
+        if (error) throw error;
+        const mats: any[] = Array.isArray(data?.source_materials) ? (data!.source_materials as any[]) : [];
+        const items: ExtractedFromMaterial[] = [];
+        mats.forEach((m, mi) => {
+          const marker = m?.marker || `[M${mi + 1}]`;
+          const name = m?.name || m?.url || "материал";
+          const imgs = Array.isArray(m?.extractedImages) ? m.extractedImages : [];
+          imgs.forEach((im: any) => {
+            if (!im?.objectKey) return;
+            items.push({
+              key: im.objectKey,
+              materialName: name,
+              materialMarker: marker,
+              pageOrSlide: im.pageOrSlide,
+              index: im.index ?? 0,
+              mime: im.mime || "image/jpeg",
+              width: im.width || 0,
+              height: im.height || 0,
+            });
+          });
+        });
+        if (!cancelled) setMaterialImages(items);
+        // Подтягиваем presigned GET URLs для превью (параллельно, но лимитируем).
+        const urls: Record<string, string> = {};
+        await Promise.all(items.slice(0, 200).map(async (it) => {
+          try { urls[it.key] = await getDownloadUrl(it.key); } catch { /* skip */ }
+        }));
+        if (!cancelled) setThumbUrls(urls);
+      } catch (e: any) {
+        toast.error(`Не удалось загрузить изображения из материалов: ${e?.message || e}`);
+        if (!cancelled) setMaterialImages([]);
+      } finally {
+        if (!cancelled) setLoadingMaterials(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isResearch, showFromMaterials, materialImages, articleId]);
+
+  const toggleSelected = (key: string) => {
+    setSelectedKeys((prev) => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key); else n.add(key);
+      return n;
+    });
+  };
+
+  const importSelectedFromMaterials = async () => {
+    if (selectedKeys.size === 0 || !materialImages) return;
+    setImporting(true);
+    try {
+      const files: File[] = [];
+      const chosen = materialImages.filter((it) => selectedKeys.has(it.key));
+      for (let i = 0; i < chosen.length; i++) {
+        const it = chosen[i];
+        setProgressText(`Загрузка из материалов ${i + 1}/${chosen.length}…`);
+        try {
+          const url = thumbUrls[it.key] || (await getDownloadUrl(it.key));
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          const ext = (it.mime.split("/")[1] || "jpg").split("+")[0];
+          const base = it.materialName.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9А-Яа-я_-]+/g, "-").slice(0, 40) || "img";
+          const suffix = it.pageOrSlide ? `p${it.pageOrSlide}-` : "";
+          const fname = `${base}-${suffix}${it.index}.${ext}`;
+          files.push(new File([blob], fname, { type: it.mime }));
+        } catch (e: any) {
+          console.warn("import material image failed", it.key, e?.message);
+        }
+      }
+      setProgressText("");
+      if (files.length === 0) {
+        toast.error("Не удалось загрузить выбранные изображения");
+        return;
+      }
+      // Дальше — обычный путь: кадрирование → формат → водяной знак → загрузка.
+      startCropFlow(files);
+      setSelectedKeys(new Set());
+      setShowFromMaterials(false);
+    } finally {
+      setImporting(false);
+      setProgressText("");
+    }
+  };
+
 
   const existing = useMemo<ExistingItem[]>(
     () => parseGalleryFileEntries((existingFiles ?? []).join("|")),
@@ -1066,6 +1182,121 @@ const PlaceholderGallery = ({
           <p className="text-[11px] text-muted-foreground">
             или вставьте скриншот (Ctrl+V)
           </p>
+        </div>
+      )}
+
+      {isResearch && previews.length === 0 && (
+        <div className="w-full mt-2 mb-2 border-t pt-3">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="gap-1.5"
+              onClick={() => setShowFromMaterials((v) => !v)}
+              disabled={processing || uploading}
+            >
+              <ImageIcon className="w-4 h-4" />
+              {showFromMaterials ? "Скрыть материалы обзора" : "Из материалов обзора"}
+            </Button>
+          </div>
+
+          {showFromMaterials && (
+            <div className="mt-3">
+              {loadingMaterials && (
+                <p className="text-xs text-muted-foreground text-center">
+                  <Loader2 className="w-3 h-3 inline animate-spin mr-1" />
+                  Загрузка списка…
+                </p>
+              )}
+              {!loadingMaterials && materialImages && materialImages.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  В материалах обзора нет извлечённых изображений.
+                </p>
+              )}
+              {!loadingMaterials && materialImages && materialImages.length > 0 && (
+                <>
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      Найдено: {materialImages.length}. Выбрано: {selectedKeys.size}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setSelectedKeys(new Set(materialImages.map((i) => i.key)))}
+                      >
+                        Выбрать все
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setSelectedKeys(new Set())}
+                      >
+                        Сбросить
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-[420px] overflow-auto p-1">
+                    {materialImages.map((it) => {
+                      const sel = selectedKeys.has(it.key);
+                      const src = thumbUrls[it.key];
+                      const label = it.pageOrSlide
+                        ? `стр. ${it.pageOrSlide} из ${it.materialName}`
+                        : `${it.materialName}`;
+                      return (
+                        <button
+                          key={it.key}
+                          type="button"
+                          onClick={() => toggleSelected(it.key)}
+                          className={
+                            "relative rounded border overflow-hidden bg-white text-left hover:border-primary/60 transition " +
+                            (sel ? "ring-2 ring-primary border-primary" : "")
+                          }
+                          title={`${it.materialMarker} ${label}`}
+                        >
+                          <div className="aspect-square bg-slate-100 flex items-center justify-center">
+                            {src ? (
+                              <img src={src} alt={label} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">
+                            {it.materialMarker}
+                          </div>
+                          {sel && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                              <Check className="w-3 h-3" />
+                            </div>
+                          )}
+                          <div className="text-[10px] text-muted-foreground px-1 py-0.5 truncate">
+                            {label}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center mt-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={importSelectedFromMaterials}
+                      disabled={selectedKeys.size === 0 || importing}
+                      className="gap-1.5"
+                    >
+                      {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      Взять выбранные ({selectedKeys.size})
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
