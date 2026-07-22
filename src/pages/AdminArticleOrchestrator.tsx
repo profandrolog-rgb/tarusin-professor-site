@@ -326,16 +326,19 @@ export default function AdminArticleOrchestrator() {
     setPickerOpen(true);
     setPickerLoading(true);
     try {
-      const [d, b, r] = await Promise.all([
+      const [d, b, r, rr] = await Promise.all([
         supabase.from("disease_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
         supabase.from("blog_posts").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
         supabase.from("research_articles").select("id,title,updated_at,is_published").eq("is_published", true).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("research_reviews" as any).select("id,title,updated_at,workflow_state,status").or("workflow_state.eq.published,status.eq.published").order("updated_at", { ascending: false }).limit(200),
       ]);
       const items: PubItem[] = [
         ...((d.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "disease_articles" as const, title: x.title, updated_at: x.updated_at })),
         ...((b.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "blog_posts" as const, title: x.title, updated_at: x.updated_at })),
         ...((r.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "research_articles" as const, title: x.title, updated_at: x.updated_at })),
+        ...((rr.data ?? []) as any[]).map((x) => ({ id: x.id, kind: "research_reviews" as const, title: x.title, updated_at: x.updated_at })),
       ];
+
       setPickerItems(items);
     } catch (e: any) {
       sonnerToast.error("Не удалось загрузить список", { description: e?.message || String(e) });
@@ -420,11 +423,49 @@ export default function AdminArticleOrchestrator() {
         sonnerToast.info(`Восстановил метки галерей: ${restored.restored.join(", ")}`);
       }
       const html = markdownToHtml(finalMd);
+
+      // Если хоть один маркер потерялся — сохраняем предыдущий content_with_markers
+      // в refinement_history как снапшот "before_consilium_return", чтобы у автора
+      // остался откат к полностью размеченной доконсилиумной версии.
+      const updatePayload: Record<string, any> = {
+        content: html,
+        content_with_markers: html,
+        workflow_state: "editing",
+      };
+      if (diff.lost.length) {
+        try {
+          const { data: prev } = await supabase
+            .from("research_reviews" as any)
+            .select("content_with_markers, refinement_history")
+            .eq("id", existingRef.id)
+            .maybeSingle();
+          const prevMarked = (prev as any)?.content_with_markers as string | null;
+          const prevHistory = Array.isArray((prev as any)?.refinement_history)
+            ? ((prev as any).refinement_history as any[])
+            : [];
+          if (prevMarked) {
+            updatePayload.refinement_history = [
+              ...prevHistory,
+              {
+                id: crypto.randomUUID(),
+                action: "before_consilium_return",
+                created_at: new Date().toISOString(),
+                is_snapshot: true,
+                snapshot_content: prevMarked,
+                diff_summary: `Потеряны маркеры: ${diff.lost.join(", ")}`,
+              },
+            ];
+          }
+        } catch {
+          // не блокируем возврат из-за истории
+        }
+      }
       const { error } = await supabase
         .from("research_reviews" as any)
-        .update({ content: html, content_with_markers: html, workflow_state: "editing" })
+        .update(updatePayload)
         .eq("id", existingRef.id);
       if (error) throw error;
+
       sonnerToast.success("Правки применены, обзор возвращён в редактор");
       navigate(`/admin/research-reviews/${existingRef.id}`);
     } catch (e: any) {
@@ -2012,7 +2053,7 @@ export default function AdminArticleOrchestrator() {
                     <div className="text-sm font-medium truncate">{i.title}</div>
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <Badge variant="outline" className="text-[10px]">
-                        {i.kind === "disease_articles" ? "Заболевания" : i.kind === "blog_posts" ? "Блог" : "Исследования"}
+                        {i.kind === "disease_articles" ? "Заболевания" : i.kind === "blog_posts" ? "Блог" : i.kind === "research_reviews" ? "Научный обзор" : "Исследования"}
                       </Badge>
                       <span>Обновлено: {new Date(i.updated_at).toLocaleDateString("ru-RU")}</span>
                     </div>
