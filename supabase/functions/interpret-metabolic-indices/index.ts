@@ -2,6 +2,8 @@
 // Кратко интерпретирует интегральные индексы (омега-3, AA/EPA, Holman, карнитины, андрогены).
 // Кэширует итог в metabolic_maps.indices_interpretation (по хешу входа).
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { callWithFallback, extractCompletion } from "../_shared/aiCallWithFallback.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
