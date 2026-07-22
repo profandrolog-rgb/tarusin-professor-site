@@ -238,7 +238,18 @@ Deno.serve(async (req) => {
     for (const lr of parsed.lab_results || []) {
       if (typeof lr.value !== 'number' || !lr.analyte) continue;
       const target = normalize(lr.analyte);
-      const match = cat.find((c: any) => c._norm.some((n: string) => n && (n === target || (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target)))));
+      const match = cat.find((c: any) => c._norm.some((n: string) => {
+        if (!n) return false;
+        if (n === target) return true;
+        // Short abbreviations (<=3 chars, e.g. ТТГ, АЛТ) — token-level equality only.
+        if (n.length <= 3) {
+          return new RegExp(`(^|[^a-zа-я0-9])${n}([^a-zа-я0-9]|$)`, 'i').test(target);
+        }
+        if (target.length <= 3) {
+          return new RegExp(`(^|[^a-zа-я0-9])${target}([^a-zа-я0-9]|$)`, 'i').test(n);
+        }
+        return (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target));
+      }));
 
       // Reference: prefer AI numeric; fallback — parse ref_text
       let refMin: number | null = typeof lr.ref_low === 'number' ? lr.ref_low : null;
@@ -252,6 +263,7 @@ Deno.serve(async (req) => {
       const row: any = {
         patient_id: patient_id || null,
         consultation_case_id: consultation_case_id || null,
+        visit_id: visit_id || null,
         test_group: match?.name?.split(' ')[0] || 'Загружено',
         test_name: match?.name || lr.analyte,
         test_code: null,
