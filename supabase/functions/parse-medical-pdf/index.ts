@@ -119,10 +119,11 @@ async function callExtractionModel(model: string, fileDataUrl: string, fileName:
 
 async function extractWithFallback(fileDataUrl: string, fileName: string) {
   let last = 'unknown error';
-  for (const model of EXTRACTION_MODELS) {
+  for (let i = 0; i < EXTRACTION_MODELS.length; i++) {
+    const model = EXTRACTION_MODELS[i];
     try {
       const parsed = await callExtractionModel(model, fileDataUrl, fileName);
-      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fileName }));
+      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fallback: i > 0, index: i, fileName }));
       return parsed;
     } catch (e: any) {
       last = e?.message || String(e);
