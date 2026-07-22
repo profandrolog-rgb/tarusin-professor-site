@@ -607,6 +607,7 @@ const AdminResearchReviewEditor = () => {
             reviewId={row.id}
             materials={materials}
             onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
+            onUpdateMaterial={updateMaterial}
             instructions={instructions}
             onInstructionsChange={setInstructions}
             onAnalyze={analyzeMaterials}
