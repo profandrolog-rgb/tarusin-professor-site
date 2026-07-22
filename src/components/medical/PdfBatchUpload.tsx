@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Props {
   patientId?: string;
   consultationCaseId?: string;
+  visitId?: string;
   onComplete?: (summary: FileStatus[]) => void;
 }
 
