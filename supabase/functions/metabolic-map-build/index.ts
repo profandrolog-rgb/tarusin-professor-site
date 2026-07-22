@@ -319,7 +319,8 @@ Deno.serve(async (req) => {
     const computedAt = new Date().toISOString();
     const aiSummary = {
       computed_at: computedAt,
-      model,
+      model: aiResult.modelUsed,
+
       deidentified,
       visit_id: visitId,
       visit_date: visitDate,
