@@ -38,7 +38,7 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export default function PdfBatchUpload({ patientId, consultationCaseId, onComplete }: Props) {
+export default function PdfBatchUpload({ patientId, consultationCaseId, visitId, onComplete }: Props) {
   const { toast } = useToast();
   const [files, setFiles] = useState<FileStatus[]>([]);
   const [parseEnabled, setParseEnabled] = useState(true);
