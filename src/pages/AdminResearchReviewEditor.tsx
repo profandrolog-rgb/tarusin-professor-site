@@ -256,6 +256,24 @@ const AdminResearchReviewEditor = () => {
     await supabase.from("research_reviews" as any).update(patch).eq("id", row.id);
   }
 
+  // Функциональный апдейт одного материала + дебаунс-сейв в базу.
+  // Устраняет гонку, когда асинхронное извлечение изображений завершается
+  // после того, как замыкание уже сняло устаревший снимок materials.
+  const materialSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateMaterial = useCallback((id: string, patch: Partial<Material>) => {
+    setRow((r: any) => {
+      if (!r) return r;
+      const list: Material[] = Array.isArray(r.source_materials) ? r.source_materials : [];
+      const next = list.map((m) => (m.id === id ? { ...m, ...patch } : m));
+      if (materialSaveTimer.current) clearTimeout(materialSaveTimer.current);
+      const reviewId = r.id;
+      materialSaveTimer.current = setTimeout(() => {
+        supabase.from("research_reviews" as any).update({ source_materials: next }).eq("id", reviewId);
+      }, 1500);
+      return { ...r, source_materials: next };
+    });
+  }, []);
+
   // Блок 6: автосохранение с задержкой 3с
   useEffect(() => {
     if (!dirty || !row?.id) return;
@@ -589,6 +607,7 @@ const AdminResearchReviewEditor = () => {
             reviewId={row.id}
             materials={materials}
             onChange={(m) => { update({ source_materials: m }); saveSilently({ source_materials: m }); }}
+            onUpdateMaterial={updateMaterial}
             instructions={instructions}
             onInstructionsChange={setInstructions}
             onAnalyze={analyzeMaterials}
