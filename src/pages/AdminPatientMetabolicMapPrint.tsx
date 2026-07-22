@@ -341,7 +341,19 @@ export default function AdminPatientMetabolicMapPrint() {
 
                   // 1) Кастомные статичные схемы
                   const CustomScheme = CUSTOM_SCHEMES[pw.slug];
-                  if (CustomScheme) return <CustomScheme />;
+                  if (CustomScheme) {
+                    const pwNodeValues = nodeValuesByPathway.get(pw.slug);
+                    const vals: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> = {};
+                    if (pwNodeValues) {
+                      for (const [nodeId, entry] of pwNodeValues.entries()) {
+                        if (!entry?.text) continue;
+                        const sev = entry.sev;
+                        const st = sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe" ? sev : "nodata";
+                        vals[nodeId] = { value: entry.text, status: st };
+                      }
+                    }
+                    return <CustomScheme values={Object.keys(vals).length ? vals : undefined} />;
+                  }
 
                   // 2) Статичный SVG-шаблон пути с подсветкой data-sev
                   if (hasPathwaySvgTemplate(pw.slug)) {
