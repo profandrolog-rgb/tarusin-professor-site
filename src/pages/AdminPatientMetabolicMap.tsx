@@ -676,7 +676,12 @@ export default function AdminPatientMetabolicMap() {
         )}
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Метаболические пути</h2>
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-xl font-semibold">Метаболические пути</h2>
+            <span className="text-xs text-muted-foreground">
+              Учтено {labCodesById.size} анализов из {labRows.length}
+            </span>
+          </div>
           {pathways.length === 0 ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
           ) : (
