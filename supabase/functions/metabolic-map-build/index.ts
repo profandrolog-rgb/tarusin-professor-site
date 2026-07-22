@@ -11,6 +11,8 @@
 //    (source_ref.ai=true), сохраняя детерминированные findings нетронутыми.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { callWithFallback, extractCompletion } from "../_shared/aiCallWithFallback.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
