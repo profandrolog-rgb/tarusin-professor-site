@@ -685,6 +685,8 @@ export default function AdminPatientMetabolicMap() {
               Учтено {labCodesById.size} анализов из {labRows.length}
             </span>
           </div>
+          <UnaccountedLabsList labRows={labRows} labCodesById={labCodesById} />
+
           {pathways.length === 0 ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
           ) : (
