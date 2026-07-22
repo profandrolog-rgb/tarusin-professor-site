@@ -53,6 +53,8 @@ import { GuardianManager } from "@/components/metabolic/GuardianManager";
 import { AuditPanel } from "@/components/metabolic/AuditPanel";
 import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
 import { CompletenessInspector } from "@/components/metabolic/CompletenessInspector";
+import { UnaccountedLabsList } from "@/components/metabolic/UnaccountedLabsList";
+
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
 type Pathway = {
