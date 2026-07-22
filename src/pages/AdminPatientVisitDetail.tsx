@@ -553,7 +553,28 @@ export default function AdminPatientVisitDetail() {
             </CardContent>
           </Card>
 
-          <PdfBatchUpload patientId={visit.patient_id} />
+          <PdfBatchUpload
+            patientId={visit.patient_id}
+            visitId={visit.id}
+            onComplete={() => {
+              const base = isProtocolRecord(visit.protocol_data) ? { ...(visit.protocol_data as any) } : {};
+              // trigger refresh of recognized labs table via state bump
+              setLabsRefresh((n) => n + 1);
+              update({ protocol_data: base as Json });
+            }}
+          />
+          <VisitRecognizedLabs
+            visitId={visit.id}
+            refreshToken={labsRefresh}
+            onRowsLoaded={(ids) => {
+              if (!isProtocolRecord(visit.protocol_data)) return;
+              const cur = ((visit.protocol_data as any).lab_result_ids || []) as string[];
+              const same = cur.length === ids.length && cur.every((x, i) => x === ids[i]);
+              if (same) return;
+              const base = { ...(visit.protocol_data as any), lab_result_ids: ids };
+              update({ protocol_data: base as Json });
+            }}
+          />
 
 
           <AssignmentsPanel
