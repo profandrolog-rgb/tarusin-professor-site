@@ -159,6 +159,66 @@ export default function AdminPatientMetabolicMapPrint() {
     return m;
   }, [findings]);
 
+  // Значения показателей по узлам для CUSTOM_SCHEMES (как на экране).
+  const labCodesById = useMemo(() => {
+    const catalog = buildCatalogIndex(catalogRows);
+    const m = new Map<string, string>();
+    for (const l of labRows) {
+      const code = (l.test_code && String(l.test_code).trim())
+        ? String(l.test_code).toUpperCase().trim()
+        : resolveCode(l.test_name, catalog);
+      if (code) m.set(l.id, code);
+    }
+    return m;
+  }, [labRows, catalogRows]);
+
+  const nodeValuesByPathway = useMemo(() => {
+    const out = new Map<string, Map<string, { text: string; sev?: Severity }>>();
+    for (const [slug, codeMap] of Object.entries(CODE_NODE_MAP as Record<string, Record<string, string>>)) {
+      const perNode = new Map<string, { text: string; sev?: Severity }>();
+      for (const l of labRows) {
+        const code = labCodesById.get(l.id);
+        if (!code) continue;
+        const nodeId = codeMap[code];
+        if (!nodeId || perNode.has(nodeId)) continue;
+        const v = l.value == null ? "" : String(l.value);
+        const u = l.unit ? ` ${l.unit}` : "";
+        perNode.set(nodeId, { text: `${v}${u}`.trim() });
+      }
+      if (perNode.size) out.set(slug, perNode);
+    }
+    const aggregates = computeAllAggregates(labRows as any);
+    if (aggregates.size) {
+      for (const pw of pathways) {
+        const nodeIds = new Set<string>((pw.nodes || []).map((n: any) => n?.id).filter(Boolean));
+        let perNode = out.get(pw.slug);
+        for (const [aggNodeId, entry] of aggregates.entries()) {
+          if (!nodeIds.has(aggNodeId)) continue;
+          if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+          perNode.set(aggNodeId, { text: (entry as any).text });
+        }
+      }
+    }
+    for (const f of findings) {
+      if (!f.node_id) continue;
+      const pw = pathways.find((p) => p.id === f.pathway_id);
+      if (!pw) continue;
+      let perNode = out.get(pw.slug);
+      if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
+      const sev: Severity = (f.severity as Severity) || "moderate";
+      perNode.set(f.node_id, { text: f.label || "", sev });
+    }
+    return out;
+  }, [labRows, labCodesById, findings, pathways]);
+
+  const selected = useMemo(() => {
+    if (includeEmpty) return selectedAll;
+    return selectedAll.filter((pw) => {
+      const st = summaryByPathway.get(pw.id)?.status;
+      return st && st !== "no_data";
+    });
+  }, [selectedAll, summaryByPathway, includeEmpty]);
+
   const doPdf = async () => {
     const node = document.getElementById("print-root");
     if (!node) return;
