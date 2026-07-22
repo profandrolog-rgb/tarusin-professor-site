@@ -673,7 +673,7 @@ export default function AdminPatientMetabolicMap() {
               Расчётные показатели из спектра. Зелёная зона — цель, жёлтая — пограничная, красная — вне нормы. Стрелка — значение пациента.
             </p>
             <IndicesGauges indices={metaIndices} patientSex={patient?.sex ?? null} />
-            <IndicesInterpretation patientId={patientId!} indices={metaIndices} patientSex={patient?.sex ?? null} />
+            <IndicesInterpretation patientId={id!} indices={metaIndices} patientSex={patient?.sex ?? null} />
 
           </section>
         )}
