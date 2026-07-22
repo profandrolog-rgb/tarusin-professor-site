@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState, lazy, Suspense } from "react";
+import { useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
+import { getDownloadUrl } from "@/lib/research/uploadToYc";
 import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
