@@ -79,7 +79,7 @@ ${indices.map((i: any) => `- ${i.label || i.id}: ${i.displayValue ?? i.value ?? 
     try { parsed = JSON.parse(extractCompletion(aiResult.json) || "{}"); } catch { parsed = {}; }
 
 
-    const payload = { hash: key, model: MODEL, generated_at: new Date().toISOString(), ...parsed };
+    const payload = { hash: key, model: aiResult.modelUsed, generated_at: new Date().toISOString(), ...parsed };
     if (mm?.id) {
       await svc.from("metabolic_maps").update({ indices_interpretation: payload }).eq("id", mm.id);
     }
