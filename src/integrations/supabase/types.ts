@@ -1810,6 +1810,7 @@ export type Database = {
           unit: string
           updated_at: string
           value: number
+          visit_id: string | null
         }
         Insert: {
           confidence?: number | null
@@ -1830,6 +1831,7 @@ export type Database = {
           unit: string
           updated_at?: string
           value: number
+          visit_id?: string | null
         }
         Update: {
           confidence?: number | null
@@ -1850,6 +1852,7 @@ export type Database = {
           unit?: string
           updated_at?: string
           value?: number
+          visit_id?: string | null
         }
         Relationships: [
           {
@@ -1864,6 +1867,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_results_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "patient_visits"
             referencedColumns: ["id"]
           },
         ]
@@ -2438,6 +2448,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          indices_interpretation: Json | null
           last_aggregated_at: string | null
           meta: Json
           notes: string | null
@@ -2450,6 +2461,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          indices_interpretation?: Json | null
           last_aggregated_at?: string | null
           meta?: Json
           notes?: string | null
@@ -2462,6 +2474,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          indices_interpretation?: Json | null
           last_aggregated_at?: string | null
           meta?: Json
           notes?: string | null
@@ -2762,6 +2775,38 @@ export type Database = {
           url?: string | null
         }
         Relationships: []
+      }
+      parsed_pdf_cache: {
+        Row: {
+          created_at: string
+          file_hash: string
+          id: string
+          patient_id: string | null
+          result: Json
+        }
+        Insert: {
+          created_at?: string
+          file_hash: string
+          id?: string
+          patient_id?: string | null
+          result: Json
+        }
+        Update: {
+          created_at?: string
+          file_hash?: string
+          id?: string
+          patient_id?: string | null
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parsed_pdf_cache_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pathway_schemas: {
         Row: {
