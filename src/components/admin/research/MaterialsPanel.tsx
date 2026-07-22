@@ -34,6 +34,8 @@ interface Props {
   reviewId: string;
   materials: Material[];
   onChange: (m: Material[]) => void;
+  /** Точечное обновление одного материала — переживает асинхронную гонку и сохраняет в базу. */
+  onUpdateMaterial?: (id: string, patch: Partial<Material>) => void;
   instructions: string;
   onInstructionsChange: (v: string) => void;
   onAnalyze: () => Promise<void>;
