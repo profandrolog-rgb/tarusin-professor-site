@@ -840,6 +840,14 @@ export default function AdminPatientMetabolicMap() {
                           {legacyText.actions && <p><span className="font-medium">Что делать:</span> {legacyText.actions}</p>}
                         </div>
                       ) : null}
+                      {!aiForPath && ai && (
+                        <div className="text-xs text-muted-foreground border-t border-dashed pt-2 flex items-center justify-between gap-2">
+                          <span>ИИ-интерпретация по этому пути не сформирована.</span>
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-xs gap-1" onClick={handleAiBuild} disabled={aiBusy}>
+                            <Sparkles className="w-3 h-3" />Регенерировать
+                          </Button>
+                        </div>
+                      )}
                       {aiForPath && (
                         <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
                           <div className="flex items-center gap-2">
