@@ -74,6 +74,7 @@ export default function AdminPatientVisitDetail() {
   const [baseline, setBaseline] = useState<string>("");
   const [siblings, setSiblings] = useState<SiblingVisit[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [labsRefresh, setLabsRefresh] = useState(0);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
