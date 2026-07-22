@@ -246,7 +246,14 @@ export default function AdminPatientMetabolicMapPrint() {
       `}</style>
 
       <div className="no-print sticky top-0 z-10 bg-background border-b py-3 px-4 flex items-center gap-2 justify-end">
-        <span className="text-sm text-muted-foreground mr-auto">Режим: {REGISTER_LABEL[register]} · листов: {selected.length + 1}</span>
+        <span className="text-sm text-muted-foreground mr-auto">
+          Режим: {REGISTER_LABEL[register]} · листов: {selected.length + 1}
+          {selectedAll.length !== selected.length && ` (скрыто пустых: ${selectedAll.length - selected.length})`}
+        </span>
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox checked={includeEmpty} onCheckedChange={(v) => setIncludeEmpty(!!v)} />
+          Печатать пустые пути
+        </label>
         <Button variant="outline" onClick={doPdf} disabled={exporting}>
           {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileDown className="w-4 h-4 mr-2" />}
           Скачать PDF
