@@ -87,8 +87,13 @@ async function callModel(model: string, text: string, field: string) {
 
 async function extract(text: string, field: string) {
   let last = 'unknown';
-  for (const m of EXTRACTION_MODELS) {
-    try { return await callModel(m, text, field); }
+  for (let i = 0; i < EXTRACTION_MODELS.length; i++) {
+    const m = EXTRACTION_MODELS[i];
+    try {
+      const res = await callModel(m, text, field);
+      console.log('extract-visit-labs model ok', JSON.stringify({ model: m, fallback: i > 0, index: i, field }));
+      return res;
+    }
     catch (e: any) { last = e?.message || String(e); console.error('extract-visit-labs model fail', m, last.slice(0, 200)); }
   }
   throw new Error(`не удалось разобрать текст: ${last}`);
