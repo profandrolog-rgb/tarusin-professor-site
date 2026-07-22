@@ -152,7 +152,9 @@ Deno.serve(async (req) => {
       .eq("patient_id", patientId)
       .order("test_date", { ascending: false })
       .limit(200);
-    if (visitDate) labsQ = labsQ.lte("test_date", visitDate);
+    // Не отсекаем лабы с NULL test_date — часть загрузок ещё без даты,
+    // но их надо учитывать в интерпретации.
+    if (visitDate) labsQ = labsQ.or(`test_date.lte.${visitDate},test_date.is.null`);
     const { data: labs } = await labsQ;
 
     // антропометрия — последнее измерение
