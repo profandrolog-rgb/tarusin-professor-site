@@ -2015,7 +2015,7 @@ export default function AdminArticleOrchestrator() {
                     <div className="text-sm font-medium truncate">{i.title}</div>
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <Badge variant="outline" className="text-[10px]">
-                        {i.kind === "disease_articles" ? "Заболевания" : i.kind === "blog_posts" ? "Блог" : "Исследования"}
+                        {i.kind === "disease_articles" ? "Заболевания" : i.kind === "blog_posts" ? "Блог" : i.kind === "research_reviews" ? "Научный обзор" : "Исследования"}
                       </Badge>
                       <span>Обновлено: {new Date(i.updated_at).toLocaleDateString("ru-RU")}</span>
                     </div>
