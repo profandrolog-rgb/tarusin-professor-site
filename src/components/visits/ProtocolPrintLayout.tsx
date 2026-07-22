@@ -3,6 +3,15 @@ import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { formatSexualConstitution } from "./sections/SexualConstitution";
 
+interface RecognizedLab {
+  test_name: string;
+  value: number | null;
+  unit: string | null;
+  reference_min: number | null;
+  reference_max: number | null;
+  test_date: string | null;
+}
+
 interface VisitForPrint {
   visit_date: string;
   protocol_type: ProtocolType;
@@ -11,6 +20,7 @@ interface VisitForPrint {
   icd_code: string | null;
   next_visit_date: string | null;
   patient: { full_name: string; birth_date: string; history_number: string | null } | null;
+  recognizedLabs?: RecognizedLab[];
 }
 
 function calcAge(birth: string, ref: Date) {
