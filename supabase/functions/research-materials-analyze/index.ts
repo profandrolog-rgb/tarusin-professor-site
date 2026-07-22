@@ -164,24 +164,39 @@ async function buildBlockForMaterial(m: Material): Promise<any[]> {
         { type: 'input_audio', input_audio: { data: await toBase64(bytes), format } },
       ];
     }
+    // Таблицы (HTML из mammoth или markdown из PDF) передаём в контекст как есть —
+    // модели просим сохранять как markdown-таблицы (см. SYSTEM_PROMPT).
+    const tablesBlock = (() => {
+      const t = m.extractedTables || [];
+      if (!t.length) return '';
+      const parts = t.slice(0, 20).map((tb, i) => {
+        const cap = tb.caption ? ` — ${tb.caption}` : '';
+        const src = tb.pageOrSlide ? ` (стр./слайд ${tb.pageOrSlide})` : '';
+        const body = (tb.html && tb.html.trim()) || (tb.markdown && tb.markdown.trim()) || '';
+        if (!body) return '';
+        return `\n\n[Таблица ${i + 1}${src}${cap}]\n${body.slice(0, 8000)}`;
+      }).filter(Boolean).join('\n');
+      return parts ? `\n\n--- Извлечённые таблицы ---${parts}` : '';
+    })();
+
     if (mime.includes('wordprocessingml') || (m.name || '').toLowerCase().endsWith('.docx')) {
       // Предпочитаем текст, извлечённый через research-materials-extract при загрузке — экономим CPU.
       if (m.text && m.text.trim().length > 0) {
-        return [{ type: 'text', text: `${label}\n(DOCX)\n\n${m.text.slice(0, 40000)}` }];
+        return [{ type: 'text', text: `${label}\n(DOCX)\n\n${m.text.slice(0, 40000)}${tablesBlock}` }];
       }
       try {
         const { value } = await mammoth.extractRawText({ buffer: bytes });
-        return [{ type: 'text', text: `${label}\n(DOCX, извлечённый текст)\n\n${String(value || '').slice(0, 40000)}` }];
+        return [{ type: 'text', text: `${label}\n(DOCX, извлечённый текст)\n\n${String(value || '').slice(0, 40000)}${tablesBlock}` }];
       } catch (e) {
-        return [{ type: 'text', text: `${label}\nDOCX не удалось разобрать: ${(e as Error).message}` }];
+        return [{ type: 'text', text: `${label}\nDOCX не удалось разобрать: ${(e as Error).message}${tablesBlock}` }];
       }
     }
     if (mime.includes('presentationml') || (m.name || '').toLowerCase().endsWith('.pptx')) {
       if (m.text && m.text.trim().length > 0) {
-        return [{ type: 'text', text: `${label}\n(PPTX)\n\n${m.text.slice(0, 40000)}` }];
+        return [{ type: 'text', text: `${label}\n(PPTX)\n\n${m.text.slice(0, 40000)}${tablesBlock}` }];
       }
       const txt = await extractPptxText(bytes);
-      return [{ type: 'text', text: `${label}\n(PPTX, извлечённый текст)\n\n${txt.slice(0, 40000)}` }];
+      return [{ type: 'text', text: `${label}\n(PPTX, извлечённый текст)\n\n${txt.slice(0, 40000)}${tablesBlock}` }];
     }
     return [{ type: 'text', text: `${label}\n(файл типа ${mime} — тип не поддерживается для извлечения)` }];
   }
