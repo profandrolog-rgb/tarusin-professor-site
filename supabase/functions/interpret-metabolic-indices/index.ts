@@ -51,24 +51,33 @@ Deno.serve(async (req) => {
 Индексы:
 ${indices.map((i: any) => `- ${i.label || i.id}: ${i.displayValue ?? i.value ?? "—"}${i.unit ? " " + i.unit : ""}${i.target ? ` (цель ${i.target})` : ""}`).join("\n")}`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        response_format: { type: "json_object" },
-      }),
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      return new Response(JSON.stringify({ error: `AI ${resp.status}: ${text.slice(0, 300)}` }), {
-        status: resp.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const fallbackModel = Deno.env.get("METABOLIC_INDICES_FALLBACK_MODEL") || "google/gemini-2.5-pro";
+    let aiResult;
+    try {
+      aiResult = await callWithFallback({
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+        primary: MODEL,
+        fallback: fallbackModel,
+        timeoutMs: 120_000,
+        label: "interpret-metabolic-indices",
+        buildBody: (model) => ({
+          model,
+          messages: [{ role: "system", content: system }, { role: "user", content: user }],
+          response_format: { type: "json_object" },
+        }),
+      });
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      const m = msg.match(/HTTP (\d+)/);
+      const status = m ? Number(m[1]) : 500;
+      return new Response(JSON.stringify({ error: msg }), {
+        status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const data = await resp.json();
     let parsed: any = {};
-    try { parsed = JSON.parse(data.choices?.[0]?.message?.content || "{}"); } catch { parsed = {}; }
+    try { parsed = JSON.parse(extractCompletion(aiResult.json) || "{}"); } catch { parsed = {}; }
+
 
     const payload = { hash: key, model: MODEL, generated_at: new Date().toISOString(), ...parsed };
     if (mm?.id) {
