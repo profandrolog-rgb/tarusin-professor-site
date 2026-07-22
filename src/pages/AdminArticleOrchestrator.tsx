@@ -423,11 +423,49 @@ export default function AdminArticleOrchestrator() {
         sonnerToast.info(`Восстановил метки галерей: ${restored.restored.join(", ")}`);
       }
       const html = markdownToHtml(finalMd);
+
+      // Если хоть один маркер потерялся — сохраняем предыдущий content_with_markers
+      // в refinement_history как снапшот "before_consilium_return", чтобы у автора
+      // остался откат к полностью размеченной доконсилиумной версии.
+      const updatePayload: Record<string, any> = {
+        content: html,
+        content_with_markers: html,
+        workflow_state: "editing",
+      };
+      if (diff.lost.length) {
+        try {
+          const { data: prev } = await supabase
+            .from("research_reviews" as any)
+            .select("content_with_markers, refinement_history")
+            .eq("id", existingRef.id)
+            .maybeSingle();
+          const prevMarked = (prev as any)?.content_with_markers as string | null;
+          const prevHistory = Array.isArray((prev as any)?.refinement_history)
+            ? ((prev as any).refinement_history as any[])
+            : [];
+          if (prevMarked) {
+            updatePayload.refinement_history = [
+              ...prevHistory,
+              {
+                id: crypto.randomUUID(),
+                action: "before_consilium_return",
+                created_at: new Date().toISOString(),
+                is_snapshot: true,
+                snapshot_content: prevMarked,
+                diff_summary: `Потеряны маркеры: ${diff.lost.join(", ")}`,
+              },
+            ];
+          }
+        } catch {
+          // не блокируем возврат из-за истории
+        }
+      }
       const { error } = await supabase
         .from("research_reviews" as any)
-        .update({ content: html, content_with_markers: html, workflow_state: "editing" })
+        .update(updatePayload)
         .eq("id", existingRef.id);
       if (error) throw error;
+
       sonnerToast.success("Правки применены, обзор возвращён в редактор");
       navigate(`/admin/research-reviews/${existingRef.id}`);
     } catch (e: any) {
