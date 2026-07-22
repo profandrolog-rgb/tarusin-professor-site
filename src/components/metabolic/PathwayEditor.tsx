@@ -96,6 +96,9 @@ export function PathwayEditor({
       appState: {
         viewBackgroundColor: appState.viewBackgroundColor,
         gridSize: appState.gridSize,
+        scrollX: appState.scrollX,
+        scrollY: appState.scrollY,
+        zoom: appState.zoom,
       },
       files: files || {},
     };
