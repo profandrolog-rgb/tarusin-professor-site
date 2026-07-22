@@ -368,6 +368,121 @@ const PlaceholderGallery = ({
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
   const cropImgRef = useRef<HTMLImageElement | null>(null);
 
+  // --- «Из материалов обзора»: изображения, извлечённые из PDF/DOCX/PPTX ---
+  interface ExtractedFromMaterial {
+    key: string;               // объектный ключ в YC
+    materialName: string;      // имя исходного файла (atlas.pdf)
+    materialMarker: string;    // [M1], [M2]…
+    pageOrSlide?: number;
+    index: number;
+    mime: string;
+    width: number;
+    height: number;
+  }
+  const isResearch = ownerTable === "research_reviews";
+  const [showFromMaterials, setShowFromMaterials] = useState(false);
+  const [materialImages, setMaterialImages] = useState<ExtractedFromMaterial[] | null>(null);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    if (!isResearch || !showFromMaterials || materialImages !== null) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingMaterials(true);
+      try {
+        const { data, error } = await supabase
+          .from("research_reviews")
+          .select("source_materials")
+          .eq("id", articleId)
+          .maybeSingle();
+        if (error) throw error;
+        const mats: any[] = Array.isArray(data?.source_materials) ? (data!.source_materials as any[]) : [];
+        const items: ExtractedFromMaterial[] = [];
+        mats.forEach((m, mi) => {
+          const marker = m?.marker || `[M${mi + 1}]`;
+          const name = m?.name || m?.url || "материал";
+          const imgs = Array.isArray(m?.extractedImages) ? m.extractedImages : [];
+          imgs.forEach((im: any) => {
+            if (!im?.objectKey) return;
+            items.push({
+              key: im.objectKey,
+              materialName: name,
+              materialMarker: marker,
+              pageOrSlide: im.pageOrSlide,
+              index: im.index ?? 0,
+              mime: im.mime || "image/jpeg",
+              width: im.width || 0,
+              height: im.height || 0,
+            });
+          });
+        });
+        if (!cancelled) setMaterialImages(items);
+        // Подтягиваем presigned GET URLs для превью (параллельно, но лимитируем).
+        const urls: Record<string, string> = {};
+        await Promise.all(items.slice(0, 200).map(async (it) => {
+          try { urls[it.key] = await getDownloadUrl(it.key); } catch { /* skip */ }
+        }));
+        if (!cancelled) setThumbUrls(urls);
+      } catch (e: any) {
+        toast.error(`Не удалось загрузить изображения из материалов: ${e?.message || e}`);
+        if (!cancelled) setMaterialImages([]);
+      } finally {
+        if (!cancelled) setLoadingMaterials(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isResearch, showFromMaterials, materialImages, articleId]);
+
+  const toggleSelected = (key: string) => {
+    setSelectedKeys((prev) => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key); else n.add(key);
+      return n;
+    });
+  };
+
+  const importSelectedFromMaterials = async () => {
+    if (selectedKeys.size === 0 || !materialImages) return;
+    setImporting(true);
+    try {
+      const files: File[] = [];
+      const chosen = materialImages.filter((it) => selectedKeys.has(it.key));
+      for (let i = 0; i < chosen.length; i++) {
+        const it = chosen[i];
+        setProgressText(`Загрузка из материалов ${i + 1}/${chosen.length}…`);
+        try {
+          const url = thumbUrls[it.key] || (await getDownloadUrl(it.key));
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          const ext = (it.mime.split("/")[1] || "jpg").split("+")[0];
+          const base = it.materialName.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9А-Яа-я_-]+/g, "-").slice(0, 40) || "img";
+          const suffix = it.pageOrSlide ? `p${it.pageOrSlide}-` : "";
+          const fname = `${base}-${suffix}${it.index}.${ext}`;
+          files.push(new File([blob], fname, { type: it.mime }));
+        } catch (e: any) {
+          console.warn("import material image failed", it.key, e?.message);
+        }
+      }
+      setProgressText("");
+      if (files.length === 0) {
+        toast.error("Не удалось загрузить выбранные изображения");
+        return;
+      }
+      // Дальше — обычный путь: кадрирование → формат → водяной знак → загрузка.
+      startCropFlow(files);
+      setSelectedKeys(new Set());
+      setShowFromMaterials(false);
+    } finally {
+      setImporting(false);
+      setProgressText("");
+    }
+  };
+
+
   const existing = useMemo<ExistingItem[]>(
     () => parseGalleryFileEntries((existingFiles ?? []).join("|")),
     [existingFiles],
