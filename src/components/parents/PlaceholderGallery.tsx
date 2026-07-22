@@ -1185,6 +1185,121 @@ const PlaceholderGallery = ({
         </div>
       )}
 
+      {isResearch && previews.length === 0 && (
+        <div className="w-full mt-2 mb-2 border-t pt-3">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="gap-1.5"
+              onClick={() => setShowFromMaterials((v) => !v)}
+              disabled={processing || uploading}
+            >
+              <ImageIcon className="w-4 h-4" />
+              {showFromMaterials ? "Скрыть материалы обзора" : "Из материалов обзора"}
+            </Button>
+          </div>
+
+          {showFromMaterials && (
+            <div className="mt-3">
+              {loadingMaterials && (
+                <p className="text-xs text-muted-foreground text-center">
+                  <Loader2 className="w-3 h-3 inline animate-spin mr-1" />
+                  Загрузка списка…
+                </p>
+              )}
+              {!loadingMaterials && materialImages && materialImages.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  В материалах обзора нет извлечённых изображений.
+                </p>
+              )}
+              {!loadingMaterials && materialImages && materialImages.length > 0 && (
+                <>
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      Найдено: {materialImages.length}. Выбрано: {selectedKeys.size}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setSelectedKeys(new Set(materialImages.map((i) => i.key)))}
+                      >
+                        Выбрать все
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setSelectedKeys(new Set())}
+                      >
+                        Сбросить
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-[420px] overflow-auto p-1">
+                    {materialImages.map((it) => {
+                      const sel = selectedKeys.has(it.key);
+                      const src = thumbUrls[it.key];
+                      const label = it.pageOrSlide
+                        ? `стр. ${it.pageOrSlide} из ${it.materialName}`
+                        : `${it.materialName}`;
+                      return (
+                        <button
+                          key={it.key}
+                          type="button"
+                          onClick={() => toggleSelected(it.key)}
+                          className={
+                            "relative rounded border overflow-hidden bg-white text-left hover:border-primary/60 transition " +
+                            (sel ? "ring-2 ring-primary border-primary" : "")
+                          }
+                          title={`${it.materialMarker} ${label}`}
+                        >
+                          <div className="aspect-square bg-slate-100 flex items-center justify-center">
+                            {src ? (
+                              <img src={src} alt={label} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="absolute top-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">
+                            {it.materialMarker}
+                          </div>
+                          {sel && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                              <Check className="w-3 h-3" />
+                            </div>
+                          )}
+                          <div className="text-[10px] text-muted-foreground px-1 py-0.5 truncate">
+                            {label}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center mt-3">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={importSelectedFromMaterials}
+                      disabled={selectedKeys.size === 0 || importing}
+                      className="gap-1.5"
+                    >
+                      {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      Взять выбранные ({selectedKeys.size})
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <input
         ref={inputRef}
         type="file"
