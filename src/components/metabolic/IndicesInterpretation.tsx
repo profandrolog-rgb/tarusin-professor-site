@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Trash2 } from "lucide-react";
 import type { IndexResult } from "@/lib/metabolic/metaIndices";
 
 interface Group { title: string; indices?: string[]; assessment: string; actions?: string }
@@ -63,10 +63,33 @@ export default function IndicesInterpretation({ patientId, indices, patientSex }
           Интерпретация индексов
           {ts && <span className="text-xs font-normal text-muted-foreground ml-2">от {new Date(ts).toLocaleString("ru-RU")}</span>}
         </CardTitle>
-        <Button size="sm" variant="secondary" onClick={() => run(true)} disabled={busy}>
-          {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
-          {groups.length ? "Перегенерировать" : "Сформировать"}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="secondary" onClick={() => run(true)} disabled={busy}>
+            {busy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+            {groups.length ? "Перегенерировать" : "Сформировать"}
+          </Button>
+          {groups.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              title="Сбросить кэш интерпретации"
+              disabled={busy}
+              onClick={async () => {
+                await (supabase as any)
+                  .from("metabolic_maps")
+                  .update({ indices_interpretation: null })
+                  .eq("patient_id", patientId);
+                setGroups([]);
+                setTs(null);
+                setErr(null);
+              }}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Сбросить кэш
+            </Button>
+          )}
+        </div>
+
       </CardHeader>
       <CardContent className="space-y-3">
         {err && <p className="text-xs text-destructive">{err}</p>}

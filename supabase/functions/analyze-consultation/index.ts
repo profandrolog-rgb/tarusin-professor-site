@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { callWithFallback, extractCompletion } from "../_shared/aiCallWithFallback.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,37 +78,45 @@ ${complaints || "не указаны"}
 Анамнез / история обращений:
 ${medical_history || "не указан"}${labsBlock}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-      }),
-    });
+    const primaryModel = Deno.env.get("ANALYZE_CONSULTATION_MODEL") || "google/gemini-2.5-flash";
+    const fallbackModel = Deno.env.get("ANALYZE_CONSULTATION_FALLBACK_MODEL") || "google/gemini-2.5-pro";
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    let aiResult;
+    try {
+      aiResult = await callWithFallback({
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+        primary: primaryModel,
+        fallback: fallbackModel,
+        timeoutMs: 120_000,
+        label: "analyze-consultation",
+        buildBody: (model) => ({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        }),
+      });
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      const m = msg.match(/HTTP (\d+)/);
+      const status = m ? Number(m[1]) : 500;
+      if (status === 429) {
         return new Response(JSON.stringify({ error: "Превышен лимит запросов, попробуйте позже" }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (status === 402) {
         return new Response(JSON.stringify({ error: "Недостаточно средств для ИИ-анализа" }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI error: ${response.status}`);
+      throw err;
     }
 
-    const data = await response.json();
-    const assessment = data.choices?.[0]?.message?.content || "Не удалось получить оценку";
+    const assessment = extractCompletion(aiResult.json) || "Не удалось получить оценку";
+
 
     return new Response(JSON.stringify({ assessment }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -11,6 +11,8 @@
 //    (source_ref.ai=true), сохраняя детерминированные findings нетронутыми.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { callWithFallback, extractCompletion } from "../_shared/aiCallWithFallback.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -253,37 +255,43 @@ Deno.serve(async (req) => {
 
     // --- вызов модели
     const origin = req.headers.get("origin") ?? "https://lovable.app";
-    const orResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": origin,
-        "X-Title": "Metabolic Map Build",
-      },
-      body: JSON.stringify({
-        model,
-        response_format: { type: "json_object" },
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: "Верни JSON строго по схеме. Вход:\n\n" + JSON.stringify(contextInput) },
-        ],
-      }),
-    });
-    if (!orResp.ok) {
-      const t = await orResp.text().catch(() => "");
-      return new Response(JSON.stringify({ error: `openrouter ${orResp.status}: ${t.slice(0, 500)}` }), {
+    const fallbackModel = Deno.env.get("METABOLIC_BUILD_FALLBACK_MODEL")
+      || (model === "google/gemini-2.5-pro" ? "google/gemini-2.5-flash" : "google/gemini-2.5-pro");
+    let aiResult;
+    try {
+      aiResult = await callWithFallback({
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": origin,
+          "X-Title": "Metabolic Map Build",
+        },
+        primary: model,
+        fallback: fallbackModel,
+        timeoutMs: 120_000,
+        label: "metabolic-map-build",
+        buildBody: (m) => ({
+          model: m,
+          response_format: { type: "json_object" },
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: "Верни JSON строго по схеме. Вход:\n\n" + JSON.stringify(contextInput) },
+          ],
+        }),
+      });
+    } catch (err: any) {
+      return new Response(JSON.stringify({ error: String(err?.message || err) }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const orJson = await orResp.json();
-    const content: string | undefined = orJson?.choices?.[0]?.message?.content;
+    const content: string | undefined = extractCompletion(aiResult.json) || undefined;
     if (!content) {
       return new Response(JSON.stringify({ error: "empty ai content" }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     let ai: any;
     try {
@@ -311,7 +319,8 @@ Deno.serve(async (req) => {
     const computedAt = new Date().toISOString();
     const aiSummary = {
       computed_at: computedAt,
-      model,
+      model: aiResult.modelUsed,
+
       deidentified,
       visit_id: visitId,
       visit_date: visitDate,
