@@ -80,6 +80,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
             file_name: updated[i].file.name,
             patient_id: patientId,
             consultation_case_id: consultationCaseId,
+            visit_id: visitId,
           },
         });
         if (error) throw error;
