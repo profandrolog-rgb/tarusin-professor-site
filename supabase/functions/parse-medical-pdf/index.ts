@@ -10,11 +10,10 @@ const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const EXTRACTION_MODELS = [
-  'google/gemini-3-flash-preview',
-  'google/gemini-3.1-pro-preview',
-  'openai/gpt-5-mini',
-];
+const DEFAULT_EXTRACTION_MODELS =
+  'google/gemini-3-flash-preview,google/gemini-3.1-pro-preview,openai/gpt-5-mini,google/gemini-2.5-flash,google/gemini-2.5-pro';
+const EXTRACTION_MODELS = (Deno.env.get('LAB_EXTRACTION_MODELS') || DEFAULT_EXTRACTION_MODELS)
+  .split(',').map((s) => s.trim()).filter(Boolean);
 
 const EXTRACTION_SYSTEM = `Ты — медицинский парсер PDF (бланки Инвитро/Гемотест/CMD/Хеликс/Lab4U/BION). Извлекай ТОЛЬКО то, что явно есть в тексте. Никогда не выдумывай значения. Если значение нечитаемое или сомнительное — ставь needs_review=true. Верни строго JSON-объект по схеме:
 {
@@ -120,10 +119,11 @@ async function callExtractionModel(model: string, fileDataUrl: string, fileName:
 
 async function extractWithFallback(fileDataUrl: string, fileName: string) {
   let last = 'unknown error';
-  for (const model of EXTRACTION_MODELS) {
+  for (let i = 0; i < EXTRACTION_MODELS.length; i++) {
+    const model = EXTRACTION_MODELS[i];
     try {
       const parsed = await callExtractionModel(model, fileDataUrl, fileName);
-      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fileName }));
+      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fallback: i > 0, index: i, fileName }));
       return parsed;
     } catch (e: any) {
       last = e?.message || String(e);

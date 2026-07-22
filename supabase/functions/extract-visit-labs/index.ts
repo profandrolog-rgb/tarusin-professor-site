@@ -24,11 +24,10 @@ const LAB_FIELDS = new Set([
   'labs', 'analyses', 'analiz', 'analizes',
 ]);
 
-const EXTRACTION_MODELS = [
-  'google/gemini-3-flash-preview',
-  'google/gemini-3.1-pro-preview',
-  'openai/gpt-5-mini',
-];
+const DEFAULT_EXTRACTION_MODELS =
+  'google/gemini-3-flash-preview,google/gemini-3.1-pro-preview,openai/gpt-5-mini,google/gemini-2.5-flash,google/gemini-2.5-pro';
+const EXTRACTION_MODELS = (Deno.env.get('LAB_EXTRACTION_MODELS') || DEFAULT_EXTRACTION_MODELS)
+  .split(',').map((s) => s.trim()).filter(Boolean);
 
 const SYSTEM = `Ты — медицинский парсер лабораторных данных из свободного текста визита.
 Извлекай ТОЛЬКО значения, явно присутствующие в тексте. Не выдумывай.
@@ -88,8 +87,13 @@ async function callModel(model: string, text: string, field: string) {
 
 async function extract(text: string, field: string) {
   let last = 'unknown';
-  for (const m of EXTRACTION_MODELS) {
-    try { return await callModel(m, text, field); }
+  for (let i = 0; i < EXTRACTION_MODELS.length; i++) {
+    const m = EXTRACTION_MODELS[i];
+    try {
+      const res = await callModel(m, text, field);
+      console.log('extract-visit-labs model ok', JSON.stringify({ model: m, fallback: i > 0, index: i, field }));
+      return res;
+    }
     catch (e: any) { last = e?.message || String(e); console.error('extract-visit-labs model fail', m, last.slice(0, 200)); }
   }
   throw new Error(`не удалось разобрать текст: ${last}`);
