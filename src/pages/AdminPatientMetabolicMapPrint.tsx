@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Printer, FileDown } from "lucide-react";
 import {
   SEVERITY_LABEL,
@@ -20,6 +21,9 @@ import { EndoDisruptorsSchemeSVG } from "@/components/metabolic/schemes/EndoDisr
 import { getTemplate } from "@/lib/metabolic/pathwayTemplates";
 import { templateToScene } from "@/lib/metabolic/templateToScene";
 import { buildAutoScene } from "@/lib/metabolic/autoLayout";
+import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
+import { buildCatalogIndex, resolveCode } from "@/lib/metabolic/resolveLabCodes";
+import { computeAllAggregates } from "@/lib/metabolic/aggregateNodes";
 
 // Единый набор кастомных схем — идентично AdminPatientMetabolicMap.tsx,
 // чтобы печатный PDF выглядел ровно как на экране.
