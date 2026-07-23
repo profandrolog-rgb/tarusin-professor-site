@@ -43,18 +43,21 @@ function ValText({ id, cx, y, values }: {
 }) {
   const v = values?.[id];
   if (!v || v.value === "" || v.value == null) return null;
+  const text = String(v.value);
+  const width = Math.max(72, Math.min(160, text.length * 7 + 18));
   return (
-    <text x={cx} y={y} fontSize={9.5} fontWeight={700} textAnchor="middle" fill="#20303f">
-      {String(v.value)}
-    </text>
+    <g pointerEvents="none">
+      <rect x={cx - width / 2} y={y - 15} width={width} height={20} rx={5} fill="#fff" fillOpacity={0.96} stroke="#94a3b8" strokeWidth={1} />
+      <text x={cx} y={y} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f">{text}</text>
+    </g>
   );
 }
 
 export function EndoDisruptorsSchemeSVG({ values, onNodeClick }: EndoDisruptorsSchemeSVGProps) {
   const v = useMemo(() => values, [values]);
   return (
-    <div style={{ overflowX: "auto" }}>
-      <svg width="100%" height="auto" viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" fontFamily="Arial, sans-serif" style={{ minWidth: 700 }}>
+    <div className="w-full overflow-hidden">
+      <svg width="100%" height="auto" viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" fontFamily="Arial, sans-serif" style={{ display: "block" }}>
         <defs>
           <marker id="ed-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#5A6B7B"/></marker>
           <marker id="ed-arrG" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#2f6f4f"/></marker>
