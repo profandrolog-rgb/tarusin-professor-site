@@ -31,7 +31,7 @@ import { fetchPathwayTexts, pickText, REGISTER_LABEL, fetchPathwaySeverityTexts,
 import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
 import { buildCatalogIndex, resolveCode, type CatalogRow } from "@/lib/metabolic/resolveLabCodes";
 import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggregateNodes";
-import { computeIndices } from "@/lib/metabolic/metaIndices";
+import { computeIndices, computeMatrixIndicesV28 } from "@/lib/metabolic/metaIndices";
 import { IndicesGauges } from "@/components/metabolic/IndicesGauges";
 import IndicesInterpretation from "@/components/metabolic/IndicesInterpretation";
 import { Printer, Pencil, Beaker } from "lucide-react";
@@ -464,7 +464,14 @@ export default function AdminPatientMetabolicMap() {
   }, [labRows, labCodesById, findings, pathways]);
 
   // Интегральные индексы: считаются из нескольких значений lab_results.
-  const metaIndices = useMemo(() => computeIndices(labRows as any), [labRows]);
+  const metaIndices = useMemo(() => {
+    const legacy = computeIndices(labRows as any);
+    const matrixV28 = computeMatrixIndicesV28(labRows as any);
+    const v28Ids = new Set(matrixV28.map((item) => item.id));
+    // v2.8 owns the registered formulas (omega_ratio, aa_epa, holman);
+    // unrelated legacy indices remain visible and unchanged.
+    return [...legacy.filter((item) => !v28Ids.has(item.id)), ...matrixV28];
+  }, [labRows]);
 
 
 
