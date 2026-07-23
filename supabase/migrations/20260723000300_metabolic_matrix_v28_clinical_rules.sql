@@ -173,7 +173,7 @@ BEGIN
   ('omega9_mufa', 'FA_OLE', 'oleic'),
   ('omega9_mufa', 'FA_NERV', 'nervonic'),
   ('carbohydrate_pyruvate', 'LAC', 'lactate_s'),
-  ('sulfur_one_carbon', 'HCY', 'homocysteine_s'),
+  ('sulfur_one_carbon', 'HCY', 'homocysteine_s')
     ) AS v(path_slug, analyte_code, node_id)
   LOOP
     IF NOT EXISTS (SELECT 1 FROM public.pathways WHERE slug = item.path_slug) THEN
