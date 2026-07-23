@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { SEVERITY_COLORS } from "@/lib/metabolic/severityColors";
 
 export type SchemeStatus = "norm" | "mild" | "moderate" | "severe" | "nodata";
 export interface SchemeValue { value: number | string; status: SchemeStatus }
@@ -7,13 +8,7 @@ export interface EndoDisruptorsSchemeSVGProps {
   onNodeClick?: (nodeId: string) => void;
 }
 
-const STATUS_STROKE: Record<SchemeStatus, string> = {
-  norm: "#3f7d4f",
-  mild: "#E0A800",
-  moderate: "#E8730C",
-  severe: "#C0392B",
-  nodata: "#94a3b8",
-};
+const statusStroke = (status: SchemeStatus) => SEVERITY_COLORS[status === "nodata" ? "no_data" : status].stroke;
 
 function Node({
   id, x, y, width, height, fill, stroke, values, onNodeClick,
@@ -24,7 +19,7 @@ function Node({
   onNodeClick?: (id: string) => void;
 }) {
   const v = values?.[id];
-  const finalStroke = v ? STATUS_STROKE[v.status] : stroke;
+  const finalStroke = v ? statusStroke(v.status) : stroke;
   const finalDash = v && v.status === "nodata" ? "5,3" : undefined;
   return (
     <rect
@@ -47,8 +42,8 @@ function ValText({ id, cx, y, values }: {
   const width = Math.max(72, Math.min(160, text.length * 7 + 18));
   return (
     <g pointerEvents="none">
-      <rect x={cx - width / 2} y={y - 15} width={width} height={20} rx={5} fill="#fff" fillOpacity={0.96} stroke="#94a3b8" strokeWidth={1} />
-      <text x={cx} y={y} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f">{text}</text>
+      <rect x={cx - width / 2} y={y - 15} width={width} height={20} rx={5} fill="#fff" fillOpacity={0.98} stroke={statusStroke(v.status)} strokeWidth={1} />
+      <text x={cx} y={y} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f" stroke="#fff" strokeWidth={2.5} paintOrder="stroke">{text}</text>
     </g>
   );
 }

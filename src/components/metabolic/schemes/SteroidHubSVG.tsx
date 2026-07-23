@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { SEVERITY_COLORS } from "@/lib/metabolic/severityColors";
 
 export type SteroidStatus = "norm" | "mild" | "moderate" | "severe" | "nodata";
 export interface SteroidValue {
@@ -10,13 +11,7 @@ export interface SteroidHubSVGProps {
   onNodeClick?: (nodeId: string) => void;
 }
 
-const STATUS_STROKE: Record<SteroidStatus, string> = {
-  norm: "#3f7d4f",
-  mild: "#E0A800",
-  moderate: "#E8730C",
-  severe: "#C0392B",
-  nodata: "#94a3b8",
-};
+const statusStroke = (status: SteroidStatus) => SEVERITY_COLORS[status === "nodata" ? "no_data" : status].stroke;
 
 /**
  * Node — прямоугольник схемы стероидогенеза с data-node-id.
@@ -47,7 +42,7 @@ function Node({
   onNodeClick?: (id: string) => void;
 }) {
   const v = values?.[id];
-  const finalStroke = v ? STATUS_STROKE[v.status] : stroke;
+  const finalStroke = v ? statusStroke(v.status) : stroke;
   const finalDash = v ? (v.status === "nodata" ? "5,3" : undefined) : strokeDasharray;
   return (
     <rect
@@ -81,11 +76,13 @@ function ValText({
   const v = values?.[id];
   if (!v || v.value === "" || v.value === null || v.value === undefined) return null;
   const text = String(v.value);
-  const badgeWidth = Math.max(84, Math.min(176, text.length * 7 + 18));
+  const lines = text.length > 24 ? [text.slice(0, 24), text.slice(24)] : [text];
+  const badgeWidth = Math.max(96, Math.min(190, Math.max(...lines.map((line) => line.length)) * 7 + 18));
+  const badgeHeight = lines.length > 1 ? 30 : 20;
   return (
     <g className="val" pointerEvents="none">
-      <rect x={cx - badgeWidth / 2} y={bottomY + 2} width={badgeWidth} height={20} rx={5} fill="#fff" fillOpacity={0.96} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
-      <text x={cx} y={bottomY + 16} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f">{text}</text>
+      <rect x={cx - badgeWidth / 2} y={bottomY + 2} width={badgeWidth} height={badgeHeight} rx={5} fill="#fff" fillOpacity={0.98} stroke={statusStroke(v.status)} strokeWidth={1} />
+      <text x={cx} y={bottomY + (lines.length > 1 ? 13 : 16)} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f" stroke="#fff" strokeWidth={3} paintOrder="stroke">{lines.map((line, index) => <tspan key={index} x={cx} dy={index === 0 ? 0 : 12}>{line}</tspan>)}</text>
     </g>
   );
 }

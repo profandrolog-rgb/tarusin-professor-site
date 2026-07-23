@@ -62,6 +62,7 @@ import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
 import { CompletenessInspector, buildCompletenessRows } from "@/components/metabolic/CompletenessInspector";
 import { UnaccountedLabsList } from "@/components/metabolic/UnaccountedLabsList";
 import { computeMappingStats } from "@/lib/metabolic/mappingStats";
+import { normalizeSeverity } from "@/lib/metabolic/severityColors";
 
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
@@ -121,6 +122,31 @@ const CUSTOM_SCHEMES: Record<string, ComponentType<PathwaySchemeProps>> = {
   vit_d_bone: VitDSchemeSVG,
   endocrine_disruptors: EndoDisruptorsSchemeSVG,
 };
+
+type SchemeStatus = "norm" | "mild" | "moderate" | "severe" | "nodata";
+const toSchemeStatus = (value: string | null | undefined): SchemeStatus => {
+  const normalized = normalizeSeverity(value);
+  return normalized === "no_data" ? "nodata" : normalized;
+};
+
+const GROUP_LABELS: Record<string, string> = {
+  hormonal_axes: "Гормональные оси",
+  metabolic_v28: "Метаболические пути v2.8",
+  energy_substrates: "Энергетический обмен",
+  amino_defense: "Аминокислотный обмен и детоксикация",
+  micronutrients_methylation: "Микронутриенты и метилирование",
+  inflammation_immune: "Воспаление и иммунный ответ",
+  endocrine_reproductive: "Эндокринная и репродуктивная система",
+  other: "Прочие системы",
+};
+
+function doctorStyleText(value: unknown): string {
+  return String(value || "")
+    .replace(/\bу вас\b/gi, "")
+    .replace(/\bваш(?:е|и|а|у|ем|ей|им|их)?\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 export default function AdminPatientMetabolicMap() {
   const { id } = useParams<{ id: string }>();
@@ -473,7 +499,7 @@ export default function AdminPatientMetabolicMap() {
       const mUnit = labelStr.match(/:\s*[\d.,-]+\s*(.+)$/);
       const unit = mUnit ? ` ${mUnit[1].trim()}` : "";
       const text = val == null || val === "" ? labelStr : `${arrow}${val}${unit}`.trim();
-      const sev: Severity = (f.severity as Severity) || "moderate";
+      const sev: Severity = normalizeSeverity(f.severity);
       let perNode = out.get(pw.slug);
       if (!perNode) { perNode = new Map(); out.set(pw.slug, perNode); }
       perNode.set(f.node_id, { text, sev });
@@ -485,10 +511,18 @@ export default function AdminPatientMetabolicMap() {
   const metaIndices = useMemo(() => {
     const legacy = computeIndices(visibleLabRows as any);
     const matrixV28 = computeMatrixIndicesV28(visibleLabRows as any);
-    const v28Ids = new Set(matrixV28.map((item) => item.id));
+    // A registered v2.8 index with missing inputs is `unknown`, not a reason
+    // to hide a valid legacy calculation made from compatible aliases.
+    const v28IdsWithValue = new Set(
+      matrixV28.filter((item) => item.value != null).map((item) => item.id),
+    );
+    const legacyIds = new Set(legacy.map((item) => item.id));
     // v2.8 owns the registered formulas (omega_ratio, aa_epa, holman);
     // unrelated legacy indices remain visible and unchanged.
-    return [...legacy.filter((item) => !v28Ids.has(item.id)), ...matrixV28];
+    return [
+      ...legacy.filter((item) => !v28IdsWithValue.has(item.id)),
+      ...matrixV28.filter((item) => item.value != null || !legacyIds.has(item.id)),
+    ];
   }, [visibleLabRows]);
 
   const completenessRows = useMemo(() => {
@@ -506,15 +540,16 @@ export default function AdminPatientMetabolicMap() {
     const pathwayBySlug = new Map(pathways.map((p) => [p.slug, p]));
     const groups = new Map<string, { label: string; rows: string[] }>();
     for (const item of items) {
-      const text = String(register === "simple" ? item?.text_plain : item?.text_pro || "").trim();
+      const text = doctorStyleText(register === "simple" ? item?.text_plain : item?.text_pro || "");
       if (!text) continue;
       const pw = pathwayBySlug.get(String(item?.pathway_code || ""));
       const key = pw?.group || "other";
-      const label = pw?.group ? pw.group.replaceAll("_", " ") : "Прочие системы";
+      const groupKey = pw?.group || "other";
+      const label = GROUP_LABELS[groupKey] || groupKey.replaceAll("_", " ");
       if (!groups.has(key)) groups.set(key, { label, rows: [] });
       groups.get(key)!.rows.push(`${pw?.name || item.pathway_code}: ${text}`);
     }
-    const body = [...groups.values()].map((group) => `## ${group.label}\n${group.rows.map((row) => `- ${row}`).join("\n")}`).join("\n\n");
+    const body = [...groups.values()].map((group) => `${group.label}\n${group.rows.map((row) => `- ${row}`).join("\n")}`).join("\n\n");
     const missing = completenessRows
       .filter((row) => row.hasRules && row.missing.length > 0)
       .map((row) => `- ${row.name}: требуется проверить/досдать ${row.missing.join(", ")}`)
@@ -730,10 +765,7 @@ export default function AdminPatientMetabolicMap() {
                   const out: Record<string, { value: number | string; status: "norm" | "mild" | "moderate" | "severe" | "nodata" }> = {};
                   for (const [nodeId, entry] of map.entries()) {
                     if (!entry?.text) continue;
-                    const sev = entry.sev;
-                    const status: "norm" | "mild" | "moderate" | "severe" | "nodata" =
-                      sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe" ? sev : "nodata";
-                    out[nodeId] = { value: entry.text, status };
+                    out[nodeId] = { value: entry.text, status: toSchemeStatus(entry.sev) };
                   }
                   return Object.keys(out).length ? out : undefined;
                 })()}
@@ -851,9 +883,7 @@ export default function AdminPatientMetabolicMap() {
                           if (pwNodeValues) {
                             for (const [nodeId, entry] of pwNodeValues.entries()) {
                               if (!entry?.text) continue;
-                              const sev = entry.sev;
-                              const st = sev === "norm" || sev === "mild" || sev === "moderate" || sev === "severe" ? sev : "nodata";
-                              vals[nodeId] = { value: entry.text, status: st };
+                              vals[nodeId] = { value: entry.text, status: toSchemeStatus(entry.sev) };
                             }
                           }
                           return <CustomScheme values={Object.keys(vals).length ? vals : undefined} />;

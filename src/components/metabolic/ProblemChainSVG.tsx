@@ -44,6 +44,14 @@ export function ProblemChainSVG({ causes }: { causes: ChainCause[] }) {
       if (!effectsMap.has(k)) effectsMap.set(k, { key: k, label, slug: eff.to_slug });
       list.push(k);
     }
+    // Не скрываем выявленный путь только потому, что его downstream-связи
+    // ещё не утверждены клинически. Показываем его явно, без выдумывания
+    // последствий.
+    if (!list.length) {
+      const k = `missing:${c.id}`;
+      effectsMap.set(k, { key: k, label: "Следствия не настроены", slug: undefined });
+      list.push(k);
+    }
     if (list.length) causeToEffects.set(c.id, list);
   }
   const drawableCauses = affected.filter((c) => causeToEffects.has(c.id));
@@ -52,7 +60,7 @@ export function ProblemChainSVG({ causes }: { causes: ChainCause[] }) {
   if (!drawableCauses.length || !effects.length) {
     return (
       <div className="text-xs italic text-muted-foreground px-3 py-6 text-center">
-        Для затронутых путей ещё не заданы следствия — заполните `consequences` в справочнике путей.
+        Для затронутых путей ещё не заданы следствия — они будут показаны с пометкой «следствия не настроены».
       </div>
     );
   }
@@ -180,14 +188,14 @@ export function ProblemChainSVG({ causes }: { causes: ChainCause[] }) {
                 fontSize={10}
                 fill="hsl(var(--muted-foreground))"
               >
-                следствие
+                {e.key.startsWith("missing:") ? "нужно согласовать связь" : "гипотеза / ассоциация"}
               </text>
             </g>
           );
         })}
       </svg>
       <div className="text-[11px] text-muted-foreground italic mt-1 px-1">
-        Цвет линии соответствует тяжести причины. Пути «норма» и «нет данных» скрыты.
+        Цвет линии соответствует тяжести причины. Справа показаны гипотезы/ассоциации, а не диагнозы; пути «норма» и «нет данных» скрыты, отсутствие утверждённой связи не маскируется.
       </div>
     </div>
   );

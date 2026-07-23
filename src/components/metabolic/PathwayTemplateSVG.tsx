@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { Severity } from "@/lib/metabolic/aggregator";
+import { SEVERITY_COLORS } from "@/lib/metabolic/severityColors";
 import type { SceneJson } from "./PathwaySceneSVG";
 import { PathwaySceneSVG } from "./PathwaySceneSVG";
 
@@ -145,7 +146,11 @@ export function PathwayTemplateSVG({
           candidate.x >= 0 && candidate.y >= 0 && candidate.x + candidate.w <= view.w && candidate.y + candidate.h <= view.h &&
           !nodeGeoms.some(({ geom: other }) => other.x !== geom.x && intersects(candidate, other)) &&
           !occupied.some((other) => intersects(candidate, other)),
-        ) || candidates[0];
+        ) || {
+          ...candidates[0],
+          x: Math.max(0, Math.min(candidates[0].x, Math.max(0, view.w - candidates[0].w))),
+          y: Math.max(0, Math.min(candidates[0].y, Math.max(0, view.h - candidates[0].h))),
+        };
         occupied.push(badge);
         const badgeGroup = doc.createElementNS(svgNS, "g");
         badgeGroup.setAttribute("class", "lbl-v");
@@ -153,11 +158,12 @@ export function PathwayTemplateSVG({
         const bg = doc.createElementNS(svgNS, "rect");
         bg.setAttribute("x", String(badge.x)); bg.setAttribute("y", String(badge.y));
         bg.setAttribute("width", String(badge.w)); bg.setAttribute("height", String(badge.h));
-        bg.setAttribute("rx", "5"); bg.setAttribute("fill", "#fff"); bg.setAttribute("fill-opacity", "0.96");
-        bg.setAttribute("stroke", "#94a3b8"); bg.setAttribute("stroke-width", "0.8");
+        bg.setAttribute("rx", "5"); bg.setAttribute("fill", "#fff"); bg.setAttribute("fill-opacity", "0.98");
+        bg.setAttribute("stroke", SEVERITY_COLORS[val.sev || "no_data"].stroke); bg.setAttribute("stroke-width", "1");
         const t = doc.createElementNS(svgNS, "text");
         t.setAttribute("x", String(badge.x + badge.w / 2)); t.setAttribute("text-anchor", "middle");
         t.setAttribute("font-size", lines.length > 1 ? "10" : "11"); t.setAttribute("font-weight", "700"); t.setAttribute("fill", "#22303C");
+        t.setAttribute("stroke", "#fff"); t.setAttribute("stroke-width", "2.5"); t.setAttribute("paint-order", "stroke");
         lines.forEach((line, index) => {
           const span = doc.createElementNS(svgNS, "tspan");
           span.setAttribute("x", String(badge.x + badge.w / 2)); span.setAttribute("y", String(badge.y + 12 + index * 11)); span.textContent = line;
