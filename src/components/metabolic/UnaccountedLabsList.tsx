@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CODE_NODE_MAP } from "@/lib/metabolic/codeNodeMap";
+import { computeMappingStats } from "@/lib/metabolic/mappingStats";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface Row {
@@ -46,6 +47,11 @@ export function UnaccountedLabsList({ labRows, labCodesById }: Props) {
     return out;
   }, [labRows, labCodesById, mappedCodes]);
 
+  const stats = useMemo(
+    () => computeMappingStats(labRows, labCodesById),
+    [labRows, labCodesById],
+  );
+
   if (items.length === 0) return null;
 
   return (
@@ -58,6 +64,9 @@ export function UnaccountedLabsList({ labRows, labCodesById }: Props) {
         <span className="flex items-center gap-1">
           {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           Не попали в раскладку: {items.length}
+          <span className="font-normal text-muted-foreground">
+            (без кода: {stats.noCatalogCode}, без пути: {stats.noPath})
+          </span>
         </span>
       </button>
       {open && (
