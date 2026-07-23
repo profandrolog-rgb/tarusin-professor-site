@@ -166,7 +166,7 @@ export default function AdminPatientMetabolicMapPrint() {
     for (const l of labRows) {
       const code = (l.test_code && String(l.test_code).trim())
         ? String(l.test_code).toUpperCase().trim()
-        : resolveCode(l.test_name, catalog);
+        : resolveCode(l.test_name, catalog, l.unit);
       if (code) m.set(l.id, code);
     }
     return m;

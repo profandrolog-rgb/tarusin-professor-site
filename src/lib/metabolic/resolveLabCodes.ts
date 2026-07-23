@@ -12,10 +12,11 @@ function norm(s: unknown): string {
 export type CatalogRow = {
   short_name: string | null;
   name: string | null;
+  unit?: string | null;
   synonyms: unknown;
 };
 
-type CatEntry = { code: string; keys: string[]; tokens: string[][] };
+type CatEntry = { code: string; keys: string[]; tokens: string[][]; unit?: string | null };
 
 export function buildCatalogIndex(rows: CatalogRow[]): CatEntry[] {
   const entries: CatEntry[] = [];
@@ -30,13 +31,17 @@ export function buildCatalogIndex(rows: CatalogRow[]): CatEntry[] {
     if (!code) continue;
     const keys = aliases.map((a) => norm(a)).filter(Boolean);
     const tokens = keys.map((k) => k.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
-    entries.push({ code, keys, tokens });
+    entries.push({ code, keys, tokens, unit: row.unit || null });
   }
   entries.sort((a, b) => Number(asciiCodeRe.test(b.code)) - Number(asciiCodeRe.test(a.code)));
   return entries;
 }
 
-export function resolveCode(testName: string | null | undefined, catalog: CatEntry[]): string | null {
+function normalizeUnit(value: string | null | undefined): string {
+  return String(value || "").toLowerCase().replace(/[\s.]+/g, "").replace("ед/л", "u/l").replace("ме/л", "u/l");
+}
+
+export function resolveCode(testName: string | null | undefined, catalog: CatEntry[], resultUnit?: string | null): string | null {
   const nm = norm(testName);
   if (!nm) return null;
   const labTokens = new Set(nm.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
@@ -47,6 +52,9 @@ export function resolveCode(testName: string | null | undefined, catalog: CatEnt
     const hitTokens = !hitDirect && !hitSubstr && labTokens.size > 0 &&
       e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
     if (hitDirect || hitSubstr || hitTokens) {
+      const catalogUnit = normalizeUnit(e.unit);
+      const measuredUnit = normalizeUnit(resultUnit);
+      if (catalogUnit && measuredUnit && catalogUnit !== measuredUnit) continue;
       // Один русский analyte может иметь legacy-код и канонический код
       // AminoMetrix (например ORNITHINE и AA_ORN_PL). Для плазменной
       // аминокислоты выбираем канонический AA_*_PL, иначе значение не
