@@ -371,6 +371,7 @@ export default function Cabinet() {
   const { user, loading, isAdmin } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [folders, setFolders] = useState<ChatFolder[]>([]);
+  const cabinetRecoveryAttemptedRef = useRef(false);
   const [openFolders, setOpenFolders] = useState<Record<string, boolean>>(() => {
     if (typeof window === "undefined") return {};
     try { return JSON.parse(window.localStorage.getItem(FOLDERS_OPEN_LS_KEY) || "{}"); } catch { return {}; }
@@ -644,17 +645,36 @@ export default function Cabinet() {
 
   // Load conversations
   const loadConversations = useCallback(async () => {
-    if (!user) return;
+    if (!user) return false;
     const { data, error } = await supabase
       .from("ai_conversations")
       .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
       .order("updated_at", { ascending: false });
     if (error) {
       toast.error("Не удалось загрузить историю");
-      return;
+      return false;
     }
-    setConversations(data || []);
-  }, [user]);
+    const rows = data || [];
+    if (rows.length === 0 && isAdmin && !cabinetRecoveryAttemptedRef.current) {
+      cabinetRecoveryAttemptedRef.current = true;
+      const { data: recovery, error: recoveryError } = await (supabase as any).rpc("recover_cabinet_ai_history");
+      if (recoveryError) {
+        console.error("Cabinet history recovery failed:", recoveryError);
+      } else if (recovery?.recovered) {
+        const { data: recoveredData, error: reloadError } = await supabase
+          .from("ai_conversations")
+          .select("id, title, model, updated_at, folder_id, patient_id, patient_name")
+          .order("updated_at", { ascending: false });
+        if (!reloadError) {
+          setConversations(recoveredData || []);
+          toast.success("История ассистента восстановлена");
+          return true;
+        }
+      }
+    }
+    setConversations(rows);
+    return false;
+  }, [user, isAdmin]);
 
   const loadFolders = useCallback(async () => {
     if (!user) return;
@@ -667,8 +687,10 @@ export default function Cabinet() {
   }, [user]);
 
   useEffect(() => {
-    loadConversations();
-    loadFolders();
+    (async () => {
+      await loadConversations();
+      await loadFolders();
+    })();
   }, [loadConversations, loadFolders]);
 
   const toggleFolder = (id: string) => {

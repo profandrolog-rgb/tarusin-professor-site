@@ -6430,6 +6430,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recover_cabinet_ai_history: { Args: never; Returns: Json }
       refresh_treatment_plans_search: { Args: never; Returns: undefined }
       search_rubrics_by_embedding: {
         Args: { _limit?: number; _query: string }
