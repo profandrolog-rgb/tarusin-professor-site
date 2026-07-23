@@ -130,7 +130,7 @@ const AdminConsultations = () => {
   };
 
   const updateRound = async (roundId: string, fields: Record<string, any>) => {
-    await supabase.from("consultation_rounds").update(fields).eq("id", roundId);
+    await supabase.from("consultation_rounds").update(fields as any).eq("id", roundId);
     qc.invalidateQueries({ queryKey: ["admin-rounds"] });
   };
 
