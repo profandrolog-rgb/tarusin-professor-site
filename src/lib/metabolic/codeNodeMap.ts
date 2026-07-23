@@ -3,7 +3,9 @@
 // (например, FERR → ferritin_store в iron и FERR → ferritin_react в inflammation).
 // Используется только слоем отображения (карточки путей и печать), правила/данные не меняет.
 
-export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
+import { CODE_NODE_MAP_V28 } from "./codeNodeMapV28";
+
+const LEGACY_CODE_NODE_MAP: Record<string, Record<string, string>> = {
   lipids: {
     CHOL: "total_chol",
     LDL: "ldl",
@@ -208,6 +210,13 @@ export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
     PHOS: "phosphate",
     ALP: "alp",
   },
+};
+
+// Пути, определённые матрицей v2.8, атомарно заменяют старые частичные
+// привязки тех же slug. Остальные клинические пути сохраняются без изменений.
+export const CODE_NODE_MAP: Record<string, Record<string, string>> = {
+  ...LEGACY_CODE_NODE_MAP,
+  ...CODE_NODE_MAP_V28,
 };
 
 
