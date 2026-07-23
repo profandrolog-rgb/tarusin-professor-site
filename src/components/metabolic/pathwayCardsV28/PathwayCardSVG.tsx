@@ -33,6 +33,43 @@ const STATUS_LABEL: Record<NodeStatus, string> = {
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+const VALUE_LINE_LIMIT = 20;
+
+type Box = { x: number; y: number; w: number; h: number };
+
+/** Keep a displayed value readable without losing the full value in <title>. */
+export function wrapValueLines(value: string, maxChars = VALUE_LINE_LIMIT): string[] {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (current && next.length > maxChars) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  if (lines.length <= 2) return lines;
+  const second = lines.slice(1).join(" ");
+  return [lines[0], second.length > maxChars ? `${second.slice(0, maxChars - 1).trimEnd()}…` : second];
+}
+
+function intersects(a: Box, b: Box, gap = 2): boolean {
+  return a.x < b.x + b.w + gap && a.x + a.w + gap > b.x &&
+    a.y < b.y + b.h + gap && a.y + a.h + gap > b.y;
+}
+
+function parseViewBox(svg: SVGSVGElement): { width: number; height: number } {
+  const raw = svg.getAttribute("viewBox")?.trim().split(/\s+/).map(Number) || [];
+  return {
+    width: Number.isFinite(raw[2]) ? raw[2] : Number(svg.getAttribute("width")) || 0,
+    height: Number.isFinite(raw[3]) ? raw[3] : Number(svg.getAttribute("height")) || 0,
+  };
+}
 
 export function PathwayCardSVG({
   markup,
@@ -57,6 +94,15 @@ export function PathwayCardSVG({
     root.querySelectorAll("g.val-dyn, title.node-title-dyn").forEach((node) => node.remove());
 
     const rects = root.querySelectorAll<SVGRectElement>("[data-node-id]");
+    const svg = root.querySelector("svg") as SVGSVGElement | null;
+    const viewBox = svg ? parseViewBox(svg) : { width: 0, height: 0 };
+    const nodeBoxes: Box[] = Array.from(rects).map((node) => ({
+      x: Number(node.getAttribute("x") ?? 0),
+      y: Number(node.getAttribute("y") ?? 0),
+      w: Number(node.getAttribute("width") ?? 0),
+      h: Number(node.getAttribute("height") ?? 0),
+    }));
+    const occupiedBadges: Box[] = [];
     rects.forEach((rect) => {
       const nodeId = rect.getAttribute("data-node-id");
       if (!nodeId) return;
@@ -121,17 +167,36 @@ export function PathwayCardSVG({
       const y = Number(rect.getAttribute("y") ?? 0);
       const width = Number(rect.getAttribute("width") ?? 0);
       const height = Number(rect.getAttribute("height") ?? 0);
-      const badgeY = y + height + 4;
+      const currentBox: Box = { x, y, w: width, h: height };
+      const lines = wrapValueLines(displayValue);
+      const badgeHeight = lines.length > 1 ? 30 : 18;
+      const badgeWidth = Math.max(0, width - 16);
+      const candidates: Box[] = [
+        { x: x + 8, y: y + height + 4, w: badgeWidth, h: badgeHeight },
+        { x: x + 8, y: y - badgeHeight - 4, w: badgeWidth, h: badgeHeight },
+        { x: x + width + 8, y: y + (height - badgeHeight) / 2, w: badgeWidth, h: badgeHeight },
+        { x: x - badgeWidth - 8, y: y + (height - badgeHeight) / 2, w: badgeWidth, h: badgeHeight },
+      ];
+      const badge = candidates.find((candidate) => {
+        const outside = viewBox.width > 0 && (candidate.x < 0 || candidate.x + candidate.w > viewBox.width || candidate.y < 0 || candidate.y + candidate.h > viewBox.height);
+        if (outside) return false;
+        const hitsNode = nodeBoxes.some((nodeBox) =>
+          (nodeBox.x !== currentBox.x || nodeBox.y !== currentBox.y || nodeBox.w !== currentBox.w || nodeBox.h !== currentBox.h) &&
+          intersects(candidate, nodeBox),
+        );
+        return !hitsNode && !occupiedBadges.some((other) => intersects(candidate, other));
+      }) || candidates[0];
+      occupiedBadges.push(badge);
 
-      const badge = document.createElementNS(SVG_NS, "g");
-      badge.setAttribute("class", "val-dyn");
-      badge.setAttribute("pointer-events", "none");
+      const badgeGroup = document.createElementNS(SVG_NS, "g");
+      badgeGroup.setAttribute("class", "val-dyn");
+      badgeGroup.setAttribute("pointer-events", "none");
 
       const background = document.createElementNS(SVG_NS, "rect");
-      background.setAttribute("x", String(x + 8));
-      background.setAttribute("y", String(badgeY));
-      background.setAttribute("width", String(Math.max(0, width - 16)));
-      background.setAttribute("height", "18");
+      background.setAttribute("x", String(badge.x));
+      background.setAttribute("y", String(badge.y));
+      background.setAttribute("width", String(badge.w));
+      background.setAttribute("height", String(badge.h));
       background.setAttribute("rx", "6");
       background.setAttribute("fill", "#FFFFFF");
       background.setAttribute("fill-opacity", "0.96");
@@ -139,16 +204,21 @@ export function PathwayCardSVG({
       background.setAttribute("stroke-width", "0.8");
 
       const text = document.createElementNS(SVG_NS, "text");
-      text.setAttribute("x", String(x + width / 2));
-      text.setAttribute("y", String(badgeY + 13));
+      text.setAttribute("x", String(badge.x + badge.w / 2));
       text.setAttribute("text-anchor", "middle");
-      text.setAttribute("font-size", "10");
+      text.setAttribute("font-size", lines.length > 1 ? "9" : "10");
       text.setAttribute("font-weight", "700");
       text.setAttribute("fill", "#1f2d33");
-      text.textContent = displayValue;
+      lines.forEach((line, index) => {
+        const tspan = document.createElementNS(SVG_NS, "tspan");
+        tspan.setAttribute("x", String(badge.x + badge.w / 2));
+        tspan.setAttribute("y", String(badge.y + 12 + index * 11));
+        tspan.textContent = line;
+        text.appendChild(tspan);
+      });
 
-      badge.append(background, text);
-      rect.parentElement?.parentElement?.appendChild(badge);
+      badgeGroup.append(background, text);
+      rect.parentElement?.parentElement?.appendChild(badgeGroup);
     });
   }, [preparedMarkup, values, onNodeClick]);
 
