@@ -80,10 +80,13 @@ function ValText({
 }) {
   const v = values?.[id];
   if (!v || v.value === "" || v.value === null || v.value === undefined) return null;
+  const text = String(v.value);
+  const badgeWidth = Math.max(84, Math.min(176, text.length * 7 + 18));
   return (
-    <text x={cx} y={bottomY - 4} className="val" fontSize={10} textAnchor="middle" fill="#20303f">
-      {String(v.value)}
-    </text>
+    <g className="val" pointerEvents="none">
+      <rect x={cx - badgeWidth / 2} y={bottomY + 2} width={badgeWidth} height={20} rx={5} fill="#fff" fillOpacity={0.96} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
+      <text x={cx} y={bottomY + 16} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f">{text}</text>
+    </g>
   );
 }
 
@@ -92,14 +95,14 @@ export function SteroidHubSVG({ values, onNodeClick }: SteroidHubSVGProps) {
   const v = useMemo(() => values, [values]);
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="w-full overflow-hidden">
       <svg
         width="100%"
         height="auto"
         viewBox="0 0 1240 960"
         xmlns="http://www.w3.org/2000/svg"
         fontFamily="Arial, sans-serif"
-        style={{ minWidth: 720 }}
+        style={{ display: "block" }}
       >
         <defs>
           <marker id="sh-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
