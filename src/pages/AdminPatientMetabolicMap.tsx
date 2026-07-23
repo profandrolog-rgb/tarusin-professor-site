@@ -873,7 +873,7 @@ export default function AdminPatientMetabolicMap() {
                         );
                       })()}
                       {pwFindings.length > 0 && (
-                        <ul className="space-y-1 text-xs">
+                        <ul className="space-y-1 text-sm">
                           {pwFindings.map((f) => {
                             const meta = SEVERITY_META[f.severity] || SEVERITY_META.info;
                             const Icon = meta.icon;
@@ -890,23 +890,23 @@ export default function AdminPatientMetabolicMap() {
                         </ul>
                       )}
                       {savedSummary && savedSummary.matched_markers === 0 && displayMarkerCount > 0 && (
-                        <div className="text-[11px] italic text-muted-foreground px-2 py-1">
+                        <div className="text-sm italic text-muted-foreground px-2 py-1">
                           Значения показателей отображаются на схеме. Клинические правила оценки для этого пути ещё не настроены.
                         </div>
                       )}
                       {savedSummary && savedSummary.matched_markers === 0 && displayMarkerCount === 0 && (
-                        <div className="text-[11px] italic text-muted-foreground px-2 py-1">
+                        <div className="text-sm italic text-muted-foreground px-2 py-1">
                           Нет лабораторных данных для оценки этого пути.
                         </div>
                       )}
                       {severityText ? (
-                        <div className="text-xs space-y-1.5 pt-2 border-t">
+                        <div className="text-sm space-y-1.5 pt-2 border-t">
                           <p><span className="font-medium">{REGISTER_LABEL[register]}:</span> {severityText}</p>
                         </div>
                       ) : status === "norm" ? (
-                        <div className="text-xs italic text-muted-foreground pt-2 border-t">Отклонений не выявлено.</div>
+                        <div className="text-sm italic text-muted-foreground pt-2 border-t">Отклонений не выявлено.</div>
                       ) : legacyText && (legacyText.summary || legacyText.what_broken || legacyText.actions) ? (
-                        <div className="text-xs space-y-1.5 pt-2 border-t">
+                        <div className="text-sm space-y-1.5 pt-2 border-t">
                           {legacyText.summary && <p><span className="font-medium">Кратко:</span> {legacyText.summary}</p>}
                           {legacyText.what_broken && <p><span className="font-medium">Что нарушено:</span> {legacyText.what_broken}</p>}
                           {legacyText.evidence && <p><span className="font-medium">По каким показателям:</span> {legacyText.evidence}</p>}
@@ -916,7 +916,7 @@ export default function AdminPatientMetabolicMap() {
                         </div>
                       ) : null}
                       {!aiForPath && ai && (
-                        <div className="text-xs text-muted-foreground border-t border-dashed pt-2 flex items-center justify-between gap-2">
+                        <div className="text-sm text-muted-foreground border-t border-dashed pt-2 flex items-center justify-between gap-2">
                           <span>ИИ-интерпретация по этому пути не сформирована.</span>
                           <Button size="sm" variant="ghost" className="h-6 px-2 text-xs gap-1" onClick={handleAiBuild} disabled={aiBusy}>
                             <Sparkles className="w-3 h-3" />Регенерировать
@@ -924,7 +924,7 @@ export default function AdminPatientMetabolicMap() {
                         </div>
                       )}
                       {aiForPath && (
-                        <div className="text-xs space-y-1.5 pt-2 border-t border-primary/30">
+                        <div className="text-sm space-y-1.5 pt-2 border-t border-primary/30">
                           <div className="flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5 text-primary" />
                             <span className="font-medium">ИИ · {aiForPath.status}</span>
