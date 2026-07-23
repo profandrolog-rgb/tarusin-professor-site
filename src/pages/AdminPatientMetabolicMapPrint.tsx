@@ -93,7 +93,7 @@ export default function AdminPatientMetabolicMapPrint() {
           .eq("patient_id", id)
           .order("test_date", { ascending: false, nullsFirst: false })
           .limit(500),
-        (supabase as any).from("lab_tests_catalog").select("code, name, aliases, unit"),
+        (supabase as any).from("lab_tests_catalog").select("short_name, name, synonyms, unit").eq("is_active", true),
       ]);
       setPatient(p as any);
       setPathways(((pw as any) || []) as Pathway[]);
