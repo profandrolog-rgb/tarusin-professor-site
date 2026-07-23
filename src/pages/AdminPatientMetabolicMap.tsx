@@ -432,7 +432,7 @@ export default function AdminPatientMetabolicMap() {
     for (const l of labRows) {
       const code = (l.test_code && String(l.test_code).trim())
         ? String(l.test_code).toUpperCase().trim()
-        : resolveCode(l.test_name, catalog);
+        : resolveCode(l.test_name, catalog, l.unit);
       if (code) m.set(l.id, code);
     }
     return m;
@@ -522,6 +522,28 @@ export default function AdminPatientMetabolicMap() {
     return out;
   }, [visibleLabRows, labCodesById, findings, pathways]);
 
+  const effectiveStatusByPathway = useMemo(() => {
+    const out = new Map<string, Severity>();
+    for (const pw of pathways) {
+      const saved = summaryByPathway.get(pw.id);
+      const pathFindings = findingsByPathway.get(pw.id) || [];
+      const nodes = nodeValuesByPathway.get(pw.slug);
+      const clinicalNodes = new Set((pw.rules || []).flatMap((r: any) => r.highlight_nodes || []));
+      const evidence: Severity[] = [
+        ...Array.from(nodes?.entries() || [])
+          .filter(([nodeId, entry]) => clinicalNodes.has(nodeId) && entry.sev && entry.sev !== "no_data")
+          .map(([, entry]) => entry.sev as Severity),
+        ...pathFindings.map((f) => normalizeSeverity(f.severity)),
+      ];
+      const measured = evidence.reduce<Severity>((worst, sev) => severityRank(sev) > severityRank(worst) ? sev : worst, "no_data");
+      const base: Severity = Number(saved?.matched_markers || 0) > 0
+        ? (saved?.status || "norm") as Severity
+        : "no_data";
+      out.set(pw.id, severityRank(measured) > severityRank(base) ? measured : base);
+    }
+    return out;
+  }, [pathways, summaryByPathway, findingsByPathway, nodeValuesByPathway]);
+
   // Интегральные индексы: считаются из нескольких значений lab_results.
   const metaIndices = useMemo(() => {
     const legacy = computeIndices(visibleLabRows as any);
@@ -554,10 +576,16 @@ export default function AdminPatientMetabolicMap() {
     if (!items.length) return "";
     const pathwayBySlug = new Map(pathways.map((p) => [p.slug, p]));
     const groups = new Map<string, { label: string; rows: string[] }>();
+    const staleAi: string[] = [];
     for (const item of items) {
       const text = doctorStyleText(register === "simple" ? item?.text_plain : item?.text_pro || "");
       if (!text) continue;
       const pw = pathwayBySlug.get(String(item?.pathway_code || ""));
+      const currentStatus = pw ? effectiveStatusByPathway.get(pw.id) : undefined;
+      if (pw && currentStatus && currentStatus !== "no_data" && normalizeSeverity(item?.status) !== currentStatus) {
+        staleAi.push(pw.name);
+        continue;
+      }
       const key = pw?.group || "other";
       const groupKey = pw?.group || "other";
       const label = GROUP_LABELS[groupKey] || groupKey.replaceAll("_", " ");
@@ -584,8 +612,11 @@ export default function AdminPatientMetabolicMap() {
     const contextNote = contextAlerts.length
       ? `\n\nКонтекстные отклонения (не являются самостоятельным диагнозом):\n${contextAlerts.join("\n")}`
       : "";
-    return `Клиническое резюме метаболической карты\n\n${body}${contextNote}${completenessNote}${links}\n\nПримечание: текст объединяет сохранённые выводы ИИ и сведения о полноте анализов. Он требует врачебной проверки перед включением в заключение.`;
-  }, [ai, pathways, register, completenessRows]);
+    const staleNote = staleAi.length
+      ? `\n\nТребуется обновить ИИ-выводы после изменения данных: ${staleAi.join(", ")}. Старый текст исключён из резюме, чтобы не противоречить текущим значениям.`
+      : "";
+    return `Клиническое резюме метаболической карты\n\n${body}${contextNote}${completenessNote}${links}${staleNote}\n\nПримечание: текст объединяет сохранённые выводы ИИ и сведения о полноте анализов. Он требует врачебной проверки перед включением в заключение.`;
+  }, [ai, pathways, register, completenessRows, nodeValuesByPathway, effectiveStatusByPathway]);
 
 
 
@@ -737,8 +768,7 @@ export default function AdminPatientMetabolicMap() {
             <CardContent className="p-3">
               <PathwayTilesGrid
                 pathways={pathways.map((pw) => {
-                  const status = (summaryByPathway.get(pw.id)?.status ||
-                    ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity;
+                  const status = effectiveStatusByPathway.get(pw.id) || "no_data";
                   const fList = findingsByPathway.get(pw.id) || [];
                   const evidence = fList.slice(0, 2).map((f) => f.label).join(" · ");
                   return {
@@ -769,8 +799,7 @@ export default function AdminPatientMetabolicMap() {
                   id: pw.id,
                   slug: pw.slug,
                   name: pw.name,
-                  status: (summaryByPathway.get(pw.id)?.status ||
-                    ((findingsByPathway.get(pw.id) || []).length ? "moderate" : "no_data")) as Severity,
+                  status: effectiveStatusByPathway.get(pw.id) || "no_data",
                   consequences: pw.consequences || [],
                 }))}
               />
@@ -832,19 +861,14 @@ export default function AdminPatientMetabolicMap() {
                   ...((savedSummary?.affected_nodes) || []),
                 ]);
                 const pwNodeValues = nodeValuesByPathway.get(pw.slug);
-                const measuredSeverity = pwNodeValues
-                  ? Array.from(pwNodeValues.values()).reduce<Severity>((worst, entry) => {
-                      const sev = entry.sev || "no_data";
-                      return severityRank(sev) > severityRank(worst) ? sev : worst;
-                    }, "no_data")
-                  : "no_data";
-                const summaryStatus: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
-                const status: Severity = severityRank(measuredSeverity) > severityRank(summaryStatus)
-                  ? measuredSeverity
-                  : summaryStatus;
-                const severityText = pickSeverityText(severityTexts, pw.id, status, register);
-                const legacyText = pickText(texts, pw.id, register); // fallback, если severity-текст пуст
+                const status: Severity = effectiveStatusByPathway.get(pw.id) || "no_data";
+                const hasClinicalEvidence = status !== "no_data" && ((savedSummary?.matched_markers || 0) > 0 || pwFindings.length > 0);
+                const severityText = hasClinicalEvidence ? pickSeverityText(severityTexts, pw.id, status, register) : null;
+                const legacyText = hasClinicalEvidence ? pickText(texts, pw.id, register) : null;
                 const displayMarkerCount = pwNodeValues?.size ?? 0;
+                const statusCaption = status === "no_data" && displayMarkerCount > 0
+                  ? (pw.rules?.length ? "данные есть · отклонений нет" : "данные есть · правила не настроены")
+                  : SEVERITY_LABEL[status];
                 const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
@@ -868,7 +892,7 @@ export default function AdminPatientMetabolicMap() {
                         </span>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className={STATUS_BADGE[status]}>
-                            {SEVERITY_LABEL[status]}
+                            {statusCaption}
                           </Badge>
                           <Button size="sm" variant="ghost" className="h-7 px-2 gap-1 text-xs" onClick={() => openEditor(pw)}>
                             <Pencil className="w-3.5 h-3.5" />Схема
@@ -979,7 +1003,9 @@ export default function AdminPatientMetabolicMap() {
                       )}
                       {savedSummary && savedSummary.matched_markers === 0 && displayMarkerCount > 0 && (
                         <div className="text-sm italic text-muted-foreground px-2 py-1">
-                          Значения показателей отображаются на схеме. Клинические правила оценки для этого пути ещё не настроены.
+                          {pw.rules?.length
+                            ? "Значения показателей отображаются на схеме; клинических отклонений по настроенным правилам не выявлено."
+                            : "Значения показателей отображаются на схеме, но клинические правила оценки для этого пути ещё не настроены."}
                         </div>
                       )}
                       {savedSummary && savedSummary.matched_markers === 0 && displayMarkerCount === 0 && (
@@ -1016,6 +1042,9 @@ export default function AdminPatientMetabolicMap() {
                           <div className="flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5 text-primary" />
                             <span className="font-medium">ИИ · {aiForPath.status}</span>
+                            {normalizeSeverity(aiForPath.status) !== status && status !== "no_data" && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 text-amber-700 border-amber-300">устарел — обновить</Badge>
+                            )}
                             {typeof aiForPath.confidence === "number" && (
                               <Badge variant="outline" className="text-[10px] px-1 py-0">
                                 {(aiForPath.confidence * 100).toFixed(0)}%

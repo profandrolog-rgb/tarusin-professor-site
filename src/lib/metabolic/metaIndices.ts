@@ -239,7 +239,10 @@ export function computeIndices(rows: LabRowLite[]): IndexResult[] {
   // 8) T / E2
   {
     const t = findValue(rows, ["Тестостерон общий", "Тестостерон", "Testosterone", "TESTO"]);
-    const e2 = findValue(rows, ["Эстрадиол", "Estradiol", "E2"]);
+    const e2 = findValue(rows, ["Эстрадиол", "Estradiol", "E2"]) || rows
+      .filter((r) => /эстрадиол|estradiol/i.test(String(r.test_name || "")))
+      .map((r) => ({ value: Number(String(r.value ?? "").replace(",", ".")), unit: r.unit || "" }))
+      .find((r) => Number.isFinite(r.value)) || null;
     if (t && e2 && e2.value > 0) {
       const v = t.value / e2.value;
       out.push({ id: "t_e2", label: "T / E2", value: v, displayValue: fmt(v), unit: "", target: "по возрасту/полу", status: "unknown", note: "Активность ароматазы." });
