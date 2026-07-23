@@ -298,9 +298,15 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
   }
 
   // 1. загружаем пути с правилами + пол/возраст пациента для фильтра
-  const [{ data: pwRows, error: pwErr }, { data: patientRow }] = await Promise.all([
+  const [{ data: pwRows, error: pwErr }, { data: patientRow }, { data: latestAnthro }] = await Promise.all([
     (supabase as any).from("pathways").select("id, slug, name, sex, rules").eq("is_active", true),
     (supabase as any).from("patients").select("sex, birth_date").eq("id", patientId).maybeSingle(),
+    (supabase as any).from("anthropometry_measurements")
+      .select("tanner_stage, measurement_date")
+      .eq("patient_id", patientId)
+      .order("measurement_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (pwErr) throw pwErr;
   const patientSex = (patientRow?.sex === "M" || patientRow?.sex === "F") ? patientRow.sex : null;
@@ -340,6 +346,15 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
     const ctx = deriveCycleContext((vLatest as any)?.protocol_data);
     cyclePhase = ctx.cyclePhase;
     reproStatus = ctx.reproStatus;
+  }
+  // Mayo DHES1 uses Tanner stage for pediatric DHEA-S. If an anthropometry
+  // record is available, provide a conservative prepubertal/pubertal context;
+  // without it, no Tanner-specific interval is substituted.
+  if (!reproStatus && ageYears != null && ageYears < 18) {
+    const tanner = Number((latestAnthro as any)?.tanner_stage);
+    if (Number.isFinite(tanner) && tanner >= 1 && tanner <= 5) {
+      reproStatus = tanner <= 1 ? "prepubertal" : "pubertal";
+    }
   }
   const patientCtx: PatientCtx = { sex: patientSex, ageYears, cyclePhase, reproStatus };
 

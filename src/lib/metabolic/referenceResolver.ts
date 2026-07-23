@@ -110,15 +110,22 @@ export function resolveReference(args: {
     return null;
   }
 
-  // Общий/мужской показатель — phase/status игнорируем
+  // Общий/мужской показатель. Если для показателя есть статусные интервалы
+  // (например, DHEA-S до/во время пубертата), сначала требуем совпадение
+  // статуса; без него не подменяем детский интервал взрослым.
   const sexCandidates: Array<"M" | "F" | "A"> = ctx.sex ? [ctx.sex, "A"] : ["A"];
-  const row = refIndex.find(
+  const matchingRows = refIndex.filter(
     (r) =>
       up(r.analyte_code) === code &&
       sexCandidates.includes(r.sex) &&
-      !r.phase && // общая строка без фазы
       ageMatches(ctx.ageYears, r),
   );
+  const status = ctx.reproStatus && ctx.reproStatus !== "unknown" ? ctx.reproStatus : null;
+  const statusRow = status
+    ? matchingRows.find((r) => !r.phase && r.status === status)
+    : undefined;
+  if (statusRow) return { ref_low: statusRow.ref_low, ref_high: statusRow.ref_high, source: "reference_ranges" };
+  const row = matchingRows.find((r) => !r.phase && !r.status);
   if (row) return { ref_low: row.ref_low, ref_high: row.ref_high, source: "reference_ranges" };
   return null;
 }

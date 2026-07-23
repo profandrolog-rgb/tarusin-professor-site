@@ -44,11 +44,13 @@ function ValText({ id, cx, bottomY, values }: {
   const v = values?.[id];
   if (!v || v.value === "" || v.value == null) return null;
   const text = String(v.value);
-  const width = Math.max(80, Math.min(170, text.length * 7 + 18));
+  const lines = text.length > 24 ? [text.slice(0, 24), text.slice(24)] : [text];
+  const width = Math.max(96, Math.min(190, Math.max(...lines.map((line) => line.length)) * 7 + 18));
+  const height = lines.length > 1 ? 30 : 20;
   return (
     <g pointerEvents="none">
-      <rect x={cx - width / 2} y={bottomY + 2} width={width} height={20} rx={5} fill="#fff" fillOpacity={0.96} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
-      <text x={cx} y={bottomY + 16} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f">{text}</text>
+      <rect x={cx - width / 2} y={bottomY + 2} width={width} height={height} rx={5} fill="#fff" fillOpacity={0.98} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
+      <text x={cx} y={bottomY + (lines.length > 1 ? 13 : 16)} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f" stroke="#fff" strokeWidth={3} paintOrder="stroke">{lines.map((line, index) => <tspan key={index} x={cx} dy={index === 0 ? 0 : 12}>{line}</tspan>)}</text>
     </g>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef } from "react";
+import { SEVERITY_COLORS } from "@/lib/metabolic/severityColors";
 
 export type NodeStatus = "norm" | "mild" | "moderate" | "severe" | "nodata";
 
@@ -15,14 +16,6 @@ export interface PathwaySchemeProps {
 export interface PathwayCardSVGProps extends PathwaySchemeProps {
   markup: string;
 }
-
-const STATUS_STROKE: Record<NodeStatus, string> = {
-  norm: "#3f7d4f",
-  mild: "#E0A800",
-  moderate: "#E8730C",
-  severe: "#C0392B",
-  nodata: "#9aa0a6",
-};
 
 const STATUS_LABEL: Record<NodeStatus, string> = {
   norm: "норма",
@@ -114,7 +107,7 @@ export function PathwayCardSVG({
       const isContext = rect.classList.contains("ctx");
 
       rect.dataset.status = status;
-      rect.style.stroke = STATUS_STROKE[status];
+      rect.style.stroke = SEVERITY_COLORS[status === "nodata" ? "no_data" : status].stroke;
       rect.style.strokeDasharray = isContext
         ? "6 3"
         : status === "nodata"
@@ -188,7 +181,11 @@ export function PathwayCardSVG({
           intersects(candidate, nodeBox),
         );
         return !hitsNode && !occupiedBadges.some((other) => intersects(candidate, other));
-      }) || candidates[0];
+      }) || {
+        ...candidates[0],
+        x: Math.max(0, Math.min(candidates[0].x, Math.max(0, viewBox.width - candidates[0].w))),
+        y: Math.max(0, Math.min(candidates[0].y, Math.max(0, viewBox.height - candidates[0].h))),
+      };
       occupiedBadges.push(badge);
 
       const badgeGroup = document.createElementNS(SVG_NS, "g");
@@ -203,7 +200,7 @@ export function PathwayCardSVG({
       background.setAttribute("rx", "6");
       background.setAttribute("fill", "#FFFFFF");
       background.setAttribute("fill-opacity", "0.96");
-      background.setAttribute("stroke", STATUS_STROKE[status]);
+      background.setAttribute("stroke", SEVERITY_COLORS[status === "nodata" ? "no_data" : status].stroke);
       background.setAttribute("stroke-width", "0.8");
 
       const text = document.createElementNS(SVG_NS, "text");
@@ -212,6 +209,9 @@ export function PathwayCardSVG({
       text.setAttribute("font-size", lines.length > 1 ? "9" : "10");
       text.setAttribute("font-weight", "700");
       text.setAttribute("fill", "#1f2d33");
+      text.setAttribute("stroke", "#ffffff");
+      text.setAttribute("stroke-width", "2.5");
+      text.setAttribute("paint-order", "stroke");
       lines.forEach((line, index) => {
         const tspan = document.createElementNS(SVG_NS, "tspan");
         tspan.setAttribute("x", String(badge.x + badge.w / 2));
