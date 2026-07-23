@@ -588,7 +588,7 @@ export default function AdminPatientMetabolicMap() {
       }
       const key = pw?.group || "other";
       const groupKey = pw?.group || "other";
-      const label = GROUP_LABELS[groupKey] || groupKey.replaceAll("_", " ");
+      const label = GROUP_LABELS[groupKey] || groupKey.replace(/_/g, " ");
       if (!groups.has(key)) groups.set(key, { label, rows: [] });
       groups.get(key)!.rows.push(`${pw?.name || item.pathway_code}: ${text}`);
     }
