@@ -62,7 +62,8 @@ import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
 import { CompletenessInspector, buildCompletenessRows } from "@/components/metabolic/CompletenessInspector";
 import { UnaccountedLabsList } from "@/components/metabolic/UnaccountedLabsList";
 import { computeMappingStats } from "@/lib/metabolic/mappingStats";
-import { normalizeSeverity } from "@/lib/metabolic/severityColors";
+import { normalizeSeverity, severityRank } from "@/lib/metabolic/severityColors";
+import { severityFromRange } from "@/lib/metabolic/referenceResolver";
 
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
@@ -167,7 +168,7 @@ export default function AdminPatientMetabolicMap() {
   const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [severityTexts, setSeverityTexts] = useState<PathwaySeverityText[]>([]);
-  const [labRows, setLabRows] = useState<Array<{ id: string; test_name: string | null; test_code: string | null; value: number | null; unit: string | null; test_date: string | null }>>([]);
+  const [labRows, setLabRows] = useState<Array<{ id: string; test_name: string | null; test_code: string | null; value: number | null; unit: string | null; reference_min: number | null; reference_max: number | null; test_date: string | null }>>([]);
   const [catalogRows, setCatalogRows] = useState<CatalogRow[]>([]);
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
@@ -287,10 +288,10 @@ export default function AdminPatientMetabolicMap() {
     // Лабораторные значения пациента — для подписи узлов SVG значениями (норма + отклонения).
     const { data: lr } = await (supabase as any)
       .from("lab_results")
-      .select("id, test_name, test_code, value, unit, test_date")
+      .select("id, test_name, test_code, value, unit, reference_min, reference_max, test_date")
       .eq("patient_id", id)
       .order("test_date", { ascending: false, nullsFirst: false });
-    setLabRows(((lr as any[]) || []).map((r) => ({ id: r.id, test_name: r.test_name, test_code: r.test_code, value: r.value, unit: r.unit, test_date: r.test_date })));
+    setLabRows(((lr as any[]) || []).map((r) => ({ id: r.id, test_name: r.test_name, test_code: r.test_code, value: r.value, unit: r.unit, reference_min: r.reference_min, reference_max: r.reference_max, test_date: r.test_date })));
     setBusy(false);
   }, [id]);
 
@@ -466,7 +467,15 @@ export default function AdminPatientMetabolicMap() {
         if (perNode.has(nodeId)) continue; // уже есть — берём самое свежее (labRows отсортирован по дате DESC)
         const v = l.value == null ? "" : String(l.value);
         const u = l.unit ? ` ${l.unit}` : "";
-        perNode.set(nodeId, { text: `${v}${u}`.trim() });
+        const level = severityFromRange(
+          Number(l.value),
+          l.reference_min == null ? null : Number(l.reference_min),
+          l.reference_max == null ? null : Number(l.reference_max),
+        );
+        perNode.set(nodeId, {
+          text: `${v}${u}`.trim(),
+          sev: level === "nodata" ? undefined : level,
+        });
       }
       if (perNode.size) out.set(slug, perNode);
     }
@@ -807,10 +816,19 @@ export default function AdminPatientMetabolicMap() {
                   ...pwFindings.map((f) => f.node_id).filter(Boolean) as string[],
                   ...((savedSummary?.affected_nodes) || []),
                 ]);
-                const status: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
+                const pwNodeValues = nodeValuesByPathway.get(pw.slug);
+                const measuredSeverity = pwNodeValues
+                  ? Array.from(pwNodeValues.values()).reduce<Severity>((worst, entry) => {
+                      const sev = entry.sev || "no_data";
+                      return severityRank(sev) > severityRank(worst) ? sev : worst;
+                    }, "no_data")
+                  : "no_data";
+                const summaryStatus: Severity = savedSummary?.status || (pwFindings.length ? "moderate" : "no_data");
+                const status: Severity = severityRank(measuredSeverity) > severityRank(summaryStatus)
+                  ? measuredSeverity
+                  : summaryStatus;
                 const severityText = pickSeverityText(severityTexts, pw.id, status, register);
                 const legacyText = pickText(texts, pw.id, register); // fallback, если severity-текст пуст
-                const pwNodeValues = nodeValuesByPathway.get(pw.slug);
                 const displayMarkerCount = pwNodeValues?.size ?? 0;
                 const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
@@ -873,7 +891,16 @@ export default function AdminPatientMetabolicMap() {
                         //  2) сохранённая сцена в pathway_schemas/map_schemas;
                         //  3) шаблон templateToScene;
                         //  4) авто-раскладка nodes/edges.
-                        const highlightsMap = new Map(Array.from(affectedNodes).map((n) => [n, status]));
+                        const highlightsMap = new Map<string, Severity>(Array.from(affectedNodes).map((n) => [n, status]));
+                        // Даже если агрегатор ещё не запускался после обновления правил,
+                        // измеренное значение с референсом обязано сразу подсветить узел.
+                        for (const [nodeId, entry] of (pwNodeValues || new Map())) {
+                          if (!entry.sev || entry.sev === "norm" || entry.sev === "no_data") continue;
+                          const current = highlightsMap.get(nodeId);
+                          if (!current || severityRank(entry.sev) > severityRank(current)) {
+                            highlightsMap.set(nodeId, entry.sev);
+                          }
+                        }
                         // Кастомные схемы: 22 карты v2.8 плюс три ранее существовавшие.
                         // Клиническая агрегация не меняется — компоненты получают только
                         // уже вычисленные значения и статусы узлов.

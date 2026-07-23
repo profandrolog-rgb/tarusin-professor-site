@@ -45,12 +45,14 @@ function ValText({ id, cx, bottomY, values }: {
   if (!v || v.value === "" || v.value == null) return null;
   const text = String(v.value);
   const lines = text.length > 24 ? [text.slice(0, 24), text.slice(24)] : [text];
-  const width = Math.max(96, Math.min(190, Math.max(...lines.map((line) => line.length)) * 7 + 18));
+  const width = Math.max(90, Math.min(160, Math.max(...lines.map((line) => line.length)) * 7 + 18));
   const height = lines.length > 1 ? 30 : 20;
+  const badgeCx = cx + 92;
+  const badgeY = bottomY - height / 2;
   return (
     <g pointerEvents="none">
-      <rect x={cx - width / 2} y={bottomY + 2} width={width} height={height} rx={5} fill="#fff" fillOpacity={0.98} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
-      <text x={cx} y={bottomY + (lines.length > 1 ? 13 : 16)} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f" stroke="#fff" strokeWidth={3} paintOrder="stroke">{lines.map((line, index) => <tspan key={index} x={cx} dy={index === 0 ? 0 : 12}>{line}</tspan>)}</text>
+      <rect x={badgeCx - width / 2} y={badgeY} width={width} height={height} rx={5} fill="#fff" fillOpacity={0.98} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
+      <text x={badgeCx} y={badgeY + (lines.length > 1 ? 13 : 16)} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f" stroke="#fff" strokeWidth={3} paintOrder="stroke">{lines.map((line, index) => <tspan key={index} x={badgeCx} dy={index === 0 ? 0 : 12}>{line}</tspan>)}</text>
     </g>
   );
 }
