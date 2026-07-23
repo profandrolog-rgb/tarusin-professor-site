@@ -59,6 +59,7 @@ import { AuditPanel } from "@/components/metabolic/AuditPanel";
 import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
 import { CompletenessInspector } from "@/components/metabolic/CompletenessInspector";
 import { UnaccountedLabsList } from "@/components/metabolic/UnaccountedLabsList";
+import { computeMappingStats } from "@/lib/metabolic/mappingStats";
 
 
 type Patient = { id: string; full_name: string; birth_date: string | null; history_number: string | null; share_simple_only?: boolean; sex?: "M" | "F" | null };
@@ -406,6 +407,11 @@ export default function AdminPatientMetabolicMap() {
     return m;
   }, [labRows, catalogRows]);
 
+  const mappingStats = useMemo(
+    () => computeMappingStats(labRows, labCodesById),
+    [labRows, labCodesById],
+  );
+
   // Значения показателей для узлов SVG: код → (значение, ед.) + направление из findings.
   // Ключ верхнего уровня — slug пути, чтобы один код (например FERR) ложился на разные узлы
   // в разных путях согласно CODE_NODE_MAP.
@@ -702,9 +708,10 @@ export default function AdminPatientMetabolicMap() {
         <section className="space-y-3">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-xl font-semibold">Метаболические пути</h2>
-            <span className="text-xs text-muted-foreground">
-              Учтено {labCodesById.size} анализов из {labRows.length}
-            </span>
+            <div className="text-right text-xs text-muted-foreground">
+              <div>Привязано к пути {mappingStats.mappedToPath} из {mappingStats.total}</div>
+              <div>В каталоге: {mappingStats.catalogResolved} · без кода: {mappingStats.noCatalogCode} · без пути: {mappingStats.noPath}</div>
+            </div>
           </div>
           <UnaccountedLabsList labRows={labRows} labCodesById={labCodesById} />
 
@@ -723,6 +730,7 @@ export default function AdminPatientMetabolicMap() {
                 const severityText = pickSeverityText(severityTexts, pw.id, status, register);
                 const legacyText = pickText(texts, pw.id, register); // fallback, если severity-текст пуст
                 const pwNodeValues = nodeValuesByPathway.get(pw.slug);
+                const displayMarkerCount = pwNodeValues?.size ?? 0;
                 const aiForPath = ai?.pathways?.find?.((p: any) => p.pathway_code === pw.slug) || null;
                 const isSelected = selectedSlugs.has(pw.slug);
                 const isAffected = status === "mild" || status === "moderate" || status === "severe";
@@ -756,7 +764,8 @@ export default function AdminPatientMetabolicMap() {
                       {pw.description && <p className="text-xs text-muted-foreground">{pw.description}</p>}
                       {savedSummary && (
                         <p className="text-[11px] text-muted-foreground">
-                          Маркеров сопоставлено: {savedSummary.matched_markers}
+                          Маркеров для клинической оценки: {savedSummary.matched_markers}
+                          {displayMarkerCount > 0 && ` · узлов с данными: ${displayMarkerCount}`}
                           {pwFindings.length > 0 && ` · отклонений: ${pwFindings.length}`}
                         </p>
                       )}
@@ -847,7 +856,12 @@ export default function AdminPatientMetabolicMap() {
                           })}
                         </ul>
                       )}
-                      {savedSummary && savedSummary.matched_markers === 0 && (
+                      {savedSummary && savedSummary.matched_markers === 0 && displayMarkerCount > 0 && (
+                        <div className="text-[11px] italic text-muted-foreground px-2 py-1">
+                          Значения показателей отображаются на схеме. Клинические правила оценки для этого пути ещё не настроены.
+                        </div>
+                      )}
+                      {savedSummary && savedSummary.matched_markers === 0 && displayMarkerCount === 0 && (
                         <div className="text-[11px] italic text-muted-foreground px-2 py-1">
                           Нет лабораторных данных для оценки этого пути.
                         </div>
