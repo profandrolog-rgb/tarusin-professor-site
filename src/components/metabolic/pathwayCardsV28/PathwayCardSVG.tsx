@@ -46,7 +46,7 @@ export function PathwayCardSVG({
     [reactId],
   );
   const preparedMarkup = useMemo(
-    () => markup.replaceAll("__ARROW_ID__", arrowId),
+    () => markup.split("__ARROW_ID__").join(arrowId),
     [markup, arrowId],
   );
 
