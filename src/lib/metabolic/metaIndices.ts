@@ -3,6 +3,7 @@
 // Если каких-то входов не хватает — индекс = null и не показывается.
 
 import { rowMatchesComponent, AGGREGATE_NODES, type LabRowLite } from "./aggregateNodes";
+import { METABOLIC_INDICES_V28 } from "./clinicalMatrixV28.generated";
 
 export type IndexResult = {
   id: string;
@@ -14,6 +15,71 @@ export type IndexResult = {
   status: "ok" | "off" | "unknown";
   note?: string;
 };
+
+/**
+ * Runtime implementation of the five registered v2.8 indices.
+ *
+ * These are deliberately additive to computeIndices(): the legacy indices
+ * remain available, while v2.8 formulas are exact-code based, return NULL
+ * semantics as `unknown`, and never create a pathway denominator row.
+ */
+export function computeMatrixIndicesV28(rows: LabRowLite[]): IndexResult[] {
+  const byCode = new Map<string, { value: number; unit: string }>();
+  for (const row of rows) {
+    const code = String(row.test_code || "").trim().toUpperCase();
+    const value = typeof row.value === "number"
+      ? row.value
+      : Number(String(row.value ?? "").replace(",", "."));
+    if (code && Number.isFinite(value) && !byCode.has(code)) {
+      byCode.set(code, { value, unit: String(row.unit || "").trim() });
+    }
+  }
+  const get = (code: string) => byCode.get(code);
+  const unitsCompatible = (items: Array<{ value: number; unit: string } | undefined>) => {
+    const units = new Set(items.map((item) => item?.unit).filter(Boolean));
+    return units.size <= 1;
+  };
+  const make = (id: string, value: number | null, label: string, unit = ""): IndexResult => ({
+    id,
+    label,
+    value,
+    displayValue: value == null ? "—" : fmt(value),
+    unit,
+    target: "по матрице v2.8; пороги не утверждены",
+    status: "unknown",
+    note: "Производный показатель для отображения; не добавляется в знаменатель и не повышает severity.",
+  });
+  const out: IndexResult[] = [];
+
+  const quin = get("QUIN");
+  const kyna = get("KYNA");
+  out.push(make("quin_kyna", quin && kyna && kyna.value !== 0 && unitsCompatible([quin, kyna])
+    ? quin.value / kyna.value : null, "QUIN / KYNA"));
+
+  const mha = [get("2MHA"), get("MHA_M_U"), get("MHA_P_U")];
+  out.push(make("mha_total", mha.every(Boolean) && unitsCompatible(mha)
+    ? mha.reduce((sum, item) => sum + (item?.value ?? 0), 0) : null, "Сумма метилгиппуровых кислот"));
+
+  const la = get("FA_LA");
+  const aa = get("FA_AA");
+  const epa = get("FA_EPA");
+  const dha = get("FA_DHA");
+  const ala = get("FA_ALA");
+  const ratioInputs = [la, aa, epa, dha, ala];
+  const denominator = (epa?.value ?? 0) + (dha?.value ?? 0) + (ala?.value ?? 0);
+  out.push(make("omega_ratio", ratioInputs.every(Boolean) && denominator > 0 && unitsCompatible(ratioInputs)
+    ? ((la?.value ?? 0) + (aa?.value ?? 0)) / denominator : null, "Омега-6 / Омега-3 (v2.8)"));
+
+  out.push(make("aa_epa", aa && epa && epa.value !== 0 && unitsCompatible([aa, epa])
+    ? aa.value / epa.value : null, "AA / EPA (v2.8)"));
+
+  const mead = get("FA_MEAD");
+  out.push(make("holman", mead && aa && aa.value !== 0 && unitsCompatible([mead, aa])
+    ? mead.value / aa.value : null, "Индекс Холмана (Mead / AA)"));
+
+  // Keep the registry as the source of truth for the five IDs at runtime.
+  return out.filter((item) => METABOLIC_INDICES_V28.some((registered) => registered.runtimeId === item.id));
+}
 
 // Найти первое численное значение из lab_results по списку алиасов (name/code).
 function findValue(rows: LabRowLite[], aliases: string[]): { value: number; unit: string } | null {
