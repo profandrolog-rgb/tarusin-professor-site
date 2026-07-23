@@ -92,6 +92,9 @@ export function PathwayCardSVG({
     if (!root) return;
 
     root.querySelectorAll("g.val-dyn, title.node-title-dyn").forEach((node) => node.remove());
+    // Заголовок уже выводится в CardHeader. Убираем только визуальный дубль
+    // внутри SVG, оставляя саму схему и её узлы без изменений.
+    root.querySelectorAll("text.ttl, text.st, text.title, text.stitle").forEach((node) => node.remove());
 
     const rects = root.querySelectorAll<SVGRectElement>("[data-node-id]");
     const svg = root.querySelector("svg") as SVGSVGElement | null;
@@ -223,7 +226,7 @@ export function PathwayCardSVG({
   }, [preparedMarkup, values, onNodeClick]);
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="w-full overflow-hidden">
       <div ref={ref} dangerouslySetInnerHTML={{ __html: preparedMarkup }} />
     </div>
   );
