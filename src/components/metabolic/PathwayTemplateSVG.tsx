@@ -103,8 +103,17 @@ export function PathwayTemplateSVG({
       });
     }
 
-    // 1b) Значения показателей под подписью узла (не меняет геометрию/данные).
+    // 1b) Значения показателей в отдельных бейджах.
+    // Бейдж не должен попадать поверх подписи узла или соседней стрелки.
     if (nodeValues && nodeValues.size) {
+      const occupied: Array<{ x: number; y: number; w: number; h: number }> = [];
+      const nodeGeoms = Array.from(svg.querySelectorAll<SVGGElement>("[data-node-id]")).flatMap((node) => {
+        const shape = node.querySelector(".node-shape") as SVGGraphicsElement | null;
+        const geom = shape ? readShapeGeom(shape) : null;
+        return geom ? [{ node, geom }] : [];
+      });
+      const intersects = (a: { x: number; y: number; w: number; h: number }, b: { x: number; y: number; w: number; h: number }) =>
+        a.x < b.x + b.w + 3 && a.x + a.w + 3 > b.x && a.y < b.y + b.h + 3 && a.y + a.h + 3 > b.y;
       nodeValues.forEach((val, nodeId) => {
         const g = svg.querySelector(`[data-node-id="${cssEscape(nodeId)}"]`) as SVGGElement | null;
         if (!g) return;
@@ -116,17 +125,45 @@ export function PathwayTemplateSVG({
         if (!geom) return;
         // Убираем возможный дубль от предыдущего рендера
         g.querySelectorAll(".lbl-v").forEach((n) => n.remove());
+        const lines = val.text.trim().split(/\s+/).reduce<string[]>((out, word) => {
+          const last = out[out.length - 1] || "";
+          if (last && `${last} ${word}`.length > 18) out[out.length - 1] = `${last} ${word}`.slice(0, 17) + "…";
+          else if (last) out[out.length - 1] = `${last} ${word}`;
+          else out.push(word);
+          return out;
+        }, []).slice(0, 2);
+        const badgeW = Math.max(76, Math.min(geom.w + 28, 150));
+        const badgeH = lines.length > 1 ? 27 : 18;
+        const candidates = [
+          { x: geom.x + geom.w / 2 - badgeW / 2, y: geom.y + geom.h + 5, w: badgeW, h: badgeH },
+          { x: geom.x + geom.w / 2 - badgeW / 2, y: geom.y - badgeH - 5, w: badgeW, h: badgeH },
+          { x: geom.x + geom.w + 6, y: geom.y + geom.h / 2 - badgeH / 2, w: badgeW, h: badgeH },
+          { x: geom.x - badgeW - 6, y: geom.y + geom.h / 2 - badgeH / 2, w: badgeW, h: badgeH },
+        ];
+        const view = readViewBox(svg);
+        const badge = candidates.find((candidate) =>
+          candidate.x >= 0 && candidate.y >= 0 && candidate.x + candidate.w <= view.w && candidate.y + candidate.h <= view.h &&
+          !nodeGeoms.some(({ geom: other }) => other.x !== geom.x && intersects(candidate, other)) &&
+          !occupied.some((other) => intersects(candidate, other)),
+        ) || candidates[0];
+        occupied.push(badge);
+        const badgeGroup = doc.createElementNS(svgNS, "g");
+        badgeGroup.setAttribute("class", "lbl-v");
+        badgeGroup.setAttribute("pointer-events", "none");
+        const bg = doc.createElementNS(svgNS, "rect");
+        bg.setAttribute("x", String(badge.x)); bg.setAttribute("y", String(badge.y));
+        bg.setAttribute("width", String(badge.w)); bg.setAttribute("height", String(badge.h));
+        bg.setAttribute("rx", "5"); bg.setAttribute("fill", "#fff"); bg.setAttribute("fill-opacity", "0.96");
+        bg.setAttribute("stroke", "#94a3b8"); bg.setAttribute("stroke-width", "0.8");
         const t = doc.createElementNS(svgNS, "text");
-        t.setAttribute("class", "lbl lbl-v");
-        t.setAttribute("x", String(geom.x + geom.w / 2));
-        t.setAttribute("y", String(geom.y + geom.h + 11));
-        t.setAttribute("text-anchor", "middle");
-        t.setAttribute("dominant-baseline", "central");
-        t.setAttribute("font-size", "11");
-        t.setAttribute("font-weight", "700");
-        t.setAttribute("fill", "#22303C");
-        t.textContent = val.text;
-        g.appendChild(t);
+        t.setAttribute("x", String(badge.x + badge.w / 2)); t.setAttribute("text-anchor", "middle");
+        t.setAttribute("font-size", lines.length > 1 ? "10" : "11"); t.setAttribute("font-weight", "700"); t.setAttribute("fill", "#22303C");
+        lines.forEach((line, index) => {
+          const span = doc.createElementNS(svgNS, "tspan");
+          span.setAttribute("x", String(badge.x + badge.w / 2)); span.setAttribute("y", String(badge.y + 12 + index * 11)); span.textContent = line;
+          t.appendChild(span);
+        });
+        badgeGroup.append(bg, t); g.appendChild(badgeGroup);
       });
     }
 
@@ -196,6 +233,11 @@ export function PathwayTemplateSVG({
       )}
     </div>
   );
+}
+
+function readViewBox(svg: SVGSVGElement): { w: number; h: number } {
+  const values = svg.getAttribute("viewBox")?.trim().split(/\s+/).map(Number) || [];
+  return { w: Number.isFinite(values[2]) ? values[2] : 0, h: Number.isFinite(values[3]) ? values[3] : 0 };
 }
 
 function cssEscape(s: string): string {
