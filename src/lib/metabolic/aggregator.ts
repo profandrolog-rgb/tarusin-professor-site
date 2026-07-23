@@ -111,13 +111,18 @@ function norm(s: unknown) {
  *   { code, when: { op, test_code, test_name?, value?, value_from_ref? },
  *     raises_to: "mild"|"moderate"|"severe", highlight_nodes: [] }
  *
+ * `outside_ref` is deliberately a single operation (rather than two rules):
+ * it flags a value below the laboratory lower bound OR above the upper bound,
+ * while counting the analyte once. It never substitutes a universal cutoff
+ * for the interval supplied by the laboratory/report.
+ *
  * Поддерживаем также «старый» формат с match/direction/thresholds (на случай миграции).
  */
 type DbRule = {
   code?: string;
   label?: string;
   when?: {
-    op?: ">" | "<" | ">=" | "<=" | "=" | "!=";
+    op?: ">" | "<" | ">=" | "<=" | "=" | "!=" | "outside_ref";
     test_code?: string;
     test_name?: string;
     value?: number;
@@ -129,6 +134,7 @@ type DbRule = {
   };
   raises_to?: "mild" | "moderate" | "severe";
   highlight_nodes?: string[];
+  note?: string;
   // legacy
   node_id?: string;
   direction?: "below" | "above" | "outside";
@@ -171,7 +177,7 @@ function findLatestMatch(labs: LabRow[], rule: DbRule): LabRow | null {
  * reference_ranges с учётом пола/возраста/фазы). Если они null — правило
  * не может быть оценено и возвращаем null (нет данных, не «норма»).
  */
-function evaluateRule(
+export function evaluateRule(
   rule: DbRule,
   lab: LabRow,
   refLow: number | null,
@@ -183,6 +189,13 @@ function evaluateRule(
   // Новый формат
   if (rule.when || rule.raises_to) {
     const op = rule.when?.op || ">";
+    if (op === "outside_ref") {
+      if (refLow == null && refHigh == null) return null;
+      const below = refLow != null && Number.isFinite(Number(refLow)) && labValue < Number(refLow);
+      const above = refHigh != null && Number.isFinite(Number(refHigh)) && labValue > Number(refHigh);
+      if (!below && !above) return "norm";
+      return (rule.raises_to as any) || "mild";
+    }
     const vfr = rule.when?.value_from_ref;
     const cmpValue: number | null =
       typeof rule.when?.value === "number"
@@ -460,6 +473,7 @@ export async function runAggregation(opts: RunOptions): Promise<AggregationResul
             bounds.ref_low != null ? `реф. ≥ ${bounds.ref_low}` : null,
             bounds.ref_high != null ? `реф. ≤ ${bounds.ref_high}` : null,
             bounds.source === "reference_ranges" ? "(по возрасту/фазе)" : null,
+            rule.note || null,
             `забор ${lab.test_date}`,
           ]
             .filter(Boolean)

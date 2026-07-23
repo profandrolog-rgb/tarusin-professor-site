@@ -282,7 +282,7 @@ export default function AdminPatientMetabolicMapPrint() {
               <tr className="bg-neutral-100 text-left">
                 <th className="border px-2 py-1">Путь</th>
                 <th className="border px-2 py-1 w-32">Статус</th>
-                <th className="border px-2 py-1 w-24">Маркеров</th>
+                <th className="border px-2 py-1 w-32">Маркеров для оценки</th>
                 <th className="border px-2 py-1">Кратко</th>
               </tr>
             </thead>
@@ -291,11 +291,15 @@ export default function AdminPatientMetabolicMapPrint() {
                 const s = summaryByPathway.get(pw.id);
                 const st: Severity = s?.status || "no_data";
                 const t = pickText(texts, pw.id, register);
+                const displayMarkerCount = nodeValuesByPathway.get(pw.slug)?.size ?? 0;
                 return (
                   <tr key={pw.id} className="align-top">
                     <td className="border px-2 py-1 font-medium">{pw.name}</td>
                     <td className={`border px-2 py-1 ${STATUS_CLS[st]}`}>{SEVERITY_LABEL[st]}</td>
-                    <td className="border px-2 py-1 text-center">{s?.matched_markers ?? 0}</td>
+                    <td className="border px-2 py-1 text-center">
+                      {s?.matched_markers ?? 0}
+                      {displayMarkerCount > 0 && <span className="block text-[10px] text-neutral-500">данные: {displayMarkerCount}</span>}
+                    </td>
                     <td className="border px-2 py-1 text-xs">{t?.summary || "—"}</td>
                   </tr>
                 );
@@ -315,6 +319,7 @@ export default function AdminPatientMetabolicMapPrint() {
           const st: Severity = s?.status || "no_data";
           const t = pickText(texts, pw.id, register);
           const pwFindings = findingsByPathway.get(pw.id) || [];
+          const displayMarkerCount = nodeValuesByPathway.get(pw.slug)?.size ?? 0;
           const affectedNodes = new Set<string>([
             ...pwFindings.map((f) => f.node_id).filter(Boolean) as string[],
             ...((s?.affected_nodes) || []),
@@ -435,7 +440,12 @@ export default function AdminPatientMetabolicMapPrint() {
                 </div>
               )}
 
-              {s?.matched_markers === 0 && (
+              {s?.matched_markers === 0 && displayMarkerCount > 0 && (
+                <p className="text-xs italic text-neutral-500 mt-3">
+                  Значения показателей отображаются на схеме, но клинические правила оценки для этого пути ещё не настроены.
+                </p>
+              )}
+              {s?.matched_markers === 0 && displayMarkerCount === 0 && (
                 <p className="text-xs italic text-neutral-500 mt-3">
                   По этому пути данных для оценки нет — статус «нет данных». Значения не выдумываются.
                 </p>
@@ -450,4 +460,3 @@ export default function AdminPatientMetabolicMapPrint() {
 
 // Устаревший PrintPathwaySVG удалён — печать использует общий PathwaySceneSVG,
 // чтобы подсветка была одинаковой в карточке и в PDF.
-
