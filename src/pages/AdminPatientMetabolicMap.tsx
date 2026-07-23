@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -19,6 +20,7 @@ import {
   Pill,
   Sparkles,
   RefreshCw,
+  Copy,
 } from "lucide-react";
 import {
   runAggregation,
@@ -139,7 +141,7 @@ export default function AdminPatientMetabolicMap() {
   const [lastAggregatedAt, setLastAggregatedAt] = useState<string | null>(null);
   const [texts, setTexts] = useState<PathwayText[]>([]);
   const [severityTexts, setSeverityTexts] = useState<PathwaySeverityText[]>([]);
-  const [labRows, setLabRows] = useState<Array<{ id: string; test_name: string | null; test_code: string | null; value: number | null; unit: string | null }>>([]);
+  const [labRows, setLabRows] = useState<Array<{ id: string; test_name: string | null; test_code: string | null; value: number | null; unit: string | null; test_date: string | null }>>([]);
   const [catalogRows, setCatalogRows] = useState<CatalogRow[]>([]);
   const [register, setRegister] = useState<Register>("simple");
   const [selectedSlugs, setSelectedSlugs] = useState<Set<string>>(new Set());
@@ -150,6 +152,7 @@ export default function AdminPatientMetabolicMap() {
   const [deidentified, setDeidentified] = useState(true);
   const [ai, setAi] = useState<any | null>(null);
   const [rxBusy, setRxBusy] = useState(false);
+  const [globalCopied, setGlobalCopied] = useState(false);
 
   // Таймер прогресса ИИ-запроса
   useEffect(() => {
@@ -258,10 +261,10 @@ export default function AdminPatientMetabolicMap() {
     // Лабораторные значения пациента — для подписи узлов SVG значениями (норма + отклонения).
     const { data: lr } = await (supabase as any)
       .from("lab_results")
-      .select("id, test_name, test_code, value, unit")
+      .select("id, test_name, test_code, value, unit, test_date")
       .eq("patient_id", id)
-      .order("test_date", { ascending: false });
-    setLabRows(((lr as any[]) || []).map((r) => ({ id: r.id, test_name: r.test_name, test_code: r.test_code, value: r.value, unit: r.unit })));
+      .order("test_date", { ascending: false, nullsFirst: false });
+    setLabRows(((lr as any[]) || []).map((r) => ({ id: r.id, test_name: r.test_name, test_code: r.test_code, value: r.value, unit: r.unit, test_date: r.test_date })));
     setBusy(false);
   }, [id]);
 
@@ -412,6 +415,15 @@ export default function AdminPatientMetabolicMap() {
     [labRows, labCodesById],
   );
 
+  // «Визит» означает срез на дату визита: сохраняем все анализы, которые уже
+  // были доступны к этой дате, и не подмешиваем более поздние результаты.
+  const visibleLabRows = useMemo(() => {
+    if (selectedVisit === "all") return labRows;
+    const visitDate = visits.find((v) => v.id === selectedVisit)?.visit_date;
+    if (!visitDate) return labRows;
+    return labRows.filter((row) => !row.test_date || row.test_date <= visitDate);
+  }, [labRows, selectedVisit, visits]);
+
   // Значения показателей для узлов SVG: код → (значение, ед.) + направление из findings.
   // Ключ верхнего уровня — slug пути, чтобы один код (например FERR) ложился на разные узлы
   // в разных путях согласно CODE_NODE_MAP.
@@ -420,7 +432,7 @@ export default function AdminPatientMetabolicMap() {
     // 1) Нормальные и все измеренные значения из lab_results
     for (const [slug, codeMap] of Object.entries(CODE_NODE_MAP)) {
       const perNode = new Map<string, { text: string; sev?: Severity }>();
-      for (const l of labRows) {
+      for (const l of visibleLabRows) {
         const code = labCodesById.get(l.id);
         if (!code) continue;
         const nodeId = codeMap[code];
@@ -434,7 +446,7 @@ export default function AdminPatientMetabolicMap() {
     }
     // 1b) Агрегированные узлы (сумма из нескольких строк lab_results) — перекрывают одиночный резолв,
     // если данный узел присутствует в пути.
-    const aggregates = computeAllAggregates(labRows as any);
+    const aggregates = computeAllAggregates(visibleLabRows as any);
     if (aggregates.size) {
       for (const pw of pathways) {
         const nodeIds = new Set<string>((pw.nodes || []).map((n: any) => n?.id).filter(Boolean));
@@ -467,17 +479,38 @@ export default function AdminPatientMetabolicMap() {
       perNode.set(f.node_id, { text, sev });
     }
     return out;
-  }, [labRows, labCodesById, findings, pathways]);
+  }, [visibleLabRows, labCodesById, findings, pathways]);
 
   // Интегральные индексы: считаются из нескольких значений lab_results.
   const metaIndices = useMemo(() => {
-    const legacy = computeIndices(labRows as any);
-    const matrixV28 = computeMatrixIndicesV28(labRows as any);
+    const legacy = computeIndices(visibleLabRows as any);
+    const matrixV28 = computeMatrixIndicesV28(visibleLabRows as any);
     const v28Ids = new Set(matrixV28.map((item) => item.id));
     // v2.8 owns the registered formulas (omega_ratio, aa_epa, holman);
     // unrelated legacy indices remain visible and unchanged.
     return [...legacy.filter((item) => !v28Ids.has(item.id)), ...matrixV28];
-  }, [labRows]);
+  }, [visibleLabRows]);
+
+  const globalConclusion = useMemo(() => {
+    const items = Array.isArray(ai?.pathways) ? ai.pathways : [];
+    if (!items.length) return "";
+    const pathwayBySlug = new Map(pathways.map((p) => [p.slug, p]));
+    const groups = new Map<string, { label: string; rows: string[] }>();
+    for (const item of items) {
+      const text = String(register === "simple" ? item?.text_plain : item?.text_pro || "").trim();
+      if (!text) continue;
+      const pw = pathwayBySlug.get(String(item?.pathway_code || ""));
+      const key = pw?.group || "other";
+      const label = pw?.group ? pw.group.replaceAll("_", " ") : "Прочие системы";
+      if (!groups.has(key)) groups.set(key, { label, rows: [] });
+      groups.get(key)!.rows.push(`${pw?.name || item.pathway_code}: ${text}`);
+    }
+    const body = [...groups.values()].map((group) => `## ${group.label}\n${group.rows.map((row) => `- ${row}`).join("\n")}`).join("\n\n");
+    const links = Array.isArray(ai?.cross_links) && ai.cross_links.length
+      ? `\n\nСвязи между системами:\n${ai.cross_links.map((l: any) => `- ${l.from} → ${l.to}: ${l.why}`).join("\n")}`
+      : "";
+    return `Клиническое резюме метаболической карты\n\n${body}${links}\n\nПримечание: текст объединяет сохранённые выводы ИИ и требует врачебной проверки перед включением в заключение.`;
+  }, [ai, pathways, register]);
 
 
 
@@ -713,12 +746,12 @@ export default function AdminPatientMetabolicMap() {
               <div>В каталоге: {mappingStats.catalogResolved} · без кода: {mappingStats.noCatalogCode} · без пути: {mappingStats.noPath}</div>
             </div>
           </div>
-          <UnaccountedLabsList labRows={labRows} labCodesById={labCodesById} />
+          <UnaccountedLabsList labRows={visibleLabRows} labCodesById={labCodesById} />
 
           {pathways.length === 0 ? (
             <Card><CardContent className="p-6 text-sm text-muted-foreground">Справочник путей ещё пуст.</CardContent></Card>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4">
               {pathways.map((pw) => {
                 const pwFindings = findingsByPathway.get(pw.id) || [];
                 const savedSummary = summaryByPathway.get(pw.id);
@@ -818,7 +851,7 @@ export default function AdminPatientMetabolicMap() {
                               rxLabelByNode={rxLabelByNode}
                               nodeValues={pwNodeValues}
                               overlayScene={schemas.get(pw.slug) || null}
-                              maxHeight={320}
+                              maxHeight={520}
                             />
                           );
                         }
@@ -951,6 +984,42 @@ export default function AdminPatientMetabolicMap() {
             </div>
           )}
         </section>
+
+        {ai && (
+          <Card className="border-primary/40" id="global-conclusion">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Итоговое клиническое резюме
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Все сохранённые выводы ИИ объединены по системам. Схемы в этот текст не входят — его можно проверить, скопировать и перенести в заключение.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {globalConclusion ? (
+                <>
+                  <Textarea readOnly value={globalConclusion} className="min-h-[360px] text-base leading-7" aria-label="Итоговое клиническое резюме" />
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(globalConclusion);
+                        setGlobalCopied(true);
+                        window.setTimeout(() => setGlobalCopied(false), 1800);
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />{globalCopied ? "Скопировано" : "Копировать текст"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Сначала сформируйте ИИ-интерпретацию карты.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {findingsByPathway.get("_unbound")?.length ? (
           <Card>
