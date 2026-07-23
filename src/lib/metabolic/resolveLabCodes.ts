@@ -30,7 +30,14 @@ export function buildCatalogIndex(rows: CatalogRow[]): CatEntry[] {
     const code = (asciiHit || String(row.short_name || row.name || aliases[0])).trim().toUpperCase();
     if (!code) continue;
     const keys = aliases.map((a) => norm(a)).filter(Boolean);
-    const tokens = keys.map((k) => k.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+    // Токены для многословных алиасов. Если фильтр коротких токенов (<3) обрезал алиас
+    // (например «ХС общий» → «общий»), token-match для такого алиаса отключаем, иначе
+    // одиночный оставшийся токен даёт ложные срабатывания (Общий белок → CHOL).
+    const tokens = keys.map((k) => {
+      const parts = k.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+      const kept = parts.filter((t) => t.length >= 3);
+      return kept.length === parts.length && kept.length >= 2 ? kept : [];
+    });
     entries.push({ code, keys, tokens, unit: row.unit || null });
   }
   entries.sort((a, b) => Number(asciiCodeRe.test(b.code)) - Number(asciiCodeRe.test(a.code)));
