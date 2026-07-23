@@ -43,18 +43,21 @@ function ValText({ id, cx, bottomY, values }: {
 }) {
   const v = values?.[id];
   if (!v || v.value === "" || v.value == null) return null;
+  const text = String(v.value);
+  const width = Math.max(80, Math.min(170, text.length * 7 + 18));
   return (
-    <text x={cx} y={bottomY - 4} fontSize={10} textAnchor="middle" fill="#20303f">
-      {String(v.value)}
-    </text>
+    <g pointerEvents="none">
+      <rect x={cx - width / 2} y={bottomY + 2} width={width} height={20} rx={5} fill="#fff" fillOpacity={0.96} stroke={STATUS_STROKE[v.status]} strokeWidth={1} />
+      <text x={cx} y={bottomY + 16} fontSize={12} fontWeight={700} textAnchor="middle" fill="#20303f">{text}</text>
+    </g>
   );
 }
 
 export function VitDSchemeSVG({ values, onNodeClick }: VitDSchemeSVGProps) {
   const v = useMemo(() => values, [values]);
   return (
-    <div style={{ overflowX: "auto" }}>
-      <svg width="100%" height="auto" viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" fontFamily="Arial, sans-serif" style={{ minWidth: 640 }}>
+    <div className="w-full overflow-hidden">
+      <svg width="100%" height="auto" viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" fontFamily="Arial, sans-serif" style={{ display: "block" }}>
         <defs>
           <marker id="vd-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#5A6B7B"/></marker>
           <marker id="vd-arrowB" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#B0752A"/></marker>
