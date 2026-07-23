@@ -236,7 +236,7 @@ export function computeIndices(rows: LabRowLite[]): IndexResult[] {
     }
   }
 
-  // 8) T / E2
+  // 8) T / E2 — приводим единицы к общей шкале (нмоль/л)
   {
     const t = findValue(rows, ["Тестостерон общий", "Тестостерон", "Testosterone", "TESTO"]);
     const e2 = findValue(rows, ["Эстрадиол", "Estradiol", "E2"]) || rows
@@ -244,8 +244,24 @@ export function computeIndices(rows: LabRowLite[]): IndexResult[] {
       .map((r) => ({ value: Number(String(r.value ?? "").replace(",", ".")), unit: r.unit || "" }))
       .find((r) => Number.isFinite(r.value)) || null;
     if (t && e2 && e2.value > 0) {
-      const v = t.value / e2.value;
-      out.push({ id: "t_e2", label: "T / E2", value: v, displayValue: fmt(v), unit: "", target: "по возрасту/полу", status: "unknown", note: "Активность ароматазы." });
+      const uT = (t.unit || "").toLowerCase().replace(/\s+/g, "");
+      const uE = (e2.unit || "").toLowerCase().replace(/\s+/g, "");
+      // T: пмоль/л → нмоль/л (÷1000); нг/мл → нмоль/л (×3.467); нмоль/л как есть.
+      let tNmol = t.value;
+      if (uT.includes("пмоль") || uT.includes("pmol")) tNmol = t.value / 1000;
+      else if (uT.includes("нг/мл") || uT.includes("ng/ml")) tNmol = t.value * 3.467;
+      // E2: пмоль/л → нмоль/л (÷1000); пг/мл → нмоль/л (×3.671/1000); нмоль/л как есть.
+      let e2Nmol = e2.value;
+      if (uE.includes("пмоль") || uE.includes("pmol")) e2Nmol = e2.value / 1000;
+      else if (uE.includes("пг/мл") || uE.includes("pg/ml")) e2Nmol = (e2.value * 3.671) / 1000;
+      const v = e2Nmol > 0 ? tNmol / e2Nmol : null;
+      if (v != null && Number.isFinite(v)) {
+        out.push({
+          id: "t_e2", label: "T / E2", value: v, displayValue: fmt(v),
+          unit: "", target: "по возрасту/полу", status: "unknown",
+          note: `Активность ароматазы. Единицы приведены к нмоль/л (T: ${t.unit || "?"}, E2: ${e2.unit || "?"}).`,
+        });
+      }
     }
   }
 
