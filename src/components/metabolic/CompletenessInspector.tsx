@@ -13,7 +13,7 @@
  * summary (matched_markers, needs_phase_codes), что и агрегатор.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,19 +32,34 @@ type LabLite = {
   test_name: string | null;
 };
 
+export type CompletenessRow = {
+  id: string;
+  slug: string;
+  name: string;
+  expected: number;
+  covered: number;
+  matched: number;
+  missing: string[];
+  needsPhase: string[];
+  hasData: boolean;
+  hasRules: boolean;
+};
+
 interface Props {
   patientId: string;
   pathways: PathwayLite[];
   summary: PathwaySummary[];
   /** Опционально: если визит выбран, ограничиваем лабы по дате визита */
   visitDate?: string | null;
+  /** Предпочтительно передавать тот же срез кодов, который уже показан на карте. */
+  externalPatientCodes?: Set<string>;
 }
 
 function normCode(s: string | null | undefined): string {
   return String(s ?? "").toUpperCase().trim();
 }
 
-export function CompletenessInspector({ patientId, pathways, summary, visitDate }: Props) {
+export function CompletenessInspector({ patientId, pathways, summary, visitDate, externalPatientCodes }: Props) {
   const [codeLabels, setCodeLabels] = useState<Record<string, string>>({});
   const [labs, setLabs] = useState<LabLite[]>([]);
 
@@ -63,7 +78,8 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
     };
   }, [patientId, visitDate]);
 
-  // Тянем каталог, чтобы показывать привычные короткие названия (ТТГ, АМГ и т.п.)
+  // Тянем каталог, чтобы показывать привычные короткие названия и правильно
+  // резолвить строки lab_results, где test_code пустой.
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -73,22 +89,30 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
         .eq("is_active", true);
       if (!alive) return;
       const map: Record<string, string> = {};
+      const aliases: Record<string, string> = {};
       for (const row of (data as any[]) || []) {
-        const label = row.short_name || row.name;
+        const code = normCode(row.short_name || row.name);
+        const label = row.name || row.short_name;
         if (!label) continue;
-        map[normCode(row.short_name)] = label;
-        map[normCode(row.name)] = label;
+        map[code] = label;
+        aliases[code] = code;
+        aliases[normCode(row.short_name)] = code;
+        aliases[normCode(row.name)] = code;
         for (const s of (row.synonyms as string[]) || []) {
           const k = normCode(s);
           if (k && !map[k]) map[k] = label;
+          if (k) aliases[k] = code;
         }
       }
       setCodeLabels(map);
+      codeAliasesRef.current = aliases;
     })();
     return () => {
       alive = false;
     };
   }, []);
+
+  const codeAliasesRef = useRef<Record<string, string>>({});
 
   // Множество кодов, которые реально есть у пациента (по test_code либо по совпадению test_name с каталогом)
   const patientCodes = useMemo(() => {
@@ -100,44 +124,23 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
       if (!c && l.test_name) {
         const n = normCode(l.test_name);
         // прямое совпадение
-        if (codeLabels[n]) set.add(n);
+        if (codeAliasesRef.current[n]) set.add(codeAliasesRef.current[n]);
       }
     }
     return set;
   }, [labs, codeLabels]);
 
+  const effectivePatientCodes = externalPatientCodes || patientCodes;
+
   const rows = useMemo(() => {
-    return pathways.map((pw) => {
-      const expected = new Set<string>();
-      for (const r of (pw.rules || []) as any[]) {
-        const tc = normCode(r?.when?.test_code);
-        if (tc) expected.add(tc);
-      }
-      const expectedArr = [...expected];
-      const covered = expectedArr.filter((c) => patientCodes.has(c));
-      const missing = expectedArr.filter((c) => !patientCodes.has(c));
-      const sum = summary.find((s) => s.pathway_id === pw.id);
-      const matched = sum?.matched_markers ?? 0;
-      const needsPhase = sum?.needs_phase_codes || [];
-      return {
-        id: pw.id,
-        slug: pw.slug,
-        name: pw.name,
-        expected: expectedArr.length,
-        covered: covered.length,
-        matched,
-        missing,
-        needsPhase,
-        isEmpty: matched === 0,
-      };
-    });
-  }, [pathways, summary, patientCodes]);
+    return buildCompletenessRows(pathways, summary, effectivePatientCodes);
+  }, [pathways, summary, effectivePatientCodes]);
 
   const labelFor = (code: string) => codeLabels[code] || code;
 
   const totals = useMemo(() => {
     const total = rows.length;
-    const evaluated = rows.filter((r) => !r.isEmpty).length;
+    const evaluated = rows.filter((r) => r.hasData && r.matched > 0).length;
     const skipped = total - evaluated;
     return { total, evaluated, skipped };
   }, [rows]);
@@ -151,7 +154,7 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
         </CardTitle>
         <p className="text-xs text-muted-foreground">
           Показывает, какие показатели каждого пути покрыты анализами пациента, а какие стоит досдать.
-          Пути без единого измерения не считаются ошибкой — они помечаются «не оценивается».
+          «Нет данных» означает отсутствие нужных анализов, «данные есть, референс не применён» — показатель найден, но его нельзя корректно сравнить.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -176,13 +179,21 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
                   <span className="text-[11px] text-muted-foreground shrink-0">{r.slug}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px]">
-                  {r.isEmpty ? (
+                  {!r.hasRules ? (
                     <Badge variant="outline" className="border-muted text-muted-foreground">
-                      не оценивается
+                      правила не настроены
+                    </Badge>
+                  ) : !r.hasData ? (
+                    <Badge variant="outline" className="border-amber-300 text-amber-700">
+                      нет данных
+                    </Badge>
+                  ) : r.matched > 0 ? (
+                    <Badge variant="outline" className="border-emerald-300 text-emerald-700 dark:text-emerald-300">
+                      оценено {r.matched}/{r.covered}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-emerald-300 text-emerald-700 dark:text-emerald-300">
-                      покрыто {r.covered}/{r.expected}
+                    <Badge variant="outline" className="border-blue-300 text-blue-700">
+                      данные есть, референс не применён
                     </Badge>
                   )}
                   {r.needsPhase.length > 0 && (
@@ -192,7 +203,7 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
                   )}
                 </div>
               </div>
-              {r.missing.length > 0 && (
+              {r.hasRules && r.missing.length > 0 && (
                 <div className="text-[12px] text-muted-foreground">
                   <span className="font-medium">Досдать:</span>{" "}
                   {r.missing.map(labelFor).join(", ")}
@@ -207,4 +218,33 @@ export function CompletenessInspector({ patientId, pathways, summary, visitDate 
       </CardContent>
     </Card>
   );
+}
+
+export function buildCompletenessRows(
+  pathways: PathwayLite[],
+  summary: PathwaySummary[],
+  patientCodes: Set<string>,
+): CompletenessRow[] {
+  return pathways.map((pw) => {
+    const expected = new Set<string>();
+    for (const r of (pw.rules || []) as any[]) {
+      const code = normCode(r?.when?.test_code);
+      if (code) expected.add(code);
+    }
+    const expectedArr = [...expected];
+    const covered = expectedArr.filter((code) => patientCodes.has(code));
+    const sum = summary.find((s) => s.pathway_id === pw.id);
+    return {
+      id: pw.id,
+      slug: pw.slug,
+      name: pw.name,
+      expected: expectedArr.length,
+      covered: covered.length,
+      matched: sum?.matched_markers ?? 0,
+      missing: expectedArr.filter((code) => !patientCodes.has(code)),
+      needsPhase: sum?.needs_phase_codes || [],
+      hasData: covered.length > 0,
+      hasRules: expectedArr.length > 0,
+    };
+  });
 }
