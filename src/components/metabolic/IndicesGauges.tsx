@@ -91,10 +91,15 @@ function zoneOfValue(v: number, zones: Zone[]): Zone | null {
 }
 
 function Gauge({ label, ix, cfg }: { label: string; ix: IndexResult | null; cfg: GaugeCfg | null }) {
-  const hasData = !!(ix && ix.value != null && cfg);
+  const hasValue = !!(ix && ix.value != null);
+  // Если есть пороги — используем их; иначе строим авто-домен от значения для отображения стрелки.
+  const autoDomain: [number, number] = hasValue
+    ? [0, Math.max(1, (ix!.value as number) * 1.6)]
+    : [0, 1];
+  const effectiveDomain: [number, number] = cfg ? cfg.domain : autoDomain;
   const zones = cfg?.zones ?? [];
-  const zone = hasData ? zoneOfValue(ix!.value as number, zones) : null;
-  const valColor = hasData && zone ? COLORS[zone.color] : GREY;
+  const zone = hasValue && cfg ? zoneOfValue(ix!.value as number, zones) : null;
+  const valColor = hasValue && zone ? COLORS[zone.color] : (hasValue ? "#20303f" : GREY);
 
   return (
     <div className="rounded-xl border bg-[#FBFCFD] border-[#DCE3EA] p-2">
@@ -111,9 +116,9 @@ function Gauge({ label, ix, cfg }: { label: string; ix: IndexResult | null; cfg:
           : <path d={arcPath(180, 0)} fill="none" stroke="#E1E6EB" strokeWidth="16" />
         }
 
-        {/* Стрелка */}
-        {hasData && cfg && (() => {
-          const ang = valueToAngleDeg(ix!.value as number, cfg.domain);
+        {/* Стрелка — рисуем при наличии значения, даже если порогов нет */}
+        {hasValue && (() => {
+          const ang = valueToAngleDeg(ix!.value as number, effectiveDomain);
           const tip = polar(ang, R - 15);
           return (
             <>
@@ -122,14 +127,14 @@ function Gauge({ label, ix, cfg }: { label: string; ix: IndexResult | null; cfg:
             </>
           );
         })()}
-        {!hasData && <circle cx={CX} cy={CY} r="6" fill={GREY} />}
+        {!hasValue && <circle cx={CX} cy={CY} r="6" fill={GREY} />}
 
         {/* Значение */}
         <text x="135" y="182" textAnchor="middle" fontSize="30" fontWeight="700" fill={valColor}>
-          {hasData ? ix!.displayValue : "—"}
+          {hasValue ? ix!.displayValue : "—"}
         </text>
         <text x="135" y="200" textAnchor="middle" fontSize="11" fill="#6a7886">
-          {hasData ? `${ix!.unit || ""}${cfg?.subLabel ? (ix!.unit ? " · " : "") + cfg!.subLabel : ""}` : "нет данных"}
+          {hasValue ? `${ix!.unit || ""}${cfg?.subLabel ? (ix!.unit ? " · " : "") + cfg!.subLabel : ""}` : "нет данных"}
         </text>
         <text x="135" y="218" textAnchor="middle" fontSize="11" fill="#8a97a4">
           {ix?.target ? `цель ${ix.target}` : ""}
