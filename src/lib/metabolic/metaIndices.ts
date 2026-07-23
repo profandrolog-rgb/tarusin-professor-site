@@ -84,7 +84,13 @@ export function computeMatrixIndicesV28(rows: LabRowLite[]): IndexResult[] {
 // Найти первое численное значение из lab_results по списку алиасов (name/code).
 function findValue(rows: LabRowLite[], aliases: string[]): { value: number; unit: string } | null {
   for (const r of rows) {
-    if (!aliases.some((a) => rowMatchesComponent(r, a))) continue;
+    const name = String(r.test_name || "").toLowerCase();
+    const code = String(r.test_code || "").toLowerCase();
+    const matched = aliases.some((a) => rowMatchesComponent(r, a)) || aliases.some((a) => {
+      const needle = a.toLowerCase().trim();
+      return needle && (name.includes(needle) || code === needle);
+    });
+    if (!matched) continue;
     const n = typeof r.value === "number" ? r.value : Number(String(r.value ?? "").replace(",", "."));
     if (Number.isFinite(n)) return { value: n, unit: r.unit || "" };
   }

@@ -136,10 +136,10 @@ export function PathwayTemplateSVG({
         const badgeW = Math.max(76, Math.min(geom.w + 28, 150));
         const badgeH = lines.length > 1 ? 27 : 18;
         const candidates = [
-          { x: geom.x + geom.w / 2 - badgeW / 2, y: geom.y + geom.h + 5, w: badgeW, h: badgeH },
-          { x: geom.x + geom.w / 2 - badgeW / 2, y: geom.y - badgeH - 5, w: badgeW, h: badgeH },
           { x: geom.x + geom.w + 6, y: geom.y + geom.h / 2 - badgeH / 2, w: badgeW, h: badgeH },
           { x: geom.x - badgeW - 6, y: geom.y + geom.h / 2 - badgeH / 2, w: badgeW, h: badgeH },
+          { x: geom.x + geom.w / 2 - badgeW / 2, y: geom.y - badgeH - 5, w: badgeW, h: badgeH },
+          { x: geom.x + geom.w / 2 - badgeW / 2, y: geom.y + geom.h + 5, w: badgeW, h: badgeH },
         ];
         const view = readViewBox(svg);
         const badge = candidates.find((candidate) =>
