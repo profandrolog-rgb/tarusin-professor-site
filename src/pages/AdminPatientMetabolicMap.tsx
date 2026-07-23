@@ -79,6 +79,7 @@ type Pathway = {
   group_order?: number | null;
   consequences?: Array<{ to_slug?: string; to_label?: string; weight?: number }>;
   sex?: "M" | "F" | null;
+  rules?: Array<{ highlight_nodes?: string[] }>;
 };
 type Finding = {
   id: string;
@@ -455,10 +456,13 @@ export default function AdminPatientMetabolicMap() {
   // Ключ верхнего уровня — slug пути, чтобы один код (например FERR) ложился на разные узлы
   // в разных путях согласно CODE_NODE_MAP.
   const nodeValuesByPathway = useMemo(() => {
-    const out = new Map<string, Map<string, { text: string; sev?: Severity }>>();
+    const out = new Map<string, Map<string, { text: string; sev?: Severity; contextOutOfRange?: boolean }>>();
     // 1) Нормальные и все измеренные значения из lab_results
     for (const [slug, codeMap] of Object.entries(CODE_NODE_MAP)) {
-      const perNode = new Map<string, { text: string; sev?: Severity }>();
+      const perNode = new Map<string, { text: string; sev?: Severity; contextOutOfRange?: boolean }>();
+      const ruleNodeIds = new Set(
+        (pathways.find((p) => p.slug === slug)?.rules || []).flatMap((rule) => rule.highlight_nodes || []),
+      );
       for (const l of visibleLabRows) {
         const code = labCodesById.get(l.id);
         if (!code) continue;
@@ -472,9 +476,11 @@ export default function AdminPatientMetabolicMap() {
           l.reference_min == null ? null : Number(l.reference_min),
           l.reference_max == null ? null : Number(l.reference_max),
         );
+        const clinicalRuleApplies = ruleNodeIds.has(nodeId);
         perNode.set(nodeId, {
           text: `${v}${u}`.trim(),
-          sev: level === "nodata" ? undefined : level,
+          sev: clinicalRuleApplies && level !== "nodata" ? level : undefined,
+          contextOutOfRange: !clinicalRuleApplies && level !== "norm" && level !== "nodata",
         });
       }
       if (perNode.size) out.set(slug, perNode);
@@ -554,7 +560,7 @@ export default function AdminPatientMetabolicMap() {
       const pw = pathwayBySlug.get(String(item?.pathway_code || ""));
       const key = pw?.group || "other";
       const groupKey = pw?.group || "other";
-      const label = GROUP_LABELS[groupKey] || groupKey.replace(/_/g, " ");
+      const label = GROUP_LABELS[groupKey] || groupKey.replaceAll("_", " ");
       if (!groups.has(key)) groups.set(key, { label, rows: [] });
       groups.get(key)!.rows.push(`${pw?.name || item.pathway_code}: ${text}`);
     }
@@ -569,7 +575,16 @@ export default function AdminPatientMetabolicMap() {
     const links = Array.isArray(ai?.cross_links) && ai.cross_links.length
       ? `\n\nСвязи между системами:\n${ai.cross_links.map((l: any) => `- ${l.from} → ${l.to}: ${l.why}`).join("\n")}`
       : "";
-    return `Клиническое резюме метаболической карты\n\n${body}${completenessNote}${links}\n\nПримечание: текст объединяет сохранённые выводы ИИ и сведения о полноте анализов. Он требует врачебной проверки перед включением в заключение.`;
+    const contextAlerts = [...nodeValuesByPathway.entries()].flatMap(([slug, nodes]) => {
+      const pw = pathwayBySlug.get(slug);
+      return [...nodes.entries()]
+        .filter(([, entry]) => entry.contextOutOfRange)
+        .map(([nodeId, entry]) => `- ${pw?.name || slug}: ${nodeId} — ${entry.text} (контекстный показатель; автоматически не повышает тяжесть пути)`);
+    });
+    const contextNote = contextAlerts.length
+      ? `\n\nКонтекстные отклонения (не являются самостоятельным диагнозом):\n${contextAlerts.join("\n")}`
+      : "";
+    return `Клиническое резюме метаболической карты\n\n${body}${contextNote}${completenessNote}${links}\n\nПримечание: текст объединяет сохранённые выводы ИИ и сведения о полноте анализов. Он требует врачебной проверки перед включением в заключение.`;
   }, [ai, pathways, register, completenessRows]);
 
 

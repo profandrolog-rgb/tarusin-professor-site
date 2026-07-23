@@ -40,12 +40,22 @@ export function resolveCode(testName: string | null | undefined, catalog: CatEnt
   const nm = norm(testName);
   if (!nm) return null;
   const labTokens = new Set(nm.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 3));
+  const candidates: Array<{ entry: CatEntry; score: number }> = [];
   for (const e of catalog) {
     const hitDirect = e.keys.includes(nm);
     const hitSubstr = !hitDirect && e.keys.some((k) => k.length >= 3 && nm.includes(k));
     const hitTokens = !hitDirect && !hitSubstr && labTokens.size > 0 &&
       e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
-    if (hitDirect || hitSubstr || hitTokens) return e.code;
+    if (hitDirect || hitSubstr || hitTokens) {
+      // Один русский analyte может иметь legacy-код и канонический код
+      // AminoMetrix (например ORNITHINE и AA_ORN_PL). Для плазменной
+      // аминокислоты выбираем канонический AA_*_PL, иначе значение не
+      // попадает в узел SVG, хотя в каталоге оно есть.
+      let score = hitDirect ? 30 : hitSubstr ? 20 : 10;
+      if (e.code.startsWith("AA_") && e.code.endsWith("_PL")) score += 20;
+      candidates.push({ entry: e, score });
+    }
   }
-  return null;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0]?.entry.code || null;
 }
