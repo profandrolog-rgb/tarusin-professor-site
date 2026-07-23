@@ -3,7 +3,7 @@
 -- The React SVG cards remain the visual source of truth; nodes/edges are the
 -- database fallback for auto-layout, printing and server-side catalog context.
 
-INSERT INTO public.pathways
+INSERT INTO public.pathways AS target
   (slug, name, description, is_active, nodes, edges, "group", group_order)
 VALUES
   ('carbohydrate_pyruvate', 'Пируват–лактат и углеводный обмен', 'Пируват, лактат, аланин', '[{"id":"lactate_u","label":"Молочная кислота (лактат)","x":80,"y":70},{"id":"pyruvate_u","label":"Пировиноградная кислота","x":230,"y":70},{"id":"alanine","label":"Аланин","x":380,"y":70},{"id":"lactate_s","label":"Лактат","x":530,"y":70}]'::jsonb, '[{"from":"alanine","to":"pyruvate_u","label":"реакция"},{"from":"pyruvate_u","to":"lactate_u","label":"реакция"},{"from":"lactate_s","to":"lactate_u","label":"межсредовая пара"}]'::jsonb, 'metabolic_v28', 100),
@@ -34,8 +34,10 @@ ON CONFLICT (slug) DO UPDATE SET
   is_active = true,
   nodes = EXCLUDED.nodes,
   edges = EXCLUDED.edges,
-  "group" = EXCLUDED."group",
-  group_order = EXCLUDED.group_order,
+  -- Preserve existing UI grouping/order for the three already seeded paths.
+  -- New v2.8 rows still receive the metabolic_v28 fallback values.
+  "group" = COALESCE(NULLIF(target."group", ''), EXCLUDED."group"),
+  group_order = COALESCE(target.group_order, EXCLUDED.group_order),
   updated_at = now();
 
 -- Do not insert severity rules here: the clinical matrix explicitly marks
