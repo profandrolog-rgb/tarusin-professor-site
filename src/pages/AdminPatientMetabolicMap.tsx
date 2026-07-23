@@ -59,7 +59,7 @@ import { DynamicsPanel } from "@/components/metabolic/DynamicsPanel";
 import { GuardianManager } from "@/components/metabolic/GuardianManager";
 import { AuditPanel } from "@/components/metabolic/AuditPanel";
 import { DataContextPanel } from "@/components/metabolic/DataContextPanel";
-import { CompletenessInspector } from "@/components/metabolic/CompletenessInspector";
+import { CompletenessInspector, buildCompletenessRows } from "@/components/metabolic/CompletenessInspector";
 import { UnaccountedLabsList } from "@/components/metabolic/UnaccountedLabsList";
 import { computeMappingStats } from "@/lib/metabolic/mappingStats";
 
@@ -491,6 +491,15 @@ export default function AdminPatientMetabolicMap() {
     return [...legacy.filter((item) => !v28Ids.has(item.id)), ...matrixV28];
   }, [visibleLabRows]);
 
+  const completenessRows = useMemo(() => {
+    const codes = new Set<string>();
+    for (const row of visibleLabRows) {
+      const code = labCodesById.get(row.id);
+      if (code) codes.add(code.toUpperCase());
+    }
+    return buildCompletenessRows(pathways, summary, codes);
+  }, [pathways, summary, visibleLabRows, labCodesById]);
+
   const globalConclusion = useMemo(() => {
     const items = Array.isArray(ai?.pathways) ? ai.pathways : [];
     if (!items.length) return "";
@@ -506,11 +515,18 @@ export default function AdminPatientMetabolicMap() {
       groups.get(key)!.rows.push(`${pw?.name || item.pathway_code}: ${text}`);
     }
     const body = [...groups.values()].map((group) => `## ${group.label}\n${group.rows.map((row) => `- ${row}`).join("\n")}`).join("\n\n");
+    const missing = completenessRows
+      .filter((row) => row.hasRules && row.missing.length > 0)
+      .map((row) => `- ${row.name}: требуется проверить/досдать ${row.missing.join(", ")}`)
+      .join("\n");
+    const completenessNote = missing
+      ? `\n\nНедостающие данные для оценки:\n${missing}`
+      : "\n\nНедостающих показателей по настроенным правилам не выявлено.";
     const links = Array.isArray(ai?.cross_links) && ai.cross_links.length
       ? `\n\nСвязи между системами:\n${ai.cross_links.map((l: any) => `- ${l.from} → ${l.to}: ${l.why}`).join("\n")}`
       : "";
-    return `Клиническое резюме метаболической карты\n\n${body}${links}\n\nПримечание: текст объединяет сохранённые выводы ИИ и требует врачебной проверки перед включением в заключение.`;
-  }, [ai, pathways, register]);
+    return `Клиническое резюме метаболической карты\n\n${body}${completenessNote}${links}\n\nПримечание: текст объединяет сохранённые выводы ИИ и сведения о полноте анализов. Он требует врачебной проверки перед включением в заключение.`;
+  }, [ai, pathways, register, completenessRows]);
 
 
 
@@ -1060,6 +1076,7 @@ export default function AdminPatientMetabolicMap() {
           pathways={pathways.map((p) => ({ id: p.id, slug: p.slug, name: p.name, rules: (p as any).rules }))}
           summary={summary}
           visitDate={selectedVisit && selectedVisit !== "all" ? (visits.find((v) => v.id === selectedVisit)?.visit_date || null) : null}
+          externalPatientCodes={new Set(visibleLabRows.map((row) => labCodesById.get(row.id)).filter(Boolean) as string[])}
         />
 
         <AuditPanel
