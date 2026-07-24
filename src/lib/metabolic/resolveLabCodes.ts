@@ -55,7 +55,25 @@ export function resolveCode(testName: string | null | undefined, catalog: CatEnt
   const candidates: Array<{ entry: CatEntry; score: number }> = [];
   for (const e of catalog) {
     const hitDirect = e.keys.includes(nm);
-    const hitSubstr = !hitDirect && e.keys.some((k) => k.length >= 3 && nm.includes(k));
+    // Наибольшая длина алиаса, входящего в имя теста — характеризует «плотность» совпадения.
+    // Пример: имя «Гаммаглутаминтрансфераза (GGT)» содержит короткий алиас «глутамин»
+    // (AA_GLN_PL, длина 8), но это лишь фрагмент слова — реальный тест это GGT.
+    let matchedKeyLen = 0;
+    if (!hitDirect) {
+      for (const k of e.keys) {
+        if (k.length < 3 || !nm.includes(k)) continue;
+        // Требуем границы слова: алиас должен быть окружён не-буквой/цифрой
+        // (или краем строки). Иначе «глутамин» ⊂ «гаммаглутаминтрансфераза»
+        // даёт ложное совпадение AA_GLN_PL для реального GGT.
+        const idx = nm.indexOf(k);
+        const before = idx === 0 ? "" : nm[idx - 1];
+        const after = idx + k.length >= nm.length ? "" : nm[idx + k.length];
+        const isBoundary = (ch: string) => ch === "" || !/[\p{L}\p{N}]/u.test(ch);
+        if (!isBoundary(before) || !isBoundary(after)) continue;
+        if (k.length > matchedKeyLen) matchedKeyLen = k.length;
+      }
+    }
+    const hitSubstr = !hitDirect && matchedKeyLen > 0;
     const hitTokens = !hitDirect && !hitSubstr && labTokens.size > 0 &&
       e.tokens.some((tt) => tt.length > 0 && tt.every((t) => labTokens.has(t)));
     if (hitDirect || hitSubstr || hitTokens) {
@@ -67,7 +85,15 @@ export function resolveCode(testName: string | null | undefined, catalog: CatEnt
       // аминокислоты выбираем канонический AA_*_PL, иначе значение не
       // попадает в узел SVG, хотя в каталоге оно есть.
       let score = hitDirect ? 30 : hitSubstr ? 20 : 10;
-      if (e.code.startsWith("AA_") && e.code.endsWith("_PL")) score += 20;
+      // Бонус за канонический плазменный AA-код даём только при полном совпадении
+      // имени (hitDirect) — иначе короткий алиас «глутамин» перекрывает GGT.
+      if (hitDirect && e.code.startsWith("AA_") && e.code.endsWith("_PL")) score += 20;
+      // Небольшой бонус за длину совпавшего алиаса (0..8): чем полнее покрытие имени,
+      // тем выше уверенность. Исключает ложные подстроки вроде «глут» ⊂ «Гаммаглутамин…».
+      if (hitSubstr) {
+        const nmLen = Math.max(1, nm.length);
+        score += Math.round(8 * (matchedKeyLen / nmLen));
+      }
       candidates.push({ entry: e, score });
     }
   }
