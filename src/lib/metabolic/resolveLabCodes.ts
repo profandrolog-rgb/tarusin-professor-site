@@ -61,7 +61,16 @@ export function resolveCode(testName: string | null | undefined, catalog: CatEnt
     let matchedKeyLen = 0;
     if (!hitDirect) {
       for (const k of e.keys) {
-        if (k.length >= 3 && nm.includes(k) && k.length > matchedKeyLen) matchedKeyLen = k.length;
+        if (k.length < 3 || !nm.includes(k)) continue;
+        // Требуем границы слова: алиас должен быть окружён не-буквой/цифрой
+        // (или краем строки). Иначе «глутамин» ⊂ «гаммаглутаминтрансфераза»
+        // даёт ложное совпадение AA_GLN_PL для реального GGT.
+        const idx = nm.indexOf(k);
+        const before = idx === 0 ? "" : nm[idx - 1];
+        const after = idx + k.length >= nm.length ? "" : nm[idx + k.length];
+        const isBoundary = (ch: string) => ch === "" || !/[\p{L}\p{N}]/u.test(ch);
+        if (!isBoundary(before) || !isBoundary(after)) continue;
+        if (k.length > matchedKeyLen) matchedKeyLen = k.length;
       }
     }
     const hitSubstr = !hitDirect && matchedKeyLen > 0;
