@@ -1,6 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 
-const TIMEWEB_APP_ID = "189038";
+const TIMEWEB_APP_ID = "225711";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
