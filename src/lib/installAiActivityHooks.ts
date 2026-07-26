@@ -12,6 +12,7 @@ const SILENT_ENDPOINTS = [
   "timeweb-deploy-status",
   "timeweb-deploy",
   "trigger-timeweb-deploy",
+  "list-venice-models",
 ];
 function isSilent(urlOrName: string): boolean {
   return SILENT_ENDPOINTS.some((s) => urlOrName.includes(s));

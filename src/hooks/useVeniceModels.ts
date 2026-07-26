@@ -12,6 +12,67 @@ type CachePayload = { ts: number; list: LiveModelInfo[] };
 
 let inFlight: Promise<LiveModelInfo[]> | null = null;
 
+const FUNCTION_PATH = "/functions/v1/list-venice-models";
+
+const getFunctionUrls = () => {
+  const primary = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+  const urls = [
+    primary ? `${primary.replace(/\/$/, "")}${FUNCTION_PATH}` : null,
+    projectId ? `https://${projectId}.supabase.co${FUNCTION_PATH}` : null,
+  ].filter((url): url is string => Boolean(url));
+  return Array.from(new Set(urls));
+};
+
+const invokeWithTimeout = async (url: string, token: string, timeoutMs: number) => {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+      },
+      body: "{}",
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.error || data?.message || `HTTP ${response.status}`);
+    }
+    return data;
+  } finally {
+    window.clearTimeout(timer);
+  }
+};
+
+const invokeVeniceCatalog = async (token: string) => {
+  const urls = getFunctionUrls();
+  if (!urls.length) return null;
+  return new Promise<any | null>((resolve) => {
+    let failed = 0;
+    let settled = false;
+    urls.forEach((url) => {
+      invokeWithTimeout(url, token, 10_000)
+        .then((data) => {
+          if (settled) return;
+          settled = true;
+          resolve(data);
+        })
+        .catch(() => {
+          failed += 1;
+          if (!settled && failed === urls.length) {
+            settled = true;
+            resolve(null);
+          }
+        });
+    });
+  });
+};
+
 async function fetchVeniceModels(): Promise<LiveModelInfo[]> {
   if (typeof window !== "undefined") {
     try {
@@ -31,8 +92,8 @@ async function fetchVeniceModels(): Promise<LiveModelInfo[]> {
   if (!sess?.session) return [];
   if (inFlight) return inFlight;
   inFlight = (async () => {
-    const { data, error } = await supabase.functions.invoke("list-venice-models", { body: {} });
-    if (error) throw new Error(error.message);
+    const data = await invokeVeniceCatalog(sess.session.access_token);
+    if (!data) return [];
     const raw: any[] = Array.isArray(data?.data) ? data.data : [];
     const list: LiveModelInfo[] = raw
       .filter((m) => m && typeof m.id === "string")
