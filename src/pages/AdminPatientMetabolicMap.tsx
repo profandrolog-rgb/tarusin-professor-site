@@ -335,9 +335,27 @@ export default function AdminPatientMetabolicMap() {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+
+      // Функция считает в фоне (длинный AI-вызов рвёт HTTP через прокси).
+      // Опрашиваем статус в metabolic_maps.meta.ai_status до 5 минут.
+      const runId = (data as any)?.run_id as string | undefined;
+      toast({ title: "ИИ-интерпретация запущена", description: "Расчёт идёт в фоне, обычно 1–3 минуты." });
+
+      const deadline = Date.now() + 5 * 60 * 1000;
+      let status: any = null;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 4000));
+        const { data: row } = await (supabase as any)
+          .from("metabolic_maps").select("meta").eq("id", mapId).maybeSingle();
+        const st = (row as any)?.meta?.ai_status;
+        if (st && (!runId || st.run_id === runId) && st.state !== "running") { status = st; break; }
+      }
+      if (!status) throw new Error("Расчёт не завершился за 5 минут — попробуйте ещё раз.");
+      if (status.state === "error") throw new Error(status.error || "Ошибка расчёта");
+
       toast({
         title: "ИИ-интерпретация готова",
-        description: `Путей: ${(data as any)?.ai?.pathways?.length ?? 0} · подсветок: ${(data as any)?.findings_inserted ?? 0}`,
+        description: `Путей: ${status.pathways ?? 0} · подсветок: ${status.findings_inserted ?? 0}`,
       });
       await reload();
     } catch (e: any) {
@@ -346,6 +364,7 @@ export default function AdminPatientMetabolicMap() {
       setAiBusy(false);
     }
   };
+
 
   const handleRebuildRx = async () => {
     if (!id || !mapId) {

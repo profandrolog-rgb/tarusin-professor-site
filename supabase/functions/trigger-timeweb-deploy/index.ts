@@ -1,6 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 
-const TIMEWEB_APP_ID = "189038";
+const TIMEWEB_APP_ID = "225711";
 // Репозиторий для получения последнего коммита при ручном запуске
 const GITHUB_REPO = "profandrolog-rgb/tarusin-professor-site";
 const GITHUB_BRANCH = "main";

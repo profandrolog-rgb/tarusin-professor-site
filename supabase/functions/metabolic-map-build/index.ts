@@ -141,7 +141,17 @@ Deno.serve(async (req) => {
     }
     const mapId = map.id as string;
 
+    // Фоновый режим: длинный AI-вызов не должен держать HTTP-соединение —
+    // прокси/шлюз рвёт его раньше (Failed to fetch). Отдаём 202 и пишем статус в meta.ai_status.
+    const runId = crypto.randomUUID();
+    const startedAt = new Date().toISOString();
+    await (supabase as any).from("metabolic_maps")
+      .update({ meta: { ...(map.meta || {}), ai_status: { state: "running", run_id: runId, started_at: startedAt } } })
+      .eq("id", mapId);
+
+    const job = async (): Promise<{ ai: any; findings_inserted: number }> => {
     // визит-источник (для отсечки данных)
+
     let visitDate: string | null = null;
     if (visitId) {
       const { data: v } = await supabase.from("patient_visits").select("visit_date").eq("id", visitId).maybeSingle();
@@ -281,17 +291,10 @@ Deno.serve(async (req) => {
         }),
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: String(err?.message || err) }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(String(err?.message || err));
     }
     const content: string | undefined = extractCompletion(aiResult.json) || undefined;
-    if (!content) {
-      return new Response(JSON.stringify({ error: "empty ai content" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    if (!content) throw new Error("empty ai content");
 
     let ai: any;
     try {
@@ -299,18 +302,11 @@ Deno.serve(async (req) => {
     } catch {
       // модель обернула в markdown — попытаемся вытащить {...}
       const m = content.match(/\{[\s\S]*\}$/);
-      if (!m) {
-        return new Response(JSON.stringify({ error: "ai returned non-json", raw: content.slice(0, 500) }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!m) throw new Error("ai returned non-json: " + content.slice(0, 300));
       ai = JSON.parse(m[0]);
     }
-    if (!ai || !Array.isArray(ai.pathways)) {
-      return new Response(JSON.stringify({ error: "ai json shape invalid" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!ai || !Array.isArray(ai.pathways)) throw new Error("ai json shape invalid");
+
 
     // сопоставим slug -> pathway_id
     const slugToId = new Map<string, string>();
@@ -330,7 +326,9 @@ Deno.serve(async (req) => {
     };
 
     // сохранить в metabolic_maps.meta.ai (не трогаем detailed aggregate_summary)
-    const nextMeta = { ...(map.meta || {}), ai: aiSummary };
+    const { data: freshRow } = await (supabase as any)
+      .from("metabolic_maps").select("meta").eq("id", mapId).maybeSingle();
+    const nextMeta = { ...(freshRow?.meta || map.meta || {}), ai: aiSummary };
     await (supabase as any).from("metabolic_maps").update({ meta: nextMeta }).eq("id", mapId);
 
     // обновить AI-findings: удалить старые (source_ref->ai = true) и вставить новые
@@ -372,9 +370,34 @@ Deno.serve(async (req) => {
       await (supabase as any).from("map_findings").insert(rows);
     }
 
-    return new Response(JSON.stringify({ ok: true, ai: aiSummary, findings_inserted: rows.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return { ai: aiSummary, findings_inserted: rows.length };
+    };
+
+    const finish = async (patch: Record<string, unknown>) => {
+      const { data: cur } = await (supabase as any)
+        .from("metabolic_maps").select("meta").eq("id", mapId).maybeSingle();
+      await (supabase as any).from("metabolic_maps")
+        .update({ meta: { ...(cur?.meta || {}), ai_status: { run_id: runId, started_at: startedAt, finished_at: new Date().toISOString(), ...patch } } })
+        .eq("id", mapId);
+    };
+
+    const task = (async () => {
+      try {
+        const res = await job();
+        await finish({ state: "done", pathways: res.ai?.pathways?.length ?? 0, findings_inserted: res.findings_inserted });
+      } catch (e: any) {
+        console.error("metabolic-map-build job error", e);
+        await finish({ state: "error", error: String(e?.message || e).slice(0, 500) });
+      }
+    })();
+
+    // @ts-ignore EdgeRuntime доступен в Supabase Edge Functions
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(task);
+
+    return new Response(JSON.stringify({ ok: true, queued: true, run_id: runId, started_at: startedAt }), {
+      status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (err: any) {
     console.error("metabolic-map-build error", err);
     return new Response(JSON.stringify({ error: err?.message || "Internal error" }), {
