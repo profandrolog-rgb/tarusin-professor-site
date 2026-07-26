@@ -6358,6 +6358,14 @@ export type Database = {
         Args: { _batch_id: string; _entry: Json }
         Returns: undefined
       }
+      can_access_linked_cabinet_ai_owner: {
+        Args: { _owner_id: string }
+        Returns: boolean
+      }
+      can_access_linked_cabinet_ai_storage_owner: {
+        Args: { _owner_id: string }
+        Returns: boolean
+      }
       cohort_pathway_stats: {
         Args: {
           _age_max?: number
