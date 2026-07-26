@@ -141,7 +141,17 @@ Deno.serve(async (req) => {
     }
     const mapId = map.id as string;
 
+    // Фоновый режим: длинный AI-вызов не должен держать HTTP-соединение —
+    // прокси/шлюз рвёт его раньше (Failed to fetch). Отдаём 202 и пишем статус в meta.ai_status.
+    const runId = crypto.randomUUID();
+    const startedAt = new Date().toISOString();
+    await (supabase as any).from("metabolic_maps")
+      .update({ meta: { ...(map.meta || {}), ai_status: { state: "running", run_id: runId, started_at: startedAt } } })
+      .eq("id", mapId);
+
+    const job = async (): Promise<{ ai: any; findings_inserted: number }> => {
     // визит-источник (для отсечки данных)
+
     let visitDate: string | null = null;
     if (visitId) {
       const { data: v } = await supabase.from("patient_visits").select("visit_date").eq("id", visitId).maybeSingle();
