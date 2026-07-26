@@ -25,10 +25,9 @@ async function fetchModels(): Promise<LiveModelInfo[]> {
   }
   if (inFlight) return inFlight;
   inFlight = (async () => {
-    const r = await fetch("https://openrouter.ai/api/v1/models", { cache: "force-cache" });
-    if (!r.ok) throw new Error(`OpenRouter models HTTP ${r.status}`);
-    const j = await r.json();
+    const j = await fetchCatalogRaced();
     const data: any[] = Array.isArray(j?.data) ? j.data : [];
+
     const list: LiveModelInfo[] = data
       .filter((m) => m && typeof m.id === "string")
       .map((m) => ({
