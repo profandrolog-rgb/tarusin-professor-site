@@ -409,7 +409,12 @@ export function resolveCuratedModel(
   if (kind === "image" || source === "lovable-gateway") {
     return { ...base, id: c.candidates[0] ?? c.key, available: true };
   }
+  // Каталог OpenRouter не загрузился (блокировка/сеть) — не помечаем всё «недоступно».
+  if (liveById.size === 0) {
+    return { ...base, id: c.candidates[0] ?? c.key, available: true };
+  }
   // 1) explicit candidates first
+
   for (const id of c.candidates) {
     const live = liveById.get(id);
     if (live) return { ...base, id, available: true, liveInfo: live };
