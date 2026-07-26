@@ -59,10 +59,44 @@ const clearCache = (userId?: string) => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const getAuthUrl = () => {
+const PASSWORD_GRANT_PATH = "/auth/v1/token?grant_type=password";
+
+class AuthRequestError extends Error {
+  status?: number;
+  isNetworkError: boolean;
+
+  constructor(message: string, opts: { status?: number; isNetworkError?: boolean } = {}) {
+    super(message);
+    this.name = "AuthRequestError";
+    this.status = opts.status;
+    this.isNetworkError = !!opts.isNetworkError;
+  }
+}
+
+type PasswordGrantPayload = {
+  access_token?: string;
+  refresh_token?: string;
+  msg?: string;
+  message?: string;
+  error?: string;
+  error_description?: string;
+};
+
+const getPrimaryAuthUrl = () => {
   const baseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   if (!baseUrl) return null;
-  return `${baseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=password`;
+  return `${baseUrl.replace(/\/$/, "")}${PASSWORD_GRANT_PATH}`;
+};
+
+const getDirectAuthUrl = () => {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+  if (!projectId) return null;
+  return `https://${projectId}.supabase.co${PASSWORD_GRANT_PATH}`;
+};
+
+const getAuthUrls = () => {
+  const urls = [getPrimaryAuthUrl(), getDirectAuthUrl()].filter((url): url is string => !!url);
+  return Array.from(new Set(urls));
 };
 
 const getAuthHeaders = () => {
@@ -70,9 +104,7 @@ const getAuthHeaders = () => {
   if (!publishableKey) return null;
   return {
     apikey: publishableKey,
-    Authorization: `Bearer ${publishableKey}`,
     "Content-Type": "application/json",
-    "X-Client-Info": "tarusin-auth-timeout",
   };
 };
 
@@ -116,30 +148,104 @@ const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
   return null;
 };
 
+const requestPasswordGrant = async (
+  authUrl: string,
+  headers: Record<string, string>,
+  email: string,
+  password: string,
+  signal: AbortSignal,
+): Promise<PasswordGrantPayload> => {
+  try {
+    const response = await fetch(authUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email, password }),
+      signal,
+      credentials: "omit",
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => null) as PasswordGrantPayload | null;
+    if (!response.ok) {
+      const message = payload?.msg || payload?.message || payload?.error_description || payload?.error || "Ошибка входа";
+      throw new AuthRequestError(message, { status: response.status });
+    }
+    return payload ?? {};
+  } catch (error) {
+    if (error instanceof AuthRequestError) throw error;
+    const isAbort = error instanceof Error && error.name === "AbortError";
+    throw new AuthRequestError(isAbort ? "Таймаут авторизации" : "Network error", { isNetworkError: true });
+  }
+};
+
+const runAuthRace = async (
+  authUrls: string[],
+  headers: Record<string, string>,
+  email: string,
+  password: string,
+  timeoutMs: number,
+): Promise<PasswordGrantPayload> => {
+  const controllers = authUrls.map(() => new AbortController());
+  const timer = window.setTimeout(() => controllers.forEach((controller) => controller.abort()), timeoutMs);
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let finished = 0;
+    let lastNetworkError: AuthRequestError | null = null;
+
+    const finishWithErrorIfDone = () => {
+      if (settled || finished < authUrls.length) return;
+      settled = true;
+      window.clearTimeout(timer);
+      reject(lastNetworkError ?? new AuthRequestError("Не удалось подключиться к серверу авторизации", { isNetworkError: true }));
+    };
+
+    authUrls.forEach((url, index) => {
+      requestPasswordGrant(url, headers, email, password, controllers[index].signal)
+        .then((payload) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timer);
+          controllers.forEach((controller, controllerIndex) => {
+            if (controllerIndex !== index) controller.abort();
+          });
+          resolve(payload);
+        })
+        .catch((error) => {
+          if (settled) return;
+          const authError = error instanceof AuthRequestError
+            ? error
+            : new AuthRequestError("Network error", { isNetworkError: true });
+
+          if (!authError.isNetworkError) {
+            settled = true;
+            window.clearTimeout(timer);
+            controllers.forEach((controller, controllerIndex) => {
+              if (controllerIndex !== index) controller.abort();
+            });
+            reject(authError);
+            return;
+          }
+
+          lastNetworkError = authError;
+          finished += 1;
+          finishWithErrorIfDone();
+        });
+    });
+  });
+};
+
 const signInWithTimeout = async (email: string, password: string): Promise<{ error: Error | null }> => {
-  const authUrl = getAuthUrl();
+  const authUrls = getAuthUrls();
   const headers = getAuthHeaders();
-  if (!authUrl || !headers) {
+  if (!authUrls.length || !headers) {
     return { error: new Error("Ошибка настройки авторизации") };
   }
 
   let lastError: Error | null = null;
   for (const delay of [0, 700]) {
     if (delay) await sleep(delay);
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 9000);
     try {
-      const response = await fetch(authUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ email, password }),
-        signal: controller.signal,
-      });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        const message = payload?.msg || payload?.message || payload?.error_description || payload?.error || "Ошибка входа";
-        return { error: new Error(message) };
-      }
+      const payload = await runAuthRace(authUrls, headers, email, password, 6500);
       if (!payload?.access_token || !payload?.refresh_token) {
         return { error: new Error("Сервер авторизации вернул неполный ответ") };
       }
@@ -150,16 +256,17 @@ const signInWithTimeout = async (email: string, password: string): Promise<{ err
       return { error: error ? new Error(error.message) : null };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Network error");
-      if (lastError.name !== "AbortError") {
+      if (!(lastError instanceof AuthRequestError) || !lastError.isNetworkError) {
+        return { error: lastError };
+      }
+      if (delay === 0) {
         continue;
       }
-    } finally {
-      window.clearTimeout(timer);
     }
   }
 
-  const message = lastError?.name === "AbortError"
-    ? "Сервер авторизации не отвечает дольше 9 секунд. Попробуйте ещё раз."
+  const message = lastError instanceof AuthRequestError && lastError.isNetworkError
+    ? "Сервер авторизации не отвечает. Попробуйте ещё раз или обновите страницу."
     : "Не удалось подключиться к серверу авторизации. Попробуйте ещё раз.";
   return { error: new Error(message) };
 };
