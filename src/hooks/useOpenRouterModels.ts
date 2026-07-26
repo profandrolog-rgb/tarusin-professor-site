@@ -11,6 +11,53 @@ type CachePayload = { ts: number; list: LiveModelInfo[] };
 
 let inFlight: Promise<LiveModelInfo[]> | null = null;
 
+const FUNCTION_PATH = "/functions/v1/list-openrouter-models";
+
+function catalogUrls(): string[] {
+  const primary = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+  return Array.from(new Set([
+    "https://openrouter.ai/api/v1/models",
+    primary ? `${primary.replace(/\/$/, "")}${FUNCTION_PATH}` : null,
+    projectId ? `https://${projectId}.supabase.co${FUNCTION_PATH}` : null,
+  ].filter((u): u is string => Boolean(u))));
+}
+
+async function fetchOne(url: string, timeoutMs: number): Promise<any> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { signal: controller.signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    if (!Array.isArray(j?.data) || !j.data.length) throw new Error("empty catalog");
+    return j;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+/** Гонка: прямой OpenRouter (быстро вне РФ) против прокси через edge function. */
+function fetchCatalogRaced(): Promise<any> {
+  const urls = catalogUrls();
+  return new Promise((resolve, reject) => {
+    let failed = 0;
+    let settled = false;
+    urls.forEach((url) => {
+      fetchOne(url, 10_000)
+        .then((j) => { if (!settled) { settled = true; resolve(j); } })
+        .catch(() => {
+          failed += 1;
+          if (!settled && failed === urls.length) {
+            settled = true;
+            reject(new Error("OpenRouter catalog unavailable"));
+          }
+        });
+    });
+  });
+}
+
+
 async function fetchModels(): Promise<LiveModelInfo[]> {
   if (typeof window !== "undefined") {
     try {
