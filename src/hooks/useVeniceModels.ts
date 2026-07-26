@@ -52,12 +52,25 @@ const invokeWithTimeout = async (url: string, token: string, timeoutMs: number) 
 const invokeVeniceCatalog = async (token: string) => {
   const urls = getFunctionUrls();
   if (!urls.length) return null;
-  const attempts = urls.map((url) => invokeWithTimeout(url, token, 10_000));
-  try {
-    return await Promise.any(attempts);
-  } catch {
-    return null;
-  }
+  return new Promise<any | null>((resolve) => {
+    let failed = 0;
+    let settled = false;
+    urls.forEach((url) => {
+      invokeWithTimeout(url, token, 10_000)
+        .then((data) => {
+          if (settled) return;
+          settled = true;
+          resolve(data);
+        })
+        .catch(() => {
+          failed += 1;
+          if (!settled && failed === urls.length) {
+            settled = true;
+            resolve(null);
+          }
+        });
+    });
+  });
 };
 
 async function fetchVeniceModels(): Promise<LiveModelInfo[]> {
