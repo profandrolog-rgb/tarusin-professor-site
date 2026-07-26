@@ -291,17 +291,10 @@ Deno.serve(async (req) => {
         }),
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: String(err?.message || err) }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(String(err?.message || err));
     }
     const content: string | undefined = extractCompletion(aiResult.json) || undefined;
-    if (!content) {
-      return new Response(JSON.stringify({ error: "empty ai content" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    if (!content) throw new Error("empty ai content");
 
     let ai: any;
     try {
@@ -309,18 +302,11 @@ Deno.serve(async (req) => {
     } catch {
       // модель обернула в markdown — попытаемся вытащить {...}
       const m = content.match(/\{[\s\S]*\}$/);
-      if (!m) {
-        return new Response(JSON.stringify({ error: "ai returned non-json", raw: content.slice(0, 500) }), {
-          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (!m) throw new Error("ai returned non-json: " + content.slice(0, 300));
       ai = JSON.parse(m[0]);
     }
-    if (!ai || !Array.isArray(ai.pathways)) {
-      return new Response(JSON.stringify({ error: "ai json shape invalid" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!ai || !Array.isArray(ai.pathways)) throw new Error("ai json shape invalid");
+
 
     // сопоставим slug -> pathway_id
     const slugToId = new Map<string, string>();
