@@ -26,7 +26,7 @@ const getFunctionUrls = () => {
 
 const invokeWithTimeout = async (url: string, token: string, timeoutMs: number) => {
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  const timer = window.setTimeout(() => controller.abort(new DOMException("timeout", "TimeoutError")), timeoutMs);
   try {
     const response = await fetch(url, {
       method: "POST",
