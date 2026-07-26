@@ -326,7 +326,9 @@ Deno.serve(async (req) => {
     };
 
     // сохранить в metabolic_maps.meta.ai (не трогаем detailed aggregate_summary)
-    const nextMeta = { ...(map.meta || {}), ai: aiSummary };
+    const { data: freshRow } = await (supabase as any)
+      .from("metabolic_maps").select("meta").eq("id", mapId).maybeSingle();
+    const nextMeta = { ...(freshRow?.meta || map.meta || {}), ai: aiSummary };
     await (supabase as any).from("metabolic_maps").update({ meta: nextMeta }).eq("id", mapId);
 
     // обновить AI-findings: удалить старые (source_ref->ai = true) и вставить новые
@@ -368,9 +370,34 @@ Deno.serve(async (req) => {
       await (supabase as any).from("map_findings").insert(rows);
     }
 
-    return new Response(JSON.stringify({ ok: true, ai: aiSummary, findings_inserted: rows.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return { ai: aiSummary, findings_inserted: rows.length };
+    };
+
+    const finish = async (patch: Record<string, unknown>) => {
+      const { data: cur } = await (supabase as any)
+        .from("metabolic_maps").select("meta").eq("id", mapId).maybeSingle();
+      await (supabase as any).from("metabolic_maps")
+        .update({ meta: { ...(cur?.meta || {}), ai_status: { run_id: runId, started_at: startedAt, finished_at: new Date().toISOString(), ...patch } } })
+        .eq("id", mapId);
+    };
+
+    const task = (async () => {
+      try {
+        const res = await job();
+        await finish({ state: "done", pathways: res.ai?.pathways?.length ?? 0, findings_inserted: res.findings_inserted });
+      } catch (e: any) {
+        console.error("metabolic-map-build job error", e);
+        await finish({ state: "error", error: String(e?.message || e).slice(0, 500) });
+      }
+    })();
+
+    // @ts-ignore EdgeRuntime доступен в Supabase Edge Functions
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(task);
+
+    return new Response(JSON.stringify({ ok: true, queued: true, run_id: runId, started_at: startedAt }), {
+      status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (err: any) {
     console.error("metabolic-map-build error", err);
     return new Response(JSON.stringify({ error: err?.message || "Internal error" }), {
