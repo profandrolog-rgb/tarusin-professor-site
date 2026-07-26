@@ -59,6 +59,23 @@ const clearCache = (userId?: string) => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const getAuthUrl = () => {
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!baseUrl) return null;
+  return `${baseUrl.replace(/\/$/, "")}/auth/v1/token?grant_type=password`;
+};
+
+const getAuthHeaders = () => {
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
+  if (!publishableKey) return null;
+  return {
+    apikey: publishableKey,
+    Authorization: `Bearer ${publishableKey}`,
+    "Content-Type": "application/json",
+    "X-Client-Info": "tarusin-auth-timeout",
+  };
+};
+
 const withTimeout = (ms: number) => {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), ms);
@@ -97,6 +114,54 @@ const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
     }
   }
   return null;
+};
+
+const signInWithTimeout = async (email: string, password: string): Promise<{ error: Error | null }> => {
+  const authUrl = getAuthUrl();
+  const headers = getAuthHeaders();
+  if (!authUrl || !headers) {
+    return { error: new Error("Ошибка настройки авторизации") };
+  }
+
+  let lastError: Error | null = null;
+  for (const delay of [0, 700]) {
+    if (delay) await sleep(delay);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 9000);
+    try {
+      const response = await fetch(authUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = payload?.msg || payload?.message || payload?.error_description || payload?.error || "Ошибка входа";
+        return { error: new Error(message) };
+      }
+      if (!payload?.access_token || !payload?.refresh_token) {
+        return { error: new Error("Сервер авторизации вернул неполный ответ") };
+      }
+      const { error } = await supabase.auth.setSession({
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token,
+      });
+      return { error: error ? new Error(error.message) : null };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Network error");
+      if (lastError.name !== "AbortError") {
+        continue;
+      }
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  const message = lastError?.name === "AbortError"
+    ? "Сервер авторизации не отвечает дольше 9 секунд. Попробуйте ещё раз."
+    : "Не удалось подключиться к серверу авторизации. Попробуйте ещё раз.";
+  return { error: new Error(message) };
 };
 
 const rolesEqual = (a: Roles, b: Roles) =>
@@ -181,8 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    return signInWithTimeout(email, password);
   };
 
   const signUp = async (email: string, password: string) => {
