@@ -17,6 +17,8 @@ import {
 import { Plus, X, Phone, ClipboardList, Salad, Scissors, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { LibraryPicker } from "@/components/visits/LibraryPicker";
+import type { AssignmentCategory } from "@/lib/visits/assignmentLibrary";
 
 function AutoTextarea({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -569,9 +571,11 @@ interface ListEditorProps {
   onChange: (next: string[]) => void;
   addPlaceholder: string;
   picker: React.ReactNode;
+  /** Категория для библиотеки собственных формулировок. */
+  category: AssignmentCategory;
 }
 
-function ListEditor({ items, onChange, addPlaceholder, picker }: ListEditorProps) {
+function ListEditor({ items, onChange, addPlaceholder, picker, category }: ListEditorProps) {
   const [draft, setDraft] = useState("");
 
   const removeAt = (idx: number) => onChange(items.filter((_, i) => i !== idx));
@@ -586,6 +590,10 @@ function ListEditor({ items, onChange, addPlaceholder, picker }: ListEditorProps
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         {picker}
+        <LibraryPicker
+          category={category}
+          onAdd={(texts) => onChange([...items, ...texts])}
+        />
       </div>
 
       {items.length > 0 && (
@@ -771,6 +779,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
             <ListEditor
               items={data.examinations}
               onChange={(next) => patch({ examinations: next })}
+              category="examinations"
               addPlaceholder="Добавить своё обследование…"
               picker={
                 <ItemPicker
@@ -786,6 +795,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
             <ListEditor
               items={data.treatments}
               onChange={(next) => patch({ treatments: next })}
+              category="treatments"
               addPlaceholder="Добавить медикамент / режим…"
               picker={
                 <ItemPicker
@@ -801,6 +811,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
             <ListEditor
               items={data.surgeries}
               onChange={(next) => patch({ surgeries: next })}
+              category="surgeries"
               addPlaceholder="Добавить название операции…"
               picker={
                 <CatalogPicker
@@ -824,6 +835,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
             <ListEditor
               items={data.activity}
               onChange={(next) => patch({ activity: next })}
+              category="activity"
               addPlaceholder="Добавить рекомендацию по нагрузке…"
               picker={
                 <CatalogPicker
@@ -847,6 +859,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
             <ListEditor
               items={data.referrals}
               onChange={(next) => patch({ referrals: next })}
+              category="referrals"
               addPlaceholder="Добавить консультацию вручную…"
               picker={<ReferralsPicker onAdd={(texts) => patch({ referrals: [...data.referrals, ...texts] })} />}
             />
@@ -856,6 +869,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
             <ListEditor
               items={data.diet}
               onChange={(next) => patch({ diet: next })}
+              category="diet"
               addPlaceholder="Добавить свой пункт диеты…"
               picker={<DietPicker onAdd={(texts) => patch({ diet: [...data.diet, ...texts] })} />}
             />
