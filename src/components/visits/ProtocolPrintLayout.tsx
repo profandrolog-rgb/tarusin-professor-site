@@ -437,6 +437,9 @@ const KNOWN_KEYS = new Set([
   "program_title","goal","start_date","control_date","items",
   // служебные поля — никогда не печатаются
   "ai_reasoning","visit_notes","_normalized","_normalized_version","_normalized_at",
+  // флаги печати
+  "print_labs_table","print_labs_dynamics","include_consent","metabolic_map_checklist",
+  "testis_asymmetry_percent","epididymis_asymmetry_percent",
 ]);
 
 function pushUnknownScalars(rows: React.ReactNode[], d: any) {
