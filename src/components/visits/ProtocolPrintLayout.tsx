@@ -990,6 +990,12 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           gap: 6mm; font-size: 9pt;
         }
         .ppl-page-break { page-break-after: always; }
+        /* Отдельные листы в конце протокола (согласие, разъяснение результатов) */
+        .ppl-extra-sheet { page-break-before: always; break-before: page; }
+        .ppl-extra-sheet .ppl-consent {
+          margin-top: 0; padding-top: 0; border-top: none;
+          break-before: auto; page-break-before: auto;
+        }
 
         /* Avoid breaking inside critical blocks (applies on screen + print) */
         .ppl-table tr,
