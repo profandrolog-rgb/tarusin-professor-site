@@ -742,7 +742,11 @@ export default function AdminPatientMetabolicMap() {
         {mapNotes && (
           <Card>
             <CardHeader><CardTitle className="text-base">Заметки</CardTitle></CardHeader>
-            <CardContent><p className="whitespace-pre-wrap text-sm">{mapNotes}</p></CardContent>
+            <CardContent>
+              <QuoteContextMenu fullText={mapNotes}>
+                <p className="whitespace-pre-wrap text-sm">{mapNotes}</p>
+              </QuoteContextMenu>
+            </CardContent>
           </Card>
         )}
 
@@ -764,15 +768,17 @@ export default function AdminPatientMetabolicMap() {
             {Array.isArray(ai.cross_links) && ai.cross_links.length > 0 && (
               <CardContent className="pt-0">
                 <div className="text-xs font-medium mb-1">Связи между путями:</div>
-                <ul className="text-xs space-y-1">
-                  {ai.cross_links.map((l: any, i: number) => (
-                    <li key={i}>
-                      <Badge variant="outline" className="mr-1">{l.from}</Badge>→
-                      <Badge variant="outline" className="mx-1">{l.to}</Badge>
-                      <span className="text-muted-foreground">{l.why}</span>
-                    </li>
-                  ))}
-                </ul>
+                <QuoteContextMenu>
+                  <ul className="text-xs space-y-1">
+                    {ai.cross_links.map((l: any, i: number) => (
+                      <li key={i}>
+                        <Badge variant="outline" className="mr-1">{l.from}</Badge>→
+                        <Badge variant="outline" className="mx-1">{l.to}</Badge>
+                        <span className="text-muted-foreground">{l.why}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </QuoteContextMenu>
               </CardContent>
             )}
           </Card>
