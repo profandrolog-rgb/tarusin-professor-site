@@ -94,6 +94,14 @@ export interface IliacMayThurnerData {
   conclusion?: string;
 }
 
+/** Асимметрия объёмов: % отличия правого от левого. */
+function asymmetryPercent(right?: string, left?: string): string | null {
+  const r = parseFloat(String(right || "").replace(",", "."));
+  const l = parseFloat(String(left || "").replace(",", "."));
+  if (!Number.isFinite(r) || !Number.isFinite(l) || l === 0) return null;
+  return (((r - l) / l) * 100).toFixed(1);
+}
+
 export interface UziReproductiveData {
   device?: string;
   right_testis_size?: string;
