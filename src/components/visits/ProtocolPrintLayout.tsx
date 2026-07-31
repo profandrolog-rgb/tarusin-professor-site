@@ -825,6 +825,18 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     );
   }
 
+  // Спарсенные анализы и результаты обследований — отдельной таблицей в конце
+  // заключения. Вывод опциональный (по умолчанию включён).
+  if (d.print_labs_table !== false && visit.recognizedLabs?.length) {
+    rows.push(<RecognizedLabsSection key="__recognized_labs" labs={visit.recognizedLabs} />);
+  }
+  // Динамика результатов между визитами — опционально (по умолчанию включена,
+  // если есть с чем сравнивать).
+  if (d.print_labs_dynamics !== false && visit.labsDynamics?.length) {
+    rows.push(<LabsDynamicsSection key="__labs_dynamics" rows={visit.labsDynamics} />);
+  }
+
+
   if (visit.next_visit_date) {
     rows.push(
       <Field
