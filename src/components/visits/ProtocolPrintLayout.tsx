@@ -1028,6 +1028,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           .ppl-table { width: 100% !important; table-layout: fixed; }
           .ppl-table tr { page-break-inside: avoid; break-inside: avoid; }
           .ppl-footer, .ppl-consent { page-break-inside: avoid; break-inside: avoid; break-before: avoid; }
+          .ppl-extra-sheet, .ppl-extra-sheet .ppl-consent { break-before: page; page-break-before: always; }
           p, td, li { orphans: 3; widows: 3; word-wrap: break-word; overflow-wrap: break-word; }
         }
 
