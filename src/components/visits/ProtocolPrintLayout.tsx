@@ -478,9 +478,8 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
   const rows: React.ReactNode[] = [];
-  if (visit.recognizedLabs?.length) {
-    rows.push(<RecognizedLabsSection key="__recognized_labs" labs={visit.recognizedLabs} />);
-  }
+  // Таблица распознанных анализов выводится в конце заключения (см. ниже), опционально.
+
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
