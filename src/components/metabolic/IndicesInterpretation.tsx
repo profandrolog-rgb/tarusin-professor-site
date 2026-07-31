@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Trash2 } from "lucide-react";
+import { QuoteContextMenu } from "@/components/common/QuoteContextMenu";
 import type { IndexResult } from "@/lib/metabolic/metaIndices";
 
 interface Group { title: string; indices?: string[]; assessment: string; actions?: string }
