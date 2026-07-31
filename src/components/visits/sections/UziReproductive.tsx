@@ -94,6 +94,14 @@ export interface IliacMayThurnerData {
   conclusion?: string;
 }
 
+/** Асимметрия объёмов: % отличия правого от левого. */
+function asymmetryPercent(right?: string, left?: string): string | null {
+  const r = parseFloat(String(right || "").replace(",", "."));
+  const l = parseFloat(String(left || "").replace(",", "."));
+  if (!Number.isFinite(r) || !Number.isFinite(l) || l === 0) return null;
+  return (((r - l) / l) * 100).toFixed(1);
+}
+
 export interface UziReproductiveData {
   device?: string;
   right_testis_size?: string;
@@ -106,6 +114,10 @@ export interface UziReproductiveData {
   right_epididymis_volume?: string;
   left_epididymis?: string;
   left_epididymis_volume?: string;
+  /** Асимметрия объёмов: % отличия правого от левого. */
+  testis_asymmetry_percent?: string;
+  epididymis_asymmetry_percent?: string;
+
   arterial_flow?: ArterialFlowData;
   venous_flow?: VenousFlowData;
   show_penis_exam?: boolean;
@@ -303,6 +315,51 @@ export function UziReproductiveSection({ data, onChange }: Props) {
           <Textarea rows={2} placeholder="Описание" value={data.left_epididymis || ""} onChange={(e) => onChange({ left_epididymis: e.target.value })} />
         </div>
       </div>
+
+      {/* Асимметрия объёмов */}
+      <div className="p-3 border rounded-md space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="font-medium text-sm">Асимметрия объёмов (% отличия правого от левого)</div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const patch: Partial<UziReproductiveData> = {};
+              const t = asymmetryPercent(data.right_testis_volume, data.left_testis_volume);
+              const e = asymmetryPercent(data.right_epididymis_volume, data.left_epididymis_volume);
+              if (t !== null) patch.testis_asymmetry_percent = t;
+              if (e !== null) patch.epididymis_asymmetry_percent = e;
+              onChange(patch);
+            }}
+          >
+            <Zap className="h-3 w-3 mr-1" /> Рассчитать
+          </Button>
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Асимметрия яичек, %</Label>
+            <Input
+              placeholder="напр. 12,5"
+              value={data.testis_asymmetry_percent || ""}
+              onChange={(e) => onChange({ testis_asymmetry_percent: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Асимметрия придатков, %</Label>
+            <Input
+              placeholder="напр. 8,0"
+              value={data.epididymis_asymmetry_percent || ""}
+              onChange={(e) => onChange({ epididymis_asymmetry_percent: e.target.value })}
+            />
+          </div>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Расчёт: (правое − левое) / левое × 100. Значение можно перебить вручную.
+        </p>
+      </div>
+
+
 
       {/* Артериальный кровоток */}
       <div className="p-3 border rounded-md space-y-2">

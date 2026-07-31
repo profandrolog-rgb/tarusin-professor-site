@@ -12,6 +12,17 @@ interface RecognizedLab {
   test_date: string | null;
 }
 
+export interface LabDynamicsRow {
+  test_name: string;
+  unit: string | null;
+  prev_value: number | null;
+  prev_date: string | null;
+  curr_value: number | null;
+  curr_date: string | null;
+  reference_min: number | null;
+  reference_max: number | null;
+}
+
 interface VisitForPrint {
   visit_date: string;
   protocol_type: ProtocolType;
@@ -21,6 +32,7 @@ interface VisitForPrint {
   next_visit_date: string | null;
   patient: { full_name: string; birth_date: string; history_number: string | null } | null;
   recognizedLabs?: RecognizedLab[];
+  labsDynamics?: LabDynamicsRow[];
 }
 
 function calcAge(birth: string, ref: Date) {
@@ -121,6 +133,8 @@ const UZI_LABELS: Record<string, string> = {
   micturition_urge: "Позыв на микцию, баллов",
   residual_urine_volume: "Остаточная моча, мл",
   residual_urine_percent: "Остаточная моча, %",
+  testis_asymmetry_percent: "Асимметрия яичек, %",
+  epididymis_asymmetry_percent: "Асимметрия придатков, %",
   paraprostatic_veins: "Парапростатические вены",
   diameter: "Диаметр, мм", reflux: "Рефлюкс",
   // Аорто-мезентериальный конфликт
@@ -422,7 +436,10 @@ const KNOWN_KEYS = new Set([
   // peptide_program
   "program_title","goal","start_date","control_date","items",
   // служебные поля — никогда не печатаются
-  "ai_reasoning","_normalized","_normalized_version","_normalized_at",
+  "ai_reasoning","visit_notes","_normalized","_normalized_version","_normalized_at",
+  // флаги печати
+  "print_labs_table","print_labs_dynamics","include_consent","metabolic_map_checklist",
+  "testis_asymmetry_percent","epididymis_asymmetry_percent",
 ]);
 
 function pushUnknownScalars(rows: React.ReactNode[], d: any) {
@@ -472,13 +489,58 @@ function RecognizedLabsSection({ labs }: { labs: RecognizedLab[] }) {
   );
 }
 
+/** Сравнение результатов анализов текущего визита с предыдущими датами. */
+function LabsDynamicsSection({ rows }: { rows: LabDynamicsRow[] }) {
+  if (!rows?.length) return null;
+  const td = { padding: "2px 4px" } as const;
+  return (
+    <Section title="Динамика результатов">
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10pt" }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid #999" }}>
+            <th style={{ ...td, textAlign: "left" }}>Показатель</th>
+            <th style={{ ...td, textAlign: "right" }}>Было</th>
+            <th style={{ ...td, textAlign: "left" }}>Дата</th>
+            <th style={{ ...td, textAlign: "right" }}>Стало</th>
+            <th style={{ ...td, textAlign: "left" }}>Дата</th>
+            <th style={{ ...td, textAlign: "right" }}>Δ</th>
+            <th style={{ ...td, textAlign: "left" }}>Норма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const delta =
+              r.prev_value != null && r.curr_value != null ? r.curr_value - r.prev_value : null;
+            const arrow = delta == null || delta === 0 ? "→" : delta > 0 ? "↑" : "↓";
+            return (
+              <tr key={i} style={{ borderBottom: "1px dotted #ccc" }}>
+                <td style={td}>{r.test_name}</td>
+                <td style={{ ...td, textAlign: "right" }}>{r.prev_value ?? "—"}</td>
+                <td style={td}>{r.prev_date || ""}</td>
+                <td style={{ ...td, textAlign: "right" }}>{r.curr_value ?? "—"}</td>
+                <td style={td}>{r.curr_date || ""}</td>
+                <td style={{ ...td, textAlign: "right" }}>
+                  {delta == null ? "—" : `${arrow} ${Math.abs(delta).toFixed(2)}`}
+                </td>
+                <td style={td}>
+                  {r.reference_min ?? "?"}–{r.reference_max ?? "?"} {r.unit || ""}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Section>
+  );
+}
+
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
   const rows: React.ReactNode[] = [];
-  if (visit.recognizedLabs?.length) {
-    rows.push(<RecognizedLabsSection key="__recognized_labs" labs={visit.recognizedLabs} />);
-  }
+  // Таблица распознанных анализов выводится в конце заключения (см. ниже), опционально.
+
 
   if (t === "ultrashort") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
@@ -749,6 +811,25 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<UziRenderer key="extra-uzi-mps" uzi={uziData} title="УЗДГ органов МПС" />);
   }
 
+  // Опциональный блок: УЗИ почек и мочевого пузыря
+  if (d.extra_uzi_kidneys && isPlainObject(d.extra_uzi_kidneys) && d.extra_uzi_kidneys.enabled === true) {
+    const { enabled: _ek, ...uziData } = d.extra_uzi_kidneys;
+    rows.push(<UziRenderer key="extra-uzi-kidneys" uzi={uziData} title="УЗИ почек и мочевого пузыря" />);
+  }
+
+  // Опциональный блок: мочевой пузырь с определением остаточной мочи
+  if (d.extra_uzi_residual && isPlainObject(d.extra_uzi_residual) && d.extra_uzi_residual.enabled === true) {
+    const { enabled: _er, ...uziData } = d.extra_uzi_residual;
+    rows.push(
+      <UziRenderer
+        key="extra-uzi-residual"
+        uzi={uziData}
+        title="УЗИ мочевого пузыря с определением остаточной мочи"
+      />
+    );
+  }
+
+
   // Catch-all: render any extra scalar fields in protocol_data not yet output
   pushUnknownScalars(rows, d);
 
@@ -804,6 +885,18 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       </Section>
     );
   }
+
+  // Спарсенные анализы и результаты обследований — отдельной таблицей в конце
+  // заключения. Вывод опциональный (по умолчанию включён).
+  if (d.print_labs_table !== false && visit.recognizedLabs?.length) {
+    rows.push(<RecognizedLabsSection key="__recognized_labs" labs={visit.recognizedLabs} />);
+  }
+  // Динамика результатов между визитами — опционально (по умолчанию включена,
+  // если есть с чем сравнивать).
+  if (d.print_labs_dynamics !== false && visit.labsDynamics?.length) {
+    rows.push(<LabsDynamicsSection key="__labs_dynamics" rows={visit.labsDynamics} />);
+  }
+
 
   if (visit.next_visit_date) {
     rows.push(
@@ -969,6 +1062,12 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           gap: 6mm; font-size: 9pt;
         }
         .ppl-page-break { page-break-after: always; }
+        /* Отдельные листы в конце протокола (согласие, разъяснение результатов) */
+        .ppl-extra-sheet { page-break-before: always; break-before: page; }
+        .ppl-extra-sheet .ppl-consent {
+          margin-top: 0; padding-top: 0; border-top: none;
+          break-before: auto; page-break-before: auto;
+        }
 
         /* Avoid breaking inside critical blocks (applies on screen + print) */
         .ppl-table tr,
@@ -1001,6 +1100,8 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           .ppl-table { width: 100% !important; table-layout: fixed; }
           .ppl-table tr { page-break-inside: avoid; break-inside: avoid; }
           .ppl-footer, .ppl-consent { page-break-inside: avoid; break-inside: avoid; break-before: avoid; }
+          .ppl-extra-sheet { break-before: page; page-break-before: always; }
+          .ppl-extra-sheet .ppl-consent { break-before: auto; page-break-before: auto; }
           p, td, li { orphans: 3; widows: 3; word-wrap: break-word; overflow-wrap: break-word; }
         }
 
@@ -1081,12 +1182,64 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           </div>
         </div>
 
-        {/* CONSENT — печатается только если врач явно включил тумблер в форме визита */}
-        {(visit.protocol_data as any)?.include_consent === true && (
+      </div>
+
+      {/* CONSENT — отдельный лист, печатается если врач включил тумблер в форме визита */}
+      {(visit.protocol_data as any)?.include_consent === true && (
+        <div className="print-page ppl-extra-sheet">
           <ConsentBlock patient={visit.patient} />
-        )}
+        </div>
+      )}
+
+      {/* РАЗЪЯСНЕНИЕ РЕЗУЛЬТАТОВ ВИЗИТА — всегда, отдельным листом в конце */}
+      <div className="print-page ppl-extra-sheet">
+        <VisitUnderstandingBlock patient={visit.patient} visitDate={visit.visit_date} />
       </div>
 
     </>
+  );
+}
+
+const UNDERSTANDING_TEXT =
+  "Мне, законному представителю пациента, (пациенту) разъяснены профессором Тарусиным Д.И. причины возникновения заболевания, стадия его развития, методы обследования и его результаты, тактика дальнейшего обследования, варианты лечения, как консервативного и комбинированного, так и оперативного, так и — при необходимости — оперативного. Мне понятны полученные назначения, рекомендации, режим, график контрольных обследований и необходимость реабилитации. Если обсуждалось оперативное лечение — мне понятны методы, потенциальные риски как самой операции, так и отказа от её выполнения. На момент окончания консультации у меня не осталось неуточнённых вопросов, мне понятны результаты визита.";
+
+function VisitUnderstandingBlock({
+  patient,
+  visitDate,
+}: {
+  patient: VisitForPrint["patient"];
+  visitDate: string;
+}) {
+  const fio = patient?.full_name || "";
+  const dob = patient?.birth_date ? format(new Date(patient.birth_date), "dd.MM.yyyy") : "";
+  const dateStr = visitDate ? format(new Date(visitDate), "dd.MM.yyyy") : "";
+
+  return (
+    <div className="ppl-consent">
+      <h4>Разъяснение результатов визита</h4>
+      <p style={{ margin: "0 0 2mm" }}>
+        Пациент: <strong>{fio || <Blank w="80mm" />}</strong>, дата рождения:{" "}
+        <strong>{dob || <Blank w="30mm" />}</strong>
+      </p>
+      <p style={{ margin: "0 0 2mm" }}>
+        Дата визита: <strong>{dateStr || <Blank w="30mm" />}</strong>
+      </p>
+      <p style={{ margin: "0 0 4mm", textAlign: "justify" }}>«{UNDERSTANDING_TEXT}»</p>
+      <div className="sig-row">
+        <span>
+          Законный представитель (пациент): <Blank w="50mm" />{" "}
+          <span style={{ fontSize: "8pt", color: "#555" }}>(подпись)</span>
+        </span>
+        <span>
+          Дата: <Blank w="35mm" />
+        </span>
+      </div>
+      <div className="sig-row">
+        <span>
+          Врач — профессор, д.м.н. Тарусин Д.И.: <Blank w="45mm" />{" "}
+          <span style={{ fontSize: "8pt", color: "#555" }}>(подпись)</span>
+        </span>
+      </div>
+    </div>
   );
 }

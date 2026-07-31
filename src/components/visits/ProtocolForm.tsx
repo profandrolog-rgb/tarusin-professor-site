@@ -17,8 +17,10 @@ import {
 } from "./SmartTemplates";
 import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
 import { ExtraUziMpsSection } from "./sections/ExtraUziMps";
+import { ExtraUziKidneysSection, ExtraUziResidualSection } from "./sections/ExtraUziBlocks";
 import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 import { AdditionalNotesField } from "./AdditionalNotesField";
+import { VisitNotesField } from "./VisitNotesField";
 
 interface Props {
   type: ProtocolType;
@@ -113,11 +115,58 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
           />
         ) : null}
 
+        {/* Опциональные УЗИ-блоки: почки и мочевой пузырь, остаточная моча.
+            Доступны во всех протоколах, кроме осмотров на 3-и и 7-е сутки. */}
+        {!["postop_day3", "postop_day7", "uzi_urinary", "uzi_bladder"].includes(type) ? (
+          <>
+            <ExtraUziKidneysSection
+              data={data?.extra_uzi_kidneys}
+              onChange={(p) => patch({ extra_uzi_kidneys: { ...(data?.extra_uzi_kidneys || {}), ...p } })}
+            />
+            <ExtraUziResidualSection
+              data={data?.extra_uzi_residual}
+              onChange={(p) => patch({ extra_uzi_residual: { ...(data?.extra_uzi_residual || {}), ...p } })}
+            />
+          </>
+        ) : null}
+
         {/* Универсальное поле «Дополнительно» — во всех протоколах */}
         <AdditionalNotesField
           value={data?.additional_notes || ""}
           onChange={(v) => patch({ additional_notes: v })}
         />
+        {/* Печать таблиц анализов */}
+        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 space-y-2">
+          <label className="flex items-start gap-2 cursor-pointer text-sm">
+            <Checkbox
+              checked={data?.print_labs_table !== false}
+              onCheckedChange={(v) => patch({ print_labs_table: v === true })}
+              className="mt-0.5"
+            />
+            <span>
+              Печатать таблицу распознанных анализов в конце заключения
+            </span>
+          </label>
+          <label className="flex items-start gap-2 cursor-pointer text-sm">
+            <Checkbox
+              checked={data?.print_labs_dynamics !== false}
+              onCheckedChange={(v) => patch({ print_labs_dynamics: v === true })}
+              className="mt-0.5"
+            />
+            <span>
+              Печатать динамику результатов (сравнение с предыдущими визитами)
+            </span>
+          </label>
+        </div>
+
+
+        {/* Личные заметки врача — НИКОГДА не печатаются */}
+        <VisitNotesField
+          value={data?.visit_notes || ""}
+          onChange={(v) => patch({ visit_notes: v })}
+        />
+
+
 
         {/* Бланк метаболической карты — выбор исследований и печать */}
         <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
