@@ -121,6 +121,8 @@ const UZI_LABELS: Record<string, string> = {
   micturition_urge: "Позыв на микцию, баллов",
   residual_urine_volume: "Остаточная моча, мл",
   residual_urine_percent: "Остаточная моча, %",
+  testis_asymmetry_percent: "Асимметрия яичек, %",
+  epididymis_asymmetry_percent: "Асимметрия придатков, %",
   paraprostatic_veins: "Парапростатические вены",
   diameter: "Диаметр, мм", reflux: "Рефлюкс",
   // Аорто-мезентериальный конфликт
