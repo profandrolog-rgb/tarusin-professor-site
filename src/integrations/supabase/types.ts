@@ -727,6 +727,39 @@ export type Database = {
         }
         Relationships: []
       }
+      assignment_library: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_text: string
+          last_used_at: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_text: string
+          last_used_at?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_text?: string
+          last_used_at?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       blog_comments: {
         Row: {
           author_email: string
@@ -6440,6 +6473,7 @@ export type Database = {
       }
       recover_cabinet_ai_history: { Args: never; Returns: Json }
       refresh_treatment_plans_search: { Args: never; Returns: undefined }
+      remember_assignments: { Args: { _items: Json }; Returns: number }
       search_rubrics_by_embedding: {
         Args: { _limit?: number; _query: string }
         Returns: {
