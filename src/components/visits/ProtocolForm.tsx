@@ -17,8 +17,10 @@ import {
 } from "./SmartTemplates";
 import { DiagnosisRecommendationsPicker } from "./DiagnosisRecommendationsPicker";
 import { ExtraUziMpsSection } from "./sections/ExtraUziMps";
+import { ExtraUziKidneysSection, ExtraUziResidualSection } from "./sections/ExtraUziBlocks";
 import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 import { AdditionalNotesField } from "./AdditionalNotesField";
+import { VisitNotesField } from "./VisitNotesField";
 
 interface Props {
   type: ProtocolType;
