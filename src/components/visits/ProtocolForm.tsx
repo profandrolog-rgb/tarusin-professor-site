@@ -115,11 +115,34 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
           />
         ) : null}
 
+        {/* Опциональные УЗИ-блоки: почки и мочевой пузырь, остаточная моча.
+            Доступны во всех протоколах, кроме осмотров на 3-и и 7-е сутки. */}
+        {!["postop_day3", "postop_day7", "uzi_urinary", "uzi_bladder"].includes(type) ? (
+          <>
+            <ExtraUziKidneysSection
+              data={data?.extra_uzi_kidneys}
+              onChange={(p) => patch({ extra_uzi_kidneys: { ...(data?.extra_uzi_kidneys || {}), ...p } })}
+            />
+            <ExtraUziResidualSection
+              data={data?.extra_uzi_residual}
+              onChange={(p) => patch({ extra_uzi_residual: { ...(data?.extra_uzi_residual || {}), ...p } })}
+            />
+          </>
+        ) : null}
+
         {/* Универсальное поле «Дополнительно» — во всех протоколах */}
         <AdditionalNotesField
           value={data?.additional_notes || ""}
           onChange={(v) => patch({ additional_notes: v })}
         />
+
+        {/* Личные заметки врача — НИКОГДА не печатаются */}
+        <VisitNotesField
+          value={data?.visit_notes || ""}
+          onChange={(v) => patch({ visit_notes: v })}
+        />
+
+
 
         {/* Бланк метаболической карты — выбор исследований и печать */}
         <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
