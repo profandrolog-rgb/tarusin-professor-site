@@ -36,6 +36,7 @@ import { computeAllAggregates, AGGREGATE_NODE_IDS } from "@/lib/metabolic/aggreg
 import { computeIndices, computeMatrixIndicesV28 } from "@/lib/metabolic/metaIndices";
 import { IndicesGauges } from "@/components/metabolic/IndicesGauges";
 import IndicesInterpretation from "@/components/metabolic/IndicesInterpretation";
+import { QuoteContextMenu } from "@/components/common/QuoteContextMenu";
 import { Printer, Pencil, Beaker } from "lucide-react";
 import { PathwaySceneSVG, type SceneJson } from "@/components/metabolic/PathwaySceneSVG";
 import { PathwayTemplateSVG, hasPathwaySvgTemplate } from "@/components/metabolic/PathwayTemplateSVG";
