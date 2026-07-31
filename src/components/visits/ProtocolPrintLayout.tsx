@@ -486,6 +486,52 @@ function RecognizedLabsSection({ labs }: { labs: RecognizedLab[] }) {
   );
 }
 
+/** Сравнение результатов анализов текущего визита с предыдущими датами. */
+function LabsDynamicsSection({ rows }: { rows: LabDynamicsRow[] }) {
+  if (!rows?.length) return null;
+  const td = { padding: "2px 4px" } as const;
+  return (
+    <Section title="Динамика результатов">
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10pt" }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid #999" }}>
+            <th style={{ ...td, textAlign: "left" }}>Показатель</th>
+            <th style={{ ...td, textAlign: "right" }}>Было</th>
+            <th style={{ ...td, textAlign: "left" }}>Дата</th>
+            <th style={{ ...td, textAlign: "right" }}>Стало</th>
+            <th style={{ ...td, textAlign: "left" }}>Дата</th>
+            <th style={{ ...td, textAlign: "right" }}>Δ</th>
+            <th style={{ ...td, textAlign: "left" }}>Норма</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const delta =
+              r.prev_value != null && r.curr_value != null ? r.curr_value - r.prev_value : null;
+            const arrow = delta == null || delta === 0 ? "→" : delta > 0 ? "↑" : "↓";
+            return (
+              <tr key={i} style={{ borderBottom: "1px dotted #ccc" }}>
+                <td style={td}>{r.test_name}</td>
+                <td style={{ ...td, textAlign: "right" }}>{r.prev_value ?? "—"}</td>
+                <td style={td}>{r.prev_date || ""}</td>
+                <td style={{ ...td, textAlign: "right" }}>{r.curr_value ?? "—"}</td>
+                <td style={td}>{r.curr_date || ""}</td>
+                <td style={{ ...td, textAlign: "right" }}>
+                  {delta == null ? "—" : `${arrow} ${Math.abs(delta).toFixed(2)}`}
+                </td>
+                <td style={td}>
+                  {r.reference_min ?? "?"}–{r.reference_max ?? "?"} {r.unit || ""}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Section>
+  );
+}
+
+
 function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   const t = visit.protocol_type;
   const d = visit.protocol_data || {};
