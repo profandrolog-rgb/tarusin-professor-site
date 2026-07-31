@@ -21,6 +21,7 @@ import { ExtraUziKidneysSection, ExtraUziResidualSection } from "./sections/Extr
 import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 import { AdditionalNotesField } from "./AdditionalNotesField";
 import { VisitNotesField } from "./VisitNotesField";
+import { OperationHistoryBanner } from "./OperationHistoryBanner";
 
 interface Props {
   type: ProtocolType;
@@ -92,6 +93,16 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
           </div>
         </div>
         <OperationTemplateBanner />
+        {/* Послеоперационные и повторные визиты: подтянуть операцию из журнала */}
+        {["postop_day3", "postop_day7", "repeat_with_labs", "repeat_with_uzi", "dynamic_with_uzi", "ultrashort"].includes(type) ? (
+          <OperationHistoryBanner
+            patientName={patientName}
+            birthDate={birthDate}
+            currentName={data?.operation_name || ""}
+            currentDate={data?.operation_date || ""}
+            onApply={(p) => patch(p)}
+          />
+        ) : null}
         {patientSex === "F" ? (
           <CycleContextSection
             data={{

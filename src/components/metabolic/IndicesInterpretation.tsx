@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Trash2 } from "lucide-react";
+import { QuoteContextMenu } from "@/components/common/QuoteContextMenu";
 import type { IndexResult } from "@/lib/metabolic/metaIndices";
 
 interface Group { title: string; indices?: string[]; assessment: string; actions?: string }
@@ -96,15 +97,17 @@ export default function IndicesInterpretation({ patientId, indices, patientSex }
         {groups.length === 0 ? (
           <p className="text-sm text-muted-foreground">Нажмите «Сформировать», чтобы получить краткое ИИ-объяснение индексов.</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {groups.map((g, i) => (
-              <div key={i} className="rounded-md border p-3 text-sm">
-                <div className="font-medium mb-1">{g.title}</div>
-                <p className="text-muted-foreground whitespace-pre-wrap">{g.assessment}</p>
-                {g.actions && <p className="mt-2 text-xs"><span className="font-medium">Что делать: </span>{g.actions}</p>}
-              </div>
-            ))}
-          </div>
+          <QuoteContextMenu>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {groups.map((g, i) => (
+                <div key={i} className="rounded-md border p-3 text-sm">
+                  <div className="font-medium mb-1">{g.title}</div>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{g.assessment}</p>
+                  {g.actions && <p className="mt-2 text-xs"><span className="font-medium">Что делать: </span>{g.actions}</p>}
+                </div>
+              ))}
+            </div>
+          </QuoteContextMenu>
         )}
       </CardContent>
     </Card>
