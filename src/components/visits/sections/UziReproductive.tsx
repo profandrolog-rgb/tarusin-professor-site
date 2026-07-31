@@ -106,6 +106,10 @@ export interface UziReproductiveData {
   right_epididymis_volume?: string;
   left_epididymis?: string;
   left_epididymis_volume?: string;
+  /** Асимметрия объёмов: % отличия правого от левого. */
+  testis_asymmetry_percent?: string;
+  epididymis_asymmetry_percent?: string;
+
   arterial_flow?: ArterialFlowData;
   venous_flow?: VenousFlowData;
   show_penis_exam?: boolean;
