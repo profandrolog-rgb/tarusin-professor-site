@@ -24,6 +24,7 @@ export default function AdminPatientVisitPrint() {
         .eq("id", id)
         .maybeSingle();
       let labs: any[] = [];
+      let dynamics: any[] = [];
       if (data?.id) {
         const { data: labRows } = await supabase
           .from("lab_results")
@@ -31,11 +32,41 @@ export default function AdminPatientVisitPrint() {
           .eq("visit_id", data.id)
           .order("test_name");
         labs = labRows || [];
+
+        // Динамика: сравниваем текущие показатели с последними предыдущими у пациента
+        if (data.patient_id && labs.length) {
+          const { data: prevRows } = await supabase
+            .from("lab_results")
+            .select("test_name, value, unit, reference_min, reference_max, test_date, visit_id")
+            .eq("patient_id", data.patient_id)
+            .neq("visit_id", data.id)
+            .order("test_date", { ascending: false });
+          const prevByName = new Map<string, any>();
+          for (const r of prevRows || []) {
+            if (!prevByName.has(r.test_name)) prevByName.set(r.test_name, r);
+          }
+          dynamics = labs
+            .filter((c) => prevByName.has(c.test_name))
+            .map((c) => {
+              const p = prevByName.get(c.test_name);
+              return {
+                test_name: c.test_name,
+                unit: c.unit ?? p.unit ?? null,
+                prev_value: p.value ?? null,
+                prev_date: p.test_date ?? null,
+                curr_value: c.value ?? null,
+                curr_date: c.test_date ?? null,
+                reference_min: c.reference_min ?? p.reference_min ?? null,
+                reference_max: c.reference_max ?? p.reference_max ?? null,
+              };
+            });
+        }
       }
-      setVisit(data ? { ...data, recognizedLabs: labs } : null);
+      setVisit(data ? { ...data, recognizedLabs: labs, labsDynamics: dynamics } : null);
       setLoading(false);
     })();
   }, [id]);
+
 
   const handlePdf = async () => {
     if (!printRef.current) return;
