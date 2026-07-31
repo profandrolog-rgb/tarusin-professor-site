@@ -135,6 +135,30 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
           value={data?.additional_notes || ""}
           onChange={(v) => patch({ additional_notes: v })}
         />
+        {/* Печать таблиц анализов */}
+        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 space-y-2">
+          <label className="flex items-start gap-2 cursor-pointer text-sm">
+            <Checkbox
+              checked={data?.print_labs_table !== false}
+              onCheckedChange={(v) => patch({ print_labs_table: v === true })}
+              className="mt-0.5"
+            />
+            <span>
+              Печатать таблицу распознанных анализов в конце заключения
+            </span>
+          </label>
+          <label className="flex items-start gap-2 cursor-pointer text-sm">
+            <Checkbox
+              checked={data?.print_labs_dynamics !== false}
+              onCheckedChange={(v) => patch({ print_labs_dynamics: v === true })}
+              className="mt-0.5"
+            />
+            <span>
+              Печатать динамику результатов (сравнение с предыдущими визитами)
+            </span>
+          </label>
+        </div>
+
 
         {/* Личные заметки врача — НИКОГДА не печатаются */}
         <VisitNotesField
