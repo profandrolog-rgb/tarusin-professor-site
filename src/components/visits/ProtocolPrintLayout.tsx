@@ -578,6 +578,21 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
   }
 
+  // Повторные визиты после операции: показываем операцию, если она подтянута из журнала.
+  if (
+    (t === "repeat_with_labs" || t === "repeat_with_uzi" || t === "dynamic_with_uzi" || t === "ultrashort") &&
+    (d.operation_name || d.operation_date)
+  ) {
+    rows.push(<Field key="op-h" label="Операция" value={d.operation_name} />);
+    rows.push(
+      <Field
+        key="opd-h"
+        label="Дата операции"
+        value={d.operation_date ? format(new Date(d.operation_date), "dd.MM.yyyy") : null}
+      />,
+    );
+  }
+
   if (t === "primary_short") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
