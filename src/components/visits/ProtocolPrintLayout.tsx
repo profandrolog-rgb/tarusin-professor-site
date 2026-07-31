@@ -12,6 +12,17 @@ interface RecognizedLab {
   test_date: string | null;
 }
 
+export interface LabDynamicsRow {
+  test_name: string;
+  unit: string | null;
+  prev_value: number | null;
+  prev_date: string | null;
+  curr_value: number | null;
+  curr_date: string | null;
+  reference_min: number | null;
+  reference_max: number | null;
+}
+
 interface VisitForPrint {
   visit_date: string;
   protocol_type: ProtocolType;
@@ -21,6 +32,7 @@ interface VisitForPrint {
   next_visit_date: string | null;
   patient: { full_name: string; birth_date: string; history_number: string | null } | null;
   recognizedLabs?: RecognizedLab[];
+  labsDynamics?: LabDynamicsRow[];
 }
 
 function calcAge(birth: string, ref: Date) {
