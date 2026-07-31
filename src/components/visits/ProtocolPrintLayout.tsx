@@ -749,6 +749,25 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<UziRenderer key="extra-uzi-mps" uzi={uziData} title="УЗДГ органов МПС" />);
   }
 
+  // Опциональный блок: УЗИ почек и мочевого пузыря
+  if (d.extra_uzi_kidneys && isPlainObject(d.extra_uzi_kidneys) && d.extra_uzi_kidneys.enabled === true) {
+    const { enabled: _ek, ...uziData } = d.extra_uzi_kidneys;
+    rows.push(<UziRenderer key="extra-uzi-kidneys" uzi={uziData} title="УЗИ почек и мочевого пузыря" />);
+  }
+
+  // Опциональный блок: мочевой пузырь с определением остаточной мочи
+  if (d.extra_uzi_residual && isPlainObject(d.extra_uzi_residual) && d.extra_uzi_residual.enabled === true) {
+    const { enabled: _er, ...uziData } = d.extra_uzi_residual;
+    rows.push(
+      <UziRenderer
+        key="extra-uzi-residual"
+        uzi={uziData}
+        title="УЗИ мочевого пузыря с определением остаточной мочи"
+      />
+    );
+  }
+
+
   // Catch-all: render any extra scalar fields in protocol_data not yet output
   pushUnknownScalars(rows, d);
 
