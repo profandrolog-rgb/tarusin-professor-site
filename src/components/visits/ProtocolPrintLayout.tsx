@@ -1102,12 +1102,67 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           </div>
         </div>
 
-        {/* CONSENT — печатается только если врач явно включил тумблер в форме визита */}
-        {(visit.protocol_data as any)?.include_consent === true && (
+      </div>
+
+      {/* CONSENT — отдельный лист, печатается если врач включил тумблер в форме визита */}
+      {(visit.protocol_data as any)?.include_consent === true && (
+        <div className="print-page ppl-extra-sheet">
           <ConsentBlock patient={visit.patient} />
-        )}
+        </div>
+      )}
+
+      {/* РАЗЪЯСНЕНИЕ РЕЗУЛЬТАТОВ ВИЗИТА — всегда, отдельным листом в конце */}
+      <div className="print-page ppl-extra-sheet">
+        <VisitUnderstandingBlock patient={visit.patient} visitDate={visit.visit_date} />
       </div>
 
     </>
+  );
+}
+
+const UNDERSTANDING_TEXT =
+  "Мне, законному представителю пациента, (пациенту) разъяснены профессором Тарусиным Д.И. причины возникновения заболевания, стадия его развития, методы обследования и его результаты, тактика дальнейшего обследования, варианты лечения, как консервативного и комбинированного, так и оперативного, так и — при необходимости — оперативного. Мне понятны полученные назначения, рекомендации, режим, график контрольных обследований и необходимость реабилитации. Если обсуждалось оперативное лечение — мне понятны методы, потенциальные риски как самой операции, так и отказа от её выполнения. На момент окончания консультации у меня не осталось неуточнённых вопросов, мне понятны результаты визита.";
+
+function VisitUnderstandingBlock({
+  patient,
+  visitDate,
+}: {
+  patient: VisitForPrint["patient"];
+  visitDate: string;
+}) {
+  const fio = patient?.full_name || "";
+  const dob = patient?.birth_date ? format(new Date(patient.birth_date), "dd.MM.yyyy") : "";
+  const dateStr = visitDate ? format(new Date(visitDate), "dd.MM.yyyy") : "";
+
+  return (
+    <div className="ppl-consent">
+      <h4>Разъяснение результатов визита</h4>
+      <p style={{ margin: "0 0 2mm" }}>
+        Пациент: <strong>{fio || <Blank w="80mm" />}</strong>, дата рождения:{" "}
+        <strong>{dob || <Blank w="30mm" />}</strong>
+      </p>
+      <p style={{ margin: "0 0 2mm" }}>
+        Дата визита: <strong>{dateStr || <Blank w="30mm" />}</strong>
+      </p>
+      <p style={{ margin: "0 0 4mm", textAlign: "justify" }}>«{UNDERSTANDING_TEXT}»</p>
+      <div className="sig-row">
+        <span>
+          Законный представитель (пациент): <Blank w="50mm" />{" "}
+          <span style={{ fontSize: "8pt", color: "#555" }}>(подпись)</span>
+        </span>
+        <span>
+          Дата: <Blank w="35mm" />
+        </span>
+      </div>
+      <div className="sig-row">
+        <span>
+          Врач — профессор, д.м.н. Тарусин Д.И.: <Blank w="45mm" />{" "}
+          <span style={{ fontSize: "8pt", color: "#555" }}>(подпись)</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
   );
 }
