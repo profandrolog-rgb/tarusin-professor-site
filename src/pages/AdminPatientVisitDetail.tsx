@@ -20,6 +20,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { normalizeImportedProtocolData, NORMALIZATION_VERSION } from "@/lib/visits/normalizeProtocolData";
 import { ProtocolPrintLayout } from "@/components/visits/ProtocolPrintLayout";
 import { AssignmentsPanel, normalizeAssignments, AssignmentsData } from "@/components/visits/AssignmentsPanel";
+import { rememberAssignments } from "@/lib/visits/assignmentLibrary";
 import { AiReasoningField } from "@/components/visits/AiReasoningField";
 import { WriteRxFromAssignments } from "@/components/visits/WriteRxFromAssignments";
 import {
@@ -186,6 +187,10 @@ export default function AdminPatientVisitDetail() {
     else {
       clearDraft();
       setBaseline(serializeVisit(visit));
+      // Запоминаем все формулировки назначений в библиотеку (не блокирует сохранение).
+      if (isProtocolRecord(visit.protocol_data)) {
+        void rememberAssignments((visit.protocol_data as any).assignments);
+      }
       toast({ title: "Сохранено" });
     }
   };
