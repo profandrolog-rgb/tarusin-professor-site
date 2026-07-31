@@ -21,6 +21,7 @@ import { ExtraUziKidneysSection, ExtraUziResidualSection } from "./sections/Extr
 import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 import { AdditionalNotesField } from "./AdditionalNotesField";
 import { VisitNotesField } from "./VisitNotesField";
+import { OperationHistoryBanner } from "./OperationHistoryBanner";
 
 interface Props {
   type: ProtocolType;
