@@ -21,7 +21,7 @@ import {
   Baby,
   ClipboardCheck,
   Settings,
-  Headphones
+  Headphones,
   Video,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
