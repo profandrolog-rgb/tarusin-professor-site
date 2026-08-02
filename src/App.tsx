@@ -43,6 +43,10 @@ const lazyConsent = page(() => import("./pages/Consent"));
 const lazyResults = page(() => import("./pages/Results"));
 const lazySelfCheck = page(() => import("./pages/SelfCheck"));
 const lazySelfCheckDetail = page(() => import("./pages/SelfCheckDetail"));
+const lazyVideoHub = page(() => import("./pages/VideoHub"));
+const lazyVideoSearch = page(() => import("./pages/VideoSearchPage"));
+const lazyVideoRubric = page(() => import("./pages/VideoRubricPage"));
+const lazyVideoDetail = page(() => import("./pages/VideoDetailPage"));
 
 const Auth = lazy(() => import("./pages/Auth"));
 const PatientPortal = lazy(() => import("./pages/PatientPortal"));
@@ -115,6 +119,10 @@ const PublicTreatmentPlan = lazy(() => import("./pages/PublicTreatmentPlan"));
 const Cabinet = lazy(() => import("./pages/Cabinet"));
 const CabinetAgent = lazy(() => import("./pages/CabinetAgent"));
 const CabinetVault = lazy(() => import("./pages/CabinetVault"));
+const AdminVideos = lazy(() => import("./pages/AdminVideos"));
+const AdminVideoEditor = lazy(() => import("./pages/AdminVideoEditor"));
+const AdminVideoRubrics = lazy(() => import("./pages/AdminVideoRubrics"));
+const AdminVideoImport = lazy(() => import("./pages/AdminVideoImport"));
 
 // Обёртки для синхронной установки языка до рендера контента.
 const RuRoot = () => (
@@ -163,6 +171,10 @@ const ruPublicChildren: RouteRecord[] = [
   { path: "results", lazy: lazyResults, entry: "src/pages/Results.tsx" },
   { path: "self-check", lazy: lazySelfCheck, entry: "src/pages/SelfCheck.tsx" },
   { path: "self-check/:slug", lazy: lazySelfCheckDetail, entry: "src/pages/SelfCheckDetail.tsx" },
+  { path: "video", lazy: lazyVideoHub, entry: "src/pages/VideoHub.tsx" },
+  { path: "video/search", lazy: lazyVideoSearch, entry: "src/pages/VideoSearchPage.tsx" },
+  { path: "video/rubric/:slug", lazy: lazyVideoRubric, entry: "src/pages/VideoRubricPage.tsx" },
+  { path: "video/:slug", lazy: lazyVideoDetail, entry: "src/pages/VideoDetailPage.tsx" },
 ];
 
 // Английские роуты — обслуживаются как SPA (без SSG-пре-рендеринга),
@@ -194,6 +206,10 @@ const enPublicChildren: RouteRecord[] = [
   { path: "results", lazy: lazyResults, entry: "src/pages/Results.tsx" },
   { path: "self-check", lazy: lazySelfCheck, entry: "src/pages/SelfCheck.tsx" },
   { path: "self-check/:slug", lazy: lazySelfCheckDetail, entry: "src/pages/SelfCheckDetail.tsx" },
+  { path: "video", lazy: lazyVideoHub, entry: "src/pages/VideoHub.tsx" },
+  { path: "video/search", lazy: lazyVideoSearch, entry: "src/pages/VideoSearchPage.tsx" },
+  { path: "video/rubric/:slug", lazy: lazyVideoRubric, entry: "src/pages/VideoRubricPage.tsx" },
+  { path: "video/:slug", lazy: lazyVideoDetail, entry: "src/pages/VideoDetailPage.tsx" },
 ];
 
 export const routes: RouteRecord[] = [
@@ -266,6 +282,11 @@ export const routes: RouteRecord[] = [
       { path: "cabinet", Component: Cabinet, entry: "src/pages/Cabinet.tsx" },
       { path: "cabinet/agent", Component: CabinetAgent, entry: "src/pages/CabinetAgent.tsx" },
      { path: "cabinet/vault", Component: CabinetVault, entry: "src/pages/CabinetVault.tsx" },
+      { path: "admin/videos", Component: AdminVideos, entry: "src/pages/AdminVideos.tsx" },
+      { path: "admin/videos/new", Component: AdminVideoEditor, entry: "src/pages/AdminVideoEditor.tsx" },
+      { path: "admin/videos/import", Component: AdminVideoImport, entry: "src/pages/AdminVideoImport.tsx" },
+      { path: "admin/videos/:id", Component: AdminVideoEditor, entry: "src/pages/AdminVideoEditor.tsx" },
+      { path: "admin/video-rubrics", Component: AdminVideoRubrics, entry: "src/pages/AdminVideoRubrics.tsx" },
 
       { path: "*", Component: NotFound },
     ],

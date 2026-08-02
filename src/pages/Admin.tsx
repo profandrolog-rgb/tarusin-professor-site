@@ -22,6 +22,7 @@ import {
   ClipboardCheck,
   Settings,
   Headphones
+  Video,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -208,6 +209,13 @@ const siteSections = [
     icon: Award,
     href: "/admin/certificates",
     color: "text-amber-500",
+  },
+  {
+    title: "Видео",
+    description: "Библиотека видео: загрузка, расшифровка, разделы и поиск",
+    icon: Video,
+    href: "/admin/videos",
+    color: "text-rose-500",
   },
   {
     title: "Самодиагностика",
