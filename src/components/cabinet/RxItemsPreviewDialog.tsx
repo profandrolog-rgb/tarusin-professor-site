@@ -166,8 +166,29 @@ export function RxItemsPreviewDialog({
                 />
                 Выбрать все ({selectedCount}/{items.length})
               </label>
-              <span className="text-xs text-muted-foreground">Будет создано бланков: {selectedCount}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">Будет создано бланков: {selectedCount}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={normalizing.length > 0}
+                  onClick={() => void runNormalize(items)}
+                >
+                  {normalizing.length > 0
+                    ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    : <Wand2 className="w-3.5 h-3.5 mr-1" />}
+                  Уточнить все
+                </Button>
+              </div>
             </div>
+            {cyrillicWarnings > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                Латинское наименование не заполнено у {cyrillicWarnings} позиц. — бланк 107-1/у нельзя печатать по-русски.
+                Нажмите «Уточнить» или впишите латынь вручную.
+              </div>
+            )}
             <ScrollArea className="flex-1 pr-3 -mr-3">
               <div className="space-y-3 py-2">
                 {items.map((it, idx) => (
@@ -182,17 +203,50 @@ export function RxItemsPreviewDialog({
                         <FileText className="w-3.5 h-3.5" /> №{idx + 1}
                       </div>
                       <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {it._source && (
+                            <Badge
+                              variant="outline"
+                              className={
+                                it._source === "ai"
+                                  ? "text-[10px] border-amber-500/60 text-amber-700 dark:text-amber-400"
+                                  : it._source === "none"
+                                    ? "text-[10px] border-destructive/60 text-destructive"
+                                    : "text-[10px]"
+                              }
+                            >
+                              {it._source === "ai" && <Sparkles className="w-3 h-3 mr-1" />}
+                              {SOURCE_LABEL[it._source]}
+                            </Badge>
+                          )}
+                          {normalizing.includes(it._id) && (
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Loader2 className="w-3 h-3 animate-spin" /> уточняю…
+                            </span>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[11px] px-2 ml-auto"
+                            disabled={normalizing.length > 0}
+                            onClick={() => void runNormalize([it])}
+                          >
+                            <Wand2 className="w-3 h-3 mr-1" />
+                            Уточнить
+                          </Button>
+                        </div>
                         <div>
                           <Label className="text-[11px] text-muted-foreground">Rp: (латинское наименование)</Label>
                           <Input
                             value={it.medication_latin_name}
-                            onChange={(e) => update(it._id, { medication_latin_name: e.target.value })}
-                            className="h-8 font-medium"
+                            onChange={(e) => update(it._id, { medication_latin_name: e.target.value, _source: undefined })}
+                            className={`h-8 font-medium ${hasCyrillicLatinName(it.medication_latin_name) ? "border-amber-500" : ""}`}
                           />
                         </div>
                         {it.medication_ru_name && (
                           <div className="text-xs text-muted-foreground pl-1">{it.medication_ru_name}</div>
                         )}
+
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           <div>
                             <Label className="text-[11px] text-muted-foreground">Форма</Label>
