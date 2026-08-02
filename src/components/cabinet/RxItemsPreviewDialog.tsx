@@ -1,15 +1,29 @@
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
-import { Loader2, Pill, Trash2, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Pill, Trash2, FileText, Sparkles, AlertTriangle, Wand2 } from "lucide-react";
+import { toast } from "sonner";
 import type { ParsedRxItem, ActivePatientContext } from "@/lib/protocolBridge";
 import { PatientConfirmationBanner } from "./PatientConfirmationBanner";
 import type { PatientSelection } from "./PatientPickerPopover";
+import {
+  normalizeRxItems, needsRxLookup, hasCyrillicLatinName, type RxSource,
+} from "@/lib/prescriptions/normalizeRx";
 
-export type EditableRxItem = ParsedRxItem & { _id: string; _selected: boolean };
+export type EditableRxItem = ParsedRxItem & {
+  _id: string;
+  _selected: boolean;
+  /** Требуется уточнение латыни/формы (препарат вписан вручную). */
+  _needsLookup?: boolean;
+  _source?: RxSource;
+  /** Исходная строка назначения — контекст для нормализации. */
+  _rawText?: string | null;
+};
 
 interface Props {
   open: boolean;
@@ -24,10 +38,20 @@ interface Props {
   onConfirm: (selected: ParsedRxItem[]) => void;
 }
 
+const SOURCE_LABEL: Record<RxSource, string> = {
+  catalog: "из каталога",
+  cache: "из справочника",
+  ai: "уточнено ИИ — проверьте",
+  none: "не распознано",
+};
+
 export function RxItemsPreviewDialog({
   open, onOpenChange, items, onItemsChange, loading, patientName,
   boundPatient, activeContext, onPatientChange, onConfirm,
 }: Props) {
+  const [normalizing, setNormalizing] = useState<string[]>([]);
+  const autoDone = useRef(false);
+
   const update = (id: string, patch: Partial<EditableRxItem>) => {
     onItemsChange(items.map((it) => (it._id === id ? { ...it, ...patch } : it)));
   };
@@ -36,6 +60,68 @@ export function RxItemsPreviewDialog({
     onItemsChange(items.map((it) => ({ ...it, _selected: checked })));
 
   const selectedCount = items.filter((i) => i._selected).length;
+
+  const runNormalize = async (targets: EditableRxItem[]) => {
+    if (targets.length === 0) return;
+    setNormalizing(targets.map((t) => t._id));
+    try {
+      const normalized = await normalizeRxItems(
+        targets.map((t) => ({
+          name: t.medication_ru_name || t.medication_latin_name,
+          raw_text: t._rawText ?? t.signa ?? null,
+          dose: t.dose || null,
+          frequency: t.frequency || null,
+          duration: t.duration || null,
+          dosage_form: t.dosage_form || null,
+          quantity: t.quantity || null,
+        })),
+      );
+      if (!normalized) {
+        toast.error("Не удалось уточнить препараты", {
+          description: "Поля можно заполнить вручную.",
+        });
+        return;
+      }
+      const byId = new Map(targets.map((t, i) => [t._id, normalized[i]]));
+      onItemsChange(
+        items.map((it) => {
+          const n = byId.get(it._id);
+          if (!n) return it;
+          return {
+            ...it,
+            medication_ru_name: n.medication_ru_name || it.medication_ru_name,
+            medication_latin_name: n.medication_latin_name || it.medication_latin_name,
+            dosage_form: n.dosage_form || it.dosage_form,
+            dose: n.dose || it.dose,
+            quantity: n.quantity || it.quantity,
+            frequency: n.frequency || it.frequency,
+            duration: n.duration || it.duration,
+            signa: n.signa ?? it.signa,
+            _source: n.source,
+            _needsLookup: false,
+          };
+        }),
+      );
+    } finally {
+      setNormalizing([]);
+    }
+  };
+
+  // Автоматическое уточнение позиций, вписанных вручную.
+  useEffect(() => {
+    if (!open) { autoDone.current = false; return; }
+    if (autoDone.current || loading || items.length === 0) return;
+    const targets = items.filter((it) => it._needsLookup ?? needsRxLookup(it));
+    if (targets.length === 0) return;
+    autoDone.current = true;
+    void runNormalize(targets);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, loading, items.length]);
+
+  const cyrillicWarnings = items.filter(
+    (i) => i._selected && hasCyrillicLatinName(i.medication_latin_name),
+  ).length;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
