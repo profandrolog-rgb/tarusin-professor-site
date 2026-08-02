@@ -17,11 +17,9 @@ const isExcludedFromSsg = (pathName: string) =>
   pathName === "/en" ||
   pathName.startsWith("/en/");
 
-// URL и ANON-ключ читаются из .env / переменных окружения хостинга (Timeweb).
-// Здесь их НЕ хардкодим, иначе не переключиться на прокси api.tarusin.pro.
-// В define оставляем только PROJECT_ID — он используется как идентификатор,
-// а не как источник URL.
-const SUPABASE_PROJECT_ID_FORCED = "bpbwkizvvythqotcyfii";
+// URL, ANON-ключ и PROJECT_ID читаются из .env / переменных окружения хостинга
+// (Timeweb). Здесь их НЕ хардкодим, иначе не переключиться на прокси
+// api.tarusin.pro и не подменить проект в другом окружении.
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -32,10 +30,8 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  define: {
-    "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(SUPABASE_PROJECT_ID_FORCED),
-  },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
