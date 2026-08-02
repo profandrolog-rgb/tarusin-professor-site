@@ -12,7 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { slugifyVideo, VIDEO_RUBRIC_FALLBACK } from "@/lib/video/constants";
 
 interface Rubric {
-  id?: string;
+  /** Исходный slug (первичный ключ) — пусто у новых строк. */
+  origSlug: string | null;
   slug: string;
   title: string;
   description: string | null;
@@ -38,10 +39,20 @@ const AdminVideoRubrics = () => {
   const load = async () => {
     const { data, error } = await supabase
       .from("video_rubrics")
-      .select("id, slug, title, description, is_urgent, is_active, sort_order")
+      .select("slug, title, description, is_urgent, is_active, sort_order")
       .order("sort_order", { ascending: true });
     if (error) toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
-    setRows((data ?? []) as Rubric[]);
+    setRows(
+      (data ?? []).map((r) => ({
+        origSlug: r.slug,
+        slug: r.slug,
+        title: r.title,
+        description: r.description,
+        is_urgent: !!r.is_urgent,
+        is_active: r.is_active !== false,
+        sort_order: r.sort_order,
+      })),
+    );
     setLoading(false);
   };
 
@@ -57,6 +68,7 @@ const AdminVideoRubrics = () => {
     setRows((prev) => [
       ...prev,
       {
+        origSlug: null,
         slug: "",
         title: "",
         description: "",
@@ -69,7 +81,8 @@ const AdminVideoRubrics = () => {
   const seedDefaults = () =>
     setRows((prev) => {
       const existing = new Set(prev.map((r) => r.slug));
-      const added = VIDEO_RUBRIC_FALLBACK.filter((r) => !existing.has(r.slug)).map((r, i) => ({
+      const added: Rubric[] = VIDEO_RUBRIC_FALLBACK.filter((r) => !existing.has(r.slug)).map((r, i) => ({
+        origSlug: null,
         slug: r.slug,
         title: r.title,
         description: "",
@@ -86,7 +99,6 @@ const AdminVideoRubrics = () => {
       const payload = rows
         .filter((r) => r.title.trim())
         .map((r) => ({
-          ...(r.id ? { id: r.id } : {}),
           slug: r.slug.trim() || slugifyVideo(r.title),
           title: r.title.trim(),
           description: r.description || null,
@@ -94,7 +106,7 @@ const AdminVideoRubrics = () => {
           is_active: r.is_active,
           sort_order: r.sort_order ?? 0,
         }));
-      const { error } = await supabase.from("video_rubrics").upsert(payload as any, { onConflict: "slug" });
+      const { error } = await supabase.from("video_rubrics").upsert(payload, { onConflict: "slug" });
       if (error) throw new Error(error.message);
       toast({ title: "Разделы сохранены" });
       await load();
@@ -111,8 +123,8 @@ const AdminVideoRubrics = () => {
 
   const remove = async (i: number) => {
     const row = rows[i];
-    if (row.id) {
-      const { error } = await supabase.from("video_rubrics").delete().eq("id", row.id);
+    if (row.origSlug) {
+      const { error } = await supabase.from("video_rubrics").delete().eq("slug", row.origSlug);
       if (error) {
         toast({ title: "Не удалось удалить", description: error.message, variant: "destructive" });
         return;
@@ -147,7 +159,7 @@ const AdminVideoRubrics = () => {
         ) : (
           <div className="mt-6 space-y-4">
             {rows.map((r, i) => (
-              <div key={r.id ?? `new-${i}`} className="space-y-3 rounded-xl border border-border bg-card p-4">
+              <div key={r.origSlug ?? `new-${i}`} className="space-y-3 rounded-xl border border-border bg-card p-4">
                 <div className="grid gap-3 md:grid-cols-3">
                   <div>
                     <Label>Название</Label>
