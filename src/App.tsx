@@ -43,6 +43,10 @@ const lazyConsent = page(() => import("./pages/Consent"));
 const lazyResults = page(() => import("./pages/Results"));
 const lazySelfCheck = page(() => import("./pages/SelfCheck"));
 const lazySelfCheckDetail = page(() => import("./pages/SelfCheckDetail"));
+const lazyVideoHub = page(() => import("./pages/VideoHub"));
+const lazyVideoSearch = page(() => import("./pages/VideoSearchPage"));
+const lazyVideoRubric = page(() => import("./pages/VideoRubricPage"));
+const lazyVideoDetail = page(() => import("./pages/VideoDetailPage"));
 
 const Auth = lazy(() => import("./pages/Auth"));
 const PatientPortal = lazy(() => import("./pages/PatientPortal"));
