@@ -316,11 +316,12 @@ export function RxItemsPreviewDialog({
             onClick={() => {
               const selected = items
                 .filter((i) => i._selected)
-                .map(({ _id, _selected, ...rest }) => rest);
+                .map(({ _id, _selected, _needsLookup, _source, _rawText, ...rest }) => rest);
               onConfirm(selected);
             }}
-            disabled={loading || selectedCount === 0}
+            disabled={loading || selectedCount === 0 || normalizing.length > 0}
           >
+
             Открыть форму рецептов ({selectedCount})
           </Button>
         </DialogFooter>
