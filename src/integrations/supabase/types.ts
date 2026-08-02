@@ -4692,6 +4692,30 @@ export type Database = {
         }
         Relationships: []
       }
+      symptom_synonyms: {
+        Row: {
+          canonical_term: string | null
+          created_at: string
+          id: string
+          patient_phrase: string
+          rubric: string | null
+        }
+        Insert: {
+          canonical_term?: string | null
+          created_at?: string
+          id?: string
+          patient_phrase: string
+          rubric?: string | null
+        }
+        Update: {
+          canonical_term?: string | null
+          created_at?: string
+          id?: string
+          patient_phrase?: string
+          rubric?: string | null
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           conditions: string
@@ -6049,6 +6073,202 @@ export type Database = {
         }
         Relationships: []
       }
+      video_chunks: {
+        Row: {
+          content: string | null
+          created_at: string
+          embedding: string | null
+          end_sec: number | null
+          id: string
+          start_sec: number | null
+          video_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          embedding?: string | null
+          end_sec?: number | null
+          id?: string
+          start_sec?: number | null
+          video_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          embedding?: string | null
+          end_sec?: number | null
+          id?: string
+          start_sec?: number | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_chunks_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_rubrics: {
+        Row: {
+          created_at: string
+          description: string | null
+          is_active: boolean | null
+          is_urgent: boolean | null
+          slug: string
+          sort_order: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean | null
+          is_urgent?: boolean | null
+          slug: string
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean | null
+          is_urgent?: boolean | null
+          slug?: string
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          access_level: string | null
+          age_groups: string[] | null
+          ai_draft: Json | null
+          audience: string[] | null
+          cluster_slug: string | null
+          created_at: string
+          duration_sec: number | null
+          faq_questions: string[] | null
+          format: string | null
+          id: string
+          is_graphic: boolean | null
+          is_published: boolean | null
+          level: string | null
+          poster_url: string | null
+          published_at: string | null
+          rubric: string | null
+          search_tsv: unknown
+          seo_description: string | null
+          seo_title: string | null
+          series_order: number | null
+          series_slug: string | null
+          slug: string
+          sort_order: number | null
+          source: string | null
+          subrubric: string | null
+          summary_plain: string | null
+          summary_short: string | null
+          symptom_phrases: string[] | null
+          tags: string[] | null
+          title: string
+          transcript: string | null
+          transcript_error: string | null
+          transcript_status: string | null
+          updated_at: string
+          video_url: string | null
+          views: number | null
+        }
+        Insert: {
+          access_level?: string | null
+          age_groups?: string[] | null
+          ai_draft?: Json | null
+          audience?: string[] | null
+          cluster_slug?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          faq_questions?: string[] | null
+          format?: string | null
+          id?: string
+          is_graphic?: boolean | null
+          is_published?: boolean | null
+          level?: string | null
+          poster_url?: string | null
+          published_at?: string | null
+          rubric?: string | null
+          search_tsv?: unknown
+          seo_description?: string | null
+          seo_title?: string | null
+          series_order?: number | null
+          series_slug?: string | null
+          slug: string
+          sort_order?: number | null
+          source?: string | null
+          subrubric?: string | null
+          summary_plain?: string | null
+          summary_short?: string | null
+          symptom_phrases?: string[] | null
+          tags?: string[] | null
+          title: string
+          transcript?: string | null
+          transcript_error?: string | null
+          transcript_status?: string | null
+          updated_at?: string
+          video_url?: string | null
+          views?: number | null
+        }
+        Update: {
+          access_level?: string | null
+          age_groups?: string[] | null
+          ai_draft?: Json | null
+          audience?: string[] | null
+          cluster_slug?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          faq_questions?: string[] | null
+          format?: string | null
+          id?: string
+          is_graphic?: boolean | null
+          is_published?: boolean | null
+          level?: string | null
+          poster_url?: string | null
+          published_at?: string | null
+          rubric?: string | null
+          search_tsv?: unknown
+          seo_description?: string | null
+          seo_title?: string | null
+          series_order?: number | null
+          series_slug?: string | null
+          slug?: string
+          sort_order?: number | null
+          source?: string | null
+          subrubric?: string | null
+          summary_plain?: string | null
+          summary_short?: string | null
+          symptom_phrases?: string[] | null
+          tags?: string[] | null
+          title?: string
+          transcript?: string | null
+          transcript_error?: string | null
+          transcript_status?: string | null
+          updated_at?: string
+          video_url?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_rubric_fkey"
+            columns: ["rubric"]
+            isOneToOne: false
+            referencedRelation: "video_rubrics"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       visit_text_templates: {
         Row: {
           created_at: string
@@ -6468,6 +6688,16 @@ export type Database = {
         Returns: undefined
       }
       is_guardian_of: { Args: { _patient_id: string }; Returns: boolean }
+      match_video_chunks: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          chunk_id: string
+          content: string
+          similarity: number
+          start_sec: number
+          video_id: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -6522,8 +6752,27 @@ export type Database = {
           title: string
         }[]
       }
+      search_videos_fts: {
+        Args: { match_count?: number; q: string }
+        Returns: {
+          rank: number
+          video_id: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      unaccent: { Args: { "": string }; Returns: string }
+      video_search_doc: {
+        Args: {
+          _faq: string[]
+          _phrases: string[]
+          _summary: string
+          _tags: string[]
+          _title: string
+          _transcript: string
+        }
+        Returns: unknown
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "editor" | "surgeon" | "parent"
