@@ -73,10 +73,11 @@ Deno.serve(async (req) => {
     let vector: Array<{ video_id: string; chunk_id: string; start_sec: number; content: string }> = [];
     try {
       const emb = await embedOne(expanded);
-      const { data } = await sb.rpc("match_video_chunks", {
+      const { data, error } = await sb.rpc("match_video_chunks", {
         query_embedding: emb as unknown as string,
         match_count: 20,
       });
+      if (error) throw new Error(error.message);
       vector = (data ?? []) as any[];
     } catch (e) {
       console.warn("video-search vector stage failed", e);
@@ -85,11 +86,13 @@ Deno.serve(async (req) => {
     // 3. Полнотекстовый поиск
     let fts: Array<{ video_id: string; rank: number }> = [];
     try {
-      const { data } = await sb.rpc("search_videos_fts", { q: expanded, match_count: 20 });
+      const { data, error } = await sb.rpc("search_videos_fts", { q: expanded, match_count: 20 });
+      if (error) throw new Error(error.message);
       fts = (data ?? []) as any[];
     } catch (e) {
       console.warn("video-search fts stage failed", e);
     }
+
 
     // 4. RRF
     const scores = new Map<string, number>();
