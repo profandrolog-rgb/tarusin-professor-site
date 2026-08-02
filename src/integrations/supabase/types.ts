@@ -6687,6 +6687,7 @@ export type Database = {
         Args: { _hash: string }
         Returns: undefined
       }
+      increment_video_view: { Args: { _slug: string }; Returns: undefined }
       is_guardian_of: { Args: { _patient_id: string }; Returns: boolean }
       match_video_chunks: {
         Args: { match_count?: number; query_embedding: string }
