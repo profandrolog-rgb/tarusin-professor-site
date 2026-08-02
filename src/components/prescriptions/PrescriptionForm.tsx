@@ -357,13 +357,27 @@ export function PrescriptionForm({ repeatPrescriptionId, repeatWithoutPatient, o
 
             {items.map((item, idx) => (
               <Card key={idx} className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-medium">{item.medication_latin_name}</h4>
+                <div className="flex justify-between items-start mb-3 gap-3">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Rp: латинское наименование</Label>
+                    <Input
+                      value={item.medication_latin_name}
+                      onChange={(e) => updateItem(idx, "medication_latin_name", e.target.value)}
+                      placeholder="Tabulettas Tamsulosini 0,4"
+                      className={/[А-Яа-яЁё]/.test(item.medication_latin_name) || !item.medication_latin_name.trim() ? "border-amber-500 font-medium" : "font-medium"}
+                    />
+                    {(/[А-Яа-яЁё]/.test(item.medication_latin_name) || !item.medication_latin_name.trim()) && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Латинское наименование не заполнено — бланк 107-1/у нельзя печатать по-русски.
+                      </p>
+                    )}
+                  </div>
                   <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+
                   <div className="space-y-1">
                     <Label className="text-xs">Форма выпуска</Label>
                     <Input value={item.dosage_form} onChange={(e) => updateItem(idx, "dosage_form", e.target.value)} placeholder="таблетки" />
