@@ -2315,33 +2315,48 @@ export type Database = {
       }
       medication_digests: {
         Row: {
+          atc_code: string | null
           contraindications: string | null
           created_at: string
+          default_dose: string | null
+          default_frequency: string | null
+          dosage_form: string | null
           dosage_info: string | null
           id: string
           indications: string | null
+          latin_name: string | null
           medication_name: string
           pharmacological_group: string | null
           synonyms: string | null
           updated_at: string
         }
         Insert: {
+          atc_code?: string | null
           contraindications?: string | null
           created_at?: string
+          default_dose?: string | null
+          default_frequency?: string | null
+          dosage_form?: string | null
           dosage_info?: string | null
           id?: string
           indications?: string | null
+          latin_name?: string | null
           medication_name: string
           pharmacological_group?: string | null
           synonyms?: string | null
           updated_at?: string
         }
         Update: {
+          atc_code?: string | null
           contraindications?: string | null
           created_at?: string
+          default_dose?: string | null
+          default_frequency?: string | null
+          dosage_form?: string | null
           dosage_info?: string | null
           id?: string
           indications?: string | null
+          latin_name?: string | null
           medication_name?: string
           pharmacological_group?: string | null
           synonyms?: string | null

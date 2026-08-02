@@ -32,25 +32,32 @@ export function isRxCategory(c: TreatmentCategory): boolean {
   return RX_CATEGORIES.has(c);
 }
 
-export function planItemToRxItem(it: PlanItemLike): ParsedRxItem {
+export function planItemToRxItem(it: PlanItemLike): ParsedRxItem & { _needsLookup: boolean; _rawText: string | null } {
   const dose = it.dose != null
     ? `${it.dose}${it.dose_unit ? " " + it.dose_unit : ""}`.trim()
     : "";
   const duration = it.duration_days ? `${it.duration_days} дн.` : "";
+  const latin = (it.inn_snapshot || "").trim();
+  const form = (it.form_snapshot || "").trim();
+  // Препарат вписан от руки: латыни нет (или она по-русски) либо нет формы.
+  const needsLookup = !latin || /[А-Яа-яЁё]/.test(latin) || !form;
   return {
     medication_ru_name: it.name_snapshot,
-    medication_latin_name: it.inn_snapshot || it.name_snapshot,
-    dosage_form: it.form_snapshot || "",
+    medication_latin_name: latin || it.name_snapshot,
+    dosage_form: form,
     dose,
     quantity: 1,
     frequency: it.frequency || "",
     duration,
     signa: it.notes ?? null,
+    _needsLookup: needsLookup,
+    _rawText: [it.name_snapshot, dose, it.frequency, duration, it.notes].filter(Boolean).join(", ") || null,
   };
 }
 
-export function planItemsToRxItems(items: PlanItemLike[]): ParsedRxItem[] {
+export function planItemsToRxItems(items: PlanItemLike[]) {
   return items
     .filter((i) => isRxCategory(i.section_category))
     .map(planItemToRxItem);
 }
+
