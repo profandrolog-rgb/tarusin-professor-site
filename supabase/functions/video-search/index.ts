@@ -49,31 +49,25 @@ Deno.serve(async (req) => {
     const sb = createClient(SUPABASE_URL, SVC);
     const low = query.toLowerCase();
 
-    // 1. Расширение запроса синонимами
+    // 1. Расширение запроса синонимами жалоб
     let expanded = query;
-    try {
-      const { data: syn } = await sb
-        .from("symptom_synonyms")
-        .select("patient_phrase, canonical_term")
-        .textSearch("patient_phrase", "", { config: "russian" })
-        .limit(0);
-      void syn;
-    } catch { /* игнорируем */ }
-    try {
-      const { data: syn } = await sb.rpc("expand_symptom_query", { q: query });
-      if (Array.isArray(syn) && syn.length) expanded += " " + syn.map((s: any) => s.canonical_term).join(" ");
-    } catch {
-      // rpc может отсутствовать — fallback на ilike
-      const tokens = low.replace(/[^\p{L}\p{N}\s-]+/gu, " ").split(/\s+/).filter((t) => t.length >= 4).slice(0, 5);
+    {
+      const tokens = low
+        .replace(/[^\p{L}\p{N}\s-]+/gu, " ")
+        .split(/\s+/)
+        .filter((t) => t.length >= 4)
+        .slice(0, 6);
       if (tokens.length) {
         const { data: syn } = await sb
           .from("symptom_synonyms")
           .select("canonical_term")
           .or(tokens.map((t) => `patient_phrase.ilike.%${t}%`).join(","))
-          .limit(10);
-        if (syn?.length) expanded += " " + syn.map((s: any) => s.canonical_term).filter(Boolean).join(" ");
+          .limit(12);
+        const extra = (syn ?? []).map((s: any) => s.canonical_term).filter(Boolean);
+        if (extra.length) expanded += " " + [...new Set(extra)].join(" ");
       }
     }
+
 
     // 2. Векторный поиск
     let vector: Array<{ video_id: string; chunk_id: string; start_sec: number; content: string }> = [];
