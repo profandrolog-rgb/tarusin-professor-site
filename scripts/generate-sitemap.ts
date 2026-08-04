@@ -159,8 +159,60 @@ function generateSitemap(entries: SitemapEntry[]) {
   ].join("\n");
 }
 
+
+/** Отдельный video-sitemap.xml с расширением Google Video для опубликованных видео. */
+async function writeVideoSitemap() {
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data } = await supabase
+      .from("videos")
+      .select("slug, title, summary_short, poster_url, video_url, duration_sec, published_at, updated_at")
+      .eq("is_published", true)
+      .eq("access_level", "public");
+    const rows = (data ?? []) as Array<Record<string, any>>;
+    const esc = (v: string) =>
+      v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const blocks = rows
+      .filter((v) => v.slug)
+      .map((v) => {
+        const loc = `${BASE_URL}/video/${v.slug}/`;
+        const lines = [
+          `  <url>`,
+          `    <loc>${loc}</loc>`,
+          v.updated_at ? `    <lastmod>${String(v.updated_at).slice(0, 10)}</lastmod>` : null,
+          `    <changefreq>monthly</changefreq>`,
+          `    <video:video>`,
+          v.poster_url ? `      <video:thumbnail_loc>${esc(v.poster_url)}</video:thumbnail_loc>` : null,
+          `      <video:title>${esc(v.title || "")}</video:title>`,
+          `      <video:description>${esc(v.summary_short || v.title || "")}</video:description>`,
+          v.video_url ? `      <video:content_loc>${esc(v.video_url)}</video:content_loc>` : null,
+          `      <video:player_loc>${loc}</video:player_loc>`,
+          v.duration_sec ? `      <video:duration>${v.duration_sec}</video:duration>` : null,
+          v.published_at ? `      <video:publication_date>${String(v.published_at).slice(0, 10)}</video:publication_date>` : null,
+          `      <video:family_friendly>yes</video:family_friendly>`,
+          `      <video:live>no</video:live>`,
+          `    </video:video>`,
+          `  </url>`,
+        ];
+        return lines.filter(Boolean).join("\n");
+      });
+    const xml = [
+      `<?xml version="1.0" encoding="UTF-8"?>`,
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">`,
+      ...blocks,
+      `</urlset>`,
+    ].join("\n");
+    writeFileSync(resolve("public/video-sitemap.xml"), xml);
+    if (existsSync(resolve("dist"))) writeFileSync(resolve("dist/video-sitemap.xml"), xml);
+    console.log(`video-sitemap.xml written (${blocks.length} videos)`);
+  } catch (err) {
+    console.warn("video-sitemap: failed:", err);
+  }
+}
+
 (async () => {
   const dynamic = await fetchDynamicEntries();
+  await writeVideoSitemap();
   const all = [...staticEntries, ...dynamic];
   const xml = generateSitemap(all);
 

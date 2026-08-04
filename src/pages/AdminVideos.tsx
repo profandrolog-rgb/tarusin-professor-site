@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Upload, LayoutList, Loader2, Eye, EyeOff, Search } from "lucide-react";
+import { ArrowLeft, Plus, Upload, LayoutList, Loader2, Eye, EyeOff, Search, GripVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +80,9 @@ const AdminVideos = () => {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
               <Link to="/admin/video-rubrics"><LayoutList className="mr-2 h-4 w-4" /> Разделы</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/admin/videos/organize"><GripVertical className="mr-2 h-4 w-4" /> Порядок</Link>
             </Button>
             <Button variant="outline" asChild>
               <Link to="/admin/videos/import"><Upload className="mr-2 h-4 w-4" /> Импорт</Link>

@@ -17,3 +17,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://tarusin.pro/sitemap.xml
+Sitemap: https://tarusin.pro/video-sitemap.xml

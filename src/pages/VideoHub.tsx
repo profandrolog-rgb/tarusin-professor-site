@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, AlertTriangle, ArrowRight } from "lucide-react";
+import { Search, AlertTriangle, ArrowRight, Rows3, LayoutGrid, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import PageMeta from "@/components/PageMeta";
 import JsonLd from "@/components/JsonLd";
 import VideoCard, { type VideoCardData } from "@/components/video/VideoCard";
 import VideoSearchBox from "@/components/video/VideoSearchBox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { VIDEO_RUBRIC_FALLBACK } from "@/lib/video/constants";
 import { SITE_URL } from "@/lib/i18nUrls";
+
+type ViewMode = "shelves" | "grid" | "feed";
+const VIEW_KEY = "video-hub-view";
+
 
 interface Rubric {
   slug: string;
@@ -51,7 +56,16 @@ const VideoHub = () => {
   }, []);
 
   const urgent = rubrics.find((r) => r.is_urgent);
-  const latest = videos.slice(0, 8);
+
+  const [view, setView] = useState<ViewMode>("shelves");
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(VIEW_KEY) : null;
+    if (saved === "shelves" || saved === "grid" || saved === "feed") setView(saved);
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_KEY, view);
+  }, [view]);
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,28 +127,100 @@ const VideoHub = () => {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-16">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-foreground">Новые видео</h2>
-          <Link to="/video/search" className="inline-flex items-center gap-1 text-sm text-primary">
-            <Search className="h-4 w-4" /> Найти по вопросу
-          </Link>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-2xl font-semibold text-foreground">
+            {view === "shelves" ? "По разделам" : view === "grid" ? "Все видео" : "Лента"}
+          </h2>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-border p-0.5">
+              {(
+                [
+                  { id: "shelves", label: "Полки", Icon: Rows3 },
+                  { id: "grid", label: "Сетка", Icon: LayoutGrid },
+                  { id: "feed", label: "Лента", Icon: List },
+                ] as { id: ViewMode; label: string; Icon: typeof Rows3 }[]
+              ).map(({ id, label, Icon }) => (
+                <Button
+                  key={id}
+                  type="button"
+                  size="sm"
+                  variant={view === id ? "secondary" : "ghost"}
+                  aria-pressed={view === id}
+                  onClick={() => setView(id)}
+                  className="gap-1.5"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{label}</span>
+                </Button>
+              ))}
+            </div>
+            <Link to="/video/search" className="inline-flex items-center gap-1 text-sm text-primary">
+              <Search className="h-4 w-4" /> Найти по вопросу
+            </Link>
+          </div>
         </div>
+
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="aspect-video w-full rounded-xl" />
             ))}
           </div>
-        ) : latest.length ? (
+        ) : !videos.length ? (
+          <p className="text-muted-foreground">Видео пока не опубликованы.</p>
+        ) : view === "grid" ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {latest.map((v) => (
+            {videos.map((v) => (
+              <VideoCard key={v.slug} video={v} />
+            ))}
+          </div>
+        ) : view === "feed" ? (
+          <div className="mx-auto grid max-w-2xl gap-6">
+            {videos.map((v) => (
               <VideoCard key={v.slug} video={v} />
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">Видео пока не опубликованы.</p>
+          <div className="space-y-10">
+            {rubrics.map((r) => {
+              const list = videos.filter((v) => v.rubric === r.slug);
+              if (!list.length) return null;
+              return (
+                <div key={r.slug}>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-foreground">{r.title}</h3>
+                    <Link to={`/video/rubric/${r.slug}`} className="text-sm text-primary">
+                      Все
+                    </Link>
+                  </div>
+                  <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2">
+                    {list.map((v) => (
+                      <div key={v.slug} className="w-64 shrink-0 snap-start">
+                        <VideoCard video={v} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {(() => {
+              const rest = videos.filter((v) => !rubrics.some((r) => r.slug === v.rubric));
+              if (!rest.length) return null;
+              return (
+                <div>
+                  <h3 className="mb-3 text-lg font-semibold text-foreground">Другие видео</h3>
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    {rest.map((v) => (
+                      <VideoCard key={v.slug} video={v} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         )}
       </section>
+
     </div>
   );
 };
