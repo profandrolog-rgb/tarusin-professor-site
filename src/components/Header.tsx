@@ -96,16 +96,10 @@ const Header = () => {
                   <ChevronDown className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {moreNavItems.map(item => (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link to={item.href} className="w-full">{item.label}</Link>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
+              <DropdownMenuContent align="end" className="w-56 max-h-[70vh] overflow-y-auto overscroll-contain">
                 {hasAdminPanelAccess && (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="w-full flex items-center">
+                    <Link to="/admin" className="w-full flex items-center font-medium text-primary">
                       <Settings className="w-4 h-4 mr-2" />
                       {t("nav.adminPanel")}
                     </Link>
@@ -113,7 +107,7 @@ const Header = () => {
                 )}
                 {!hasAdminPanelAccess && isSurgeon && (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/operations-journal" className="w-full flex items-center">
+                    <Link to="/admin/operations-journal" className="w-full flex items-center font-medium text-primary">
                       <Settings className="w-4 h-4 mr-2" />
                       {t("nav.opsJournal")}
                     </Link>
@@ -148,7 +142,14 @@ const Header = () => {
                     </DropdownMenuItem>
                   </>
                 )}
+                <DropdownMenuSeparator />
+                {moreNavItems.map(item => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link to={item.href} className="w-full">{item.label}</Link>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
+
             </DropdownMenu>
           </nav>
 
