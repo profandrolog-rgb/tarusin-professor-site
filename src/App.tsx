@@ -122,6 +122,7 @@ const CabinetVault = lazy(() => import("./pages/CabinetVault"));
 const AdminVideos = lazy(() => import("./pages/AdminVideos"));
 const AdminVideoEditor = lazy(() => import("./pages/AdminVideoEditor"));
 const AdminVideoRubrics = lazy(() => import("./pages/AdminVideoRubrics"));
+const AdminVideoOrganize = lazy(() => import("./pages/AdminVideoOrganize"));
 const AdminVideoImport = lazy(() => import("./pages/AdminVideoImport"));
 
 // Обёртки для синхронной установки языка до рендера контента.
@@ -287,6 +288,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/videos/import", Component: AdminVideoImport, entry: "src/pages/AdminVideoImport.tsx" },
       { path: "admin/videos/:id", Component: AdminVideoEditor, entry: "src/pages/AdminVideoEditor.tsx" },
       { path: "admin/video-rubrics", Component: AdminVideoRubrics, entry: "src/pages/AdminVideoRubrics.tsx" },
+      { path: "admin/videos/organize", Component: AdminVideoOrganize, entry: "src/pages/AdminVideoOrganize.tsx" },
 
       { path: "*", Component: NotFound },
     ],

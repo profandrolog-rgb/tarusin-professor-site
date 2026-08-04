@@ -30,6 +30,7 @@ const Footer = () => {
     { label: t("nav.forDoctors"), href: "/for-doctors", type: "link" },
     { label: t("nav.media"), href: "/media", type: "link" },
     { label: t("nav.videos"), href: "/videos", type: "link" },
+    { label: t("nav.videoLibrary"), href: "/video", type: "link" },
     { label: t("nav.videoCases"), href: "/video-cases", type: "link" },
     { label: t("nav.publications"), href: "/publications", type: "link" },
     { label: t("nav.clinicalCases"), href: "/clinical-cases", type: "link" },

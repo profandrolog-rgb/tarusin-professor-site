@@ -30,6 +30,7 @@ const Header = () => {
     { label: t("nav.forDoctors"), href: "/for-doctors" },
     { label: t("nav.media"), href: "/media" },
     { label: t("nav.videos"), href: "/videos" },
+    { label: t("nav.videoLibrary"), href: "/video" },
     { label: t("nav.videoCases"), href: "/video-cases" },
     { label: t("nav.publications"), href: "/publications" },
     { label: t("nav.research"), href: "/research" },
