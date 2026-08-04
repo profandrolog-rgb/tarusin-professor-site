@@ -47,6 +47,7 @@ const pageNavItems = [
   { title: "Для врачей", url: "/for-doctors", icon: GraduationCap },
   { title: "СМИ и ТВ", url: "/media", icon: Tv },
   { title: "Видео", url: "/videos", icon: Video },
+  { title: "Видеоответы (библиотека)", url: "/video", icon: Video },
   { title: "Видео-кейсы", url: "/video-cases", icon: Clapperboard },
   { title: "Публикации", url: "/publications", icon: BookOpen },
   { title: "Клинические случаи", url: "/clinical-cases", icon: ClipboardList },
