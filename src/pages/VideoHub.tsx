@@ -56,7 +56,16 @@ const VideoHub = () => {
   }, []);
 
   const urgent = rubrics.find((r) => r.is_urgent);
-  const latest = videos.slice(0, 8);
+
+  const [view, setView] = useState<ViewMode>("shelves");
+  useEffect(() => {
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(VIEW_KEY) : null;
+    if (saved === "shelves" || saved === "grid" || saved === "feed") setView(saved);
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(VIEW_KEY, view);
+  }, [view]);
+
 
   return (
     <div className="min-h-screen bg-background">
