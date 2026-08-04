@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, AlertTriangle, ArrowRight } from "lucide-react";
+import { Search, AlertTriangle, ArrowRight, Rows3, LayoutGrid, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import PageMeta from "@/components/PageMeta";
 import JsonLd from "@/components/JsonLd";
 import VideoCard, { type VideoCardData } from "@/components/video/VideoCard";
 import VideoSearchBox from "@/components/video/VideoSearchBox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { VIDEO_RUBRIC_FALLBACK } from "@/lib/video/constants";
 import { SITE_URL } from "@/lib/i18nUrls";
+
+type ViewMode = "shelves" | "grid" | "feed";
+const VIEW_KEY = "video-hub-view";
+
 
 interface Rubric {
   slug: string;
