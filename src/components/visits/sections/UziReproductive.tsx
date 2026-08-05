@@ -94,12 +94,19 @@ export interface IliacMayThurnerData {
   conclusion?: string;
 }
 
-/** Асимметрия объёмов: % отличия правого от левого. */
+/**
+ * Дефицит объёма (асимметрия): меньшее значение делим на большее,
+ * умножаем на 100 и вычитаем 100. Результат отрицательный — на сколько
+ * процентов меньший орган меньше большего.
+ */
 function asymmetryPercent(right?: string, left?: string): string | null {
   const r = parseFloat(String(right || "").replace(",", "."));
   const l = parseFloat(String(left || "").replace(",", "."));
-  if (!Number.isFinite(r) || !Number.isFinite(l) || l === 0) return null;
-  return (((r - l) / l) * 100).toFixed(1);
+  if (!Number.isFinite(r) || !Number.isFinite(l)) return null;
+  const min = Math.min(r, l);
+  const max = Math.max(r, l);
+  if (max === 0) return null;
+  return ((min / max) * 100 - 100).toFixed(1);
 }
 
 export interface UziReproductiveData {
@@ -319,7 +326,7 @@ export function UziReproductiveSection({ data, onChange }: Props) {
       {/* Асимметрия объёмов */}
       <div className="p-3 border rounded-md space-y-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="font-medium text-sm">Асимметрия объёмов (% отличия правого от левого)</div>
+          <div className="font-medium text-sm">Дефицит объёма (меньшее ÷ большее × 100 − 100, %)</div>
           <Button
             type="button"
             variant="outline"

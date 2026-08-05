@@ -629,15 +629,16 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
     rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания" value={d.indications} />);
-    if (d.uzi && isPlainObject(d.uzi)) {
-      rows.push(<UziRenderer key="uzi" uzi={d.uzi}
-        title={t === "uzi_reproductive" ? "УЗИ органов репродуктивной системы" : "УЗИ органов мошонки"} />);
-    }
+    // Сначала осмотр, затем УЗИ
     if (t !== "uzi_reproductive") {
       pushSomatic(rows, d);
       pushSexual(rows, d);
       pushLocalStatus(rows, d);
       pushClinical(rows, d);
+    }
+    if (d.uzi && isPlainObject(d.uzi)) {
+      rows.push(<UziRenderer key="uzi" uzi={d.uzi}
+        title={t === "uzi_reproductive" ? "УЗИ органов репродуктивной системы" : "УЗИ органов мошонки"} />);
     }
     rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
   }
