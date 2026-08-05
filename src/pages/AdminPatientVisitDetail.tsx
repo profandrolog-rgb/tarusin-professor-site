@@ -326,7 +326,7 @@ export default function AdminPatientVisitDetail() {
       <div className="min-h-screen bg-background">
         {/* STICKY ACTION BAR */}
         <div className="sticky top-0 z-50 bg-background border-b shadow-sm">
-          <div className="max-w-5xl mx-auto flex items-center gap-2 px-4 h-12">
+          <div className="max-w-5xl mx-auto flex flex-wrap items-center gap-2 px-4 py-1.5 min-h-12">
             {/* Left group */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -482,6 +482,18 @@ export default function AdminPatientVisitDetail() {
             </div>
           )}
         </div>
+
+        {/* Плавающая кнопка сохранения — всегда доступна в любом протоколе */}
+        <Button
+          size="lg"
+          onClick={handleSave}
+          disabled={saving}
+          className={`fixed bottom-6 right-6 z-50 shadow-lg rounded-full ${isDirty ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
+        >
+          {saving ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
+          Сохранить
+          {isDirty && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-yellow-300" />}
+        </Button>
 
         <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8">
           <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
