@@ -9,6 +9,7 @@ import { UziReproductiveSection } from "../sections/UziReproductive";
 import { UziUrinarySection } from "../sections/UziUrinary";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
+import { NeuroStatusSection } from "../sections/NeuroStatus";
 import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
@@ -138,6 +139,11 @@ export function DynamicWithUziForm({ data, onChange, birthDate, patientId, curre
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
       <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+      <div className="space-y-1">
+        <SmartFieldLabel fieldKey="neuro_status" value={(data as any).neuro_status || ""} onSet={(v) => onChange({ neuro_status: v } as any)}>Неврологический статус (кратко)</SmartFieldLabel>
+        <Textarea rows={2} value={(data as any).neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value } as any)} />
+      </div>
+      <NeuroStatusSection value={(data as any).neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v } as any)} />
       <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
 
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
@@ -163,6 +169,11 @@ export function RepeatWithUziForm({ data, onChange, birthDate, patientId, curren
         <CardContent><LocalStatusAndrologySection data={data.local_status || {}} onChange={(p) => onChange({ local_status: { ...(data.local_status || {}), ...p } })} /></CardContent>
       </Card>
       <OrthoStatusSection value={data.ortho_status} onChange={(v) => onChange({ ortho_status: v })} />
+      <div className="space-y-1">
+        <SmartFieldLabel fieldKey="neuro_status" value={(data as any).neuro_status || ""} onSet={(v) => onChange({ neuro_status: v } as any)}>Неврологический статус (кратко)</SmartFieldLabel>
+        <Textarea rows={2} value={(data as any).neuro_status || ""} onChange={(e) => onChange({ neuro_status: e.target.value } as any)} />
+      </div>
+      <NeuroStatusSection value={(data as any).neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v } as any)} />
       <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
 
       <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>

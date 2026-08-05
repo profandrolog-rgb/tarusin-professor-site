@@ -51,7 +51,8 @@ function calcVolumeDeficit(vol: number | null, normVal: number | null): { defici
   if (!vol || !normVal) return null;
   if (vol >= normVal) return null;
   const deficit = Math.round((normVal - vol) * 100) / 100;
-  const deficitPercent = Math.round((deficit / normVal) * 100);
+  // Меньшее ÷ большее × 100 − 100 (по модулю)
+  const deficitPercent = Math.abs(Math.round((vol / normVal) * 100 - 100));
   return { deficit, deficitPercent };
 }
 
@@ -59,8 +60,10 @@ function calcLateralization(rightVol: number | null, leftVol: number | null): { 
   if (!rightVol || !leftVol) return null;
   const diff = Math.round((rightVol - leftVol) * 100) / 100;
   if (Math.abs(diff) < 0.1) return null;
-  const avg = (rightVol + leftVol) / 2;
-  const diffPercent = Math.round((Math.abs(diff) / avg) * 100);
+  const min = Math.min(rightVol, leftVol);
+  const max = Math.max(rightVol, leftVol);
+  // Меньшее ÷ большее × 100 − 100 (по модулю)
+  const diffPercent = Math.abs(Math.round((min / max) * 100 - 100));
   const side = diff > 0 ? "влево (левое меньше)" : "вправо (правое меньше)";
   return { diff: Math.abs(diff), diffPercent, side };
 }
