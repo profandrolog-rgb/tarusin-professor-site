@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
   // Доступ: крон (секрет в заголовке) либо администратор/редактор
-  const cronSecret = Deno.env.get("SURGERY_CRON_SECRET");
+  const cronSecret = Deno.env.get("SURGERY_CRON_TOKEN") || Deno.env.get("SURGERY_CRON_SECRET");
   const headerSecret = req.headers.get("x-cron-secret");
   let authorized = !!cronSecret && headerSecret === cronSecret;
   if (!authorized) {
