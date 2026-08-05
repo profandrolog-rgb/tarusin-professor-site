@@ -52,20 +52,21 @@ function calcVolumeDeficit(vol: number | null, normVal: number | null): { defici
   if (vol >= normVal) return null;
   const deficit = Math.round((normVal - vol) * 100) / 100;
   // Меньшее ÷ большее × 100 − 100 (по модулю)
-  const deficitPercent = Math.abs(Math.round((vol / normVal) * 100 - 100));
+  const min = Math.min(vol, normVal);
+  const max = Math.max(vol, normVal);
+  const deficitPercent = Math.round(Math.abs((min / max) * 100 - 100));
   return { deficit, deficitPercent };
 }
 
-function calcLateralization(rightVol: number | null, leftVol: number | null): { diff: number; diffPercent: number; side: string } | null {
-  if (!rightVol || !leftVol) return null;
-  const diff = Math.round((rightVol - leftVol) * 100) / 100;
-  if (Math.abs(diff) < 0.1) return null;
-  const min = Math.min(rightVol, leftVol);
-  const max = Math.max(rightVol, leftVol);
+function calcVolumeDifference(firstVol: number | null, secondVol: number | null): { diff: number; diffPercent: number } | null {
+  if (!firstVol || !secondVol) return null;
+  const diff = Math.round(Math.abs(firstVol - secondVol) * 100) / 100;
+  if (diff < 0.1) return null;
+  const min = Math.min(firstVol, secondVol);
+  const max = Math.max(firstVol, secondVol);
   // Меньшее ÷ большее × 100 − 100 (по модулю)
-  const diffPercent = Math.abs(Math.round((min / max) * 100 - 100));
-  const side = diff > 0 ? "влево (левое меньше)" : "вправо (правое меньше)";
-  return { diff: Math.abs(diff), diffPercent, side };
+  const diffPercent = Math.round(Math.abs((min / max) * 100 - 100));
+  return { diff, diffPercent };
 }
 
 function calcGonadalProstaticIndex(rightVol: number | null, leftVol: number | null, prostateVol: number | null): { meanTestis: number; prostate: number; ratio: number; assessment: string } | null {
@@ -187,7 +188,7 @@ export function UltrasoundPanel() {
   const rightDeficit = calcVolumeDeficit(rightTestisVol, usNorm?.rightTestisMl ?? null);
   const leftDeficit = calcVolumeDeficit(leftTestisVol, usNorm?.leftTestisMl ?? null);
   const prostateDeficit = calcVolumeDeficit(prostateVol, usNorm?.prostateMl ?? null);
-  const lateralization = calcLateralization(rightTestisVol, leftTestisVol);
+  const volumeDifference = calcVolumeDifference(rightTestisVol, leftTestisVol);
   const gpi = calcGonadalProstaticIndex(rightTestisVol, leftTestisVol, prostateVol);
 
   const buildRow = () => ({
@@ -450,16 +451,16 @@ export function UltrasoundPanel() {
             </Card>
 
             {/* ИНДЕКСЫ */}
-            {(lateralization || gpi) && (
+            {(volumeDifference || gpi) && (
               <Card className="lg:col-span-2">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Расчётные индексы</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {lateralization && (
-                      <div className={cn("p-3 rounded-lg", lateralization.diffPercent > 20 ? "bg-destructive/10" : "bg-accent/50")}>
-                        <p className="text-xs text-muted-foreground">Латерализация</p>
-                        <p className="font-bold text-sm">Δ = {lateralization.diff} мл ({lateralization.diffPercent}%)</p>
-                        <p className="text-xs">Смещение {lateralization.side}</p>
+                    {volumeDifference && (
+                      <div className={cn("p-3 rounded-lg", volumeDifference.diffPercent > 20 ? "bg-destructive/10" : "bg-accent/50")}>
+                        <p className="text-xs text-muted-foreground">Разница объёмов яичек</p>
+                        <p className="font-bold text-sm">Δ = {volumeDifference.diff} мл ({volumeDifference.diffPercent}%)</p>
+                        <p className="text-xs">Меньшее ÷ большее × 100 − 100, по модулю</p>
                       </div>
                     )}
                     {gpi && (
@@ -708,7 +709,7 @@ export function UltrasoundPanel() {
           ) : (
             <div className="space-y-3">
               {filteredHistory.map((u: any) => {
-                const hLat = calcLateralization(u.right_testis_volume, u.left_testis_volume);
+                const hVolumeDifference = calcVolumeDifference(u.right_testis_volume, u.left_testis_volume);
                 const hGpi = calcGonadalProstaticIndex(u.right_testis_volume, u.left_testis_volume, u.prostate_volume);
                 return (
                   <Card key={u.id} className={cn(editingId === u.id && "ring-2 ring-primary")}>
@@ -754,10 +755,10 @@ export function UltrasoundPanel() {
                             <div className="font-medium">{hGpi.ratio}</div>
                           </div>
                         )}
-                        {hLat && (
-                          <div className={cn("p-2 rounded", hLat.diffPercent > 20 ? "bg-destructive/10" : "bg-secondary/30")}>
-                            <span className="text-muted-foreground text-xs">Латерализация</span>
-                            <div className="font-medium">{hLat.diffPercent}% {hLat.side}</div>
+                        {hVolumeDifference && (
+                          <div className={cn("p-2 rounded", hVolumeDifference.diffPercent > 20 ? "bg-destructive/10" : "bg-secondary/30")}>
+                            <span className="text-muted-foreground text-xs">Разница объёмов</span>
+                            <div className="font-medium">{hVolumeDifference.diffPercent}%</div>
                           </div>
                         )}
                         {u.penile_length && (

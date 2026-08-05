@@ -363,7 +363,7 @@ export function UziReproductiveSection({ data, onChange }: Props) {
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Расчёт: (правое − левое) / левое × 100. Значение можно перебить вручную.
+          Расчёт без учёта стороны: |меньшее ÷ большее × 100 − 100|. Значение можно изменить вручную.
         </p>
       </div>
 
