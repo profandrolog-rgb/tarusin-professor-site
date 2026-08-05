@@ -81,6 +81,14 @@ const clinicalSections = [
     color: "text-rose-500",
   },
   {
+    title: "Путёвки на операцию",
+    description: "Выдача путёвок, контроль обследований, напоминания пациентам",
+    icon: ClipboardCheck,
+    href: "/admin/surgery-referrals",
+    color: "text-teal-600",
+  },
+
+  {
     title: "🤖 Кабинет (ИИ-чат)",
     description: "Приватный чат с моделями Claude, GPT, Gemini, Grok через OpenRouter",
     icon: Settings,

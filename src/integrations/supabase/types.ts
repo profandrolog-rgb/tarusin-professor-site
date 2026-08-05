@@ -4692,6 +4692,274 @@ export type Database = {
         }
         Relationships: []
       }
+      surgery_exam_catalog: {
+        Row: {
+          created_at: string
+          group_name: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          note: string | null
+          sort_order: number
+          updated_at: string
+          valid_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          group_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          note?: string | null
+          sort_order?: number
+          updated_at?: string
+          valid_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          group_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          note?: string | null
+          sort_order?: number
+          updated_at?: string
+          valid_days?: number | null
+        }
+        Relationships: []
+      }
+      surgery_memo_templates: {
+        Row: {
+          body: string
+          coordinator_instruction: string
+          coordinator_name: string
+          coordinator_phone: string
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          coordinator_instruction?: string
+          coordinator_name?: string
+          coordinator_phone?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          coordinator_instruction?: string
+          coordinator_name?: string
+          coordinator_phone?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      surgery_referral_events: {
+        Row: {
+          actor: string | null
+          actor_kind: string
+          comment: string | null
+          created_at: string
+          event_type: string
+          id: string
+          referral_id: string
+          status: string | null
+        }
+        Insert: {
+          actor?: string | null
+          actor_kind?: string
+          comment?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          referral_id: string
+          status?: string | null
+        }
+        Update: {
+          actor?: string | null
+          actor_kind?: string
+          comment?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          referral_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surgery_referral_events_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "surgery_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surgery_referral_items: {
+        Row: {
+          created_at: string
+          done_at: string | null
+          id: string
+          is_done: boolean
+          name: string
+          note: string | null
+          referral_id: string
+          sort_order: number
+          updated_at: string
+          valid_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          done_at?: string | null
+          id?: string
+          is_done?: boolean
+          name: string
+          note?: string | null
+          referral_id: string
+          sort_order?: number
+          updated_at?: string
+          valid_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          done_at?: string | null
+          id?: string
+          is_done?: boolean
+          name?: string
+          note?: string | null
+          referral_id?: string
+          sort_order?: number
+          updated_at?: string
+          valid_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surgery_referral_items_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "surgery_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surgery_referrals: {
+        Row: {
+          age_text: string | null
+          birth_date: string | null
+          coordinator_instruction: string | null
+          coordinator_name: string | null
+          coordinator_phone: string | null
+          created_at: string
+          created_by: string | null
+          diagnosis: string | null
+          full_name: string
+          id: string
+          internal_notes: string | null
+          last_contact_at: string | null
+          last_reminder_at: string | null
+          memo_body: string | null
+          memo_title: string | null
+          operation_name: string | null
+          patient_email: string | null
+          patient_id: string | null
+          planned_date_from: string | null
+          planned_date_to: string | null
+          public_hash: string
+          reminders_sent: number
+          status: string
+          telegram_chat_id: string | null
+          telegram_link_code: string
+          updated_at: string
+          visit_id: string | null
+        }
+        Insert: {
+          age_text?: string | null
+          birth_date?: string | null
+          coordinator_instruction?: string | null
+          coordinator_name?: string | null
+          coordinator_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string | null
+          full_name: string
+          id?: string
+          internal_notes?: string | null
+          last_contact_at?: string | null
+          last_reminder_at?: string | null
+          memo_body?: string | null
+          memo_title?: string | null
+          operation_name?: string | null
+          patient_email?: string | null
+          patient_id?: string | null
+          planned_date_from?: string | null
+          planned_date_to?: string | null
+          public_hash?: string
+          reminders_sent?: number
+          status?: string
+          telegram_chat_id?: string | null
+          telegram_link_code?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Update: {
+          age_text?: string | null
+          birth_date?: string | null
+          coordinator_instruction?: string | null
+          coordinator_name?: string | null
+          coordinator_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          diagnosis?: string | null
+          full_name?: string
+          id?: string
+          internal_notes?: string | null
+          last_contact_at?: string | null
+          last_reminder_at?: string | null
+          memo_body?: string | null
+          memo_title?: string | null
+          operation_name?: string | null
+          patient_email?: string | null
+          patient_id?: string | null
+          planned_date_from?: string | null
+          planned_date_to?: string | null
+          public_hash?: string
+          reminders_sent?: number
+          status?: string
+          telegram_chat_id?: string | null
+          telegram_link_code?: string
+          updated_at?: string
+          visit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surgery_referrals_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surgery_referrals_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "patient_visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       symptom_synonyms: {
         Row: {
           canonical_term: string | null
@@ -6663,6 +6931,7 @@ export type Database = {
       }
       generate_plan_public_hash: { Args: never; Returns: string }
       get_public_plan: { Args: { _hash: string }; Returns: Json }
+      get_public_surgery_referral: { Args: { _hash: string }; Returns: Json }
       get_repertory_chapter_stats: {
         Args: never
         Returns: {
@@ -6689,6 +6958,10 @@ export type Database = {
       }
       increment_video_view: { Args: { _slug: string }; Returns: undefined }
       is_guardian_of: { Args: { _patient_id: string }; Returns: boolean }
+      mark_public_referral_item: {
+        Args: { _done: boolean; _hash: string; _item_id: string }
+        Returns: boolean
+      }
       match_video_chunks: {
         Args: { match_count?: number; query_embedding: string }
         Returns: {

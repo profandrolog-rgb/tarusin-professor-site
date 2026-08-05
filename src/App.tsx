@@ -123,6 +123,11 @@ const AdminVideos = lazy(() => import("./pages/AdminVideos"));
 const AdminVideoEditor = lazy(() => import("./pages/AdminVideoEditor"));
 const AdminVideoRubrics = lazy(() => import("./pages/AdminVideoRubrics"));
 const AdminVideoOrganize = lazy(() => import("./pages/AdminVideoOrganize"));
+const AdminSurgeryReferrals = lazy(() => import("./pages/AdminSurgeryReferrals"));
+const AdminSurgeryReferralSettings = lazy(() => import("./pages/AdminSurgeryReferralSettings"));
+const AdminSurgeryReferralPrint = lazy(() => import("./pages/AdminSurgeryReferralPrint"));
+const PublicSurgeryReferral = lazy(() => import("./pages/PublicSurgeryReferral"));
+
 const AdminVideoImport = lazy(() => import("./pages/AdminVideoImport"));
 
 // Обёртки для синхронной установки языка до рендера контента.
@@ -289,6 +294,11 @@ export const routes: RouteRecord[] = [
       { path: "admin/videos/:id", Component: AdminVideoEditor, entry: "src/pages/AdminVideoEditor.tsx" },
       { path: "admin/video-rubrics", Component: AdminVideoRubrics, entry: "src/pages/AdminVideoRubrics.tsx" },
       { path: "admin/videos/organize", Component: AdminVideoOrganize, entry: "src/pages/AdminVideoOrganize.tsx" },
+      { path: "admin/surgery-referrals", Component: AdminSurgeryReferrals, entry: "src/pages/AdminSurgeryReferrals.tsx" },
+      { path: "admin/surgery-referrals/settings", Component: AdminSurgeryReferralSettings, entry: "src/pages/AdminSurgeryReferralSettings.tsx" },
+      { path: "admin/surgery-referrals/:id/print", Component: AdminSurgeryReferralPrint, entry: "src/pages/AdminSurgeryReferralPrint.tsx" },
+      { path: "s/:hash", Component: PublicSurgeryReferral, entry: "src/pages/PublicSurgeryReferral.tsx" },
+
 
       { path: "*", Component: NotFound },
     ],
