@@ -96,7 +96,7 @@ export interface IliacMayThurnerData {
 
 /**
  * Дефицит объёма (асимметрия): меньшее значение делим на большее,
- * умножаем на 100 и вычитаем 100. Результат отрицательный — на сколько
+ * умножаем на 100 и вычитаем 100. Показываем по модулю — на сколько
  * процентов меньший орган меньше большего.
  */
 function asymmetryPercent(right?: string, left?: string): string | null {
@@ -106,8 +106,9 @@ function asymmetryPercent(right?: string, left?: string): string | null {
   const min = Math.min(r, l);
   const max = Math.max(r, l);
   if (max === 0) return null;
-  return ((min / max) * 100 - 100).toFixed(1);
+  return Math.abs((min / max) * 100 - 100).toFixed(1);
 }
+
 
 export interface UziReproductiveData {
   device?: string;
