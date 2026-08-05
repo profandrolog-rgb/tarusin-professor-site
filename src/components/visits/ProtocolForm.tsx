@@ -22,6 +22,8 @@ import { CycleContextSection, CycleContextData } from "./sections/CycleContext";
 import { AdditionalNotesField } from "./AdditionalNotesField";
 import { VisitNotesField } from "./VisitNotesField";
 import { OperationHistoryBanner } from "./OperationHistoryBanner";
+import { SurgeryReferralDialog } from "./SurgeryReferralDialog";
+
 
 interface Props {
   type: ProtocolType;
@@ -89,9 +91,17 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
               value={(data?.recommendations as string) || ""}
               onApply={(next) => patch({ recommendations: next })}
             />
+            <SurgeryReferralDialog
+              patientId={patientId}
+              patientName={patientName}
+              birthDate={birthDate}
+              visitId={currentVisitId}
+              protocolData={data}
+            />
             <FillStandardButton />
           </div>
         </div>
+
         <OperationTemplateBanner />
         {/* Послеоперационные и повторные визиты: подтянуть операцию из журнала */}
         {["postop_day3", "postop_day7", "repeat_with_labs", "repeat_with_uzi", "dynamic_with_uzi", "ultrashort"].includes(type) ? (

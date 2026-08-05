@@ -11,3 +11,7 @@ verify_jwt = false
 
 [functions.timeweb-deploy-status]
 verify_jwt = true
+
+[functions.surgery-referral-bot]
+verify_jwt = false
+
