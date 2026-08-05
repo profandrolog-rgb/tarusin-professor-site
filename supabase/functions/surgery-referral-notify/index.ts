@@ -79,8 +79,33 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // Доступ: крон (секрет в заголовке) либо администратор/редактор
+  const cronSecret = Deno.env.get("SURGERY_CRON_SECRET");
+  const headerSecret = req.headers.get("x-cron-secret");
+  let authorized = !!cronSecret && headerSecret === cronSecret;
+  if (!authorized) {
+    const authHeader = req.headers.get("Authorization") || "";
+    const jwt = authHeader.replace("Bearer ", "");
+    if (jwt) {
+      const { data: claims } = await admin.auth.getClaims(jwt);
+      const uid = claims?.claims?.sub as string | undefined;
+      if (uid) {
+        const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", uid);
+        authorized = (roles || []).some((r: any) => r.role === "admin" || r.role === "editor");
+      }
+    }
+  }
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   let patientReminders = 0;
   let digestSent = false;
+
 
   try {
     const { data: refs, error } = await admin
