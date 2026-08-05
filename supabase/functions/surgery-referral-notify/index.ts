@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       if (daysToOp !== null && daysToOp >= 0 && daysToOp <= 7) soon.push({ ...r, daysToOp, left });
 
       // Нужно ли напоминание пациенту
-      const preOpReminder = daysToOp !== null && (daysToOp === 7 || daysToOp === 1);
+      const preOpReminder = daysToOp !== null && (daysToOp === 5 || daysToOp === 7 || daysToOp === 1);
       const scheduleReminder = REMINDER_DAYS.includes(sinceIssued) && left > 0;
       const shouldRemind = (preOpReminder || scheduleReminder) && (sinceReminder === null || sinceReminder >= 1);
 
