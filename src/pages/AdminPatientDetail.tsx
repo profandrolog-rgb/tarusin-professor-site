@@ -41,6 +41,8 @@ export default function AdminPatientDetail() {
   const [busy, setBusy] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [reps, setReps] = useState<{ id: string; title: string | null; complaint: string; created_at: string; selected_remedies: any[] }[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
+
 
 
   useEffect(() => {
