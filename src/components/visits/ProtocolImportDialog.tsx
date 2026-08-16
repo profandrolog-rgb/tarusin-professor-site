@@ -96,7 +96,9 @@ export function ProtocolImportDialog({
 
   useEffect(() => {
     if (!open) reset();
-  }, [open, reset]);
+    else if (initialFile) setFile(initialFile);
+  }, [open, reset, initialFile]);
+
 
   // Поиск пациента по ФИО (когда пациент не задан извне)
   useEffect(() => {
