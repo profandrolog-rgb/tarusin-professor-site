@@ -10,6 +10,7 @@ import { AppErrorBoundary } from "@/components/RouteErrorBoundary";
 import { Loader2 } from "lucide-react";
 import AiActivityDock from "@/components/AiActivityDock";
 import { installAiActivityHooks } from "@/lib/installAiActivityHooks";
+import { scheduleBackendKeepAlive } from "@/lib/backendKeepAlive";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,7 +48,7 @@ const NavigationBar = () => {
 };
 
 const RootLayout = () => {
-  useEffect(() => { installAiActivityHooks(); }, []);
+  useEffect(() => { installAiActivityHooks(); scheduleBackendKeepAlive(); }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
