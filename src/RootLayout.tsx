@@ -48,7 +48,7 @@ const NavigationBar = () => {
 };
 
 const RootLayout = () => {
-  useEffect(() => { installAiActivityHooks(); }, []);
+  useEffect(() => { installAiActivityHooks(); scheduleBackendKeepAlive(); }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
