@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown, FileUp } from "lucide-react";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,9 @@ import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQ
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
+import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+import type { ParsedProtocol } from "@/lib/visits/protocolImport";
+
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
 
 interface Visit {
@@ -75,6 +78,8 @@ export default function AdminPatientVisitDetail() {
   const [baseline, setBaseline] = useState<string>("");
   const [siblings, setSiblings] = useState<SiblingVisit[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+
   const [labsRefresh, setLabsRefresh] = useState(0);
 
   useEffect(() => {
@@ -168,6 +173,38 @@ export default function AdminPatientVisitDetail() {
   useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
 
   const update = (patch: Partial<Visit>) => setVisit((v) => (v ? { ...v, ...patch } : v));
+
+  /** Заполнение открытой формы данными, распознанными из документа старого формата. */
+  const applyImportedProtocol = (parsed: ParsedProtocol) => {
+    setVisit((v) => {
+      if (!v) return v;
+      const base: Record<string, any> = isProtocolRecord(v.protocol_data)
+        ? { ...(v.protocol_data as any) } : {};
+      const incoming = (parsed.protocol_data || {}) as Record<string, any>;
+      for (const [key, value] of Object.entries(incoming)) {
+        if (value === null || value === undefined || value === "") continue;
+        if (
+          typeof value === "object" && !Array.isArray(value) &&
+          typeof base[key] === "object" && base[key] !== null && !Array.isArray(base[key])
+        ) {
+          base[key] = { ...base[key], ...value };
+        } else {
+          base[key] = value;
+        }
+      }
+      if (parsed.unmapped?.trim()) base._imported_unmapped = parsed.unmapped.trim();
+      return {
+        ...v,
+        protocol_data: base as Json,
+        visit_date: parsed.visit_date || v.visit_date,
+        diagnosis: parsed.diagnosis || v.diagnosis,
+        icd_code: parsed.icd_code || v.icd_code,
+        next_visit_date: parsed.next_visit_date || v.next_visit_date,
+      };
+    });
+    toast({ title: "Форма заполнена из документа", description: "Проверьте поля и сохраните протокол." });
+  };
+
 
   const handleSave = async () => {
     if (!visit) return;
@@ -402,6 +439,28 @@ export default function AdminPatientVisitDetail() {
               </TooltipTrigger>
               <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                  <FileUp className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Импорт из документа</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Распознать протокол старого формата (Word, PDF, скан, текст) и заполнить форму</TooltipContent>
+            </Tooltip>
+
+            <ProtocolImportDialog
+              open={importOpen}
+              onOpenChange={setImportOpen}
+              patientId={visit.patient_id}
+              patientName={visit.patient?.full_name}
+              currentVisitId={visit.id}
+              onApply={applyImportedProtocol}
+              onSaved={(vid) => { if (vid !== visit.id) navigate(`/admin/visits/${vid}`); }}
+            />
+
+
 
             {visit.protocol_type === "primary_short" && (
               <Tooltip>

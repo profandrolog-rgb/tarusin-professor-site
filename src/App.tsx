@@ -58,6 +58,7 @@ const AdminQuestions = lazy(() => import("./pages/AdminQuestions"));
 const AdminOperationsJournal = lazy(() => import("./pages/AdminOperationsJournal"));
 const AdminPatientVisits = lazy(() => import("./pages/AdminPatientVisits"));
 const AdminPatientVisitNew = lazy(() => import("./pages/AdminPatientVisitNew"));
+const AdminVisitImport = lazy(() => import("./pages/AdminVisitImport"));
 const AdminPatientVisitDetail = lazy(() => import("./pages/AdminPatientVisitDetail"));
 const AdminPatientVisitPrint = lazy(() => import("./pages/AdminPatientVisitPrint"));
 const AdminDiseaseArticles = lazy(() => import("./pages/AdminDiseaseArticles"));
@@ -237,6 +238,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/operations-journal", Component: AdminOperationsJournal, entry: "src/pages/AdminOperationsJournal.tsx" },
       { path: "admin/visits", Component: AdminPatientVisits, entry: "src/pages/AdminPatientVisits.tsx" },
       { path: "admin/visits/new", Component: AdminPatientVisitNew, entry: "src/pages/AdminPatientVisitNew.tsx" },
+      { path: "admin/visits/import", Component: AdminVisitImport, entry: "src/pages/AdminVisitImport.tsx" },
       { path: "admin/visits/:id", Component: AdminPatientVisitDetail, entry: "src/pages/AdminPatientVisitDetail.tsx" },
       { path: "admin/visits/:id/print", Component: AdminPatientVisitPrint, entry: "src/pages/AdminPatientVisitPrint.tsx" },
       { path: "admin/visit-templates", Component: AdminVisitTemplates, entry: "src/pages/AdminVisitTemplates.tsx" },

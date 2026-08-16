@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Loader2, ArrowUpDown } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, ArrowUpDown, FileUp } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PROTOCOL_TYPES, PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+
 
 interface VisitRow {
   id: string;
@@ -29,6 +31,8 @@ export default function AdminPatientVisits() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dateSortDir, setDateSortDir] = useState<"asc" | "desc">("desc");
   const [dateSearch, setDateSearch] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -83,10 +87,26 @@ export default function AdminPatientVisits() {
             </Button>
             <h1 className="text-2xl md:text-3xl font-bold">Журнал визитов</h1>
           </div>
-          <Button asChild>
-            <Link to="/admin/visits/new"><Plus className="h-4 w-4 mr-1" /> Новый протокол</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/admin/visits/import"><FileUp className="h-4 w-4 mr-1" /> Импорт из документа</Link>
+            </Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              Вставить текст
+            </Button>
+
+            <Button asChild>
+              <Link to="/admin/visits/new"><Plus className="h-4 w-4 mr-1" /> Новый протокол</Link>
+            </Button>
+          </div>
         </div>
+
+        <ProtocolImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onSaved={(visitId) => navigate(`/admin/visits/${visitId}`)}
+        />
+
 
         <Card>
           <CardHeader>
