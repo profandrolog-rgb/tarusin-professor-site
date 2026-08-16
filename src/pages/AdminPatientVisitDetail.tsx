@@ -174,6 +174,38 @@ export default function AdminPatientVisitDetail() {
 
   const update = (patch: Partial<Visit>) => setVisit((v) => (v ? { ...v, ...patch } : v));
 
+  /** Заполнение открытой формы данными, распознанными из документа старого формата. */
+  const applyImportedProtocol = (parsed: ParsedProtocol) => {
+    setVisit((v) => {
+      if (!v) return v;
+      const base: Record<string, any> = isProtocolRecord(v.protocol_data)
+        ? { ...(v.protocol_data as any) } : {};
+      const incoming = (parsed.protocol_data || {}) as Record<string, any>;
+      for (const [key, value] of Object.entries(incoming)) {
+        if (value === null || value === undefined || value === "") continue;
+        if (
+          typeof value === "object" && !Array.isArray(value) &&
+          typeof base[key] === "object" && base[key] !== null && !Array.isArray(base[key])
+        ) {
+          base[key] = { ...base[key], ...value };
+        } else {
+          base[key] = value;
+        }
+      }
+      if (parsed.unmapped?.trim()) base._imported_unmapped = parsed.unmapped.trim();
+      return {
+        ...v,
+        protocol_data: base as Json,
+        visit_date: parsed.visit_date || v.visit_date,
+        diagnosis: parsed.diagnosis || v.diagnosis,
+        icd_code: parsed.icd_code || v.icd_code,
+        next_visit_date: parsed.next_visit_date || v.next_visit_date,
+      };
+    });
+    toast({ title: "Форма заполнена из документа", description: "Проверьте поля и сохраните протокол." });
+  };
+
+
   const handleSave = async () => {
     if (!visit) return;
     setSaving(true);
