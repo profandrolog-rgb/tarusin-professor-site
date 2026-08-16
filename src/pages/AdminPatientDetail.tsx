@@ -149,6 +149,9 @@ export default function AdminPatientDetail() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" className="gap-2" onClick={() => setImportOpen(true)}>
+              <FileUp className="w-4 h-4"/>Импорт протокола
+            </Button>
             <Link to={`/admin/patients/${patient.id}/metabolic-map`}>
               <Button variant="outline" className="gap-2"><Activity className="w-4 h-4"/>Метаболическая карта</Button>
             </Link>
@@ -160,6 +163,15 @@ export default function AdminPatientDetail() {
             </Link>
           </div>
         </div>
+
+        <ProtocolImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          patientId={patient.id}
+          patientName={patient.full_name}
+          onSaved={(visitId) => navigate(`/admin/visits/${visitId}`)}
+        />
+
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
