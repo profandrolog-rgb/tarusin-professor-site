@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, Plus, Loader2, Printer, BookMarked, FileText, GitCompare, Activity } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Printer, BookMarked, FileText, GitCompare, Activity, FileUp } from "lucide-react";
+import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { toast } from "sonner";
