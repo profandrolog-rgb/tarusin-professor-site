@@ -403,6 +403,28 @@ export default function AdminPatientVisitDetail() {
               <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
             </Tooltip>
 
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                  <FileUp className="h-4 w-4 md:mr-1" />
+                  <span className="hidden md:inline">Импорт из документа</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Распознать протокол старого формата (Word, PDF, скан, текст) и заполнить форму</TooltipContent>
+            </Tooltip>
+
+            <ProtocolImportDialog
+              open={importOpen}
+              onOpenChange={setImportOpen}
+              patientId={visit.patient_id}
+              patientName={visit.patient?.full_name}
+              currentVisitId={visit.id}
+              onApply={applyImportedProtocol}
+              onSaved={(vid) => { if (vid !== visit.id) navigate(`/admin/visits/${vid}`); }}
+            />
+
+
+
             {visit.protocol_type === "primary_short" && (
               <Tooltip>
                 <TooltipTrigger asChild>
