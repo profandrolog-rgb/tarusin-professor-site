@@ -88,9 +88,13 @@ export default function AdminPatientVisits() {
             <h1 className="text-2xl md:text-3xl font-bold">Журнал визитов</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <FileUp className="h-4 w-4 mr-1" /> Импорт протокола
+            <Button variant="outline" asChild>
+              <Link to="/admin/visits/import"><FileUp className="h-4 w-4 mr-1" /> Импорт из документа</Link>
             </Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              Вставить текст
+            </Button>
+
             <Button asChild>
               <Link to="/admin/visits/new"><Plus className="h-4 w-4 mr-1" /> Новый протокол</Link>
             </Button>
