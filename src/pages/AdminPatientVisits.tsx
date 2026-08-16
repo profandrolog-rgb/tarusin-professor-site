@@ -87,10 +87,22 @@ export default function AdminPatientVisits() {
             </Button>
             <h1 className="text-2xl md:text-3xl font-bold">Журнал визитов</h1>
           </div>
-          <Button asChild>
-            <Link to="/admin/visits/new"><Plus className="h-4 w-4 mr-1" /> Новый протокол</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <FileUp className="h-4 w-4 mr-1" /> Импорт протокола
+            </Button>
+            <Button asChild>
+              <Link to="/admin/visits/new"><Plus className="h-4 w-4 mr-1" /> Новый протокол</Link>
+            </Button>
+          </div>
         </div>
+
+        <ProtocolImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onSaved={(visitId) => navigate(`/admin/visits/${visitId}`)}
+        />
+
 
         <Card>
           <CardHeader>
