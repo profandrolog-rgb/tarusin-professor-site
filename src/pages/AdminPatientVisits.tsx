@@ -31,6 +31,8 @@ export default function AdminPatientVisits() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dateSortDir, setDateSortDir] = useState<"asc" | "desc">("desc");
   const [dateSearch, setDateSearch] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
