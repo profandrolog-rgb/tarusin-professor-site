@@ -45,13 +45,15 @@ interface Props {
   onApply?: (parsed: ParsedProtocol) => void;
   /** Вызывается после сохранения нового/существующего визита. */
   onSaved?: (visitId: string) => void;
+  /** Файл, подставляемый при открытии (массовый импорт). */
+  initialFile?: File | null;
 }
 
 type Step = "source" | "review";
 type Target = "new" | "existing" | "current";
 
 export function ProtocolImportDialog({
-  open, onOpenChange, patientId, patientName, currentVisitId, onApply, onSaved,
+  open, onOpenChange, patientId, patientName, currentVisitId, onApply, onSaved, initialFile,
 }: Props) {
   const [step, setStep] = useState<Step>("source");
   const [busy, setBusy] = useState(false);
