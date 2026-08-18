@@ -35,7 +35,18 @@ function parseEntry(raw: string): Item {
 const ImageGallery = ({ caption, files }: Props) => {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  const items = useMemo<Item[]>(() => files.map(parseEntry), [files]);
+  // Служебная запись `cols=N` задаёт число фото в ряд (2–5), остальное — файлы.
+  const { items, cols } = useMemo<{ items: Item[]; cols: number | null }>(() => {
+    const parsed = files.map(parseEntry);
+    let c: number | null = null;
+    const rest: Item[] = [];
+    for (const it of parsed) {
+      const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
+      if (m) { c = Number(m[1]); continue; }
+      rest.push(it);
+    }
+    return { items: rest, cols: c };
+  }, [files]);
 
   useEffect(() => {
     if (lightboxIdx === null) return;
@@ -50,6 +61,7 @@ const ImageGallery = ({ caption, files }: Props) => {
   }, [lightboxIdx, items.length]);
 
   const isSingle = items.length === 1;
+
 
   const photoCaptionStyle: React.CSSProperties = {
     fontSize: 13,
