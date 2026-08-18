@@ -6,7 +6,9 @@
 // который стоит НЕ в России (VPS в зарубежной локации или Cloudflare Worker).
 //
 // Переменные окружения:
-//   VITE_SUPABASE_URL           — основной адрес (обычно прокси, напр. https://api.tarusin.pro)
+//   VITE_SUPABASE_URL           — основной адрес (например, https://api.tarusin.pro)
+//   VITE_SUPABASE_PROXY_URL     — явный production override для управляемого Lovable URL;
+//                                 при наличии предпочитается перед VITE_SUPABASE_URL
 //   VITE_BACKEND_FALLBACK_URL   — резервный прокси (можно перечислить несколько через запятую)
 //   VITE_SUPABASE_BUILD_URL     — адрес, используемый при SSG-сборке (Node на сервере сборки)
 //   VITE_SUPABASE_PROJECT_ID    — из него собирается прямой адрес Supabase (последний кандидат)
@@ -20,8 +22,8 @@ export const PROJECT_ID = env.VITE_SUPABASE_PROJECT_ID;
 /** Прямой адрес Supabase. Работает вне РФ, внутри РФ может быть заблокирован. */
 export const DIRECT_BASE = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
 
-/** Основной адрес, которым пользуется supabase-js (обычно прокси). */
-export const PRIMARY_BASE = stripSlash(env.VITE_SUPABASE_URL ?? "");
+/** Основной адрес, которым пользуется supabase-js (прокси, предпочитая VITE_SUPABASE_PROXY_URL). */
+export const PRIMARY_BASE = stripSlash(env.VITE_SUPABASE_PROXY_URL || env.VITE_SUPABASE_URL || "");
 
 /**
  * Кандидаты обхода в порядке приоритета: резервные прокси из env, затем прямой
