@@ -248,7 +248,19 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
   // Render one shape as Konva node
   const renderShape = (s: AnnotationShape) => {
     const isSel = s.id === selectedId;
-    const commonSel = tool === "select";
+    // Клик выделяет элемент в любом инструменте (кроме процесса рисования),
+    // правый клик — сразу удаляет.
+    const pick = () => {
+      if (drawingRef.current) return;
+      setSelectedId(s.id);
+      if (tool !== "select") setTool("select");
+    };
+    const ctx = (e: Konva.KonvaEventObject<PointerEvent | MouseEvent>) => {
+      e.evt?.preventDefault?.();
+      e.cancelBubble = true;
+      deleteShape(s.id);
+    };
+    const hit = Math.max(s.strokeWidth * 3, 18);
     if (s.type === "arrow") {
       return (
         <Arrow
@@ -257,11 +269,13 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
           stroke={s.color}
           fill={s.color}
           strokeWidth={s.strokeWidth}
+          hitStrokeWidth={hit}
           pointerLength={10}
           pointerWidth={10}
           lineCap="round"
-          onClick={() => commonSel && setSelectedId(s.id)}
-          onTap={() => commonSel && setSelectedId(s.id)}
+          onClick={pick}
+          onTap={pick}
+          onContextMenu={ctx}
           shadowEnabled={isSel}
           shadowColor="#3b82f6"
           shadowBlur={6}
@@ -278,8 +292,10 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
           radiusY={s.ry * stageH}
           stroke={s.color}
           strokeWidth={s.strokeWidth}
-          onClick={() => commonSel && setSelectedId(s.id)}
-          onTap={() => commonSel && setSelectedId(s.id)}
+          hitStrokeWidth={hit}
+          onClick={pick}
+          onTap={pick}
+          onContextMenu={ctx}
           shadowEnabled={isSel}
           shadowColor="#3b82f6"
           shadowBlur={6}
@@ -297,7 +313,7 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
         strokeWidth={s.strokeWidth * 0.3}
         fontSize={s.fontSize * stageH}
         fontFamily="sans-serif"
-        draggable={commonSel}
+        draggable={tool === "select"}
         onDragEnd={(e) => {
           const { nx, ny } = toNorm(e.target.x(), e.target.y());
           pushHistory({
@@ -307,11 +323,13 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
             imageHeight: imgH,
           });
         }}
-        onClick={() => commonSel && setSelectedId(s.id)}
-        onTap={() => commonSel && setSelectedId(s.id)}
+        onClick={pick}
+        onTap={pick}
+        onContextMenu={ctx}
       />
     );
   };
+
 
   // Live-drawing shape
   const live = drawingRef.current;
