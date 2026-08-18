@@ -13,11 +13,14 @@ interface PageMetaProps {
   lang?: "ru" | "en";
   /** SEO-ключи (выводятся как <meta name="keywords">), опционально. */
   keywords?: string[];
+  /** Закрыть страницу от индексации (например, 404). */
+  noindex?: boolean;
 }
+
 
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
-const PageMeta = ({ title, description, path, image, type = "website", lang, keywords }: PageMetaProps) => {
+const PageMeta = ({ title, description, path, image, type = "website", lang, keywords, noindex }: PageMetaProps) => {
 
   // Определяем язык — либо явно передан, либо вычислен из текущего URL.
   let pathname = "/";
@@ -51,7 +54,9 @@ const PageMeta = ({ title, description, path, image, type = "website", lang, key
       {keywords && keywords.length > 0 && (
         <meta name="keywords" content={keywords.join(", ")} />
       )}
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <link rel="canonical" href={url} />
+
 
 
       {/* hreflang */}
