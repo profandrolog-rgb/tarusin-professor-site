@@ -1,16 +1,16 @@
 // Loader для DiseaseDetailPage. Используется и при SSG-сборке (Node), и при SPA-навигации.
 // Не используем supabase-js клиент, чтобы не тащить лишний код в build-сборщик и в браузерный prefetch.
 
-const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
-const DIRECT_URL = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
-const CONFIGURED_URL = (import.meta.env.VITE_SUPABASE_URL as string) || "";
+import { loaderBase } from "@/lib/backendEndpoints";
+
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-// При SSG-сборке (Node на сервере сборки) прокси api.tarusin.pro не нужен и может лежать —
-// берём прямой адрес Supabase. В браузере остаётся настроенный адрес (прокси для РФ),
-// а фолбэк на прямой адрес делает src/lib/backendFailover.ts.
-const IS_BUILD = typeof window === "undefined";
-const SUPABASE_URL = (IS_BUILD ? DIRECT_URL || CONFIGURED_URL : CONFIGURED_URL) || DIRECT_URL;
+// При SSG-сборке (Node на сервере сборки в РФ) прямой домен Supabase может быть
+// заблокирован, а прокси api.tarusin.pro — лежать. Адрес выбирается в
+// src/lib/backendEndpoints.ts: VITE_SUPABASE_BUILD_URL → резервный прокси →
+// основной → прямой. В браузере остаётся основной адрес, а обход делает
+// src/lib/backendFailover.ts.
+const SUPABASE_URL = loaderBase();
 
 const HEADERS = {
   apikey: SUPABASE_ANON,
