@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { handleStorageImgError } from "@/lib/storageFallback";
 
 interface Props {
   caption: string;
@@ -145,6 +146,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                   draggable={false}
                   onDragStart={noDragStart}
                   onContextMenu={noContextMenu}
+                  onError={handleStorageImgError}
                 />
                 <span style={watermarkStyle}>tarusin.pro</span>
               </button>
@@ -191,6 +193,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                     draggable={false}
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}
+                    onError={handleStorageImgError}
                   />
                   <span style={watermarkStyle}>tarusin.pro</span>
                 </button>
@@ -210,6 +213,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                     draggable={false}
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}
+                    onError={handleStorageImgError}
                   />
                   <span style={watermarkStyle}>tarusin.pro</span>
                 </button>
@@ -279,6 +283,7 @@ const ImageGallery = ({ caption, files }: Props) => {
               draggable={false}
               onDragStart={noDragStart}
               onContextMenu={noContextMenu}
+              onError={handleStorageImgError}
             />
             <span style={watermarkStyle}>tarusin.pro</span>
           </div>
