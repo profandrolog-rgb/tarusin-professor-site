@@ -19,7 +19,7 @@ const GLOBAL_FALLBACK = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-
 const SEARCH_MODEL =
   Deno.env.get('RESEARCH_SEARCH_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'perplexity/sonar-pro';
 const WRITE_MODEL =
-  Deno.env.get('RESEARCH_WRITE_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'anthropic/claude-opus-4-8';
+  Deno.env.get('RESEARCH_WRITE_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'anthropic/claude-opus-5';
 const FACTCHECK_MODEL =
   Deno.env.get('RESEARCH_FACTCHECK_MODEL') || Deno.env.get('RESEARCH_AI_MODEL') || 'tencent/hy3';
 

@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY missing" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const model = "anthropic/claude-opus-4-8";
+    const model = "anthropic/claude-opus-5";
     const origin = req.headers.get("origin") || "https://tarusin.pro";
 
     const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {

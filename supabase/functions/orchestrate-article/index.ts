@@ -196,7 +196,7 @@ const ARBITER_SYSTEM = `${EDITORIAL_FIXED_PROMPT}
 - НЕ описывай ход рассуждений, планы или промежуточные шаги — только готовый JSON.`;
 
 const ARBITER_FALLBACKS = [
-  "anthropic/claude-opus-4-8",
+  "anthropic/claude-opus-5",
   "openai/gpt-5",
   "google/gemini-2.5-pro",
   "anthropic/claude-sonnet-4.5",
@@ -832,7 +832,7 @@ Deno.serve(async (req) => {
     if (body.action === "consolidate") {
       const text: string = String(body.text || "").trim();
       const reviews = Array.isArray(body.reviews) ? body.reviews : [];
-      const arbiter: string = String(body.arbiter || "anthropic/claude-opus-4-8");
+      const arbiter: string = String(body.arbiter || "anthropic/claude-opus-5");
       if (!text || !reviews.length) {
         return new Response(JSON.stringify({ error: "text and reviews required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -871,7 +871,7 @@ Deno.serve(async (req) => {
     if (body.action === "rewrite") {
       const text: string = String(body.text || "").trim();
       const editsAccepted = Array.isArray(body.edits) ? body.edits : [];
-      const rewriter: string = String(body.rewriter || "anthropic/claude-opus-4-8");
+      const rewriter: string = String(body.rewriter || "anthropic/claude-opus-5");
       if (!text || !editsAccepted.length) {
         return new Response(JSON.stringify({ error: "text and accepted edits required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

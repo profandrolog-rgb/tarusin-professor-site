@@ -9,7 +9,7 @@ const GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const PRIMARY_MODEL =
   Deno.env.get('RESEARCH_REFINE_MODEL') ||
   Deno.env.get('RESEARCH_AI_MODEL') ||
-  'anthropic/claude-sonnet-4.8';
+  'anthropic/claude-sonnet-5';
 const FALLBACK_MODEL = Deno.env.get('RESEARCH_AI_MODEL') || 'google/gemini-3.1-pro-preview';
 
 const ACTION_PROMPTS: Record<string, string> = {
