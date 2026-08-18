@@ -2,8 +2,14 @@
 // Тянет список ВСЕХ опубликованных болезней одним REST-запросом, чтобы pre-render
 // получал готовый список карточек без клиентских useEffect.
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+const DIRECT_URL = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
+const CONFIGURED_URL = (import.meta.env.VITE_SUPABASE_URL as string) || "";
+// При SSG-сборке идём напрямую в Supabase (прокси api.tarusin.pro для РФ нужен только в браузере).
+const SUPABASE_URL =
+  (typeof window === "undefined" ? DIRECT_URL || CONFIGURED_URL : CONFIGURED_URL) || DIRECT_URL;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
 
 const HEADERS = {
   apikey: SUPABASE_ANON,
