@@ -5,7 +5,11 @@ dist
 .lovable
 .workspace
 docs
-supabase/.temp
+supabase
 *.tsbuildinfo
 npm-debug.log*
 .DS_Store
+.env.local
+.env.*.local
+Dockerfile
+.dockerignore
