@@ -54,7 +54,9 @@ const PageMeta = ({ title, description, path, image, type = "website", lang, key
       {keywords && keywords.length > 0 && (
         <meta name="keywords" content={keywords.join(", ")} />
       )}
+      {noindex && <meta name="robots" content="noindex, follow" />}
       <link rel="canonical" href={url} />
+
 
 
       {/* hreflang */}
