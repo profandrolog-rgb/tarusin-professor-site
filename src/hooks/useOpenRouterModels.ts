@@ -14,12 +14,10 @@ let inFlight: Promise<LiveModelInfo[]> | null = null;
 const FUNCTION_PATH = "/functions/v1/list-openrouter-models";
 
 function catalogUrls(): string[] {
-  const primary = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
   return Array.from(new Set([
     "https://openrouter.ai/api/v1/models",
-    primary ? `${primary.replace(/\/$/, "")}${FUNCTION_PATH}` : null,
-    projectId ? `https://${projectId}.supabase.co${FUNCTION_PATH}` : null,
+    PRIMARY_BASE ? `${PRIMARY_BASE}${FUNCTION_PATH}` : null,
+    ...FALLBACK_BASES.map((base) => `${base}${FUNCTION_PATH}`),
   ].filter((u): u is string => Boolean(u))));
 }
 
