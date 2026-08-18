@@ -486,27 +486,33 @@ const PlaceholderGallery = ({
   };
 
 
-  const existing = useMemo<ExistingItem[]>(
-    () => parseGalleryFileEntries((existingFiles ?? []).join("|")),
+  const parsedExisting = useMemo(
+    () => extractGalleryCols(parseGalleryFileEntries((existingFiles ?? []).join("|"))),
     [existingFiles],
   );
+  const existing = parsedExisting.entries;
   const hasExisting = existing.length > 0;
 
+  // Число фото в ряд (2–5). null = авто (3 в ряд на десктопе).
+  const [cols, setCols] = useState<number | null>(parsedExisting.cols);
+  useEffect(() => { setCols(parsedExisting.cols); }, [parsedExisting.cols]);
+
   const buildMarker = (entries: ExistingItem[]) => {
-    return buildGalleryMarkerFromEntries(caption, entries);
+    return buildGalleryMarkerFromEntries(caption, withGalleryCols(entries, cols));
   };
 
   // Парсит файлы из ТЕКУЩЕГО маркера в свежем article_content (по подписи).
   // Защита от перезаписи: даже если prop `existing` устарел, мы видим
   // реальный список файлов из БД.
   const parseMarkerFilesFromContent = (content: string): ExistingItem[] => {
-    return readGalleryEntriesFromContent(content, caption);
+    return extractGalleryCols(readGalleryEntriesFromContent(content, caption)).entries;
   };
 
   // writer получает реально сохранённый сейчас список файлов (из БД)
   // и возвращает следующий — это исключает гонки и затирания.
   const persistEntries = async (
     writer: ExistingItem[] | ((current: ExistingItem[]) => ExistingItem[]),
+    colsOverride?: number | null,
   ): Promise<boolean> => {
     const { data: fresh, error: fetchErr } = await (supabase as any)
       .from(ownerTable)
@@ -519,8 +525,11 @@ const PlaceholderGallery = ({
     }
     const baseContent = (fresh as any)[contentColumn] || fullContent;
     const currentFiles = parseMarkerFilesFromContent(baseContent);
-    const nextEntries =
-      typeof writer === "function" ? writer(currentFiles) : writer;
+    const nextEntries = withGalleryCols(
+      typeof writer === "function" ? writer(currentFiles) : writer,
+      colsOverride !== undefined ? colsOverride : cols,
+    );
+
 
     const result = upsertGalleryEntriesInContent(baseContent, caption, nextEntries, marker);
     const newContent = result.content;
