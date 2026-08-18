@@ -15,11 +15,9 @@ let inFlight: Promise<LiveModelInfo[]> | null = null;
 const FUNCTION_PATH = "/functions/v1/list-venice-models";
 
 const getFunctionUrls = () => {
-  const primary = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
   const urls = [
-    primary ? `${primary.replace(/\/$/, "")}${FUNCTION_PATH}` : null,
-    projectId ? `https://${projectId}.supabase.co${FUNCTION_PATH}` : null,
+    PRIMARY_BASE ? `${PRIMARY_BASE}${FUNCTION_PATH}` : null,
+    ...FALLBACK_BASES.map((base) => `${base}${FUNCTION_PATH}`),
   ].filter((url): url is string => Boolean(url));
   return Array.from(new Set(urls));
 };
