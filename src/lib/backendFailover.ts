@@ -29,7 +29,10 @@ function requestUrl(input: RequestInfo | URL): string {
 }
 
 export function installBackendFailover() {
-  if (typeof window === "undefined") return;
+  // Пререндер (vite-react-ssg) выполняет модуль в Node: window/fetch может
+  // отсутствовать — любые обращения делаем только в браузере.
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (typeof window.fetch !== "function" || typeof AbortController === "undefined") return;
   if ((window as any).__backendFailoverInstalled) return;
   (window as any).__backendFailoverInstalled = true;
   if (!DIRECT_BASE || !PROXY_BASE || DIRECT_BASE === PROXY_BASE) return;
