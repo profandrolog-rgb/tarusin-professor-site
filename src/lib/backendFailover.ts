@@ -11,7 +11,10 @@ const DIRECT_BASE = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
 let preferDirect = false;
 
 /** Максимум ожидания ответа прокси, после чего уходим напрямую в Supabase. */
-const PROXY_TIMEOUT_MS = 7000;
+const PROXY_TIMEOUT_MS = 4000;
+/** Быстрая стартовая проверка прокси: если он мёртв — сразу работаем напрямую. */
+const PROBE_TIMEOUT_MS = 2500;
+
 
 
 function toDirect(url: string): string | null {
@@ -32,6 +35,27 @@ export function installBackendFailover() {
   if (!DIRECT_BASE || !PROXY_BASE || DIRECT_BASE === PROXY_BASE) return;
 
   const originalFetch = window.fetch.bind(window);
+
+  // Стартовый зонд: если прокси не отвечает за 2.5 с — сразу помечаем direct,
+  // чтобы первый вход/загрузка данных не ждали мёртвый прокси.
+  void (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    try {
+      const res = await originalFetch(`${PROXY_BASE}/auth/v1/health`, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (res.status >= 500) preferDirect = true;
+    } catch {
+      preferDirect = true;
+    } finally {
+      clearTimeout(timer);
+    }
+  })();
+
+
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
