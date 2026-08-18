@@ -9,6 +9,8 @@ import GalleryEditorDialog, {
 import {
   parseGalleryFileEntries,
   buildGalleryMarkerFromEntries,
+  extractGalleryCols,
+  withGalleryCols,
 } from "@/lib/markdown/galleryMarkers";
 import type { GalleryKind } from "@/components/gallery/galleryKinds";
 
@@ -58,7 +60,9 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
   const ownerSlug = opts.ownerSlug || "gallery";
   const publicUrl = useThumbUrl(bucket, folder);
 
-  const entries = useMemo(() => parseGalleryFileEntries(filesRaw), [filesRaw]);
+  const parsed = useMemo(() => extractGalleryCols(parseGalleryFileEntries(filesRaw)), [filesRaw]);
+  const entries = parsed.entries;
+  const cols = parsed.cols;
   const initialImages: GalleryImage[] = useMemo(
     () => entries.map((e) => ({
       id: crypto.randomUUID(),
@@ -136,10 +140,16 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
         onSave={({ caption: cap, images }) => {
           const marker = buildGalleryMarkerFromEntries(
             cap,
-            images.map((i) => ({ filename: i.filename, caption: i.caption })),
+            withGalleryCols(
+              images.map((i) => ({ filename: i.filename, caption: i.caption })),
+              cols,
+            ),
           );
           // Синхронизируем атрибуты плашки: подпись + отформатированный список файлов.
-          const files = images
+          const files = withGalleryCols(
+            images.map((i) => ({ filename: i.filename, caption: i.caption })),
+            cols,
+          )
             .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
             .join("|");
           updateAttributes({ caption: cap, files });
