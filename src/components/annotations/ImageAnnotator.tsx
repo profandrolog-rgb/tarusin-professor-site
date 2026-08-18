@@ -188,11 +188,29 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
     pushHistory({ ...doc, shapes: [...doc.shapes, s], imageWidth: imgW, imageHeight: imgH });
   };
 
+  const deleteShape = useCallback((id: string) => {
+    pushHistory({ ...doc, shapes: doc.shapes.filter((s) => s.id !== id), imageWidth: imgW, imageHeight: imgH });
+    setSelectedId((cur) => (cur === id ? null : cur));
+  }, [doc, imgW, imgH, pushHistory]);
+
   const deleteSelected = () => {
     if (!selectedId) return;
-    pushHistory({ ...doc, shapes: doc.shapes.filter((s) => s.id !== selectedId), imageWidth: imgW, imageHeight: imgH });
-    setSelectedId(null);
+    deleteShape(selectedId);
   };
+
+  // Delete / Backspace удаляет выделенный элемент
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
+        e.preventDefault();
+        deleteShape(selectedId);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, deleteShape]);
 
   const clearAll = () => {
     if (!doc.shapes.length) return;
@@ -200,6 +218,7 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
     pushHistory({ shapes: [], imageWidth: imgW, imageHeight: imgH });
     setSelectedId(null);
   };
+
 
   const save = async () => {
     setSaving(true);
