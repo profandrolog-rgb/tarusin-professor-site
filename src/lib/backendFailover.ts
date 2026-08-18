@@ -11,7 +11,10 @@ const DIRECT_BASE = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
 let preferDirect = false;
 
 /** Максимум ожидания ответа прокси, после чего уходим напрямую в Supabase. */
-const PROXY_TIMEOUT_MS = 7000;
+const PROXY_TIMEOUT_MS = 4000;
+/** Быстрая стартовая проверка прокси: если он мёртв — сразу работаем напрямую. */
+const PROBE_TIMEOUT_MS = 2500;
+
 
 
 function toDirect(url: string): string | null {
