@@ -574,6 +574,23 @@ const PlaceholderGallery = ({
     }
   };
 
+  // Изменить подпись уже загруженного фото.
+  const editExistingCaption = async (filename: string, current: string) => {
+    const next = window.prompt("Подпись к фото:", current || "");
+    if (next === null) return;
+    const trimmed = next.trim();
+    setDeletingFile(filename);
+    try {
+      const ok = await persistEntries((cur) =>
+        cur.map((e) => (e.filename === filename ? { ...e, caption: trimmed } : e)),
+      );
+      if (ok) toast.success(trimmed ? "Подпись обновлена" : "Подпись удалена");
+    } finally {
+      setDeletingFile(null);
+    }
+  };
+
+
 
 
   const sensors = useSensors(
