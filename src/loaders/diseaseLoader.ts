@@ -1,14 +1,23 @@
 // Loader для DiseaseDetailPage. Используется и при SSG-сборке (Node), и при SPA-навигации.
 // Не используем supabase-js клиент, чтобы не тащить лишний код в build-сборщик и в браузерный prefetch.
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
+const DIRECT_URL = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
+const CONFIGURED_URL = (import.meta.env.VITE_SUPABASE_URL as string) || "";
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
+// При SSG-сборке (Node на сервере сборки) прокси api.tarusin.pro не нужен и может лежать —
+// берём прямой адрес Supabase. В браузере остаётся настроенный адрес (прокси для РФ),
+// а фолбэк на прямой адрес делает src/lib/backendFailover.ts.
+const IS_BUILD = typeof window === "undefined";
+const SUPABASE_URL = (IS_BUILD ? DIRECT_URL || CONFIGURED_URL : CONFIGURED_URL) || DIRECT_URL;
 
 const HEADERS = {
   apikey: SUPABASE_ANON,
   Authorization: `Bearer ${SUPABASE_ANON}`,
   Accept: "application/json",
 };
+
 
 export interface DiseaseLoaderData {
   article: any;
