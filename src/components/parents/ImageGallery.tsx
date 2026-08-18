@@ -164,8 +164,8 @@ const ImageGallery = ({ caption, files }: Props) => {
             const colClass = cols
               ? "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] md:max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
               : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
-            const itemClass = patientFull ? "shrink-0" : colClass;
-            const itemStyle: React.CSSProperties = patientFull
+            const itemClass = patientFull && !cols ? "shrink-0" : colClass;
+            const itemStyle: React.CSSProperties = patientFull && !cols
               ? { width: PATIENT_FULL_W, maxWidth: "100%" }
               : {};
 
@@ -199,7 +199,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                   type="button"
                   onClick={() => setLightboxIdx(i)}
                   className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull ? PATIENT_FULL_H : undefined }}
+                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
                 >
                   <img
                     src={publicUrl(it.filename)}
