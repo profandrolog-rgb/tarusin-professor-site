@@ -35,7 +35,18 @@ function parseEntry(raw: string): Item {
 const ImageGallery = ({ caption, files }: Props) => {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  const items = useMemo<Item[]>(() => files.map(parseEntry), [files]);
+  // Служебная запись `cols=N` задаёт число фото в ряд (2–5), остальное — файлы.
+  const { items, cols } = useMemo<{ items: Item[]; cols: number | null }>(() => {
+    const parsed = files.map(parseEntry);
+    let c: number | null = null;
+    const rest: Item[] = [];
+    for (const it of parsed) {
+      const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
+      if (m) { c = Number(m[1]); continue; }
+      rest.push(it);
+    }
+    return { items: rest, cols: c };
+  }, [files]);
 
   useEffect(() => {
     if (lightboxIdx === null) return;
@@ -50,6 +61,7 @@ const ImageGallery = ({ caption, files }: Props) => {
   }, [lightboxIdx, items.length]);
 
   const isSingle = items.length === 1;
+
 
   const photoCaptionStyle: React.CSSProperties = {
     fontSize: 13,
@@ -143,15 +155,20 @@ const ImageGallery = ({ caption, files }: Props) => {
           );
         })()
       ) : (
-        <div className="flex flex-wrap justify-center gap-3">
+        <div
+          className="flex flex-wrap justify-center gap-3"
+          style={cols ? ({ ["--cols" as any]: String(cols) } as React.CSSProperties) : undefined}
+        >
           {items.map((it, i) => {
             const patientFull = isPatientFull(it.filename);
-            const itemClass = patientFull
-              ? "shrink-0"
+            const colClass = cols
+              ? "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] md:max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
               : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
-            const itemStyle: React.CSSProperties = patientFull
+            const itemClass = patientFull && !cols ? "shrink-0" : colClass;
+            const itemStyle: React.CSSProperties = patientFull && !cols
               ? { width: PATIENT_FULL_W, maxWidth: "100%" }
               : {};
+
             return (
             <div key={it.filename + i} className={itemClass} style={itemStyle}>
               {isInfographic(it.filename) ? (
@@ -182,7 +199,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                   type="button"
                   onClick={() => setLightboxIdx(i)}
                   className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull ? PATIENT_FULL_H : undefined }}
+                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
                 >
                   <img
                     src={publicUrl(it.filename)}
