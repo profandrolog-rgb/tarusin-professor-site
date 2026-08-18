@@ -24,18 +24,23 @@ export const CURATED_MODELS: CuratedModel[] = [
   // ─── Быстрые ───────────────────────────────────────────────────────────
   {
     key: "gemini-flash",
-    label: "Gemini 3 Flash",
+    label: "Gemini 3.7 Flash",
     tier: "fast",
-    candidates: ["google/gemini-3-flash-preview", "google/gemini-2.5-flash"],
-    familyRegex: /^google\/gemini-(?:2\.5|3)[^/]*flash(?!-image)/i,
+    candidates: [
+      "google/gemini-3.7-flash",
+      "google/gemini-3.6-flash",
+      "google/gemini-3-flash-preview",
+      "google/gemini-2.5-flash",
+    ],
+    familyRegex: /^google\/gemini-3(?:\.\d)?-flash(?!-image|-lite)/i,
   },
   {
     key: "claude-sonnet",
-    label: "Claude Sonnet (актуальный)",
+    label: "Claude Sonnet 5",
     tier: "fast",
     // Take the latest Sonnet from the live list. Candidates first, then family fallback.
     candidates: [
-      "anthropic/claude-sonnet-4.8",
+      "anthropic/claude-sonnet-5",
       "anthropic/claude-sonnet-4.7",
       "anthropic/claude-sonnet-4.6",
       "anthropic/claude-sonnet-4.5",
@@ -53,14 +58,15 @@ export const CURATED_MODELS: CuratedModel[] = [
     label: "Grok 4",
     tier: "fast",
     // grok-4.5 недоступен в нашем регионе (xAI отдаёт 403 permission-denied) — используем 4.3 как основной
-    candidates: ["x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4", "x-ai/grok-4.5"],
+    candidates: ["x-ai/grok-4.6", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
     familyRegex: /^x-ai\/grok-4/i,
   },
   {
     key: "qwen-flash",
-    label: "Qwen 3.6 Flash",
+    label: "Qwen 3.7 Flash",
     tier: "fast",
     candidates: [
+      "qwen/qwen3.7-flash",
       "qwen/qwen3.6-flash",
       "qwen/qwen-3.6-flash",
       "qwen/qwen3-flash",
@@ -70,16 +76,17 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "kimi-k2",
-    label: "Kimi K2",
+    label: "Kimi K3",
     tier: "fast",
     candidates: [
+      "moonshotai/kimi-k3",
       "moonshotai/kimi-k2.7-code",
       "moonshotai/kimi-k2.6",
       "moonshotai/kimi-k2.5",
       "moonshotai/kimi-k2-0905",
       "moonshotai/kimi-k2",
     ],
-    familyRegex: /^moonshotai\/kimi-k2(?!-thinking)/i,
+    familyRegex: /^moonshotai\/kimi-k(?:2|3)(?!-thinking)/i,
   },
 
 
@@ -93,29 +100,34 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "claude-opus",
-    label: "Claude Opus 4.8",
+    label: "Claude Opus 5",
     tier: "deep",
     candidates: [
-      "anthropic/claude-opus-4-8",
+      "anthropic/claude-opus-5",
+      "anthropic/claude-opus-5-fast",
       "anthropic/claude-opus-4.8",
-      "anthropic/claude-opus-4-7",
       "anthropic/claude-opus-4.7",
     ],
-    familyRegex: /^anthropic\/claude-opus-4/i,
+    familyRegex: /^anthropic\/claude-opus-(?:5|4\.8)/i,
   },
   {
     key: "sakana-fugu",
-    label: "Fugu Ultra (Sakana AI)",
+    label: "Namazu (Sakana AI)",
     tier: "deep",
-    candidates: ["sakana/fugu-ultra"],
+    candidates: ["sakana/sakana-namazu", "sakana/fugu-ultra"],
     hint: "Мета-оркестратор, сам маршрутизирует по пулу моделей",
   },
   {
     key: "gpt56-terra-pro",
-    label: "GPT-5.6 Terra Pro",
+    label: "GPT-5.6 Luna Pro",
     tier: "deep",
-    candidates: ["openai/gpt-5.6-terra-pro", "openai/gpt-5.6-terra"],
-    familyRegex: /^openai\/gpt-5\.6-terra/i,
+    candidates: [
+      "openai/gpt-5.6-luna-pro",
+      "openai/gpt-5.6-terra-pro",
+      "openai/gpt-5.6-sol-pro",
+      "openai/gpt-5.6-luna",
+    ],
+    familyRegex: /^openai\/gpt-5\.6-(?:luna|terra|sol)-pro/i,
   },
   {
     key: "gpt5",
@@ -136,8 +148,8 @@ export const CURATED_MODELS: CuratedModel[] = [
     key: "nemotron-3-ultra",
     label: "Nemotron 3 Ultra (NVIDIA)",
     tier: "deep",
-    candidates: ["nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3-ultra-550b-a55b:free"],
-    familyRegex: /^nvidia\/nemotron-3-ultra/i,
+    candidates: ["nvidia/nemotron-3.5-lightning", "nvidia/nemotron-3-ultra-550b-a55b"],
+    familyRegex: /^nvidia\/nemotron-3(?:\.5)?/i,
     hint: "Заточен под агентную оркестрацию — кандидат на роль арбитра",
   },
   {
@@ -160,8 +172,8 @@ export const CURATED_MODELS: CuratedModel[] = [
     label: "DeepSeek V4-Pro",
     tier: "deep",
     candidates: [
+      "deepseek/deepseek-v4-pro-0813",
       "deepseek/deepseek-v4-pro",
-      "deepseek/deepseek-v4-pro:free",
       "deepseek/deepseek-pro-v4",
       "deepseek/deepseek-v4",
     ],
@@ -176,13 +188,13 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "qwen-max",
-    label: "Qwen 3 Max",
+    label: "Qwen 3.8 Max",
     tier: "deep",
     candidates: [
+      "qwen/qwen3.8-max",
+      "qwen/qwen3.7-max",
       "qwen/qwen3-max",
       "qwen/qwen-max",
-      "qwen/qwen3.7-max",
-      "qwen/qwen-3.7-max",
     ],
     familyRegex: /^qwen\/qwen[^/]*max/i,
   },
@@ -308,7 +320,7 @@ export const CURATED_MODELS: CuratedModel[] = [
     source: "lovable-gateway",
     emoji: "🎨",
     hint: "Сложные композиции",
-    candidates: ["openai/gpt-image-2", "openai/gpt-image-1-mini"],
+    candidates: ["openai/gpt-5.4-image-2", "openai/gpt-image-1-mini"],
   },
   {
     key: "img-gemini-nano",
