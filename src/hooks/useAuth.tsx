@@ -83,19 +83,15 @@ type PasswordGrantPayload = {
 };
 
 const getPrimaryAuthUrl = () => {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  if (!baseUrl) return null;
-  return `${baseUrl.replace(/\/$/, "")}${PASSWORD_GRANT_PATH}`;
-};
-
-const getDirectAuthUrl = () => {
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
-  if (!projectId) return null;
-  return `https://${projectId}.supabase.co${PASSWORD_GRANT_PATH}`;
+  if (!PRIMARY_BASE) return null;
+  return `${PRIMARY_BASE}${PASSWORD_GRANT_PATH}`;
 };
 
 const getAuthUrls = () => {
-  const urls = [getPrimaryAuthUrl(), getDirectAuthUrl()].filter((url): url is string => !!url);
+  const urls = [
+    getPrimaryAuthUrl(),
+    ...FALLBACK_BASES.map((base) => `${base}${PASSWORD_GRANT_PATH}`),
+  ].filter((url): url is string => !!url);
   return Array.from(new Set(urls));
 };
 
