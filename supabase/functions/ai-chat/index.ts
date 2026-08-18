@@ -37,7 +37,7 @@ const CHAT_MODEL_FALLBACKS: Record<string, string[]> = {
   "google/gemini-3.1-pro-preview": ["google/gemini-3-flash-preview"],
   "openai/gpt-5": ["openai/gpt-5-mini", "openai/gpt-5-chat"],
   "anthropic/claude-opus-4.8": ["anthropic/claude-sonnet-4.5"],
-  "anthropic/claude-opus-4-8": ["anthropic/claude-sonnet-4.5"],
+  "anthropic/claude-opus-5": ["anthropic/claude-sonnet-4.5"],
   "moonshotai/kimi-k2-thinking": ["qwen/qwen3.6-flash", "z-ai/glm-5"],
   "deepseek/deepseek-v4-pro": ["deepseek/deepseek-v4-flash", "deepseek/deepseek-v3.2"],
 };

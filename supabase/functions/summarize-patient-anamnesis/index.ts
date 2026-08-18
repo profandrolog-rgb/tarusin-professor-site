@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "https://tarusin.pro";
-    const models = ["google/gemini-2.5-flash", "openai/gpt-4o-mini", "anthropic/claude-3.5-haiku"];
+    const models = ["google/gemini-2.5-flash", "openai/gpt-4o-mini", "anthropic/claude-sonnet-4.5"];
     let summary = "";
     let usedModel = "";
     let lastErr = "";
