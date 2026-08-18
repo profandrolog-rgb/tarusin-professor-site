@@ -36,6 +36,27 @@ export function installBackendFailover() {
 
   const originalFetch = window.fetch.bind(window);
 
+  // Стартовый зонд: если прокси не отвечает за 2.5 с — сразу помечаем direct,
+  // чтобы первый вход/загрузка данных не ждали мёртвый прокси.
+  void (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    try {
+      const res = await originalFetch(`${PROXY_BASE}/auth/v1/health`, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (res.status >= 500) preferDirect = true;
+    } catch {
+      preferDirect = true;
+    } finally {
+      clearTimeout(timer);
+    }
+  })();
+
+
+
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
     const direct = toDirect(url);
