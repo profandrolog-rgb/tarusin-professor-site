@@ -1073,7 +1073,31 @@ const PlaceholderGallery = ({
             <option key={t} value={t}>{TYPE_LABEL[t]}</option>
           ))}
         </select>
+        <label className="text-xs text-muted-foreground ml-2">Фото в ряд:</label>
+        <select
+          className="text-xs border rounded px-2 py-1 bg-background"
+          value={cols === null ? "auto" : String(cols)}
+          disabled={uploading || deletingFile !== null}
+          onChange={async (e) => {
+            const v = e.target.value;
+            const next = v === "auto" ? null : Number(v);
+            setCols(next);
+            const ok = await persistEntries((current) => current, next);
+            if (ok) {
+              toast.success(
+                next ? `В ряд: ${next} фото` : "В ряд: авто (3 на десктопе)",
+              );
+            }
+          }}
+        >
+          <option value="auto">Авто (3)</option>
+          <option value="2">2 в ряд</option>
+          <option value="3">3 в ряд</option>
+          <option value="4">4 в ряд</option>
+          <option value="5">5 в ряд</option>
+        </select>
       </div>
+
 
       {processing && (
         <div className="w-full max-w-md mb-4">
