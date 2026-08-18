@@ -18,7 +18,9 @@ const NotFound = () => {
         title={isEn ? "404 — Page Not Found | Prof. Tarusin D.I." : "404 — страница не найдена | проф. Тарусин Д.И."}
         description={isEn ? "The page you are looking for does not exist or has been moved. Return to the home page of Prof. Tarusin D.I.'s official site." : "Запрошенная страница не существует или была перемещена. Вернитесь на главную страницу официального сайта профессора Тарусина Д.И."}
         path={location.pathname}
+        noindex
       />
+
       <div className="text-center">
         <h1 className="mb-4 text-4xl font-bold">404</h1>
         <p className="mb-4 text-xl text-muted-foreground">
