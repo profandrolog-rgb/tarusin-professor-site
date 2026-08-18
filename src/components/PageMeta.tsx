@@ -13,7 +13,10 @@ interface PageMetaProps {
   lang?: "ru" | "en";
   /** SEO-ключи (выводятся как <meta name="keywords">), опционально. */
   keywords?: string[];
+  /** Закрыть страницу от индексации (например, 404). */
+  noindex?: boolean;
 }
+
 
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 
