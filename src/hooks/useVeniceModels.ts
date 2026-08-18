@@ -3,6 +3,7 @@
 // чтобы по всему фронту единообразно отличать gateway.
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { FALLBACK_BASES, PRIMARY_BASE } from "@/lib/backendEndpoints";
 import type { LiveModelInfo } from "@/config/aiModels";
 
 const SS_KEY = "venice.models.v1";
