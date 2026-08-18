@@ -43,18 +43,29 @@ export function installBackendFailover() {
 
     if (!direct) return originalFetch(input as any, init);
 
+    // Прокси может «висеть» без ответа — ограничиваем ожидание и уходим напрямую.
+    const controller = new AbortController();
+    const external = init?.signal ?? null;
+    const onExternalAbort = () => controller.abort();
+    external?.addEventListener("abort", onExternalAbort);
+    const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+
     try {
-      const res = await originalFetch(input as any, init);
+      const res = await originalFetch(input as any, { ...init, signal: controller.signal });
       if (res.status >= 500 && res.status <= 599) {
         preferDirect = true;
         return originalFetch(direct, init);
       }
       return res;
     } catch (err) {
-      // Сетевая ошибка/таймаут прокси — пробуем напрямую.
-      if (init?.signal?.aborted) throw err;
+      // Отмена пользователем/вызывающим кодом — пробрасываем как есть.
+      if (external?.aborted) throw err;
       preferDirect = true;
       return originalFetch(direct, init);
+    } finally {
+      clearTimeout(timer);
+      external?.removeEventListener("abort", onExternalAbort);
     }
   };
 }
+
