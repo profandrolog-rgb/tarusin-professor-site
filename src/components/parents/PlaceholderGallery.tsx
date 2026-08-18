@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
 import { getDownloadUrl } from "@/lib/research/uploadToYc";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine, Type } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
 import {
@@ -574,6 +574,23 @@ const PlaceholderGallery = ({
     }
   };
 
+  // Изменить подпись уже загруженного фото.
+  const editExistingCaption = async (filename: string, current: string) => {
+    const next = window.prompt("Подпись к фото:", current || "");
+    if (next === null) return;
+    const trimmed = next.trim();
+    setDeletingFile(filename);
+    try {
+      const ok = await persistEntries((cur) =>
+        cur.map((e) => (e.filename === filename ? { ...e, caption: trimmed } : e)),
+      );
+      if (ok) toast.success(trimmed ? "Подпись обновлена" : "Подпись удалена");
+    } finally {
+      setDeletingFile(null);
+    }
+  };
+
+
 
 
   const sensors = useSensors(
@@ -1010,6 +1027,16 @@ const PlaceholderGallery = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => editExistingCaption(it.filename, it.caption)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 left-8 bg-slate-700 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Изменить подпись к фото"
+                  aria-label="Изменить подпись к фото"
+                >
+                  <Type className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => deleteExisting(it.filename)}
                   disabled={deletingFile !== null || uploading}
                   className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
@@ -1022,11 +1049,15 @@ const PlaceholderGallery = ({
                     <Trash2 className="w-3.5 h-3.5" />
                   )}
                 </button>
-                {it.caption && (
-                  <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1">
-                    {it.caption}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => editExistingCaption(it.filename, it.caption)}
+                  className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] truncate px-1 text-left hover:bg-black/80"
+                  title="Изменить подпись"
+                >
+                  {it.caption || "+ подпись"}
+                </button>
+
               </div>
             ))}
           </div>

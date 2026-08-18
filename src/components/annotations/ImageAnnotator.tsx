@@ -188,11 +188,29 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
     pushHistory({ ...doc, shapes: [...doc.shapes, s], imageWidth: imgW, imageHeight: imgH });
   };
 
+  const deleteShape = useCallback((id: string) => {
+    pushHistory({ ...doc, shapes: doc.shapes.filter((s) => s.id !== id), imageWidth: imgW, imageHeight: imgH });
+    setSelectedId((cur) => (cur === id ? null : cur));
+  }, [doc, imgW, imgH, pushHistory]);
+
   const deleteSelected = () => {
     if (!selectedId) return;
-    pushHistory({ ...doc, shapes: doc.shapes.filter((s) => s.id !== selectedId), imageWidth: imgW, imageHeight: imgH });
-    setSelectedId(null);
+    deleteShape(selectedId);
   };
+
+  // Delete / Backspace удаляет выделенный элемент
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
+        e.preventDefault();
+        deleteShape(selectedId);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, deleteShape]);
 
   const clearAll = () => {
     if (!doc.shapes.length) return;
@@ -200,6 +218,7 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
     pushHistory({ shapes: [], imageWidth: imgW, imageHeight: imgH });
     setSelectedId(null);
   };
+
 
   const save = async () => {
     setSaving(true);
@@ -229,7 +248,19 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
   // Render one shape as Konva node
   const renderShape = (s: AnnotationShape) => {
     const isSel = s.id === selectedId;
-    const commonSel = tool === "select";
+    // Клик выделяет элемент в любом инструменте (кроме процесса рисования),
+    // правый клик — сразу удаляет.
+    const pick = () => {
+      if (drawingRef.current) return;
+      setSelectedId(s.id);
+      if (tool !== "select") setTool("select");
+    };
+    const ctx = (e: Konva.KonvaEventObject<PointerEvent | MouseEvent>) => {
+      e.evt?.preventDefault?.();
+      e.cancelBubble = true;
+      deleteShape(s.id);
+    };
+    const hit = Math.max(s.strokeWidth * 3, 18);
     if (s.type === "arrow") {
       return (
         <Arrow
@@ -238,11 +269,13 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
           stroke={s.color}
           fill={s.color}
           strokeWidth={s.strokeWidth}
+          hitStrokeWidth={hit}
           pointerLength={10}
           pointerWidth={10}
           lineCap="round"
-          onClick={() => commonSel && setSelectedId(s.id)}
-          onTap={() => commonSel && setSelectedId(s.id)}
+          onClick={pick}
+          onTap={pick}
+          onContextMenu={ctx}
           shadowEnabled={isSel}
           shadowColor="#3b82f6"
           shadowBlur={6}
@@ -259,8 +292,10 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
           radiusY={s.ry * stageH}
           stroke={s.color}
           strokeWidth={s.strokeWidth}
-          onClick={() => commonSel && setSelectedId(s.id)}
-          onTap={() => commonSel && setSelectedId(s.id)}
+          hitStrokeWidth={hit}
+          onClick={pick}
+          onTap={pick}
+          onContextMenu={ctx}
           shadowEnabled={isSel}
           shadowColor="#3b82f6"
           shadowBlur={6}
@@ -278,7 +313,7 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
         strokeWidth={s.strokeWidth * 0.3}
         fontSize={s.fontSize * stageH}
         fontFamily="sans-serif"
-        draggable={commonSel}
+        draggable={tool === "select"}
         onDragEnd={(e) => {
           const { nx, ny } = toNorm(e.target.x(), e.target.y());
           pushHistory({
@@ -288,11 +323,13 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
             imageHeight: imgH,
           });
         }}
-        onClick={() => commonSel && setSelectedId(s.id)}
-        onTap={() => commonSel && setSelectedId(s.id)}
+        onClick={pick}
+        onTap={pick}
+        onContextMenu={ctx}
       />
     );
   };
+
 
   // Live-drawing shape
   const live = drawingRef.current;
@@ -401,9 +438,39 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
         )}
       </div>
 
+      {/* Список элементов разметки с удалением */}
+      {doc.shapes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-muted/20 p-2">
+          <span className="text-xs text-muted-foreground mr-1">Элементы:</span>
+          {doc.shapes.map((s, i) => (
+            <span
+              key={s.id}
+              className={`inline-flex items-center gap-1 rounded-full border pl-2 pr-1 py-0.5 text-xs cursor-pointer ${
+                s.id === selectedId ? "border-primary bg-primary/10" : "bg-background"
+              }`}
+              onClick={() => { setSelectedId(s.id); setTool("select"); }}
+            >
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+              {s.type === "arrow" ? `Стрелка ${i + 1}` : s.type === "ellipse" ? `Овал ${i + 1}` : `Текст: ${s.text.slice(0, 14)}`}
+              <button
+                type="button"
+                aria-label="Удалить элемент"
+                title="Удалить элемент"
+                className="ml-0.5 rounded-full p-0.5 text-destructive hover:bg-destructive/10"
+                onClick={(e) => { e.stopPropagation(); deleteShape(s.id); }}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground">
+        Удалить элемент: выделите его щелчком и нажмите Delete, либо кликните правой кнопкой по элементу, либо используйте корзину в списке ниже.
         Оригинал изображения не изменяется — сохраняется только слой разметки. Один снимок может иметь несколько наборов (например «atlas», «site», «book»).
       </p>
+
     </div>
   );
 };
