@@ -31,8 +31,11 @@ import {
   parseGalleryFileEntries,
   readGalleryEntriesFromContent,
   upsertGalleryEntriesInContent,
+  extractGalleryCols,
+  withGalleryCols,
   type GalleryFileEntry,
 } from "@/lib/markdown/galleryMarkers";
+
 import { isStorageCollisionError, nextGalleryImageIndex } from "@/lib/markdown/galleryImageFilenames";
 
 interface Props {
