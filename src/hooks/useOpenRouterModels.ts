@@ -3,6 +3,7 @@
 // don't refetch. Returns a map indexed by slug + the array form for search.
 import { useEffect, useState } from "react";
 import type { LiveModelInfo } from "@/config/aiModels";
+import { FALLBACK_BASES, PRIMARY_BASE } from "@/lib/backendEndpoints";
 
 const SS_KEY = "openrouter.models.v2";
 const SS_TTL_MS = 30 * 60 * 1000; // 30 минут — модели меняются редко
@@ -14,12 +15,10 @@ let inFlight: Promise<LiveModelInfo[]> | null = null;
 const FUNCTION_PATH = "/functions/v1/list-openrouter-models";
 
 function catalogUrls(): string[] {
-  const primary = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
   return Array.from(new Set([
     "https://openrouter.ai/api/v1/models",
-    primary ? `${primary.replace(/\/$/, "")}${FUNCTION_PATH}` : null,
-    projectId ? `https://${projectId}.supabase.co${FUNCTION_PATH}` : null,
+    PRIMARY_BASE ? `${PRIMARY_BASE}${FUNCTION_PATH}` : null,
+    ...FALLBACK_BASES.map((base) => `${base}${FUNCTION_PATH}`),
   ].filter((u): u is string => Boolean(u))));
 }
 
