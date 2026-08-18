@@ -438,9 +438,39 @@ const ImageAnnotator = ({ imagePath, bucket = "disease-media", initialLabel = "d
         )}
       </div>
 
+      {/* Список элементов разметки с удалением */}
+      {doc.shapes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-muted/20 p-2">
+          <span className="text-xs text-muted-foreground mr-1">Элементы:</span>
+          {doc.shapes.map((s, i) => (
+            <span
+              key={s.id}
+              className={`inline-flex items-center gap-1 rounded-full border pl-2 pr-1 py-0.5 text-xs cursor-pointer ${
+                s.id === selectedId ? "border-primary bg-primary/10" : "bg-background"
+              }`}
+              onClick={() => { setSelectedId(s.id); setTool("select"); }}
+            >
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+              {s.type === "arrow" ? `Стрелка ${i + 1}` : s.type === "ellipse" ? `Овал ${i + 1}` : `Текст: ${s.text.slice(0, 14)}`}
+              <button
+                type="button"
+                aria-label="Удалить элемент"
+                title="Удалить элемент"
+                className="ml-0.5 rounded-full p-0.5 text-destructive hover:bg-destructive/10"
+                onClick={(e) => { e.stopPropagation(); deleteShape(s.id); }}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground">
+        Удалить элемент: выделите его щелчком и нажмите Delete, либо кликните правой кнопкой по элементу, либо используйте корзину в списке ниже.
         Оригинал изображения не изменяется — сохраняется только слой разметки. Один снимок может иметь несколько наборов (например «atlas», «site», «book»).
       </p>
+
     </div>
   );
 };
