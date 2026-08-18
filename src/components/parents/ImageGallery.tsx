@@ -155,15 +155,20 @@ const ImageGallery = ({ caption, files }: Props) => {
           );
         })()
       ) : (
-        <div className="flex flex-wrap justify-center gap-3">
+        <div
+          className="flex flex-wrap justify-center gap-3"
+          style={cols ? ({ ["--cols" as any]: String(cols) } as React.CSSProperties) : undefined}
+        >
           {items.map((it, i) => {
             const patientFull = isPatientFull(it.filename);
-            const itemClass = patientFull
-              ? "shrink-0"
+            const colClass = cols
+              ? "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] md:max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
               : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
+            const itemClass = patientFull ? "shrink-0" : colClass;
             const itemStyle: React.CSSProperties = patientFull
               ? { width: PATIENT_FULL_W, maxWidth: "100%" }
               : {};
+
             return (
             <div key={it.filename + i} className={itemClass} style={itemStyle}>
               {isInfographic(it.filename) ? (
