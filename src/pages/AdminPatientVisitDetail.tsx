@@ -243,26 +243,43 @@ export default function AdminPatientVisitDetail() {
       }
     };
 
-    let { data: rows, error } = await attempt();
+    let rows: { id: string }[] | null = null;
+    let error: { message: string; code?: string } | null = null;
 
-    // Обновляем токен только если проблема действительно в авторизации —
-    // при сетевом сбое лишний refreshSession добавлял ещё несколько секунд.
-    if (error) {
-      const msg = `${error.message || ""} ${(error as any).code || ""}`.toLowerCase();
-      const authIssue = msg.includes("jwt") || msg.includes("token") || msg.includes("401") || msg.includes("permission");
-      if (authIssue) await supabase.auth.refreshSession().catch(() => null);
-      const retry = await attempt();
-      rows = retry.data;
-      error = retry.error;
+    try {
+      const first = await attempt();
+      rows = first.data;
+      error = first.error;
+
+      // Обновляем токен только если проблема действительно в авторизации —
+      // при сетевом сбое лишний refreshSession добавлял ещё несколько секунд.
+      if (error) {
+        const msg = `${error.message || ""} ${error.code || ""}`.toLowerCase();
+        const authIssue = msg.includes("jwt") || msg.includes("token") || msg.includes("401") || msg.includes("permission");
+        if (authIssue) await supabase.auth.refreshSession().catch(() => null);
+        const retry = await attempt();
+        rows = retry.data;
+        error = retry.error;
+      }
+    } catch (caught) {
+      error = { message: caught instanceof Error ? caught.message : "Сетевая ошибка" };
+    } finally {
+      clearInterval(ticker);
+      setSaving(false);
+      setSaveElapsed(0);
     }
 
-    clearInterval(ticker);
     const tookMs = Math.round(performance.now() - startedAt);
     if (tookMs > 4000) console.warn(`[visit-save] запись заняла ${tookMs} мс`);
-    setSaving(false);
-    setSaveElapsed(0);
     if (error) {
-      toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
+      const networkIssue = /failed to fetch|network|abort/i.test(error.message);
+      toast({
+        title: "Не удалось связаться с сервером",
+        description: networkIssue
+          ? "Черновик сохранён на устройстве. Проверьте интернет и нажмите «Сохранить» ещё раз."
+          : error.message,
+        variant: "destructive",
+      });
     } else if (!rows || rows.length === 0) {
       // Запрос прошёл, но ни одна строка не обновилась — почти всегда потеря сессии/прав.
       toast({
