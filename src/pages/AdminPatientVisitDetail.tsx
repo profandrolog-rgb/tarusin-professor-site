@@ -75,6 +75,8 @@ export default function AdminPatientVisitDetail() {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveElapsed, setSaveElapsed] = useState(0);
+
   const [baseline, setBaseline] = useState<string>("");
   const [siblings, setSiblings] = useState<SiblingVisit[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -209,6 +211,12 @@ export default function AdminPatientVisitDetail() {
   const handleSave = async () => {
     if (!visit) return;
     setSaving(true);
+    setSaveElapsed(0);
+    const startedAt = performance.now();
+    const ticker = window.setInterval(
+      () => setSaveElapsed(Math.round((performance.now() - startedAt) / 1000)),
+      500,
+    );
     const payload = {
       visit_date: visit.visit_date,
       diagnosis: visit.diagnosis,
@@ -217,20 +225,42 @@ export default function AdminPatientVisitDetail() {
       protocol_data: visit.protocol_data,
     };
 
-    const attempt = async () =>
-      supabase.from("patient_visits").update(payload).eq("id", visit.id).select("id");
+    // Жёсткий предел на попытку: висящий запрос лучше оборвать и повторить,
+    // чем держать врача в ожидании неопределённое время.
+    const ATTEMPT_TIMEOUT_MS = 12000;
+    const attempt = async () => {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
+      try {
+        return await supabase
+          .from("patient_visits")
+          .update(payload)
+          .eq("id", visit.id)
+          .select("id")
+          .abortSignal(controller.signal);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
 
     let { data: rows, error } = await attempt();
 
-    // Истёкшая сессия / сетевой сбой прокси — обновляем токен и пробуем ещё раз.
+    // Обновляем токен только если проблема действительно в авторизации —
+    // при сетевом сбое лишний refreshSession добавлял ещё несколько секунд.
     if (error) {
-      await supabase.auth.refreshSession().catch(() => null);
+      const msg = `${error.message || ""} ${(error as any).code || ""}`.toLowerCase();
+      const authIssue = msg.includes("jwt") || msg.includes("token") || msg.includes("401") || msg.includes("permission");
+      if (authIssue) await supabase.auth.refreshSession().catch(() => null);
       const retry = await attempt();
       rows = retry.data;
       error = retry.error;
     }
 
+    clearInterval(ticker);
+    const tookMs = Math.round(performance.now() - startedAt);
+    if (tookMs > 4000) console.warn(`[visit-save] запись заняла ${tookMs} мс`);
     setSaving(false);
+    setSaveElapsed(0);
     if (error) {
       toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
     } else if (!rows || rows.length === 0) {
@@ -247,9 +277,10 @@ export default function AdminPatientVisitDetail() {
       if (isProtocolRecord(visit.protocol_data)) {
         void rememberAssignments((visit.protocol_data as any).assignments);
       }
-      toast({ title: "Сохранено" });
+      toast({ title: "Сохранено", description: `${(tookMs / 1000).toFixed(1)} с` });
     }
   };
+
   const handleSaveRef = useRef(handleSave);
   useEffect(() => { handleSaveRef.current = handleSave; });
 
@@ -543,9 +574,10 @@ export default function AdminPatientVisitDetail() {
                     className={isDirty ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                   >
                     {saving ? <Loader2 className="h-4 w-4 md:mr-1 animate-spin" /> : <Save className="h-4 w-4 md:mr-1" />}
-                    <span className="hidden md:inline">Сохранить</span>
+                    <span className="hidden md:inline">{saving ? `Сохраняю${saveElapsed ? ` ${saveElapsed} с` : "…"}` : "Сохранить"}</span>
                     {isDirty && <span className="ml-1 inline-block w-2 h-2 rounded-full bg-yellow-300" />}
                   </Button>
+
                 </TooltipTrigger>
                 <TooltipContent>
                   {isDirty ? "Есть несохранённые изменения (Ctrl+S)" : "Всё сохранено"}
@@ -569,8 +601,9 @@ export default function AdminPatientVisitDetail() {
           className={`fixed bottom-6 right-6 z-50 shadow-lg rounded-full ${isDirty ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
         >
           {saving ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
-          Сохранить
+          {saving ? `Сохраняю${saveElapsed ? ` ${saveElapsed} с` : "…"}` : "Сохранить"}
           {isDirty && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-yellow-300" />}
+
         </Button>
 
         <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8">
