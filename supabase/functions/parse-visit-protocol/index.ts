@@ -112,22 +112,28 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization') || '';
-    if (!authHeader) {
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    if (!token) {
       return new Response(JSON.stringify({ error: 'Не авторизовано' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-    if (!user) {
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub;
+    if (claimsError || !userId) {
       return new Response(JSON.stringify({ error: 'Не авторизовано' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const { data: isAdmin } = await supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data: isAdmin, error: roleError } = await admin.rpc('has_role', { _user_id: userId, _role: 'admin' });
+    if (roleError) {
+      console.error('[parse-visit-protocol] role check failed', roleError.message);
+      return new Response(JSON.stringify({ error: 'Не удалось проверить права' }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: 'Недостаточно прав' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -149,7 +155,6 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      const admin = createClient(SUPABASE_URL, SERVICE_KEY);
       const { data: stored, error: downloadError } = await admin.storage.from(bucket).download(storagePath);
       if (downloadError || !stored) {
         return new Response(JSON.stringify({ error: 'Не удалось получить загруженный файл' }), {

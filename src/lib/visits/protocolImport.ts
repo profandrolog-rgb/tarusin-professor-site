@@ -123,10 +123,26 @@ export async function parseProtocolDocument(source: {
   storagePath?: string;
   fileName?: string;
 }): Promise<ParsedProtocol> {
+  // functions.invoke иногда успевает взять anon-key во время восстановления
+  // сохранённой сессии после открытия вкладки. Для защищённого медицинского
+  // парсера всегда передаём явно проверенный пользовательский access token.
+  let { data: sessionData } = await supabase.auth.getSession();
+  let session = sessionData.session;
+  const expiresSoon = !session?.expires_at || session.expires_at * 1000 < Date.now() + 60_000;
+  if (expiresSoon) {
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) throw new Error("Сессия истекла. Войдите в систему ещё раз.");
+    session = refreshed.session;
+  }
+  if (!session?.access_token) {
+    throw new Error("Нет активной сессии. Войдите в систему ещё раз.");
+  }
+
   let lastErr: any = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const { data, error } = await supabase.functions.invoke("parse-visit-protocol", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: {
           text: source.text || "",
           file_data: source.fileData || "",
