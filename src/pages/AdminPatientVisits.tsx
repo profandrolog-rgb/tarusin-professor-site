@@ -22,11 +22,36 @@ interface VisitRow {
   patient: { id: string; full_name: string; history_number: string | null } | null;
 }
 
+/**
+ * Кэш последнего успешно загруженного журнала: список открывается мгновенно,
+ * а свежие данные подтягиваются в фоне. Раньше врач ждал полный round-trip
+ * (сессия -> роли -> визиты) через прокси перед первым кадром списка.
+ */
+const CACHE_PREFIX = "visits_journal_cache_v1:";
+
+const readCache = (key: string): VisitRow[] | null => {
+  try {
+    const raw = sessionStorage.getItem(CACHE_PREFIX + key);
+    return raw ? (JSON.parse(raw) as VisitRow[]) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeCache = (key: string, rows: VisitRow[]) => {
+  try {
+    sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify(rows));
+  } catch {
+    /* переполнение хранилища не должно ломать журнал */
+  }
+};
+
 export default function AdminPatientVisits() {
   const navigate = useNavigate();
   const { user, loading: authLoading, isAdmin, isSurgeon } = useAuth();
-  const [rows, setRows] = useState<VisitRow[]>([]);
+  const [rows, setRows] = useState<VisitRow[]>(() => readCache("all") || []);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dateSortDir, setDateSortDir] = useState<"asc" | "desc">("desc");
@@ -55,7 +80,14 @@ export default function AdminPatientVisits() {
     };
 
     const load = async () => {
-      setLoading(true);
+      const cached = readCache(typeFilter);
+      if (cached && cached.length) {
+        setRows(cached);
+        setLoading(false);
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setLoadError(null);
 
       // Сеть через прокси может дать одиночный сбой — делаем до 3 попыток
@@ -65,8 +97,11 @@ export default function AdminPatientVisits() {
         const { data, error } = await fetchPage();
         if (cancelled) return;
         if (!error) {
-          setRows((data as any) || []);
+          const fresh = ((data as any) || []) as VisitRow[];
+          setRows(fresh);
+          writeCache(typeFilter, fresh);
           setLoading(false);
+          setRefreshing(false);
           return;
         }
         lastError = error.message;
@@ -78,13 +113,17 @@ export default function AdminPatientVisits() {
       // Не стираем уже показанные визиты — сообщаем об ошибке загрузки.
       setLoadError(lastError || "Сеть недоступна");
       setLoading(false);
+      setRefreshing(false);
     };
 
-    if (user && (isAdmin || isSurgeon)) load();
+    // Не ждём разрешения ролей: RLS всё равно ограничивает выдачу, а ожидание
+    // ответа user_roles через прокси задерживало список на лишний round-trip.
+    if (user) load();
     return () => {
       cancelled = true;
     };
-  }, [user, isAdmin, isSurgeon, typeFilter, reloadKey]);
+  }, [user, typeFilter, reloadKey]);
+
 
   const displayRows = useMemo(() => {
     let data = rows.filter((r) => {
