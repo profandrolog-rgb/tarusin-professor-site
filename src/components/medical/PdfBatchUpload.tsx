@@ -38,6 +38,25 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+const PARSER_BUCKET = "patient-lab-docs";
+
+function safeFileName(name: string): string {
+  return name.replace(/[^a-zA-Zа-яА-Я0-9._-]+/g, "_").slice(-120) || "document.pdf";
+}
+
+async function functionErrorMessage(error: any): Promise<string> {
+  const response = error?.context;
+  if (response instanceof Response) {
+    try {
+      const payload = await response.clone().json();
+      if (typeof payload?.error === "string") return payload.error;
+    } catch {
+      // The SDK message below is the best available fallback.
+    }
+  }
+  return String(error?.message || error || "Ошибка разбора документа");
+}
+
 export default function PdfBatchUpload({ patientId, consultationCaseId, visitId, onComplete }: Props) {
   const { toast } = useToast();
   const [files, setFiles] = useState<FileStatus[]>([]);
@@ -64,13 +83,26 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
       updated[i] = { ...updated[i], status: "uploading", progress: 20 };
       setFiles([...updated]);
       try {
-        const dataUrl = await fileToDataUrl(updated[i].file);
         if (!parseEnabled) {
           // Upload-only: skip parsing
           updated[i] = { ...updated[i], status: "done", progress: 100, message: "Загружено (без парсинга)" };
           setFiles([...updated]);
           continue;
         }
+
+        // Не отправляем большой PDF как base64 внутри запроса к Edge Function:
+        // прокси может оборвать такой POST до запуска функции. Сначала кладём
+        // оригинал в приватное хранилище, затем передаём парсеру только путь.
+        const owner = patientId || consultationCaseId || "unassigned";
+        const storagePath = `${owner}/${Date.now()}-${crypto.randomUUID()}-${safeFileName(updated[i].file.name)}`;
+        const { error: uploadError } = await supabase.storage
+          .from(PARSER_BUCKET)
+          .upload(storagePath, updated[i].file, {
+            contentType: updated[i].file.type || "application/pdf",
+            upsert: false,
+          });
+        if (uploadError) throw new Error(`Не удалось загрузить PDF: ${uploadError.message}`);
+
         updated[i] = { ...updated[i], status: "parsing", progress: 55 };
         setFiles([...updated]);
 
@@ -82,14 +114,15 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
           try {
             const res = await supabase.functions.invoke("parse-medical-pdf", {
               body: {
-                file_data: dataUrl,
+                storage_bucket: PARSER_BUCKET,
+                storage_path: storagePath,
                 file_name: updated[i].file.name,
                 patient_id: patientId,
                 consultation_case_id: consultationCaseId,
                 visit_id: visitId,
               },
             });
-            if (res.error) throw res.error;
+            if (res.error) throw new Error(await functionErrorMessage(res.error));
             if ((res.data as any)?.error) throw new Error((res.data as any).error);
             data = res.data;
             lastErr = null;
