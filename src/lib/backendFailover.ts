@@ -141,7 +141,12 @@ export function installBackendFailover() {
     const external = init?.signal ?? null;
     const onExternalAbort = () => controller.abort();
     external?.addEventListener("abort", onExternalAbort);
-    const timer = setTimeout(() => controller.abort(), long ? LONG_TIMEOUT_MS : PROXY_TIMEOUT_MS);
+    const timeout = long
+      ? LONG_TIMEOUT_MS
+      : isWriteRequest(url, init)
+        ? WRITE_TIMEOUT_MS
+        : PROXY_TIMEOUT_MS;
+    const timer = setTimeout(() => controller.abort(), timeout);
 
     try {
       const res = await originalFetch(input as any, { ...init, signal: controller.signal });
