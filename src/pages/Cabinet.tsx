@@ -207,6 +207,10 @@ type ChatFolder = {
 
 const FOLDERS_OPEN_LS_KEY = "cabinet.foldersOpen.v1";
 
+// Кеш сообщений по диалогу на время сессии: повторное открытие мгновенно.
+const convMessagesCache = new Map<string, Msg[]>();
+
+
 const isPrivateConv = (id: string | null | undefined): boolean => !!id && id.startsWith("private:");
 
 const fileToDataUrl = (file: File): Promise<string> =>
@@ -421,6 +425,8 @@ export default function Cabinet() {
   }, [sidebarWidth]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+
   const [input, setInput] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [extendedPickerOpen, setExtendedPickerOpen] = useState(false);
@@ -744,14 +750,22 @@ export default function Cabinet() {
     let cancelled = false;
     if (!activeId) {
       setMessages([]);
+      setMessagesLoading(false);
       return () => { cancelled = true; };
     }
     if (isPrivateConv(activeId)) {
       // private convs live only in memory; don't query DB
+      setMessagesLoading(false);
       return () => { cancelled = true; };
     }
+    // Мгновенно показываем ранее загруженный диалог, дальше обновляем в фоне.
+    const cached = convMessagesCache.get(activeId);
+    if (cached) setMessages(cached);
+    else setMessages([]);
+    setMessagesLoading(true);
     (async () => {
       let data: any[] | null = null;
+
       let loadError: any = null;
 
       // Cloudflare/мобильная сеть иногда обрывает первый REST-запрос. Не показываем
@@ -772,9 +786,11 @@ export default function Cabinet() {
       if (cancelled) return;
       if (loadError) {
         console.error("Cabinet messages load failed:", loadError);
+        setMessagesLoading(false);
         toast.error(`Не удалось загрузить запрос из истории: ${loadError.message || "ошибка соединения"}`);
         return;
       }
+
       const loadedMessages: Msg[] = (data || []).map((m: any) => {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
@@ -845,36 +861,40 @@ export default function Cabinet() {
           };
         });
 
-      // Re-sign storage-backed attachments in batch (1h TTL)
+      // Текст диалога показываем сразу, не дожидаясь подписания файлов в хранилище.
+      setMessages(loadedMessages);
+      setMessagesLoading(false);
+      convMessagesCache.set(activeId, loadedMessages);
+
       const pathsToSign = Array.from(new Set(
         loadedMessages.flatMap((m) => (m.attachments || []).filter((a) => a.path && !a.dataUrl).map((a) => a.path as string))
       ));
-      if (pathsToSign.length) {
-        const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrls(pathsToSign, 60 * 60);
-        const map = new Map<string, string>();
-        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(pathsToSign[i], s.signedUrl); });
-        for (const m of loadedMessages) {
-          if (!m.attachments) continue;
-          m.attachments = m.attachments.map((a) => a.path && map.has(a.path) ? { ...a, dataUrl: map.get(a.path) } : a);
-        }
-      }
-
-      // Re-sign generated images
       const imgPaths = loadedMessages.filter((m) => m.image?.path).map((m) => m.image!.path);
-      if (imgPaths.length) {
-        const { data: signed } = await supabase.storage.from("generated-images").createSignedUrls(imgPaths, 60 * 60);
-        const map = new Map<string, string>();
-        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(imgPaths[i], s.signedUrl); });
-        for (const m of loadedMessages) {
-          if (m.image && map.has(m.image.path)) m.image.signedUrl = map.get(m.image.path);
-        }
+      if (pathsToSign.length || imgPaths.length) {
+        const [attSigned, imgSigned] = await Promise.all([
+          pathsToSign.length
+            ? supabase.storage.from("chat-attachments").createSignedUrls(pathsToSign, 60 * 60)
+            : Promise.resolve({ data: [] as any[] }),
+          imgPaths.length
+            ? supabase.storage.from("generated-images").createSignedUrls(imgPaths, 60 * 60)
+            : Promise.resolve({ data: [] as any[] }),
+        ]);
+        if (cancelled) return;
+        const attMap = new Map<string, string>();
+        (attSigned.data || []).forEach((s: any, i: number) => { if (s?.signedUrl) attMap.set(pathsToSign[i], s.signedUrl); });
+        const imgMap = new Map<string, string>();
+        (imgSigned.data || []).forEach((s: any, i: number) => { if (s?.signedUrl) imgMap.set(imgPaths[i], s.signedUrl); });
+        const withUrls = loadedMessages.map((m) => ({
+          ...m,
+          attachments: (m.attachments || []).map((a) => a.path && attMap.has(a.path) ? { ...a, dataUrl: attMap.get(a.path) } : a),
+          image: m.image && imgMap.has(m.image.path) ? { ...m.image, signedUrl: imgMap.get(m.image.path) } : m.image,
+        }));
+        setMessages(withUrls);
+        convMessagesCache.set(activeId, withUrls);
       }
-
-      if (cancelled) return;
-      setMessages(loadedMessages);
-
 
       const conv = conversations.find((c) => c.id === activeId);
+
       if (conv?.model === "council") {
         setCouncil(true);
       } else if (conv?.model) {
@@ -2684,11 +2704,17 @@ export default function Cabinet() {
               Приватный режим: переписка не сохраняется в истории и в базе. После закрытия вкладки или удаления — исчезает бесследно.
             </div>
           )}
-          {messages.length === 0 && (
+          {messagesLoading && messages.length === 0 && (
+            <div className="text-center text-muted-foreground text-sm pt-16 animate-pulse">
+              Загружаю запрос из истории…
+            </div>
+          )}
+          {!messagesLoading && messages.length === 0 && (
             <div className="text-center text-muted-foreground text-sm pt-16">
               Задайте вопрос. Можно прикрепить изображения или PDF.
             </div>
           )}
+
           {messages.map((m, i) => (
             <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
