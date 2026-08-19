@@ -2684,11 +2684,17 @@ export default function Cabinet() {
               Приватный режим: переписка не сохраняется в истории и в базе. После закрытия вкладки или удаления — исчезает бесследно.
             </div>
           )}
-          {messages.length === 0 && (
+          {messagesLoading && messages.length === 0 && (
+            <div className="text-center text-muted-foreground text-sm pt-16 animate-pulse">
+              Загружаю запрос из истории…
+            </div>
+          )}
+          {!messagesLoading && messages.length === 0 && (
             <div className="text-center text-muted-foreground text-sm pt-16">
               Задайте вопрос. Можно прикрепить изображения или PDF.
             </div>
           )}
+
           {messages.map((m, i) => (
             <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
