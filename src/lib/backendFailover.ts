@@ -5,7 +5,7 @@
 // на резервном адресе (второй прокси, затем прямой домен Supabase) и дальше
 // в этой сессии сразу ходим на выбранный резерв.
 
-import { FALLBACK_BASES, PRIMARY_BASE, swapBase } from "./backendEndpoints";
+import { FALLBACK_BASES, PRIMARY_BASE, normalizeBackendUrl, swapBase } from "./backendEndpoints";
 
 /** Выбранный на эту сессию резервный адрес (null — работаем через основной). */
 let activeFallback: string | null = null;
@@ -31,6 +31,15 @@ function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;
   if (input instanceof URL) return input.toString();
   return input.url;
+}
+
+/** Сохранить параметры Request при переписывании только его backend-host. */
+function normalizedInput(input: RequestInfo | URL, normalizedUrl: string): RequestInfo | URL {
+  if (requestUrl(input) === normalizedUrl) return input;
+  if (typeof Request !== "undefined" && input instanceof Request) {
+    return new Request(normalizedUrl, input);
+  }
+  return normalizedUrl;
 }
 
 /** Максимум ожидания для записи данных (PATCH/POST/PUT в базу). */
@@ -122,7 +131,12 @@ export function installBackendFailover() {
   })();
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = requestUrl(input);
+    // Старые экраны собирали функции через VITE_SUPABASE_URL. В production эта
+    // переменная может содержать заблокированный прямой домен, в то время как
+    // supabase-js уже использует VITE_SUPABASE_PROXY_URL. Нормализуем host здесь,
+    // чтобы парсинг, оркестраторы, чат, диктовка и storage шли одним маршрутом.
+    const url = normalizeBackendUrl(requestUrl(input));
+    const primaryInput = normalizedInput(input, url);
 
     const long = isLongRequest(url, init);
 
@@ -134,7 +148,7 @@ export function installBackendFailover() {
       if (direct) return originalFetch(direct, init);
     }
 
-    if (!url.startsWith(PRIMARY_BASE)) return originalFetch(input as any, init);
+    if (!url.startsWith(PRIMARY_BASE)) return originalFetch(primaryInput as any, init);
 
     // Прокси может «висеть» без ответа — ограничиваем ожидание и уходим на резерв.
     const controller = new AbortController();
@@ -149,7 +163,7 @@ export function installBackendFailover() {
     const timer = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const res = await originalFetch(input as any, { ...init, signal: controller.signal });
+      const res = await originalFetch(primaryInput as any, { ...init, signal: controller.signal });
       if (res.status >= 500 && res.status <= 599) {
         // Для долгих вызовов повторяем только шлюзовые ошибки прокси (502/504):
         // функция при них не выполнялась, значит двойного AI-запроса не будет.
