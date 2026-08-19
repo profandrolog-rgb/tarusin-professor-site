@@ -143,13 +143,26 @@ export function ProtocolImportDialog({
     }
     setBusy(true);
     try {
-      let payload: { text?: string; fileData?: string; fileName?: string } = {};
+      let payload: {
+        text?: string;
+        fileData?: string;
+        storageBucket?: string;
+        storagePath?: string;
+        fileName?: string;
+      } = {};
       if (file) {
         const src = await extractProtocolSource(file);
-        payload = { text: src.text, fileData: src.fileData, fileName: src.fileName };
+        payload = {
+          text: src.text,
+          fileData: src.fileData,
+          storageBucket: src.storageBucket,
+          storagePath: src.storagePath,
+          fileName: src.fileName,
+        };
         if (pastedText.trim()) {
           payload.text = [payload.text, pastedText.trim()].filter(Boolean).join("\n\n");
         }
+
       } else {
         payload = { text: pastedText.trim(), fileName: "Вставленный текст" };
       }
