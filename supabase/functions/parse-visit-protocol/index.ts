@@ -156,7 +156,12 @@ Deno.serve(async (req) => {
 
     let result: any = null;
     const errors: string[] = [];
-    for (const model of MODELS) {
+    // Для сканов и PDF первым берём более сильную модель: распознавание
+    // рукописных/отсканированных протоколов у flash заметно хуже.
+    const modelOrder = fileData
+      ? [...MODELS].sort((a, b) => Number(a.includes('flash')) - Number(b.includes('flash')))
+      : MODELS;
+    for (const model of modelOrder) {
       try {
         result = await callModel(model, parts);
         result._model = model;
