@@ -148,6 +148,15 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 function isValidPastDate(s: string | null | undefined): string | null {
   if (!s || typeof s !== 'string') return null;
   const m = s.match(/^\d{4}-\d{2}-\d{2}$/);
@@ -164,20 +173,24 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       file_data,
+      storage_bucket,
+      storage_path,
       file_name,
       patient_id,
       consultation_case_id,
       visit_id,
     }: {
-      file_data: string;
+      file_data?: string;
+      storage_bucket?: string;
+      storage_path?: string;
       file_name: string;
       patient_id?: string;
       consultation_case_id?: string;
       visit_id?: string;
     } = body;
 
-    if (!file_data || !file_name) {
-      return new Response(JSON.stringify({ error: 'file_data and file_name required' }), {
+    if ((!file_data && !storage_path) || !file_name) {
+      return new Response(JSON.stringify({ error: 'file_data or storage_path and file_name required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -197,8 +210,28 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
+    let sourceData = file_data || '';
+    if (!sourceData && storage_path) {
+      const bucket = storage_bucket || 'patient-lab-docs';
+      if (bucket !== 'patient-lab-docs') {
+        return new Response(JSON.stringify({ error: 'Unsupported storage bucket' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: storedFile, error: downloadError } = await supabase.storage
+        .from(bucket)
+        .download(storage_path);
+      if (downloadError || !storedFile) {
+        throw new Error(`Не удалось получить загруженный PDF: ${downloadError?.message || 'файл не найден'}`);
+      }
+      if (storedFile.size > 25 * 1024 * 1024) throw new Error('PDF больше 25 МБ');
+      const bytes = new Uint8Array(await storedFile.arrayBuffer());
+      sourceData = `data:${storedFile.type || 'application/pdf'};base64,${bytesToBase64(bytes)}`;
+    }
+
     // Cache lookup by (patient_id, file_hash) — skips AI on re-upload of the same file.
-    const fileHash = await sha256Hex(file_data);
+    const fileHash = await sha256Hex(sourceData);
     let parsed: any = null;
     if (patient_id) {
       const { data: cached } = await supabase
@@ -214,7 +247,7 @@ Deno.serve(async (req) => {
     }
 
     if (!parsed) {
-      parsed = await extractWithFallback(file_data, file_name);
+      parsed = await extractWithFallback(sourceData, file_name);
       if (patient_id) {
         await supabase
           .from('parsed_pdf_cache')
