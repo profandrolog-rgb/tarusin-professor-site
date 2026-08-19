@@ -19,16 +19,22 @@ const env = import.meta.env as Record<string, string | undefined>;
 
 export const PROJECT_ID = env.VITE_SUPABASE_PROJECT_ID;
 
-/** Прямой адрес Supabase. Работает вне РФ, внутри РФ может быть заблокирован. */
+/**
+ * Прямой адрес Supabase. В РФ блокируется на уровне TLS, поэтому по умолчанию
+ * НЕ используется ни как резерв, ни при сборке — только если явно разрешено
+ * переменной VITE_ALLOW_DIRECT_SUPABASE=true.
+ */
 export const DIRECT_BASE = PROJECT_ID ? `https://${PROJECT_ID}.supabase.co` : "";
+
+/** Разрешён ли прямой домен Supabase как путь обхода (по умолчанию — нет). */
+export const ALLOW_DIRECT = String(env.VITE_ALLOW_DIRECT_SUPABASE ?? "").toLowerCase() === "true";
 
 /** Основной адрес, которым пользуется supabase-js (прокси, предпочитая VITE_SUPABASE_PROXY_URL). */
 export const PRIMARY_BASE = stripSlash(env.VITE_SUPABASE_PROXY_URL || env.VITE_SUPABASE_URL || "");
 
 /**
- * Кандидаты обхода в порядке приоритета: резервные прокси из env, затем прямой
- * адрес Supabase (полезен для посетителей вне РФ). Дубликаты и основной адрес
- * исключаются.
+ * Кандидаты обхода в порядке приоритета: только прокси из env. Прямой домен
+ * Supabase добавляется исключительно при VITE_ALLOW_DIRECT_SUPABASE=true.
  */
 export const FALLBACK_BASES: string[] = (() => {
   const configured = (env.VITE_BACKEND_FALLBACK_URL ?? "")
@@ -36,7 +42,7 @@ export const FALLBACK_BASES: string[] = (() => {
     .map((s) => stripSlash(s.trim()))
     .filter(Boolean);
 
-  const all = [...configured, DIRECT_BASE].filter(Boolean);
+  const all = [...configured, ...(ALLOW_DIRECT ? [DIRECT_BASE] : [])].filter(Boolean);
   return Array.from(new Set(all)).filter((base) => base !== PRIMARY_BASE);
 })();
 
@@ -49,7 +55,7 @@ export const BUILD_BASE: string =
   stripSlash(env.VITE_SUPABASE_BUILD_URL ?? "") ||
   FALLBACK_BASES.find((base) => base !== DIRECT_BASE) ||
   PRIMARY_BASE ||
-  DIRECT_BASE;
+  (ALLOW_DIRECT ? DIRECT_BASE : "");
 
 /** Базовый адрес для загрузчиков: BUILD_BASE при пререндере, PRIMARY_BASE в браузере. */
 export const loaderBase = (): string =>
