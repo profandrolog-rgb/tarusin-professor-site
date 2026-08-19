@@ -782,9 +782,11 @@ export default function Cabinet() {
       if (cancelled) return;
       if (loadError) {
         console.error("Cabinet messages load failed:", loadError);
+        setMessagesLoading(false);
         toast.error(`Не удалось загрузить запрос из истории: ${loadError.message || "ошибка соединения"}`);
         return;
       }
+
       const loadedMessages: Msg[] = (data || []).map((m: any) => {
           const atts: Attachment[] = Array.isArray(m.attachments) ? m.attachments : [];
           const councilAtt = atts.find((a) => a?.name === "__council__");
