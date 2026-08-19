@@ -108,6 +108,8 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
           <OperationHistoryBanner
             patientName={patientName}
             birthDate={birthDate}
+            patientId={patientId}
+            currentVisitId={currentVisitId}
             currentName={data?.operation_name || ""}
             currentDate={data?.operation_date || ""}
             onApply={(p) => patch(p)}
