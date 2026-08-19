@@ -32,6 +32,8 @@ export default function AdminPatientVisits() {
   const [dateSortDir, setDateSortDir] = useState<"asc" | "desc">("desc");
   const [dateSearch, setDateSearch] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
 
   useEffect(() => {
@@ -40,20 +42,49 @@ export default function AdminPatientVisits() {
   }, [authLoading, user, isAdmin, isSurgeon, navigate]);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+    let cancelled = false;
+
+    const fetchPage = async () => {
       let q = supabase
         .from("patient_visits")
         .select("id, visit_date, protocol_type, diagnosis, icd_code, patient:patients(id, full_name, history_number)")
         .order("visit_date", { ascending: false })
         .limit(200);
       if (typeFilter !== "all") q = q.eq("protocol_type", typeFilter);
-      const { data, error } = await q;
-      if (!error) setRows((data as any) || []);
+      return q;
+    };
+
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+
+      // Сеть через прокси может дать одиночный сбой — делаем до 3 попыток
+      // с паузами, вместо того чтобы показывать пустой журнал.
+      let lastError: string | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, error } = await fetchPage();
+        if (cancelled) return;
+        if (!error) {
+          setRows((data as any) || []);
+          setLoading(false);
+          return;
+        }
+        lastError = error.message;
+        if (attempt === 0) await supabase.auth.refreshSession().catch(() => null);
+        await new Promise((r) => setTimeout(r, 700 * (attempt + 1)));
+        if (cancelled) return;
+      }
+
+      // Не стираем уже показанные визиты — сообщаем об ошибке загрузки.
+      setLoadError(lastError || "Сеть недоступна");
       setLoading(false);
     };
+
     if (user && (isAdmin || isSurgeon)) load();
-  }, [user, isAdmin, isSurgeon, typeFilter]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isAdmin, isSurgeon, typeFilter, reloadKey]);
 
   const displayRows = useMemo(() => {
     let data = rows.filter((r) => {
@@ -144,6 +175,14 @@ export default function AdminPatientVisits() {
           <CardContent className="p-0">
             {loading ? (
               <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : loadError ? (
+              <div className="p-12 text-center space-y-3">
+                <p className="text-sm text-destructive">Не удалось загрузить журнал визитов: {loadError}</p>
+                <p className="text-xs text-muted-foreground">Данные не потеряны — это сбой соединения с бэкендом.</p>
+                <Button variant="outline" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+                  Повторить загрузку
+                </Button>
+              </div>
             ) : displayRows.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground">Визитов пока нет. Создайте первый протокол.</div>
             ) : (
