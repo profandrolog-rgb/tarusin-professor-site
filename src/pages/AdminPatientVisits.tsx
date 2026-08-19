@@ -212,8 +212,14 @@ export default function AdminPatientVisits() {
 
         <Card>
           <CardContent className="p-0">
+            {refreshing && (
+              <div className="px-4 py-2 text-xs text-muted-foreground animate-pulse border-b">
+                Обновляю журнал...
+              </div>
+            )}
             {loading ? (
               <div className="p-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+
             ) : loadError ? (
               <div className="p-12 text-center space-y-3">
                 <p className="text-sm text-destructive">Не удалось загрузить журнал визитов: {loadError}</p>
