@@ -374,6 +374,8 @@ export function ProtocolImportDialog({
               />
             </div>
 
+            <SystemReadinessButton label="Проверить готовность системы" />
+
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button>
               <Button onClick={handleParse} disabled={busy}>
@@ -381,6 +383,7 @@ export function ProtocolImportDialog({
                 Распознать
               </Button>
             </DialogFooter>
+
           </div>
         ) : (
           <div className="space-y-5">
