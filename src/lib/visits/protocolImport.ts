@@ -90,17 +90,35 @@ export async function parseProtocolDocument(source: {
   fileData?: string;
   fileName?: string;
 }): Promise<ParsedProtocol> {
-  const { data, error } = await supabase.functions.invoke("parse-visit-protocol", {
-    body: {
-      text: source.text || "",
-      file_data: source.fileData || "",
-      file_name: source.fileName || "protocol",
-    },
-  });
-  if (error) throw new Error(error.message || "Не удалось распознать документ");
-  if ((data as any)?.error) throw new Error((data as any).error);
-  return data as ParsedProtocol;
+  let lastErr: any = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-visit-protocol", {
+        body: {
+          text: source.text || "",
+          file_data: source.fileData || "",
+          file_name: source.fileName || "protocol",
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as ParsedProtocol;
+    } catch (e: any) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      // Повторяем только сетевые сбои (обрыв связи с сервером), не ошибки разбора.
+      if (!/failed to (send|fetch)|network|abort|timeout/i.test(msg)) break;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+  const msg = String(lastErr?.message || lastErr || "Не удалось распознать документ");
+  throw new Error(
+    /failed to (send|fetch)|network|abort/i.test(msg)
+      ? "Не удалось отправить документ на сервер (сеть). Попробуйте ещё раз."
+      : msg,
+  );
 }
+
 
 /** Человеческие названия полей для экрана проверки. */
 export const FIELD_LABELS: Record<string, string> = {
