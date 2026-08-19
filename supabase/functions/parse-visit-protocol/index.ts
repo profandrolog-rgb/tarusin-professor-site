@@ -125,8 +125,34 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const text: string = typeof body.text === 'string' ? body.text : '';
-    const fileData: string = typeof body.file_data === 'string' ? body.file_data : '';
+    let fileData: string = typeof body.file_data === 'string' ? body.file_data : '';
+    const storageBucket: string = typeof body.storage_bucket === 'string' ? body.storage_bucket : '';
+    const storagePath: string = typeof body.storage_path === 'string' ? body.storage_path : '';
     const fileName: string = typeof body.file_name === 'string' ? body.file_name : 'document';
+
+    // Большой PDF/скан приходит не в теле запроса, а ссылкой в приватном хранилище.
+    if (!fileData && storagePath) {
+      const bucket = storageBucket || 'patient-lab-docs';
+      if (bucket !== 'patient-lab-docs') {
+        return new Response(JSON.stringify({ error: 'Недопустимое хранилище файла' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+      const { data: stored, error: downloadError } = await admin.storage.from(bucket).download(storagePath);
+      if (downloadError || !stored) {
+        return new Response(JSON.stringify({ error: 'Не удалось получить загруженный файл' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (stored.size > 25 * 1024 * 1024) {
+        return new Response(JSON.stringify({ error: 'Файл больше 25 МБ' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const bytes = new Uint8Array(await stored.arrayBuffer());
+      fileData = `data:${stored.type || 'application/pdf'};base64,${bytesToBase64(bytes)}`;
+    }
 
     if (!text.trim() && !fileData) {
       return new Response(JSON.stringify({ error: 'Нужен текст или файл протокола' }), {
@@ -138,6 +164,7 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
 
     const parts: unknown[] = [];
     if (text.trim()) {
