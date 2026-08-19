@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPES, getProtocolLabel, type ProtocolType } from "@/lib/visits/protocolTypes";
 import { normalizeImportedProtocolData } from "@/lib/visits/normalizeProtocolData";
+import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
+
 import {
   extractProtocolSource, parseProtocolDocument, flattenProtocolData,
   setByPath, deleteByPath, type ParsedProtocol, type FlatField,
