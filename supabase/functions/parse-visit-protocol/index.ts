@@ -6,6 +6,17 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+/** Байты файла → base64 (по частям, чтобы не переполнить стек). */
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
 
 const MODELS = (
   Deno.env.get('PROTOCOL_IMPORT_MODELS') ||
@@ -199,7 +210,10 @@ Deno.serve(async (req) => {
     }
     if (!result) {
       console.error('[parse-visit-protocol] all models failed', errors);
-      return new Response(JSON.stringify({ error: 'Не удалось распознать документ. Попробуйте ещё раз.' }), {
+      return new Response(JSON.stringify({
+        error: 'Не удалось распознать документ. Попробуйте ещё раз.',
+        details: errors.slice(0, 3).map((m) => m.slice(0, 200)),
+      }), {
         status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
