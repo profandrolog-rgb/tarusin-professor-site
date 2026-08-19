@@ -857,36 +857,40 @@ export default function Cabinet() {
           };
         });
 
-      // Re-sign storage-backed attachments in batch (1h TTL)
+      // Текст диалога показываем сразу, не дожидаясь подписания файлов в хранилище.
+      setMessages(loadedMessages);
+      setMessagesLoading(false);
+      convMessagesCache.set(activeId, loadedMessages);
+
       const pathsToSign = Array.from(new Set(
         loadedMessages.flatMap((m) => (m.attachments || []).filter((a) => a.path && !a.dataUrl).map((a) => a.path as string))
       ));
-      if (pathsToSign.length) {
-        const { data: signed } = await supabase.storage.from("chat-attachments").createSignedUrls(pathsToSign, 60 * 60);
-        const map = new Map<string, string>();
-        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(pathsToSign[i], s.signedUrl); });
-        for (const m of loadedMessages) {
-          if (!m.attachments) continue;
-          m.attachments = m.attachments.map((a) => a.path && map.has(a.path) ? { ...a, dataUrl: map.get(a.path) } : a);
-        }
-      }
-
-      // Re-sign generated images
       const imgPaths = loadedMessages.filter((m) => m.image?.path).map((m) => m.image!.path);
-      if (imgPaths.length) {
-        const { data: signed } = await supabase.storage.from("generated-images").createSignedUrls(imgPaths, 60 * 60);
-        const map = new Map<string, string>();
-        (signed || []).forEach((s: any, i: number) => { if (s?.signedUrl) map.set(imgPaths[i], s.signedUrl); });
-        for (const m of loadedMessages) {
-          if (m.image && map.has(m.image.path)) m.image.signedUrl = map.get(m.image.path);
-        }
+      if (pathsToSign.length || imgPaths.length) {
+        const [attSigned, imgSigned] = await Promise.all([
+          pathsToSign.length
+            ? supabase.storage.from("chat-attachments").createSignedUrls(pathsToSign, 60 * 60)
+            : Promise.resolve({ data: [] as any[] }),
+          imgPaths.length
+            ? supabase.storage.from("generated-images").createSignedUrls(imgPaths, 60 * 60)
+            : Promise.resolve({ data: [] as any[] }),
+        ]);
+        if (cancelled) return;
+        const attMap = new Map<string, string>();
+        (attSigned.data || []).forEach((s: any, i: number) => { if (s?.signedUrl) attMap.set(pathsToSign[i], s.signedUrl); });
+        const imgMap = new Map<string, string>();
+        (imgSigned.data || []).forEach((s: any, i: number) => { if (s?.signedUrl) imgMap.set(imgPaths[i], s.signedUrl); });
+        const withUrls = loadedMessages.map((m) => ({
+          ...m,
+          attachments: (m.attachments || []).map((a) => a.path && attMap.has(a.path) ? { ...a, dataUrl: attMap.get(a.path) } : a),
+          image: m.image && imgMap.has(m.image.path) ? { ...m.image, signedUrl: imgMap.get(m.image.path) } : m.image,
+        }));
+        setMessages(withUrls);
+        convMessagesCache.set(activeId, withUrls);
       }
-
-      if (cancelled) return;
-      setMessages(loadedMessages);
-
 
       const conv = conversations.find((c) => c.id === activeId);
+
       if (conv?.model === "council") {
         setCouncil(true);
       } else if (conv?.model) {
