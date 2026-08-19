@@ -9,11 +9,18 @@ import { FALLBACK_BASES, PRIMARY_BASE, swapBase } from "./backendEndpoints";
 
 /** Выбранный на эту сессию резервный адрес (null — работаем через основной). */
 let activeFallback: string | null = null;
+/** Время (ms), когда выбранный резерв перестаёт считаться актуальным. */
+let activeFallbackUntil = 0;
 
 /** Максимум ожидания ответа прокси, после чего уходим на резерв. */
-const PROXY_TIMEOUT_MS = 4000;
+const PROXY_TIMEOUT_MS = 8000;
 /** Быстрая стартовая проверка прокси: если он мёртв — сразу работаем на резерве. */
 const PROBE_TIMEOUT_MS = 2500;
+/**
+ * Резерв «залипает» только на короткое время: прямой домен Supabase в РФ
+ * заблокирован, поэтому один сбой прокси не должен выключать сайт на всю сессию.
+ */
+const FALLBACK_TTL_MS = 30000;
 
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;
@@ -50,19 +57,31 @@ export function installBackendFailover() {
     }
   };
 
-  /** Найти первый живой резервный адрес; результат кэшируется на сессию. */
+  /** Текущий резерв, если он ещё не «просрочен». */
+  const currentFallback = (): string | null => {
+    if (activeFallback && Date.now() < activeFallbackUntil) return activeFallback;
+    activeFallback = null;
+    return null;
+  };
+
+  /**
+   * Найти живой резервный адрес. Важно: если ни один резерв не отвечает
+   * (в РФ прямой домен Supabase заблокирован), остаёмся на основном адресе —
+   * переключение на заведомо мёртвый хост полностью ломает вход.
+   */
   const pickFallback = async (): Promise<string | null> => {
-    if (activeFallback) return activeFallback;
+    const cached = currentFallback();
+    if (cached) return cached;
     for (const base of FALLBACK_BASES) {
       if (await probe(base, PROBE_TIMEOUT_MS)) {
         activeFallback = base;
+        activeFallbackUntil = Date.now() + FALLBACK_TTL_MS;
         return base;
       }
     }
-    // Ни один резерв не ответил на health — всё равно пробуем первый,
-    // health может быть закрыт прокси, а рабочие пути открыты.
-    activeFallback = FALLBACK_BASES[0] ?? null;
-    return activeFallback;
+    activeFallback = null;
+    activeFallbackUntil = 0;
+    return null;
   };
 
   // Стартовый зонд основного адреса: если прокси мёртв — сразу выбираем резерв,
@@ -76,10 +95,12 @@ export function installBackendFailover() {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
 
-    if (activeFallback) {
-      const direct = swapBase(url, activeFallback);
+    const active = currentFallback();
+    if (active) {
+      const direct = swapBase(url, active);
       if (direct) return originalFetch(direct, init);
     }
+
 
     if (!url.startsWith(PRIMARY_BASE)) return originalFetch(input as any, init);
 
