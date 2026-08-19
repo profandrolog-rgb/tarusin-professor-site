@@ -23,10 +23,20 @@ serve(async (req) => {
     });
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Требуется вход" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) throw new Error("Admin only");
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Только для администратора" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { complaints, medical_history, patient_name, patient_id, consultation_case_id } = await req.json();
 

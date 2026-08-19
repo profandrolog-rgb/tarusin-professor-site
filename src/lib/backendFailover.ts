@@ -33,6 +33,9 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+/** Максимум ожидания для записи данных (PATCH/POST/PUT в базу). */
+const WRITE_TIMEOUT_MS = 45000;
+
 /** Edge Functions, realtime и загрузка файлов — долгие по своей природе запросы. */
 function isLongRequest(url: string, init?: RequestInit): boolean {
   if (url.includes("/functions/v1/") || url.includes("/realtime/")) return true;
@@ -41,6 +44,17 @@ function isLongRequest(url: string, init?: RequestInit): boolean {
   // таймаут обрывал такую загрузку ещё до запуска функции парсинга.
   const method = String(init?.method || "GET").toUpperCase();
   return url.includes("/storage/v1/object/") && (method === "POST" || method === "PUT");
+}
+
+/**
+ * Запись в базу: большой протокол осмотра отправляется одним PATCH и может
+ * идти дольше 8 секунд. Обрывать такую запись «сетевым» таймаутом нельзя —
+ * врач получал «Не удалось связаться с сервером» на фактически живом бэкенде.
+ */
+function isWriteRequest(url: string, init?: RequestInit): boolean {
+  const method = String(init?.method || "GET").toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return false;
+  return url.includes("/rest/v1/") || url.includes("/storage/v1/");
 }
 
 export function installBackendFailover() {
@@ -127,7 +141,12 @@ export function installBackendFailover() {
     const external = init?.signal ?? null;
     const onExternalAbort = () => controller.abort();
     external?.addEventListener("abort", onExternalAbort);
-    const timer = setTimeout(() => controller.abort(), long ? LONG_TIMEOUT_MS : PROXY_TIMEOUT_MS);
+    const timeout = long
+      ? LONG_TIMEOUT_MS
+      : isWriteRequest(url, init)
+        ? WRITE_TIMEOUT_MS
+        : PROXY_TIMEOUT_MS;
+    const timer = setTimeout(() => controller.abort(), timeout);
 
     try {
       const res = await originalFetch(input as any, { ...init, signal: controller.signal });
