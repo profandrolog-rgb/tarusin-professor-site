@@ -33,6 +33,8 @@ import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
+
 import type { ParsedProtocol } from "@/lib/visits/protocolImport";
 
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
