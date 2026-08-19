@@ -601,8 +601,9 @@ export default function AdminPatientVisitDetail() {
           className={`fixed bottom-6 right-6 z-50 shadow-lg rounded-full ${isDirty ? "bg-green-600 hover:bg-green-700 text-white" : ""}`}
         >
           {saving ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Save className="h-5 w-5 mr-2" />}
-          Сохранить
+          {saving ? `Сохраняю${saveElapsed ? ` ${saveElapsed} с` : "…"}` : "Сохранить"}
           {isDirty && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-yellow-300" />}
+
         </Button>
 
         <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8">
