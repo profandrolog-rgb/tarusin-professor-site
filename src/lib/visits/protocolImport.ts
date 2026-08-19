@@ -52,11 +52,38 @@ export async function docxToMarkdown(file: File): Promise<string> {
 export interface ExtractedSource {
   text?: string;
   fileData?: string;
+  storageBucket?: string;
+  storagePath?: string;
   fileName: string;
   kind: "docx" | "pdf" | "image" | "text";
 }
 
-/** Подготовка файла к распознаванию: docx/txt → текст, pdf/картинка → data URL. */
+const IMPORT_BUCKET = "patient-lab-docs";
+
+function safeFileName(name: string): string {
+  return name.replace(/[^a-zA-Zа-яА-Я0-9._-]+/g, "_").slice(-120) || "protocol";
+}
+
+/**
+ * Большой PDF/скан нельзя отправлять как base64 внутри тела запроса к функции:
+ * Cloudflare-прокси обрывает такой POST ещё до запуска парсера («failed to send
+ * a request»). Кладём оригинал в приватное хранилище и передаём только путь.
+ */
+async function uploadForParsing(file: File): Promise<{ bucket: string; path: string } | null> {
+  try {
+    const path = `protocol-import/${Date.now()}-${crypto.randomUUID()}-${safeFileName(file.name)}`;
+    const { error } = await supabase.storage.from(IMPORT_BUCKET).upload(path, file, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+    if (error) return null;
+    return { bucket: IMPORT_BUCKET, path };
+  } catch {
+    return null;
+  }
+}
+
+/** Подготовка файла к распознаванию: docx/txt → текст, pdf/картинка → хранилище. */
 export async function extractProtocolSource(file: File): Promise<ExtractedSource> {
   if (file.size > MAX_FILE_BYTES) throw new Error("Файл больше 20 МБ");
   const name = file.name.toLowerCase();
@@ -75,11 +102,15 @@ export async function extractProtocolSource(file: File): Promise<ExtractedSource
     if (!text) throw new Error("Файл пустой");
     return { text, fileName: file.name, kind: "text" };
   }
-  if (name.endsWith(".pdf") || mime === "application/pdf") {
-    return { fileData: await readAsDataUrl(file), fileName: file.name, kind: "pdf" };
-  }
-  if (mime.startsWith("image/")) {
-    return { fileData: await readAsDataUrl(file), fileName: file.name, kind: "image" };
+  const isPdf = name.endsWith(".pdf") || mime === "application/pdf";
+  if (isPdf || mime.startsWith("image/")) {
+    const kind: "pdf" | "image" = isPdf ? "pdf" : "image";
+    const uploaded = await uploadForParsing(file);
+    if (uploaded) {
+      return { storageBucket: uploaded.bucket, storagePath: uploaded.path, fileName: file.name, kind };
+    }
+    // Хранилище недоступно — отправляем файл в теле запроса (как раньше).
+    return { fileData: await readAsDataUrl(file), fileName: file.name, kind };
   }
   throw new Error("Поддерживаются Word (.docx), PDF, изображения и текстовые файлы");
 }
@@ -88,6 +119,8 @@ export async function extractProtocolSource(file: File): Promise<ExtractedSource
 export async function parseProtocolDocument(source: {
   text?: string;
   fileData?: string;
+  storageBucket?: string;
+  storagePath?: string;
   fileName?: string;
 }): Promise<ParsedProtocol> {
   let lastErr: any = null;
@@ -97,6 +130,8 @@ export async function parseProtocolDocument(source: {
         body: {
           text: source.text || "",
           file_data: source.fileData || "",
+          storage_bucket: source.storageBucket || "",
+          storage_path: source.storagePath || "",
           file_name: source.fileName || "protocol",
         },
       });
@@ -106,8 +141,8 @@ export async function parseProtocolDocument(source: {
     } catch (e: any) {
       lastErr = e;
       const msg = String(e?.message || e);
-      // Повторяем только сетевые сбои (обрыв связи с сервером), не ошибки разбора.
-      if (!/failed to (send|fetch)|network|abort|timeout/i.test(msg)) break;
+      // Повторяем сетевые сбои и шлюзовые ошибки прокси, не ошибки разбора.
+      if (!/failed to (send|fetch)|network|abort|timeout|502|504|non-2xx/i.test(msg)) break;
       await new Promise((r) => setTimeout(r, 1500 * attempt));
     }
   }
@@ -118,6 +153,7 @@ export async function parseProtocolDocument(source: {
       : msg,
   );
 }
+
 
 
 /** Человеческие названия полей для экрана проверки. */
