@@ -9,11 +9,18 @@ import { FALLBACK_BASES, PRIMARY_BASE, swapBase } from "./backendEndpoints";
 
 /** Выбранный на эту сессию резервный адрес (null — работаем через основной). */
 let activeFallback: string | null = null;
+/** Время (ms), когда выбранный резерв перестаёт считаться актуальным. */
+let activeFallbackUntil = 0;
 
 /** Максимум ожидания ответа прокси, после чего уходим на резерв. */
-const PROXY_TIMEOUT_MS = 4000;
+const PROXY_TIMEOUT_MS = 8000;
 /** Быстрая стартовая проверка прокси: если он мёртв — сразу работаем на резерве. */
 const PROBE_TIMEOUT_MS = 2500;
+/**
+ * Резерв «залипает» только на короткое время: прямой домен Supabase в РФ
+ * заблокирован, поэтому один сбой прокси не должен выключать сайт на всю сессию.
+ */
+const FALLBACK_TTL_MS = 30000;
 
 function requestUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;
