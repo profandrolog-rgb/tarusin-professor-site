@@ -128,11 +128,27 @@ export function installBackendFailover() {
 
   // Стартовый зонд основного адреса: если прокси мёртв — сразу выбираем резерв,
   // чтобы первый вход/загрузка данных не ждали неотвечающий прокси.
+  // Результат кэшируем на минуту в sessionStorage: раньше каждый переход между
+  // страницами админки заново тратил до 2.5 с на зондирование.
+  const PROBE_CACHE_KEY = "backend_primary_ok_until";
   void (async () => {
-    if (!(await probe(PRIMARY_BASE, PROBE_TIMEOUT_MS))) {
-      await pickFallback();
+    try {
+      const until = Number(sessionStorage.getItem(PROBE_CACHE_KEY) || 0);
+      if (Date.now() < until) return;
+    } catch {
+      /* приватный режим — просто зондируем */
     }
+    if (await probe(PRIMARY_BASE, PROBE_TIMEOUT_MS)) {
+      try {
+        sessionStorage.setItem(PROBE_CACHE_KEY, String(Date.now() + 60000));
+      } catch {
+        /* игнорируем */
+      }
+      return;
+    }
+    await pickFallback();
   })();
+
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     // Старые экраны собирали функции через VITE_SUPABASE_URL. В production эта
