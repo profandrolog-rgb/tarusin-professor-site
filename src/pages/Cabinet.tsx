@@ -421,6 +421,8 @@ export default function Cabinet() {
   }, [sidebarWidth]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+
   const [input, setInput] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [extendedPickerOpen, setExtendedPickerOpen] = useState(false);
