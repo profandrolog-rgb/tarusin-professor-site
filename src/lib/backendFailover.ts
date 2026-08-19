@@ -126,16 +126,22 @@ export function installBackendFailover() {
 
     try {
       const res = await originalFetch(input as any, { ...init, signal: controller.signal });
-      if (!long && res.status >= 500 && res.status <= 599) {
-        const base = await pickFallback();
-        const retry = base ? swapBase(url, base) : null;
-        if (retry) return originalFetch(retry, init);
+      if (res.status >= 500 && res.status <= 599) {
+        // Для долгих вызовов повторяем только шлюзовые ошибки прокси (502/504):
+        // функция при них не выполнялась, значит двойного AI-запроса не будет.
+        const gatewayError = res.status === 502 || res.status === 504;
+        if (!long || gatewayError) {
+          const base = await pickFallback();
+          const retry = base ? swapBase(url, base) : null;
+          if (retry) return originalFetch(retry, init);
+        }
       }
       return res;
     } catch (err) {
       // Отмена пользователем/вызывающим кодом — пробрасываем как есть.
       if (external?.aborted) throw err;
-      if (long) throw err;
+      // Сетевой сбой: ответ не получен вообще (обрыв TLS/DPI, «Failed to fetch»).
+      // Такой запрос можно безопасно повторить на резервном адресе — даже долгий.
       const base = await pickFallback();
       const retry = base ? swapBase(url, base) : null;
       if (retry) return originalFetch(retry, init);
@@ -146,3 +152,4 @@ export function installBackendFailover() {
     }
   };
 }
+

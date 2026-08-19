@@ -74,17 +74,47 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
         updated[i] = { ...updated[i], status: "parsing", progress: 55 };
         setFiles([...updated]);
 
-        const { data, error } = await supabase.functions.invoke("parse-medical-pdf", {
-          body: {
-            file_data: dataUrl,
-            file_name: updated[i].file.name,
-            patient_id: patientId,
-            consultation_case_id: consultationCaseId,
-            visit_id: visitId,
-          },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        // Сеть может обрываться (прокси/DPI) — повторяем до 3 раз.
+        // Повтор дешёвый: результат разбора кэшируется на сервере по хешу файла.
+        let data: any = null;
+        let lastErr: any = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const res = await supabase.functions.invoke("parse-medical-pdf", {
+              body: {
+                file_data: dataUrl,
+                file_name: updated[i].file.name,
+                patient_id: patientId,
+                consultation_case_id: consultationCaseId,
+                visit_id: visitId,
+              },
+            });
+            if (res.error) throw res.error;
+            if ((res.data as any)?.error) throw new Error((res.data as any).error);
+            data = res.data;
+            lastErr = null;
+            break;
+          } catch (e: any) {
+            lastErr = e;
+            updated[i] = {
+              ...updated[i],
+              status: "parsing",
+              progress: 55,
+              message: `Повтор ${attempt} из 3 (сеть)…`,
+            };
+            setFiles([...updated]);
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+          }
+        }
+        if (lastErr) {
+          const msg = String(lastErr?.message || lastErr);
+          throw new Error(
+            /failed to (send|fetch)|network|abort/i.test(msg)
+              ? "Не удалось отправить файл на сервер (сеть). Попробуйте ещё раз."
+              : msg,
+          );
+        }
+
         updated[i] = {
           ...updated[i],
           status: "done",
