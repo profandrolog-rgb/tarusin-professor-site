@@ -9,9 +9,11 @@ import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
 interface Props {
   data: PostOpDay3Data;
   onChange: (patch: Partial<PostOpDay3Data>) => void;
+  patientId?: string | null;
+  currentVisitId?: string | null;
 }
 
-export function PostOpDay3Form({ data, onChange }: Props) {
+export function PostOpDay3Form({ data, onChange, patientId, currentVisitId }: Props) {
   return (
     <div className="space-y-4">
       <ClinicalHistorySection
@@ -19,6 +21,8 @@ export function PostOpDay3Form({ data, onChange }: Props) {
         onChange={(p) => onChange(p as any)}
         show={{ complaints: false }}
         rows={2}
+        patientId={patientId}
+        currentVisitId={currentVisitId}
       />
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1">

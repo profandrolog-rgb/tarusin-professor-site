@@ -209,19 +209,38 @@ export default function AdminPatientVisitDetail() {
   const handleSave = async () => {
     if (!visit) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("patient_visits")
-      .update({
-        visit_date: visit.visit_date,
-        diagnosis: visit.diagnosis,
-        icd_code: visit.icd_code,
-        next_visit_date: visit.next_visit_date,
-        protocol_data: visit.protocol_data,
-      })
-      .eq("id", visit.id);
+    const payload = {
+      visit_date: visit.visit_date,
+      diagnosis: visit.diagnosis,
+      icd_code: visit.icd_code,
+      next_visit_date: visit.next_visit_date,
+      protocol_data: visit.protocol_data,
+    };
+
+    const attempt = async () =>
+      supabase.from("patient_visits").update(payload).eq("id", visit.id).select("id");
+
+    let { data: rows, error } = await attempt();
+
+    // Истёкшая сессия / сетевой сбой прокси — обновляем токен и пробуем ещё раз.
+    if (error) {
+      await supabase.auth.refreshSession().catch(() => null);
+      const retry = await attempt();
+      rows = retry.data;
+      error = retry.error;
+    }
+
     setSaving(false);
-    if (error) toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
-    else {
+    if (error) {
+      toast({ title: "Не удалось сохранить", description: error.message, variant: "destructive" });
+    } else if (!rows || rows.length === 0) {
+      // Запрос прошёл, но ни одна строка не обновилась — почти всегда потеря сессии/прав.
+      toast({
+        title: "Протокол не сохранён",
+        description: "Сервер не подтвердил запись (возможно, истёк вход). Не закрывайте страницу: войдите заново в другой вкладке и нажмите «Сохранить» ещё раз — черновик сохранён локально.",
+        variant: "destructive",
+      });
+    } else {
       clearDraft();
       setBaseline(serializeVisit(visit));
       // Запоминаем все формулировки назначений в библиотеку (не блокирует сохранение).
