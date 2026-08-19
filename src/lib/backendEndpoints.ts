@@ -33,6 +33,23 @@ export const ALLOW_DIRECT = String(env.VITE_ALLOW_DIRECT_SUPABASE ?? "").toLower
 export const PRIMARY_BASE = stripSlash(env.VITE_SUPABASE_PROXY_URL || env.VITE_SUPABASE_URL || "");
 
 /**
+ * Адреса, которые могли быть зашиты в старых экранах до появления единой
+ * прокси-точки. Любой запрос к ним в браузере должен быть переписан на
+ * PRIMARY_BASE, иначе отдельные парсеры/оркестраторы обходят Cloudflare.
+ */
+const LEGACY_BASES = Array.from(new Set([
+  stripSlash(env.VITE_SUPABASE_URL || ""),
+  DIRECT_BASE,
+].filter(Boolean))).filter((base) => base !== PRIMARY_BASE);
+
+/** Перевести старый/прямой URL бэкенда на текущий основной прокси. */
+export const normalizeBackendUrl = (url: string): string => {
+  if (!PRIMARY_BASE) return url;
+  const legacy = LEGACY_BASES.find((base) => url === base || url.startsWith(`${base}/`));
+  return legacy ? PRIMARY_BASE + url.slice(legacy.length) : url;
+};
+
+/**
  * Кандидаты обхода в порядке приоритета: только прокси из env. Прямой домен
  * Supabase добавляется исключительно при VITE_ALLOW_DIRECT_SUPABASE=true.
  */
