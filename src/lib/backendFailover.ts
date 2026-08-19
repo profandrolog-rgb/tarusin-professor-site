@@ -105,12 +105,15 @@ export function installBackendFailover() {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
 
-    const active = currentFallback();
+    const long = isLongRequest(url);
+
+    // Долгие вызовы (Edge Functions) всегда идём через основной прокси:
+    // повторять их на резерве нельзя (двойной AI-запрос), а прямой домен в РФ закрыт.
+    const active = long ? null : currentFallback();
     if (active) {
       const direct = swapBase(url, active);
       if (direct) return originalFetch(direct, init);
     }
-
 
     if (!url.startsWith(PRIMARY_BASE)) return originalFetch(input as any, init);
 
@@ -119,11 +122,11 @@ export function installBackendFailover() {
     const external = init?.signal ?? null;
     const onExternalAbort = () => controller.abort();
     external?.addEventListener("abort", onExternalAbort);
-    const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), long ? LONG_TIMEOUT_MS : PROXY_TIMEOUT_MS);
 
     try {
       const res = await originalFetch(input as any, { ...init, signal: controller.signal });
-      if (res.status >= 500 && res.status <= 599) {
+      if (!long && res.status >= 500 && res.status <= 599) {
         const base = await pickFallback();
         const retry = base ? swapBase(url, base) : null;
         if (retry) return originalFetch(retry, init);
@@ -132,6 +135,7 @@ export function installBackendFailover() {
     } catch (err) {
       // Отмена пользователем/вызывающим кодом — пробрасываем как есть.
       if (external?.aborted) throw err;
+      if (long) throw err;
       const base = await pickFallback();
       const retry = base ? swapBase(url, base) : null;
       if (retry) return originalFetch(retry, init);
