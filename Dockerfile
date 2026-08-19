@@ -9,6 +9,7 @@ RUN npm ci --no-audit --no-fund
 # Build args Vite. ВАЖНО: без ENV-дублирования — если аргумент не передан,
 # переменная остаётся неопределённой и Vite берёт значения из .env.production.
 ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PROXY_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_SUPABASE_PROJECT_ID
 ARG VITE_BACKEND_FALLBACK_URL
