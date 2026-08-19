@@ -33,6 +33,11 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
+/** Edge Functions и realtime — долгие по своей природе запросы. */
+function isLongRequest(url: string): boolean {
+  return url.includes("/functions/v1/") || url.includes("/realtime/");
+}
+
 export function installBackendFailover() {
   // Пререндер (vite-react-ssg) выполняет модуль в Node: window/fetch может
   // отсутствовать — любые обращения делаем только в браузере.
