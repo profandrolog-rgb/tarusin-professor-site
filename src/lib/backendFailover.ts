@@ -73,7 +73,10 @@ export function installBackendFailover() {
   if (typeof window.fetch !== "function" || typeof AbortController === "undefined") return;
   if ((window as any).__backendFailoverInstalled) return;
   (window as any).__backendFailoverInstalled = true;
-  if (!PRIMARY_BASE || FALLBACK_BASES.length === 0) return;
+  // Нормализация старых прямых URL нужна даже без резервного прокси.
+  // Иначе один и тот же production build ведёт supabase-js через Cloudflare,
+  // а вручную собранные URL функций — на заблокированный исходный домен.
+  if (!PRIMARY_BASE) return;
 
   const originalFetch = window.fetch.bind(window);
 
@@ -108,6 +111,7 @@ export function installBackendFailover() {
    * переключение на заведомо мёртвый хост полностью ломает вход.
    */
   const pickFallback = async (): Promise<string | null> => {
+    if (FALLBACK_BASES.length === 0) return null;
     const cached = currentFallback();
     if (cached) return cached;
     for (const base of FALLBACK_BASES) {
