@@ -227,7 +227,7 @@ export default function AdminPatientVisitDetail() {
 
     // Жёсткий предел на попытку: висящий запрос лучше оборвать и повторить,
     // чем держать врача в ожидании неопределённое время.
-    const ATTEMPT_TIMEOUT_MS = 12000;
+    const ATTEMPT_TIMEOUT_MS = 40000;
     const attempt = async () => {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
