@@ -33,9 +33,14 @@ function requestUrl(input: RequestInfo | URL): string {
   return input.url;
 }
 
-/** Edge Functions и realtime — долгие по своей природе запросы. */
-function isLongRequest(url: string): boolean {
-  return url.includes("/functions/v1/") || url.includes("/realtime/");
+/** Edge Functions, realtime и загрузка файлов — долгие по своей природе запросы. */
+function isLongRequest(url: string, init?: RequestInit): boolean {
+  if (url.includes("/functions/v1/") || url.includes("/realtime/")) return true;
+
+  // Большой PDF загружается отдельным POST/PUT в Storage. Обычный 8-секундный
+  // таймаут обрывал такую загрузку ещё до запуска функции парсинга.
+  const method = String(init?.method || "GET").toUpperCase();
+  return url.includes("/storage/v1/object/") && (method === "POST" || method === "PUT");
 }
 
 export function installBackendFailover() {
@@ -105,7 +110,7 @@ export function installBackendFailover() {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestUrl(input);
 
-    const long = isLongRequest(url);
+    const long = isLongRequest(url, init);
 
     // Долгие вызовы (Edge Functions) всегда идём через основной прокси:
     // повторять их на резерве нельзя (двойной AI-запрос), а прямой домен в РФ закрыт.
