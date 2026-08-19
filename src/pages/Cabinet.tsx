@@ -207,6 +207,10 @@ type ChatFolder = {
 
 const FOLDERS_OPEN_LS_KEY = "cabinet.foldersOpen.v1";
 
+// Кеш сообщений по диалогу на время сессии: повторное открытие мгновенно.
+const convMessagesCache = new Map<string, Msg[]>();
+
+
 const isPrivateConv = (id: string | null | undefined): boolean => !!id && id.startsWith("private:");
 
 const fileToDataUrl = (file: File): Promise<string> =>
