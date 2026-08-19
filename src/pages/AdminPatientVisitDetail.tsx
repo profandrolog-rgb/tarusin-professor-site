@@ -33,6 +33,8 @@ import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
+
 import type { ParsedProtocol } from "@/lib/visits/protocolImport";
 
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
@@ -625,6 +627,9 @@ export default function AdminPatientVisitDetail() {
 
         <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-8">
           <h1 className="text-2xl font-bold">{def?.title || visit.protocol_type}</h1>
+
+          <SystemReadinessButton label="Проверить систему перед приёмом" />
+
 
           <Card>
             <CardHeader><CardTitle className="text-base">Пациент</CardTitle></CardHeader>

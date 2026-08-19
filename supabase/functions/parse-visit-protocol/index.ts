@@ -141,6 +141,50 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+
+    // Быстрая самопроверка готовности («система готова / не готова»):
+    // авторизация и роль уже проверены выше, здесь — хранилище и ИИ-шлюз.
+    if (body?.ping === true) {
+      const checks: Array<{ name: string; ok: boolean; detail?: string; ms?: number }> = [
+        { name: 'Авторизация и права администратора', ok: true },
+      ];
+
+      let t = Date.now();
+      const { error: storageError } = await admin.storage
+        .from('patient-lab-docs')
+        .list('protocol-import', { limit: 1 });
+      checks.push({
+        name: 'Приватное хранилище документов',
+        ok: !storageError,
+        detail: storageError?.message,
+        ms: Date.now() - t,
+      });
+
+      t = Date.now();
+      let aiOk = false;
+      let aiDetail: string | undefined;
+      try {
+        const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${LOVABLE_API_KEY}` },
+          body: JSON.stringify({
+            model: MODELS[0],
+            messages: [{ role: 'user', content: 'Ответь одним словом: ок' }],
+            max_tokens: 5,
+          }),
+        });
+        aiOk = resp.ok;
+        if (!resp.ok) aiDetail = `${resp.status}: ${(await resp.text()).slice(0, 160)}`;
+      } catch (e) {
+        aiDetail = (e as Error).message;
+      }
+      checks.push({ name: `ИИ-модель распознавания (${MODELS[0]})`, ok: aiOk, detail: aiDetail, ms: Date.now() - t });
+
+      return new Response(JSON.stringify({ ok: checks.every((c) => c.ok), checks }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const text: string = typeof body.text === 'string' ? body.text : '';
     let fileData: string = typeof body.file_data === 'string' ? body.file_data : '';
     const storageBucket: string = typeof body.storage_bucket === 'string' ? body.storage_bucket : '';
