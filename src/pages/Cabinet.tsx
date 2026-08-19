@@ -741,22 +741,38 @@ export default function Cabinet() {
 
   // Load messages for active conversation
   useEffect(() => {
+    let cancelled = false;
     if (!activeId) {
       setMessages([]);
-      return;
+      return () => { cancelled = true; };
     }
     if (isPrivateConv(activeId)) {
       // private convs live only in memory; don't query DB
-      return;
+      return () => { cancelled = true; };
     }
     (async () => {
-      const { data, error } = await supabase
-        .from("ai_messages")
-        .select("id, role, content, attachments, model, image_path, image_model, image_cost, image_refs")
-        .eq("conversation_id", activeId)
-        .order("created_at", { ascending: true });
-      if (error) {
-        toast.error("Не удалось загрузить сообщения");
+      let data: any[] | null = null;
+      let loadError: any = null;
+
+      // Cloudflare/мобильная сеть иногда обрывает первый REST-запрос. Не показываем
+      // пустой диалог после единичного сбоя: обновляем сессию и повторяем запрос.
+      for (let attempt = 0; attempt < 3 && !cancelled; attempt += 1) {
+        if (attempt === 1) await supabase.auth.refreshSession().catch(() => null);
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 600 * attempt));
+        const result = await supabase
+          .from("ai_messages")
+          .select("id, role, content, attachments, model, image_path, image_model, image_cost, image_refs")
+          .eq("conversation_id", activeId)
+          .order("created_at", { ascending: true });
+        data = result.data;
+        loadError = result.error;
+        if (!loadError) break;
+      }
+
+      if (cancelled) return;
+      if (loadError) {
+        console.error("Cabinet messages load failed:", loadError);
+        toast.error(`Не удалось загрузить запрос из истории: ${loadError.message || "ошибка соединения"}`);
         return;
       }
       const loadedMessages: Msg[] = (data || []).map((m: any) => {
@@ -854,6 +870,7 @@ export default function Cabinet() {
         }
       }
 
+      if (cancelled) return;
       setMessages(loadedMessages);
 
 
@@ -865,6 +882,7 @@ export default function Cabinet() {
         setModel(conv.model);
       }
     })();
+    return () => { cancelled = true; };
   }, [activeId]);
 
   useEffect(() => {
