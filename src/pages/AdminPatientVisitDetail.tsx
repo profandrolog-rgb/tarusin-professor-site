@@ -574,9 +574,10 @@ export default function AdminPatientVisitDetail() {
                     className={isDirty ? "bg-green-600 hover:bg-green-700 text-white" : ""}
                   >
                     {saving ? <Loader2 className="h-4 w-4 md:mr-1 animate-spin" /> : <Save className="h-4 w-4 md:mr-1" />}
-                    <span className="hidden md:inline">Сохранить</span>
+                    <span className="hidden md:inline">{saving ? `Сохраняю${saveElapsed ? ` ${saveElapsed} с` : "…"}` : "Сохранить"}</span>
                     {isDirty && <span className="ml-1 inline-block w-2 h-2 rounded-full bg-yellow-300" />}
                   </Button>
+
                 </TooltipTrigger>
                 <TooltipContent>
                   {isDirty ? "Есть несохранённые изменения (Ctrl+S)" : "Всё сохранено"}
