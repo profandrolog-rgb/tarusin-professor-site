@@ -746,14 +746,22 @@ export default function Cabinet() {
     let cancelled = false;
     if (!activeId) {
       setMessages([]);
+      setMessagesLoading(false);
       return () => { cancelled = true; };
     }
     if (isPrivateConv(activeId)) {
       // private convs live only in memory; don't query DB
+      setMessagesLoading(false);
       return () => { cancelled = true; };
     }
+    // Мгновенно показываем ранее загруженный диалог, дальше обновляем в фоне.
+    const cached = convMessagesCache.get(activeId);
+    if (cached) setMessages(cached);
+    else setMessages([]);
+    setMessagesLoading(true);
     (async () => {
       let data: any[] | null = null;
+
       let loadError: any = null;
 
       // Cloudflare/мобильная сеть иногда обрывает первый REST-запрос. Не показываем
