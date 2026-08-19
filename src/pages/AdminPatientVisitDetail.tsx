@@ -75,6 +75,8 @@ export default function AdminPatientVisitDetail() {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveElapsed, setSaveElapsed] = useState(0);
+
   const [baseline, setBaseline] = useState<string>("");
   const [siblings, setSiblings] = useState<SiblingVisit[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
