@@ -90,6 +90,7 @@ const AdminSystemSettings = lazy(() => import("./pages/AdminSystemSettings"));
 const AdminSpellcheckDictionary = lazy(() => import("./pages/AdminSpellcheckDictionary"));
 const AdminVisitTemplates = lazy(() => import("./pages/AdminVisitTemplates"));
 const AdminSystemBackup = lazy(() => import("./pages/AdminSystemBackup"));
+const AdminServers = lazy(() => import("./pages/AdminServers"));
 const AdminMedicalReferences = lazy(() => import("./pages/AdminMedicalReferences"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminPodcastSources = lazy(() => import("./pages/AdminPodcastSources"));
@@ -271,6 +272,7 @@ export const routes: RouteRecord[] = [
       { path: "admin/spellcheck-dictionary", Component: AdminSpellcheckDictionary, entry: "src/pages/AdminSpellcheckDictionary.tsx" },
       { path: "admin/medical-references", Component: AdminMedicalReferences, entry: "src/pages/AdminMedicalReferences.tsx" },
       { path: "admin/system-backup", Component: AdminSystemBackup, entry: "src/pages/AdminSystemBackup.tsx" },
+      { path: "admin/servers", Component: AdminServers, entry: "src/pages/AdminServers.tsx" },
       { path: "admin/analytics", Component: AdminAnalytics, entry: "src/pages/AdminAnalytics.tsx" },
       { path: "admin/podcast-sources", Component: AdminPodcastSources, entry: "src/pages/AdminPodcastSources.tsx" },
       { path: "admin/article-orchestrator", Component: AdminArticleOrchestrator, entry: "src/pages/AdminArticleOrchestrator.tsx" },

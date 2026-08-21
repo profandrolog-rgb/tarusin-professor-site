@@ -23,6 +23,7 @@ import {
   Settings,
   Headphones,
   Video,
+  Server,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -252,6 +253,13 @@ const siteSections = [
     icon: Settings,
     href: "/admin/system-backup",
     color: "text-amber-600",
+  },
+  {
+    title: "Серверы и VPN",
+    description: "Переход к панели 3x-ui и консоли VPS netcup",
+    icon: Server,
+    href: "/admin/servers",
+    color: "text-emerald-600",
   },
 ];
 
