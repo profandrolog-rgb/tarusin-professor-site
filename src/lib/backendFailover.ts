@@ -62,12 +62,13 @@ export function installBackendFailover() {
     const method = requestMethod(input, init);
     const retryable = isBackend && hasAlternativeRoutes && (method === "GET" || method === "HEAD");
 
-    const alternative = () => routeManager.getAlternatives()[0] || null;
+    // Кандидата фиксируем ДО возможного reportFailure, иначе после смены
+    // активного маршрута «альтернативой» станет только что отказавший адрес.
+    const alt = retryable ? routeManager.getAlternatives()[0] || null : null;
 
     try {
       const resp = await originalFetch(withUrl(input, url) as any, init);
       if (retryable && RETRYABLE_STATUS.has(resp.status)) {
-        const alt = alternative();
         if (alt) {
           const retried = await originalFetch(withUrl(input, rebaseUrl(url, alt)) as any, init);
           if (retried.ok) routeManager.reportSuccess(alt);
@@ -78,7 +79,6 @@ export function installBackendFailover() {
     } catch (e) {
       if (isBackend) routeManager.reportFailure(active);
       if (retryable) {
-        const alt = alternative();
         if (alt) {
           const retried = await originalFetch(withUrl(input, rebaseUrl(url, alt)) as any, init);
           if (retried.ok) routeManager.reportSuccess(alt);
