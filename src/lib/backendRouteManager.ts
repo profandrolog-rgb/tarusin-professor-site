@@ -77,7 +77,7 @@ export function createRouteManager(deps: RouteManagerDeps): RouteManager {
     /* приватный режим — остаёмся на default */
   }
 
-  let lastProbeAt = 0;
+  let lastProbeAt: number | null = null;
   let inFlight: Promise<void> | null = null;
   let confirmFor: string | null = null;
   let confirmCount = 0;
@@ -166,7 +166,7 @@ export function createRouteManager(deps: RouteManagerDeps): RouteManager {
       if (bases.length < 2) return Promise.resolve();
       if (inFlight) return inFlight;
       const t = now();
-      if (lastProbeAt && t - lastProbeAt < PROBE_INTERVAL_MS) return Promise.resolve();
+      if (lastProbeAt !== null && t - lastProbeAt < PROBE_INTERVAL_MS) return Promise.resolve();
       lastProbeAt = t;
       inFlight = Promise.all(
         bases.map(async (base) => {

@@ -42,7 +42,7 @@ describe("backend failover fetch", () => {
     const calls: string[] = [];
     window.fetch = vi.fn(async (input: any) => {
       const url = typeof input === "string" ? input : input.url;
-      calls.push(url);
+      if (!url.includes('/auth/v1/health')) calls.push(url);
       if (url.startsWith(A2)) throw new TypeError("Failed to fetch");
       return res(200, "[]");
     }) as any;
@@ -58,7 +58,7 @@ describe("backend failover fetch", () => {
     const calls: string[] = [];
     window.fetch = vi.fn(async (input: any) => {
       const url = typeof input === "string" ? input : input.url;
-      calls.push(url);
+      if (!url.includes('/auth/v1/health')) calls.push(url);
       return res(502);
     }) as any;
 
@@ -72,7 +72,7 @@ describe("backend failover fetch", () => {
     const calls: string[] = [];
     window.fetch = vi.fn(async (input: any) => {
       const url = typeof input === "string" ? input : input.url;
-      calls.push(url);
+      if (!url.includes('/auth/v1/health')) calls.push(url);
       throw new TypeError("Failed to fetch");
     }) as any;
 
@@ -87,7 +87,7 @@ describe("backend failover fetch", () => {
     const calls: string[] = [];
     window.fetch = vi.fn(async (input: any) => {
       const url = typeof input === "string" ? input : input.url;
-      calls.push(url);
+      if (!url.includes('/auth/v1/health')) calls.push(url);
       return res(401, '{"message":"unauthorized"}');
     }) as any;
 
@@ -101,7 +101,8 @@ describe("backend failover fetch", () => {
   it("переписывает прямой *.supabase.co на активный маршрут", async () => {
     const calls: string[] = [];
     window.fetch = vi.fn(async (input: any) => {
-      calls.push(typeof input === "string" ? input : input.url);
+      const u = typeof input === "string" ? input : input.url;
+      if (!u.includes('/auth/v1/health')) calls.push(u);
       return res(200, "[]");
     }) as any;
 
