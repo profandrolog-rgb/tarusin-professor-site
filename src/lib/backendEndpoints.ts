@@ -33,21 +33,49 @@ export const ALLOW_DIRECT = String(env.VITE_ALLOW_DIRECT_SUPABASE ?? "").toLower
 export const PRIMARY_BASE = stripSlash(env.VITE_SUPABASE_PROXY_URL || env.VITE_SUPABASE_URL || "");
 
 /**
+ * Дополнительные равнозначные прокси к ТОМУ ЖЕ проекту Supabase
+ * (VITE_BACKEND_ALT_URL, через запятую). Используются менеджером маршрутов
+ * (src/lib/backendRouteManager.ts) как альтернатива основному адресу.
+ * Прямой *.supabase.co здесь НЕ участвует.
+ */
+export const ALT_BASES: string[] = Array.from(
+  new Set(
+    (env.VITE_BACKEND_ALT_URL ?? "")
+      .split(",")
+      .map((s) => stripSlash(s.trim()))
+      .filter(Boolean),
+  ),
+).filter((base) => base !== PRIMARY_BASE);
+
+/** Все допустимые рабочие маршруты: основной первым (он же безопасный default). */
+export const ROUTE_BASES: string[] = [PRIMARY_BASE, ...ALT_BASES].filter(Boolean);
+
+/**
  * Адреса, которые могли быть зашиты в старых экранах до появления единой
  * прокси-точки. Любой запрос к ним в браузере должен быть переписан на
- * PRIMARY_BASE, иначе отдельные парсеры/оркестраторы обходят Cloudflare.
+ * активный маршрут, иначе отдельные парсеры/оркестраторы обходят прокси.
  */
 const LEGACY_BASES = Array.from(new Set([
   stripSlash(env.VITE_SUPABASE_URL || ""),
   DIRECT_BASE,
 ].filter(Boolean))).filter((base) => base !== PRIMARY_BASE);
 
-/** Перевести старый/прямой URL бэкенда на текущий основной прокси. */
-export const normalizeBackendUrl = (url: string): string => {
-  if (!PRIMARY_BASE) return url;
-  const legacy = LEGACY_BASES.find((base) => url === base || url.startsWith(`${base}/`));
-  return legacy ? PRIMARY_BASE + url.slice(legacy.length) : url;
+/** Все известные базы бэкенда (рабочие маршруты + устаревшие/прямые). */
+const KNOWN_BASES = Array.from(new Set([...ROUTE_BASES, ...LEGACY_BASES].filter(Boolean)));
+
+/** Переписать URL любого известного адреса бэкенда на указанный маршрут. */
+export const rebaseUrl = (url: string, target: string): string => {
+  if (!target) return url;
+  const known = KNOWN_BASES.find((base) => base !== target && (url === base || url.startsWith(`${base}/`)));
+  return known ? target + url.slice(known.length) : url;
 };
+
+/** Перевести старый/прямой URL бэкенда на основной прокси (или на указанный маршрут). */
+export const normalizeBackendUrl = (url: string, target: string = PRIMARY_BASE): string => {
+  if (!PRIMARY_BASE) return url;
+  return rebaseUrl(url, target || PRIMARY_BASE);
+};
+
 
 /**
  * Кандидаты обхода в порядке приоритета: только прокси из env. Прямой домен
