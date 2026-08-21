@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("notify-telegram-appointment error:", err);
-    return new Response(JSON.stringify({ ok: false, error: String(err?.message || err) }), {
+    return new Response(JSON.stringify({ ok: false, error: String((err as Error)?.message || err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
