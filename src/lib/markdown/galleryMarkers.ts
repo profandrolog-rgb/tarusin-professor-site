@@ -290,12 +290,21 @@ function buildGalleryMarker(caption: string, files: string[]): string {
 }
 
 function formatGalleryFileEntry(entry: GalleryFileEntry): string {
-  const safeCaption = (entry.caption || "").replace(/"/g, "”").replace(/\|/g, "／");
+  // Кавычки внутри подписи ломают обратный парсинг записи — убираем их полностью.
+  const safeCaption = (entry.caption || "").replace(/["'“”]/g, "").replace(/\|/g, "／").trim();
   return safeCaption ? `${entry.filename} "${safeCaption}"` : entry.filename;
 }
 
 export function buildGalleryMarkerFromEntries(caption: string, entries: GalleryFileEntry[]): string {
-  return buildGalleryMarker(caption, entries.map(formatGalleryFileEntry));
+  const seen = new Set<string>();
+  const unique = entries.filter((e) => {
+    if (!e.filename) return false;
+    const key = e.filename.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return buildGalleryMarker(caption, unique.map(formatGalleryFileEntry));
 }
 
 export function readGalleryEntriesFromContent(content: string, caption: string): GalleryFileEntry[] {
