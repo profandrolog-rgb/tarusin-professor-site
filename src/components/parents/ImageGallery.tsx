@@ -28,8 +28,10 @@ function publicUrl(filename: string) {
 // Parses entries like:  `name.jpg` or `name.jpg "подпись"` (also `'…'`, `“…”`)
 function parseEntry(raw: string): Item {
   const s = raw.trim();
-  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].trim() };
+  const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
+  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  const sp = s.indexOf(" ");
+  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
   return { filename: s, caption: "" };
 }
 
