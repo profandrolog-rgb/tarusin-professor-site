@@ -28,8 +28,10 @@ function publicUrl(filename: string) {
 // Parses entries like:  `name.jpg` or `name.jpg "подпись"` (also `'…'`, `“…”`)
 function parseEntry(raw: string): Item {
   const s = raw.trim();
-  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].trim() };
+  const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
+  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  const sp = s.indexOf(" ");
+  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
   return { filename: s, caption: "" };
 }
 
@@ -41,9 +43,14 @@ const ImageGallery = ({ caption, files }: Props) => {
     const parsed = files.map(parseEntry);
     let c: number | null = null;
     const rest: Item[] = [];
+    const seen = new Set<string>();
     for (const it of parsed) {
       const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
       if (m) { c = Number(m[1]); continue; }
+      if (!it.filename) continue;
+      const key = it.filename.toLowerCase();
+      if (seen.has(key)) continue; // защита от дублей → «лишних пустых слотов»
+      seen.add(key);
       rest.push(it);
     }
     return { items: rest, cols: c };

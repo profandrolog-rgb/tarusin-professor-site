@@ -189,13 +189,27 @@ function parseGalleryFiles(raw: string): string[] {
 
 function parseGalleryFileEntry(raw: string): GalleryFileEntry {
   const s = raw.trim();
-  const m = s.match(/^(\S+)\s+["'“”]([^"'“”]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].trim() };
+  // Терпимый парсер: подпись может сама содержать кавычки любого вида.
+  const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
+  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  // Подпись без кавычек: имя файла — первый токен, остальное — подпись.
+  const sp = s.indexOf(" ");
+  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
   return { filename: s, caption: "" };
 }
 
 export function parseGalleryFileEntries(raw: string): GalleryFileEntry[] {
-  return parseGalleryFiles(raw).map(parseGalleryFileEntry);
+  const seen = new Set<string>();
+  const out: GalleryFileEntry[] = [];
+  for (const e of parseGalleryFiles(raw).map(parseGalleryFileEntry)) {
+    if (!e.filename) continue;
+    // Служебные записи (cols=N) не дедуплицируем по общему правилу — они уникальны сами.
+    const key = e.filename.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+  }
+  return out;
 }
 
 /**
@@ -276,12 +290,21 @@ function buildGalleryMarker(caption: string, files: string[]): string {
 }
 
 function formatGalleryFileEntry(entry: GalleryFileEntry): string {
-  const safeCaption = (entry.caption || "").replace(/"/g, "”").replace(/\|/g, "／");
+  // Кавычки внутри подписи ломают обратный парсинг записи — убираем их полностью.
+  const safeCaption = (entry.caption || "").replace(/["'“”]/g, "").replace(/\|/g, "／").trim();
   return safeCaption ? `${entry.filename} "${safeCaption}"` : entry.filename;
 }
 
 export function buildGalleryMarkerFromEntries(caption: string, entries: GalleryFileEntry[]): string {
-  return buildGalleryMarker(caption, entries.map(formatGalleryFileEntry));
+  const seen = new Set<string>();
+  const unique = entries.filter((e) => {
+    if (!e.filename) return false;
+    const key = e.filename.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return buildGalleryMarker(caption, unique.map(formatGalleryFileEntry));
 }
 
 export function readGalleryEntriesFromContent(content: string, caption: string): GalleryFileEntry[] {
