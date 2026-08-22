@@ -43,9 +43,14 @@ const ImageGallery = ({ caption, files }: Props) => {
     const parsed = files.map(parseEntry);
     let c: number | null = null;
     const rest: Item[] = [];
+    const seen = new Set<string>();
     for (const it of parsed) {
       const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
       if (m) { c = Number(m[1]); continue; }
+      if (!it.filename) continue;
+      const key = it.filename.toLowerCase();
+      if (seen.has(key)) continue; // защита от дублей → «лишних пустых слотов»
+      seen.add(key);
       rest.push(it);
     }
     return { items: rest, cols: c };
