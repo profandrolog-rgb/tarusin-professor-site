@@ -24,7 +24,7 @@ export function AnnotationOverlay({
       preserveAspectRatio={fit === "cover" ? "xMidYMid slice" : "xMidYMid meet"}
       aria-hidden="true"
     >
-      {doc.shapes.map((s) => renderSvgShape(s, w, h))}
+      {doc.shapes.map((s) => renderSvgShape(s, w, h, Math.max(1, w / 900)))}
     </svg>
   );
 }
@@ -72,9 +72,11 @@ export function useAnnotationsMap(
   return map;
 }
 
-export function renderSvgShape(s: AnnotationShape, w: number, h: number) {
+export function renderSvgShape(s: AnnotationShape, w: number, h: number, swScale = 1) {
   const stroke = s.color;
-  const sw = s.strokeWidth;
+  // В редакторе толщина задана в пикселях сцены (макс. 900px по ширине),
+  // поэтому при выводе в системе координат оригинала её нужно масштабировать.
+  const sw = s.strokeWidth * swScale;
   if (s.type === "arrow") {
     const markerId = `arrowhead-${s.id}`;
     return (
