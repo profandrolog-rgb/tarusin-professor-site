@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
+import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 
 interface Props {
   caption: string;
@@ -69,6 +70,12 @@ const ImageGallery = ({ caption, files }: Props) => {
   }, [lightboxIdx, items.length]);
 
   const isSingle = items.length === 1;
+
+  // Слой разметки (стрелки/овалы/подписи), сохранённый в редакторе аннотаций.
+  const annotations = useAnnotationsMap(items.map((it) => it.filename), {
+    bucket: BUCKET,
+    folder: FOLDER,
+  });
 
 
   const photoCaptionStyle: React.CSSProperties = {
@@ -155,6 +162,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                   onContextMenu={noContextMenu}
                   onError={handleStorageImgError}
                 />
+                <AnnotationOverlay doc={annotations[single.filename]} fit="contain" />
                 <span style={watermarkStyle}>tarusin.pro</span>
               </button>
               {single.caption && (
@@ -202,6 +210,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                     onContextMenu={noContextMenu}
                     onError={handleStorageImgError}
                   />
+                  <AnnotationOverlay doc={annotations[it.filename]} fit="contain" />
                   <span style={watermarkStyle}>tarusin.pro</span>
                 </button>
               ) : (
@@ -222,6 +231,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                     onContextMenu={noContextMenu}
                     onError={handleStorageImgError}
                   />
+                  <AnnotationOverlay doc={annotations[it.filename]} fit="cover" />
                   <span style={watermarkStyle}>tarusin.pro</span>
                 </button>
               )}
@@ -292,6 +302,7 @@ const ImageGallery = ({ caption, files }: Props) => {
               onContextMenu={noContextMenu}
               onError={handleStorageImgError}
             />
+            <AnnotationOverlay doc={annotations[items[lightboxIdx].filename]} fit="contain" />
             <span style={watermarkStyle}>tarusin.pro</span>
           </div>
           {items[lightboxIdx].caption && (
