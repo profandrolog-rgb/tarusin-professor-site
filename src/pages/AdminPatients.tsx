@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Helmet } from "react-helmet-async";
@@ -7,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Loader2, Pencil, FileText } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, FileText, RefreshCw, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -24,8 +25,6 @@ export default function AdminPatients() {
   const { user, isAdmin, loading } = useAuth();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [rows, setRows] = useState<Patient[]>([]);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) navigate("/auth");
@@ -36,10 +35,16 @@ export default function AdminPatients() {
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setBusy(true);
+  const { data: rows = [], isFetching, error, refetch } = useQuery({
+    queryKey: ["admin-patients", debounced],
+    enabled: !!user && isAdmin,
+    // Держим прежний список на экране, пока грузится новый — не мигаем «пусто».
+    placeholderData: keepPreviousData,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => 400 * 2 ** attempt,
+    queryFn: async () => {
       let q = supabase
         .from("patients")
         .select("id, full_name, birth_date, phone, history_number")
@@ -49,18 +54,18 @@ export default function AdminPatients() {
         const esc = debounced.replace(/[%,]/g, " ");
         q = q.or(`full_name.ilike.%${esc}%,history_number.ilike.%${esc}%`);
       }
-      const { data } = await q;
-      if (!cancelled) {
-        setRows((data as any[]) || []);
-        setBusy(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [debounced]);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data as Patient[]) || [];
+    },
+  });
+
+  const busy = isFetching;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
   }
+
 
   return (
     <div className="min-h-screen bg-background">
