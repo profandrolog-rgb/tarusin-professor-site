@@ -388,6 +388,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Безопасный доступ к авторизации вне провайдера (тесты, изолированный рендер). */
+export function useOptionalAuth(): AuthContextType | undefined {
+  return useContext(AuthContext);
+}
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
