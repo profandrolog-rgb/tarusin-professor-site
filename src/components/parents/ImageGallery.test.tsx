@@ -45,15 +45,15 @@ describe("ImageGallery — выравнивание последнего ряд�
 
 describe("ImageGallery — шторка 18+", () => {
   it("nsfw=1: галерея закрыта шторкой, лайтбокс недоступен", () => {
-    const { container, getByText } = render(
+    const { container, getByRole } = render(
       <ImageGallery caption="Тест" files={["nsfw=1", "a1.jpg", "a2.jpg"]} />,
     );
-    expect(getByText(/Открыть клиническую галерею/i)).toBeTruthy();
+    expect(getByRole("button", { name: /Открыть клиническую галерею/i })).toBeTruthy();
     expect(container.querySelectorAll("img").length).toBe(2);
   });
 
   it("без nsfw: шторки нет", () => {
-    const { queryByText } = render(<ImageGallery caption="Тест" files={["a1.jpg", "a2.jpg"]} />);
-    expect(queryByText(/Открыть клиническую галерею/i)).toBeNull();
+    const { queryByRole } = render(<ImageGallery caption="Тест" files={["a1.jpg", "a2.jpg"]} />);
+    expect(queryByRole("button", { name: /Открыть клиническую галерею/i })).toBeNull();
   });
 });
