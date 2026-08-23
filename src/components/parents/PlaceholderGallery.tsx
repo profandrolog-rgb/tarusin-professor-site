@@ -498,11 +498,11 @@ const PlaceholderGallery = ({
   useEffect(() => { setCols(parsedExisting.cols); }, [parsedExisting.cols]);
 
   // Шторка 18+ для клинических фото (схемы не скрываем).
-  const [nsfw, setNsfw] = useState<boolean>(parsedExisting.nsfw);
-  useEffect(() => { setNsfw(parsedExisting.nsfw); }, [parsedExisting.nsfw]);
+  const [restricted, setRestricted] = useState<boolean>(parsedExisting.restricted);
+  useEffect(() => { setRestricted(parsedExisting.restricted); }, [parsedExisting.restricted]);
 
   const buildMarker = (entries: ExistingItem[]) => {
-    return buildGalleryMarkerFromEntries(caption, withGalleryCols(entries, cols, nsfw));
+    return buildGalleryMarkerFromEntries(caption, withGalleryCols(entries, cols, restricted));
   };
 
   // Парсит файлы из ТЕКУЩЕГО маркера в свежем article_content (по подписи).
@@ -517,7 +517,7 @@ const PlaceholderGallery = ({
   const persistEntries = async (
     writer: ExistingItem[] | ((current: ExistingItem[]) => ExistingItem[]),
     colsOverride?: number | null,
-    nsfwOverride?: boolean,
+    restrictedOverride?: boolean,
   ): Promise<boolean> => {
     const { data: fresh, error: fetchErr } = await (supabase as any)
       .from(ownerTable)
@@ -533,7 +533,7 @@ const PlaceholderGallery = ({
     const nextEntries = withGalleryCols(
       typeof writer === "function" ? writer(currentFiles) : writer,
       colsOverride !== undefined ? colsOverride : cols,
-      nsfwOverride !== undefined ? nsfwOverride : nsfw,
+      restrictedOverride !== undefined ? restrictedOverride : restricted,
     );
 
 
@@ -1137,23 +1137,23 @@ const PlaceholderGallery = ({
           <input
             type="checkbox"
             className="accent-current"
-            checked={nsfw}
+            checked={restricted}
             disabled={uploading || deletingFile !== null}
             onChange={async (e) => {
               const next = e.target.checked;
-              setNsfw(next);
+              setRestricted(next);
               const ok = await persistEntries((current) => current, undefined, next);
               if (ok) {
                 toast.success(next ? "Галерея закрыта шторкой 18+" : "Шторка 18+ снята");
               } else {
-                setNsfw(!next);
+                setRestricted(!next);
               }
             }}
           />
-          Закрыть шторкой 18+
+          Закрыть медицинской шторкой (18+)
         </label>
       </div>
-      {nsfw && (
+      {restricted && (
         <div className="mb-3 text-xs text-destructive">
           Публично галерея закрыта шторкой «Клинические изображения · 18+»
         </div>

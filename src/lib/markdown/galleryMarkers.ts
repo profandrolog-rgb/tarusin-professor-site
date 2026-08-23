@@ -219,18 +219,20 @@ export function parseGalleryFileEntries(raw: string): GalleryFileEntry[] {
 export const GALLERY_COLS_ENTRY_RE = /^cols\s*=\s*([1-6])$/i;
 
 /**
- * Служебная запись `nsfw=1` — галерея закрыта шторкой 18+ (клинические фото).
+ * Служебная запись `clinical=restricted` — галерея закрыта медицинской шторкой
+ * (клинические фотографии, доступ после осознанного подтверждения).
  * Отсутствие записи = галерея открыта (схемы, рисунки, инфографика).
+ * Легаси-форма `nsfw=1` читается для совместимости, но больше не записывается.
  */
-export const GALLERY_NSFW_ENTRY_RE = /^nsfw\s*=\s*(1|true|yes)$/i;
+export const GALLERY_RESTRICTED_ENTRY_RE = /^(?:clinical\s*=\s*restricted|nsfw\s*=\s*(?:1|true|yes))$/i;
 
 export function extractGalleryCols(entries: GalleryFileEntry[]): {
   cols: number | null;
-  nsfw: boolean;
+  restricted: boolean;
   entries: GalleryFileEntry[];
 } {
   let cols: number | null = null;
-  let nsfw = false;
+  let restricted = false;
   const rest: GalleryFileEntry[] = [];
   for (const e of entries) {
     const m = e.filename.match(GALLERY_COLS_ENTRY_RE);
@@ -238,24 +240,24 @@ export function extractGalleryCols(entries: GalleryFileEntry[]): {
       cols = Number(m[1]);
       continue;
     }
-    if (GALLERY_NSFW_ENTRY_RE.test(e.filename)) {
-      nsfw = true;
+    if (GALLERY_RESTRICTED_ENTRY_RE.test(e.filename)) {
+      restricted = true;
       continue;
     }
     rest.push(e);
   }
-  return { cols, nsfw, entries: rest };
+  return { cols, restricted, entries: rest };
 }
 
 export function withGalleryCols(
   entries: GalleryFileEntry[],
   cols: number | null,
-  nsfw = false,
+  restricted = false,
 ): GalleryFileEntry[] {
   const clean = extractGalleryCols(entries).entries;
   const service: GalleryFileEntry[] = [];
   if (cols) service.push({ filename: `cols=${cols}`, caption: "" });
-  if (nsfw) service.push({ filename: "nsfw=1", caption: "" });
+  if (restricted) service.push({ filename: "clinical=restricted", caption: "" });
   return [...service, ...clean];
 }
 
