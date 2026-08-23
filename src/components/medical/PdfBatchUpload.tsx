@@ -94,14 +94,40 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
         // прокси может оборвать такой POST до запуска функции. Сначала кладём
         // оригинал в приватное хранилище, затем передаём парсеру только путь.
         const owner = patientId || consultationCaseId || "unassigned";
-        const storagePath = `${owner}/${Date.now()}-${crypto.randomUUID()}-${safeFileName(updated[i].file.name)}`;
-        const { error: uploadError } = await supabase.storage
-          .from(PARSER_BUCKET)
-          .upload(storagePath, updated[i].file, {
-            contentType: updated[i].file.type || "application/pdf",
-            upsert: false,
-          });
-        if (uploadError) throw new Error(`Не удалось загрузить PDF: ${uploadError.message}`);
+        // Сеть/прокси может оборвать загрузку («Failed to fetch») — повторяем
+        // до 3 раз с новым уникальным путём, чтобы не ловить конфликт имён.
+        let storagePath = "";
+        let uploadErr: any = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          storagePath = `${owner}/${Date.now()}-${crypto.randomUUID()}-${safeFileName(updated[i].file.name)}`;
+          try {
+            const { error } = await supabase.storage
+              .from(PARSER_BUCKET)
+              .upload(storagePath, updated[i].file, {
+                contentType: updated[i].file.type || "application/pdf",
+                upsert: false,
+              });
+            if (error) throw error;
+            uploadErr = null;
+            break;
+          } catch (e: any) {
+            uploadErr = e;
+            updated[i] = {
+              ...updated[i],
+              status: "uploading",
+              progress: 20,
+              message: `Повтор загрузки ${attempt} из 3 (сеть)…`,
+            };
+            setFiles([...updated]);
+            await new Promise((r) => setTimeout(r, 1500 * attempt));
+          }
+        }
+        if (uploadErr) {
+          throw new Error(
+            `Не удалось загрузить PDF: ${uploadErr?.message || "сеть недоступна"}. Проверьте соединение и повторите.`,
+          );
+        }
+
 
         updated[i] = { ...updated[i], status: "parsing", progress: 55 };
         setFiles([...updated]);
