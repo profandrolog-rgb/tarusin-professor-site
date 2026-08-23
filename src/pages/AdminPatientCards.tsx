@@ -29,9 +29,10 @@ const AdminPatientCards = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patient_cards")
-        .select("id, user_id, patient_full_name, parent_name, diagnosis, updated_at")
+        .select("*")
         .order("updated_at", { ascending: false })
         .limit(300);
+
       if (error) throw error;
       return data ?? [];
     },
