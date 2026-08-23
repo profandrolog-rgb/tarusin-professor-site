@@ -3,20 +3,39 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 
-const COOKIE_NAME = "age_confirmed_18";
+const AGE_COOKIE = "age_confirmed_18";
+/** Отдельное осознанное согласие именно на просмотр клинических материалов. */
+const CLINICAL_COOKIE = "clinical_gallery_acknowledged";
 const COOKIE_DAYS = 365;
+export const CLINICAL_ACK_EVENT = "clinical-gallery-acknowledged";
 
-export function getAgeConfirmedCookie(): boolean {
-  if (typeof document === "undefined") return false;
-  const match = document.cookie.match(new RegExp("(^| )" + COOKIE_NAME + "=([^;]+)"));
-  return match?.[2] === "true";
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match?.[2] ?? null;
 }
 
-export function setAgeConfirmedCookie() {
+function writeCookie(name: string, value: string) {
   const d = new Date();
   d.setTime(d.getTime() + COOKIE_DAYS * 86400000);
-  document.cookie = `${COOKIE_NAME}=true;expires=${d.toUTCString()};path=/;SameSite=Lax`;
-  window.dispatchEvent(new Event("age-confirmed-18"));
+  document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/;SameSite=Lax`;
+}
+
+/** Подтверждён ли возраст (общая cookie сайта, в т.ч. со страницы /results). */
+export function getAgeConfirmedCookie(): boolean {
+  return readCookie(AGE_COOKIE) === "true";
+}
+
+/** Принято ли отдельное медицинское предупреждение перед клиническими галереями. */
+export function getClinicalAcknowledgedCookie(): boolean {
+  return readCookie(CLINICAL_COOKIE) === "1";
+}
+
+/** Фиксирует оба состояния: возраст и осознанное согласие на клинические материалы. */
+export function setClinicalAcknowledgedCookie() {
+  writeCookie(AGE_COOKIE, "true");
+  writeCookie(CLINICAL_COOKIE, "1");
+  window.dispatchEvent(new Event(CLINICAL_ACK_EVENT));
 }
 
 interface Props {
@@ -47,16 +66,20 @@ const ClinicalCurtain = ({ onConfirm }: Props) => {
     return () => ro.disconnect();
   }, []);
 
+  // Если согласие принято в другой галерее на этой же странице — открываем и эту.
   useEffect(() => {
     const onExternal = () => onConfirm();
-    window.addEventListener("age-confirmed-18", onExternal);
-    return () => window.removeEventListener("age-confirmed-18", onExternal);
+    window.addEventListener(CLINICAL_ACK_EVENT, onExternal);
+    return () => window.removeEventListener(CLINICAL_ACK_EVENT, onExternal);
   }, [onConfirm]);
 
   const showLegal = !compact || expanded;
+  // Возраст уже подтверждён ранее — повторно про 18 лет не спрашиваем,
+  // но медицинское предупреждение показываем обязательно.
+  const [ageKnown] = useState(() => getAgeConfirmedCookie());
 
   const handleClick = () => {
-    setAgeConfirmedCookie();
+    setClinicalAcknowledgedCookie();
     onConfirm();
   };
 
@@ -108,9 +131,13 @@ const ClinicalCurtain = ({ onConfirm }: Props) => {
         )}
 
         <p className="mt-4 text-xs md:text-sm text-foreground font-medium">
-          {isEn
-            ? "By clicking “Open clinical gallery” I confirm that I am 18 years old and that I understand the medical and educational nature of these materials."
-            : "Нажимая «Открыть клиническую галерею», я подтверждаю, что мне исполнилось 18 лет и я понимаю медицинский и образовательный характер представленных материалов."}
+          {ageKnown
+            ? isEn
+              ? "By clicking “Open clinical gallery” I confirm that I have read this notice and understand the medical and educational nature of these materials."
+              : "Нажимая «Открыть клиническую галерею», я подтверждаю, что ознакомился с предупреждением и понимаю медицинский и образовательный характер представленных материалов."
+            : isEn
+              ? "By clicking “Open clinical gallery” I confirm that I am 18 years old and that I understand the medical and educational nature of these materials."
+              : "Нажимая «Открыть клиническую галерею», я подтверждаю, что мне исполнилось 18 лет и я понимаю медицинский и образовательный характер представленных материалов."}
         </p>
 
         <Button onClick={handleClick} size="lg" className="mt-4">
