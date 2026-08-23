@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
+import { useOptionalAuth } from "@/hooks/useAuth";
 
 interface Props {
   caption: string;
@@ -61,10 +62,12 @@ const ImageGallery = ({ caption, files }: Props) => {
   }, [files]);
 
   // Шторка снята, если галерея открытая либо медицинское предупреждение уже принято.
+  // Админ и редактор работают с галереями по существу — шторка их не блокирует.
+  const isStaff = !!useOptionalAuth()?.isAdmin;
   const [unlocked, setUnlocked] = useState(!restricted);
   useEffect(() => {
-    setUnlocked(!restricted || getClinicalAcknowledgedCookie());
-  }, [restricted]);
+    setUnlocked(!restricted || isStaff || getClinicalAcknowledgedCookie());
+  }, [restricted, isStaff]);
   const locked = restricted && !unlocked;
 
   useEffect(() => {
