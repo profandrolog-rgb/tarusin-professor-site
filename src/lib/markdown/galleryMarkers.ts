@@ -218,11 +218,19 @@ export function parseGalleryFileEntries(raw: string): GalleryFileEntry[] {
  */
 export const GALLERY_COLS_ENTRY_RE = /^cols\s*=\s*([1-6])$/i;
 
+/**
+ * Служебная запись `nsfw=1` — галерея закрыта шторкой 18+ (клинические фото).
+ * Отсутствие записи = галерея открыта (схемы, рисунки, инфографика).
+ */
+export const GALLERY_NSFW_ENTRY_RE = /^nsfw\s*=\s*(1|true|yes)$/i;
+
 export function extractGalleryCols(entries: GalleryFileEntry[]): {
   cols: number | null;
+  nsfw: boolean;
   entries: GalleryFileEntry[];
 } {
   let cols: number | null = null;
+  let nsfw = false;
   const rest: GalleryFileEntry[] = [];
   for (const e of entries) {
     const m = e.filename.match(GALLERY_COLS_ENTRY_RE);
@@ -230,17 +238,25 @@ export function extractGalleryCols(entries: GalleryFileEntry[]): {
       cols = Number(m[1]);
       continue;
     }
+    if (GALLERY_NSFW_ENTRY_RE.test(e.filename)) {
+      nsfw = true;
+      continue;
+    }
     rest.push(e);
   }
-  return { cols, entries: rest };
+  return { cols, nsfw, entries: rest };
 }
 
 export function withGalleryCols(
   entries: GalleryFileEntry[],
   cols: number | null,
+  nsfw = false,
 ): GalleryFileEntry[] {
   const clean = extractGalleryCols(entries).entries;
-  return cols ? [{ filename: `cols=${cols}`, caption: "" }, ...clean] : clean;
+  const service: GalleryFileEntry[] = [];
+  if (cols) service.push({ filename: `cols=${cols}`, caption: "" });
+  if (nsfw) service.push({ filename: "nsfw=1", caption: "" });
+  return [...service, ...clean];
 }
 
 

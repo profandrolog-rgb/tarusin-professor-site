@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
+import ClinicalCurtain, { getAgeConfirmedCookie } from "@/components/gallery/ClinicalCurtain";
 
 interface Props {
   caption: string;
@@ -39,23 +40,36 @@ function parseEntry(raw: string): Item {
 const ImageGallery = ({ caption, files }: Props) => {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  // Служебная запись `cols=N` задаёт число фото в ряд (2–5), остальное — файлы.
-  const { items, cols } = useMemo<{ items: Item[]; cols: number | null }>(() => {
+  // Служебные записи: `cols=N` — фото в ряд, `nsfw=1` — шторка 18+.
+  const { items, cols, nsfw } = useMemo<{ items: Item[]; cols: number | null; nsfw: boolean }>(() => {
     const parsed = files.map(parseEntry);
     let c: number | null = null;
+    let n = false;
     const rest: Item[] = [];
     const seen = new Set<string>();
     for (const it of parsed) {
       const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
       if (m) { c = Number(m[1]); continue; }
+      if (/^nsfw\s*=\s*(1|true|yes)$/i.test(it.filename)) { n = true; continue; }
       if (!it.filename) continue;
       const key = it.filename.toLowerCase();
       if (seen.has(key)) continue; // защита от дублей → «лишних пустых слотов»
       seen.add(key);
       rest.push(it);
     }
-    return { items: rest, cols: c };
+    return { items: rest, cols: c, nsfw: n };
   }, [files]);
+
+  // Шторка снята, если галерея открытая либо совершеннолетие уже подтверждено.
+  const [unlocked, setUnlocked] = useState(!nsfw);
+  useEffect(() => {
+    setUnlocked(!nsfw || getAgeConfirmedCookie());
+  }, [nsfw]);
+  const locked = nsfw && !unlocked;
+
+  useEffect(() => {
+    if (locked && lightboxIdx !== null) setLightboxIdx(null);
+  }, [locked, lightboxIdx]);
 
   useEffect(() => {
     if (lightboxIdx === null) return;
@@ -118,6 +132,12 @@ const ImageGallery = ({ caption, files }: Props) => {
           {caption}
         </h4>
       )}
+      <div className={locked ? "relative min-h-[280px]" : "relative"}>
+      <div
+        className={locked ? "pointer-events-none select-none" : "transition-[filter] duration-500"}
+        style={locked ? { filter: "blur(26px) saturate(0.85)", transform: "scale(1.02)" } : undefined}
+        aria-hidden={locked}
+      >
       {isSingle ? (
         (() => {
           const single = items[0];
@@ -243,9 +263,11 @@ const ImageGallery = ({ caption, files }: Props) => {
           })}
         </div>
       )}
+      </div>
+      {locked && <ClinicalCurtain onConfirm={() => setUnlocked(true)} />}
+      </div>
 
-
-      {lightboxIdx !== null && (
+      {lightboxIdx !== null && !locked && (
         <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 select-none"
           style={{ userSelect: "none" }}
