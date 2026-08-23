@@ -90,9 +90,21 @@ export default function AdminPatients() {
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
             />
+            {error ? (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                <span className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="w-4 h-4" />
+                  Не удалось загрузить список: {(error as Error).message}
+                </span>
+                <Button size="sm" variant="outline" onClick={() => refetch()} className="gap-1">
+                  <RefreshCw className="w-3.5 h-3.5" />Повторить
+                </Button>
+              </div>
+            ) : null}
             <div className="text-xs text-muted-foreground">
               {busy ? "Поиск…" : `Найдено: ${rows.length}${rows.length === 50 ? " (лимит)" : ""}`}
             </div>
+
             <Table>
               <TableHeader>
                 <TableRow>
