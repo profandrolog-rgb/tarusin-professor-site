@@ -145,11 +145,34 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
       toast.error("Укажите ФИО пациента");
       return;
     }
+    if (!operationName.trim()) {
+      toast.error("Укажите название операции", {
+        description: "Без названия операции путёвку выдавать нельзя.",
+      });
+      return;
+    }
+    if (!dateFrom) {
+      toast.error("Укажите дату операции", {
+        description: rangeMode
+          ? "Заполните начало диапазона сроков операции."
+          : "Выберите дату операции или включите диапазон сроков.",
+      });
+      return;
+    }
+    if (rangeMode && !dateTo) {
+      toast.error("Укажите конец диапазона сроков операции");
+      return;
+    }
+    if (rangeMode && dateTo && dateTo < dateFrom) {
+      toast.error("Конец диапазона раньше начала — проверьте сроки операции");
+      return;
+    }
     const chosen = exams.filter((e) => e.checked);
     if (chosen.length === 0) {
       toast.error("Отметьте хотя бы одно обследование");
       return;
     }
+
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -246,7 +269,7 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
               <Input value={ageText} onChange={(e) => setAgeText(e.target.value)} />
             </div>
             <div className="md:col-span-2 space-y-1">
-              <Label>Название операции</Label>
+              <Label>Название операции <span className="text-destructive">*</span></Label>
               <Input
                 value={operationName}
                 onChange={(e) => setOperationName(e.target.value)}
@@ -275,7 +298,7 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
 
           <div className="rounded-md border p-3 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <Label>Ориентировочный срок операции</Label>
+              <Label>Ориентировочный срок операции <span className="text-destructive">*</span></Label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox checked={rangeMode} onCheckedChange={(v) => setRangeMode(v === true)} />
                 интервал дат
