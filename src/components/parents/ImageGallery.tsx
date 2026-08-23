@@ -262,9 +262,11 @@ const ImageGallery = ({ caption, files }: Props) => {
           })}
         </div>
       )}
+      </div>
+      {locked && <ClinicalCurtain onConfirm={() => setUnlocked(true)} />}
+      </div>
 
-
-      {lightboxIdx !== null && (
+      {lightboxIdx !== null && !locked && (
         <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 select-none"
           style={{ userSelect: "none" }}
