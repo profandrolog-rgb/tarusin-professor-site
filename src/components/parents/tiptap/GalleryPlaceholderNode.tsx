@@ -63,6 +63,7 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
   const parsed = useMemo(() => extractGalleryCols(parseGalleryFileEntries(filesRaw)), [filesRaw]);
   const entries = parsed.entries;
   const cols = parsed.cols;
+  const nsfw = parsed.nsfw;
   const initialImages: GalleryImage[] = useMemo(
     () => entries.map((e) => ({
       id: crypto.randomUUID(),
@@ -143,12 +144,14 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
             withGalleryCols(
               images.map((i) => ({ filename: i.filename, caption: i.caption })),
               cols,
+              nsfw,
             ),
           );
           // Синхронизируем атрибуты плашки: подпись + отформатированный список файлов.
           const files = withGalleryCols(
             images.map((i) => ({ filename: i.filename, caption: i.caption })),
             cols,
+            nsfw,
           )
             .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
             .join("|");
