@@ -63,7 +63,8 @@ const ImageGallery = ({ caption, files }: Props) => {
 
   // Шторка снята, если галерея открытая либо медицинское предупреждение уже принято.
   // Админ и редактор работают с галереями по существу — шторка их не блокирует.
-  const isStaff = !!useOptionalAuth()?.isAdmin;
+  const auth = useOptionalAuth();
+  const isStaff = !!(auth?.isAdmin || auth?.isEditor);
   const [unlocked, setUnlocked] = useState(!restricted);
   useEffect(() => {
     setUnlocked(!restricted || isStaff || getClinicalAcknowledgedCookie());
