@@ -31,7 +31,7 @@ const AdminConsultations = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  const { data: cases = [], isLoading } = useQuery({
+  const { data: cases = [], isLoading, isError, error: casesError, isFetching, refetch } = useQuery({
     queryKey: ["admin-consultations"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,10 +39,15 @@ const AdminConsultations = () => {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: isAdmin,
+    staleTime: 2 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1500 * (attempt + 1), 5000),
+    placeholderData: (prev: any) => prev,
   });
+
 
   const selectedCase = cases.find((c: any) => c.id === selectedId);
 
