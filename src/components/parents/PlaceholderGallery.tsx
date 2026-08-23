@@ -517,6 +517,7 @@ const PlaceholderGallery = ({
   const persistEntries = async (
     writer: ExistingItem[] | ((current: ExistingItem[]) => ExistingItem[]),
     colsOverride?: number | null,
+    nsfwOverride?: boolean,
   ): Promise<boolean> => {
     const { data: fresh, error: fetchErr } = await (supabase as any)
       .from(ownerTable)
