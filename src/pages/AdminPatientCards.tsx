@@ -24,18 +24,25 @@ const AdminPatientCards = () => {
   const [search, setSearch] = useState("");
   const [selectedCard, setSelectedCard] = useState<any>(null);
 
-  const { data: cards = [], isLoading } = useQuery({
+  const { data: cards = [], isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["admin-patient-cards"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patient_cards")
         .select("*")
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .limit(300);
+
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: isAdmin,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => 400 * 2 ** attempt,
   });
+
 
   const filtered = cards.filter((c: any) =>
     c.patient_full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -71,13 +78,36 @@ const AdminPatientCards = () => {
           </div>
         </div>
 
+        {error ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm mb-6">
+            <span className="text-destructive">
+              {isEn ? "Failed to load cards" : "Не удалось загрузить карточки"}: {(error as Error).message}
+            </span>
+            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              {isEn ? "Retry" : "Повторить"}
+            </Button>
+          </div>
+        ) : null}
+
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12">
-            {isEn ? "No patient cards yet" : "Карточек пока нет"}
-          </p>
+        ) : filtered.length === 0 && !error ? (
+          <div className="text-center py-12 space-y-3">
+            <p className="text-muted-foreground">
+              {cards.length === 0
+                ? isEn
+                  ? "No patient cards yet — cards appear after patients register in the portal"
+                  : "Карточек пока нет — карточка создаётся, когда пациент регистрируется в личном кабинете"
+                : isEn ? "Nothing matches the search" : "По поиску ничего не найдено"}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              {isEn ? "Refresh" : "Обновить"}
+            </Button>
+          </div>
         ) : (
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((card: any) => (
               <Card key={card.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedCard(card)}>
