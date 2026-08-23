@@ -533,6 +533,7 @@ const PlaceholderGallery = ({
     const nextEntries = withGalleryCols(
       typeof writer === "function" ? writer(currentFiles) : writer,
       colsOverride !== undefined ? colsOverride : cols,
+      nsfwOverride !== undefined ? nsfwOverride : nsfw,
     );
 
 
