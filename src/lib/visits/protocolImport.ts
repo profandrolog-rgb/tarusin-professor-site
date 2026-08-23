@@ -78,18 +78,23 @@ function safeFileName(name: string): string {
  * a request»). Кладём оригинал в приватное хранилище и передаём только путь.
  */
 async function uploadForParsing(file: File): Promise<{ bucket: string; path: string } | null> {
-  try {
+  // Прокси/сеть может оборвать загрузку («Failed to fetch») — до 3 попыток.
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const path = `protocol-import/${Date.now()}-${crypto.randomUUID()}-${safeFileName(file.name)}`;
-    const { error } = await supabase.storage.from(IMPORT_BUCKET).upload(path, file, {
-      contentType: file.type || "application/octet-stream",
-      upsert: false,
-    });
-    if (error) return null;
-    return { bucket: IMPORT_BUCKET, path };
-  } catch {
-    return null;
+    try {
+      const { error } = await supabase.storage.from(IMPORT_BUCKET).upload(path, file, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+      if (!error) return { bucket: IMPORT_BUCKET, path };
+    } catch {
+      // сетевой сбой — повторяем ниже
+    }
+    if (attempt < 3) await new Promise((r) => setTimeout(r, 1500 * attempt));
   }
+  return null;
 }
+
 
 /** Подготовка файла к распознаванию: docx/txt → текст, pdf/картинка → хранилище. */
 export async function extractProtocolSource(file: File): Promise<ExtractedSource> {
