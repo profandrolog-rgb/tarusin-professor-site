@@ -39,23 +39,36 @@ function parseEntry(raw: string): Item {
 const ImageGallery = ({ caption, files }: Props) => {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  // Служебная запись `cols=N` задаёт число фото в ряд (2–5), остальное — файлы.
-  const { items, cols } = useMemo<{ items: Item[]; cols: number | null }>(() => {
+  // Служебные записи: `cols=N` — фото в ряд, `nsfw=1` — шторка 18+.
+  const { items, cols, nsfw } = useMemo<{ items: Item[]; cols: number | null; nsfw: boolean }>(() => {
     const parsed = files.map(parseEntry);
     let c: number | null = null;
+    let n = false;
     const rest: Item[] = [];
     const seen = new Set<string>();
     for (const it of parsed) {
       const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
       if (m) { c = Number(m[1]); continue; }
+      if (/^nsfw\s*=\s*(1|true|yes)$/i.test(it.filename)) { n = true; continue; }
       if (!it.filename) continue;
       const key = it.filename.toLowerCase();
       if (seen.has(key)) continue; // защита от дублей → «лишних пустых слотов»
       seen.add(key);
       rest.push(it);
     }
-    return { items: rest, cols: c };
+    return { items: rest, cols: c, nsfw: n };
   }, [files]);
+
+  // Шторка снята, если галерея открытая либо совершеннолетие уже подтверждено.
+  const [unlocked, setUnlocked] = useState(!nsfw);
+  useEffect(() => {
+    setUnlocked(!nsfw || getAgeConfirmedCookie());
+  }, [nsfw]);
+  const locked = nsfw && !unlocked;
+
+  useEffect(() => {
+    if (locked && lightboxIdx !== null) setLightboxIdx(null);
+  }, [locked, lightboxIdx]);
 
   useEffect(() => {
     if (lightboxIdx === null) return;
