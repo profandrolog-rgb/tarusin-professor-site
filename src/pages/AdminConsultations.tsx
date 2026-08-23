@@ -79,6 +79,9 @@ const AdminConsultations = () => {
       return data;
     },
     enabled: !!selectedId,
+    staleTime: 60 * 1000,
+    retry: 2,
+
   });
 
   const { data: allDocs = [] } = useQuery({
