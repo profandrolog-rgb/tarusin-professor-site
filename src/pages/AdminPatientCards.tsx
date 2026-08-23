@@ -101,11 +101,24 @@ const AdminPatientCards = () => {
                   : "Карточек пока нет — карточка создаётся, когда пациент регистрируется в личном кабинете"
                 : isEn ? "Nothing matches the search" : "По поиску ничего не найдено"}
             </p>
-            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
-              {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-              {isEn ? "Refresh" : "Обновить"}
-            </Button>
+            {cards.length === 0 ? (
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                {isEn
+                  ? "To edit data of a patient who already has visits, open the Patients database."
+                  : "Чтобы редактировать данные пациента, у которого уже есть записи и протоколы, откройте «Базу пациентов»."}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+                {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                {isEn ? "Refresh" : "Обновить"}
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/admin/patients">{isEn ? "Open Patients database" : "Открыть базу пациентов"}</Link>
+              </Button>
+            </div>
           </div>
+
         ) : (
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
