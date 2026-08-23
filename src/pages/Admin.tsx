@@ -24,6 +24,7 @@ import {
   Headphones,
   Video,
   Server,
+  Database,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,13 @@ import { DbHealthWidget } from "@/components/admin/DbHealthWidget";
 
 // === КЛИНИЧЕСКАЯ РАБОТА: пациенты, протоколы, ИИ, назначения ===
 const clinicalSections = [
+  {
+    title: "База пациентов",
+    description: "Редактирование пациентов, визитов, протоколов осмотров",
+    icon: Database,
+    href: "/admin/patients",
+    color: "text-blue-600",
+  },
   {
     title: "Карточки пациентов",
     description: "Портал пациентов: карточки, документы, чат",
