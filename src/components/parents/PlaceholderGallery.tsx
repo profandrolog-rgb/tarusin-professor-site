@@ -497,8 +497,12 @@ const PlaceholderGallery = ({
   const [cols, setCols] = useState<number | null>(parsedExisting.cols);
   useEffect(() => { setCols(parsedExisting.cols); }, [parsedExisting.cols]);
 
+  // Шторка 18+ для клинических фото (схемы не скрываем).
+  const [nsfw, setNsfw] = useState<boolean>(parsedExisting.nsfw);
+  useEffect(() => { setNsfw(parsedExisting.nsfw); }, [parsedExisting.nsfw]);
+
   const buildMarker = (entries: ExistingItem[]) => {
-    return buildGalleryMarkerFromEntries(caption, withGalleryCols(entries, cols));
+    return buildGalleryMarkerFromEntries(caption, withGalleryCols(entries, cols, nsfw));
   };
 
   // Парсит файлы из ТЕКУЩЕГО маркера в свежем article_content (по подписи).
