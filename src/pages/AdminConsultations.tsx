@@ -170,11 +170,33 @@ const AdminConsultations = () => {
         {!selectedId ? (
           /* Case list */
           <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {isFetching ? "Обновление…" : `Заявок: ${cases.length}`}
+              </p>
+              <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+                {isFetching ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                Обновить
+              </Button>
+            </div>
             {isLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>
+            ) : isError ? (
+              <div className="text-center py-12 space-y-3">
+                <p className="text-destructive">
+                  Не удалось загрузить список консультаций: {(casesError as any)?.message || "ошибка сети"}
+                </p>
+                <Button variant="outline" onClick={() => refetch()}>Повторить</Button>
+              </div>
             ) : cases.length === 0 ? (
-              <p className="text-muted-foreground text-center py-12">Нет консультаций</p>
+              <div className="text-center py-12 space-y-2">
+                <p className="text-muted-foreground">Заявок на онлайн-консультацию пока нет</p>
+                <p className="text-xs text-muted-foreground">
+                  Они появляются здесь после отправки формы пациентом или родителем.
+                </p>
+              </div>
             ) : (
+
               cases.map((c: any) => {
                 const s = statusLabels[c.status] || statusLabels.submitted;
                 return (
