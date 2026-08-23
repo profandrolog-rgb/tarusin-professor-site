@@ -269,7 +269,7 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
               <Input value={ageText} onChange={(e) => setAgeText(e.target.value)} />
             </div>
             <div className="md:col-span-2 space-y-1">
-              <Label>Название операции</Label>
+              <Label>Название операции <span className="text-destructive">*</span></Label>
               <Input
                 value={operationName}
                 onChange={(e) => setOperationName(e.target.value)}
@@ -298,7 +298,7 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
 
           <div className="rounded-md border p-3 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <Label>Ориентировочный срок операции</Label>
+              <Label>Ориентировочный срок операции <span className="text-destructive">*</span></Label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox checked={rangeMode} onCheckedChange={(v) => setRangeMode(v === true)} />
                 интервал дат
