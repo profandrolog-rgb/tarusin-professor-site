@@ -60,7 +60,7 @@ const ImageGallery = ({ caption, files }: Props) => {
     return { items: rest, cols: c, restricted: n };
   }, [files]);
 
-  // Шторка снята, если галерея открытая либо совершеннолетие уже подтверждено.
+  // Шторка снята, если галерея открытая либо медицинское предупреждение уже принято.
   const [unlocked, setUnlocked] = useState(!restricted);
   useEffect(() => {
     setUnlocked(!restricted || getClinicalAcknowledgedCookie());
