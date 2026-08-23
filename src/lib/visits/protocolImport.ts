@@ -61,8 +61,16 @@ export interface ExtractedSource {
 const IMPORT_BUCKET = "patient-lab-docs";
 
 function safeFileName(name: string): string {
-  return name.replace(/[^a-zA-Zа-яА-Я0-9._-]+/g, "_").slice(-120) || "protocol";
+  // Storage не принимает не-ASCII ключи ("Invalid key") — чистим имя файла.
+  const cleaned = name
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(-120);
+  return cleaned || "protocol";
 }
+
 
 /**
  * Большой PDF/скан нельзя отправлять как base64 внутри тела запроса к функции:
