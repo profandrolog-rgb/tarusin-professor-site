@@ -24,18 +24,24 @@ const AdminPatientCards = () => {
   const [search, setSearch] = useState("");
   const [selectedCard, setSelectedCard] = useState<any>(null);
 
-  const { data: cards = [], isLoading } = useQuery({
+  const { data: cards = [], isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["admin-patient-cards"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patient_cards")
-        .select("*")
-        .order("updated_at", { ascending: false });
+        .select("id, user_id, patient_full_name, parent_name, diagnosis, updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(300);
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: isAdmin,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => 400 * 2 ** attempt,
   });
+
 
   const filtered = cards.filter((c: any) =>
     c.patient_full_name?.toLowerCase().includes(search.toLowerCase()) ||
