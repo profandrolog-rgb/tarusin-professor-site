@@ -41,6 +41,7 @@ const ClinicalCurtain = ({ onConfirm }: Props) => {
     if (!el) return;
     const measure = () => setCompact(el.clientHeight < 420);
     measure();
+    if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
