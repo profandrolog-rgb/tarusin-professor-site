@@ -42,3 +42,18 @@ describe("ImageGallery — выравнивание последнего ряд�
     });
   }
 });
+
+describe("ImageGallery — шторка 18+", () => {
+  it("nsfw=1: галерея закрыта шторкой, лайтбокс недоступен", () => {
+    const { container, getByText } = render(
+      <ImageGallery caption="Тест" files={["nsfw=1", "a1.jpg", "a2.jpg"]} />,
+    );
+    expect(getByText(/Открыть клиническую галерею/i)).toBeTruthy();
+    expect(container.querySelectorAll("img").length).toBe(2);
+  });
+
+  it("без nsfw: шторки нет", () => {
+    const { queryByText } = render(<ImageGallery caption="Тест" files={["a1.jpg", "a2.jpg"]} />);
+    expect(queryByText(/Открыть клиническую галерею/i)).toBeNull();
+  });
+});
