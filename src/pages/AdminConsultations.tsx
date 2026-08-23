@@ -97,6 +97,9 @@ const AdminConsultations = () => {
       return data;
     },
     enabled: rounds.length > 0,
+    staleTime: 60 * 1000,
+    retry: 2,
+
   });
 
   const getDocUrl = async (path: string) => {
