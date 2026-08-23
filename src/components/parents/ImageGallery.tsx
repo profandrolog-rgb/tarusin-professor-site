@@ -131,6 +131,12 @@ const ImageGallery = ({ caption, files }: Props) => {
           {caption}
         </h4>
       )}
+      <div className={locked ? "relative min-h-[280px]" : "relative"}>
+      <div
+        className={locked ? "pointer-events-none select-none" : "transition-[filter] duration-500"}
+        style={locked ? { filter: "blur(26px) saturate(0.85)", transform: "scale(1.02)" } : undefined}
+        aria-hidden={locked}
+      >
       {isSingle ? (
         (() => {
           const single = items[0];
