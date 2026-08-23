@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
-import ClinicalCurtain, { getAgeConfirmedCookie } from "@/components/gallery/ClinicalCurtain";
+import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
 
 interface Props {
   caption: string;
@@ -40,8 +40,8 @@ function parseEntry(raw: string): Item {
 const ImageGallery = ({ caption, files }: Props) => {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  // Служебные записи: `cols=N` — фото в ряд, `nsfw=1` — шторка 18+.
-  const { items, cols, nsfw } = useMemo<{ items: Item[]; cols: number | null; nsfw: boolean }>(() => {
+  // Служебные записи: `cols=N` — фото в ряд, `clinical=restricted` — медицинская шторка.
+  const { items, cols, restricted } = useMemo<{ items: Item[]; cols: number | null; restricted: boolean }>(() => {
     const parsed = files.map(parseEntry);
     let c: number | null = null;
     let n = false;
@@ -50,22 +50,22 @@ const ImageGallery = ({ caption, files }: Props) => {
     for (const it of parsed) {
       const m = it.filename.match(/^cols\s*=\s*([1-6])$/i);
       if (m) { c = Number(m[1]); continue; }
-      if (/^nsfw\s*=\s*(1|true|yes)$/i.test(it.filename)) { n = true; continue; }
+      if (/^(?:clinical\s*=\s*restricted|nsfw\s*=\s*(?:1|true|yes))$/i.test(it.filename)) { n = true; continue; }
       if (!it.filename) continue;
       const key = it.filename.toLowerCase();
       if (seen.has(key)) continue; // защита от дублей → «лишних пустых слотов»
       seen.add(key);
       rest.push(it);
     }
-    return { items: rest, cols: c, nsfw: n };
+    return { items: rest, cols: c, restricted: n };
   }, [files]);
 
   // Шторка снята, если галерея открытая либо совершеннолетие уже подтверждено.
-  const [unlocked, setUnlocked] = useState(!nsfw);
+  const [unlocked, setUnlocked] = useState(!restricted);
   useEffect(() => {
-    setUnlocked(!nsfw || getAgeConfirmedCookie());
-  }, [nsfw]);
-  const locked = nsfw && !unlocked;
+    setUnlocked(!restricted || getClinicalAcknowledgedCookie());
+  }, [restricted]);
+  const locked = restricted && !unlocked;
 
   useEffect(() => {
     if (locked && lightboxIdx !== null) setLightboxIdx(null);
