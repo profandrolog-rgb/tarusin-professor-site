@@ -32,8 +32,17 @@ interface FileStatus {
 const PARSER_BUCKET = "patient-lab-docs";
 
 function safeFileName(name: string): string {
-  return name.replace(/[^a-zA-Zа-яА-Я0-9._-]+/g, "_").slice(-120) || "document.pdf";
+  // Supabase Storage отклоняет ключи с не-ASCII символами ("Invalid key"),
+  // поэтому кириллицу и прочие символы заменяем на "_".
+  const cleaned = name
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(-120);
+  return cleaned || "document.pdf";
 }
+
 
 async function functionErrorMessage(error: any): Promise<string> {
   const response = error?.context;
