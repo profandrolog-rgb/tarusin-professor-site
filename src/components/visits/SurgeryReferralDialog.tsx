@@ -145,11 +145,34 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
       toast.error("Укажите ФИО пациента");
       return;
     }
+    if (!operationName.trim()) {
+      toast.error("Укажите название операции", {
+        description: "Без названия операции путёвку выдавать нельзя.",
+      });
+      return;
+    }
+    if (!dateFrom) {
+      toast.error("Укажите дату операции", {
+        description: rangeMode
+          ? "Заполните начало диапазона сроков операции."
+          : "Выберите дату операции или включите диапазон сроков.",
+      });
+      return;
+    }
+    if (rangeMode && !dateTo) {
+      toast.error("Укажите конец диапазона сроков операции");
+      return;
+    }
+    if (rangeMode && dateTo && dateTo < dateFrom) {
+      toast.error("Конец диапазона раньше начала — проверьте сроки операции");
+      return;
+    }
     const chosen = exams.filter((e) => e.checked);
     if (chosen.length === 0) {
       toast.error("Отметьте хотя бы одно обследование");
       return;
     }
+
     setSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
