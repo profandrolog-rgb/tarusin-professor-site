@@ -307,7 +307,8 @@ export default function GalleryEditorDialog({
               dragOver ? "border-primary bg-primary/5 text-primary" : "border-muted-foreground/30 text-muted-foreground"
             }`}
           >
-            Перетащите изображения сюда или нажмите «Загрузить». Новые фото кадрируются по выбранной пропорции.
+            Перетащите изображения сюда, вставьте из буфера обмена (Ctrl/⌘ + V) или нажмите «Загрузить».
+            Новые фото кадрируются по выбранной пропорции.
           </div>
 
           {images.length > 0 && (
