@@ -69,6 +69,15 @@ const Fallback = <div className="p-4 flex justify-center"><Loader2 className="w-
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Публичная страница обзора кэшируется react-query (staleTime 5 мин),
+  // поэтому после сохранения из редактора сбрасываем её кэш —
+  // иначе только что вставленная галерея не появляется до истечения кэша.
+  const invalidatePublicCache = useCallback((slug?: string) => {
+    queryClient.invalidateQueries({ queryKey: ["research-review", slug] });
+    queryClient.invalidateQueries({ queryKey: ["research-reviews"] });
+  }, [queryClient]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
