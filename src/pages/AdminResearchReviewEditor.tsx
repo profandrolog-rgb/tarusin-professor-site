@@ -248,12 +248,14 @@ const AdminResearchReviewEditor = () => {
       toast.success(newStatus ? `Статус: ${newStatus}` : "Сохранено");
       setDirty(false);
       if (newStatus) setRow({ ...row, ...payload });
+      invalidatePublicCache(row.slug);
     }
   }
 
   async function saveSilently(patch: any) {
     if (!row) return;
     await supabase.from("research_reviews" as any).update(patch).eq("id", row.id);
+    invalidatePublicCache(row.slug);
   }
 
   // Функциональный апдейт одного материала + дебаунс-сейв в базу.
