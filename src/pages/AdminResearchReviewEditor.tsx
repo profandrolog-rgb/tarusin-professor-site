@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, lazy, Suspense, useCallback } from "react";
 import type { Editor } from "@tiptap/react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
