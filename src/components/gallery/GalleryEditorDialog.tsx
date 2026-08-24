@@ -256,7 +256,7 @@ export default function GalleryEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" onPaste={handlePaste}>
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
 
         <div className="space-y-3">
