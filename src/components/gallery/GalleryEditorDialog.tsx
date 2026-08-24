@@ -206,6 +206,24 @@ export default function GalleryEditorDialog({
     if (fileInput.current) fileInput.current.value = "";
   }
 
+  // Вставка изображений из буфера обмена (Ctrl/⌘ + V) в любом месте диалога.
+  // Текстовую вставку не перехватываем — реагируем только на файлы-картинки.
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const files: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind !== "file") continue;
+      const f = it.getAsFile();
+      if (f && f.type.startsWith("image/")) files.push(f);
+    }
+    if (!files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    handleFiles(files);
+  }
+
   async function updateImage(id: string, patch: Partial<GalleryImage>) {
     const im = images.find((x) => x.id === id);
     if (!im) return;
