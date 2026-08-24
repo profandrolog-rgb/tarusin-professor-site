@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, lazy, Suspense, useCallback } from "react";
 import type { Editor } from "@tiptap/react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +70,15 @@ const Fallback = <div className="p-4 flex justify-center"><Loader2 className="w-
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Публичная страница обзора кэшируется react-query (staleTime 5 мин),
+  // поэтому после сохранения из редактора сбрасываем её кэш —
+  // иначе только что вставленная галерея не появляется до истечения кэша.
+  const invalidatePublicCache = useCallback((slug?: string) => {
+    queryClient.invalidateQueries({ queryKey: ["research-review", slug] });
+    queryClient.invalidateQueries({ queryKey: ["research-reviews"] });
+  }, [queryClient]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<any>(null);
@@ -248,12 +258,14 @@ const AdminResearchReviewEditor = () => {
       toast.success(newStatus ? `Статус: ${newStatus}` : "Сохранено");
       setDirty(false);
       if (newStatus) setRow({ ...row, ...payload });
+      invalidatePublicCache(row.slug);
     }
   }
 
   async function saveSilently(patch: any) {
     if (!row) return;
     await supabase.from("research_reviews" as any).update(patch).eq("id", row.id);
+    invalidatePublicCache(row.slug);
   }
 
   // Функциональный апдейт одного материала + дебаунс-сейв в базу.

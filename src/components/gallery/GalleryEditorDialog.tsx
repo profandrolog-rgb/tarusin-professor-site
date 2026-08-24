@@ -206,6 +206,24 @@ export default function GalleryEditorDialog({
     if (fileInput.current) fileInput.current.value = "";
   }
 
+  // Вставка изображений из буфера обмена (Ctrl/⌘ + V) в любом месте диалога.
+  // Текстовую вставку не перехватываем — реагируем только на файлы-картинки.
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const files: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind !== "file") continue;
+      const f = it.getAsFile();
+      if (f && f.type.startsWith("image/")) files.push(f);
+    }
+    if (!files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    handleFiles(files);
+  }
+
   async function updateImage(id: string, patch: Partial<GalleryImage>) {
     const im = images.find((x) => x.id === id);
     if (!im) return;
@@ -256,7 +274,7 @@ export default function GalleryEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" onPaste={handlePaste}>
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
 
         <div className="space-y-3">
@@ -307,7 +325,8 @@ export default function GalleryEditorDialog({
               dragOver ? "border-primary bg-primary/5 text-primary" : "border-muted-foreground/30 text-muted-foreground"
             }`}
           >
-            Перетащите изображения сюда или нажмите «Загрузить». Новые фото кадрируются по выбранной пропорции.
+            Перетащите изображения сюда, вставьте из буфера обмена (Ctrl/⌘ + V) или нажмите «Загрузить».
+            Новые фото кадрируются по выбранной пропорции.
           </div>
 
           {images.length > 0 && (
