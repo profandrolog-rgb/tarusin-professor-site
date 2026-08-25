@@ -566,7 +566,7 @@ const PlaceholderGallery = ({
   };
 
   // --- Операции над галереей целиком: удалить / переместить по тексту ---
-  const [galleryOp, setGalleryOp] = useState<"delete" | "up" | "down" | null>(null);
+  const [galleryOp, setGalleryOp] = useState<"delete" | "up" | "down" | "rename" | null>(null);
 
   /** Читает свежий контент, применяет преобразование и сохраняет. */
   const persistContent = async (
