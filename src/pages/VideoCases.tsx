@@ -147,15 +147,27 @@ const VideoCases = () => {
 
       if (error) throw error;
 
-      const { data: reactions } = await supabase
-        .from("video_case_reactions")
-        .select("*");
+      // Public aggregates only; own reaction fetched separately.
+      const { data: reactionTotals } = await supabase
+        .from("video_case_reaction_counts" as any)
+        .select("video_case_id, reaction_type, count");
+      const totals = (reactionTotals as unknown as { video_case_id: string; reaction_type: string; count: number }[]) || [];
+
+      let myReactions: { video_case_id: string; reaction_type: string }[] = [];
+      if (user) {
+        const { data: mine } = await supabase
+          .from("video_case_reactions")
+          .select("video_case_id, reaction_type")
+          .eq("user_id", user.id);
+        myReactions = mine || [];
+      }
 
       const enriched = (casesData || []).map((c) => {
-        const caseReactions = (reactions || []).filter((r) => r.video_case_id === c.id);
-        const likes = caseReactions.filter((r) => r.reaction_type === "like").length;
-        const dislikes = caseReactions.filter((r) => r.reaction_type === "dislike").length;
-        const userReaction = user ? caseReactions.find((r) => r.user_id === user.id)?.reaction_type || null : null;
+        const caseTotals = totals.filter((r) => r.video_case_id === c.id);
+        const countOf = (type: string) => Number(caseTotals.find((r) => r.reaction_type === type)?.count || 0);
+        const likes = countOf("like");
+        const dislikes = countOf("dislike");
+        const userReaction = myReactions.find((r) => r.video_case_id === c.id)?.reaction_type || null;
 
         return {
           id: c.id,
