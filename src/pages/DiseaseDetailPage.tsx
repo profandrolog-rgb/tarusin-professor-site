@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useLoaderData, useLocation } from "react-router-dom";
-import { ChevronRight, ArrowLeft, Languages } from "lucide-react";
+import { ChevronRight, ArrowLeft, Languages, Pencil } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
 import { useAuth } from "@/hooks/useAuth";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
 import HtmlArticle from "@/components/parents/HtmlArticle";
+import InlineArticlePageEditor from "@/components/parents/InlineArticlePageEditor";
 import { useContentTranslation } from "@/hooks/useContentTranslation";
 import { getLangFromPath } from "@/lib/i18nUrls";
 
@@ -60,6 +61,7 @@ const DiseaseDetailPage = () => {
   const [article, setArticle] = useState<any>(loaderData?.article ?? null);
   const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
   const [notFound, setNotFound] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const { translation, loading: trLoading } = useContentTranslation(
     "disease_article",
@@ -177,9 +179,9 @@ const DiseaseDetailPage = () => {
   return (
     <AgeConfirmationModal>
       <div
-        className="min-h-screen bg-background select-none"
-        onContextMenu={(e) => e.preventDefault()}
-        onCopy={(e) => e.preventDefault()}
+        className={`min-h-screen bg-background ${editing ? "" : "select-none"}`}
+        onContextMenu={(e) => { if (!editing) e.preventDefault(); }}
+        onCopy={(e) => { if (!editing) e.preventDefault(); }}
       >
         <PageMeta
           title={pageTitle}
@@ -218,7 +220,29 @@ const DiseaseDetailPage = () => {
         })()}
 
         <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl overflow-x-visible">
-          {enMissing ? (
+          {isAdmin && !isEn && (
+            <div className="mb-6 flex justify-end">
+              {!editing && (
+                <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-1.5">
+                  <Pencil className="w-4 h-4" /> Редактировать страницу
+                </Button>
+              )}
+            </div>
+          )}
+
+          {isAdmin && !isEn && editing ? (
+            <InlineArticlePageEditor
+              article={{
+                id: article.id,
+                slug: article.slug,
+                title: article.title,
+                description: article.description ?? null,
+                article_content: article.article_content ?? "",
+              }}
+              onSaved={(patch) => setArticle({ ...article, ...patch })}
+              onClose={() => setEditing(false)}
+            />
+          ) : enMissing ? (
             <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
               <CardContent className="p-10 text-center">
                 <Languages className="w-10 h-10 text-primary mx-auto mb-4" />
