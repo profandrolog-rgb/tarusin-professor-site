@@ -26,6 +26,11 @@ export default function VisitRecognizedLabs({ visitId, refreshToken, onRowsLoade
   const [rows, setRows] = useState<LabRow[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Держим коллбэк в ref: родитель передаёт новую стрелку на каждый рендер,
+  // из-за чего запрос уходил заново на каждое нажатие клавиши.
+  const onRowsLoadedRef = useRef(onRowsLoaded);
+  useEffect(() => { onRowsLoadedRef.current = onRowsLoaded; }, [onRowsLoaded]);
+
   const load = useCallback(async () => {
     if (!visitId) return;
     setLoading(true);
@@ -37,11 +42,12 @@ export default function VisitRecognizedLabs({ visitId, refreshToken, onRowsLoade
       .order("test_name", { ascending: true });
     const list = (data as LabRow[]) || [];
     setRows(list);
-    onRowsLoaded?.(list.map((r) => r.id));
+    onRowsLoadedRef.current?.(list.map((r) => r.id));
     setLoading(false);
-  }, [visitId, onRowsLoaded]);
+  }, [visitId]);
 
   useEffect(() => { load(); }, [load, refreshToken]);
+
 
   if (!visitId) return null;
 
