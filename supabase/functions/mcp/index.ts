@@ -7,7 +7,7 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.28.0";
 
 // src/lib/mcp/tools/search-disease-articles.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.28.0";
-import { z } from "npm:zod@^4.4.3";
+import { z } from "npm:zod@3.25.76";
 
 // src/lib/mcp/supabase.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.93.2";
@@ -93,7 +93,7 @@ var search_disease_articles_default = defineTool({
 
 // src/lib/mcp/tools/get-disease-article.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.28.0";
-import { z as z2 } from "npm:zod@^4.4.3";
+import { z as z2 } from "npm:zod@3.25.76";
 var get_disease_article_default = defineTool2({
   name: "get_disease_article",
   title: "Get disease article",
@@ -119,7 +119,7 @@ var get_disease_article_default = defineTool2({
 
 // src/lib/mcp/tools/search-videos.ts
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.28.0";
-import { z as z3 } from "npm:zod@^4.4.3";
+import { z as z3 } from "npm:zod@3.25.76";
 var search_videos_default = defineTool3({
   name: "search_videos",
   title: "Search videos",
@@ -154,7 +154,7 @@ var search_videos_default = defineTool3({
 
 // src/lib/mcp/tools/list-blog-posts.ts
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.28.0";
-import { z as z4 } from "npm:zod@^4.4.3";
+import { z as z4 } from "npm:zod@3.25.76";
 var list_blog_posts_default = defineTool4({
   name: "list_blog_posts",
   title: "List blog posts",
@@ -185,7 +185,7 @@ var list_blog_posts_default = defineTool4({
 
 // src/lib/mcp/tools/search-patients.ts
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.28.0";
-import { z as z5 } from "npm:zod@^4.4.3";
+import { z as z5 } from "npm:zod@3.25.76";
 var search_patients_default = defineTool5({
   name: "search_patients",
   title: "Search patients",
@@ -212,7 +212,7 @@ var search_patients_default = defineTool5({
 
 // src/lib/mcp/tools/list-patient-visits.ts
 import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.28.0";
-import { z as z6 } from "npm:zod@^4.4.3";
+import { z as z6 } from "npm:zod@3.25.76";
 var list_patient_visits_default = defineTool6({
   name: "list_patient_visits",
   title: "List patient visits",

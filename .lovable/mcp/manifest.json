@@ -26,21 +26,22 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "query": {
-              "description": "Search text, e.g. «гинекомастия».",
               "type": "string",
-              "minLength": 2
+              "minLength": 2,
+              "description": "Search text, e.g. «гинекомастия»."
             },
             "limit": {
-              "default": 10,
               "type": "integer",
               "minimum": 1,
-              "maximum": 50
+              "maximum": 50,
+              "default": 10
             }
-          }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -54,7 +55,6 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "slug": {
@@ -65,7 +65,9 @@
           },
           "required": [
             "slug"
-          ]
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -79,26 +81,27 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "query": {
-              "description": "Search text.",
               "type": "string",
-              "minLength": 2
+              "minLength": 2,
+              "description": "Search text."
             },
             "rubric": {
-              "description": "Filter by rubric slug.",
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "description": "Filter by rubric slug."
             },
             "limit": {
-              "default": 10,
               "type": "integer",
               "minimum": 1,
-              "maximum": 50
+              "maximum": 50,
+              "default": 10
             }
-          }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -112,21 +115,22 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "query": {
-              "description": "Optional search text in title or excerpt.",
               "type": "string",
-              "minLength": 2
+              "minLength": 2,
+              "description": "Optional search text in title or excerpt."
             },
             "limit": {
-              "default": 10,
               "type": "integer",
               "minimum": 1,
-              "maximum": 50
+              "maximum": 50,
+              "default": 10
             }
-          }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -140,7 +144,6 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "query": {
@@ -149,15 +152,17 @@
               "description": "Part of the patient name or history number."
             },
             "limit": {
-              "default": 10,
               "type": "integer",
               "minimum": 1,
-              "maximum": 25
+              "maximum": 25,
+              "default": 10
             }
           },
           "required": [
             "query"
-          ]
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
@@ -171,25 +176,25 @@
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
           "properties": {
             "patient_id": {
               "type": "string",
               "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
               "description": "Patient id returned by search_patients."
             },
             "limit": {
-              "default": 20,
               "type": "integer",
               "minimum": 1,
-              "maximum": 50
+              "maximum": 50,
+              "default": 20
             }
           },
           "required": [
             "patient_id"
-          ]
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       }
