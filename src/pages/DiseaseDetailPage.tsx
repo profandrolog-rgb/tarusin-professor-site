@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useLoaderData, useLocation } from "react-router-dom";
-import { ChevronRight, ArrowLeft, Languages } from "lucide-react";
+import { ChevronRight, ArrowLeft, Languages, Pencil } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import type { DiseaseLoaderData } from "@/loaders/diseaseLoader";
 import { useAuth } from "@/hooks/useAuth";
 import MarkdownArticle from "@/components/parents/MarkdownArticle";
 import HtmlArticle from "@/components/parents/HtmlArticle";
+import InlineArticlePageEditor from "@/components/parents/InlineArticlePageEditor";
 import { useContentTranslation } from "@/hooks/useContentTranslation";
 import { getLangFromPath } from "@/lib/i18nUrls";
 
