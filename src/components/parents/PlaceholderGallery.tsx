@@ -561,6 +561,93 @@ const PlaceholderGallery = ({
     return true;
   };
 
+  // --- Операции над галереей целиком: удалить / переместить по тексту ---
+  const [galleryOp, setGalleryOp] = useState<"delete" | "up" | "down" | null>(null);
+
+  /** Читает свежий контент, применяет преобразование и сохраняет. */
+  const persistContent = async (
+    transform: (content: string) => { content: string; ok: boolean; warn?: string },
+  ): Promise<boolean> => {
+    const { data: fresh, error: fetchErr } = await (supabase as any)
+      .from(ownerTable)
+      .select(contentColumn)
+      .eq("id", articleId)
+      .maybeSingle();
+    if (fetchErr || !fresh) {
+      toast.error("Не удалось прочитать запись: " + (fetchErr?.message || "нет данных"));
+      return false;
+    }
+    const baseContent = (fresh as any)[contentColumn] || fullContent;
+    const res = transform(baseContent);
+    if (!res.ok) {
+      toast.warning(res.warn || "Изменение не применено");
+      return false;
+    }
+    const { error, data: updated } = await (supabase as any)
+      .from(ownerTable)
+      .update({ [contentColumn]: res.content })
+      .eq("id", articleId)
+      .select("id");
+    if (error) {
+      toast.error("Не удалось сохранить: " + error.message);
+      return false;
+    }
+    if (!updated || updated.length === 0) {
+      toast.error("Сохранение не прошло (нет прав или сессия истекла). Войдите заново.");
+      return false;
+    }
+    onContentChange?.(res.content);
+    return true;
+  };
+
+  const deleteWholeGallery = async () => {
+    if (galleryOp) return;
+    const msg = existing.length
+      ? `Удалить галерею «${caption}» вместе с ${existing.length} фото из текста статьи?`
+      : `Удалить пустой блок галереи «${caption}» из текста статьи?`;
+    if (!confirm(msg)) return;
+    setGalleryOp("delete");
+    try {
+      const ok = await persistContent((content) => {
+        const r = removeGalleryMarkerFromContent(content, marker, caption);
+        return { content: r.content, ok: r.found, warn: "Маркер галереи не найден в тексте" };
+      });
+      if (ok) {
+        // Файлы в хранилище убираем best-effort, чтобы не оставлять мусор.
+        try {
+          if (existing.length) {
+            await supabase.storage
+              .from(ARTICLE_IMAGES_BUCKET)
+              .remove(existing.map((e) => `${ARTICLE_IMAGES_FOLDER}/${e.filename}`));
+          }
+        } catch { /* noop */ }
+        toast.success("Галерея удалена");
+      }
+    } finally {
+      setGalleryOp(null);
+    }
+  };
+
+  const moveGallery = async (direction: "up" | "down") => {
+    if (galleryOp) return;
+    setGalleryOp(direction);
+    try {
+      const ok = await persistContent((content) => {
+        const r = moveGalleryMarkerInContent(content, marker, caption, direction);
+        return {
+          content: r.content,
+          ok: r.moved,
+          warn: direction === "up" ? "Галерея уже в начале статьи" : "Галерея уже в конце статьи",
+        };
+      });
+      if (ok) toast.success(direction === "up" ? "Галерея сдвинута выше" : "Галерея сдвинута ниже");
+    } finally {
+      setGalleryOp(null);
+    }
+  };
+
+
+
   const deleteExisting = async (filename: string) => {
     if (deletingFile) return;
     if (!confirm("Удалить это фото из галереи?")) return;
