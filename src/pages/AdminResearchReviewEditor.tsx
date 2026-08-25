@@ -67,6 +67,26 @@ const VOICE_LABEL: Record<VoiceMode, string> = {
 
 const Fallback = <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
+/**
+ * Совместимость со старым форматом: раньше fact_check_report сохранялся как
+ * массив {quote, issue, suggested_fix, confidence}. Новый UI ждёт объект —
+ * поэтому старые записи приводим к нему, чтобы заметки не «исчезали».
+ */
+function normalizeFactCheck(value: any): any {
+  if (Array.isArray(value)) {
+    return {
+      not_found_in_source: value.map((it: any) => ({
+        marker: it?.marker,
+        claim: it?.quote ?? it?.claim ?? "",
+        reason: [it?.issue, it?.suggested_fix ? `Предложение: ${it.suggested_fix}` : null]
+          .filter(Boolean)
+          .join(" — "),
+      })),
+    };
+  }
+  return value && typeof value === "object" ? value : {};
+}
+
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -117,7 +137,7 @@ const AdminResearchReviewEditor = () => {
   }, [id]);
 
   const orchStateRaw: any = row?.orchestrator_state && typeof row.orchestrator_state === "object" ? row.orchestrator_state : null;
-  const legacyState: any = row?.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
+  const legacyState: any = row?.fact_check_report && typeof row.fact_check_report === "object" && !Array.isArray(row.fact_check_report) ? row.fact_check_report : {};
   const orchState: any = orchStateRaw && Object.keys(orchStateRaw).length > 0 ? orchStateRaw : legacyState;
   const status: OrchestratorStatus = orchState.orchestrator_status;
   const lastStep: string | undefined = orchState.last_step;
@@ -503,7 +523,7 @@ const AdminResearchReviewEditor = () => {
   if (!row) return <div className="p-6">Не найдено</div>;
 
   const refs: Ref[] = Array.isArray(row.references_list) ? row.references_list : [];
-  const fcReport = row.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
+  const fcReport = normalizeFactCheck(row.fact_check_report);
   const materials: Material[] = Array.isArray(row.source_materials) ? row.source_materials : [];
   const history: RefinementEntry[] = Array.isArray(row.refinement_history) ? row.refinement_history : [];
 

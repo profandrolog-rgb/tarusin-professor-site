@@ -264,17 +264,22 @@ const RichTextEditor = ({ content, onChange, placeholder, storageBucket = "disea
     await runSpellcheckCore(html);
   }, [editor, runSpellcheckCore]);
 
-  // Автозапуск при появлении текста в редакторе (первое открытие, а также
-  // после подстановки текста оркестратором).
+  // Автозапуск ОДИН раз — при первом появлении текста в редакторе
+  // (первое открытие, а также после подстановки текста оркестратором).
+  // Дальнейшие правки обрабатывает дебаунс-эффект ниже, иначе проверка
+  // орфографии срабатывала бы на каждое нажатие клавиши.
+  const autoRanRef = useRef(false);
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || autoRanRef.current) return;
     const html = editor.getHTML();
     const plain = plainOf(html);
     if (plain.length < 3) return;
     const h = hashText(plain);
     if (checkedHashRef.current === h) return;
+    autoRanRef.current = true;
     void runSpellcheckCore(html, { silent: true });
   }, [editor, content, runSpellcheckCore]);
+
 
   // Дебаунс при редактировании: 20 сек тишины и текст реально изменился.
   useEffect(() => {

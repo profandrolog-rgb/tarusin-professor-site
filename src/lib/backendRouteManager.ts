@@ -14,6 +14,7 @@
 // маршрута касается REST/auth/storage/functions; для Realtime потребуется
 // пересоздание клиента — сознательно вне этой задачи.
 
+import { rawFetch } from "@/lib/rawFetch";
 import { ALT_BASES, PRIMARY_BASE, ROUTE_BASES } from "./backendEndpoints";
 
 export const PROBE_TIMEOUT_MS = 2500;
@@ -194,7 +195,7 @@ export async function probeHealth(base: string, apiKey: string): Promise<ProbeRe
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
   try {
-    const resp = await fetch(`${base}/auth/v1/health`, {
+    const resp = await rawFetch(`${base}/auth/v1/health`, {
       headers: apiKey ? { apikey: apiKey } : undefined,
       signal: ctrl.signal,
       cache: "no-store",
