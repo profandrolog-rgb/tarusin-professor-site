@@ -677,15 +677,19 @@ const PlaceholderGallery = ({
     if (!confirm("Удалить это фото из галереи?")) return;
     setDeletingFile(filename);
     try {
-      // best-effort удаление файла из storage
-      await supabase.storage
-        .from("disease-media")
-        .remove([`${ARTICLE_IMAGES_FOLDER}/${filename}`]);
-      // Удаляем по актуальному списку из БД, а не по prop-снимку
+      // ВАЖНО: сначала сохраняем текст статьи без этого файла, и только потом
+      // убираем сам файл из хранилища. Обратный порядок при сбое сети приводил
+      // к «потере» уже загруженных картинок: файл удалён, ссылка осталась.
       const ok = await persistEntries((current) =>
         current.filter((e) => e.filename !== filename),
       );
-      if (ok) toast.success("Фото удалено");
+      if (!ok) return;
+      try {
+        await supabase.storage
+          .from("disease-media")
+          .remove([`${ARTICLE_IMAGES_FOLDER}/${filename}`]);
+      } catch { /* файл-сирота безопаснее, чем битая ссылка */ }
+      toast.success("Фото удалено");
     } finally {
       setDeletingFile(null);
     }
