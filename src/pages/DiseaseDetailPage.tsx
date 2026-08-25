@@ -61,6 +61,7 @@ const DiseaseDetailPage = () => {
   const [article, setArticle] = useState<any>(loaderData?.article ?? null);
   const [related, setRelated] = useState<any[]>(loaderData?.related ?? []);
   const [notFound, setNotFound] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const { translation, loading: trLoading } = useContentTranslation(
     "disease_article",
