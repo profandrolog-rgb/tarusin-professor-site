@@ -80,7 +80,7 @@ const SmartSearch = () => {
         ]);
         const items: Suggestion[] = [];
         (diseases.data ?? []).forEach((r: any) => items.push({ kind: "disease", title: r.title, url: `/for-parents/${r.slug}` }));
-        (blogs.data ?? []).forEach((r: any) => items.push({ kind: "blog", title: r.title, url: `/blog#post-${r.slug ?? r.id}` }));
+        (blogs.data ?? []).forEach((r: any) => items.push({ kind: "blog", title: r.title, url: `/blog#post-${r.id}` }));
         (videos.data ?? []).forEach((r: any) => items.push({ kind: "video", title: r.title, url: `/video-cases#video-${r.id}` }));
         setAutocomplete(items.slice(0, 8));
       } catch {
