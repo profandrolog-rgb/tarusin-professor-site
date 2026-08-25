@@ -179,9 +179,9 @@ const DiseaseDetailPage = () => {
   return (
     <AgeConfirmationModal>
       <div
-        className="min-h-screen bg-background select-none"
-        onContextMenu={(e) => e.preventDefault()}
-        onCopy={(e) => e.preventDefault()}
+        className={`min-h-screen bg-background ${editing ? "" : "select-none"}`}
+        onContextMenu={(e) => { if (!editing) e.preventDefault(); }}
+        onCopy={(e) => { if (!editing) e.preventDefault(); }}
       >
         <PageMeta
           title={pageTitle}
