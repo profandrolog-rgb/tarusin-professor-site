@@ -160,6 +160,8 @@ export default function GalleryEditorDialog({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [defaultKind, setDefaultKind] = useState<GalleryKind>("default");
+  // Файлы, убранные из галереи: удаляем из хранилища только после сохранения.
+  const [pendingRemovals, setPendingRemovals] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -167,6 +169,7 @@ export default function GalleryEditorDialog({
       setCaption(initialCaption);
       setImages(initialImages);
       setDragOver(false);
+      setPendingRemovals([]);
     }
   }, [open, initialCaption, initialImages]);
 
@@ -250,7 +253,9 @@ export default function GalleryEditorDialog({
     const im = images.find((x) => x.id === id);
     if (!im) return;
     setImages((prev) => prev.filter((x) => x.id !== id));
-    try { await supabase.storage.from(bucket).remove([`${folder}/${im.filename}`]); } catch { /* noop */ }
+    // Файл из хранилища НЕ удаляем сразу: если диалог закрыт без сохранения
+    // (или сохранение не прошло), картинка терялась безвозвратно.
+    setPendingRemovals((prev) => [...prev, im.filename]);
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -267,6 +272,14 @@ export default function GalleryEditorDialog({
   function submit() {
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
     onSave({ caption: caption.trim(), images });
+    // Удаляем файлы из хранилища только после подтверждённого сохранения списка,
+    // и только те, которых нет в итоговой галерее.
+    const keep = new Set(images.map((i) => i.filename));
+    const drop = pendingRemovals.filter((f) => !keep.has(f));
+    setPendingRemovals([]);
+    if (drop.length) {
+      void supabase.storage.from(bucket).remove(drop.map((f) => `${folder}/${f}`)).catch(() => {});
+    }
     onOpenChange(false);
   }
 
