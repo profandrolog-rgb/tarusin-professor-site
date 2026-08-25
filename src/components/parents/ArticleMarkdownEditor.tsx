@@ -62,7 +62,12 @@ interface Props {
   hideAi?: boolean;
   /** Custom label for the save button. */
   saveLabel?: string;
+  /** When set, the preview renders galleries in admin mode (upload/annotate/captions) for this article. */
+  galleryArticleId?: string;
+  galleryArticleSlug?: string;
+  galleryAdmin?: boolean;
 }
+
 
 
 export interface ArticleMarkdownEditorHandle {
@@ -96,7 +101,7 @@ function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
   return chunks;
 }
 
-const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving, draftKey, draftMeta, hideAi, saveLabel }, ref) => {
+const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving, draftKey, draftMeta, hideAi, saveLabel, galleryArticleId, galleryArticleSlug, galleryAdmin }, ref) => {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -719,10 +724,12 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
               <div className="max-w-4xl mx-auto px-6 py-8">
                 <MarkdownArticle
                   content={value}
-                  articleId="preview"
-                  articleSlug="preview"
-                  isAdmin={false}
+                  articleId={galleryArticleId || "preview"}
+                  articleSlug={galleryArticleSlug || "preview"}
+                  isAdmin={!!galleryAdmin}
+                  onContentChange={galleryAdmin ? onChange : undefined}
                 />
+
               </div>
             </div>
           ) : (
@@ -736,10 +743,12 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
               <div className="max-w-3xl mx-auto px-6 py-8 text-[0.95rem]">
                 <MarkdownArticle
                   content={value}
-                  articleId="preview"
-                  articleSlug="preview"
-                  isAdmin={false}
+                  articleId={galleryArticleId || "preview"}
+                  articleSlug={galleryArticleSlug || "preview"}
+                  isAdmin={!!galleryAdmin}
+                  onContentChange={galleryAdmin ? onChange : undefined}
                 />
+
               </div>
             </div>
           )}

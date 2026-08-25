@@ -107,6 +107,9 @@ const InlineArticlePageEditor = ({ article, onSaved, onClose }: Props) => {
         saving={saving}
         saveLabel="Сохранить изменения"
         hideAi
+        galleryAdmin
+        galleryArticleId={article.id}
+        galleryArticleSlug={article.slug}
         draftKey={`inline-${article.id}`}
         draftMeta={{
           title,
@@ -115,6 +118,12 @@ const InlineArticlePageEditor = ({ article, onSaved, onClose }: Props) => {
           articleId: article.id,
         }}
       />
+
+      <p className="text-xs text-muted-foreground">
+        Загрузка фото, аннотирование (стрелки, овалы, подписи), подписи и перемещение галерей доступны
+        во вкладке «Предпросмотр» — панель управления галереей появляется под каждой галереей.
+      </p>
+
 
       <div className="flex justify-end gap-2 border-t pt-4">
         <Button variant="outline" onClick={onClose} className="gap-1.5">
