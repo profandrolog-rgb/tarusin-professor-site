@@ -67,6 +67,26 @@ const VOICE_LABEL: Record<VoiceMode, string> = {
 
 const Fallback = <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
 
+/**
+ * Совместимость со старым форматом: раньше fact_check_report сохранялся как
+ * массив {quote, issue, suggested_fix, confidence}. Новый UI ждёт объект —
+ * поэтому старые записи приводим к нему, чтобы заметки не «исчезали».
+ */
+function normalizeFactCheck(value: any): any {
+  if (Array.isArray(value)) {
+    return {
+      not_found_in_source: value.map((it: any) => ({
+        marker: it?.marker,
+        claim: it?.quote ?? it?.claim ?? "",
+        reason: [it?.issue, it?.suggested_fix ? `Предложение: ${it.suggested_fix}` : null]
+          .filter(Boolean)
+          .join(" — "),
+      })),
+    };
+  }
+  return value && typeof value === "object" ? value : {};
+}
+
 const AdminResearchReviewEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
