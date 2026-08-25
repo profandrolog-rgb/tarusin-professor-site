@@ -724,10 +724,12 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
               <div className="max-w-4xl mx-auto px-6 py-8">
                 <MarkdownArticle
                   content={value}
-                  articleId="preview"
-                  articleSlug="preview"
-                  isAdmin={false}
+                  articleId={galleryArticleId || "preview"}
+                  articleSlug={galleryArticleSlug || "preview"}
+                  isAdmin={!!galleryAdmin}
+                  onContentChange={galleryAdmin ? onChange : undefined}
                 />
+
               </div>
             </div>
           ) : (
