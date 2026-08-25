@@ -1269,6 +1269,23 @@ const PlaceholderGallery = ({
             variant="outline"
             size="sm"
             className="h-7 px-2 text-xs"
+            title="Переименовать галерею"
+            disabled={galleryOp !== null}
+            onClick={renameGallery}
+          >
+            {galleryOp === "rename" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
+            Переименовать
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            title="Переместить галерею выше по тексту"
+            disabled={galleryOp !== null}
+            onClick={() => moveGallery("up")}
+          >
+            size="sm"
+            className="h-7 px-2 text-xs"
             title="Переместить галерею выше по тексту"
             disabled={galleryOp !== null}
             onClick={() => moveGallery("up")}
