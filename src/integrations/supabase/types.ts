@@ -6613,6 +6613,22 @@ export type Database = {
           },
         ]
       }
+      blog_post_reaction_counts: {
+        Row: {
+          count: number | null
+          post_id: string | null
+          reaction_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questions_public: {
         Row: {
           answer_text: string | null
@@ -6687,6 +6703,22 @@ export type Database = {
           },
         ]
       }
+      research_article_reaction_counts: {
+        Row: {
+          article_id: string | null
+          count: number | null
+          reaction_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_article_reactions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "research_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       treatment_plans_search: {
         Row: {
           clinical_summary: string | null
@@ -6715,6 +6747,22 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_case_reaction_counts: {
+        Row: {
+          count: number | null
+          reaction_type: string | null
+          video_case_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_case_reactions_video_case_id_fkey"
+            columns: ["video_case_id"]
+            isOneToOne: false
+            referencedRelation: "video_cases"
             referencedColumns: ["id"]
           },
         ]

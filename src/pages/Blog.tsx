@@ -148,16 +148,32 @@ const Blog = () => {
     },
   });
 
-  const { data: allReactions = [] } = useQuery({
-    queryKey: ["blog-reactions"],
+  // Public aggregate counts only — reactor identities are not exposed publicly.
+  const { data: reactionTotals = [] } = useQuery({
+    queryKey: ["blog-reaction-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_post_reaction_counts" as any)
+        .select("post_id, reaction_type, count");
+      if (error) throw error;
+      return data as unknown as { post_id: string; reaction_type: string; count: number }[];
+    },
+  });
+
+  // Only the current user's own reaction rows are readable.
+  const { data: myReactions = [] } = useQuery({
+    queryKey: ["blog-my-reactions", user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("blog_post_reactions")
-        .select("*");
+        .select("id, post_id, reaction_type")
+        .eq("user_id", user!.id);
       if (error) throw error;
-      return data as BlogReaction[];
+      return data as unknown as Pick<BlogReaction, "id" | "post_id" | "reaction_type">[];
     },
   });
+
 
   const getImageUrl = (path: string | null) => {
     if (!path) return null;
@@ -305,7 +321,7 @@ const Blog = () => {
   const toggleReaction = useMutation({
     mutationFn: async ({ postId, type }: { postId: string; type: "like" | "dislike" }) => {
       if (!user) throw new Error("Не авторизован");
-      const existing = allReactions.find((r) => r.post_id === postId && r.user_id === user.id);
+      const existing = myReactions.find((r) => r.post_id === postId);
       if (existing) {
         if (existing.reaction_type === type) {
           // Remove reaction
@@ -326,7 +342,10 @@ const Blog = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-reactions"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blog-reaction-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["blog-my-reactions"] });
+    },
   });
 
   const addComment = useMutation({
@@ -502,11 +521,12 @@ const Blog = () => {
   };
 
   const getReactionCounts = (postId: string) => {
-    const postReactions = allReactions.filter((r) => r.post_id === postId);
+    const totals = reactionTotals.filter((r) => r.post_id === postId);
+    const countOf = (type: string) => Number(totals.find((r) => r.reaction_type === type)?.count || 0);
     return {
-      likes: postReactions.filter((r) => r.reaction_type === "like").length,
-      dislikes: postReactions.filter((r) => r.reaction_type === "dislike").length,
-      userReaction: user ? postReactions.find((r) => r.user_id === user.id)?.reaction_type || null : null,
+      likes: countOf("like"),
+      dislikes: countOf("dislike"),
+      userReaction: (myReactions.find((r) => r.post_id === postId)?.reaction_type as "like" | "dislike" | undefined) || null,
     };
   };
 

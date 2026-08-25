@@ -15,7 +15,7 @@ const REACTIONS = [
 
 interface ResearchReactionsProps {
   articleId: string;
-  reactions: { reaction_type: string; user_id: string }[];
+  reactions: { counts: { reaction_type: string; count: number }[]; myReaction: string | null };
   onReactionChange: () => void;
 }
 
@@ -24,12 +24,12 @@ const ResearchReactions = ({ articleId, reactions, onReactionChange }: ResearchR
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const userReaction = reactions.find((r) => r.user_id === user?.id);
+  const userReaction = reactions.myReaction;
 
   const reactionCounts = REACTIONS.map((r) => ({
     ...r,
-    count: reactions.filter((rx) => rx.reaction_type === r.type).length,
-    isActive: userReaction?.reaction_type === r.type,
+    count: Number(reactions.counts.find((rx) => rx.reaction_type === r.type)?.count || 0),
+    isActive: userReaction === r.type,
   }));
 
   const handleReaction = async (type: string) => {
@@ -39,7 +39,7 @@ const ResearchReactions = ({ articleId, reactions, onReactionChange }: ResearchR
     }
     setLoading(true);
     try {
-      if (userReaction?.reaction_type === type) {
+      if (userReaction === type) {
         await supabase
           .from("research_article_reactions")
           .delete()
