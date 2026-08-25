@@ -422,3 +422,101 @@ function decodeHtml(s: string): string {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 }
+
+/* ------------------------------------------------------------------ *
+ * Управление положением галереи в тексте (админ-режим).
+ * ------------------------------------------------------------------ */
+
+/** Находит позицию маркера галереи в контенте: сначала по точному тексту, затем по подписи. */
+function findGalleryMarkerRange(
+  content: string,
+  exactMarker: string | undefined,
+  caption: string,
+): { start: number; end: number } | null {
+  if (exactMarker) {
+    const i = content.indexOf(exactMarker);
+    if (i >= 0) return { start: i, end: i + exactMarker.length };
+  }
+  const markerRe = new RegExp(GALLERY_RE.source, "g");
+  let m: RegExpExecArray | null;
+  while ((m = markerRe.exec(content)) !== null) {
+    if ((m[1] || "") === caption) return { start: m.index, end: m.index + m[0].length };
+  }
+  const divRe = new RegExp(GALLERY_DIV_RE.source, "gi");
+  let d: RegExpExecArray | null;
+  while ((d = divRe.exec(content)) !== null) {
+    if (readHtmlAttr(d[1] || "", "data-caption") === caption) {
+      return { start: d.index, end: d.index + d[0].length };
+    }
+  }
+  return null;
+}
+
+/** Расширяет диапазон маркера на обёртку <p>…</p> и окружающие пустые строки. */
+function widenMarkerRange(content: string, range: { start: number; end: number }) {
+  let { start, end } = range;
+  const before = content.slice(Math.max(0, start - 60), start);
+  const openP = before.match(/<p[^>]*>\s*$/i);
+  const after = content.slice(end, end + 60);
+  const closeP = after.match(/^\s*<\/p>/i);
+  if (openP && closeP) {
+    start -= openP[0].length;
+    end += closeP[0].length;
+  }
+  while (start > 0 && /\s/.test(content[start - 1])) start--;
+  while (end < content.length && /\s/.test(content[end])) end++;
+  return { start, end };
+}
+
+/** Удаляет галерею (маркер) из контента. Файлы в хранилище не трогаем. */
+export function removeGalleryMarkerFromContent(
+  content: string,
+  exactMarker: string | undefined,
+  caption: string,
+): { content: string; found: boolean } {
+  const range = findGalleryMarkerRange(content, exactMarker, caption);
+  if (!range) return { content, found: false };
+  const w = widenMarkerRange(content, range);
+  const next = `${content.slice(0, w.start)}\n\n${content.slice(w.end)}`;
+  return { content: next.replace(/\n{3,}/g, "\n\n").trim(), found: true };
+}
+
+const BLOCK_CLOSE_RE = /<\/(?:p|h[1-6]|ul|ol|table|blockquote|figure|pre|div|section)>/gi;
+
+/** Границы блоков, куда можно вставить галерею. */
+function blockBoundaries(text: string): number[] {
+  const set = new Set<number>([0, text.length]);
+  const nl = /\n{2,}/g;
+  let m: RegExpExecArray | null;
+  while ((m = nl.exec(text)) !== null) set.add(m.index + m[0].length);
+  const bc = new RegExp(BLOCK_CLOSE_RE.source, "gi");
+  while ((m = bc.exec(text)) !== null) set.add(m.index + m[0].length);
+  return [...set].sort((a, b) => a - b);
+}
+
+/**
+ * Перемещает галерею на один блок вверх/вниз внутри текста статьи.
+ * Возвращает moved=false, если двигать уже некуда.
+ */
+export function moveGalleryMarkerInContent(
+  content: string,
+  exactMarker: string | undefined,
+  caption: string,
+  direction: "up" | "down",
+): { content: string; moved: boolean } {
+  const range = findGalleryMarkerRange(content, exactMarker, caption);
+  if (!range) return { content, moved: false };
+  const marker = content.slice(range.start, range.end);
+  const w = widenMarkerRange(content, range);
+  const rest = `${content.slice(0, w.start)}\n\n${content.slice(w.end)}`;
+  const insertAt = w.start;
+
+  const bounds = blockBoundaries(rest);
+  const prev = [...bounds].reverse().find((b) => b < insertAt - 1);
+  const next = bounds.find((b) => b > insertAt + 1);
+  const target = direction === "up" ? prev : next;
+  if (target === undefined) return { content, moved: false };
+
+  const out = `${rest.slice(0, target)}\n\n${marker}\n\n${rest.slice(target)}`;
+  return { content: out.replace(/\n{3,}/g, "\n\n").trim(), moved: true };
+}
