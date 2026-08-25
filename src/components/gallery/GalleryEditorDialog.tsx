@@ -272,6 +272,14 @@ export default function GalleryEditorDialog({
   function submit() {
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
     onSave({ caption: caption.trim(), images });
+    // Удаляем файлы из хранилища только после подтверждённого сохранения списка,
+    // и только те, которых нет в итоговой галерее.
+    const keep = new Set(images.map((i) => i.filename));
+    const drop = pendingRemovals.filter((f) => !keep.has(f));
+    setPendingRemovals([]);
+    if (drop.length) {
+      void supabase.storage.from(bucket).remove(drop.map((f) => `${folder}/${f}`)).catch(() => {});
+    }
     onOpenChange(false);
   }
 
