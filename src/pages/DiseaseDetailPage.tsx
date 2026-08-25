@@ -220,7 +220,29 @@ const DiseaseDetailPage = () => {
         })()}
 
         <main className="container mx-auto px-4 py-10 md:py-14 max-w-4xl overflow-x-visible">
-          {enMissing ? (
+          {isAdmin && !isEn && (
+            <div className="mb-6 flex justify-end">
+              {!editing && (
+                <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-1.5">
+                  <Pencil className="w-4 h-4" /> Редактировать страницу
+                </Button>
+              )}
+            </div>
+          )}
+
+          {isAdmin && !isEn && editing ? (
+            <InlineArticlePageEditor
+              article={{
+                id: article.id,
+                slug: article.slug,
+                title: article.title,
+                description: article.description ?? null,
+                article_content: article.article_content ?? "",
+              }}
+              onSaved={(patch) => setArticle({ ...article, ...patch })}
+              onClose={() => setEditing(false)}
+            />
+          ) : enMissing ? (
             <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
               <CardContent className="p-10 text-center">
                 <Languages className="w-10 h-10 text-primary mx-auto mb-4" />
