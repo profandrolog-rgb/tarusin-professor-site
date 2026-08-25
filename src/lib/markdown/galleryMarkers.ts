@@ -523,3 +523,35 @@ export function moveGalleryMarkerInContent(
   const out = `${rest.slice(0, target)}\n\n${marker}\n\n${rest.slice(target)}`;
   return { content: out.replace(/\n{3,}/g, "\n\n").trim(), moved: true };
 }
+
+/**
+ * Переименовывает галерею (меняет подпись в маркере) внутри контента.
+ * Работает и для текстового маркера [[GALLERY:...]], и для HTML-плашки.
+ */
+export function renameGalleryMarkerInContent(
+  content: string,
+  exactMarker: string | undefined,
+  caption: string,
+  nextCaption: string,
+): { content: string; found: boolean; marker: string } {
+  const range = findGalleryMarkerRange(content, exactMarker, caption);
+  if (!range) return { content, found: false, marker: "" };
+  const raw = content.slice(range.start, range.end);
+  const safe = nextCaption.replace(/["'“”]/g, "'");
+  let next: string;
+  if (/^\[\[GALLERY:/i.test(raw.trim())) {
+    next = raw.replace(
+      /(\[\[GALLERY:\s*caption\s*=\s*)["'“”][^"'“”]*["'“”]/i,
+      `$1"${safe}"`,
+    );
+  } else if (/data-caption\s*=/i.test(raw)) {
+    next = raw.replace(/data-caption\s*=\s*(?:"[^"]*"|'[^']*')/i, `data-caption="${safe}"`);
+  } else {
+    next = raw.replace(/(<div\b)/i, `$1 data-caption="${safe}"`);
+  }
+  return {
+    content: content.slice(0, range.start) + next + content.slice(range.end),
+    found: next !== raw,
+    marker: next,
+  };
+}
