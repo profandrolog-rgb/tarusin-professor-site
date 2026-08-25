@@ -14,6 +14,7 @@
 // маршрута касается REST/auth/storage/functions; для Realtime потребуется
 // пересоздание клиента — сознательно вне этой задачи.
 
+import { rawFetch } from "@/lib/rawFetch";
 import { ALT_BASES, PRIMARY_BASE, ROUTE_BASES } from "./backendEndpoints";
 
 export const PROBE_TIMEOUT_MS = 2500;
