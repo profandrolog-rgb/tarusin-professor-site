@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import type { LiveModelInfo } from "@/config/aiModels";
 import { FALLBACK_BASES, PRIMARY_BASE } from "@/lib/backendEndpoints";
+import { supabase } from "@/integrations/supabase/client";
 
 const SS_KEY = "openrouter.models.v2";
 const SS_TTL_MS = 30 * 60 * 1000; // 30 минут — модели меняются редко
