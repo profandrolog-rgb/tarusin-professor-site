@@ -16,6 +16,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
+import JsonLd from "@/components/JsonLd";
 import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import type { Database } from "@/integrations/supabase/types";
 import { useHashOpen } from "@/hooks/useHashOpen";
@@ -408,6 +409,35 @@ const VideoCases = () => {
     <AgeConfirmationModal>
     <div className="min-h-screen bg-background select-none" onContextMenu={handleContextMenu} onCopy={(e) => e.preventDefault()}>
       <PageMeta title={isEn ? "Video Cases — Prof. Tarusin" : "Видео-кейсы — Проф. Тарусин Д.И."} description={isEn ? "Short surgical videos, notes and clinical case reviews by Professor Tarusin." : "Короткие видео из операционной, заметки и разборы клинических случаев профессора Тарусина Д.И."} path="/video-cases" />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: isEn ? "Video Cases — Prof. Tarusin" : "Видео-кейсы — проф. Тарусин Д.И.",
+          url: "https://tarusin.pro/video-cases/",
+          numberOfItems: cases.length,
+          itemListElement: cases.slice(0, 25).map((c, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": "VideoObject",
+              name: c.title,
+              description:
+                c.description ||
+                (isEn
+                  ? "Clinical video case reviewed by Professor Tarusin D.I."
+                  : "Клинический видео-кейс с разбором профессора Тарусина Д.И."),
+              uploadDate: c.created_at,
+              thumbnailUrl: "https://tarusin.pro/og-image.png",
+              inLanguage: isEn ? "en" : "ru",
+              publisher: {
+                "@type": "Person",
+                name: isEn ? "Prof. Dmitry I. Tarusin" : "Профессор Тарусин Дмитрий Игоревич",
+              },
+            },
+          })),
+        }}
+      />
       <header className="bg-primary text-primary-foreground py-12 md:py-20">
         <div className="container mx-auto px-4">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-6 transition-colors">
