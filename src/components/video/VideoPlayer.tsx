@@ -18,7 +18,7 @@ const VideoPlayer = ({ src, poster, title, startSec = 0, requiresConfirm }: Prop
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || !startSec) return;
+    if (!el || !startSec || !revealed) return;
     const onLoaded = () => {
       try {
         el.currentTime = startSec;
@@ -26,9 +26,11 @@ const VideoPlayer = ({ src, poster, title, startSec = 0, requiresConfirm }: Prop
         /* игнорируем */
       }
     };
+    if (el.readyState >= 1) onLoaded();
     el.addEventListener("loadedmetadata", onLoaded);
     return () => el.removeEventListener("loadedmetadata", onLoaded);
-  }, [startSec, src]);
+  }, [startSec, src, revealed]);
+
 
   if (!revealed) {
     return (
