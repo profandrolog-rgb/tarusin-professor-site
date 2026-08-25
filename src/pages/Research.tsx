@@ -90,9 +90,11 @@ const Research = () => {
   const { data: allReactions = [] } = useQuery({
     queryKey: ["research-all-reactions"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("research_article_reactions").select("article_id, reaction_type");
+      const { data, error } = await supabase
+        .from("research_article_reaction_counts" as any)
+        .select("article_id, reaction_type, count");
       if (error) throw error;
-      return data;
+      return data as unknown as { article_id: string; reaction_type: string; count: number }[];
     },
   });
 
@@ -100,10 +102,10 @@ const Research = () => {
     queryKey: ["research-all-comments"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("research_article_comments")
+        .from("research_article_comments_public" as any)
         .select("article_id, is_approved");
       if (error) throw error;
-      return data;
+      return data as unknown as { article_id: string; is_approved: boolean }[];
     },
   });
 
@@ -297,7 +299,7 @@ const Research = () => {
                       key={article.id}
                       article={article}
                       commentCount={allComments.filter((c) => c.article_id === article.id && c.is_approved).length}
-                      reactionCount={allReactions.filter((r) => r.article_id === article.id).length}
+                      reactionCount={allReactions.filter((r) => r.article_id === article.id).reduce((sum, r) => sum + Number(r.count || 0), 0)}
                       viewMode={viewMode}
                       onClick={() => !isSorting && setSelectedId(article.id)}
                       onEdit={canEdit && !isSorting ? () => setEditArticle(article) : undefined}

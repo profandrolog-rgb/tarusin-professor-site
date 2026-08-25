@@ -49,15 +49,31 @@ const ResearchPostDetail = ({ articleId, onBack }: ResearchPostDetailProps) => {
     },
   });
 
-  const { data: reactions = [], refetch: refetchReactions } = useQuery({
+  const { data: reactions = { counts: [], myReaction: null }, refetch: refetchReactions } = useQuery({
     queryKey: ["research-reactions", articleId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("research_article_reactions")
-        .select("*")
-        .eq("article_id", articleId);
-      if (error) throw error;
-      return data;
+      const [{ data: totals, error: totalsError }, own] = await Promise.all([
+        supabase
+          .from("research_article_reaction_counts" as any)
+          .select("reaction_type, count")
+          .eq("article_id", articleId),
+        supabase.auth.getUser(),
+      ]);
+      if (totalsError) throw totalsError;
+      let myType: string | null = null;
+      if (own.data.user) {
+        const { data: mine } = await supabase
+          .from("research_article_reactions")
+          .select("reaction_type")
+          .eq("article_id", articleId)
+          .eq("user_id", own.data.user.id)
+          .maybeSingle();
+        myType = mine?.reaction_type ?? null;
+      }
+      return {
+        counts: (totals as unknown as { reaction_type: string; count: number }[]) || [],
+        myReaction: myType,
+      };
     },
   });
 
