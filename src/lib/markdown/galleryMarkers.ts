@@ -512,8 +512,11 @@ export function moveGalleryMarkerInContent(
   const insertAt = w.start;
 
   const bounds = blockBoundaries(rest);
-  const prev = [...bounds].reverse().find((b) => b < insertAt - 1);
-  const next = bounds.find((b) => b > insertAt + 1);
+  // Границы, отделённые от текущего места только пробелами, считаем тем же местом.
+  const prev = [...bounds]
+    .reverse()
+    .find((b) => b < insertAt && rest.slice(b, insertAt).trim().length > 0);
+  const next = bounds.find((b) => b > insertAt && rest.slice(insertAt, b).trim().length > 0);
   const target = direction === "up" ? prev : next;
   if (target === undefined) return { content, moved: false };
 
