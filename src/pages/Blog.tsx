@@ -148,16 +148,32 @@ const Blog = () => {
     },
   });
 
-  const { data: allReactions = [] } = useQuery({
-    queryKey: ["blog-reactions"],
+  // Public aggregate counts only — reactor identities are not exposed publicly.
+  const { data: reactionTotals = [] } = useQuery({
+    queryKey: ["blog-reaction-counts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blog_post_reaction_counts" as any)
+        .select("post_id, reaction_type, count");
+      if (error) throw error;
+      return data as unknown as { post_id: string; reaction_type: string; count: number }[];
+    },
+  });
+
+  // Only the current user's own reaction rows are readable.
+  const { data: myReactions = [] } = useQuery({
+    queryKey: ["blog-my-reactions", user?.id],
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("blog_post_reactions")
-        .select("*");
+        .select("id, post_id, reaction_type")
+        .eq("user_id", user!.id);
       if (error) throw error;
-      return data as BlogReaction[];
+      return data as unknown as Pick<BlogReaction, "id" | "post_id" | "reaction_type">[];
     },
   });
+
 
   const getImageUrl = (path: string | null) => {
     if (!path) return null;
