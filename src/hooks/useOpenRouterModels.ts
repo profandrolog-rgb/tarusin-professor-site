@@ -82,8 +82,15 @@ async function fetchModels(): Promise<LiveModelInfo[]> {
   }
   if (inFlight) return inFlight;
   inFlight = (async () => {
-    const j = await fetchCatalogRaced();
+    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    let token = anonKey;
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.access_token) token = data.session.access_token;
+    } catch { /* ignore */ }
+    const j = await fetchCatalogRaced({ apikey: anonKey, Authorization: `Bearer ${token}` });
     const data: any[] = Array.isArray(j?.data) ? j.data : [];
+
 
     const list: LiveModelInfo[] = data
       .filter((m) => m && typeof m.id === "string")
