@@ -1242,6 +1242,42 @@ const PlaceholderGallery = ({
           />
           Закрыть медицинской шторкой (18+)
         </label>
+
+        <span className="w-full sm:w-auto sm:ml-3 flex items-center gap-1 justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            title="Переместить галерею выше по тексту"
+            disabled={galleryOp !== null}
+            onClick={() => moveGallery("up")}
+          >
+            {galleryOp === "up" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
+            Выше
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            title="Переместить галерею ниже по тексту"
+            disabled={galleryOp !== null}
+            onClick={() => moveGallery("down")}
+          >
+            {galleryOp === "down" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowDown className="w-3.5 h-3.5" />}
+            Ниже
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+            title="Удалить галерею из статьи"
+            disabled={galleryOp !== null}
+            onClick={deleteWholeGallery}
+          >
+            {galleryOp === "delete" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Удалить галерею
+          </Button>
+        </span>
       </div>
       {restricted && (
         <div className="mb-3 text-xs text-destructive">
