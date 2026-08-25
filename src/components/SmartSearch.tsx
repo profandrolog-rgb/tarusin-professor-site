@@ -75,7 +75,7 @@ const SmartSearch = () => {
         const sb = supabase as any;
         const [diseases, blogs, videos] = await Promise.all([
           sb.from("disease_articles").select("id, title, slug").ilike("title", term).eq("is_published", true).limit(4),
-          sb.from("blog_posts").select("id, title, slug").ilike("title", term).limit(4),
+          sb.from("blog_posts").select("id, title").ilike("title", term).eq("is_published", true).limit(4),
           sb.from("video_cases").select("id, title").ilike("title", term).limit(3),
         ]);
         const items: Suggestion[] = [];
