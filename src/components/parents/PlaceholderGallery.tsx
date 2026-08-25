@@ -33,7 +33,10 @@ import {
   upsertGalleryEntriesInContent,
   extractGalleryCols,
   withGalleryCols,
+  removeGalleryMarkerFromContent,
+  moveGalleryMarkerInContent,
   type GalleryFileEntry,
+
 } from "@/lib/markdown/galleryMarkers";
 
 import { isStorageCollisionError, nextGalleryImageIndex } from "@/lib/markdown/galleryImageFilenames";
