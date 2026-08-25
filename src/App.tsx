@@ -230,6 +230,11 @@ export const routes: RouteRecord[] = [
 
       // --- Приватные / служебные роуты: исключены из SSG ---
       { path: "auth", Component: Auth, entry: "src/pages/Auth.tsx" },
+      {
+        path: ".lovable/oauth/consent",
+        lazy: page(() => import("./pages/OAuthConsent")),
+        entry: "src/pages/OAuthConsent.tsx",
+      },
       { path: "portal", Component: PatientPortal, entry: "src/pages/PatientPortal.tsx" },
       { path: "admin", Component: Admin, entry: "src/pages/Admin.tsx" },
       { path: "admin/requests", Component: AdminRequests, entry: "src/pages/AdminRequests.tsx" },

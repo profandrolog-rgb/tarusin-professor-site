@@ -36,7 +36,11 @@ const Auth = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const initialTab = searchParams.get("tab") === "register" ? "signup" : "signin";
-  const from = (location.state as { from?: string })?.from || "/";
+  // ?next= позволяет вернуть пользователя на исходный адрес (например, экран
+  // согласия OAuth). Принимаем только относительные пути того же origin.
+  const rawNext = searchParams.get("next");
+  const safeNext = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  const from = safeNext || (location.state as { from?: string })?.from || "/";
 
   useEffect(() => {
     if (user) navigate(from, { replace: true });
@@ -82,7 +86,7 @@ const Auth = () => {
     e.preventDefault();
     if (!validateForm(true)) return;
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(email, password, from);
     if (error) {
       setLoading(false);
       let message = error.message;

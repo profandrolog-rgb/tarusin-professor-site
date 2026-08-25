@@ -2,12 +2,14 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 // Пути, которые НЕ нужно пре-рендерить: приватные разделы, SPA-страницы,
 // динамические ссылки и английская ветка. Это резко сокращает работу SSG
 // на Timeweb и не влияет на публичные SEO-страницы русского сайта.
 const isExcludedFromSsg = (pathName: string) =>
   pathName === "/auth" ||
+  pathName.startsWith("/.lovable/") ||
   pathName === "/portal" ||
   pathName === "/admin" ||
   pathName.startsWith("/admin/") ||
@@ -30,7 +32,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), mcpPlugin(), mode === "development" && componentTagger()].filter(Boolean),
 
   resolve: {
     alias: {

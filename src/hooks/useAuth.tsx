@@ -13,7 +13,7 @@ interface AuthContextType {
   isParent: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, redirectPath?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -353,8 +353,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signInWithTimeout(email, password);
   };
 
-  const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+  const signUp = async (email: string, password: string, redirectPath?: string) => {
+    const safePath =
+      redirectPath && redirectPath.startsWith("/") && !redirectPath.startsWith("//")
+        ? redirectPath
+        : "/";
+    const redirectUrl = `${window.location.origin}${safePath}`;
     const { error } = await supabase.auth.signUp({
       email,
       password,
