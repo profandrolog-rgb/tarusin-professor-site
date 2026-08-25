@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
+import JsonLd from "@/components/JsonLd";
 import { useTranslation } from "react-i18next";
 
 interface VideoFile {
@@ -241,6 +242,34 @@ const Videos = () => {
         title={isEn ? "Video Library — Prof. Tarusin D.I." : "Видеотека — проф. Тарусин Д.И."}
         description={isEn ? "Educational video library by Prof. Tarusin D.I. on pediatric urology-andrology: lectures, surgical techniques, and clinical case discussions." : "Видеотека профессора Тарусина Д.И. по детской урологии-андрологии: лекции, хирургические методики и разбор клинических случаев."}
         path="/videos"
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: isEn ? "Video Library — Prof. Tarusin D.I." : "Видеотека — проф. Тарусин Д.И.",
+          url: "https://tarusin.pro/videos/",
+          numberOfItems: videos.length,
+          itemListElement: videos.slice(0, 25).map((video, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": "VideoObject",
+              name: video.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "),
+              description: isEn
+                ? "Educational video on pediatric urology-andrology by Prof. Tarusin D.I."
+                : "Обучающее видео по детской урологии-андрологии профессора Тарусина Д.И.",
+              uploadDate: video.created_at,
+              thumbnailUrl: "https://tarusin.pro/og-image.png",
+              inLanguage: isEn ? "en" : "ru",
+              isFamilyFriendly: true,
+              publisher: {
+                "@type": "Person",
+                name: isEn ? "Prof. Dmitry I. Tarusin" : "Профессор Тарусин Дмитрий Игоревич",
+              },
+            },
+          })),
+        }}
       />
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-12 md:py-20">

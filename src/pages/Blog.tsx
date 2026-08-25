@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Edit2, Trash2, Eye, EyeOff, MessageSquare, Send, Check, X, Loader2, Upload, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, Move, LayoutGrid, List as ListIcon, Image as ImageIcon } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
+import JsonLd from "@/components/JsonLd";
 import RichTextEditor from "@/components/blog/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -557,6 +558,37 @@ const Blog = () => {
   return (
     <div className="min-h-screen bg-background select-none" onContextMenu={(e) => e.preventDefault()} onCopy={(e) => e.preventDefault()}>
       <PageMeta title={isEn ? "Reflections — Prof. Tarusin" : "Размышлизмы — Проф. Тарусин Д.И."} description={isEn ? "Professor Tarusin's personal blog — reflections on medicine, andrology, life and professional journey." : "Авторский блог профессора Тарусина — размышления о медицине, андрологии, жизни и профессиональном пути."} path="/blog" />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          name: isEn ? "Reflections — Prof. Tarusin" : "Размышлизмы — проф. Тарусин Д.И.",
+          description: isEn
+            ? "Professor Tarusin's personal blog — reflections on medicine, andrology, life and professional journey."
+            : "Авторский блог профессора Тарусина — размышления о медицине, андрологии, жизни и профессиональном пути.",
+          url: "https://tarusin.pro/blog/",
+          inLanguage: isEn ? "en" : "ru",
+          author: {
+            "@type": "Person",
+            name: isEn ? "Prof. Dmitry I. Tarusin" : "Профессор Тарусин Дмитрий Игоревич",
+            url: "https://tarusin.pro/",
+          },
+          publisher: {
+            "@type": "Person",
+            name: isEn ? "Prof. Dmitry I. Tarusin" : "Профессор Тарусин Дмитрий Игоревич",
+          },
+          blogPost: posts.slice(0, 20).map((post) => ({
+            "@type": "BlogPosting",
+            headline: post.title,
+            description: post.excerpt || post.card_annotation || undefined,
+            datePublished: post.created_at,
+            author: {
+              "@type": "Person",
+              name: isEn ? "Prof. Dmitry I. Tarusin" : "Профессор Тарусин Дмитрий Игоревич",
+            },
+          })),
+        }}
+      />
       <div className="container mx-auto px-4 py-8 pt-24">
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" />

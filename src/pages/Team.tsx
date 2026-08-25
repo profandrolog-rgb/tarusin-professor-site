@@ -11,6 +11,7 @@ import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import PageMeta from "@/components/PageMeta";
+import JsonLd from "@/components/JsonLd";
 
 interface TeamMember {
   id: string;
@@ -77,6 +78,33 @@ export default function Team() {
         title={isEn ? "Professor Tarusin's Team" : "Команда профессора Тарусина Д.И."}
         description={isEn ? "Doctors and specialists on Professor Tarusin's team — andrologists, urologists, and surgeons with extensive experience." : "Врачи и специалисты команды профессора Тарусина — андрологи, урологи и хирурги с многолетним опытом."}
         path="/team"
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: isEn ? "Professor Tarusin's Team" : "Команда профессора Тарусина Д.И.",
+          url: "https://tarusin.pro/team/",
+          numberOfItems: members.length,
+          itemListElement: members.map((member, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": "Physician",
+              name: member.full_name,
+              description: member.description || member.mission || undefined,
+              medicalSpecialty: (member.specialties || []).map((s) => ({
+                "@type": "MedicalSpecialty",
+                name: s,
+              })),
+              worksFor: {
+                "@type": "Organization",
+                name: isEn ? "Prof. Tarusin's Team" : "Команда профессора Тарусина Д.И.",
+                url: "https://tarusin.pro/",
+              },
+            },
+          })),
+        }}
       />
       <div className="container mx-auto px-4 py-12">
         {isAdmin && (
