@@ -250,7 +250,9 @@ export default function GalleryEditorDialog({
     const im = images.find((x) => x.id === id);
     if (!im) return;
     setImages((prev) => prev.filter((x) => x.id !== id));
-    try { await supabase.storage.from(bucket).remove([`${folder}/${im.filename}`]); } catch { /* noop */ }
+    // Файл из хранилища НЕ удаляем сразу: если диалог закрыт без сохранения
+    // (или сохранение не прошло), картинка терялась безвозвратно.
+    setPendingRemovals((prev) => [...prev, im.filename]);
   }
 
   function onDragEnd(e: DragEndEvent) {
