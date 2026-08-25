@@ -160,6 +160,8 @@ export default function GalleryEditorDialog({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [defaultKind, setDefaultKind] = useState<GalleryKind>("default");
+  // Файлы, убранные из галереи: удаляем из хранилища только после сохранения.
+  const [pendingRemovals, setPendingRemovals] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -167,6 +169,7 @@ export default function GalleryEditorDialog({
       setCaption(initialCaption);
       setImages(initialImages);
       setDragOver(false);
+      setPendingRemovals([]);
     }
   }, [open, initialCaption, initialImages]);
 
