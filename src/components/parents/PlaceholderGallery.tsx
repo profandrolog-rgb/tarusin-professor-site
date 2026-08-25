@@ -35,6 +35,7 @@ import {
   withGalleryCols,
   removeGalleryMarkerFromContent,
   moveGalleryMarkerInContent,
+  renameGalleryMarkerInContent,
   type GalleryFileEntry,
 
 } from "@/lib/markdown/galleryMarkers";
@@ -565,7 +566,7 @@ const PlaceholderGallery = ({
   };
 
   // --- Операции над галереей целиком: удалить / переместить по тексту ---
-  const [galleryOp, setGalleryOp] = useState<"delete" | "up" | "down" | null>(null);
+  const [galleryOp, setGalleryOp] = useState<"delete" | "up" | "down" | "rename" | null>(null);
 
   /** Читает свежий контент, применяет преобразование и сохраняет. */
   const persistContent = async (
@@ -644,6 +645,26 @@ const PlaceholderGallery = ({
         };
       });
       if (ok) toast.success(direction === "up" ? "Галерея сдвинута выше" : "Галерея сдвинута ниже");
+    } finally {
+      setGalleryOp(null);
+    }
+  };
+
+  /** Переименование галереи (подпись в маркере). */
+  const renameGallery = async () => {
+    if (galleryOp) return;
+    const next = window.prompt("Название (подпись) галереи:", caption || "");
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed) { toast.warning("Название не может быть пустым"); return; }
+    if (trimmed === (caption || "").trim()) return;
+    setGalleryOp("rename");
+    try {
+      const ok = await persistContent((content) => {
+        const r = renameGalleryMarkerInContent(content, marker, caption, trimmed);
+        return { content: r.content, ok: r.found, warn: "Маркер галереи не найден в тексте" };
+      });
+      if (ok) toast.success("Название галереи обновлено");
     } finally {
       setGalleryOp(null);
     }
@@ -1244,6 +1265,17 @@ const PlaceholderGallery = ({
         </label>
 
         <span className="w-full sm:w-auto sm:ml-3 flex items-center gap-1 justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            title="Переименовать галерею"
+            disabled={galleryOp !== null}
+            onClick={renameGallery}
+          >
+            {galleryOp === "rename" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
+            Переименовать
+          </Button>
           <Button
             variant="outline"
             size="sm"
