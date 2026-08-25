@@ -58,7 +58,12 @@ interface Props {
   draftKey?: string;
   /** Article metadata mirrored into the draft so a tab close never loses it. */
   draftMeta?: { title?: string; slug?: string; description?: string; tags?: string; articleId?: string | null };
+  /** Hide all AI-related controls (formatting, connection test, resume). */
+  hideAi?: boolean;
+  /** Custom label for the save button. */
+  saveLabel?: string;
 }
+
 
 export interface ArticleMarkdownEditorHandle {
   getMarkdown: () => string;
