@@ -650,6 +650,26 @@ const PlaceholderGallery = ({
     }
   };
 
+  /** Переименование галереи (подпись в маркере). */
+  const renameGallery = async () => {
+    if (galleryOp) return;
+    const next = window.prompt("Название (подпись) галереи:", caption || "");
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed) { toast.warning("Название не может быть пустым"); return; }
+    if (trimmed === (caption || "").trim()) return;
+    setGalleryOp("rename");
+    try {
+      const ok = await persistContent((content) => {
+        const r = renameGalleryMarkerInContent(content, marker, caption, trimmed);
+        return { content: r.content, ok: r.found, warn: "Маркер галереи не найден в тексте" };
+      });
+      if (ok) toast.success("Название галереи обновлено");
+    } finally {
+      setGalleryOp(null);
+    }
+  };
+
 
 
   const deleteExisting = async (filename: string) => {
