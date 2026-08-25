@@ -321,7 +321,7 @@ const Blog = () => {
   const toggleReaction = useMutation({
     mutationFn: async ({ postId, type }: { postId: string; type: "like" | "dislike" }) => {
       if (!user) throw new Error("Не авторизован");
-      const existing = allReactions.find((r) => r.post_id === postId && r.user_id === user.id);
+      const existing = myReactions.find((r) => r.post_id === postId);
       if (existing) {
         if (existing.reaction_type === type) {
           // Remove reaction
@@ -342,7 +342,10 @@ const Blog = () => {
         if (error) throw error;
       }
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["blog-reactions"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["blog-reaction-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["blog-my-reactions"] });
+    },
   });
 
   const addComment = useMutation({
@@ -518,11 +521,12 @@ const Blog = () => {
   };
 
   const getReactionCounts = (postId: string) => {
-    const postReactions = allReactions.filter((r) => r.post_id === postId);
+    const totals = reactionTotals.filter((r) => r.post_id === postId);
+    const countOf = (type: string) => Number(totals.find((r) => r.reaction_type === type)?.count || 0);
     return {
-      likes: postReactions.filter((r) => r.reaction_type === "like").length,
-      dislikes: postReactions.filter((r) => r.reaction_type === "dislike").length,
-      userReaction: user ? postReactions.find((r) => r.user_id === user.id)?.reaction_type || null : null,
+      likes: countOf("like"),
+      dislikes: countOf("dislike"),
+      userReaction: (myReactions.find((r) => r.post_id === postId)?.reaction_type as "like" | "dislike" | undefined) || null,
     };
   };
 
