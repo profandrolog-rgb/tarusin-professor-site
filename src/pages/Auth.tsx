@@ -36,7 +36,11 @@ const Auth = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const initialTab = searchParams.get("tab") === "register" ? "signup" : "signin";
-  const from = (location.state as { from?: string })?.from || "/";
+  // ?next= позволяет вернуть пользователя на исходный адрес (например, экран
+  // согласия OAuth). Принимаем только относительные пути того же origin.
+  const rawNext = searchParams.get("next");
+  const safeNext = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  const from = safeNext || (location.state as { from?: string })?.from || "/";
 
   useEffect(() => {
     if (user) navigate(from, { replace: true });
