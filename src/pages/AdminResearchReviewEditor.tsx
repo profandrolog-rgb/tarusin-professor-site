@@ -503,7 +503,7 @@ const AdminResearchReviewEditor = () => {
   if (!row) return <div className="p-6">Не найдено</div>;
 
   const refs: Ref[] = Array.isArray(row.references_list) ? row.references_list : [];
-  const fcReport = row.fact_check_report && typeof row.fact_check_report === "object" ? row.fact_check_report : {};
+  const fcReport = normalizeFactCheck(row.fact_check_report);
   const materials: Material[] = Array.isArray(row.source_materials) ? row.source_materials : [];
   const history: RefinementEntry[] = Array.isArray(row.refinement_history) ? row.refinement_history : [];
 
