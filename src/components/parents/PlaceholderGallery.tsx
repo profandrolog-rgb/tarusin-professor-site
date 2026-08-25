@@ -1284,12 +1284,6 @@ const PlaceholderGallery = ({
             disabled={galleryOp !== null}
             onClick={() => moveGallery("up")}
           >
-            size="sm"
-            className="h-7 px-2 text-xs"
-            title="Переместить галерею выше по тексту"
-            disabled={galleryOp !== null}
-            onClick={() => moveGallery("up")}
-          >
             {galleryOp === "up" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
             Выше
           </Button>
