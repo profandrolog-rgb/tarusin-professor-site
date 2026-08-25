@@ -101,7 +101,7 @@ function splitIntoChunks(text: string, target = CHUNK_TARGET): string[] {
   return chunks;
 }
 
-const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving, draftKey, draftMeta, hideAi, saveLabel }, ref) => {
+const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ value, onChange, onSaveAsIs, saving, draftKey, draftMeta, hideAi, saveLabel, galleryArticleId, galleryArticleSlug, galleryAdmin }, ref) => {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
