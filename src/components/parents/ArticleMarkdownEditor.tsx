@@ -532,6 +532,8 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             onChange={(e) => handleDocx(e.target.files?.[0] || null)}
           />
 
+          {!hideAi && (
+            <>
           <Button
             type="button"
             variant="outline"
@@ -595,21 +597,24 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
               ⚠️ {draftRow.error_message.length > 60 ? draftRow.error_message.slice(0, 60) + "…" : draftRow.error_message}
             </span>
           )}
+            </>
+          )}
 
           {onSaveAsIs && (
             <Button
               type="button"
-              variant="secondary"
+              variant="default"
               size="sm"
               onClick={onSaveAsIs}
               disabled={saving || !value.trim()}
               className="gap-1.5"
-              title="Сохранить текст как есть, без AI-форматирования (для уже готового markdown)"
+              title={saveLabel || "Сохранить текст как есть, без AI-форматирования"}
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              Сохранить без форматирования
+              {saving ? "Сохраняю…" : saveLabel || "Сохранить без форматирования"}
             </Button>
           )}
+
 
 
           <Button
