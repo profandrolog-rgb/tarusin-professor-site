@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
-import { Image as ImageIcon, Pencil } from "lucide-react";
+import { ArrowDown, ArrowUp, Image as ImageIcon, Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import GalleryEditorDialog, {
@@ -49,7 +49,7 @@ function useThumbUrl(bucket: string, folder: string) {
   };
 }
 
-const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProps) => {
+const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: NodeViewProps) => {
   const [open, setOpen] = useState(false);
   const editable = editor.isEditable;
   const caption: string = node.attrs.caption || "Без подписи";
@@ -76,6 +76,39 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
 
   const thumbs = entries.slice(0, 4);
   const extra = Math.max(0, entries.length - thumbs.length);
+  const getMoveState = () => {
+    try {
+      const pos = typeof getPos === "function" ? getPos() : undefined;
+      if (typeof pos !== "number") return { up: false, down: false };
+      const resolved = editor.state.doc.resolve(pos);
+      const index = resolved.index(resolved.depth);
+      const count = resolved.parent.childCount;
+      return { up: index > 0, down: index < count - 1 };
+    } catch {
+      return { up: false, down: false };
+    }
+  };
+  const moveState = getMoveState();
+
+  const moveGallery = (direction: "up" | "down") => {
+    if (!editor.isEditable) return;
+    const pos = typeof getPos === "function" ? getPos() : undefined;
+    if (typeof pos !== "number") return;
+    const { state, view } = editor;
+    const resolved = state.doc.resolve(pos);
+    const depth = resolved.depth;
+    const index = resolved.index(depth);
+    const parent = resolved.parent;
+    const siblingIndex = direction === "up" ? index - 1 : index + 1;
+    if (siblingIndex < 0 || siblingIndex >= parent.childCount) return;
+    const sibling = parent.child(siblingIndex);
+    const from = pos;
+    const to = pos + node.nodeSize;
+    const insertAt = direction === "up" ? pos - sibling.nodeSize : pos + sibling.nodeSize;
+    const tr = state.tr.delete(from, to).insert(insertAt, node);
+    view.dispatch(tr.scrollIntoView());
+    view.focus();
+  };
 
   return (
     <NodeViewWrapper
@@ -117,16 +150,42 @@ const GalleryView = ({ node, updateAttributes, editor, extension }: NodeViewProp
           )}
         </div>
         {editable && (opts.allowUpload ?? true) && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 shrink-0 bg-white"
-            onClick={() => setOpen(true)}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            Редактировать галерею
-          </Button>
+          <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 bg-white px-2"
+              disabled={!moveState.up}
+              title="Переместить галерею выше"
+              onClick={() => moveGallery("up")}
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+              Выше
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 bg-white px-2"
+              disabled={!moveState.down}
+              title="Переместить галерею ниже"
+              onClick={() => moveGallery("down")}
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+              Ниже
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 bg-white px-2"
+              onClick={() => setOpen(true)}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              Редактировать
+            </Button>
+          </div>
         )}
       </div>
 
