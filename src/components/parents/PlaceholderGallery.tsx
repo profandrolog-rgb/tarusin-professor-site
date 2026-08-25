@@ -35,6 +35,7 @@ import {
   withGalleryCols,
   removeGalleryMarkerFromContent,
   moveGalleryMarkerInContent,
+  renameGalleryMarkerInContent,
   type GalleryFileEntry,
 
 } from "@/lib/markdown/galleryMarkers";
