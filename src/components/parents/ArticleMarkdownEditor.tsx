@@ -62,7 +62,12 @@ interface Props {
   hideAi?: boolean;
   /** Custom label for the save button. */
   saveLabel?: string;
+  /** When set, the preview renders galleries in admin mode (upload/annotate/captions) for this article. */
+  galleryArticleId?: string;
+  galleryArticleSlug?: string;
+  galleryAdmin?: boolean;
 }
+
 
 
 export interface ArticleMarkdownEditorHandle {
