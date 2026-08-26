@@ -77,6 +77,23 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
       .join("\n");
   }, [protocolData]);
 
+  /** Явно указанная в протоколе операция */
+  const protocolOperation = useMemo(() => {
+    const d = protocolData || {};
+    const direct = [d.operation_name, d.planned_operation, d.surgery_name, d.operation]
+      .find((x) => typeof x === "string" && x.trim());
+    return (direct as string | undefined)?.trim() || "";
+  }, [protocolData]);
+
+  /** Текст протокола, в котором ищем операцию из каталога (план, рекомендации, заключение) */
+  const protocolText = useMemo(() => {
+    const d = protocolData || {};
+    return [d.recommendations, d.conclusion, d.exam_plan, d.treatment_plan, d.consultation_notes, d.diagnosis]
+      .filter((x) => typeof x === "string" && x.trim())
+      .join("\n")
+      .toLowerCase();
+  }, [protocolData]);
+
   useEffect(() => {
     if (!open) return;
     setFullName(patientName || "");
