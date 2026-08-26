@@ -32,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { JournalPatientLookup } from "@/components/admin/JournalPatientLookup";
+import { PatientNameAutocomplete } from "@/components/admin/PatientNameAutocomplete";
 
 interface JournalEntry {
   id: string;
@@ -321,16 +321,22 @@ const AdminOperationsJournal = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-2">
-              <JournalPatientLookup
-                onPick={(data) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    patient_name: data.patient_name,
-                    patient_birth_date: data.patient_birth_date || prev.patient_birth_date,
-                    diagnosis: data.diagnosis || prev.diagnosis,
-                  }))
-                }
-              />
+              <div>
+                <Label>ФИО пациента *</Label>
+                <PatientNameAutocomplete
+                  value={form.patient_name}
+                  onChange={(v) => setForm((prev) => ({ ...prev, patient_name: v }))}
+                  onPick={(data) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      patient_name: data.patient_name,
+                      patient_birth_date: data.patient_birth_date || prev.patient_birth_date,
+                      diagnosis: data.diagnosis || prev.diagnosis,
+                    }))
+                  }
+                  placeholder="Начните вводить фамилию — подставим данные из базы"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Дата операции *</Label>
@@ -349,14 +355,7 @@ const AdminOperationsJournal = () => {
                   />
                 </div>
               </div>
-              <div>
-                <Label>ФИО пациента *</Label>
-                <Input
-                  value={form.patient_name}
-                  onChange={(e) => setForm({ ...form, patient_name: e.target.value })}
-                  placeholder="Иванов Иван Иванович"
-                />
-              </div>
+
               <div>
                 <Label>Диагноз *</Label>
                 <Input
