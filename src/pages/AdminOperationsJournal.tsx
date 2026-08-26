@@ -32,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { JournalPatientLookup } from "@/components/admin/JournalPatientLookup";
 
 interface JournalEntry {
   id: string;
