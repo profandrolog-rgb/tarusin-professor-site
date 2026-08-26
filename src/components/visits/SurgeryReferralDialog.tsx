@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -77,12 +78,32 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
       .join("\n");
   }, [protocolData]);
 
+  /** Явно указанная в протоколе операция */
+  const protocolOperation = useMemo(() => {
+    const d = protocolData || {};
+    const direct = [d.operation_name, d.planned_operation, d.surgery_name, d.operation]
+      .find((x) => typeof x === "string" && x.trim());
+    return (direct as string | undefined)?.trim() || "";
+  }, [protocolData]);
+
+  /** Текст протокола, в котором ищем операцию из каталога (план, рекомендации, заключение) */
+  const protocolText = useMemo(() => {
+    const d = protocolData || {};
+    return [d.recommendations, d.conclusion, d.exam_plan, d.treatment_plan, d.consultation_notes, d.diagnosis]
+      .filter((x) => typeof x === "string" && x.trim())
+      .join("\n")
+      .toLowerCase();
+  }, [protocolData]);
+
   useEffect(() => {
     if (!open) return;
     setFullName(patientName || "");
     setBd(birthDate || "");
     setAgeText(calcAgeText(birthDate));
     setDiagnosis(protocolDiagnosis);
+    // Путёвка обычно выдаётся в день консультации — подставляем сегодняшнюю дату
+    setDateFrom((prev) => prev || new Date());
+    if (protocolOperation) setOperationName(protocolOperation);
     (async () => {
       const [{ data: catalog }, { data: memo }, { data: ops }] = await Promise.all([
         supabase.from("surgery_exam_catalog").select("*").eq("is_active", true).order("sort_order"),
@@ -108,7 +129,16 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
         setCoordPhone(memo.coordinator_phone || coordPhone);
         setCoordInstruction(memo.coordinator_instruction || coordInstruction);
       }
-      setOperations(((ops || []) as any[]).map((o) => o.name).filter(Boolean));
+      const opNames = ((ops || []) as any[]).map((o) => o.name).filter(Boolean) as string[];
+      setOperations(opNames);
+      // Синхронизация с консультацией: если операция явно не указана,
+      // ищем в тексте протокола название операции из каталога (берём самое длинное совпадение)
+      if (!protocolOperation && protocolText) {
+        const match = opNames
+          .filter((n) => n.length > 3 && protocolText.includes(n.toLowerCase()))
+          .sort((a, b) => b.length - a.length)[0];
+        if (match) setOperationName(match);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -281,6 +311,20 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
                   <option key={o} value={o} />
                 ))}
               </datalist>
+              {operations.length ? (
+                <Select value={operations.includes(operationName) ? operationName : ""} onValueChange={setOperationName}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Выбрать из каталога операций" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {operations.map((o) => (
+                      <SelectItem key={o} value={o} className="text-xs">
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
             </div>
           </div>
 

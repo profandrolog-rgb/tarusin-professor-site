@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { formatRuDate, plannedDateText } from "@/lib/surgery/referral";
 
 export default function AdminSurgeryReferralPrint() {
@@ -17,6 +18,11 @@ export default function AdminSurgeryReferralPrint() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Убираем всплывающие уведомления («Путёвка создана» и пр.), чтобы они не попадали в печать/PDF
+  useEffect(() => {
+    sonnerToast.dismiss();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -70,7 +76,7 @@ export default function AdminSurgeryReferralPrint() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-8">
-      <style>{`@media print { .no-print { display: none !important; } body { background: #fff; } }`}</style>
+      <style>{`@media print { .no-print, [data-sonner-toaster], [data-radix-toast-viewport], .toaster { display: none !important; } body { background: #fff; } }`}</style>
       <div className="no-print max-w-4xl mx-auto flex justify-between mb-4">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/admin/surgery-referrals">
