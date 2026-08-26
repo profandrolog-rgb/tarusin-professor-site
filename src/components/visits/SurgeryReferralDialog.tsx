@@ -128,7 +128,16 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
         setCoordPhone(memo.coordinator_phone || coordPhone);
         setCoordInstruction(memo.coordinator_instruction || coordInstruction);
       }
-      setOperations(((ops || []) as any[]).map((o) => o.name).filter(Boolean));
+      const opNames = ((ops || []) as any[]).map((o) => o.name).filter(Boolean) as string[];
+      setOperations(opNames);
+      // Синхронизация с консультацией: если операция явно не указана,
+      // ищем в тексте протокола название операции из каталога (берём самое длинное совпадение)
+      if (!protocolOperation && protocolText) {
+        const match = opNames
+          .filter((n) => n.length > 3 && protocolText.includes(n.toLowerCase()))
+          .sort((a, b) => b.length - a.length)[0];
+        if (match) setOperationName(match);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
