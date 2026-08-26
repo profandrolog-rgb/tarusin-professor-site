@@ -32,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { JournalPatientLookup } from "@/components/admin/JournalPatientLookup";
 
 interface JournalEntry {
   id: string;
@@ -320,6 +321,16 @@ const AdminOperationsJournal = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-2">
+              <JournalPatientLookup
+                onPick={(data) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    patient_name: data.patient_name,
+                    patient_birth_date: data.patient_birth_date || prev.patient_birth_date,
+                    diagnosis: data.diagnosis || prev.diagnosis,
+                  }))
+                }
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Дата операции *</Label>
