@@ -100,6 +100,9 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
     setBd(birthDate || "");
     setAgeText(calcAgeText(birthDate));
     setDiagnosis(protocolDiagnosis);
+    // Путёвка обычно выдаётся в день консультации — подставляем сегодняшнюю дату
+    setDateFrom((prev) => prev || new Date());
+    if (protocolOperation) setOperationName(protocolOperation);
     (async () => {
       const [{ data: catalog }, { data: memo }, { data: ops }] = await Promise.all([
         supabase.from("surgery_exam_catalog").select("*").eq("is_active", true).order("sort_order"),
