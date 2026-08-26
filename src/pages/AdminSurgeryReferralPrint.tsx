@@ -19,6 +19,11 @@ export default function AdminSurgeryReferralPrint() {
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Убираем всплывающие уведомления («Путёвка создана» и пр.), чтобы они не попадали в печать/PDF
+  useEffect(() => {
+    sonnerToast.dismiss();
+  }, []);
+
   useEffect(() => {
     if (!id) return;
     (async () => {
