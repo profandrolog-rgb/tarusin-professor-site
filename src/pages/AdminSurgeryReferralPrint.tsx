@@ -76,7 +76,7 @@ export default function AdminSurgeryReferralPrint() {
 
   return (
     <div className="min-h-screen bg-muted/30 p-4 md:p-8">
-      <style>{`@media print { .no-print { display: none !important; } body { background: #fff; } }`}</style>
+      <style>{`@media print { .no-print, [data-sonner-toaster], [data-radix-toast-viewport], .toaster { display: none !important; } body { background: #fff; } }`}</style>
       <div className="no-print max-w-4xl mx-auto flex justify-between mb-4">
         <Button variant="ghost" size="sm" asChild>
           <Link to="/admin/surgery-referrals">
