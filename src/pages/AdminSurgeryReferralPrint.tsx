@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { formatRuDate, plannedDateText } from "@/lib/surgery/referral";
 
 export default function AdminSurgeryReferralPrint() {
