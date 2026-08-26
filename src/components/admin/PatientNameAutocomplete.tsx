@@ -17,7 +17,9 @@ interface Suggestion {
   history_number?: string | null;
   hasProtocol: boolean;
   diagnosis: string;
+  source: "База пациентов" | "Картотека" | "Консультации" | "Журнал операций";
 }
+
 
 function fio(p: {
   full_name?: string | null;
