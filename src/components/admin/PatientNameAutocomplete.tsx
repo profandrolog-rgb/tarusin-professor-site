@@ -245,6 +245,9 @@ export function PatientNameAutocomplete({
                   <User className="w-3.5 h-3.5 text-muted-foreground" />
                 )}
                 {s.name}
+                <span className="ml-auto text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground">
+                  {s.source}
+                </span>
               </div>
               <div className="text-xs text-muted-foreground">
                 {s.birth_date
@@ -253,6 +256,7 @@ export function PatientNameAutocomplete({
                 {s.history_number ? ` · № ${s.history_number}` : ""}
                 {s.hasProtocol ? " · есть протокол осмотра" : ""}
               </div>
+
               {s.diagnosis && (
                 <div className="text-xs text-muted-foreground/80 line-clamp-1">{s.diagnosis}</div>
               )}
