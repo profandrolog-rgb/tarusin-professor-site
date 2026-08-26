@@ -310,6 +310,20 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
                   <option key={o} value={o} />
                 ))}
               </datalist>
+              {operations.length ? (
+                <Select value={operations.includes(operationName) ? operationName : ""} onValueChange={setOperationName}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Выбрать из каталога операций" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {operations.map((o) => (
+                      <SelectItem key={o} value={o} className="text-xs">
+                        {o}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
             </div>
           </div>
 
