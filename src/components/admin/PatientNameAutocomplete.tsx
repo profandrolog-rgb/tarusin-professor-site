@@ -17,7 +17,9 @@ interface Suggestion {
   history_number?: string | null;
   hasProtocol: boolean;
   diagnosis: string;
+  source: "База пациентов" | "Картотека" | "Консультации" | "Журнал операций";
 }
+
 
 function fio(p: {
   full_name?: string | null;
@@ -74,13 +76,25 @@ export function PatientNameAutocomplete({
       setLoading(true);
       try {
         const esc = term.replace(/[%,()]/g, " ");
-        const [patientsRes, journalRes] = await Promise.all([
+        const [patientsRes, cardsRes, casesRes, journalRes] = await Promise.all([
           supabase
             .from("patients")
             .select("id, full_name, last_name, first_name, patronymic, birth_date, history_number")
             .or(
               `full_name.ilike.%${esc}%,last_name.ilike.%${esc}%,first_name.ilike.%${esc}%,history_number.ilike.%${esc}%`,
             )
+            .limit(10),
+          supabase
+            .from("patient_cards")
+            .select("id, patient_full_name, diagnosis, updated_at")
+            .ilike("patient_full_name", `%${esc}%`)
+            .order("updated_at", { ascending: false })
+            .limit(10),
+          supabase
+            .from("consultation_cases")
+            .select("id, patient_full_name, updated_at")
+            .ilike("patient_full_name", `%${esc}%`)
+            .order("updated_at", { ascending: false })
             .limit(10),
           supabase
             .from("operations_journal")
@@ -101,7 +115,7 @@ export function PatientNameAutocomplete({
         }>;
 
         // Последние визиты (протоколы) для найденных пациентов
-        let visitsByPatient: Record<string, string> = {};
+        const visitsByPatient: Record<string, string> = {};
         if (patients.length > 0) {
           const { data: visits } = await supabase
             .from("patient_visits")
@@ -112,7 +126,7 @@ export function PatientNameAutocomplete({
             )
             .order("visit_date", { ascending: false });
           for (const v of (visits ?? []) as Array<{ patient_id: string; diagnosis: string | null }>) {
-            if (!visitsByPatient[v.patient_id]) {
+            if (!(v.patient_id in visitsByPatient)) {
               visitsByPatient[v.patient_id] = (v.diagnosis ?? "").trim();
             }
           }
@@ -127,26 +141,60 @@ export function PatientNameAutocomplete({
             history_number: p.history_number,
             hasProtocol: p.id in visitsByPatient,
             diagnosis: visitsByPatient[p.id] ?? "",
+            source: "База пациентов" as const,
           }))
           .filter((s) => s.name !== "Без имени");
 
         const seen = new Set(list.map((s) => s.name.toLowerCase()));
+        const push = (s: Suggestion) => {
+          const k = s.name.toLowerCase();
+          if (!s.name || seen.has(k)) return;
+          seen.add(k);
+          list.push(s);
+        };
+
+        for (const c of (cardsRes.data ?? []) as Array<{
+          id: string;
+          patient_full_name: string;
+          diagnosis: string | null;
+        }>) {
+          push({
+            key: `c-${c.id}`,
+            name: (c.patient_full_name ?? "").trim(),
+            birth_date: "",
+            hasProtocol: false,
+            diagnosis: (c.diagnosis ?? "").trim(),
+            source: "Картотека",
+          });
+        }
+
+        for (const cc of (casesRes.data ?? []) as Array<{ id: string; patient_full_name: string }>) {
+          push({
+            key: `cc-${cc.id}`,
+            name: (cc.patient_full_name ?? "").trim(),
+            birth_date: "",
+            hasProtocol: false,
+            diagnosis: "",
+            source: "Консультации",
+          });
+        }
+
         for (const j of (journalRes.data ?? []) as Array<{
           patient_name: string;
           patient_birth_date: string | null;
           diagnosis: string | null;
         }>) {
           const name = (j.patient_name ?? "").trim();
-          if (!name || seen.has(name.toLowerCase())) continue;
-          seen.add(name.toLowerCase());
-          list.push({
+          push({
             key: `j-${name}`,
             name,
             birth_date: j.patient_birth_date ?? "",
             hasProtocol: false,
             diagnosis: (j.diagnosis ?? "").trim(),
+            source: "Журнал операций",
           });
         }
+
 
         setItems(list.slice(0, 12));
         setOpen(true);
@@ -197,6 +245,9 @@ export function PatientNameAutocomplete({
                   <User className="w-3.5 h-3.5 text-muted-foreground" />
                 )}
                 {s.name}
+                <span className="ml-auto text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 bg-muted text-muted-foreground">
+                  {s.source}
+                </span>
               </div>
               <div className="text-xs text-muted-foreground">
                 {s.birth_date
@@ -205,6 +256,7 @@ export function PatientNameAutocomplete({
                 {s.history_number ? ` · № ${s.history_number}` : ""}
                 {s.hasProtocol ? " · есть протокол осмотра" : ""}
               </div>
+
               {s.diagnosis && (
                 <div className="text-xs text-muted-foreground/80 line-clamp-1">{s.diagnosis}</div>
               )}
