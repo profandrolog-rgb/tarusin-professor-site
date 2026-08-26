@@ -32,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { JournalPatientLookup } from "@/components/admin/JournalPatientLookup";
+import { PatientNameAutocomplete } from "@/components/admin/PatientNameAutocomplete";
 
 interface JournalEntry {
   id: string;
