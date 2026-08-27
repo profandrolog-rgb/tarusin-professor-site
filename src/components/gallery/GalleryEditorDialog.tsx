@@ -185,8 +185,9 @@ export default function GalleryEditorDialog({
     const filename = `${safeSlugPart(ownerSlug)}-${kind}-${uuid}.jpg`;
     const path = `${folder}/${filename}`;
     const { error } = await supabase.storage.from(bucket).upload(path, blob, {
-      contentType: "image/jpeg", upsert: false,
+      contentType: "image/jpeg", upsert: false, cacheControl: UPLOAD_CACHE_CONTROL,
     });
+
     if (error) { toast.error(`${file.name}: ${error.message}`); return null; }
     return { id: crypto.randomUUID(), filename, caption: "", kind };
   }

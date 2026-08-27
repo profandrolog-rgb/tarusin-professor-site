@@ -30,10 +30,13 @@ const BentoImageCell = ({ image, className = "", rounded = "rounded-lg" }: Props
     >
       {url ? (
         <img
-          src={url}
+          src={cdnImage(url, { width: 400 })}
+          srcSet={cdnSrcSet(url, [200, 400, 700])}
+          sizes="(max-width: 768px) 33vw, 200px"
           alt=""
           loading="lazy"
-          draggable={false}
+          decoding="async"
+
           className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
           style={{
             objectPosition: `${x}% ${y}%`,
