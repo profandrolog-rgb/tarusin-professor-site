@@ -226,27 +226,33 @@ const ImageGallery = ({ caption, files }: Props) => {
         >
           {items.map((it, i) => {
             const patientFull = isPatientFull(it.filename);
+            const crop = it.crop;
+            const cropped = cropStyles(crop);
             const colClass = cols
               ? "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] md:max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
               : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
-            const itemClass = patientFull && !cols ? "shrink-0" : colClass;
-            const itemStyle: React.CSSProperties = patientFull && !cols
+            const itemClass = patientFull && !cols && !crop ? "shrink-0" : colClass;
+            const itemStyle: React.CSSProperties = patientFull && !cols && !crop
               ? { width: PATIENT_FULL_W, maxWidth: "100%" }
               : {};
+            // Фото с индивидуальным кадром показываем строго по его настройкам,
+            // игнорируя автоматические правила (инфографика, «в рост»).
+            const useFreeFlow = crop ? crop.fit === "contain" || !cropped.frame.aspectRatio : isInfographic(it.filename);
 
             return (
             <div key={it.filename + i} className={itemClass} style={itemStyle}>
-              {isInfographic(it.filename) ? (
+              {useFreeFlow ? (
                 <button
                   type="button"
                   onClick={() => setLightboxIdx(i)}
-                  className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+                  className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background overflow-hidden"
+                  style={crop ? cropped.frame : undefined}
                 >
                   <img
                     src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
-                    style={{
+                    style={crop ? { maxWidth: "100%", ...cropped.image } : {
                       maxWidth: "100%",
                       width: "100%",
                       height: "auto",
@@ -266,14 +272,16 @@ const ImageGallery = ({ caption, files }: Props) => {
                   type="button"
                   onClick={() => setLightboxIdx(i)}
                   className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
+                  style={crop
+                    ? cropped.frame
+                    : { aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
                 >
                   <img
                     src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
-                    className="w-full h-full object-cover"
-                    style={{ maxWidth: "100%", height: "100%" }}
+                    className={crop ? undefined : "w-full h-full object-cover"}
+                    style={crop ? { maxWidth: "100%", ...cropped.image } : { maxWidth: "100%", height: "100%" }}
                     draggable={false}
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}
