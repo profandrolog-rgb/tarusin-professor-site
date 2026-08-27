@@ -160,13 +160,17 @@ const ImageGallery = ({ caption, files }: Props) => {
         (() => {
           const single = items[0];
           const single_patientFull = isPatientFull(single.filename);
-          const wrapperClass = single_patientFull
+          const singleCrop = single.crop;
+          const cropped = cropStyles(singleCrop);
+          const wrapperClass = single_patientFull && !singleCrop
             ? "mx-auto"
             : "max-w-[860px] mx-auto w-full";
-          const wrapperStyle: React.CSSProperties = single_patientFull
+          const wrapperStyle: React.CSSProperties = single_patientFull && !singleCrop
             ? { width: PATIENT_FULL_W, maxWidth: "100%" }
             : {};
-          const imgStyle: React.CSSProperties = single_patientFull
+          const imgStyle: React.CSSProperties = singleCrop
+            ? { maxWidth: "100%", ...cropped.image }
+            : single_patientFull
             ? {
                 maxWidth: "100%",
                 width: "auto",
@@ -188,7 +192,10 @@ const ImageGallery = ({ caption, files }: Props) => {
               <button
                 type="button"
                 onClick={() => setLightboxIdx(0)}
-                className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+                className={`relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background${
+                  singleCrop ? " overflow-hidden" : ""
+                }`}
+                style={singleCrop ? cropped.frame : undefined}
               >
                 <img
                   src={publicUrl(single.filename)}
@@ -200,7 +207,10 @@ const ImageGallery = ({ caption, files }: Props) => {
                   onContextMenu={noContextMenu}
                   onError={handleStorageImgError}
                 />
-                <AnnotationOverlay doc={annotations[single.filename]} fit="contain" />
+                <AnnotationOverlay
+                  doc={annotations[single.filename]}
+                  fit={singleCrop?.fit === "cover" ? "cover" : "contain"}
+                />
                 <span style={watermarkStyle}>tarusin.pro</span>
               </button>
               {single.caption && (
