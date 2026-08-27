@@ -84,8 +84,29 @@ const DiseaseDetailPage = () => {
     }
   }, [slug]);
 
+  // Ранний результат из inline-скрипта в index.html: запрос стартует до загрузки
+  // бандла, поэтому свежая версия статьи (в т.ч. новые галереи) появляется сразу,
+  // не дожидаясь инициализации клиента и маршрутизатора бэкенда.
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
+    const early = (window as any).__earlyArticle as
+      | { slug: string; promise: Promise<any> }
+      | undefined;
+    if (!early || early.slug !== slug) return;
+    let cancelled = false;
+    early.promise
+      .then((art) => {
+        if (!cancelled && art) setArticle(art);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !slug) return;
+
     let cancelled = false;
 
     (async () => {
