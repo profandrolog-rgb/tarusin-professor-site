@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Trash2, Upload, FolderInput, GripVertical } from "lucide-react";
+import { Loader2, Trash2, Upload, FolderInput, GripVertical, Crop } from "lucide-react";
+import ImageCropDialog from "./ImageCropDialog";
+import { parseCropToken, formatCropToken, cropStyles, DEFAULT_CROP } from "@/lib/gallery/cropSpec";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
