@@ -97,6 +97,48 @@
   }
 }
 
+/* ------------------------------------------------------------------ *
+ * Специальный блок "Заметка профессора" в лонгридах.
+ * Рукописный шрифт Caveat, серый фон, акцентная левая граница.
+ * На десктопе занимает правые 2/3, слева оставляет 1/3 пустого пространства.
+ * ------------------------------------------------------------------ */
+.professor-note {
+  @apply relative my-8 p-5 rounded-xl bg-muted/60 border-l-4 border-primary shadow-sm;
+  font-family: 'Caveat', cursive;
+}
+
+.professor-note-toolbar {
+  @apply flex flex-wrap items-center gap-2 mb-3 pb-3 border-b border-border/50;
+}
+
+.professor-note-header {
+  @apply flex items-center gap-2 mb-3 text-foreground/90;
+}
+
+.professor-note-icon {
+  @apply w-5 h-5 text-primary shrink-0;
+}
+
+.professor-note-title {
+  @apply text-lg font-semibold leading-tight;
+}
+
+.professor-note-body {
+  @apply text-lg leading-relaxed text-foreground;
+}
+
+.professor-note-body p {
+  @apply mb-3 last:mb-0;
+}
+
+@media (min-width: 768px) {
+  .professor-note {
+    width: 66.666%;
+    margin-left: 33.333%;
+  }
+}
+
+
 /* Hide video download/overflow menu buttons */
 video::-webkit-media-controls-enclosure {
   overflow: hidden;
