@@ -12,7 +12,6 @@ import {
 import { Loader2, Trash2, Upload, FolderInput, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { UPLOAD_CACHE_CONTROL } from "@/lib/imageCdn";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor,
   useSensor, useSensors, type DragEndEvent,
@@ -186,9 +185,8 @@ export default function GalleryEditorDialog({
     const filename = `${safeSlugPart(ownerSlug)}-${kind}-${uuid}.jpg`;
     const path = `${folder}/${filename}`;
     const { error } = await supabase.storage.from(bucket).upload(path, blob, {
-      contentType: "image/jpeg", upsert: false, cacheControl: UPLOAD_CACHE_CONTROL,
+      contentType: "image/jpeg", upsert: false,
     });
-
     if (error) { toast.error(`${file.name}: ${error.message}`); return null; }
     return { id: crypto.randomUUID(), filename, caption: "", kind };
   }

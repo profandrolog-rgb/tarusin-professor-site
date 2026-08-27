@@ -1,6 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { cdnImage, cdnSrcSet } from "@/lib/imageCdn";
-
 
 export interface BentoImageData {
   path: string;
@@ -30,13 +28,10 @@ const BentoImageCell = ({ image, className = "", rounded = "rounded-lg" }: Props
     >
       {url ? (
         <img
-          src={cdnImage(url, { width: 400 })}
-          srcSet={cdnSrcSet(url, [200, 400, 700])}
-          sizes="(max-width: 768px) 33vw, 200px"
+          src={url}
           alt=""
           loading="lazy"
-          decoding="async"
-
+          draggable={false}
           className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
           style={{
             objectPosition: `${x}% ${y}%`,
