@@ -160,6 +160,19 @@ turndownService.addRule("galleryTextMarker", {
   },
 });
 
+// Сохраняем специальный блок "Заметка профессора" как raw HTML, чтобы внутреннее
+// форматирование не превращалось в markdown и не ломалось при обратном парсинге.
+turndownService.addRule("professorNote", {
+  filter: (node) =>
+    node.nodeType === 1 &&
+    (node as HTMLElement).getAttribute("data-note") !== null,
+  replacement: (_content, node) => {
+    const el = node as HTMLElement;
+    return "\n\n" + el.outerHTML + "\n\n";
+  },
+});
+
+
 
 export function htmlToMarkdown(html: string): string {
   if (!html) return "";
