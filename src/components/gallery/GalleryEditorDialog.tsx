@@ -52,8 +52,17 @@ export interface GalleryEditorDialogProps {
   initialCaption: string;
   /** Начальный список изображений. */
   initialImages: GalleryImage[];
+  /** Сколько фото в ряд (null — авто, 3 на десктопе). */
+  initialCols?: number | null;
+  /** Клиническая шторка 18+. */
+  initialRestricted?: boolean;
   /** Вызывается при нажатии «Сохранить». */
-  onSave: (data: { caption: string; images: GalleryImage[] }) => void;
+  onSave: (data: {
+    caption: string;
+    images: GalleryImage[];
+    cols: number | null;
+    restricted: boolean;
+  }) => void;
   /** Заголовок диалога (по умолчанию «Галерея изображений»). */
   title?: string;
   /** Текст кнопки подтверждения (по умолчанию «Сохранить»). */
@@ -144,6 +153,8 @@ function SortableRow({
 export default function GalleryEditorDialog({
   open, onOpenChange, bucket, folder, ownerSlug,
   initialCaption, initialImages, onSave,
+  initialCols = null,
+  initialRestricted = false,
   title = "Галерея изображений",
   submitLabel = "Сохранить",
   onOpenPicker,
@@ -156,6 +167,8 @@ export default function GalleryEditorDialog({
 
   const [caption, setCaption] = useState(initialCaption);
   const [images, setImages] = useState<GalleryImage[]>(initialImages);
+  const [cols, setCols] = useState<number | null>(initialCols);
+  const [restricted, setRestricted] = useState<boolean>(initialRestricted);
   const [uploading, setUploading] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -168,10 +181,12 @@ export default function GalleryEditorDialog({
     if (open) {
       setCaption(initialCaption);
       setImages(initialImages);
+      setCols(initialCols);
+      setRestricted(initialRestricted);
       setDragOver(false);
       setPendingRemovals([]);
     }
-  }, [open, initialCaption, initialImages]);
+  }, [open, initialCaption, initialImages, initialCols, initialRestricted]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -271,7 +286,7 @@ export default function GalleryEditorDialog({
 
   function submit() {
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
-    onSave({ caption: caption.trim(), images });
+    onSave({ caption: caption.trim(), images, cols, restricted });
     // Удаляем файлы из хранилища только после подтверждённого сохранения списка,
     // и только те, которых нет в итоговой галерее.
     const keep = new Set(images.map((i) => i.filename));
@@ -308,6 +323,30 @@ export default function GalleryEditorDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs shrink-0">Фото в ряд:</Label>
+              <Select
+                value={cols === null ? "auto" : String(cols)}
+                onValueChange={(v) => setCols(v === "auto" ? null : Number(v))}
+              >
+                <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Авто (3)</SelectItem>
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n} в ряд</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                className="accent-current"
+                checked={restricted}
+                onChange={(e) => setRestricted(e.target.checked)}
+              />
+              Шторка 18+
+            </label>
             <Button size="sm" variant="outline" onClick={() => fileInput.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
               Загрузить изображения

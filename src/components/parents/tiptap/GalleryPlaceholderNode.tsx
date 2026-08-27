@@ -197,21 +197,17 @@ const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: Node
         ownerSlug={ownerSlug}
         initialCaption={node.attrs.caption || ""}
         initialImages={initialImages}
-        onSave={({ caption: cap, images }) => {
-          const marker = buildGalleryMarkerFromEntries(
-            cap,
-            withGalleryCols(
-              images.map((i) => ({ filename: i.filename, caption: i.caption })),
-              cols,
-              restricted,
-            ),
-          );
-          // Синхронизируем атрибуты плашки: подпись + отформатированный список файлов.
-          const files = withGalleryCols(
+        initialCols={cols}
+        initialRestricted={restricted}
+        onSave={({ caption: cap, images, cols: nextCols, restricted: nextRestricted }) => {
+          const entries = withGalleryCols(
             images.map((i) => ({ filename: i.filename, caption: i.caption })),
-            cols,
-            restricted,
-          )
+            nextCols,
+            nextRestricted,
+          );
+          const marker = buildGalleryMarkerFromEntries(cap, entries);
+          // Синхронизируем атрибуты плашки: подпись + отформатированный список файлов.
+          const files = entries
             .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
             .join("|");
           updateAttributes({ caption: cap, files });
