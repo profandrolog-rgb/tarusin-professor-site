@@ -286,7 +286,7 @@ export default function GalleryEditorDialog({
 
   function submit() {
     if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
-    onSave({ caption: caption.trim(), images });
+    onSave({ caption: caption.trim(), images, cols, restricted });
     // Удаляем файлы из хранилища только после подтверждённого сохранения списка,
     // и только те, которых нет в итоговой галерее.
     const keep = new Set(images.map((i) => i.filename));
