@@ -37,8 +37,13 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mcpPlugin(),
-    mode === "development" && hmrGatePlugin(),
+    // The bridge must subscribe to Vite's websocket before the HMR gate wraps
+    // it; otherwise the Lovable viewer can miss its registration and the
+    // preview shell remains stuck in "Reloading preview".
     mode === "development" && devServerBridgePlugin(),
+    // Keep updates granular even if the supervisor environment is missing the
+    // corresponding flag. A full reload here disconnects the embedded viewer.
+    mode === "development" && hmrGatePlugin({ fullReload: false }),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
 
