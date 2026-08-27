@@ -94,8 +94,9 @@ export function installRuntimeDiagnostics() {
     const now = Date.now();
     if (now - lastInteractionAt < 400) return;
     lastInteractionAt = now;
-    const target = event.target instanceof Element
-      ? `${target.tagName.toLowerCase()}${target.id ? `#${target.id}` : ""}${target.getAttribute("aria-label") ? `[aria-label=${target.getAttribute("aria-label")}]` : ""}`
+    const element = event.target instanceof Element ? event.target : null;
+    const target = element
+      ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}${element.getAttribute("aria-label") ? `[aria-label=${element.getAttribute("aria-label")}]` : ""}`
       : undefined;
     write(`interaction:${event.type}`, { target, x: window.scrollX, y: window.scrollY });
   };
