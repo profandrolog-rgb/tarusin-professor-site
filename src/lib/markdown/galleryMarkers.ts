@@ -191,6 +191,8 @@ type GallerySnapshot = {
 export type GalleryFileEntry = {
   filename: string;
   caption: string;
+  /** Токен кадрирования `crop=x,y,zoom,fit,ratio` (пусто — кадр по умолчанию). */
+  crop?: string;
 };
 
 function parseGalleryFiles(raw: string): string[] {
@@ -204,10 +206,16 @@ function parseGalleryFileEntry(raw: string): GalleryFileEntry {
   const s = raw.trim();
   // Терпимый парсер: подпись может сама содержать кавычки любого вида.
   const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  if (m) {
+    const { filename, crop } = splitFilenameCrop(m[1]);
+    return { filename, crop, caption: m[2].replace(/["'“”]/g, "").trim() };
+  }
   // Подпись без кавычек: имя файла — первый токен, остальное — подпись.
   const sp = s.indexOf(" ");
-  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
+  if (sp > 0) {
+    const { filename, crop } = splitFilenameCrop(s.slice(0, sp));
+    return { filename, crop, caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
+  }
   return { filename: s, caption: "" };
 }
 
