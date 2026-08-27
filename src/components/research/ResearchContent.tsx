@@ -25,7 +25,14 @@ interface Props {
 
 type Segment =
   | { type: "text"; content: string }
-  | { type: "note"; icon: ProfessorNoteIconKey; title: string; content: string }
+  | {
+      type: "note";
+      icon: ProfessorNoteIconKey;
+      title: string;
+      content: string;
+      width?: string;
+      side?: string;
+    }
   | { type: "gallery"; caption: string; marker: string; files: string[] };
 
 function splitContent(html: string): Segment[] {
@@ -49,6 +56,8 @@ function splitContent(html: string): Segment[] {
           icon: sub.icon,
           title: sub.title,
           content: sub.html,
+          width: sub.width,
+          side: sub.side,
         });
       }
     }
@@ -70,7 +79,7 @@ const ResearchContent = ({ html, onFragmentClick, admin }: Props) => {
         if (seg.type === "text") {
           const clean = DOMPurify.sanitize(seg.content, {
             ADD_TAGS: ["aside"],
-            ADD_ATTR: ["target", "rel", "data-ref", "data-note", "data-icon", "data-title"],
+            ADD_ATTR: ["target", "rel", "data-ref", "data-note", "data-icon", "data-title", "data-width", "data-side"],
           });
           return (
             <div
@@ -87,6 +96,8 @@ const ResearchContent = ({ html, onFragmentClick, admin }: Props) => {
               icon={seg.icon}
               title={seg.title}
               innerHtml={seg.content}
+              width={seg.width as never}
+              side={seg.side as never}
             />
           );
         }

@@ -44,6 +44,38 @@ export const PROFESSOR_NOTE_ICONS: {
 
 export const DEFAULT_PROFESSOR_NOTE_ICON: ProfessorNoteIconKey = "stethoscope";
 
+/** Доля пустого пространства рядом с заметкой: 1/3 или 1/4 ширины страницы. */
+export type ProfessorNoteWidthKey = "two-thirds" | "three-quarters";
+/** Сторона, к которой прижата заметка (пустота — с противоположной). */
+export type ProfessorNoteSideKey = "right" | "left";
+
+export const PROFESSOR_NOTE_WIDTHS: {
+  key: ProfessorNoteWidthKey;
+  label: string;
+}[] = [
+  { key: "two-thirds", label: "Пустота 1/3 (заметка 2/3)" },
+  { key: "three-quarters", label: "Пустота 1/4 (заметка 3/4)" },
+];
+
+export const PROFESSOR_NOTE_SIDES: {
+  key: ProfessorNoteSideKey;
+  label: string;
+}[] = [
+  { key: "right", label: "Заметка справа" },
+  { key: "left", label: "Заметка слева" },
+];
+
+export const DEFAULT_PROFESSOR_NOTE_WIDTH: ProfessorNoteWidthKey = "two-thirds";
+export const DEFAULT_PROFESSOR_NOTE_SIDE: ProfessorNoteSideKey = "right";
+
+export function normalizeNoteWidth(v?: string | null): ProfessorNoteWidthKey {
+  return v === "three-quarters" ? "three-quarters" : DEFAULT_PROFESSOR_NOTE_WIDTH;
+}
+
+export function normalizeNoteSide(v?: string | null): ProfessorNoteSideKey {
+  return v === "left" ? "left" : DEFAULT_PROFESSOR_NOTE_SIDE;
+}
+
 export function getProfessorNoteIcon(key?: string) {
   return (
     PROFESSOR_NOTE_ICONS.find((i) => i.key === key) ?? PROFESSOR_NOTE_ICONS[0]
@@ -76,7 +108,15 @@ function decodeHtml(s: string): string {
 
 export type ProfessorNoteSegment =
   | { type: "text"; html: string }
-  | { type: "note"; html: string; icon: ProfessorNoteIconKey; title: string };
+  | {
+      type: "note";
+      html: string;
+      icon: ProfessorNoteIconKey;
+      title: string;
+      width: ProfessorNoteWidthKey;
+      side: ProfessorNoteSideKey;
+    };
+
 
 export function splitByProfessorNotes(html: string): ProfessorNoteSegment[] {
   const out: ProfessorNoteSegment[] = [];
@@ -93,7 +133,9 @@ export function splitByProfessorNotes(html: string): ProfessorNoteSegment[] {
       (readHtmlAttr(attrs, "data-icon") as ProfessorNoteIconKey) ||
       DEFAULT_PROFESSOR_NOTE_ICON;
     const title = readHtmlAttr(attrs, "data-title") || "";
-    out.push({ type: "note", html: m[2], icon, title });
+    const width = normalizeNoteWidth(readHtmlAttr(attrs, "data-width"));
+    const side = normalizeNoteSide(readHtmlAttr(attrs, "data-side"));
+    out.push({ type: "note", html: m[2], icon, title, width, side });
     lastIndex = m.index + m[0].length;
   }
   if (lastIndex < html.length) {
@@ -106,6 +148,8 @@ interface ProfessorNoteBlockProps {
   icon: ProfessorNoteIconKey;
   title: string;
   innerHtml: string;
+  width?: ProfessorNoteWidthKey;
+  side?: ProfessorNoteSideKey;
   className?: string;
 }
 
@@ -113,11 +157,13 @@ export const ProfessorNoteBlock = ({
   icon,
   title,
   innerHtml,
+  width,
+  side,
   className = "",
 }: ProfessorNoteBlockProps) => {
   const { Icon } = getProfessorNoteIcon(icon);
   const clean = DOMPurify.sanitize(innerHtml, {
-    ADD_ATTR: ["style", "data-note", "data-icon", "data-title"],
+    ADD_ATTR: ["style", "data-note", "data-icon", "data-title", "data-width", "data-side"],
   });
   return (
     <aside
@@ -125,6 +171,8 @@ export const ProfessorNoteBlock = ({
       data-note
       data-icon={icon}
       data-title={title}
+      data-width={normalizeNoteWidth(width)}
+      data-side={normalizeNoteSide(side)}
     >
       <div className="professor-note-header">
         <Icon className="professor-note-icon" aria-hidden="true" />
