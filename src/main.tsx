@@ -2,16 +2,18 @@ import React from "react";
 import { ViteReactSSG } from "vite-react-ssg";
 import { routes } from "./App";
 import { installBackendFailover } from "./lib/backendFailover";
-import { installChunkReload } from "./lib/chunkReload";
 import "./i18n";
 import "./index.css";
 
 if (typeof window !== "undefined") {
-  // The stale production-chunk recovery must never run in Vite's live preview.
-  // During HMR a module can be temporarily unavailable while its graph is being
-  // replaced; treating that as a deployed stale chunk reloads the preview iframe
-  // and can leave the editor disconnected instead of showing its normal refresh.
-  if (import.meta.env.PROD) installChunkReload();
+  // Keep stale-chunk recovery completely outside the development module graph.
+  // Importing it statically made Vite invalidate the preview entry during HMR,
+  // even though its listeners were only installed in production.
+  if (import.meta.env.PROD) {
+    void import("./lib/chunkReload").then(({ installChunkReload }) => {
+      installChunkReload();
+    });
+  }
   installBackendFailover();
 }
 
