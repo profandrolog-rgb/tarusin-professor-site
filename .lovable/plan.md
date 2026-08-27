@@ -34,7 +34,7 @@
   Это переживает и markdown-, и HTML-статьи: рендер уже идёт через `rehypeRaw`, галереи-маркеры не затрагиваются.
 - **Tiptap:** новый кастомный узел `ProfessorNote` (`src/components/parents/tiptap/ProfessorNoteNode.tsx`) — блочный узел с `content: "block+"`, NodeView с панелькой управления, `parseHTML`/`renderHTML` по `aside[data-note]`.
 - **Turndown:** правило `keep` для `aside[data-note]`, чтобы при конвертации в markdown блок сохранялся как HTML без экранирования (по аналогии с существующим правилом для галерей).
-- **Публичный рендер:** класс `.professor-note` в `src/index.css` (светлая и тёмная темы) + шрифт Caveat через `index.html`; `MarkdownArticle` и `HtmlArticle` рендерят блок как есть, иконка подставляется маленьким скриптом-компонентом по `data-icon`.
+- **Публичный рендер:** класс `.professor-note` в `src/index.css` — `width: 66.666%`, `margin-left: 33.333%`, на мобильном `width: 100%`, `margin-left: 0`; светлая и тёмная темы. Шрифт Caveat через `index.html`. `MarkdownArticle` и `HtmlArticle` рендерят блок как есть, иконка подставляется маленьким компонентом по `data-icon`.
 - **Безопасность:** в `DOMPurify.sanitize` разрешить `aside` и атрибуты `data-note`, `data-icon`, `data-title`.
 - **Печать/PDF:** блок печатается без обрезки, фон сохраняется (`print-color-adjust: exact`).
 
