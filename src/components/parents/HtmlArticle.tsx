@@ -2,6 +2,11 @@ import { useMemo } from "react";
 import DOMPurify from "dompurify";
 import PlaceholderGallery from "./PlaceholderGallery";
 import ImageGallery from "./ImageGallery";
+import {
+  splitByProfessorNotes,
+  ProfessorNoteBlock,
+  type ProfessorNoteIconKey,
+} from "@/lib/professorNote";
 
 interface Props {
   content: string;
@@ -103,31 +108,53 @@ function stripDuplicateTitle(html: string, title?: string): string {
   return html;
 }
 
-interface Segment {
-  type: "html" | "gallery";
-  html?: string;
-  caption?: string;
-  marker?: string;
-  files?: string[];
+interface GallerySegment {
+  marker: string;
+  caption: string;
+  files: string[];
 }
+
+type Segment =
+  | { type: "html"; html: string }
+  | { type: "note"; icon: ProfessorNoteIconKey; title: string; html: string }
+  | { type: "gallery"; gallery: GallerySegment };
 
 function splitOnGalleryMarkers(html: string): Segment[] {
   const segments: Segment[] = [];
   let last = 0;
   const re = new RegExp(GALLERY_RE.source, "g");
   let m: RegExpExecArray | null;
+
+  const pushTextSlice = (slice: string) => {
+    for (const sub of splitByProfessorNotes(slice)) {
+      if (sub.type === "text") {
+        segments.push({ type: "html", html: sub.html });
+      } else {
+        segments.push({
+          type: "note",
+          icon: sub.icon,
+          title: sub.title,
+          html: sub.html,
+        });
+      }
+    }
+  };
+
   while ((m = re.exec(html)) !== null) {
-    if (m.index > last) segments.push({ type: "html", html: html.slice(last, m.index) });
+    if (m.index > last) pushTextSlice(html.slice(last, m.index));
     const isTextMarker = m[1] !== undefined;
     const caption = isTextMarker ? m[1] || "" : readHtmlAttr(m[3] || "", "data-caption");
     const files = (isTextMarker ? m[2] || "" : readHtmlAttr(m[3] || "", "data-files"))
       .split("|")
       .map((s) => s.trim())
       .filter(Boolean);
-    segments.push({ type: "gallery", marker: m[0], caption, files });
+    segments.push({
+      type: "gallery",
+      gallery: { marker: m[0], caption, files },
+    });
     last = m.index + m[0].length;
   }
-  if (last < html.length) segments.push({ type: "html", html: html.slice(last) });
+  if (last < html.length) pushTextSlice(html.slice(last));
   return segments;
 }
 
@@ -155,20 +182,34 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
               key={i}
               className={ARTICLE_CLASS}
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(seg.html || "", { ADD_ATTR: ["style"] }),
+                __html: DOMPurify.sanitize(seg.html || "", {
+                  ADD_TAGS: ["aside"],
+                  ADD_ATTR: ["data-note", "data-icon", "data-title", "style"],
+                }),
               }}
             />
           );
         }
-        if ((seg.files?.length || 0) === 0) {
+        if (seg.type === "note") {
+          return (
+            <ProfessorNoteBlock
+              key={i}
+              icon={seg.icon}
+              title={seg.title}
+              innerHtml={seg.html}
+            />
+          );
+        }
+        const g = seg.gallery;
+        if ((g.files?.length || 0) === 0) {
           if (!isAdmin) return null;
           return (
             <PlaceholderGallery
               key={i}
               articleId={articleId}
               articleSlug={articleSlug}
-              caption={seg.caption || ""}
-              marker={seg.marker || ""}
+              caption={g.caption || ""}
+              marker={g.marker}
               fullContent={content}
               onContentChange={onContentChange}
             />
@@ -176,15 +217,15 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
         }
         return (
           <div key={i}>
-            <ImageGallery caption={seg.caption || ""} files={seg.files || []} />
+            <ImageGallery caption={g.caption || ""} files={g.files || []} />
             {isAdmin && (
               <PlaceholderGallery
                 articleId={articleId}
                 articleSlug={articleSlug}
-                caption={seg.caption || ""}
-                marker={seg.marker || ""}
+                caption={g.caption || ""}
+                marker={g.marker}
                 fullContent={content}
-                existingFiles={seg.files || []}
+                existingFiles={g.files || []}
                 onContentChange={onContentChange}
               />
             )}
