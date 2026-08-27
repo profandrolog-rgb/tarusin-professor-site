@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
+import { cdnImage, cdnSrcSet } from "@/lib/imageCdn";
+
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
 import { useOptionalAuth } from "@/hooks/useAuth";
