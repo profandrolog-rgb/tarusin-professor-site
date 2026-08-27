@@ -6780,6 +6780,21 @@ export type Database = {
           total_cost_estimate: number
         }[]
       }
+      admin_list_questions: {
+        Args: never
+        Returns: {
+          answer_text: string
+          answered_at: string
+          author_email: string
+          author_name: string
+          created_at: string
+          id: string
+          is_published: boolean
+          question_text: string
+          status: string
+          updated_at: string
+        }[]
+      }
       analytics_avg_cost_by_tag: {
         Args: { _doctor: string; _from: string; _status: string; _to: string }
         Returns: Json
