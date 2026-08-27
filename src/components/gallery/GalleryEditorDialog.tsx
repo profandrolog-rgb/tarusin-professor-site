@@ -31,6 +31,8 @@ export interface GalleryImage {
   filename: string;
   caption: string;
   kind: GalleryKind;
+  /** Токен кадрирования `crop=x,y,zoom,fit,ratio` — пусто, если кадр стандартный. */
+  crop?: string;
 }
 
 export interface PickMaterialItem {
