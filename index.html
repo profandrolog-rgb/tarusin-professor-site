@@ -17,6 +17,38 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://tarusin.pro/og-image.png" />
 
+    <!--
+      Раннее обновление содержимого статей о болезнях.
+      Страницы отдаются пре-рендером (SSG), поэтому свежие правки и галереи
+      в них появляются только после пересборки. Чтобы посетитель видел
+      актуальную версию сразу, запрос к базе стартует ещё до загрузки бандла,
+      а страница (DiseaseDetailPage) забирает готовый результат из window.
+    -->
+    <link rel="preconnect" href="https://api2.tarusin.pro" crossorigin />
+    <script>
+      (function () {
+        try {
+          var m = location.pathname.match(/^\/for-parents\/(?!materials\/)([^\/]+)\/?$/);
+          if (!m) return;
+          var slug = decodeURIComponent(m[1]);
+          var base = "https://api2.tarusin.pro";
+          var key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYndraXp2dnl0aHFvdGN5ZmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Njc2MTQsImV4cCI6MjA4NTE0MzYxNH0.iv_pLSj27wOMUmfY0HOJ91bPm1u-b4wjiScYrP03bww";
+          window.__earlyArticle = {
+            slug: slug,
+            promise: fetch(
+              base + "/rest/v1/disease_articles?select=*&slug=eq." + encodeURIComponent(slug) + "&is_published=eq.true",
+              { headers: { apikey: key, Authorization: "Bearer " + key, Accept: "application/json" } }
+            )
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (rows) { return rows && rows[0] ? rows[0] : null; })
+              .catch(function () { return null; }),
+          };
+        } catch (e) { /* пре-рендер/старые браузеры — молча пропускаем */ }
+      })();
+    </script>
+
+
+
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
