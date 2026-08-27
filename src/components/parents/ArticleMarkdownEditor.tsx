@@ -169,7 +169,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       TableHeader,
       TableCell,
       GalleryPlaceholder,
-      ProfessorNote,
+      ProfessorNote.configure({ onSave: onSaveAsIs, saving }),
     ],
     content: markdownToHtml(value),
     editorProps: {
