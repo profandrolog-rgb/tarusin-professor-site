@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Save, Trash2 } from "lucide-react";
 import {
   PROFESSOR_NOTE_ICONS,
   DEFAULT_PROFESSOR_NOTE_ICON,
@@ -36,7 +36,12 @@ const ProfessorNoteView = ({
   editor,
   getPos,
   deleteNode,
+  extension,
 }: NodeViewProps) => {
+  const { onSave, saving } = extension.options as {
+    onSave?: () => void;
+    saving?: boolean;
+  };
   const editable = editor.isEditable;
   const icon: ProfessorNoteIconKey =
     node.attrs.icon || DEFAULT_PROFESSOR_NOTE_ICON;
@@ -134,6 +139,24 @@ const ProfessorNoteView = ({
           >
             <ArrowDown className="w-3.5 h-3.5" />
           </Button>
+          {onSave && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="h-8 px-2 gap-1"
+              onClick={() => onSave()}
+              disabled={saving}
+              title="Сохранить изменения страницы"
+            >
+              {saving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              Сохранить
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -152,6 +175,14 @@ const ProfessorNoteView = ({
 
 export const ProfessorNote = Node.create({
   name: "professorNote",
+
+  addOptions() {
+    return {
+      /** Сохранение страницы прямо из блока заметки. */
+      onSave: undefined as undefined | (() => void),
+      saving: false,
+    };
+  },
   group: "block",
   content: "block+",
   selectable: true,
@@ -201,18 +232,20 @@ export const ProfessorNote = Node.create({
     return {
       insertProfessorNote:
         () =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
-            content: [
-              {
-                type: "paragraph",
-                content: [{ type: "text", text: "" }],
-              },
-            ],
-          });
+        ({ chain, state }) => {
+          // Вставляем строго по текущему курсору. Пустой text-узел недопустим
+          // в ProseMirror и раньше приводил к молчаливому отказу команды.
+          const at = state.selection.to;
+          return chain()
+            .insertContentAt(at, {
+              type: this.name,
+              attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
+              content: [{ type: "paragraph" }],
+            })
+            .focus(at + 2)
+            .run();
         },
+
     };
   },
 });
