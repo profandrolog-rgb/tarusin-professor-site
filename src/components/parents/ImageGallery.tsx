@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { handleStorageImgError } from "@/lib/storageFallback";
+import { handleStorageImgError, publicStorageUrl } from "@/lib/storageFallback";
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
 import { useOptionalAuth } from "@/hooks/useAuth";
@@ -20,15 +20,8 @@ interface Item {
 
 const FOLDER = "article-images";
 const BUCKET = "disease-media";
-// Стабильный базовый URL из env — не зависит от состояния клиента Supabase.
-const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${BUCKET}`;
-
 function publicUrl(filename: string) {
-  const safe = filename
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-  return `${STORAGE_BASE}/${FOLDER}/${safe}`;
+  return publicStorageUrl(BUCKET, `${FOLDER}/${filename}`) || "";
 }
 
 // Parses entries like:  `name.jpg` or `name.jpg@crop=50,30,1.2,cover,4x3 "подпись"`

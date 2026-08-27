@@ -26,6 +26,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { publicStorageUrl } from "@/lib/storageFallback";
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import {
@@ -60,14 +61,8 @@ interface Props {
 
 const ARTICLE_IMAGES_FOLDER = "article-images";
 const ARTICLE_IMAGES_BUCKET = "disease-media";
-const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${ARTICLE_IMAGES_BUCKET}`;
-
 function publicArticleImageUrl(filename: string) {
-  const safe = filename
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-  return `${STORAGE_BASE}/${ARTICLE_IMAGES_FOLDER}/${safe}`;
+  return publicStorageUrl(ARTICLE_IMAGES_BUCKET, `${ARTICLE_IMAGES_FOLDER}/${filename}`) || "";
 }
 
 type ImgType = "surgery" | "ultrasound" | "patient" | "patient-full" | "urology" | "urology-closeup" | "infographic" | "anatomy" | "default";

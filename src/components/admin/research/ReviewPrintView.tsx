@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { stripMarkers } from '@/lib/research/markers';
 import { splitContentByGallery } from '@/lib/markdown/galleryMarkers';
+import { publicStorageUrl } from '@/lib/storageFallback';
 
 interface Props {
   title: string;
@@ -11,10 +12,9 @@ interface Props {
 }
 
 const BUCKET = 'disease-media';
-const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${BUCKET}/article-images`;
 
 function publicUrl(filename: string) {
-  return `${STORAGE_BASE}/${filename.split('/').map(encodeURIComponent).join('/')}`;
+  return publicStorageUrl(BUCKET, `article-images/${filename}`) || '';
 }
 
 function parseEntry(raw: string): { filename: string; caption: string } {
