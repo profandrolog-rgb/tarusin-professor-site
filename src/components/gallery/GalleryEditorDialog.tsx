@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Trash2, Upload, FolderInput, GripVertical } from "lucide-react";
+import { Loader2, Trash2, Upload, FolderInput, GripVertical, Crop } from "lucide-react";
+import ImageCropDialog from "./ImageCropDialog";
+import { parseCropToken, formatCropToken, cropStyles, DEFAULT_CROP } from "@/lib/gallery/cropSpec";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -31,6 +33,8 @@ export interface GalleryImage {
   filename: string;
   caption: string;
   kind: GalleryKind;
+  /** Токен кадрирования `crop=x,y,zoom,fit,ratio` — пусто, если кадр стандартный. */
+  crop?: string;
 }
 
 export interface PickMaterialItem {
@@ -81,17 +85,21 @@ function safeSlugPart(slug: string): string {
 }
 
 function SortableRow({
-  im, renaming, onKind, onCaption, onRemove, publicUrl,
+  im, renaming, onKind, onCaption, onCrop, onRemove, publicUrl,
 }: {
   im: GalleryImage;
   renaming: boolean;
   onKind: (v: GalleryKind) => void;
   onCaption: (v: string) => void;
+  onCrop: (token: string) => void;
   onRemove: () => void;
   publicUrl: (name: string) => string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: im.id });
+  const [cropOpen, setCropOpen] = useState(false);
+  const spec = parseCropToken(im.crop) || DEFAULT_CROP;
+  const thumb = cropStyles(spec);
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -108,12 +116,15 @@ function SortableRow({
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <img
-        src={publicUrl(im.filename)}
-        alt=""
-        className="w-16 h-16 object-cover rounded shrink-0 bg-muted"
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }}
-      />
+      <div className="w-16 h-16 rounded shrink-0 bg-muted overflow-hidden">
+        <img
+          src={publicUrl(im.filename)}
+          alt=""
+          className="w-full h-full"
+          style={{ objectFit: "cover", objectPosition: `${spec.x}% ${spec.y}%` }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }}
+        />
+      </div>
       <div className="flex-1 min-w-0 space-y-1">
         <Input
           value={im.caption}
@@ -138,7 +149,16 @@ function SortableRow({
               ))}
             </SelectContent>
           </Select>
-          <Badge variant="outline" className="text-[10px] font-mono truncate max-w-[240px]">
+          <Button
+            size="sm"
+            variant={im.crop ? "secondary" : "outline"}
+            className="h-8 text-xs"
+            onClick={() => setCropOpen(true)}
+          >
+            <Crop className="w-3.5 h-3.5 mr-1" />
+            {im.crop ? "Кадр настроен" : "Кадрировать"}
+          </Button>
+          <Badge variant="outline" className="text-[10px] font-mono truncate max-w-[200px]">
             {im.filename}
           </Badge>
         </div>
@@ -146,6 +166,13 @@ function SortableRow({
       <Button variant="ghost" size="sm" onClick={onRemove} disabled={renaming}>
         <Trash2 className="w-4 h-4 text-destructive" />
       </Button>
+      <ImageCropDialog
+        open={cropOpen}
+        onOpenChange={setCropOpen}
+        src={publicUrl(im.filename)}
+        value={spec}
+        onSave={(next) => onCrop(formatCropToken(next))}
+      />
     </div>
   );
 }
@@ -392,6 +419,7 @@ export default function GalleryEditorDialog({
                       renaming={renamingId === im.id}
                       onKind={(v) => updateImage(im.id, { kind: v })}
                       onCaption={(v) => updateImage(im.id, { caption: v })}
+                      onCrop={(token) => updateImage(im.id, { crop: token })}
                       onRemove={() => removeImage(im.id)}
                       publicUrl={publicUrl}
                     />

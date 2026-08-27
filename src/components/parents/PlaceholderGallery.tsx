@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
 import { getDownloadUrl } from "@/lib/research/uploadToYc";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine, Type, ArrowUp, ArrowDown } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine, Type, ArrowUp, ArrowDown, Crop as CropIcon } from "lucide-react";
+import ImageCropDialog from "@/components/gallery/ImageCropDialog";
+import { parseCropToken, formatCropToken, DEFAULT_CROP } from "@/lib/gallery/cropSpec";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
 import {
@@ -360,6 +362,7 @@ const PlaceholderGallery = ({
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [annotatingFile, setAnnotatingFile] = useState<string | null>(null);
+  const [croppingFile, setCroppingFile] = useState<string | null>(null);
 
   // --- Интерактивное кадрирование ---
   interface CropQueueItem {
@@ -1158,6 +1161,16 @@ const PlaceholderGallery = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setCroppingFile(it.filename)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 left-[3.75rem] bg-emerald-700 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Кадрировать фото"
+                  aria-label="Кадрировать фото"
+                >
+                  <CropIcon className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => deleteExisting(it.filename)}
                   disabled={deletingFile !== null || uploading}
                   className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
@@ -1681,6 +1694,24 @@ const PlaceholderGallery = ({
           </div>
         );
       })()}
+
+      {croppingFile && (
+        <ImageCropDialog
+          open
+          onOpenChange={(o) => !o && setCroppingFile(null)}
+          src={publicArticleImageUrl(croppingFile)}
+          value={parseCropToken(existing.find((e) => e.filename === croppingFile)?.crop) || DEFAULT_CROP}
+          onSave={async (next) => {
+            const token = formatCropToken(next);
+            const target = croppingFile;
+            setCroppingFile(null);
+            const ok = await persistEntries((current) =>
+              current.map((e) => (e.filename === target ? { ...e, crop: token } : e)),
+            );
+            if (ok) toast.success("Кадр сохранён");
+          }}
+        />
+      )}
 
       <Dialog open={!!annotatingFile} onOpenChange={(o) => !o && setAnnotatingFile(null)}>
         <DialogContent className="max-w-5xl">

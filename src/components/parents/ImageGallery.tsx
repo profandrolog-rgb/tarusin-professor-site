@@ -4,6 +4,7 @@ import { handleStorageImgError } from "@/lib/storageFallback";
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
 import { useOptionalAuth } from "@/hooks/useAuth";
+import { splitFilenameCrop, parseCropToken, cropStyles, type CropSpec } from "@/lib/gallery/cropSpec";
 
 interface Props {
   caption: string;
@@ -13,6 +14,8 @@ interface Props {
 interface Item {
   filename: string;
   caption: string;
+  /** Индивидуальное кадрирование фото (null — стандартный кадр 4:3). */
+  crop: CropSpec | null;
 }
 
 const FOLDER = "article-images";
@@ -28,14 +31,25 @@ function publicUrl(filename: string) {
   return `${STORAGE_BASE}/${FOLDER}/${safe}`;
 }
 
-// Parses entries like:  `name.jpg` or `name.jpg "подпись"` (also `'…'`, `“…”`)
+// Parses entries like:  `name.jpg` or `name.jpg@crop=50,30,1.2,cover,4x3 "подпись"`
 function parseEntry(raw: string): Item {
   const s = raw.trim();
   const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  if (m) {
+    const { filename, crop } = splitFilenameCrop(m[1]);
+    return { filename, crop: parseCropToken(crop), caption: m[2].replace(/["'“”]/g, "").trim() };
+  }
   const sp = s.indexOf(" ");
-  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
-  return { filename: s, caption: "" };
+  if (sp > 0) {
+    const { filename, crop } = splitFilenameCrop(s.slice(0, sp));
+    return {
+      filename,
+      crop: parseCropToken(crop),
+      caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim(),
+    };
+  }
+  const bare = splitFilenameCrop(s);
+  return { filename: bare.filename, crop: parseCropToken(bare.crop), caption: "" };
 }
 
 const ImageGallery = ({ caption, files }: Props) => {
@@ -146,13 +160,17 @@ const ImageGallery = ({ caption, files }: Props) => {
         (() => {
           const single = items[0];
           const single_patientFull = isPatientFull(single.filename);
-          const wrapperClass = single_patientFull
+          const singleCrop = single.crop;
+          const cropped = cropStyles(singleCrop);
+          const wrapperClass = single_patientFull && !singleCrop
             ? "mx-auto"
             : "max-w-[860px] mx-auto w-full";
-          const wrapperStyle: React.CSSProperties = single_patientFull
+          const wrapperStyle: React.CSSProperties = single_patientFull && !singleCrop
             ? { width: PATIENT_FULL_W, maxWidth: "100%" }
             : {};
-          const imgStyle: React.CSSProperties = single_patientFull
+          const imgStyle: React.CSSProperties = singleCrop
+            ? { maxWidth: "100%", ...cropped.image }
+            : single_patientFull
             ? {
                 maxWidth: "100%",
                 width: "auto",
@@ -174,7 +192,10 @@ const ImageGallery = ({ caption, files }: Props) => {
               <button
                 type="button"
                 onClick={() => setLightboxIdx(0)}
-                className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+                className={`relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background${
+                  singleCrop ? " overflow-hidden" : ""
+                }`}
+                style={singleCrop ? cropped.frame : undefined}
               >
                 <img
                   src={publicUrl(single.filename)}
@@ -186,7 +207,10 @@ const ImageGallery = ({ caption, files }: Props) => {
                   onContextMenu={noContextMenu}
                   onError={handleStorageImgError}
                 />
-                <AnnotationOverlay doc={annotations[single.filename]} fit="contain" />
+                <AnnotationOverlay
+                  doc={annotations[single.filename]}
+                  fit={singleCrop?.fit === "cover" ? "cover" : "contain"}
+                />
                 <span style={watermarkStyle}>tarusin.pro</span>
               </button>
               {single.caption && (
@@ -202,27 +226,33 @@ const ImageGallery = ({ caption, files }: Props) => {
         >
           {items.map((it, i) => {
             const patientFull = isPatientFull(it.filename);
+            const crop = it.crop;
+            const cropped = cropStyles(crop);
             const colClass = cols
               ? "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] md:max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
               : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
-            const itemClass = patientFull && !cols ? "shrink-0" : colClass;
-            const itemStyle: React.CSSProperties = patientFull && !cols
+            const itemClass = patientFull && !cols && !crop ? "shrink-0" : colClass;
+            const itemStyle: React.CSSProperties = patientFull && !cols && !crop
               ? { width: PATIENT_FULL_W, maxWidth: "100%" }
               : {};
+            // Фото с индивидуальным кадром показываем строго по его настройкам,
+            // игнорируя автоматические правила (инфографика, «в рост»).
+            const useFreeFlow = crop ? crop.fit === "contain" || !cropped.frame.aspectRatio : isInfographic(it.filename);
 
             return (
             <div key={it.filename + i} className={itemClass} style={itemStyle}>
-              {isInfographic(it.filename) ? (
+              {useFreeFlow ? (
                 <button
                   type="button"
                   onClick={() => setLightboxIdx(i)}
-                  className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
+                  className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background overflow-hidden"
+                  style={crop ? cropped.frame : undefined}
                 >
                   <img
                     src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
-                    style={{
+                    style={crop ? { maxWidth: "100%", ...cropped.image } : {
                       maxWidth: "100%",
                       width: "100%",
                       height: "auto",
@@ -242,14 +272,16 @@ const ImageGallery = ({ caption, files }: Props) => {
                   type="button"
                   onClick={() => setLightboxIdx(i)}
                   className="relative block w-full overflow-hidden rounded-lg border border-border hover:opacity-95 transition"
-                  style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
+                  style={crop
+                    ? cropped.frame
+                    : { aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
                 >
                   <img
                     src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
-                    className="w-full h-full object-cover"
-                    style={{ maxWidth: "100%", height: "100%" }}
+                    className={crop ? undefined : "w-full h-full object-cover"}
+                    style={crop ? { maxWidth: "100%", ...cropped.image } : { maxWidth: "100%", height: "100%" }}
                     draggable={false}
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}

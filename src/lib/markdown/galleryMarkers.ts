@@ -2,6 +2,7 @@ import { marked } from "marked";
 import TurndownService from "turndown";
 // @ts-ignore - turndown-plugin-gfm has no types but exports `gfm`
 import { gfm as turndownGfm } from "turndown-plugin-gfm";
+import { splitFilenameCrop, joinFilenameCrop } from "@/lib/gallery/cropSpec";
 
 export const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
 export const GALLERY_DIV_RE = /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
@@ -191,6 +192,8 @@ type GallerySnapshot = {
 export type GalleryFileEntry = {
   filename: string;
   caption: string;
+  /** Токен кадрирования `crop=x,y,zoom,fit,ratio` (пусто — кадр по умолчанию). */
+  crop?: string;
 };
 
 function parseGalleryFiles(raw: string): string[] {
@@ -204,11 +207,18 @@ function parseGalleryFileEntry(raw: string): GalleryFileEntry {
   const s = raw.trim();
   // Терпимый парсер: подпись может сама содержать кавычки любого вида.
   const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  if (m) {
+    const { filename, crop } = splitFilenameCrop(m[1]);
+    return { filename, crop, caption: m[2].replace(/["'“”]/g, "").trim() };
+  }
   // Подпись без кавычек: имя файла — первый токен, остальное — подпись.
   const sp = s.indexOf(" ");
-  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
-  return { filename: s, caption: "" };
+  if (sp > 0) {
+    const { filename, crop } = splitFilenameCrop(s.slice(0, sp));
+    return { filename, crop, caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
+  }
+  const bare = splitFilenameCrop(s);
+  return { filename: bare.filename, crop: bare.crop, caption: "" };
 }
 
 export function parseGalleryFileEntries(raw: string): GalleryFileEntry[] {
@@ -323,7 +333,9 @@ function buildGalleryMarker(caption: string, files: string[]): string {
 function formatGalleryFileEntry(entry: GalleryFileEntry): string {
   // Кавычки внутри подписи ломают обратный парсинг записи — убираем их полностью.
   const safeCaption = (entry.caption || "").replace(/["'“”]/g, "").replace(/\|/g, "／").trim();
-  return safeCaption ? `${entry.filename} "${safeCaption}"` : entry.filename;
+  // Параметры кадрирования пишем сразу за именем файла: `photo.jpg@crop=...`.
+  const token = joinFilenameCrop(entry.filename, entry.crop);
+  return safeCaption ? `${token} "${safeCaption}"` : token;
 }
 
 export function buildGalleryMarkerFromEntries(caption: string, entries: GalleryFileEntry[]): string {
