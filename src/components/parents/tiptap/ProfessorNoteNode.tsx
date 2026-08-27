@@ -201,18 +201,20 @@ export const ProfessorNote = Node.create({
     return {
       insertProfessorNote:
         () =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
-            content: [
-              {
-                type: "paragraph",
-                content: [{ type: "text", text: "" }],
-              },
-            ],
-          });
+        ({ chain, state }) => {
+          // Вставляем строго по текущему курсору. Пустой text-узел недопустим
+          // в ProseMirror и раньше приводил к молчаливому отказу команды.
+          const at = state.selection.to;
+          return chain()
+            .insertContentAt(at, {
+              type: this.name,
+              attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
+              content: [{ type: "paragraph" }],
+            })
+            .focus(at + 2)
+            .run();
         },
+
     };
   },
 });
