@@ -636,6 +636,17 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
             Галерея
           </Button>
 
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => editor?.chain().focus().insertProfessorNote().run()}
+            className="gap-1.5"
+          >
+            <NotebookPen className="w-3.5 h-3.5" />
+            Заметка
+          </Button>
+
           {connStatus && (
             <span
               className={`text-xs px-2 py-1 rounded-md ${
