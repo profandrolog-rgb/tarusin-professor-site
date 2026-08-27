@@ -4,6 +4,7 @@ import { handleStorageImgError } from "@/lib/storageFallback";
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
 import { useOptionalAuth } from "@/hooks/useAuth";
+import { splitFilenameCrop, parseCropToken, cropStyles, type CropSpec } from "@/lib/gallery/cropSpec";
 
 interface Props {
   caption: string;
