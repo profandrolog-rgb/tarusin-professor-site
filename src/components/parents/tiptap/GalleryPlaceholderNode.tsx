@@ -202,14 +202,17 @@ const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: Node
         initialRestricted={restricted}
         onSave={({ caption: cap, images, cols: nextCols, restricted: nextRestricted }) => {
           const entries = withGalleryCols(
-            images.map((i) => ({ filename: i.filename, caption: i.caption })),
+            images.map((i) => ({ filename: i.filename, caption: i.caption, crop: i.crop || "" })),
             nextCols,
             nextRestricted,
           );
           const marker = buildGalleryMarkerFromEntries(cap, entries);
-          // Синхронизируем атрибуты плашки: подпись + отформатированный список файлов.
+          // Синхронизируем атрибуты плашки: подпись, кадр и отформатированный список файлов.
           const files = entries
-            .map((i) => `${i.filename}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`)
+            .map((i) => {
+              const token = i.crop ? `${i.filename}@${i.crop}` : i.filename;
+              return `${token}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`;
+            })
             .join("|");
           updateAttributes({ caption: cap, files });
           // Уведомляем внешний слушатель (например, редактор обзоров) для синхронизации маркеров.
