@@ -419,6 +419,7 @@ export default function GalleryEditorDialog({
                       renaming={renamingId === im.id}
                       onKind={(v) => updateImage(im.id, { kind: v })}
                       onCaption={(v) => updateImage(im.id, { caption: v })}
+                      onCrop={(token) => updateImage(im.id, { crop: token })}
                       onRemove={() => removeImage(im.id)}
                       publicUrl={publicUrl}
                     />
