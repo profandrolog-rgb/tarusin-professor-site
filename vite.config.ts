@@ -37,11 +37,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mcpPlugin(),
-    // Keep Lovable's HMR gate and preview bridge in their supported order.
-    // Do not override fullReload: the preview host selects the compatible
-    // update mode through LOVABLE_HMR_FULL_RELOAD.
-    mode === "development" && hmrGatePlugin(),
     mode === "development" && devServerBridgePlugin(),
+    // Register the preview bridge before the gate wraps Vite's websocket.
+    // Do not override fullReload: the host selects its compatible update mode.
+    mode === "development" && hmrGatePlugin(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
 
