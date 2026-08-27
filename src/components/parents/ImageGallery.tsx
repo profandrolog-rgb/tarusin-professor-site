@@ -334,14 +334,17 @@ const ImageGallery = ({ caption, files }: Props) => {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={publicUrl(items[lightboxIdx].filename)}
+              src={cdnImage(publicUrl(items[lightboxIdx].filename), { width: 1600, quality: 85 })}
               alt={items[lightboxIdx].caption || caption || `Фото ${lightboxIdx + 1}`}
               className="max-w-full max-h-[90vh] object-contain"
+              decoding="async"
+              fetchPriority="high"
               draggable={false}
               onDragStart={noDragStart}
               onContextMenu={noContextMenu}
               onError={handleStorageImgError}
             />
+
             <AnnotationOverlay doc={annotations[items[lightboxIdx].filename]} fit="contain" />
             <span style={watermarkStyle}>tarusin.pro</span>
           </div>
