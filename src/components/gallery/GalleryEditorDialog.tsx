@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Trash2, Upload, FolderInput, GripVertical, Crop } from "lucide-react";
+import { Loader2, Trash2, Upload, FolderInput, GripVertical, Crop, PenLine } from "lucide-react";
 import ImageCropDialog from "./ImageCropDialog";
 import { parseCropToken, formatCropToken, cropStyles, DEFAULT_CROP } from "@/lib/gallery/cropSpec";
 import { toast } from "sonner";
@@ -27,6 +27,8 @@ import {
   GalleryKind, GALLERY_KINDS, GALLERY_KIND_OPTIONS, KIND_SEGMENT_RE,
   processImageByKind,
 } from "./galleryKinds";
+
+const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
 
 export interface GalleryImage {
   id: string;
@@ -85,13 +87,14 @@ function safeSlugPart(slug: string): string {
 }
 
 function SortableRow({
-  im, renaming, onKind, onCaption, onCrop, onRemove, publicUrl,
+  im, renaming, onKind, onCaption, onCrop, onAnnotate, onRemove, publicUrl,
 }: {
   im: GalleryImage;
   renaming: boolean;
   onKind: (v: GalleryKind) => void;
   onCaption: (v: string) => void;
   onCrop: (token: string) => void;
+  onAnnotate: () => void;
   onRemove: () => void;
   publicUrl: (name: string) => string;
 }) {
@@ -158,6 +161,16 @@ function SortableRow({
             <Crop className="w-3.5 h-3.5 mr-1" />
             {im.crop ? "Кадр настроен" : "Кадрировать"}
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={onAnnotate}
+            title="Добавить стрелки, овалы и подписи"
+          >
+            <PenLine className="w-3.5 h-3.5 mr-1" />
+            Аннотировать
+          </Button>
           <Badge variant="outline" className="text-[10px] font-mono truncate max-w-[200px]">
             {im.filename}
           </Badge>
@@ -200,6 +213,7 @@ export default function GalleryEditorDialog({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [defaultKind, setDefaultKind] = useState<GalleryKind>("default");
+  const [annotatingFile, setAnnotatingFile] = useState<string | null>(null);
   // Файлы, убранные из галереи: удаляем из хранилища только после сохранения.
   const [pendingRemovals, setPendingRemovals] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -328,6 +342,7 @@ export default function GalleryEditorDialog({
   const ids = useMemo(() => images.map((x) => x.id), [images]);
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" onPaste={handlePaste}>
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
@@ -420,6 +435,7 @@ export default function GalleryEditorDialog({
                       onKind={(v) => updateImage(im.id, { kind: v })}
                       onCaption={(v) => updateImage(im.id, { caption: v })}
                       onCrop={(token) => updateImage(im.id, { crop: token })}
+                      onAnnotate={() => setAnnotatingFile(im.filename)}
                       onRemove={() => removeImage(im.id)}
                       publicUrl={publicUrl}
                     />
@@ -436,6 +452,24 @@ export default function GalleryEditorDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <Dialog open={annotatingFile !== null} onOpenChange={(next) => !next && setAnnotatingFile(null)}>
+      <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Аннотирование фото</DialogTitle>
+        </DialogHeader>
+        {annotatingFile && (
+          <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Загрузка редактора…</div>}>
+            <ImageAnnotator
+              imagePath={`${folder}/${annotatingFile}`}
+              bucket={bucket}
+              onClose={() => setAnnotatingFile(null)}
+              onSaved={() => setAnnotatingFile(null)}
+            />
+          </Suspense>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
