@@ -3,6 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { FALLBACK_BASES, PRIMARY_BASE, swapBase } from "./backendEndpoints";
+import { proxyPublicStorageUrl } from "./installStoragePublicUrlProxy";
 
 /**
  * Публичная ссылка на файл в бакете. Проксирование выполняется глобально
@@ -10,7 +11,10 @@ import { FALLBACK_BASES, PRIMARY_BASE, swapBase } from "./backendEndpoints";
  */
 export function publicStorageUrl(bucket: string, path: string | null | undefined): string | null {
   if (!path) return null;
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  const url = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  // Do not rely solely on the startup monkey-patch: this helper remains safe
+  // during SSG, isolated renders and early imports before main.tsx executes.
+  return proxyPublicStorageUrl(url);
 }
 
 
