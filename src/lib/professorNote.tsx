@@ -133,7 +133,9 @@ export function splitByProfessorNotes(html: string): ProfessorNoteSegment[] {
       (readHtmlAttr(attrs, "data-icon") as ProfessorNoteIconKey) ||
       DEFAULT_PROFESSOR_NOTE_ICON;
     const title = readHtmlAttr(attrs, "data-title") || "";
-    out.push({ type: "note", html: m[2], icon, title });
+    const width = normalizeNoteWidth(readHtmlAttr(attrs, "data-width"));
+    const side = normalizeNoteSide(readHtmlAttr(attrs, "data-side"));
+    out.push({ type: "note", html: m[2], icon, title, width, side });
     lastIndex = m.index + m[0].length;
   }
   if (lastIndex < html.length) {
