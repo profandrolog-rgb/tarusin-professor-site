@@ -19,7 +19,15 @@ import { ArrowDown, ArrowUp, Save, Trash2 } from "lucide-react";
 import {
   PROFESSOR_NOTE_ICONS,
   DEFAULT_PROFESSOR_NOTE_ICON,
+  PROFESSOR_NOTE_WIDTHS,
+  PROFESSOR_NOTE_SIDES,
+  DEFAULT_PROFESSOR_NOTE_WIDTH,
+  DEFAULT_PROFESSOR_NOTE_SIDE,
+  normalizeNoteWidth,
+  normalizeNoteSide,
   type ProfessorNoteIconKey,
+  type ProfessorNoteWidthKey,
+  type ProfessorNoteSideKey,
 } from "@/lib/professorNote";
 
 declare module "@tiptap/core" {
@@ -45,6 +53,8 @@ const ProfessorNoteView = ({
   const icon: ProfessorNoteIconKey =
     node.attrs.icon || DEFAULT_PROFESSOR_NOTE_ICON;
   const title: string = node.attrs.title || "";
+  const width: ProfessorNoteWidthKey = normalizeNoteWidth(node.attrs.width);
+  const side: ProfessorNoteSideKey = normalizeNoteSide(node.attrs.side);
   const [draftTitle, setDraftTitle] = useState(title);
 
   const setIcon = (key: ProfessorNoteIconKey) => {
@@ -88,6 +98,8 @@ const ProfessorNoteView = ({
       data-note=""
       data-icon={icon}
       data-title={title}
+      data-width={width}
+      data-side={side}
     >
       {editable && (
         <div
@@ -118,6 +130,40 @@ const ProfessorNoteView = ({
             placeholder="Заголовок блока"
             className="h-8 text-sm flex-1"
           />
+          <Select
+            value={width}
+            onValueChange={(v) =>
+              updateAttributes({ width: v as ProfessorNoteWidthKey })
+            }
+          >
+            <SelectTrigger className="h-8 w-[190px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROFESSOR_NOTE_WIDTHS.map((item) => (
+                <SelectItem key={item.key} value={item.key}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={side}
+            onValueChange={(v) =>
+              updateAttributes({ side: v as ProfessorNoteSideKey })
+            }
+          >
+            <SelectTrigger className="h-8 w-[150px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROFESSOR_NOTE_SIDES.map((item) => (
+                <SelectItem key={item.key} value={item.key}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             type="button"
             variant="outline"
@@ -192,6 +238,20 @@ export const ProfessorNote = Node.create({
           "data-icon": attrs.icon || DEFAULT_PROFESSOR_NOTE_ICON,
         }),
       },
+      width: {
+        default: DEFAULT_PROFESSOR_NOTE_WIDTH,
+        parseHTML: (el) => normalizeNoteWidth(el.getAttribute("data-width")),
+        renderHTML: (attrs) => ({
+          "data-width": normalizeNoteWidth(attrs.width),
+        }),
+      },
+      side: {
+        default: DEFAULT_PROFESSOR_NOTE_SIDE,
+        parseHTML: (el) => normalizeNoteSide(el.getAttribute("data-side")),
+        renderHTML: (attrs) => ({
+          "data-side": normalizeNoteSide(attrs.side),
+        }),
+      },
       title: {
         default: "",
         parseHTML: (el) => el.getAttribute("data-title") || "",
@@ -228,7 +288,12 @@ export const ProfessorNote = Node.create({
         ({ commands }) =>
           commands.insertContent({
             type: this.name,
-            attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
+            attrs: {
+              icon: DEFAULT_PROFESSOR_NOTE_ICON,
+              title: "",
+              width: DEFAULT_PROFESSOR_NOTE_WIDTH,
+              side: DEFAULT_PROFESSOR_NOTE_SIDE,
+            },
             content: [{ type: "paragraph" }],
           }),
     };
