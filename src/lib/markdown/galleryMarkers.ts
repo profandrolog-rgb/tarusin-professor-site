@@ -216,7 +216,8 @@ function parseGalleryFileEntry(raw: string): GalleryFileEntry {
     const { filename, crop } = splitFilenameCrop(s.slice(0, sp));
     return { filename, crop, caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
   }
-  return { filename: s, caption: "" };
+  const bare = splitFilenameCrop(s);
+  return { filename: bare.filename, crop: bare.crop, caption: "" };
 }
 
 export function parseGalleryFileEntries(raw: string): GalleryFileEntry[] {
