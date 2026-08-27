@@ -148,6 +148,8 @@ interface ProfessorNoteBlockProps {
   icon: ProfessorNoteIconKey;
   title: string;
   innerHtml: string;
+  width?: ProfessorNoteWidthKey;
+  side?: ProfessorNoteSideKey;
   className?: string;
 }
 
@@ -155,11 +157,13 @@ export const ProfessorNoteBlock = ({
   icon,
   title,
   innerHtml,
+  width,
+  side,
   className = "",
 }: ProfessorNoteBlockProps) => {
   const { Icon } = getProfessorNoteIcon(icon);
   const clean = DOMPurify.sanitize(innerHtml, {
-    ADD_ATTR: ["style", "data-note", "data-icon", "data-title"],
+    ADD_ATTR: ["style", "data-note", "data-icon", "data-title", "data-width", "data-side"],
   });
   return (
     <aside
@@ -167,6 +171,8 @@ export const ProfessorNoteBlock = ({
       data-note
       data-icon={icon}
       data-title={title}
+      data-width={normalizeNoteWidth(width)}
+      data-side={normalizeNoteSide(side)}
     >
       <div className="professor-note-header">
         <Icon className="professor-note-icon" aria-hidden="true" />
