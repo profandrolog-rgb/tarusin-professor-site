@@ -23,6 +23,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { UPLOAD_CACHE_CONTROL } from "@/lib/imageCdn";
 import { toast } from "sonner";
 import ReactCrop, { type Crop, type PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
@@ -1018,7 +1019,8 @@ const PlaceholderGallery = ({
           const path = `${ARTICLE_IMAGES_FOLDER}/${filename}`;
           const { error } = await supabase.storage
             .from("disease-media")
-            .upload(path, p.blob, { upsert: false, contentType: "image/jpeg" });
+            .upload(path, p.blob, { upsert: false, contentType: "image/jpeg", cacheControl: UPLOAD_CACHE_CONTROL });
+
           if (!error) {
             upErr = null;
             break;
