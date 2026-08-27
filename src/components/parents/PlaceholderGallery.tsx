@@ -497,7 +497,7 @@ const PlaceholderGallery = ({
   const existing = parsedExisting.entries;
   const hasExisting = existing.length > 0;
 
-  // Число фото в ряд (2–5). null = авто (3 в ряд на десктопе).
+  // Число фото в ряд (2–6). null = авто (3 в ряд на десктопе).
   const [cols, setCols] = useState<number | null>(parsedExisting.cols);
   useEffect(() => { setCols(parsedExisting.cols); }, [parsedExisting.cols]);
 
@@ -1247,6 +1247,7 @@ const PlaceholderGallery = ({
           <option value="3">3 в ряд</option>
           <option value="4">4 в ряд</option>
           <option value="5">5 в ряд</option>
+          <option value="6">6 в ряд</option>
         </select>
         <label className="flex items-center gap-2 text-xs text-muted-foreground ml-2 cursor-pointer">
           <input
