@@ -70,6 +70,7 @@ const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: Node
       filename: e.filename,
       caption: e.caption || "",
       kind: detectKindFromFilename(e.filename),
+      crop: e.crop || "",
     })),
     [entries],
   );
