@@ -143,6 +143,19 @@
   .professor-note {
     width: 66.666%;
     margin-left: 33.333%;
+    margin-right: 0;
+  }
+  .professor-note[data-width="three-quarters"] {
+    width: 75%;
+    margin-left: 25%;
+  }
+  .professor-note[data-side="left"] {
+    margin-left: 0;
+    margin-right: 33.333%;
+  }
+  .professor-note[data-side="left"][data-width="three-quarters"] {
+    margin-left: 0;
+    margin-right: 25%;
   }
 }
 
