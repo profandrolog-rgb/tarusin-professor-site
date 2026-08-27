@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowDown, ArrowUp, Loader2, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Save, Trash2 } from "lucide-react";
 import {
   PROFESSOR_NOTE_ICONS,
   DEFAULT_PROFESSOR_NOTE_ICON,
@@ -38,9 +38,8 @@ const ProfessorNoteView = ({
   deleteNode,
   extension,
 }: NodeViewProps) => {
-  const { onSave, saving } = extension.options as {
+  const { onSave } = extension.options as {
     onSave?: () => void;
-    saving?: boolean;
   };
   const editable = editor.isEditable;
   const icon: ProfessorNoteIconKey =
@@ -146,14 +145,9 @@ const ProfessorNoteView = ({
               size="sm"
               className="h-8 px-2 gap-1"
               onClick={() => onSave()}
-              disabled={saving}
               title="Сохранить изменения страницы"
             >
-              {saving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Save className="w-3.5 h-3.5" />
-              )}
+              <Save className="w-3.5 h-3.5" />
               Сохранить
             </Button>
           )}
@@ -180,7 +174,6 @@ export const ProfessorNote = Node.create({
     return {
       /** Сохранение страницы прямо из блока заметки. */
       onSave: undefined as undefined | (() => void),
-      saving: false,
     };
   },
   group: "block",
@@ -232,20 +225,12 @@ export const ProfessorNote = Node.create({
     return {
       insertProfessorNote:
         () =>
-        ({ chain, state }) => {
-          // Вставляем строго по текущему курсору. Пустой text-узел недопустим
-          // в ProseMirror и раньше приводил к молчаливому отказу команды.
-          const at = state.selection.to;
-          return chain()
-            .insertContentAt(at, {
-              type: this.name,
-              attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
-              content: [{ type: "paragraph" }],
-            })
-            .focus(at + 2)
-            .run();
-        },
-
+        ({ commands }) =>
+          commands.insertContent({
+            type: this.name,
+            attrs: { icon: DEFAULT_PROFESSOR_NOTE_ICON, title: "" },
+            content: [{ type: "paragraph" }],
+          }),
     };
   },
 });
