@@ -255,15 +255,19 @@ const ImageGallery = ({ caption, files }: Props) => {
                   style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
                 >
                   <img
-                    src={publicUrl(it.filename)}
+                    src={cdnImage(publicUrl(it.filename), { width: 700 })}
+                    srcSet={cdnSrcSet(publicUrl(it.filename), [480, 700, 1000])}
+                    sizes="(max-width: 768px) 100vw, 340px"
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     style={{ maxWidth: "100%", height: "100%" }}
                     draggable={false}
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}
                     onError={handleStorageImgError}
+
                   />
                   <AnnotationOverlay doc={annotations[it.filename]} fit="cover" />
                   <span style={watermarkStyle}>tarusin.pro</span>
