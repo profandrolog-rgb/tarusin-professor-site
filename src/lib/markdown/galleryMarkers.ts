@@ -332,7 +332,9 @@ function buildGalleryMarker(caption: string, files: string[]): string {
 function formatGalleryFileEntry(entry: GalleryFileEntry): string {
   // Кавычки внутри подписи ломают обратный парсинг записи — убираем их полностью.
   const safeCaption = (entry.caption || "").replace(/["'“”]/g, "").replace(/\|/g, "／").trim();
-  return safeCaption ? `${entry.filename} "${safeCaption}"` : entry.filename;
+  // Параметры кадрирования пишем сразу за именем файла: `photo.jpg@crop=...`.
+  const token = joinFilenameCrop(entry.filename, entry.crop);
+  return safeCaption ? `${token} "${safeCaption}"` : token;
 }
 
 export function buildGalleryMarkerFromEntries(caption: string, entries: GalleryFileEntry[]): string {
