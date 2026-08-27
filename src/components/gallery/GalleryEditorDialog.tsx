@@ -12,6 +12,7 @@ import {
 import { Loader2, Trash2, Upload, FolderInput, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { UPLOAD_CACHE_CONTROL } from "@/lib/imageCdn";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor,
   useSensor, useSensors, type DragEndEvent,
