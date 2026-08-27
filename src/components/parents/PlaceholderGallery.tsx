@@ -1158,6 +1158,16 @@ const PlaceholderGallery = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setCroppingFile(it.filename)}
+                  disabled={deletingFile !== null || uploading}
+                  className="absolute top-1 left-[3.75rem] bg-emerald-700 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
+                  title="Кадрировать фото"
+                  aria-label="Кадрировать фото"
+                >
+                  <Crop className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => deleteExisting(it.filename)}
                   disabled={deletingFile !== null || uploading}
                   className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 disabled:opacity-50"
