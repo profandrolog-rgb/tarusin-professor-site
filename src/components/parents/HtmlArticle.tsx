@@ -116,7 +116,14 @@ interface GallerySegment {
 
 type Segment =
   | { type: "html"; html: string }
-  | { type: "note"; icon: ProfessorNoteIconKey; title: string; html: string }
+  | {
+      type: "note";
+      icon: ProfessorNoteIconKey;
+      title: string;
+      html: string;
+      width?: string;
+      side?: string;
+    }
   | { type: "gallery"; gallery: GallerySegment };
 
 function splitOnGalleryMarkers(html: string): Segment[] {
@@ -135,6 +142,8 @@ function splitOnGalleryMarkers(html: string): Segment[] {
           icon: sub.icon,
           title: sub.title,
           html: sub.html,
+          width: sub.width,
+          side: sub.side,
         });
       }
     }
@@ -184,7 +193,7 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
               dangerouslySetInnerHTML={{
                 __html: DOMPurify.sanitize(seg.html || "", {
                   ADD_TAGS: ["aside"],
-                  ADD_ATTR: ["data-note", "data-icon", "data-title", "style"],
+                  ADD_ATTR: ["data-note", "data-icon", "data-title", "data-width", "data-side", "style"],
                 }),
               }}
             />
@@ -197,6 +206,8 @@ const HtmlArticle = ({ content, articleId, articleSlug, isAdmin, title, onConten
               icon={seg.icon}
               title={seg.title}
               innerHtml={seg.html}
+              width={seg.width as never}
+              side={seg.side as never}
             />
           );
         }

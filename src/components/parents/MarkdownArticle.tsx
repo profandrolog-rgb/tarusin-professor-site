@@ -18,7 +18,14 @@ interface ParsedGallery {
 
 type Segment =
   | { type: "md"; content: string }
-  | { type: "note"; icon: ProfessorNoteIconKey; title: string; content: string }
+  | {
+      type: "note";
+      icon: ProfessorNoteIconKey;
+      title: string;
+      content: string;
+      width?: string;
+      side?: string;
+    }
   | { type: "gallery"; gallery: ParsedGallery };
 
 const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
@@ -48,6 +55,8 @@ export function parseArticleContent(content: string, title?: string): Segment[] 
           icon: sub.icon,
           title: sub.title,
           content: sub.html,
+          width: sub.width,
+          side: sub.side,
         });
       }
     }
@@ -192,6 +201,8 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
               icon={seg.icon}
               title={seg.title}
               innerHtml={seg.content}
+              width={seg.width as never}
+              side={seg.side as never}
             />
           );
         }
