@@ -14,6 +14,7 @@ import ImageCropDialog from "./ImageCropDialog";
 import { parseCropToken, formatCropToken, cropStyles, DEFAULT_CROP } from "@/lib/gallery/cropSpec";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { publicStorageUrl } from "@/lib/storageFallback";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor,
   useSensor, useSensors, type DragEndEvent,
@@ -199,10 +200,8 @@ export default function GalleryEditorDialog({
   submitLabel = "Сохранить",
   onOpenPicker,
 }: GalleryEditorDialogProps) {
-  const STORAGE_BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}`;
   const publicUrl = (filename: string) => {
-    const safe = filename.split("/").map(encodeURIComponent).join("/");
-    return `${STORAGE_BASE}/${folder}/${safe}`;
+    return publicStorageUrl(bucket, `${folder}/${filename}`) || "";
   };
 
   const [caption, setCaption] = useState(initialCaption);

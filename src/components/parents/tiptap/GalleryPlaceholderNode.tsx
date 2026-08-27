@@ -13,6 +13,7 @@ import {
   withGalleryCols,
 } from "@/lib/markdown/galleryMarkers";
 import type { GalleryKind } from "@/components/gallery/galleryKinds";
+import { publicStorageUrl } from "@/lib/storageFallback";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -42,10 +43,8 @@ const detectKindFromFilename = (filename: string): GalleryKind => {
 };
 
 function useThumbUrl(bucket: string, folder: string) {
-  const base = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}`;
   return (filename: string) => {
-    const safe = filename.split("/").map(encodeURIComponent).join("/");
-    return `${base}/${folder}/${safe}`;
+    return publicStorageUrl(bucket, `${folder}/${filename}`) || "";
   };
 }
 

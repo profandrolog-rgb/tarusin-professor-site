@@ -40,7 +40,11 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && devServerBridgePlugin(),
     // Register the preview bridge before the gate wraps Vite's websocket.
     // Do not override fullReload: the host selects its compatible update mode.
-    mode === "development" && hmrGatePlugin(),
+    mode === "development" && hmrGatePlugin({
+      // These modules own the router/auth tree. Holding their invalidation while
+      // navigating to a lazy admin route leaves old and new React graphs mixed.
+      passthrough: ["src/App.tsx", "src/RootLayout.tsx", "src/hooks/useAuth.tsx"],
+    }),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
 
