@@ -52,8 +52,17 @@ export interface GalleryEditorDialogProps {
   initialCaption: string;
   /** Начальный список изображений. */
   initialImages: GalleryImage[];
+  /** Сколько фото в ряд (null — авто, 3 на десктопе). */
+  initialCols?: number | null;
+  /** Клиническая шторка 18+. */
+  initialRestricted?: boolean;
   /** Вызывается при нажатии «Сохранить». */
-  onSave: (data: { caption: string; images: GalleryImage[] }) => void;
+  onSave: (data: {
+    caption: string;
+    images: GalleryImage[];
+    cols: number | null;
+    restricted: boolean;
+  }) => void;
   /** Заголовок диалога (по умолчанию «Галерея изображений»). */
   title?: string;
   /** Текст кнопки подтверждения (по умолчанию «Сохранить»). */
