@@ -108,7 +108,15 @@ function decodeHtml(s: string): string {
 
 export type ProfessorNoteSegment =
   | { type: "text"; html: string }
-  | { type: "note"; html: string; icon: ProfessorNoteIconKey; title: string };
+  | {
+      type: "note";
+      html: string;
+      icon: ProfessorNoteIconKey;
+      title: string;
+      width: ProfessorNoteWidthKey;
+      side: ProfessorNoteSideKey;
+    };
+
 
 export function splitByProfessorNotes(html: string): ProfessorNoteSegment[] {
   const out: ProfessorNoteSegment[] = [];
