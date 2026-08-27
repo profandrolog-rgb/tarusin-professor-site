@@ -153,6 +153,8 @@ function SortableRow({
 export default function GalleryEditorDialog({
   open, onOpenChange, bucket, folder, ownerSlug,
   initialCaption, initialImages, onSave,
+  initialCols = null,
+  initialRestricted = false,
   title = "Галерея изображений",
   submitLabel = "Сохранить",
   onOpenPicker,
@@ -165,6 +167,8 @@ export default function GalleryEditorDialog({
 
   const [caption, setCaption] = useState(initialCaption);
   const [images, setImages] = useState<GalleryImage[]>(initialImages);
+  const [cols, setCols] = useState<number | null>(initialCols);
+  const [restricted, setRestricted] = useState<boolean>(initialRestricted);
   const [uploading, setUploading] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -177,10 +181,12 @@ export default function GalleryEditorDialog({
     if (open) {
       setCaption(initialCaption);
       setImages(initialImages);
+      setCols(initialCols);
+      setRestricted(initialRestricted);
       setDragOver(false);
       setPendingRemovals([]);
     }
-  }, [open, initialCaption, initialImages]);
+  }, [open, initialCaption, initialImages, initialCols, initialRestricted]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
