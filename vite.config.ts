@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
+import { devServerBridgePlugin } from "@lovable.dev/vite-plugin-dev-server-bridge";
+import { hmrGatePlugin } from "@lovable.dev/vite-plugin-hmr-gate";
 
 // Пути, которые НЕ нужно пре-рендерить: приватные разделы, SPA-страницы,
 // динамические ссылки и английская ветка. Это резко сокращает работу SSG
@@ -32,7 +34,13 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mcpPlugin(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mcpPlugin(),
+    mode === "development" && hmrGatePlugin(),
+    mode === "development" && devServerBridgePlugin(),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
 
   resolve: {
     alias: {
