@@ -46,15 +46,13 @@ const AdminQuestions = () => {
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ["admin-questions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("questions")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await (supabase as any).rpc("admin_list_questions");
       if (error) throw error;
-      return data;
+      return (data ?? []) as any[];
     },
     enabled: !!isAdmin,
   });
+
 
   const answerMutation = useMutation({
     mutationFn: async ({ id, answer }: { id: string; answer: string }) => {
