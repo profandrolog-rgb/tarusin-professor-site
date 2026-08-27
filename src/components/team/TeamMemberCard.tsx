@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { publicStorageUrl } from "@/lib/storageFallback";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,9 +51,8 @@ export function TeamMemberCard({
   onMoveUp,
   onMoveDown,
 }: TeamMemberCardProps) {
-  const photoUrl = member.photo_path
-    ? supabase.storage.from("team-photos").getPublicUrl(member.photo_path).data.publicUrl
-    : null;
+  const photoUrl = publicStorageUrl("team-photos", member.photo_path);
+
 
   const getInitials = (name: string) => {
     return name
