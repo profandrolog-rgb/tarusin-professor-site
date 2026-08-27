@@ -1695,6 +1695,24 @@ const PlaceholderGallery = ({
         );
       })()}
 
+      {croppingFile && (
+        <ImageCropDialog
+          open
+          onOpenChange={(o) => !o && setCroppingFile(null)}
+          src={publicArticleImageUrl(croppingFile)}
+          value={parseCropToken(existing.find((e) => e.filename === croppingFile)?.crop) || DEFAULT_CROP}
+          onSave={async (next) => {
+            const token = formatCropToken(next);
+            const target = croppingFile;
+            setCroppingFile(null);
+            const ok = await persistEntries((current) =>
+              current.map((e) => (e.filename === target ? { ...e, crop: token } : e)),
+            );
+            if (ok) toast.success("Кадр сохранён");
+          }}
+        />
+      )}
+
       <Dialog open={!!annotatingFile} onOpenChange={(o) => !o && setAnnotatingFile(null)}>
         <DialogContent className="max-w-5xl">
           <DialogHeader>
