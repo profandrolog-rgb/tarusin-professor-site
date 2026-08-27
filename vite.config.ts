@@ -38,9 +38,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     mcpPlugin(),
     // Keep Lovable's HMR gate and preview bridge in their supported order.
-    // The gate coordinates a complete refresh after a batch of edits; forcing
-    // granular HMR leaves invalidated React/SSG modules in a blank viewer.
-    mode === "development" && hmrGatePlugin(),
+    // This app mixes React lazy modules with SSG, so explicitly override the
+    // host's granular-HMR default to avoid a disconnected blank preview.
+    mode === "development" && hmrGatePlugin({ fullReload: true }),
     mode === "development" && devServerBridgePlugin(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
