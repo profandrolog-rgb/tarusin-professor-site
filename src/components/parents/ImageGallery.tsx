@@ -179,15 +179,19 @@ const ImageGallery = ({ caption, files }: Props) => {
                 className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
               >
                 <img
-                  src={publicUrl(single.filename)}
+                  src={cdnImage(publicUrl(single.filename), { width: 1400 })}
+                  srcSet={cdnSrcSet(publicUrl(single.filename))}
+                  sizes="(max-width: 860px) 100vw, 860px"
                   alt={single.caption || caption || "Фото 1"}
                   loading="lazy"
+                  decoding="async"
                   style={imgStyle}
                   draggable={false}
                   onDragStart={noDragStart}
                   onContextMenu={noContextMenu}
                   onError={handleStorageImgError}
                 />
+
                 <AnnotationOverlay doc={annotations[single.filename]} fit="contain" />
                 <span style={watermarkStyle}>tarusin.pro</span>
               </button>
