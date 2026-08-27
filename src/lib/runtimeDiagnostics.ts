@@ -105,16 +105,9 @@ export function installRuntimeDiagnostics() {
   window.addEventListener("wheel", recordInteraction, { capture: true, passive: true });
   window.addEventListener("scroll", recordInteraction, { capture: true, passive: true });
 
-  const originalPushState = history.pushState.bind(history);
-  history.pushState = (...args) => {
-    write("history:pushState", { to: args[2] });
-    return originalPushState(...args);
-  };
-  const originalReplaceState = history.replaceState.bind(history);
-  history.replaceState = (...args) => {
-    write("history:replaceState", { to: args[2] });
-    return originalReplaceState(...args);
-  };
+  // Do not wrap pushState/replaceState here. The embedded Preview Bridge also
+  // observes the History API to synchronize its iframe URL; replacing these
+  // methods can detach the viewer during client-side navigation.
   window.addEventListener("popstate", () => write("history:popstate"));
 
   if (import.meta.hot) {
