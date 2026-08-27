@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { cdnImage, cdnSrcSet } from "@/lib/imageCdn";
+
 
 export interface BentoImageData {
   path: string;
