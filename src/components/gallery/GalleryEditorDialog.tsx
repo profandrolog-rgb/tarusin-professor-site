@@ -323,6 +323,30 @@ export default function GalleryEditorDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs shrink-0">Фото в ряд:</Label>
+              <Select
+                value={cols === null ? "auto" : String(cols)}
+                onValueChange={(v) => setCols(v === "auto" ? null : Number(v))}
+              >
+                <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Авто (3)</SelectItem>
+                  {[2, 3, 4, 5, 6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n} в ряд</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                className="accent-current"
+                checked={restricted}
+                onChange={(e) => setRestricted(e.target.checked)}
+              />
+              Шторка 18+
+            </label>
             <Button size="sm" variant="outline" onClick={() => fileInput.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
               Загрузить изображения
