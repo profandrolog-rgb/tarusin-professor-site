@@ -37,11 +37,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mcpPlugin(),
-    // Keep Lovable's HMR gate and preview bridge in their supported order.
-    // This app mixes React lazy modules with SSG, so explicitly override the
-    // host's granular-HMR default to avoid a disconnected blank preview.
-    mode === "development" && hmrGatePlugin({ fullReload: true }),
     mode === "development" && devServerBridgePlugin(),
+    // Register the preview bridge before the gate wraps Vite's websocket.
+    // Do not override fullReload: the host selects its compatible update mode.
+    mode === "development" && hmrGatePlugin(),
     mode === "development" && componentTagger(),
   ].filter(Boolean),
 
