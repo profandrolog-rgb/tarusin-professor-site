@@ -225,9 +225,12 @@ const ImageGallery = ({ caption, files }: Props) => {
                   className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
                 >
                   <img
-                    src={publicUrl(it.filename)}
+                    src={cdnImage(publicUrl(it.filename), { width: 900 })}
+                    srcSet={cdnSrcSet(publicUrl(it.filename))}
+                    sizes={cols ? `(max-width: 768px) 100vw, ${Math.round(860 / cols)}px` : "(max-width: 768px) 100vw, 420px"}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
+                    decoding="async"
                     style={{
                       maxWidth: "100%",
                       width: "100%",
@@ -240,6 +243,7 @@ const ImageGallery = ({ caption, files }: Props) => {
                     onContextMenu={noContextMenu}
                     onError={handleStorageImgError}
                   />
+
                   <AnnotationOverlay doc={annotations[it.filename]} fit="contain" />
                   <span style={watermarkStyle}>tarusin.pro</span>
                 </button>
