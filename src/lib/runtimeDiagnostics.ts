@@ -95,10 +95,10 @@ export function installRuntimeDiagnostics() {
     if (now - lastInteractionAt < 400) return;
     lastInteractionAt = now;
     const element = event.target instanceof Element ? event.target : null;
-    const target = element
+    const targetDescription = element
       ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}${element.getAttribute("aria-label") ? `[aria-label=${element.getAttribute("aria-label")}]` : ""}`
       : undefined;
-    write(`interaction:${event.type}`, { target, x: window.scrollX, y: window.scrollY });
+    write(`interaction:${event.type}`, { target: targetDescription, x: window.scrollX, y: window.scrollY });
   };
   window.addEventListener("click", recordInteraction, true);
   window.addEventListener("pointerdown", recordInteraction, true);
