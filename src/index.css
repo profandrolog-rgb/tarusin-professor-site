@@ -103,8 +103,16 @@
  * На десктопе занимает правые 2/3, слева оставляет 1/3 пустого пространства.
  * ------------------------------------------------------------------ */
 .professor-note {
-  @apply relative my-8 p-5 rounded-xl bg-muted/60 border-l-4 border-primary shadow-sm;
+  @apply relative my-8 p-5 rounded-xl bg-muted/60 border-l-4 border-primary;
   font-family: 'Caveat', cursive;
+  /* Едва заметная тень, отбрасываемая блоком. */
+  box-shadow: 0 6px 18px -8px hsl(var(--foreground) / 0.18),
+    0 1px 3px hsl(var(--foreground) / 0.06);
+}
+
+/* Зеркальный вариант: заметка слева, пустота справа, окантовка справа. */
+.professor-note[data-side="left"] {
+  @apply border-l-0 border-r-4 border-primary;
 }
 
 .professor-note-toolbar {
