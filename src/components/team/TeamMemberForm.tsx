@@ -53,10 +53,9 @@ export function TeamMemberForm({ member, onSuccess, nextSortOrder }: TeamMemberF
   const [professorOpinion, setProfessorOpinion] = useState(member?.professor_opinion || "");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(
-    member?.photo_path
-      ? supabase.storage.from("team-photos").getPublicUrl(member.photo_path).data.publicUrl
-      : null
+    publicStorageUrl("team-photos", member?.photo_path)
   );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
 
