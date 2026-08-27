@@ -40,12 +40,14 @@ import {
   Redo,
   Plug,
   Save,
+  NotebookPen,
 } from "lucide-react";
 
 import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GalleryPlaceholder } from "./tiptap/GalleryPlaceholderNode";
+import ProfessorNote from "./tiptap/ProfessorNoteNode";
 import { markdownToHtml, htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
 
 interface Props {
@@ -167,6 +169,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       TableHeader,
       TableCell,
       GalleryPlaceholder,
+      ProfessorNote,
     ],
     content: markdownToHtml(value),
     editorProps: {
