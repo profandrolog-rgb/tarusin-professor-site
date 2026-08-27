@@ -40,12 +40,14 @@ import {
   Redo,
   Plug,
   Save,
+  NotebookPen,
 } from "lucide-react";
 
 import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GalleryPlaceholder } from "./tiptap/GalleryPlaceholderNode";
+import ProfessorNote from "./tiptap/ProfessorNoteNode";
 import { markdownToHtml, htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
 
 interface Props {
@@ -167,6 +169,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       TableHeader,
       TableCell,
       GalleryPlaceholder,
+      ProfessorNote,
     ],
     content: markdownToHtml(value),
     editorProps: {
@@ -631,6 +634,17 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
           >
             <ImagePlus className="w-3.5 h-3.5" />
             Галерея
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => editor?.chain().focus().insertProfessorNote().run()}
+            className="gap-1.5"
+          >
+            <NotebookPen className="w-3.5 h-3.5" />
+            Заметка
           </Button>
 
           {connStatus && (

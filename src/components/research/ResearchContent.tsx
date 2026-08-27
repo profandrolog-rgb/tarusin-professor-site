@@ -3,6 +3,11 @@ import DOMPurify from "dompurify";
 import { splitContentByGallery, parseGalleryFileEntries } from "@/lib/markdown/galleryMarkers";
 import ImageGallery from "@/components/parents/ImageGallery";
 import PlaceholderGallery from "@/components/parents/PlaceholderGallery";
+import {
+  splitByProfessorNotes,
+  ProfessorNoteBlock,
+  type ProfessorNoteIconKey,
+} from "@/lib/professorNote";
 
 interface Props {
   /** HTML содержимое обзора (может содержать маркеры галерей [[GALLERY: ...]]). */
@@ -18,24 +23,70 @@ interface Props {
   };
 }
 
+type Segment =
+  | { type: "text"; content: string }
+  | { type: "note"; icon: ProfessorNoteIconKey; title: string; content: string }
+  | { type: "gallery"; caption: string; marker: string; files: string[] };
+
+function splitContent(html: string): Segment[] {
+  const out: Segment[] = [];
+  for (const seg of splitContentByGallery(html || "")) {
+    if (seg.type === "gallery") {
+      out.push({
+        type: "gallery",
+        caption: seg.caption,
+        marker: seg.marker,
+        files: seg.files,
+      });
+      continue;
+    }
+    for (const sub of splitByProfessorNotes(seg.content)) {
+      if (sub.type === "text") {
+        out.push({ type: "text", content: sub.html });
+      } else {
+        out.push({
+          type: "note",
+          icon: sub.icon,
+          title: sub.title,
+          content: sub.html,
+        });
+      }
+    }
+  }
+  return out;
+}
+
 /**
  * Рендерит контент научного обзора: HTML-фрагменты — через DOMPurify,
  * на месте маркеров [[GALLERY: ...]] — общий ImageGallery (публично)
  * или PlaceholderGallery в admin-режиме (управление файлами прямо на странице).
  */
 const ResearchContent = ({ html, onFragmentClick, admin }: Props) => {
-  const segments = useMemo(() => splitContentByGallery(html || ""), [html]);
+  const segments = useMemo(() => splitContent(html || ""), [html]);
 
   return (
     <div className="prose prose-sm md:prose-base max-w-none text-foreground">
       {segments.map((seg, i) => {
         if (seg.type === "text") {
-          const clean = DOMPurify.sanitize(seg.content, { ADD_ATTR: ["target", "rel", "data-ref"] });
+          const clean = DOMPurify.sanitize(seg.content, {
+            ADD_TAGS: ["aside"],
+            ADD_ATTR: ["target", "rel", "data-ref", "data-note", "data-icon", "data-title"],
+          });
           return (
             <div
               key={i}
               onClick={onFragmentClick}
               dangerouslySetInnerHTML={{ __html: clean }}
+            />
+          );
+        }
+        if (seg.type === "note") {
+          return (
+            <ProfessorNoteBlock
+              key={i}
+              icon={seg.icon}
+              title={seg.title}
+              innerHtml={seg.content}
             />
           );
         }

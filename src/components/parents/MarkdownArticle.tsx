@@ -4,6 +4,11 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import PlaceholderGallery from "./PlaceholderGallery";
 import ImageGallery from "./ImageGallery";
+import {
+  splitByProfessorNotes,
+  ProfessorNoteBlock,
+  type ProfessorNoteIconKey,
+} from "@/lib/professorNote";
 
 interface ParsedGallery {
   marker: string; // оригинальная строка маркера
@@ -11,11 +16,10 @@ interface ParsedGallery {
   files: string[];
 }
 
-interface Segment {
-  type: "md" | "gallery";
-  content: string;
-  gallery?: ParsedGallery;
-}
+type Segment =
+  | { type: "md"; content: string }
+  | { type: "note"; icon: ProfessorNoteIconKey; title: string; content: string }
+  | { type: "gallery"; gallery: ParsedGallery };
 
 const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
 
@@ -27,18 +31,34 @@ function parseGalleryFiles(rest: string): string[] {
     .filter(Boolean);
 }
 
-export function parseArticleContent(content: string): Segment[] {
+export function parseArticleContent(content: string, title?: string): Segment[] {
+  const prepared = normalizeHorizontalRules(stripDuplicateTitle(content, title));
   const segments: Segment[] = [];
   let lastIndex = 0;
   const re = new RegExp(GALLERY_RE.source, "g");
   let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) {
+
+  const pushTextSlice = (slice: string) => {
+    for (const sub of splitByProfessorNotes(slice)) {
+      if (sub.type === "text") {
+        segments.push({ type: "md", content: sub.html });
+      } else {
+        segments.push({
+          type: "note",
+          icon: sub.icon,
+          title: sub.title,
+          content: sub.html,
+        });
+      }
+    }
+  };
+
+  while ((m = re.exec(prepared)) !== null) {
     if (m.index > lastIndex) {
-      segments.push({ type: "md", content: content.slice(lastIndex, m.index) });
+      pushTextSlice(prepared.slice(lastIndex, m.index));
     }
     segments.push({
       type: "gallery",
-      content: m[0],
       gallery: {
         marker: m[0],
         caption: m[1] || "",
@@ -47,8 +67,8 @@ export function parseArticleContent(content: string): Segment[] {
     });
     lastIndex = m.index + m[0].length;
   }
-  if (lastIndex < content.length) {
-    segments.push({ type: "md", content: content.slice(lastIndex) });
+  if (lastIndex < prepared.length) {
+    pushTextSlice(prepared.slice(lastIndex));
   }
   return segments;
 }
@@ -121,7 +141,7 @@ function stripDuplicateTitle(md: string, title?: string): string {
 
 const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onContentChange }: Props) => {
   const segments = useMemo(
-    () => parseArticleContent(normalizeHorizontalRules(stripDuplicateTitle(content, title))),
+    () => parseArticleContent(content, title),
     [content, title]
   );
 
@@ -165,7 +185,17 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
             </ReactMarkdown>
           );
         }
-        const g = seg.gallery!;
+        if (seg.type === "note") {
+          return (
+            <ProfessorNoteBlock
+              key={i}
+              icon={seg.icon}
+              title={seg.title}
+              innerHtml={seg.content}
+            />
+          );
+        }
+        const g = seg.gallery;
         if (g.files.length === 0) {
           if (!isAdmin) {
             // Скрываем пустые маркеры от обычных пользователей
