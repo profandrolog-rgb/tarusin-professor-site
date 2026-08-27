@@ -3,15 +3,11 @@ import { ViteReactSSG } from "vite-react-ssg";
 import { routes } from "./App";
 import { installBackendFailover } from "./lib/backendFailover";
 import { installStoragePublicUrlProxy } from "./lib/installStoragePublicUrlProxy";
-import { installRuntimeDiagnostics } from "./lib/runtimeDiagnostics";
 
 import "./i18n";
 import "./index.css";
 
 if (typeof window !== "undefined") {
-  // Install first so errors and reload causes from all subsequent startup code
-  // are retained in sessionStorage and visible in the preview console.
-  installRuntimeDiagnostics();
   // Keep stale-chunk recovery completely outside the development module graph.
   // Importing it statically made Vite invalidate the preview entry during HMR,
   // even though its listeners were only installed in production.
