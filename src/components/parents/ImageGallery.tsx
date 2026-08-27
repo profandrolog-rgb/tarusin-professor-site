@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
-import { cdnImage, cdnSrcSet } from "@/lib/imageCdn";
 
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
@@ -179,12 +178,9 @@ const ImageGallery = ({ caption, files }: Props) => {
                 className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
               >
                 <img
-                  src={cdnImage(publicUrl(single.filename), { width: 1400 })}
-                  srcSet={cdnSrcSet(publicUrl(single.filename))}
-                  sizes="(max-width: 860px) 100vw, 860px"
+                  src={publicUrl(single.filename)}
                   alt={single.caption || caption || "Фото 1"}
                   loading="lazy"
-                  decoding="async"
                   style={imgStyle}
                   draggable={false}
                   onDragStart={noDragStart}
@@ -225,12 +221,9 @@ const ImageGallery = ({ caption, files }: Props) => {
                   className="relative block w-full rounded-lg border border-border hover:opacity-95 transition bg-background"
                 >
                   <img
-                    src={cdnImage(publicUrl(it.filename), { width: 900 })}
-                    srcSet={cdnSrcSet(publicUrl(it.filename))}
-                    sizes={cols ? `(max-width: 768px) 100vw, ${Math.round(860 / cols)}px` : "(max-width: 768px) 100vw, 420px"}
+                    src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
-                    decoding="async"
                     style={{
                       maxWidth: "100%",
                       width: "100%",
@@ -255,12 +248,9 @@ const ImageGallery = ({ caption, files }: Props) => {
                   style={{ aspectRatio: patientFull ? "9 / 16" : "4 / 3", height: patientFull && !cols ? PATIENT_FULL_H : undefined }}
                 >
                   <img
-                    src={cdnImage(publicUrl(it.filename), { width: 700 })}
-                    srcSet={cdnSrcSet(publicUrl(it.filename), [480, 700, 1000])}
-                    sizes="(max-width: 768px) 100vw, 340px"
+                    src={publicUrl(it.filename)}
                     alt={it.caption || caption || `Фото ${i + 1}`}
                     loading="lazy"
-                    decoding="async"
                     className="w-full h-full object-cover"
                     style={{ maxWidth: "100%", height: "100%" }}
                     draggable={false}
@@ -334,11 +324,9 @@ const ImageGallery = ({ caption, files }: Props) => {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={cdnImage(publicUrl(items[lightboxIdx].filename), { width: 1600, quality: 85 })}
+              src={publicUrl(items[lightboxIdx].filename)}
               alt={items[lightboxIdx].caption || caption || `Фото ${lightboxIdx + 1}`}
               className="max-w-full max-h-[90vh] object-contain"
-              decoding="async"
-              fetchPriority="high"
               draggable={false}
               onDragStart={noDragStart}
               onContextMenu={noContextMenu}

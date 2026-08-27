@@ -14,33 +14,13 @@ export function directStorageUrl(url: string): string | null {
   return null;
 }
 
-/** Ссылка на оригинал, если картинка запрашивалась через трансформацию. */
-function originalObjectUrl(url: string): string | null {
-  if (!url.includes("/storage/v1/render/image/public/")) return null;
-  return url.replace("/storage/v1/render/image/public/", "/storage/v1/object/public/").split("?")[0];
-}
-
-/**
- * onError для <img>: сначала откатываемся с трансформации на оригинал,
- * затем — на резервный домен бэкенда. Повторов не делаем.
- */
+/** onError для <img>: пробуем прямой домен Supabase, повторов не делаем. */
 export function handleStorageImgError(e: React.SyntheticEvent<HTMLImageElement>) {
   const img = e.currentTarget;
-  if (!img.dataset.originalApplied) {
-    const orig = originalObjectUrl(img.src);
-    if (orig) {
-      img.dataset.originalApplied = "1";
-      img.removeAttribute("srcset");
-      img.src = orig;
-      return;
-    }
-    img.dataset.originalApplied = "1";
-  }
   if (img.dataset.fallbackApplied) return;
   const next = directStorageUrl(img.src);
   if (!next) return;
   img.dataset.fallbackApplied = "1";
-  img.removeAttribute("srcset");
   img.src = next;
 }
 
