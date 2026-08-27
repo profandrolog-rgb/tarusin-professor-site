@@ -1019,7 +1019,6 @@ const PlaceholderGallery = ({
           const { error } = await supabase.storage
             .from("disease-media")
             .upload(path, p.blob, { upsert: false, contentType: "image/jpeg" });
-
           if (!error) {
             upErr = null;
             break;

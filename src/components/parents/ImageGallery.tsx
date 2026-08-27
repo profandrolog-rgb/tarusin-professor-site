@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { handleStorageImgError } from "@/lib/storageFallback";
-
 import { AnnotationOverlay, useAnnotationsMap } from "@/components/annotations/AnnotationOverlay";
 import ClinicalCurtain, { getClinicalAcknowledgedCookie } from "@/components/gallery/ClinicalCurtain";
 import { useOptionalAuth } from "@/hooks/useAuth";
@@ -187,7 +186,6 @@ const ImageGallery = ({ caption, files }: Props) => {
                   onContextMenu={noContextMenu}
                   onError={handleStorageImgError}
                 />
-
                 <AnnotationOverlay doc={annotations[single.filename]} fit="contain" />
                 <span style={watermarkStyle}>tarusin.pro</span>
               </button>
@@ -236,7 +234,6 @@ const ImageGallery = ({ caption, files }: Props) => {
                     onContextMenu={noContextMenu}
                     onError={handleStorageImgError}
                   />
-
                   <AnnotationOverlay doc={annotations[it.filename]} fit="contain" />
                   <span style={watermarkStyle}>tarusin.pro</span>
                 </button>
@@ -257,7 +254,6 @@ const ImageGallery = ({ caption, files }: Props) => {
                     onDragStart={noDragStart}
                     onContextMenu={noContextMenu}
                     onError={handleStorageImgError}
-
                   />
                   <AnnotationOverlay doc={annotations[it.filename]} fit="cover" />
                   <span style={watermarkStyle}>tarusin.pro</span>
@@ -332,7 +328,6 @@ const ImageGallery = ({ caption, files }: Props) => {
               onContextMenu={noContextMenu}
               onError={handleStorageImgError}
             />
-
             <AnnotationOverlay doc={annotations[items[lightboxIdx].filename]} fit="contain" />
             <span style={watermarkStyle}>tarusin.pro</span>
           </div>

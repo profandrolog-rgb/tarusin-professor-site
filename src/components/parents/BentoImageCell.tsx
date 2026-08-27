@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-
 export interface BentoImageData {
   path: string;
   x?: number; // 0..100 object-position X

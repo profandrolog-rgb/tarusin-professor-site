@@ -23,4 +23,3 @@ export function handleStorageImgError(e: React.SyntheticEvent<HTMLImageElement>)
   img.dataset.fallbackApplied = "1";
   img.src = next;
 }
-

@@ -187,7 +187,6 @@ export default function GalleryEditorDialog({
     const { error } = await supabase.storage.from(bucket).upload(path, blob, {
       contentType: "image/jpeg", upsert: false,
     });
-
     if (error) { toast.error(`${file.name}: ${error.message}`); return null; }
     return { id: crypto.randomUUID(), filename, caption: "", kind };
   }
