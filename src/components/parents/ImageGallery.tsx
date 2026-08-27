@@ -13,6 +13,8 @@ interface Props {
 interface Item {
   filename: string;
   caption: string;
+  /** Индивидуальное кадрирование фото (null — стандартный кадр 4:3). */
+  crop: CropSpec | null;
 }
 
 const FOLDER = "article-images";
@@ -28,14 +30,25 @@ function publicUrl(filename: string) {
   return `${STORAGE_BASE}/${FOLDER}/${safe}`;
 }
 
-// Parses entries like:  `name.jpg` or `name.jpg "подпись"` (also `'…'`, `“…”`)
+// Parses entries like:  `name.jpg` or `name.jpg@crop=50,30,1.2,cover,4x3 "подпись"`
 function parseEntry(raw: string): Item {
   const s = raw.trim();
   const m = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
-  if (m) return { filename: m[1], caption: m[2].replace(/["'“”]/g, "").trim() };
+  if (m) {
+    const { filename, crop } = splitFilenameCrop(m[1]);
+    return { filename, crop: parseCropToken(crop), caption: m[2].replace(/["'“”]/g, "").trim() };
+  }
   const sp = s.indexOf(" ");
-  if (sp > 0) return { filename: s.slice(0, sp), caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
-  return { filename: s, caption: "" };
+  if (sp > 0) {
+    const { filename, crop } = splitFilenameCrop(s.slice(0, sp));
+    return {
+      filename,
+      crop: parseCropToken(crop),
+      caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim(),
+    };
+  }
+  const bare = splitFilenameCrop(s);
+  return { filename: bare.filename, crop: parseCropToken(bare.crop), caption: "" };
 }
 
 const ImageGallery = ({ caption, files }: Props) => {
