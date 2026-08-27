@@ -44,6 +44,38 @@ export const PROFESSOR_NOTE_ICONS: {
 
 export const DEFAULT_PROFESSOR_NOTE_ICON: ProfessorNoteIconKey = "stethoscope";
 
+/** Доля пустого пространства рядом с заметкой: 1/3 или 1/4 ширины страницы. */
+export type ProfessorNoteWidthKey = "two-thirds" | "three-quarters";
+/** Сторона, к которой прижата заметка (пустота — с противоположной). */
+export type ProfessorNoteSideKey = "right" | "left";
+
+export const PROFESSOR_NOTE_WIDTHS: {
+  key: ProfessorNoteWidthKey;
+  label: string;
+}[] = [
+  { key: "two-thirds", label: "Пустота 1/3 (заметка 2/3)" },
+  { key: "three-quarters", label: "Пустота 1/4 (заметка 3/4)" },
+];
+
+export const PROFESSOR_NOTE_SIDES: {
+  key: ProfessorNoteSideKey;
+  label: string;
+}[] = [
+  { key: "right", label: "Заметка справа" },
+  { key: "left", label: "Заметка слева" },
+];
+
+export const DEFAULT_PROFESSOR_NOTE_WIDTH: ProfessorNoteWidthKey = "two-thirds";
+export const DEFAULT_PROFESSOR_NOTE_SIDE: ProfessorNoteSideKey = "right";
+
+export function normalizeNoteWidth(v?: string | null): ProfessorNoteWidthKey {
+  return v === "three-quarters" ? "three-quarters" : DEFAULT_PROFESSOR_NOTE_WIDTH;
+}
+
+export function normalizeNoteSide(v?: string | null): ProfessorNoteSideKey {
+  return v === "left" ? "left" : DEFAULT_PROFESSOR_NOTE_SIDE;
+}
+
 export function getProfessorNoteIcon(key?: string) {
   return (
     PROFESSOR_NOTE_ICONS.find((i) => i.key === key) ?? PROFESSOR_NOTE_ICONS[0]
