@@ -7,7 +7,11 @@ import "./i18n";
 import "./index.css";
 
 if (typeof window !== "undefined") {
-  installChunkReload();
+  // The stale production-chunk recovery must never run in Vite's live preview.
+  // During HMR a module can be temporarily unavailable while its graph is being
+  // replaced; treating that as a deployed stale chunk reloads the preview iframe
+  // and can leave the editor disconnected instead of showing its normal refresh.
+  if (import.meta.env.PROD) installChunkReload();
   installBackendFailover();
 }
 
