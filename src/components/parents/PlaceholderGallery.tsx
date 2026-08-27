@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, useEffect, lazy, Suspense } from "react";
 import { getDownloadUrl } from "@/lib/research/uploadToYc";
-import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine, Type, ArrowUp, ArrowDown } from "lucide-react";
+import { ImageIcon, Loader2, Plus, X, Upload, RefreshCw, GripVertical, Trash2, Check, ChevronLeft, ChevronRight, RotateCcw, Save, PenLine, Type, ArrowUp, ArrowDown, Crop as CropIcon } from "lucide-react";
+import ImageCropDialog from "@/components/gallery/ImageCropDialog";
+import { parseCropToken, formatCropToken, DEFAULT_CROP } from "@/lib/gallery/cropSpec";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
 import {
@@ -360,6 +362,7 @@ const PlaceholderGallery = ({
   const [overrideType, setOverrideType] = useState<ImgType | "auto">("auto");
   const [deletingFile, setDeletingFile] = useState<string | null>(null);
   const [annotatingFile, setAnnotatingFile] = useState<string | null>(null);
+  const [croppingFile, setCroppingFile] = useState<string | null>(null);
 
   // --- Интерактивное кадрирование ---
   interface CropQueueItem {
@@ -1164,7 +1167,7 @@ const PlaceholderGallery = ({
                   title="Кадрировать фото"
                   aria-label="Кадрировать фото"
                 >
-                  <Crop className="w-3.5 h-3.5" />
+                  <CropIcon className="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
