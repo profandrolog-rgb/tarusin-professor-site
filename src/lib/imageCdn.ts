@@ -40,7 +40,9 @@ export function cdnImage(url: string | null | undefined, opts: CdnOptions = {}):
   const params = new URLSearchParams(existingQuery || "");
   if (opts.width) params.set("width", String(Math.round(opts.width)));
   params.set("quality", String(opts.quality ?? IMAGE_QUALITY));
-  if (opts.resize) params.set("resize", opts.resize);
+  // ВАЖНО: у Storage режим по умолчанию — cover (обрезка). Для статей нужен
+  // contain: пропорции и композиция кадра остаются как в оригинале.
+  params.set("resize", opts.resize ?? "contain");
   const qs = params.toString();
   return qs ? `${rendered}?${qs}` : rendered;
 }
