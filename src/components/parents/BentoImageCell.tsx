@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { storageThumb, storageOriginal } from "@/lib/storageImage";
 
 export interface BentoImageData {
   path: string;
@@ -14,9 +15,11 @@ interface Props {
 }
 
 const BentoImageCell = ({ image, className = "", rounded = "rounded-lg" }: Props) => {
-  const url = image?.path
+  const original = image?.path
     ? supabase.storage.from("disease-media").getPublicUrl(image.path).data.publicUrl
     : null;
+  // Карточка показывает превью, поэтому грузим сжатый вариант (~5x меньше).
+  const url = original ? storageThumb(original, 800, 72) : null;
 
   const x = image?.x ?? 50;
   const y = image?.y ?? 50;
@@ -31,7 +34,14 @@ const BentoImageCell = ({ image, className = "", rounded = "rounded-lg" }: Props
           src={url}
           alt=""
           loading="lazy"
+          decoding="async"
           draggable={false}
+          onError={(e) => {
+            // Если трансформатор недоступен — молча падаем на исходный файл.
+            const img = e.currentTarget;
+            const fallback = storageOriginal(original);
+            if (fallback && img.src !== fallback) img.src = fallback;
+          }}
           className="absolute inset-0 h-full w-full object-cover select-none pointer-events-none"
           style={{
             objectPosition: `${x}% ${y}%`,
