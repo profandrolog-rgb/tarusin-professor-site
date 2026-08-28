@@ -119,7 +119,9 @@ const fetchRolesWithRetry = async (userId: string): Promise<Roles | null> => {
   const delays = [0, 500, 1000, 2000];
   for (let i = 0; i < delays.length; i++) {
     if (delays[i]) await sleep(delays[i]);
-    const timeout = withTimeout(8000);
+    // 20 с, а не 8: при насыщенном канале (галереи, тяжёлые картинки) запрос
+    // может простоять в очереди браузера 7+ секунд и раньше отменялся зря.
+    const timeout = withTimeout(20000);
     try {
       const { data, error } = await supabase
         .from("user_roles")
