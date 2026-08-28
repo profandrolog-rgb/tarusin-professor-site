@@ -4,7 +4,7 @@
 // а также при HTML↔markdown конвертации. Здесь — инвентаризация, автовосстановление, сверка перед применением.
 
 export const MARKER_RE = /\[M\d+\]/g;
-export const GALLERY_MARKER_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
+export const GALLERY_MARKER_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^\]]*?)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
 
 export function countMarkers(text: string): Record<string, number> {
   const out: Record<string, number> = {};

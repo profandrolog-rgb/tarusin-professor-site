@@ -4,7 +4,7 @@ import TurndownService from "turndown";
 import { gfm as turndownGfm } from "turndown-plugin-gfm";
 import { splitFilenameCrop, joinFilenameCrop } from "@/lib/gallery/cropSpec";
 
-export const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^"'“”]*)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
+export const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^\]]*?)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
 export const GALLERY_DIV_RE = /<div\b(?=[^>]*(?:\bdata-gallery-placeholder(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?|\bdata-type\s*=\s*(?:"galleryPlaceholder"|'galleryPlaceholder'|galleryPlaceholder)))([^>]*)>[\s\S]*?<\/div>/gi;
 
 /** Сегмент HTML/markdown-контента: либо кусок текста, либо распознанная галерея. */
@@ -153,7 +153,7 @@ turndownService.addRule("galleryTextMarker", {
     const el = node as HTMLElement;
     if (el.tagName !== "P") return false;
     const text = (el.textContent || "").trim();
-    return /^\[\[GALLERY:\s*caption\s*=\s*["'“”][^"'“”]*["'“”]\s*(?:\|[^\]]*)?\]\]$/.test(text);
+    return /^\[\[GALLERY:\s*caption\s*=\s*["'“”][^\]]*?["'“”]\s*(?:\|[^\]]*)?\]\]$/.test(text);
   },
   replacement: (_content, node) => {
     const text = ((node as HTMLElement).textContent || "").trim();
