@@ -15,9 +15,11 @@ interface Props {
 }
 
 const BentoImageCell = ({ image, className = "", rounded = "rounded-lg" }: Props) => {
-  const url = image?.path
+  const original = image?.path
     ? supabase.storage.from("disease-media").getPublicUrl(image.path).data.publicUrl
     : null;
+  // Карточка показывает превью, поэтому грузим сжатый вариант (~5x меньше).
+  const url = original ? storageThumb(original, 800, 72) : null;
 
   const x = image?.x ?? 50;
   const y = image?.y ?? 50;
