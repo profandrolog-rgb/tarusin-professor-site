@@ -58,9 +58,12 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
 
 
   useEffect(() => {
-    if (seeded.length > 0 && !isAdmin) return;
+    // Данные уже пришли из route loader. Не запускаем второй одинаковый
+    // запрос после асинхронного определения роли: раньше переход isAdmin
+    // false → true включал loading и заменял готовые 35 карточек скелетоном.
+    if (seeded.length > 0) return;
     fetchArticles();
-  }, [fetchArticles, isAdmin, seeded.length]);
+  }, [fetchArticles, seeded.length]);
 
   const categories = useMemo(() => {
     const cats = new Set(articles.map((a) => a.category));
