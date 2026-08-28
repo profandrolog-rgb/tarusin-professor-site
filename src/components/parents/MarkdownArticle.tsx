@@ -1,3 +1,4 @@
+import { unescapeGalleryMarkers } from "@/lib/markdown/galleryMarkers";
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -39,7 +40,9 @@ function parseGalleryFiles(rest: string): string[] {
 }
 
 export function parseArticleContent(content: string, title?: string): Segment[] {
-  const prepared = normalizeHorizontalRules(stripDuplicateTitle(content, title));
+  const prepared = unescapeGalleryMarkers(
+    normalizeHorizontalRules(stripDuplicateTitle(content, title)),
+  );
   const segments: Segment[] = [];
   let lastIndex = 0;
   const re = new RegExp(GALLERY_RE.source, "g");
