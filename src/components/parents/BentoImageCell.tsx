@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { storageThumb, storageOriginal } from "@/lib/storageImage";
 
 export interface BentoImageData {
   path: string;
