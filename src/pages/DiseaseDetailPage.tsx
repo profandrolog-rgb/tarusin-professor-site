@@ -106,6 +106,8 @@ const DiseaseDetailPage = () => {
 
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
+    const early = (window as any).__earlyArticle as { slug?: string } | undefined;
+    if (loaderData?.article || early?.slug === slug) return;
 
     let cancelled = false;
 
