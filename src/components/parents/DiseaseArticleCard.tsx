@@ -19,7 +19,10 @@ interface DiseaseArticle {
   description: string | null;
   video_path: string | null;
   audio_path: string | null;
-  article_content: string | null;
+  /** Может отсутствовать: список не грузит тяжёлый текст статьи. */
+  article_content?: string | null;
+  /** Вычисляемый признак наличия текста (generated-колонка в БД). */
+  has_article_content?: boolean | null;
   thumbnail_path: string | null;
   category: string;
   bento_image_1?: BentoImageData | null;
@@ -48,24 +51,51 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
   const [editTitle, setEditTitle] = useState(article.title);
   const [editDescription, setEditDescription] = useState(article.description || "");
   const [editContent, setEditContent] = useState(article.article_content || "");
+  const [fullContent, setFullContent] = useState<string | null>(article.article_content ?? null);
+  const [loadingContent, setLoadingContent] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const hasVideo = !!article.video_path;
   const hasAudio = !!article.audio_path;
-  const hasText = !!article.article_content;
+  const hasText = article.has_article_content ?? !!article.article_content;
 
-  const handleEdit = () => {
+  /** Догружает полный текст статьи только когда он реально нужен. */
+  const ensureContent = useCallback(async (): Promise<string> => {
+    if (fullContent !== null) return fullContent;
+    setLoadingContent(true);
+    const { data, error } = await supabase
+      .from("disease_articles")
+      .select("article_content")
+      .eq("id", article.id)
+      .maybeSingle();
+    setLoadingContent(false);
+    if (error) {
+      toast.error("Не удалось загрузить текст статьи");
+      return "";
+    }
+    const text = data?.article_content || "";
+    setFullContent(text);
+    return text;
+  }, [article.id, fullContent]);
+
+  const handleEdit = async () => {
     setEditTitle(article.title);
     setEditDescription(article.description || "");
-    setEditContent(article.article_content || "");
     setIsEditing(true);
     setIsArticleOpen(true);
     setActiveTab("text");
+    setEditContent(await ensureContent());
+  };
+
+  const handleArticleOpenChange = (open: boolean) => {
+    setIsArticleOpen(open);
+    if (open) void ensureContent();
   };
 
   const handleCancel = () => {
     setIsEditing(false);
   };
+
 
   const handleSave = async () => {
     setSaving(true);
