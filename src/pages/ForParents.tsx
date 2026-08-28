@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "react-i18next";
 import PageMeta from "@/components/PageMeta";
-import AgeConfirmationModal from "@/components/AgeConfirmationModal";
 import UsefulMaterials from "@/components/parents/UsefulMaterials";
 import DiseaseArticlesList from "@/components/parents/DiseaseArticlesList";
 import PublicationsList from "@/components/parents/PublicationsList";
@@ -33,7 +32,6 @@ const ForParents = () => {
   }, [searchParams]);
 
   return (
-    <AgeConfirmationModal>
       <div className="min-h-screen bg-background select-none" onContextMenu={(e) => e.preventDefault()} onCopy={(e) => e.preventDefault()}>
         <PageMeta
           title={isEn ? "For Parents & Patients — Prof. Tarusin D.I." : "Для родителей и пациентов — материалы о мужском здоровье | проф. Тарусин Д.И."}
@@ -79,7 +77,6 @@ const ForParents = () => {
           </div>
         </section>
       </div>
-    </AgeConfirmationModal>
   );
 };
 
