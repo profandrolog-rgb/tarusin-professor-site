@@ -18,7 +18,21 @@ export type GallerySegment =
  * <div data-gallery-placeholder data-caption="..." data-files="...">.
  * Используется одинаково в статьях для родителей и научных обзорах.
  */
-export function splitContentByGallery(content: string): GallerySegment[] {
+/**
+ * Снимает markdown-экранирование с маркеров галерей: Turndown мог сохранить
+ * `\[\[GALLERY: caption=\"...\"\]\]`, из-за чего маркер перестаёт распознаваться
+ * и виден на странице как текст. Нормализуем перед любым разбором.
+ */
+export function unescapeGalleryMarkers(content: string): string {
+  if (!content || !content.includes("GALLERY")) return content;
+  return content.replace(
+    /\\?\[\\?\[GALLERY:[\s\S]*?\\?\]\\?\]/g,
+    (m) => m.replace(/\\(?=[[\]"'|*_`~])/g, ""),
+  );
+}
+
+export function splitContentByGallery(rawContent: string): GallerySegment[] {
+  const content = unescapeGalleryMarkers(rawContent || "");
   if (!content) return [];
   type Hit = { start: number; end: number; caption: string; files: string[]; marker: string };
   const hits: Hit[] = [];
@@ -65,7 +79,7 @@ export function splitContentByGallery(content: string): GallerySegment[] {
 /** Убирает все маркеры галерей из текста/HTML (для экспорта в форматы без картинок). */
 export function stripGalleryMarkers(content: string): string {
   if (!content) return "";
-  return content.replace(GALLERY_RE, "").replace(GALLERY_DIV_RE, "");
+  return unescapeGalleryMarkers(content).replace(GALLERY_RE, "").replace(GALLERY_DIV_RE, "");
 }
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -89,7 +103,7 @@ function unprotectSourceMarkers(input: string): string {
 export function markdownToHtml(md: string): string {
   if (!md) return "";
   // Защищаем [M#] от возможной интерпретации marked как ссылки/сноски.
-  const protectedMd = protectSourceMarkers(md);
+  const protectedMd = protectSourceMarkers(unescapeGalleryMarkers(md));
   // Replace gallery markers with HTML placeholders BEFORE markdown parsing.
   // Wrapped in their own paragraphs (blank lines) so marked treats them as block-level.
   const prepared = protectedMd.replace(
