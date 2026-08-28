@@ -1,11 +1,9 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
 import { ArrowDown, ArrowUp, Image as ImageIcon, Pencil } from "lucide-react";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import GalleryEditorDialog, {
-  type GalleryImage,
-} from "@/components/gallery/GalleryEditorDialog";
+import type { GalleryImage } from "@/components/gallery/GalleryEditorDialog";
 import {
   parseGalleryFileEntries,
   buildGalleryMarkerFromEntries,
@@ -14,6 +12,8 @@ import {
 } from "@/lib/markdown/galleryMarkers";
 import type { GalleryKind } from "@/components/gallery/galleryKinds";
 import { publicStorageUrl } from "@/lib/storageFallback";
+
+const GalleryEditorDialog = lazy(() => import("@/components/gallery/GalleryEditorDialog"));
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -133,6 +133,8 @@ const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: Node
                   <img
                     src={publicUrl(t.filename)}
                     alt={t.caption || ""}
+                    loading="lazy"
+                    decoding="async"
                     className="w-16 h-16 object-cover rounded border border-slate-200 bg-white"
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0.25"; }}
                     draggable={false}
@@ -189,35 +191,39 @@ const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: Node
         )}
       </div>
 
-      <GalleryEditorDialog
-        open={open}
-        onOpenChange={setOpen}
-        bucket={bucket}
-        folder={folder}
-        ownerSlug={ownerSlug}
-        initialCaption={node.attrs.caption || ""}
-        initialImages={initialImages}
-        initialCols={cols}
-        initialRestricted={restricted}
-        onSave={({ caption: cap, images, cols: nextCols, restricted: nextRestricted }) => {
-          const entries = withGalleryCols(
-            images.map((i) => ({ filename: i.filename, caption: i.caption, crop: i.crop || "" })),
-            nextCols,
-            nextRestricted,
-          );
-          const marker = buildGalleryMarkerFromEntries(cap, entries);
-          // Синхронизируем атрибуты плашки: подпись, кадр и отформатированный список файлов.
-          const files = entries
-            .map((i) => {
-              const token = i.crop ? `${i.filename}@${i.crop}` : i.filename;
-              return `${token}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`;
-            })
-            .join("|");
-          updateAttributes({ caption: cap, files });
-          // Уведомляем внешний слушатель (например, редактор обзоров) для синхронизации маркеров.
-          editor.emit("galleryPlaceholderUpdated" as any, { marker, caption: cap, images });
-        }}
-      />
+      {open && (
+        <Suspense fallback={null}>
+          <GalleryEditorDialog
+            open
+            onOpenChange={setOpen}
+            bucket={bucket}
+            folder={folder}
+            ownerSlug={ownerSlug}
+            initialCaption={node.attrs.caption || ""}
+            initialImages={initialImages}
+            initialCols={cols}
+            initialRestricted={restricted}
+            onSave={({ caption: cap, images, cols: nextCols, restricted: nextRestricted }) => {
+              const entries = withGalleryCols(
+                images.map((i) => ({ filename: i.filename, caption: i.caption, crop: i.crop || "" })),
+                nextCols,
+                nextRestricted,
+              );
+              const marker = buildGalleryMarkerFromEntries(cap, entries);
+              // Синхронизируем атрибуты плашки: подпись, кадр и отформатированный список файлов.
+              const files = entries
+                .map((i) => {
+                  const token = i.crop ? `${i.filename}@${i.crop}` : i.filename;
+                  return `${token}${i.caption ? ` "${i.caption.replace(/"/g, "'")}"` : ""}`;
+                })
+                .join("|");
+              updateAttributes({ caption: cap, files });
+              // Уведомляем внешний слушатель (например, редактор обзоров) для синхронизации маркеров.
+              editor.emit("galleryPlaceholderUpdated" as any, { marker, caption: cap, images });
+            }}
+          />
+        </Suspense>
+      )}
     </NodeViewWrapper>
   );
 };
