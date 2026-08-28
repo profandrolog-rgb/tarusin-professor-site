@@ -76,6 +76,10 @@ export async function parentsLoader(): Promise<ParentsLoaderData> {
     console.warn("[parentsLoader] missing SUPABASE env vars — skipping prefetch");
     return { articles: [] };
   }
+  // ВАЖНО: article_content НЕ запрашиваем — это ~600 КБ на 36 статей и
+  // главная причина медленной загрузки каталога. Для карточек достаточно
+  // вычисляемого признака has_article_content, полный текст догружается
+  // на странице статьи или по требованию в списочном виде.
   const columns = [
     "id",
     "slug",
@@ -88,9 +92,15 @@ export async function parentsLoader(): Promise<ParentsLoaderData> {
     "video_path",
     "audio_path",
     "thumbnail_path",
-    "article_content",
+    "card_annotation",
+    "card_background_path",
+    "bento_image_1",
+    "bento_image_2",
+    "bento_image_3",
+    "has_article_content",
   ].join(",");
   const url = `${SUPABASE_URL}/rest/v1/disease_articles?is_published=eq.true&select=${columns}&order=sort_order.asc`;
+
   const articles = (await fetchJson("list", url)) as any[] | null;
   return { articles: Array.isArray(articles) ? articles : [] };
 }
