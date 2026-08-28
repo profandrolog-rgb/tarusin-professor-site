@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import DOMPurify from "dompurify";
 import { Link } from "react-router-dom";
 import { Video, Headphones, ChevronDown, ChevronUp, FileText, Pencil, Save, X, ExternalLink } from "lucide-react";
@@ -267,7 +267,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
               {activeTab === "text" && hasText && (
                 <>
                   {isAdmin && (
-                    <Collapsible open={isArticleOpen} onOpenChange={setIsArticleOpen}>
+                    <Collapsible open={isArticleOpen} onOpenChange={handleArticleOpenChange}>
                       <CollapsibleTrigger asChild>
                         <Button variant="outline" className="w-full mb-2">
                           {isArticleOpen ? (
@@ -284,11 +284,17 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <div
-                          className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
-                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.article_content!) }}
-                          onCopy={(e) => e.preventDefault()}
-                        />
+                        {loadingContent && fullContent === null ? (
+                          <div className="bg-secondary/30 rounded-lg p-4 text-sm text-muted-foreground">
+                            Загружаем текст статьи…
+                          </div>
+                        ) : (
+                          <div
+                            className="prose prose-sm max-w-none text-foreground bg-secondary/30 rounded-lg p-4 [&_img]:rounded-lg [&_img]:mx-auto [&_img]:max-w-full [&_table]:w-full [&_table]:border-collapse [&_th]:bg-muted [&_th]:p-2 [&_th]:border [&_th]:border-border [&_td]:p-2 [&_td]:border [&_td]:border-border"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullContent || "") }}
+                            onCopy={(e) => e.preventDefault()}
+                          />
+                        )}
                       </CollapsibleContent>
                     </Collapsible>
                   )}
