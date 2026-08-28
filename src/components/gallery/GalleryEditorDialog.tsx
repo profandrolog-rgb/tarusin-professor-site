@@ -452,7 +452,7 @@ export default function GalleryEditorDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button>
-          <Button onClick={submit} disabled={!images.length}>{submitLabel}</Button>
+          <Button onClick={submit} disabled={!images.length && !caption.trim()}>{submitLabel}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
