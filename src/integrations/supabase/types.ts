@@ -1468,6 +1468,7 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          has_article_content: boolean | null
           id: string
           is_published: boolean
           keywords: string[] | null
@@ -1491,6 +1492,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          has_article_content?: boolean | null
           id?: string
           is_published?: boolean
           keywords?: string[] | null
@@ -1514,6 +1516,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          has_article_content?: boolean | null
           id?: string
           is_published?: boolean
           keywords?: string[] | null
