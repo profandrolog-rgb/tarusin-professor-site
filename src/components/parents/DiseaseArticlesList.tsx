@@ -20,6 +20,14 @@ const isFeatured = (a: { title: string; slug: string }) => {
   return FEATURED_KEYWORDS.some((k) => hay.includes(k));
 };
 
+// Список НЕ грузит article_content (тяжёлые лонгриды): вместо него —
+// вычисляемый признак has_article_content. Полный текст догружается
+// в карточке по требованию.
+const LIST_COLUMNS =
+  "id,slug,title,description,category,sort_order,age_group,keywords,video_path,audio_path,thumbnail_path,card_annotation,card_background_path,bento_image_1,bento_image_2,bento_image_3,has_article_content";
+
+
+
 const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListProps) => {
   const { isAdmin } = useAuth();
   const seeded = (initialArticles || []).filter((a) => a.age_group === ageGroup);
@@ -35,7 +43,7 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
     setLoadError(false);
     const { data, error } = await supabase
       .from("disease_articles")
-      .select("*")
+      .select(LIST_COLUMNS)
       .eq("age_group", ageGroup)
       .eq("is_published", true)
       .order("sort_order", { ascending: true });
@@ -47,6 +55,7 @@ const DiseaseArticlesList = ({ ageGroup, initialArticles }: DiseaseArticlesListP
     }
     setLoading(false);
   }, [ageGroup]);
+
 
   useEffect(() => {
     if (seeded.length > 0 && !isAdmin) return;
