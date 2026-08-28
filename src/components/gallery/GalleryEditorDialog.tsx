@@ -325,7 +325,12 @@ export default function GalleryEditorDialog({
   }
 
   function submit() {
-    if (!images.length) { toast.error("Добавьте хотя бы одно изображение"); return; }
+    // Пустую галерею сохранять можно: это позволяет переименовать подпись
+    // сразу после создания плашки, до загрузки изображений.
+    if (!images.length && !caption.trim()) {
+      toast.error("Укажите подпись или добавьте изображение");
+      return;
+    }
     onSave({ caption: caption.trim(), images, cols, restricted });
     // Удаляем файлы из хранилища только после подтверждённого сохранения списка,
     // и только те, которых нет в итоговой галерее.
