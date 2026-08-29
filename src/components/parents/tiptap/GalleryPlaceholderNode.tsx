@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from "@tiptap/react";
-import { ArrowDown, ArrowUp, Image as ImageIcon, Pencil } from "lucide-react";
+import { ArrowDown, ArrowUp, Image as ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { GalleryImage } from "@/components/gallery/GalleryEditorDialog";
@@ -48,7 +48,7 @@ function useThumbUrl(bucket: string, folder: string) {
   };
 }
 
-const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: NodeViewProps) => {
+const GalleryView = ({ node, updateAttributes, editor, extension, getPos, deleteNode }: NodeViewProps) => {
   const [open, setOpen] = useState(false);
   const editable = editor.isEditable;
   const caption: string = node.attrs.caption || "Без подписи";
@@ -186,6 +186,23 @@ const GalleryView = ({ node, updateAttributes, editor, extension, getPos }: Node
             >
               <Pencil className="w-3.5 h-3.5" />
               Редактировать
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 bg-white px-2 border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+              title="Удалить галерею из черновика"
+              onClick={() => {
+                const message = entries.length
+                  ? `Удалить галерею «${caption}» (${entries.length} фото) из черновика? Загруженные изображения останутся в хранилище.`
+                  : `Удалить пустую галерею «${caption}» из черновика?`;
+                if (!window.confirm(message)) return;
+                deleteNode();
+              }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Удалить
             </Button>
           </div>
         )}
