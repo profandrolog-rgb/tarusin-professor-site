@@ -26,7 +26,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   GalleryKind, GALLERY_KINDS, GALLERY_KIND_OPTIONS, KIND_SEGMENT_RE,
-  processImageByKind,
+  galleryUploadFormat, processImageByKind,
 } from "./galleryKinds";
 
 const ImageAnnotator = lazy(() => import("@/components/annotations/ImageAnnotator"));
@@ -238,13 +238,13 @@ export default function GalleryEditorDialog({
   );
 
   async function uploadOne(file: File, kind: GalleryKind): Promise<GalleryImage | null> {
-    let blob: Blob = file;
-    try { blob = await processImageByKind(file, kind); } catch { /* fallback: raw file */ }
+    let processed = { blob: file as Blob, ...galleryUploadFormat(file) };
+    try { processed = await processImageByKind(file, kind); } catch { /* fallback: raw file */ }
     const uuid = crypto.randomUUID().slice(0, 8);
-    const filename = `${safeSlugPart(ownerSlug)}-${kind}-${uuid}.jpg`;
+    const filename = `${safeSlugPart(ownerSlug)}-${kind}-${uuid}.${processed.extension}`;
     const path = `${folder}/${filename}`;
-    const { error } = await supabase.storage.from(bucket).upload(path, blob, {
-      contentType: "image/jpeg", upsert: false,
+    const { error } = await supabase.storage.from(bucket).upload(path, processed.blob, {
+      contentType: processed.contentType, upsert: false,
     });
     if (error) { toast.error(`${file.name}: ${error.message}`); return null; }
     return { id: crypto.randomUUID(), filename, caption: "", kind };

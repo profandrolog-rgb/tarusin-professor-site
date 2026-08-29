@@ -62,12 +62,43 @@ function loadImageFromBlob(blob: Blob): Promise<HTMLImageElement> {
   });
 }
 
-/** Автокадрирование по правилу типа. Возвращает JPEG-blob. */
-export async function processImageByKind(source: Blob, kind: GalleryKind): Promise<Blob> {
+export interface ProcessedGalleryImage {
+  blob: Blob;
+  contentType: string;
+  extension: string;
+}
+
+export function galleryUploadFormat(source: Blob): Omit<ProcessedGalleryImage, "blob"> {
+  const contentType = source.type.toLowerCase().split(";", 1)[0] || "application/octet-stream";
+  if (!contentType.startsWith("image/")) {
+    return { contentType, extension: "bin" };
+  }
+
+  const subtype = contentType.slice("image/".length).split("+", 1)[0];
+  const extension = subtype === "jpeg" ? "jpg" : subtype.replace(/[^a-z0-9]/g, "") || "bin";
+  return { contentType, extension };
+}
+
+/**
+ * Автокадрирование по правилу типа.
+ * Без кадрирования сохраняет исходный файл, если уменьшение не требуется:
+ * так SVG остаётся векторным, а PNG/JPEG/WebP не пережимаются повторно.
+ */
+export async function processImageByKind(source: Blob, kind: GalleryKind): Promise<ProcessedGalleryImage> {
   const rule = GALLERY_KINDS[kind] || GALLERY_KINDS.default;
+  const originalFormat = galleryUploadFormat(source);
+
+  if (rule.ratio === null && originalFormat.contentType === "image/svg+xml") {
+    return { blob: source, ...originalFormat };
+  }
+
   const img = await loadImageFromBlob(source);
   const srcW = img.naturalWidth;
   const srcH = img.naturalHeight;
+
+  if (rule.ratio === null && srcW <= rule.maxW && originalFormat.extension !== "bin") {
+    return { blob: source, ...originalFormat };
+  }
 
   let sx = 0, sy = 0, sw = srcW, sh = srcH;
   if (rule.ratio !== null) {
@@ -100,11 +131,15 @@ export async function processImageByKind(source: Blob, kind: GalleryKind): Promi
   ctx.fillRect(0, 0, dw, dh);
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
 
-  return await new Promise<Blob>((resolve, reject) => {
+  const preserveLossless = originalFormat.contentType === "image/png" || originalFormat.contentType === "image/svg+xml";
+  const contentType = preserveLossless ? "image/png" : "image/jpeg";
+  const extension = preserveLossless ? "png" : "jpg";
+  const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
-      "image/jpeg",
-      0.85,
+      contentType,
+      contentType === "image/jpeg" ? 0.92 : undefined,
     );
   });
+  return { blob, contentType, extension };
 }
