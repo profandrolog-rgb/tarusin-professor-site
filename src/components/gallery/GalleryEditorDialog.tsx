@@ -215,6 +215,9 @@ export default function GalleryEditorDialog({
   const [annotatingFile, setAnnotatingFile] = useState<string | null>(null);
   // Файлы, убранные из галереи: удаляем из хранилища только после сохранения.
   const [pendingRemovals, setPendingRemovals] = useState<string[]>([]);
+  // Переименование также откладываем: отмена/ошибка сохранения статьи не
+  // должна оставлять маркер со ссылкой на отсутствующий объект.
+  const pendingMoves = useRef(new Map<string, { from: string; to: string }>());
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -225,6 +228,7 @@ export default function GalleryEditorDialog({
       setRestricted(initialRestricted);
       setDragOver(false);
       setPendingRemovals([]);
+      pendingMoves.current.clear();
     }
   }, [open, initialCaption, initialImages, initialCols, initialRestricted]);
 
@@ -282,7 +286,7 @@ export default function GalleryEditorDialog({
     handleFiles(files);
   }
 
-  async function updateImage(id: string, patch: Partial<GalleryImage>) {
+  function updateImage(id: string, patch: Partial<GalleryImage>) {
     const im = images.find((x) => x.id === id);
     if (!im) return;
     if (patch.kind && patch.kind !== im.kind) {
@@ -293,11 +297,10 @@ export default function GalleryEditorDialog({
         setImages((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
         return;
       }
-      setRenamingId(id);
-      const { error } = await supabase.storage.from(bucket)
-        .move(`${folder}/${im.filename}`, `${folder}/${newFilename}`);
-      setRenamingId(null);
-      if (error) { toast.error(`Не удалось сменить тип: ${error.message}`); return; }
+      const pending = pendingMoves.current.get(id);
+      const from = pending?.from || im.filename;
+      if (newFilename === from) pendingMoves.current.delete(id);
+      else pendingMoves.current.set(id, { from, to: newFilename });
       setImages((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch, filename: newFilename } : x)));
       return;
     }
@@ -310,7 +313,9 @@ export default function GalleryEditorDialog({
     setImages((prev) => prev.filter((x) => x.id !== id));
     // Файл из хранилища НЕ удаляем сразу: если диалог закрыт без сохранения
     // (или сохранение не прошло), картинка терялась безвозвратно.
-    setPendingRemovals((prev) => [...prev, im.filename]);
+    const pending = pendingMoves.current.get(id);
+    pendingMoves.current.delete(id);
+    setPendingRemovals((prev) => [...prev, pending?.from || im.filename]);
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -324,12 +329,29 @@ export default function GalleryEditorDialog({
     });
   }
 
-  function submit() {
+  async function submit() {
     // Пустую галерею сохранять можно: это позволяет переименовать подпись
     // сразу после создания плашки, до загрузки изображений.
     if (!images.length && !caption.trim()) {
       toast.error("Укажите подпись или добавьте изображение");
       return;
+    }
+    // Сначала создаём новые объекты копированием, затем обновляем маркер.
+    // Старый объект сохраняется, пока статья не приняла новое имя.
+    const copied: string[] = [];
+    for (const { from, to } of pendingMoves.current.values()) {
+      const { error } = await supabase.storage.from(bucket).copy(
+        `${folder}/${from}`,
+        `${folder}/${to}`,
+      );
+      if (error) {
+        toast.error(`Не удалось подготовить новое имя изображения: ${error.message}`);
+        if (copied.length) {
+          await supabase.storage.from(bucket).remove(copied.map((name) => `${folder}/${name}`));
+        }
+        return;
+      }
+      copied.push(to);
     }
     onSave({ caption: caption.trim(), images, cols, restricted });
     // Удаляем файлы из хранилища только после подтверждённого сохранения списка,
@@ -340,6 +362,7 @@ export default function GalleryEditorDialog({
     if (drop.length) {
       void supabase.storage.from(bucket).remove(drop.map((f) => `${folder}/${f}`)).catch(() => {});
     }
+    pendingMoves.current.clear();
     onOpenChange(false);
   }
 

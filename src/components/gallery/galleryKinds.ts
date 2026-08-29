@@ -31,7 +31,9 @@ export const GALLERY_KINDS: Record<GalleryKind, KindRule> = {
   urology:           { ratio: 3 / 4,  crop: "center", maxW: 1000, label: "Урология (3:4, центр)" },
   "urology-closeup": { ratio: 1,      crop: "center", maxW: 1200, label: "Урология крупно (1:1)" },
   infographic:       { ratio: null,   crop: "center", maxW: 1800, label: "Инфографика (без кадра)" },
-  default:           { ratio: 4 / 3,  crop: "center", maxW: 1600, label: "По умолчанию (4:3)" },
+  // Безопасное значение по умолчанию: сохраняем исходную композицию файла.
+  // Явные режимы (surgery, ultrasound и т. д.) по-прежнему кадрируются по своим правилам.
+  default:           { ratio: null,   crop: "center", maxW: 1600, label: "По умолчанию (без обрезки)" },
 };
 
 export const GALLERY_KIND_OPTIONS: GalleryKind[] = [

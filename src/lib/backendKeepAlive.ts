@@ -11,6 +11,8 @@
  * пользователь о ней знать не должен.
  */
 
+import { runtimeBackendBase } from "@/lib/backendEndpoints";
+
 const STORAGE_KEY = "backend-keepalive-last-ping";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const RETRY_DELAYS_MS = [5_000, 20_000, 60_000];
@@ -35,7 +37,7 @@ const writeLastPing = (ts: number) => {
 
 /** Один тихий запрос к health-эндпоинту бэкенда. true — бэкенд ответил. */
 const pingOnce = async (): Promise<boolean> => {
-  const baseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const baseUrl = runtimeBackendBase();
   const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
   if (!baseUrl || !apikey) return false;
 

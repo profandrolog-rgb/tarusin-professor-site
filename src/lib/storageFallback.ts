@@ -20,9 +20,9 @@ export function publicStorageUrl(bucket: string, path: string | null | undefined
 
 /** Ссылка на тот же объект в обход прокси (или null, если подмена не нужна). */
 export function directStorageUrl(url: string): string | null {
-  if (!url || !PRIMARY_BASE) return null;
-  for (const base of FALLBACK_BASES) {
-    if (url.startsWith(base)) return null;
+  if (!url || (!PRIMARY_BASE && !FALLBACK_BASES.length)) return null;
+  const candidates = Array.from(new Set([PRIMARY_BASE, ...FALLBACK_BASES].filter(Boolean)));
+  for (const base of candidates) {
     const next = swapBase(url, base);
     if (next) return next;
   }

@@ -33,6 +33,18 @@ export const ALLOW_DIRECT = String(env.VITE_ALLOW_DIRECT_SUPABASE ?? "").toLower
 export const PRIMARY_BASE = stripSlash(env.VITE_SUPABASE_PROXY_URL || env.VITE_SUPABASE_URL || "");
 
 /**
+ * Lovable embeds the application in a separate preview hostname.  The
+ * preview must use the German proxy (api3), even when the build injected the
+ * production api2 URL into VITE_SUPABASE_URL.  Keep production and local
+ * development on the configured primary route.
+ */
+export const isLovablePreviewHost = (): boolean => {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname.toLowerCase();
+  return host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com");
+};
+
+/**
  * Дополнительные равнозначные прокси к ТОМУ ЖЕ проекту Supabase
  * (VITE_BACKEND_ALT_URL, через запятую). Используются менеджером маршрутов
  * (src/lib/backendRouteManager.ts) как альтернатива основному адресу.
@@ -102,12 +114,16 @@ export const BUILD_BASE: string =
   PRIMARY_BASE ||
   (ALLOW_DIRECT ? DIRECT_BASE : "");
 
+export const runtimeBackendBase = (): string =>
+  isLovablePreviewHost() ? "https://api3.tarusin.pro" : (PRIMARY_BASE || BUILD_BASE);
+
 /** Базовый адрес для загрузчиков: BUILD_BASE при пререндере, PRIMARY_BASE в браузере. */
 export const loaderBase = (): string =>
-  typeof window === "undefined" ? BUILD_BASE || PRIMARY_BASE : PRIMARY_BASE || BUILD_BASE;
+  typeof window === "undefined" ? BUILD_BASE || PRIMARY_BASE : runtimeBackendBase();
 
 /** Переписать URL с основного адреса на кандидата обхода. */
 export const swapBase = (url: string, base: string): string | null => {
-  if (!PRIMARY_BASE || !base || base === PRIMARY_BASE) return null;
-  return url.startsWith(PRIMARY_BASE) ? base + url.slice(PRIMARY_BASE.length) : null;
+  if (!base) return null;
+  const source = KNOWN_BASES.find((known) => known !== base && (url === known || url.startsWith(`${known}/`)));
+  return source ? base + url.slice(source.length) : null;
 };

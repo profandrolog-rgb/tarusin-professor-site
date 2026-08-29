@@ -104,9 +104,11 @@ function detectType(caption: string): ImgType {
   if (/операци|хирург|разрез|этап|интраопер/.test(c)) return "surgery";
   if (/узи|эхограм|ультразвук|допплер/.test(c)) return "ultrasound";
   if (/рост|целиком|полный|синдром|кариотип|фенотип/.test(c)) return "patient-full";
+  // Графики и схемы с медицинским названием нельзя отдавать в урологический
+  // формат: иначе «Авто» кадрирует широкую инфографику до 3:4.
+  if (/схем|алгоритм|инфографик|классификац|таблиц|эпидемиолог|распростран|график|диаграм|дол[яи]|структур|частот|скрининг|популяц|процент/.test(c)) return "infographic";
   if (/мошонк|яичк|половой|препуци|головк|фимоз|крипторхизм|гидроцеле|варикоцеле/.test(c)) return "urology";
   if (/пациент|клиническ|внешн|вид|фото|симптом/.test(c)) return "patient";
-  if (/схем|алгоритм|инфографик|классификац|таблиц|эпидемиолог|распростран|график|диаграм/.test(c)) return "infographic";
   if (/анатоми|строени/.test(c)) return "anatomy";
   return "default";
 }
@@ -276,7 +278,7 @@ const SortableThumb = ({
         <img
           src={item.previewUrl}
           alt={item.originalName}
-          className="w-32 h-32 object-cover rounded border bg-white pointer-events-none select-none"
+          className={`w-32 h-32 ${item.type === "infographic" ? "object-contain" : "object-cover"} rounded border bg-white pointer-events-none select-none`}
           draggable={false}
         />
         <button
