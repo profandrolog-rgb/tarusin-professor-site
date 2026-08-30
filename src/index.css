@@ -241,6 +241,21 @@ video::-webkit-media-controls-overflow-button {
   background-color: #EBF5FF;
 }
 
+/* Мобильные: компактные ячейки статейных таблиц */
+@media (max-width: 640px) {
+  .article-markdown table {
+    margin: 16px 0;
+    font-size: 0.875rem;
+  }
+  .article-markdown table td,
+  .article-markdown table th,
+  .article-markdown table thead th,
+  .article-markdown table:not(:has(thead)) tr:first-child td,
+  .article-markdown table:not(:has(thead)) tr:first-child th {
+    padding: 8px 10px;
+  }
+}
+
 /* Dark theme: переопределяем фиксированные цвета заголовков статей,
    чтобы подзаголовки не «проваливались» в тёмный фон */
 .dark .article-markdown h1,
