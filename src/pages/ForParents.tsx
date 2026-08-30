@@ -52,12 +52,12 @@ const ForParents = () => {
 
         <main className="container mx-auto px-4 py-12 md:py-16">
           <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); const sp = new URLSearchParams(searchParams); sp.set("tab", v); setSearchParams(sp, { replace: true }); }} className="w-full">
-            <TabsList className="w-full h-auto mb-10 flex md:grid md:grid-cols-5 overflow-x-auto justify-start">
-              <TabsTrigger value="useful" className="flex items-center gap-2 py-3 text-xs md:text-base whitespace-nowrap shrink-0 md:shrink"><BookOpen className="w-4 h-4 hidden sm:block" />{isEn ? "Useful Materials" : "Полезные материалы"}</TabsTrigger>
-              <TabsTrigger value="children" className="flex items-center gap-2 py-3 text-xs md:text-base whitespace-nowrap shrink-0 md:shrink"><Baby className="w-4 h-4 hidden sm:block" />{isEn ? "Pediatric Conditions" : "О детских болезнях"}</TabsTrigger>
-              <TabsTrigger value="adults" className="flex items-center gap-2 py-3 text-xs md:text-base whitespace-nowrap shrink-0 md:shrink"><User className="w-4 h-4 hidden sm:block" />{isEn ? "Adult Conditions" : "О взрослых болезнях"}</TabsTrigger>
-              <TabsTrigger value="guide" className="flex items-center gap-2 py-3 text-xs md:text-base whitespace-nowrap shrink-0 md:shrink"><ClipboardList className="w-4 h-4 hidden sm:block" />{isEn ? "Patient Guide" : "Памятка пациенту"}</TabsTrigger>
-              <TabsTrigger value="publications" className="flex items-center gap-2 py-3 text-xs md:text-base whitespace-nowrap shrink-0 md:shrink"><FileText className="w-4 h-4 hidden sm:block" />{isEn ? "Publications" : "Публикации"}</TabsTrigger>
+            <TabsList className="w-full h-auto mb-10 flex gap-1 lg:grid lg:grid-cols-5 overflow-x-auto justify-start">
+              <TabsTrigger value="useful" className="flex items-center gap-2 px-3 py-3 text-xs md:text-base whitespace-nowrap shrink-0 lg:shrink"><BookOpen className="w-4 h-4 hidden sm:block" />{isEn ? "Useful Materials" : "Полезные материалы"}</TabsTrigger>
+              <TabsTrigger value="children" className="flex items-center gap-2 px-3 py-3 text-xs md:text-base whitespace-nowrap shrink-0 lg:shrink"><Baby className="w-4 h-4 hidden sm:block" />{isEn ? "Pediatric Conditions" : "О детских болезнях"}</TabsTrigger>
+              <TabsTrigger value="adults" className="flex items-center gap-2 px-3 py-3 text-xs md:text-base whitespace-nowrap shrink-0 lg:shrink"><User className="w-4 h-4 hidden sm:block" />{isEn ? "Adult Conditions" : "О взрослых болезнях"}</TabsTrigger>
+              <TabsTrigger value="guide" className="flex items-center gap-2 px-3 py-3 text-xs md:text-base whitespace-nowrap shrink-0 lg:shrink"><ClipboardList className="w-4 h-4 hidden sm:block" />{isEn ? "Patient Guide" : "Памятка пациенту"}</TabsTrigger>
+              <TabsTrigger value="publications" className="flex items-center gap-2 px-3 py-3 text-xs md:text-base whitespace-nowrap shrink-0 lg:shrink"><FileText className="w-4 h-4 hidden sm:block" />{isEn ? "Publications" : "Публикации"}</TabsTrigger>
             </TabsList>
             <TabsContent value="useful"><UsefulMaterials /></TabsContent>
             <TabsContent value="children"><DiseaseArticlesList ageGroup="children" initialArticles={initialArticles} /></TabsContent>
