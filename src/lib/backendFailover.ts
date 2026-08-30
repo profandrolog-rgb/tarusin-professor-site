@@ -13,7 +13,7 @@
 // Realtime/WebSocket остаётся на адресе, с которым создан supabase-клиент
 // (VITE_SUPABASE_PROXY_URL): перехват fetch на WS не действует.
 
-import { PRIMARY_BASE, rebaseUrl } from "./backendEndpoints";
+import { PRIMARY_BASE, ROUTE_BASES, rebaseUrl } from "./backendEndpoints";
 import { routeManager, hasAlternativeRoutes } from "./backendRouteManager";
 
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
@@ -51,8 +51,13 @@ export function installBackendFailover() {
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const active = routeManager.getActive();
-    const url = rebaseUrl(requestUrl(input), active);
-    const isBackend = url.startsWith(active);
+    const raw = requestUrl(input);
+    // Явно указанный рабочий маршрут (api2/api3) не переписываем: иначе
+    // параллельная гонка маршрутов в useAuth схлопывается в один адрес.
+    const explicit = ROUTE_BASES.find((base) => raw === base || raw.startsWith(`${base}/`));
+    const url = explicit ? raw : rebaseUrl(raw, active);
+    const isBackend = explicit ? true : url.startsWith(active);
+
 
     if (isBackend && hasAlternativeRoutes) {
       // Фоновая диагностика: не чаще одного цикла в 5 минут на вкладку.
@@ -81,7 +86,7 @@ export function installBackendFailover() {
       // — не сбой маршрута: не помечаем адрес нерабочим и не повторяем запрос
       // с уже отменённым signal (иначе браузер бросает «signal is aborted without reason»).
       if ((init?.signal as AbortSignal | undefined)?.aborted) throw e;
-      if (isBackend) routeManager.reportFailure(active);
+      if (isBackend) routeManager.reportFailure(explicit || active);
       if (retryable) {
         if (alt) {
           const retried = await originalFetch(withUrl(input, rebaseUrl(url, alt)) as any, init);
