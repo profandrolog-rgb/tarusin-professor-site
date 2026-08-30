@@ -86,7 +86,7 @@ export function installBackendFailover() {
       // — не сбой маршрута: не помечаем адрес нерабочим и не повторяем запрос
       // с уже отменённым signal (иначе браузер бросает «signal is aborted without reason»).
       if ((init?.signal as AbortSignal | undefined)?.aborted) throw e;
-      if (isBackend) routeManager.reportFailure(active);
+      if (isBackend) routeManager.reportFailure(explicit || active);
       if (retryable) {
         if (alt) {
           const retried = await originalFetch(withUrl(input, rebaseUrl(url, alt)) as any, init);
