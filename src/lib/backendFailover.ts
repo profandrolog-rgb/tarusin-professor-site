@@ -77,6 +77,10 @@ export function installBackendFailover() {
       }
       return resp;
     } catch (e) {
+      // Отмена запроса вызывающим кодом (AbortController, гонка маршрутов входа)
+      // — не сбой маршрута: не помечаем адрес нерабочим и не повторяем запрос
+      // с уже отменённым signal (иначе браузер бросает «signal is aborted without reason»).
+      if ((init?.signal as AbortSignal | undefined)?.aborted) throw e;
       if (isBackend) routeManager.reportFailure(active);
       if (retryable) {
         if (alt) {
