@@ -156,6 +156,10 @@ const Reviews = () => {
               </div>
             </div>
 
+            <ReviewsSection />
+
+
+
             <Card className="mb-12 bg-accent/10 border-accent/30">
               <CardContent className="p-8">
                 <h3 className="text-xl font-bold text-foreground mb-4">{isEn ? "Online Visibility Assessment" : "Оценка интернет-видимости"}</h3>
