@@ -39,9 +39,7 @@
           var m = location.pathname.match(/^\/for-parents\/(?!materials\/)([^\/]+)\/?$/);
           if (!m) return;
           var slug = decodeURIComponent(m[1]);
-          var isLovablePreview = location.hostname.endsWith(".lovable.app") ||
-            location.hostname.endsWith(".lovableproject.com");
-          var base = isLovablePreview ? "https://api3.tarusin.pro" : "https://api2.tarusin.pro";
+          var base = "https://api3.tarusin.pro";
           var key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYndraXp2dnl0aHFvdGN5ZmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Njc2MTQsImV4cCI6MjA4NTE0MzYxNH0.iv_pLSj27wOMUmfY0HOJ91bPm1u-b4wjiScYrP03bww";
           window.__earlyArticle = {
             slug: slug,
