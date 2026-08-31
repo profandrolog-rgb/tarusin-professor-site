@@ -14,7 +14,7 @@ import { DIRECT_BASE } from "./backendEndpoints";
 /** Рабочий прокси для публичных файлов (Cloudflare Worker вне РФ). */
 export const PUBLIC_STORAGE_PROXY =
   (import.meta.env.VITE_PUBLIC_STORAGE_PROXY as string | undefined)?.replace(/\/$/, "") ||
-  "https://api2.tarusin.pro";
+  "https://api3.tarusin.pro";
 
 /** Перевести публичную ссылку Storage на прокси (если она указывает на прямой домен). */
 export function proxyPublicStorageUrl(url: string): string {
