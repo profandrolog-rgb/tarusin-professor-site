@@ -104,11 +104,16 @@ const ImageGallery = ({ caption, files }: Props) => {
 
 
   const photoCaptionStyle: React.CSSProperties = {
-    fontSize: 13,
+    fontSize: "clamp(10px, 2.6vw, 13px)",
+    lineHeight: 1.25,
     color: "#666",
     fontStyle: "italic",
     textAlign: "center",
     marginTop: 6,
+    marginBottom: 2,
+    paddingInline: 2,
+    overflowWrap: "anywhere",
+    hyphens: "auto",
   };
 
   const watermarkStyle: React.CSSProperties = {
