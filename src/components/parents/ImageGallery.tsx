@@ -222,8 +222,8 @@ const ImageGallery = ({ caption, files }: Props) => {
             const crop = it.crop;
             const cropped = cropStyles(crop);
             const colClass = cols
-              ? "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] md:max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
-              : "basis-full sm:basis-[calc(50%-0.375rem)] sm:max-w-[calc(50%-0.375rem)] md:basis-[calc(33.333%-0.5rem)] md:max-w-[calc(33.333%-0.5rem)]";
+              ? "basis-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))] max-w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]"
+              : "basis-[calc(33.333%-0.5rem)] max-w-[calc(33.333%-0.5rem)]";
             const itemClass = patientFull && !cols && !crop ? "shrink-0" : colClass;
             const itemStyle: React.CSSProperties = patientFull && !cols && !crop
               ? { width: PATIENT_FULL_W, maxWidth: "100%" }
