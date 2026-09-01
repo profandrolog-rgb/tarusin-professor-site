@@ -10,6 +10,8 @@ import {
   RefreshCw,
   Search,
   Settings,
+  Trash2,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,8 +138,23 @@ export default function AdminSurgeryReferrals() {
     load();
   };
 
+  const removeReferral = async (row: any) => {
+    const ok = window.confirm(
+      `Удалить путёвку «${row.full_name}» (выдана ${formatRuDate(row.created_at)})?\n\nБудут удалены перечень обследований и журнал по этой путёвке. Действие необратимо.`
+    );
+    if (!ok) return;
+    const { error } = await supabase.from("surgery_referrals").delete().eq("id", row.id);
+    if (error) {
+      toast.error("Не удалось удалить путёвку", { description: error.message });
+      return;
+    }
+    setRows((prev) => prev.filter((x) => x.id !== row.id));
+    toast.success("Путёвка удалена");
+  };
+
   const runNotify = async () => {
     setNotifyBusy(true);
+
     try {
       const { data, error } = await supabase.functions.invoke("surgery-referral-notify", { body: { manual: true } });
       if (error) throw error;
@@ -273,6 +290,16 @@ export default function AdminSurgeryReferrals() {
                         Ссылка пациента
                       </a>
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                      onClick={() => removeReferral(r)}
+                      title="Удалить путёвку"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+
                   </CardContent>
                 </Card>
               );
