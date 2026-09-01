@@ -273,6 +273,16 @@ export default function AdminSurgeryReferrals() {
                         Ссылка пациента
                       </a>
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
+                      onClick={() => removeReferral(r)}
+                      title="Удалить путёвку"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+
                   </CardContent>
                 </Card>
               );
