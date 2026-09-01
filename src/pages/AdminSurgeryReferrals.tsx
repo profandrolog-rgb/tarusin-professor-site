@@ -152,8 +152,9 @@ export default function AdminSurgeryReferrals() {
     toast.success("Путёвка удалена");
   };
 
-
+  const runNotify = async () => {
     setNotifyBusy(true);
+
     try {
       const { data, error } = await supabase.functions.invoke("surgery-referral-notify", { body: { manual: true } });
       if (error) throw error;
