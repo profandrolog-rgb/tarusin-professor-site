@@ -138,7 +138,21 @@ export default function AdminSurgeryReferrals() {
     load();
   };
 
-  const runNotify = async () => {
+  const removeReferral = async (row: any) => {
+    const ok = window.confirm(
+      `Удалить путёвку «${row.full_name}» (выдана ${formatRuDate(row.created_at)})?\n\nБудут удалены перечень обследований и журнал по этой путёвке. Действие необратимо.`
+    );
+    if (!ok) return;
+    const { error } = await supabase.from("surgery_referrals").delete().eq("id", row.id);
+    if (error) {
+      toast.error("Не удалось удалить путёвку", { description: error.message });
+      return;
+    }
+    setRows((prev) => prev.filter((x) => x.id !== row.id));
+    toast.success("Путёвка удалена");
+  };
+
+
     setNotifyBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke("surgery-referral-notify", { body: { manual: true } });
