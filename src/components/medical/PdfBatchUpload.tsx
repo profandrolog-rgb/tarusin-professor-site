@@ -241,6 +241,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
 
         <p className="text-xs text-muted-foreground">
           Можно выбирать несколько файлов из любого расположения (компьютер, флешка, сетевая папка).
+          Поддерживаются PDF, Word (.doc/.docx), Excel (.xls/.xlsx/.csv) и фото анализов (JPEG/PNG) — фото распознаются OCR.
         </p>
 
         <div className="space-y-2">
