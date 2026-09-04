@@ -49,7 +49,8 @@ const EXTRACTION_SYSTEM = `Ты — медицинский парсер PDF (б�
 - Числа с пробелом-разделителем тысяч («1 200») приводи к 1200; «<0,1» → value=0.1, needs_review=true, ref_text сохрани.
 - Строки-заголовки разделов («Актинобактерии», «Грибы», «Вирусы», «Итого») в lab_results НЕ включай.
 - Итоговый текст заключения/интерпретации (дисбиоз, избыточный рост, дефицит) положи в conclusion_text.
-Никогда не путай колонку значения с колонкой референса. Никаких пояснений вне JSON.`;
+Никогда не путай колонку значения с колонкой референса. Никаких пояснений вне JSON.
+ИСТОЧНИК может быть PDF, фотографией/сканом бланка (JPEG/PNG), документом Word или таблицей Excel — правила извлечения одинаковы; для фото используй OCR и при нечитаемости ставь needs_review=true.`;
 
 function normalize(s: string): string {
   return s.toLowerCase().replace(/[^a-zа-я0-9]+/gi, '').trim();
@@ -91,7 +92,49 @@ function parseRefText(raw: string | null | undefined): { min: number | null; max
   return { min: null, max: null };
 }
 
-async function callExtractionModel(model: string, fileDataUrl: string, fileName: string) {
+type SourceKind = 'pdf' | 'image' | 'docx' | 'xlsx' | 'text';
+
+function detectKind(fileName: string, mime: string): SourceKind {
+  const n = (fileName || '').toLowerCase();
+  const m = (mime || '').toLowerCase();
+  if (/\.(jpe?g|png|webp|heic|tiff?|bmp)$/.test(n) || m.startsWith('image/')) return 'image';
+  if (/\.docx?$/.test(n) || m.includes('wordprocessing') || m === 'application/msword') return 'docx';
+  if (/\.(xlsx|xls|csv)$/.test(n) || m.includes('spreadsheet') || m.includes('ms-excel')) return 'xlsx';
+  if (/\.(txt|md)$/.test(n) || m.startsWith('text/')) return 'text';
+  return 'pdf';
+}
+
+async function docxToText(bytes: Uint8Array): Promise<string> {
+  const mammoth: any = await import('npm:mammoth@1.8.0');
+  const api = mammoth.default ?? mammoth;
+  const r = await api.extractRawText({ buffer: bytes });
+  return String(r?.value || '').trim();
+}
+
+async function xlsxToText(bytes: Uint8Array): Promise<string> {
+  const mod: any = await import('npm:xlsx@0.18.5');
+  const XLSX = mod.default ?? mod;
+  const wb = XLSX.read(bytes, { type: 'array' });
+  return (wb.SheetNames as string[])
+    .map((name) => `# Лист: ${name}\n${XLSX.utils.sheet_to_csv(wb.Sheets[name])}`)
+    .join('\n\n')
+    .trim();
+}
+
+async function callExtractionModel(
+  model: string,
+  fileDataUrl: string,
+  fileName: string,
+  kind: SourceKind,
+  textContent: string,
+) {
+  const payloadBlock =
+    kind === 'image'
+      ? { type: 'image_url', image_url: { url: fileDataUrl } }
+      : kind === 'pdf'
+        ? { type: 'file', file: { filename: fileName, file_data: fileDataUrl } }
+        : { type: 'text', text: `Содержимое документа (${kind}):\n${textContent}` };
+
   const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -106,7 +149,7 @@ async function callExtractionModel(model: string, fileDataUrl: string, fileName:
           role: 'user',
           content: [
             { type: 'text', text: `Файл: ${fileName}. Извлеки данные согласно схеме.` },
-            { type: 'file', file: { filename: fileName, file_data: fileDataUrl } },
+            payloadBlock,
           ],
         },
       ],
@@ -126,21 +169,27 @@ async function callExtractionModel(model: string, fileDataUrl: string, fileName:
   }
 }
 
-async function extractWithFallback(fileDataUrl: string, fileName: string) {
+async function extractWithFallback(
+  fileDataUrl: string,
+  fileName: string,
+  kind: SourceKind = 'pdf',
+  textContent = '',
+) {
   let last = 'unknown error';
   for (let i = 0; i < EXTRACTION_MODELS.length; i++) {
     const model = EXTRACTION_MODELS[i];
     try {
-      const parsed = await callExtractionModel(model, fileDataUrl, fileName);
-      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fallback: i > 0, index: i, fileName }));
+      const parsed = await callExtractionModel(model, fileDataUrl, fileName, kind, textContent);
+      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fallback: i > 0, index: i, fileName, kind }));
       return parsed;
     } catch (e: any) {
       last = e?.message || String(e);
-      console.error('parse-medical-pdf model fail', JSON.stringify({ model, fileName, error: last.slice(0, 500) }));
+      console.error('parse-medical-pdf model fail', JSON.stringify({ model, fileName, kind, error: last.slice(0, 500) }));
     }
   }
-  throw new Error(`Не удалось разобрать PDF ни одной моделью: ${last}`);
+  throw new Error(`Не удалось разобрать документ ни одной моделью: ${last}`);
 }
+
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
@@ -156,6 +205,25 @@ function bytesToBase64(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+function dataUrlMime(dataUrl: string): string {
+  const m = /^data:([^;,]+)/.exec(dataUrl || '');
+  return m ? m[1] : '';
+}
+
+function dataUrlToBytes(dataUrl: string): Uint8Array | null {
+  const idx = (dataUrl || '').indexOf('base64,');
+  if (idx === -1) return null;
+  try {
+    const binary = atob(dataUrl.slice(idx + 7));
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 
 function isValidPastDate(s: string | null | undefined): string | null {
   if (!s || typeof s !== 'string') return null;
@@ -173,6 +241,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       file_data,
+      file_mime,
       storage_bucket,
       storage_path,
       file_name,
@@ -181,6 +250,7 @@ Deno.serve(async (req) => {
       visit_id,
     }: {
       file_data?: string;
+      file_mime?: string;
       storage_bucket?: string;
       storage_path?: string;
       file_name: string;
@@ -211,6 +281,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     let sourceData = file_data || '';
+    let sourceBytes: Uint8Array | null = null;
+    let sourceMime = file_mime || '';
     if (!sourceData && storage_path) {
       const bucket = storage_bucket || 'patient-lab-docs';
       if (bucket !== 'patient-lab-docs') {
@@ -223,12 +295,28 @@ Deno.serve(async (req) => {
         .from(bucket)
         .download(storage_path);
       if (downloadError || !storedFile) {
-        throw new Error(`Не удалось получить загруженный PDF: ${downloadError?.message || 'файл не найден'}`);
+        throw new Error(`Не удалось получить загруженный файл: ${downloadError?.message || 'файл не найден'}`);
       }
-      if (storedFile.size > 25 * 1024 * 1024) throw new Error('PDF больше 25 МБ');
+      if (storedFile.size > 25 * 1024 * 1024) throw new Error('Файл больше 25 МБ');
       const bytes = new Uint8Array(await storedFile.arrayBuffer());
+      sourceBytes = bytes;
+      sourceMime = sourceMime || storedFile.type || '';
       sourceData = `data:${storedFile.type || 'application/pdf'};base64,${bytesToBase64(bytes)}`;
     }
+
+    // Тип источника: PDF, фото (OCR), Word, Excel/CSV или текст.
+    const kind = detectKind(file_name, sourceMime || dataUrlMime(sourceData));
+    let textContent = '';
+    if (kind === 'docx' || kind === 'xlsx' || kind === 'text') {
+      const bytes = sourceBytes || dataUrlToBytes(sourceData);
+      if (!bytes) throw new Error('Не удалось прочитать содержимое документа');
+      if (kind === 'docx') textContent = await docxToText(bytes);
+      else if (kind === 'xlsx') textContent = await xlsxToText(bytes);
+      else textContent = new TextDecoder().decode(bytes).trim();
+      if (!textContent) throw new Error('В документе не найдено текста для разбора');
+      if (textContent.length > 200_000) textContent = textContent.slice(0, 200_000);
+    }
+
 
     // Cache lookup by (patient_id, file_hash) — skips AI on re-upload of the same file.
     const fileHash = await sha256Hex(sourceData);
@@ -247,7 +335,7 @@ Deno.serve(async (req) => {
     }
 
     if (!parsed) {
-      parsed = await extractWithFallback(sourceData, file_name);
+      parsed = await extractWithFallback(sourceData, file_name, kind, textContent);
       if (patient_id) {
         await supabase
           .from('parsed_pdf_cache')

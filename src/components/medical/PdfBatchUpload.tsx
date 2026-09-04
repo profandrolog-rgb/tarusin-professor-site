@@ -40,7 +40,7 @@ function safeFileName(name: string): string {
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(-120);
-  return cleaned || "document.pdf";
+  return cleaned || "document";
 }
 
 
@@ -66,7 +66,16 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
-    const arr = Array.from(list).filter((f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name));
+    const arr = Array.from(list).filter(
+      (f) =>
+        /\.(pdf|docx?|xlsx?|csv|jpe?g|png|webp|heic|tiff?|bmp|txt)$/i.test(f.name) ||
+        f.type === "application/pdf" ||
+        f.type.startsWith("image/") ||
+        f.type.includes("wordprocessing") ||
+        f.type.includes("spreadsheet") ||
+        f.type.includes("ms-excel") ||
+        f.type === "application/msword",
+    );
     setFiles((prev) => [...prev, ...arr.map((f) => ({ file: f, progress: 0, status: "pending" as const }))]);
   };
 
@@ -104,7 +113,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
             const { error } = await supabase.storage
               .from(PARSER_BUCKET)
               .upload(storagePath, updated[i].file, {
-                contentType: updated[i].file.type || "application/pdf",
+                contentType: updated[i].file.type || "application/octet-stream",
                 upsert: false,
               });
             if (error) throw error;
@@ -143,6 +152,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
                 storage_bucket: PARSER_BUCKET,
                 storage_path: storagePath,
                 file_name: updated[i].file.name,
+                file_mime: updated[i].file.type || undefined,
                 patient_id: patientId,
                 consultation_case_id: consultationCaseId,
                 visit_id: visitId,
@@ -200,7 +210,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="w-4 h-4" />
-          Загрузить анализы (PDF)
+          Загрузить анализы (PDF, Word, Excel, фото)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -209,12 +219,12 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
             ref={inputRef}
             type="file"
             multiple
-            accept="application/pdf,.pdf"
+            accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,image/*,.jpg,.jpeg,.png,.webp,.heic,.tif,.tiff,.bmp"
             className="hidden"
             onChange={(e) => addFiles(e.target.files)}
           />
           <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={running}>
-            <Upload className="w-4 h-4 mr-2" />Выбрать PDF
+            <Upload className="w-4 h-4 mr-2" />Выбрать файлы
           </Button>
           <Button size="sm" onClick={run} disabled={!files.length || running}>
             {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
@@ -226,12 +236,13 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
               onCheckedChange={(v) => setParseEnabled(!!v)}
               disabled={running}
             />
-            Парсить PDF в заключение
+            Парсить документ в заключение
           </label>
         </div>
 
         <p className="text-xs text-muted-foreground">
           Можно выбирать несколько файлов из любого расположения (компьютер, флешка, сетевая папка).
+          Поддерживаются PDF, Word (.doc/.docx), Excel (.xls/.xlsx/.csv) и фото анализов (JPEG/PNG) — фото распознаются OCR.
         </p>
 
         <div className="space-y-2">
