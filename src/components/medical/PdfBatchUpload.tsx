@@ -209,7 +209,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="w-4 h-4" />
-          Загрузить анализы (PDF)
+          Загрузить анализы (PDF, Word, Excel, фото)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -218,12 +218,12 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
             ref={inputRef}
             type="file"
             multiple
-            accept="application/pdf,.pdf"
+            accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,image/*,.jpg,.jpeg,.png,.webp,.heic,.tif,.tiff,.bmp"
             className="hidden"
             onChange={(e) => addFiles(e.target.files)}
           />
           <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={running}>
-            <Upload className="w-4 h-4 mr-2" />Выбрать PDF
+            <Upload className="w-4 h-4 mr-2" />Выбрать файлы
           </Button>
           <Button size="sm" onClick={run} disabled={!files.length || running}>
             {running ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
@@ -235,7 +235,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
               onCheckedChange={(v) => setParseEnabled(!!v)}
               disabled={running}
             />
-            Парсить PDF в заключение
+            Парсить документ в заключение
           </label>
         </div>
 
