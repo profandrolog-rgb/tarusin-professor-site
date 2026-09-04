@@ -260,6 +260,8 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     let sourceData = file_data || '';
+    let sourceBytes: Uint8Array | null = null;
+    let sourceMime = file_mime || '';
     if (!sourceData && storage_path) {
       const bucket = storage_bucket || 'patient-lab-docs';
       if (bucket !== 'patient-lab-docs') {
@@ -272,12 +274,28 @@ Deno.serve(async (req) => {
         .from(bucket)
         .download(storage_path);
       if (downloadError || !storedFile) {
-        throw new Error(`Не удалось получить загруженный PDF: ${downloadError?.message || 'файл не найден'}`);
+        throw new Error(`Не удалось получить загруженный файл: ${downloadError?.message || 'файл не найден'}`);
       }
-      if (storedFile.size > 25 * 1024 * 1024) throw new Error('PDF больше 25 МБ');
+      if (storedFile.size > 25 * 1024 * 1024) throw new Error('Файл больше 25 МБ');
       const bytes = new Uint8Array(await storedFile.arrayBuffer());
+      sourceBytes = bytes;
+      sourceMime = sourceMime || storedFile.type || '';
       sourceData = `data:${storedFile.type || 'application/pdf'};base64,${bytesToBase64(bytes)}`;
     }
+
+    // Тип источника: PDF, фото (OCR), Word, Excel/CSV или текст.
+    const kind = detectKind(file_name, sourceMime || dataUrlMime(sourceData));
+    let textContent = '';
+    if (kind === 'docx' || kind === 'xlsx' || kind === 'text') {
+      const bytes = sourceBytes || dataUrlToBytes(sourceData);
+      if (!bytes) throw new Error('Не удалось прочитать содержимое документа');
+      if (kind === 'docx') textContent = await docxToText(bytes);
+      else if (kind === 'xlsx') textContent = await xlsxToText(bytes);
+      else textContent = new TextDecoder().decode(bytes).trim();
+      if (!textContent) throw new Error('В документе не найдено текста для разбора');
+      if (textContent.length > 200_000) textContent = textContent.slice(0, 200_000);
+    }
+
 
     // Cache lookup by (patient_id, file_hash) — skips AI on re-upload of the same file.
     const fileHash = await sha256Hex(sourceData);
