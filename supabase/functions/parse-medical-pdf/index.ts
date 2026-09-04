@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
     }
 
     if (!parsed) {
-      parsed = await extractWithFallback(sourceData, file_name);
+      parsed = await extractWithFallback(sourceData, file_name, kind, textContent);
       if (patient_id) {
         await supabase
           .from('parsed_pdf_cache')
