@@ -92,7 +92,49 @@ function parseRefText(raw: string | null | undefined): { min: number | null; max
   return { min: null, max: null };
 }
 
-async function callExtractionModel(model: string, fileDataUrl: string, fileName: string) {
+type SourceKind = 'pdf' | 'image' | 'docx' | 'xlsx' | 'text';
+
+function detectKind(fileName: string, mime: string): SourceKind {
+  const n = (fileName || '').toLowerCase();
+  const m = (mime || '').toLowerCase();
+  if (/\.(jpe?g|png|webp|heic|tiff?|bmp)$/.test(n) || m.startsWith('image/')) return 'image';
+  if (/\.docx?$/.test(n) || m.includes('wordprocessing') || m === 'application/msword') return 'docx';
+  if (/\.(xlsx|xls|csv)$/.test(n) || m.includes('spreadsheet') || m.includes('ms-excel')) return 'xlsx';
+  if (/\.(txt|md)$/.test(n) || m.startsWith('text/')) return 'text';
+  return 'pdf';
+}
+
+async function docxToText(bytes: Uint8Array): Promise<string> {
+  const mammoth: any = await import('npm:mammoth@1.8.0');
+  const api = mammoth.default ?? mammoth;
+  const r = await api.extractRawText({ buffer: bytes });
+  return String(r?.value || '').trim();
+}
+
+async function xlsxToText(bytes: Uint8Array): Promise<string> {
+  const mod: any = await import('npm:xlsx@0.18.5');
+  const XLSX = mod.default ?? mod;
+  const wb = XLSX.read(bytes, { type: 'array' });
+  return (wb.SheetNames as string[])
+    .map((name) => `# Лист: ${name}\n${XLSX.utils.sheet_to_csv(wb.Sheets[name])}`)
+    .join('\n\n')
+    .trim();
+}
+
+async function callExtractionModel(
+  model: string,
+  fileDataUrl: string,
+  fileName: string,
+  kind: SourceKind,
+  textContent: string,
+) {
+  const payloadBlock =
+    kind === 'image'
+      ? { type: 'image_url', image_url: { url: fileDataUrl } }
+      : kind === 'pdf'
+        ? { type: 'file', file: { filename: fileName, file_data: fileDataUrl } }
+        : { type: 'text', text: `Содержимое документа (${kind}):\n${textContent}` };
+
   const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -107,7 +149,7 @@ async function callExtractionModel(model: string, fileDataUrl: string, fileName:
           role: 'user',
           content: [
             { type: 'text', text: `Файл: ${fileName}. Извлеки данные согласно схеме.` },
-            { type: 'file', file: { filename: fileName, file_data: fileDataUrl } },
+            payloadBlock,
           ],
         },
       ],
@@ -127,21 +169,27 @@ async function callExtractionModel(model: string, fileDataUrl: string, fileName:
   }
 }
 
-async function extractWithFallback(fileDataUrl: string, fileName: string) {
+async function extractWithFallback(
+  fileDataUrl: string,
+  fileName: string,
+  kind: SourceKind = 'pdf',
+  textContent = '',
+) {
   let last = 'unknown error';
   for (let i = 0; i < EXTRACTION_MODELS.length; i++) {
     const model = EXTRACTION_MODELS[i];
     try {
-      const parsed = await callExtractionModel(model, fileDataUrl, fileName);
-      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fallback: i > 0, index: i, fileName }));
+      const parsed = await callExtractionModel(model, fileDataUrl, fileName, kind, textContent);
+      console.log('parse-medical-pdf model ok', JSON.stringify({ model, fallback: i > 0, index: i, fileName, kind }));
       return parsed;
     } catch (e: any) {
       last = e?.message || String(e);
-      console.error('parse-medical-pdf model fail', JSON.stringify({ model, fileName, error: last.slice(0, 500) }));
+      console.error('parse-medical-pdf model fail', JSON.stringify({ model, fileName, kind, error: last.slice(0, 500) }));
     }
   }
-  throw new Error(`Не удалось разобрать PDF ни одной моделью: ${last}`);
+  throw new Error(`Не удалось разобрать документ ни одной моделью: ${last}`);
 }
+
 
 async function sha256Hex(input: string): Promise<string> {
   const buf = new TextEncoder().encode(input);
