@@ -114,8 +114,7 @@ export const BUILD_BASE: string =
   PRIMARY_BASE ||
   (ALLOW_DIRECT ? DIRECT_BASE : "");
 
-export const runtimeBackendBase = (): string =>
-  isLovablePreviewHost() ? "https://api3.tarusin.pro" : (PRIMARY_BASE || BUILD_BASE);
+export const runtimeBackendBase = (): string => PRIMARY_BASE || BUILD_BASE;
 
 /** Базовый адрес для загрузчиков: BUILD_BASE при пререндере, PRIMARY_BASE в браузере. */
 export const loaderBase = (): string =>
