@@ -66,7 +66,16 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
 
   const addFiles = (list: FileList | null) => {
     if (!list) return;
-    const arr = Array.from(list).filter((f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name));
+    const arr = Array.from(list).filter(
+      (f) =>
+        /\.(pdf|docx?|xlsx?|csv|jpe?g|png|webp|heic|tiff?|bmp|txt)$/i.test(f.name) ||
+        f.type === "application/pdf" ||
+        f.type.startsWith("image/") ||
+        f.type.includes("wordprocessing") ||
+        f.type.includes("spreadsheet") ||
+        f.type.includes("ms-excel") ||
+        f.type === "application/msword",
+    );
     setFiles((prev) => [...prev, ...arr.map((f) => ({ file: f, progress: 0, status: "pending" as const }))]);
   };
 
