@@ -206,6 +206,25 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function dataUrlMime(dataUrl: string): string {
+  const m = /^data:([^;,]+)/.exec(dataUrl || '');
+  return m ? m[1] : '';
+}
+
+function dataUrlToBytes(dataUrl: string): Uint8Array | null {
+  const idx = (dataUrl || '').indexOf('base64,');
+  if (idx === -1) return null;
+  try {
+    const binary = atob(dataUrl.slice(idx + 7));
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+
 function isValidPastDate(s: string | null | undefined): string | null {
   if (!s || typeof s !== 'string') return null;
   const m = s.match(/^\d{4}-\d{2}-\d{2}$/);
