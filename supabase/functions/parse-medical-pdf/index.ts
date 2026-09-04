@@ -222,6 +222,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       file_data,
+      file_mime,
       storage_bucket,
       storage_path,
       file_name,
@@ -230,6 +231,7 @@ Deno.serve(async (req) => {
       visit_id,
     }: {
       file_data?: string;
+      file_mime?: string;
       storage_bucket?: string;
       storage_path?: string;
       file_name: string;
