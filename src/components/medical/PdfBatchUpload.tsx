@@ -113,7 +113,7 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
             const { error } = await supabase.storage
               .from(PARSER_BUCKET)
               .upload(storagePath, updated[i].file, {
-                contentType: updated[i].file.type || "application/pdf",
+                contentType: updated[i].file.type || "application/octet-stream",
                 upsert: false,
               });
             if (error) throw error;
