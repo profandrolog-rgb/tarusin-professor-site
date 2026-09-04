@@ -40,7 +40,7 @@ function safeFileName(name: string): string {
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(-120);
-  return cleaned || "document.pdf";
+  return cleaned || "document";
 }
 
 
