@@ -165,12 +165,26 @@ async function fetchSubbatchAnalysisAttempt(
       continue;
     }
     const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (info.kind === "text") {
+      try {
+        const text = (await extractTextFromFile(r.ext, bytes)).trim();
+        if (!text) { per_file_errors.push({ file: r.name, error: "пустой документ" }); continue; }
+        contentBlocks.push({
+          type: "text",
+          text: `--- Содержимое файла: ${r.name} ---\n${text.slice(0, MAX_TEXT_CHARS)}`,
+        });
+      } catch (e) {
+        per_file_errors.push({ file: r.name, error: `не удалось извлечь текст: ${(e as Error).message}` });
+      }
+      continue;
+    }
     const dataUrl = `data:${info.mime};base64,${toBase64(bytes)}`;
     if (info.kind === "image") {
       contentBlocks.push({ type: "image_url", image_url: { url: dataUrl } });
     } else {
       contentBlocks.push({ type: "file", file: { filename: r.name, file_data: dataUrl } });
     }
+
   }
 
   const isVenice = model.startsWith("venice/");
