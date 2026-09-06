@@ -265,7 +265,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
         <DialogHeader>
           <DialogTitle>Пакетный анализ документов</DialogTitle>
           <DialogDescription>
-            Загрузите PDF / изображения / ZIP с медицинскими документами (макс. {MAX_FILES} файлов, до {MAX_TOTAL_MB} МБ суммарно).
+            Загрузите PDF / Word / Excel / CSV / текст / изображения / ZIP с медицинскими документами (макс. {MAX_FILES} файлов, до {MAX_TOTAL_MB} МБ суммарно).
             Файлы анализирует Claude Sonnet 4.5 подпакетами по {subbatchSize} штук с финальной сводкой.
           </DialogDescription>
         </DialogHeader>
