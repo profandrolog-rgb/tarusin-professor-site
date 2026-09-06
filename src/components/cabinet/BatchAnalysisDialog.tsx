@@ -332,6 +332,30 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
                 </div>
               );
             })()}
+            {(() => {
+              const uploadedNames = (activeBatch?.file_paths || []).map(p => p.split("/").pop() || p);
+              const rows = uploadedNames.length
+                ? uploadedNames.map(name => ({ name, ok: true }))
+                : pending.map(p => ({ name: p.file.name, ok: !!p.uploadedPath }));
+              if (!rows.length) return null;
+              return (
+                <div className="border border-border rounded">
+                  <div className="px-3 py-2 text-sm font-medium border-b border-border">
+                    Загружено файлов: {rows.filter(r => r.ok).length} из {rows.length}
+                  </div>
+                  <div className="max-h-40 overflow-y-auto px-3 py-2 space-y-1">
+                    {rows.map((r, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        {r.ok
+                          ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                          : <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
+                        <span className="truncate">{r.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             {phase === "error" && activeBatch?.error && (
               <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded p-3 text-sm">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
