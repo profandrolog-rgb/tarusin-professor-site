@@ -293,7 +293,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
               <p className="text-sm mt-2">Нажмите или перетащите файлы. PDF, Word, Excel, CSV, текст, изображения, ZIP.</p>
 
               <input ref={fileInputRef} type="file" multiple className="hidden"
-                accept="application/pdf,image/*,.zip,application/zip"
+                accept="application/pdf,image/*,.zip,application/zip,.doc,.docx,.xls,.xlsx,.csv,.txt"
                 onChange={(e) => addFiles(e.target.files)} />
             </div>
             {pending.length > 0 && (
