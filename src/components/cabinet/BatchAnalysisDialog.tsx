@@ -154,7 +154,9 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
       const isZip = /\.zip$/i.test(f.name);
       const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
       const isImg = f.type.startsWith("image/");
-      if (!isZip && !isPdf && !isImg) { toast.error(`${f.name}: поддерживаются PDF, изображения и ZIP`); continue; }
+      const isDoc = /\.(doc|docx|xls|xlsx|csv|txt)$/i.test(f.name);
+      if (!isZip && !isPdf && !isImg && !isDoc) { toast.error(`${f.name}: поддерживаются PDF, Word, Excel, CSV, текст, изображения и ZIP`); continue; }
+
       incoming.push({ file: f, localId: `${Date.now()}-${Math.random()}`, progress: 0 });
     }
     setPending(prev => [...prev, ...incoming]);
