@@ -206,13 +206,13 @@ const AdminServers = () => {
               </div>
               <CardTitle>Прокси сайта</CardTitle>
               <CardDescription>
-                Основной маршрут сайта к базе данных и серверным функциям через api2.tarusin.pro.
+                Основной маршрут сайта к базе данных и серверным функциям через api3.tarusin.pro.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border bg-muted/30 p-3 text-sm">
                 <div className="font-medium">Управляемый маршрут Supabase</div>
-                <div className="mt-1 font-mono text-muted-foreground">api2.tarusin.pro</div>
+                <div className="mt-1 font-mono text-muted-foreground">api3.tarusin.pro</div>
               </div>
               <Button asChild variant="outline" className="w-full">
                 <Link to="/admin/system-settings">
