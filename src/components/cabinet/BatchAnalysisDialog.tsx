@@ -90,11 +90,54 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
     return () => { supabase.removeChannel(channel); };
   }, [activeBatch?.id]);
 
+  // Страховка: если realtime-событие не дошло (обрыв канала, закрытое окно),
+  // дочитываем состояние пакета опросом раз в 5 секунд, пока идёт обработка.
+  useEffect(() => {
+    if (!activeBatch?.id) return;
+    if (phase !== "uploading" && phase !== "analyzing") return;
+    const id = activeBatch.id;
+    const timer = setInterval(async () => {
+      const { data } = await supabase.from("analysis_batches").select("*").eq("id", id).maybeSingle();
+      if (!data) return;
+      const row = data as unknown as BatchRow;
+      setActiveBatch(row);
+      if (row.status === "done") setPhase("done");
+      else if (row.status === "error") setPhase("error");
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [activeBatch?.id, phase]);
+
+  // При открытии окна подхватываем незавершённый пакет — результат не теряется,
+  // даже если окно закрывали во время анализа.
+  useEffect(() => {
+    if (!open || !userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("analysis_batches")
+        .select("*")
+        .eq("user_id", userId)
+        .in("status", ["pending", "processing"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const row = data?.[0] as unknown as BatchRow | undefined;
+      if (cancelled || !row) return;
+      setActiveBatch(row);
+      if (row.task) setTask(row.task);
+      setPhase("analyzing");
+    })();
+    return () => { cancelled = true; };
+  }, [open, userId]);
+
   // Deliver final result once
   useEffect(() => {
     if (phase === "done" && activeBatch?.final_result && !resultDeliveredRef.current) {
       resultDeliveredRef.current = true;
-      onResult({ final: activeBatch.final_result, partial: activeBatch.partial_results || [], task });
+      onResult({
+        final: activeBatch.final_result,
+        partial: activeBatch.partial_results || [],
+        task: activeBatch.task || task,
+      });
     }
   }, [phase, activeBatch, onResult, task]);
 
