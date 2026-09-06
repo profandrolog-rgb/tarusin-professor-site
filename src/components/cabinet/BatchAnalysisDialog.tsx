@@ -28,6 +28,8 @@ type BatchRow = {
   chain_log?: ChainLogEntry[] | null;
   updated_at?: string;
   user_id?: string;
+  file_paths?: string[] | null;
+  task?: string | null;
 };
 
 
