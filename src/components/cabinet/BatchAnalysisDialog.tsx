@@ -154,7 +154,9 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
       const isZip = /\.zip$/i.test(f.name);
       const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
       const isImg = f.type.startsWith("image/");
-      if (!isZip && !isPdf && !isImg) { toast.error(`${f.name}: поддерживаются PDF, изображения и ZIP`); continue; }
+      const isDoc = /\.(doc|docx|xls|xlsx|csv|txt)$/i.test(f.name);
+      if (!isZip && !isPdf && !isImg && !isDoc) { toast.error(`${f.name}: поддерживаются PDF, Word, Excel, CSV, текст, изображения и ZIP`); continue; }
+
       incoming.push({ file: f, localId: `${Date.now()}-${Math.random()}`, progress: 0 });
     }
     setPending(prev => [...prev, ...incoming]);
@@ -263,7 +265,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
         <DialogHeader>
           <DialogTitle>Пакетный анализ документов</DialogTitle>
           <DialogDescription>
-            Загрузите PDF / изображения / ZIP с медицинскими документами (макс. {MAX_FILES} файлов, до {MAX_TOTAL_MB} МБ суммарно).
+            Загрузите PDF / Word / Excel / CSV / текст / изображения / ZIP с медицинскими документами (макс. {MAX_FILES} файлов, до {MAX_TOTAL_MB} МБ суммарно).
             Файлы анализирует Claude Sonnet 4.5 подпакетами по {subbatchSize} штук с финальной сводкой.
           </DialogDescription>
         </DialogHeader>
@@ -288,9 +290,10 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
               onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
             >
               <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-              <p className="text-sm mt-2">Нажмите или перетащите файлы. PDF, изображения, ZIP.</p>
+              <p className="text-sm mt-2">Нажмите или перетащите файлы. PDF, Word, Excel, CSV, текст, изображения, ZIP.</p>
+
               <input ref={fileInputRef} type="file" multiple className="hidden"
-                accept="application/pdf,image/*,.zip,application/zip"
+                accept="application/pdf,image/*,.zip,application/zip,.doc,.docx,.xls,.xlsx,.csv,.txt"
                 onChange={(e) => addFiles(e.target.files)} />
             </div>
             {pending.length > 0 && (

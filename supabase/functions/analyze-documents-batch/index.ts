@@ -38,14 +38,45 @@ const attemptsForModel = (model: string) => unique([model, ...(MODEL_FALLBACKS[m
 
 type FileRef = { path: string; name: string; ext: string };
 
-function mimeFor(ext: string): { kind: "image" | "pdf"; mime: string } | null {
+function mimeFor(ext: string): { kind: "image" | "pdf" | "text"; mime: string } | null {
   const e = ext.toLowerCase();
   if (e === "pdf") return { kind: "pdf", mime: "application/pdf" };
   if (["png", "jpg", "jpeg", "webp", "gif", "heic"].includes(e)) {
     return { kind: "image", mime: e === "jpg" ? "image/jpeg" : `image/${e === "heic" ? "heic" : e}` };
   }
+  if (["doc", "docx", "xls", "xlsx", "csv", "txt"].includes(e)) {
+    return { kind: "text", mime: "text/plain" };
+  }
   return null;
 }
+
+const MAX_TEXT_CHARS = 200_000;
+
+async function extractTextFromFile(ext: string, bytes: Uint8Array): Promise<string> {
+  const e = ext.toLowerCase();
+  if (e === "txt" || e === "csv") {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+  if (e === "docx" || e === "doc") {
+    const mammoth = await import("npm:mammoth@1.8.0");
+    const res = await (mammoth.default ?? mammoth).extractRawText({
+      buffer: bytes.slice().buffer as ArrayBuffer,
+    });
+    return res.value ?? "";
+  }
+  if (e === "xlsx" || e === "xls") {
+    const XLSX = await import("npm:xlsx@0.18.5");
+    const wb = (XLSX.default ?? XLSX).read(bytes, { type: "array" });
+    const parts: string[] = [];
+    for (const sheetName of wb.SheetNames) {
+      const csv = (XLSX.default ?? XLSX).utils.sheet_to_csv(wb.Sheets[sheetName]);
+      parts.push(`--- Лист: ${sheetName} ---\n${csv}`);
+    }
+    return parts.join("\n\n");
+  }
+  return "";
+}
+
 
 function toBase64(bytes: Uint8Array): string {
   // chunked to avoid stack blow-up on large files
@@ -134,12 +165,26 @@ async function fetchSubbatchAnalysisAttempt(
       continue;
     }
     const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (info.kind === "text") {
+      try {
+        const text = (await extractTextFromFile(r.ext, bytes)).trim();
+        if (!text) { per_file_errors.push({ file: r.name, error: "пустой документ" }); continue; }
+        contentBlocks.push({
+          type: "text",
+          text: `--- Содержимое файла: ${r.name} ---\n${text.slice(0, MAX_TEXT_CHARS)}`,
+        });
+      } catch (e) {
+        per_file_errors.push({ file: r.name, error: `не удалось извлечь текст: ${(e as Error).message}` });
+      }
+      continue;
+    }
     const dataUrl = `data:${info.mime};base64,${toBase64(bytes)}`;
     if (info.kind === "image") {
       contentBlocks.push({ type: "image_url", image_url: { url: dataUrl } });
     } else {
       contentBlocks.push({ type: "file", file: { filename: r.name, file_data: dataUrl } });
     }
+
   }
 
   const isVenice = model.startsWith("venice/");
