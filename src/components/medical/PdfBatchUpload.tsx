@@ -110,13 +110,25 @@ export default function PdfBatchUpload({ patientId, consultationCaseId, visitId,
         for (let attempt = 1; attempt <= 3; attempt++) {
           storagePath = `${owner}/${Date.now()}-${crypto.randomUUID()}-${safeFileName(updated[i].file.name)}`;
           try {
-            const { error } = await supabase.storage
-              .from(PARSER_BUCKET)
-              .upload(storagePath, updated[i].file, {
-                contentType: updated[i].file.type || "application/octet-stream",
-                upsert: false,
-              });
+            // Ограничение времени: если канал «висит», не ждём бесконечно,
+            // а падаем в повтор (следующая попытка идёт с новым путём).
+            const UPLOAD_TIMEOUT_MS = 60000;
+            const { error } = await Promise.race([
+              supabase.storage
+                .from(PARSER_BUCKET)
+                .upload(storagePath, updated[i].file, {
+                  contentType: updated[i].file.type || "application/octet-stream",
+                  upsert: false,
+                }),
+              new Promise<never>((_, reject) =>
+                setTimeout(
+                  () => reject(new Error("Превышено время ожидания загрузки (60 с)")),
+                  UPLOAD_TIMEOUT_MS,
+                ),
+              ),
+            ]);
             if (error) throw error;
+
             uploadErr = null;
             break;
           } catch (e: any) {
