@@ -93,6 +93,20 @@
   <body>
     <noscript><div><img src="https://mc.yandex.ru/watch/107724120" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <div id="root"></div>
+    <script>
+      (function () {
+        try {
+          var p = window.location.pathname;
+          if (/^\/(admin|cabinet|auth|patient-portal)(\/|$)/.test(p)) {
+            var r = document.getElementById("root");
+            if (r && r.getAttribute("data-server-rendered") === "true") {
+              r.removeAttribute("data-server-rendered");
+              r.innerHTML = "";
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
