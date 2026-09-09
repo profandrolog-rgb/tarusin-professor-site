@@ -154,8 +154,8 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
       const isZip = /\.zip$/i.test(f.name);
       const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
       const isImg = f.type.startsWith("image/");
-      const isDoc = /\.(doc|docx|xls|xlsx|csv|txt)$/i.test(f.name);
-      if (!isZip && !isPdf && !isImg && !isDoc) { toast.error(`${f.name}: поддерживаются PDF, Word, Excel, CSV, текст, изображения и ZIP`); continue; }
+      const isDoc = /\.(doc|docx|xls|xlsx|csv|txt|odt|ods|odp|rtf)$/i.test(f.name);
+      if (!isZip && !isPdf && !isImg && !isDoc) { toast.error(`${f.name}: поддерживаются PDF, Word, Excel, OpenOffice (odt/ods/odp), RTF, CSV, текст, изображения и ZIP`); continue; }
 
       incoming.push({ file: f, localId: `${Date.now()}-${Math.random()}`, progress: 0 });
     }
@@ -290,10 +290,10 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
               onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
             >
               <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-              <p className="text-sm mt-2">Нажмите или перетащите файлы. PDF, Word, Excel, CSV, текст, изображения, ZIP.</p>
+              <p className="text-sm mt-2">Нажмите или перетащите файлы. PDF, Word, Excel, OpenOffice (odt/ods/odp), RTF, CSV, текст, изображения, ZIP.</p>
 
               <input ref={fileInputRef} type="file" multiple className="hidden"
-                accept="application/pdf,image/*,.zip,application/zip,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                accept="application/pdf,image/*,.zip,application/zip,.doc,.docx,.xls,.xlsx,.csv,.txt,.odt,.ods,.odp,.rtf"
                 onChange={(e) => addFiles(e.target.files)} />
             </div>
             {pending.length > 0 && (

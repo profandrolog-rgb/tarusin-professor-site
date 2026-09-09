@@ -44,7 +44,7 @@ function mimeFor(ext: string): { kind: "image" | "pdf" | "text"; mime: string } 
   if (["png", "jpg", "jpeg", "webp", "gif", "heic"].includes(e)) {
     return { kind: "image", mime: e === "jpg" ? "image/jpeg" : `image/${e === "heic" ? "heic" : e}` };
   }
-  if (["doc", "docx", "xls", "xlsx", "csv", "txt"].includes(e)) {
+  if (["doc", "docx", "xls", "xlsx", "csv", "txt", "odt", "ods", "odp", "rtf"].includes(e)) {
     return { kind: "text", mime: "text/plain" };
   }
   return null;
@@ -71,6 +71,34 @@ async function extractTextFromFile(ext: string, bytes: Uint8Array): Promise<stri
     for (const sheetName of wb.SheetNames) {
       const csv = (XLSX.default ?? XLSX).utils.sheet_to_csv(wb.Sheets[sheetName]);
       parts.push(`--- Лист: ${sheetName} ---\n${csv}`);
+    }
+    return parts.join("\n\n");
+  }
+  if (e === "rtf") {
+    const raw = new TextDecoder("utf-8").decode(bytes);
+    return raw
+      .replace(/\\'([0-9a-fA-F]{2})/g, (_m, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/\\[a-zA-Z]+-?\d* ?/g, " ")
+      .replace(/[{}]/g, "")
+      .replace(/[ \t]{2,}/g, " ");
+  }
+  if (e === "odt" || e === "ods" || e === "odp") {
+    // OpenDocument = ZIP с content.xml; читаем текст из XML.
+    const { unzipSync, strFromU8 } = await import("npm:fflate@0.8.2");
+    const files = unzipSync(bytes);
+    const xmlNames = Object.keys(files).filter((n) => n === "content.xml" || n === "styles.xml");
+    const parts: string[] = [];
+    for (const n of xmlNames) {
+      const xml = strFromU8(files[n]);
+      const textOnly = xml
+        .replace(/<text:tab\/>/g, "\t")
+        .replace(/<text:line-break\/>/g, "\n")
+        .replace(/<\/(text:p|text:h|table:table-row)>/g, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+        .replace(/\n{3,}/g, "\n\n");
+      if (textOnly.trim()) parts.push(textOnly);
     }
     return parts.join("\n\n");
   }
