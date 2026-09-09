@@ -1765,16 +1765,29 @@ export default function Cabinet() {
     // ОДИН РАЗ на диалог. При повторных сообщениях этот блок уже присутствует
     // в истории `messages` — повторная инъекция удваивает контекст, что
     // приводит к переполнению окна модели и «отказу» на второй вопрос.
+    // Пациент, к которому реально привязан открытый чат (а не черновая привязка).
+    const boundPatient = threadPatient;
+    const protocolMarkerFor = (name: string | null | undefined) =>
+      `[Контекст пациента из активного протокола`.concat(name ? ` (` : ``);
     const protocolAlreadyAttached = messages.some(
-      (m) => m.role === "user" && typeof m.content === "string" && m.content.includes("[Контекст пациента из активного протокола"),
+      (m) => m.role === "user" && typeof m.content === "string" &&
+        m.content.includes("[Контекст пациента из активного протокола") &&
+        (!boundPatient.name || m.content.includes(`— ${boundPatient.name}]`)),
     );
     const historyAlreadyAttached = messages.some(
-      (m) => m.role === "user" && typeof m.content === "string" && m.content.includes("[Полная ретроспектива пациента"),
+      (m) => m.role === "user" && typeof m.content === "string" &&
+        m.content.includes("[Полная ретроспектива пациента") &&
+        m.content.includes(`— ${boundPatient.name || boundPatient.id}]`),
     );
 
     if (attachProtocol && !protocolAlreadyAttached) {
       const ctx = getActiveContext();
-      if (ctx) {
+      // Не подмешиваем протокол чужого пациента в чат, привязанный к другому.
+      const mismatched = !!(ctx && boundPatient.id && ctx.patientId && ctx.patientId !== boundPatient.id);
+      if (mismatched) {
+        toast.warning(`Протокол открыт по другому пациенту (${ctx?.patientName}) — не прикрепляю к чату ${boundPatient.name || ""}`);
+      }
+      if (ctx && !mismatched) {
         try {
           const body = await fetchActiveProtocolText(ctx);
           if (body && body.trim()) {
@@ -1788,14 +1801,14 @@ export default function Cabinet() {
     }
 
     // Полная ретроспектива пациента: все прошлые визиты/УЗИ/анализы/заключения + таблицы динамики
-    if (attachHistory && pendingPatient.id && !historyAlreadyAttached) {
+    if (attachHistory && boundPatient.id && !historyAlreadyAttached) {
       try {
         toast.info("Собираю всю историю пациента…", { duration: 2000 });
-        const { text: historyText, counts } = await fetchPatientHistory(pendingPatient.id, pendingPatient.name || undefined);
+        const { text: historyText, counts } = await fetchPatientHistory(boundPatient.id, boundPatient.name || undefined);
         const summary = summarizeCounts(counts);
         setHistoryCountsHint(summary);
         if (historyText && historyText.trim()) {
-          text = `[Полная ретроспектива пациента — ${pendingPatient.name || pendingPatient.id}]\n${summary}\n\n${historyText}\n\n---\n\n${text || "(без дополнительного вопроса — проанализируйте динамику и предложите тактику)"}`;
+          text = `[Полная ретроспектива пациента — ${boundPatient.name || boundPatient.id}]\n${summary}\n\n${historyText}\n\n---\n\n${text || "(без дополнительного вопроса — проанализируйте динамику и предложите тактику)"}`;
           toast.success(`История подтянута: ${summary}`, { duration: 3000 });
         } else {
           toast.warning("По пациенту не найдено исторических записей");
