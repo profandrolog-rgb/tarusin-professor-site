@@ -1767,8 +1767,6 @@ export default function Cabinet() {
     // приводит к переполнению окна модели и «отказу» на второй вопрос.
     // Пациент, к которому реально привязан открытый чат (а не черновая привязка).
     const boundPatient = threadPatient;
-    const protocolMarkerFor = (name: string | null | undefined) =>
-      `[Контекст пациента из активного протокола`.concat(name ? ` (` : ``);
     const protocolAlreadyAttached = messages.some(
       (m) => m.role === "user" && typeof m.content === "string" &&
         m.content.includes("[Контекст пациента из активного протокола") &&
