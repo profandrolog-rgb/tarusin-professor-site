@@ -173,20 +173,34 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
     setPhase("uploading");
 
     // 1. Insert analysis_batches row to get batchId for storage path
-    const { data: batchRow, error: bErr } = await supabase
-      .from("analysis_batches")
-      .insert({
-        user_id: userId,
-        conversation_id: conversationId,
-        task: task.trim(),
-        subbatch_size: subbatchSize,
-        file_paths: [],
-        total_files: 0,
-      })
-      .select("*")
-      .single();
+    // Сетевые обрывы (AbortError / Failed to fetch) — повторяем до 3 попыток.
+    let batchRow: { id: string } | null = null;
+    let bErr: { message?: string } | null = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const res = await supabase
+        .from("analysis_batches")
+        .insert({
+          user_id: userId,
+          conversation_id: conversationId,
+          task: task.trim(),
+          subbatch_size: subbatchSize,
+          file_paths: [],
+          total_files: 0,
+        })
+        .select("*")
+        .single();
+      batchRow = (res.data as unknown as { id: string } | null) ?? null;
+      bErr = res.error ?? null;
+      if (batchRow && !bErr) break;
+      const net = /abort|failed to fetch|network/i.test(bErr?.message || "");
+      if (!net || attempt === 3) break;
+      await new Promise(r => setTimeout(r, attempt * 1000));
+    }
     if (bErr || !batchRow) {
-      toast.error("Не удалось создать пакет: " + (bErr?.message || ""));
+      const net = /abort|failed to fetch|network/i.test(bErr?.message || "");
+      toast.error(net
+        ? "Соединение прервалось при создании пакета. Проверьте интернет и попробуйте снова."
+        : "Не удалось создать пакет: " + (bErr?.message || ""));
       setUploading(false); setPhase("select"); return;
     }
     const batchId = batchRow.id;
