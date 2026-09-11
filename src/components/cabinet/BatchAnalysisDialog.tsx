@@ -118,6 +118,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
         .select("*")
         .eq("user_id", userId)
         .in("status", ["pending", "processing"])
+        .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
         .order("created_at", { ascending: false })
         .limit(1);
       const row = data?.[0] as unknown as BatchRow | undefined;
@@ -412,6 +413,9 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
             <Button onClick={startBatch} disabled={!pending.length || !task.trim()}>
               <Upload className="w-4 h-4 mr-1" /> Запустить анализ ({pending.length})
             </Button>
+          )}
+          {phase !== "select" && !uploading && (
+            <Button variant="outline" onClick={reset}>Новый пакет</Button>
           )}
           {(phase === "uploading" || phase === "analyzing") && (
             <Button disabled><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Обработка…</Button>
