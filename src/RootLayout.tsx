@@ -57,7 +57,9 @@ const RootLayout = () => {
             <AppErrorBoundary>
               <NavigationBar />
               <Suspense fallback={<RouteLoader />}>
-                <Outlet />
+                <ClientOnlyGate>
+                  <Outlet />
+                </ClientOnlyGate>
               </Suspense>
             </AppErrorBoundary>
           </MainLayout>
