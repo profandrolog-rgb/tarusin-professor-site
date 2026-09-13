@@ -7,7 +7,7 @@
     "predev": "npx tsx scripts/generate-sitemap.ts",
     "dev": "vite",
     "build": "vite-react-ssg build",
-    "postbuild": "npx tsx scripts/generate-sitemap.ts && node scripts/strip-private-ssg-shells.mjs",
+    "postbuild": "npx tsx scripts/generate-sitemap.ts",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
