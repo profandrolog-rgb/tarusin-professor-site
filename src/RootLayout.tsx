@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AppErrorBoundary } from "@/components/RouteErrorBoundary";
+import { ClientOnlyGate } from "@/components/ClientOnlyGate";
 import { Loader2 } from "lucide-react";
 import AiActivityDock from "@/components/AiActivityDock";
 import { installAiActivityHooks } from "@/lib/installAiActivityHooks";
