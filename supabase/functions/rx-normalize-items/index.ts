@@ -155,10 +155,11 @@ Deno.serve(async (req) => {
 
     // ---------- Step B: batched AI normalization ----------
     if (pendingIdx.length > 0) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) {
-        console.error("LOVABLE_API_KEY missing — skipping AI normalization");
+      const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+      if (!OPENROUTER_API_KEY) {
+        console.error("OPENROUTER_API_KEY missing — skipping AI normalization");
       } else {
+
         const payload = pendingIdx.map((i) => {
           const it = cleaned[i];
           return {
