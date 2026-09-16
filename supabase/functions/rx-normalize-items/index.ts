@@ -155,10 +155,11 @@ Deno.serve(async (req) => {
 
     // ---------- Step B: batched AI normalization ----------
     if (pendingIdx.length > 0) {
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) {
-        console.error("LOVABLE_API_KEY missing — skipping AI normalization");
+      const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+      if (!OPENROUTER_API_KEY) {
+        console.error("OPENROUTER_API_KEY missing — skipping AI normalization");
       } else {
+
         const payload = pendingIdx.map((i) => {
           const it = cleaned[i];
           return {
@@ -194,9 +195,16 @@ Deno.serve(async (req) => {
 - Если препарат неизвестен/это не лекарство — верни confidence 0 и пустые поля, кроме medication_ru_name.
 - Верни ровно по одному объекту на каждый index из входа.`;
 
-        const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const origin = req.headers.get("origin") || "https://tarusin.pro";
+
+        const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": origin,
+            "X-Title": "Tarusin.pro Rx Normalize",
+          },
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
@@ -207,7 +215,8 @@ Deno.serve(async (req) => {
         });
 
         if (aiRes.status === 429) return json({ error: "Слишком много запросов, попробуйте позже" }, 429);
-        if (aiRes.status === 402) return json({ error: "Необходимо пополнить баланс AI" }, 402);
+        if (aiRes.status === 402) return json({ error: "Необходимо пополнить баланс OpenRouter" }, 402);
+
 
         if (!aiRes.ok) {
           console.error("AI error", aiRes.status, await aiRes.text());
