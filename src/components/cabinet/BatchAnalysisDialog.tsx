@@ -276,7 +276,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!uploading) onOpenChange(v); }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Пакетный анализ документов</DialogTitle>
           <DialogDescription>
@@ -406,7 +406,7 @@ export function BatchAnalysisDialog({ open, onOpenChange, userId, conversationId
                           {e.ts ? new Date(e.ts).toLocaleTimeString("ru-RU", { hour12: false }) : "--:--:--"}
                         </span>
                         <span className="font-medium shrink-0">{stage}</span>
-                        <span className="truncate">
+                        <span className="min-w-0 break-all">
                           {Object.entries(e)
                             .filter(([k]) => k !== "ts" && k !== "stage")
                             .map(([k, v]) => `${k}=${typeof v === "string" ? v : JSON.stringify(v)}`)
