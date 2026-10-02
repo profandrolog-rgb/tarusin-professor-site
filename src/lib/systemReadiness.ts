@@ -4,6 +4,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PRIMARY_BASE } from "@/lib/backendEndpoints";
 
+// Понятное сообщение вместо внутреннего AbortError «замка» сессии.
+const LOCKED_SESSION_HINT =
+  "Сессия заблокирована ожидающим обновлением — закройте вкладки сайта и повторите проверку";
+const humanizeAbort = (msg: string) =>
+  msg && msg.includes("signal is aborted") ? LOCKED_SESSION_HINT : msg;
+
+
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
 export interface ReadinessCheck {

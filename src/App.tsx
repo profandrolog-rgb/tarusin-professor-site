@@ -1,5 +1,7 @@
 import type { RouteRecord } from "vite-react-ssg";
 import { lazy } from "react";
+// Побочный эффект: таймаут запросов обновления токена (см. файл).
+import "./lib/authRequestTimeout";
 import RootLayout from "./RootLayout";
 import LangBoundary from "./components/LangBoundary";
 // Index страница оставлена eager — это LCP/главная.
