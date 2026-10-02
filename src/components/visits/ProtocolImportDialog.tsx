@@ -324,7 +324,7 @@ export function ProtocolImportDialog({
             Импорт протокола из документа
           </DialogTitle>
           <DialogDescription>
-            Word (.docx), PDF, скан или просто вставленный текст. Поля подбираются по смыслу — перед сохранением всё можно проверить и поправить.
+            Word (.docx), OpenOffice (.odt), RTF, PDF, скан или просто вставленный текст. Поля подбираются по смыслу — перед сохранением всё можно проверить и поправить.
           </DialogDescription>
         </DialogHeader>
 
@@ -348,7 +348,7 @@ export function ProtocolImportDialog({
                 ref={fileRef}
                 type="file"
                 className="hidden"
-                accept=".docx,.pdf,.txt,.md,.rtf,image/*"
+                accept=".docx,.odt,.ods,.odp,.ott,.fodt,.pdf,.txt,.md,.rtf,image/*"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
               {file ? (
@@ -361,7 +361,7 @@ export function ProtocolImportDialog({
                 <div className="space-y-1">
                   <Upload className="h-7 w-7 mx-auto text-muted-foreground" />
                   <p className="text-sm font-medium">Перетащите документ или нажмите для выбора</p>
-                  <p className="text-xs text-muted-foreground">.docx, .pdf, фото/скан, .txt — до 20 МБ</p>
+                  <p className="text-xs text-muted-foreground">.docx, .odt (OpenOffice), .rtf, .pdf, фото/скан, .txt — до 20 МБ</p>
                 </div>
               )}
             </div>

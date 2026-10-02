@@ -97,6 +97,66 @@ async function uploadForParsing(file: File): Promise<{ bucket: string; path: str
 
 
 /** Подготовка файла к распознаванию: docx/txt → текст, pdf/картинка → хранилище. */
+/** OpenDocument XML (content.xml) → текст с абзацами и строками таблиц. */
+function odfXmlToText(xml: string): string {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const out: string[] = [];
+  const walk = (node: Node, line: string[]): void => {
+    node.childNodes.forEach((c) => {
+      if (c.nodeType === 3) { line.push(c.textContent || ""); return; }
+      if (c.nodeType !== 1) return;
+      const ln = (c as Element).localName;
+      if (ln === "tab") { line.push("\t"); return; }
+      if (ln === "s") { line.push(" "); return; }
+      if (ln === "line-break") { line.push("\n"); return; }
+      if (ln === "table-row") {
+        const cells: string[] = [];
+        (c as Element).childNodes.forEach((cell) => {
+          if (cell.nodeType === 1 && (cell as Element).localName === "table-cell") {
+            const buf: string[] = []; walk(cell, buf); cells.push(buf.join(" ").replace(/\s+/g, " ").trim());
+          }
+        });
+        if (cells.some(Boolean)) out.push("| " + cells.join(" | ") + " |");
+        return;
+      }
+      if (ln === "p" || ln === "h") {
+        const buf: string[] = []; walk(c, buf);
+        const t = buf.join("");
+        if (t.trim()) out.push(t);
+        return;
+      }
+      walk(c, line);
+    });
+  };
+  const body = doc.getElementsByTagNameNS("*", "body")[0] || doc.documentElement;
+  walk(body, []);
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 200_000);
+}
+
+async function openDocumentToText(file: File): Promise<string> {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const entry = zip.file("content.xml");
+  if (!entry) throw new Error("Файл OpenOffice повреждён (нет content.xml)");
+  return odfXmlToText(await entry.async("string"));
+}
+
+/** Простое извлечение текста из RTF (с поддержкой \'hh в cp1251 и \uN). */
+function rtfToText(rtf: string): string {
+  if (!rtf.startsWith("{\\rtf")) return rtf.trim();
+  const dec = new TextDecoder("windows-1251");
+  let s = rtf
+    .replace(/\{\\\*[^{}]*(\{[^{}]*\}[^{}]*)*\}/g, "")
+    .replace(/\{\\(fonttbl|colortbl|stylesheet|info)[\s\S]*?\}\s*\}/g, "")
+    .replace(/\\u(-?\d+)\??/g, (_, n) => String.fromCharCode((+n + 65536) % 65536))
+    .replace(/\\'([0-9a-f]{2})/gi, (_, h) => dec.decode(new Uint8Array([parseInt(h, 16)])))
+    .replace(/\\(par|line|row)\b ?/g, "\n")
+    .replace(/\\(tab|cell)\b ?/g, "\t")
+    .replace(/\\[a-z]+-?\d* ?/gi, "")
+    .replace(/[{}]/g, "");
+  return s.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export async function extractProtocolSource(file: File): Promise<ExtractedSource> {
   if (file.size > MAX_FILE_BYTES) throw new Error("Файл больше 20 МБ");
   const name = file.name.toLowerCase();
@@ -108,9 +168,24 @@ export async function extractProtocolSource(file: File): Promise<ExtractedSource
     return { text, fileName: file.name, kind: "docx" };
   }
   if (name.endsWith(".doc")) {
-    throw new Error("Старый формат .doc не поддерживается — сохраните файл как .docx или PDF");
+    throw new Error("Старый формат .doc не поддерживается — сохраните файл как .docx, .odt или PDF");
   }
-  if (name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".rtf") || mime.startsWith("text/")) {
+  if (/\.(odt|ods|odp|odg|ott)$/.test(name) || mime.includes("opendocument")) {
+    const text = await openDocumentToText(file);
+    if (!text) throw new Error("В документе OpenOffice не найден текст");
+    return { text, fileName: file.name, kind: "text" };
+  }
+  if (/\.(fodt|fods|fodp)$/.test(name)) {
+    const text = odfXmlToText(await file.text());
+    if (!text) throw new Error("В документе OpenOffice не найден текст");
+    return { text, fileName: file.name, kind: "text" };
+  }
+  if (name.endsWith(".rtf") || mime.includes("rtf")) {
+    const text = rtfToText(await file.text());
+    if (!text) throw new Error("Файл пустой");
+    return { text, fileName: file.name, kind: "text" };
+  }
+  if (name.endsWith(".txt") || name.endsWith(".md") || mime.startsWith("text/")) {
     const text = (await file.text()).trim();
     if (!text) throw new Error("Файл пустой");
     return { text, fileName: file.name, kind: "text" };
