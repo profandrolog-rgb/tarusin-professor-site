@@ -62,7 +62,7 @@ export async function runSystemReadinessCheck(): Promise<ReadinessReport> {
   checks.push(
     await timed("Вход в систему (сессия)", async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(humanizeAbort(error.message));
       let session = data.session;
       const expiresSoon = !session?.expires_at || session.expires_at * 1000 < Date.now() + 60_000;
       if (expiresSoon) {
@@ -82,7 +82,7 @@ export async function runSystemReadinessCheck(): Promise<ReadinessReport> {
       const { error, count } = await supabase
         .from("patient_visits")
         .select("id", { count: "exact", head: true });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(humanizeAbort(error.message));
       return typeof count === "number" ? `${count} записей` : undefined;
     }),
   );
@@ -93,7 +93,7 @@ export async function runSystemReadinessCheck(): Promise<ReadinessReport> {
       const { error } = await supabase.storage
         .from("patient-lab-docs")
         .upload(path, new Blob(["ok"], { type: "text/plain" }), { upsert: true });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(humanizeAbort(error.message));
       await supabase.storage.from("patient-lab-docs").remove([path]);
     }),
   );
