@@ -176,9 +176,29 @@ function rtfToText(rtf: string): string {
   return s.replace(/\n{3,}/g, "\n\n").trim();
 }
 
+/** Определение формата по содержимому (если расширение потерялось или искажено). */
+async function sniffFormat(file: File): Promise<"docx" | "odf" | "doc" | "pdf" | "rtf" | null> {
+  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const hex = Array.from(head).map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (hex.startsWith("25504446")) return "pdf"; // %PDF
+  if (hex.startsWith("7b5c727466")) return "rtf"; // {\rtf
+  if (hex.startsWith("d0cf11e0a1b11ae1")) return "doc"; // OLE2
+  if (hex.startsWith("504b0304")) {
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = await JSZip.loadAsync(await file.arrayBuffer());
+      if (zip.file("word/document.xml")) return "docx";
+      if (zip.file("content.xml")) return "odf";
+    } catch { /* не ZIP-документ */ }
+  }
+  return null;
+}
+
 export async function extractProtocolSource(file: File): Promise<ExtractedSource> {
   if (file.size > MAX_FILE_BYTES) throw new Error("Файл больше 20 МБ");
-  const name = file.name.toLowerCase();
+  const sniffed = await sniffFormat(file);
+  const extByContent = { docx: ".docx", odf: ".odt", doc: ".doc", pdf: ".pdf", rtf: ".rtf" } as const;
+  const name = (sniffed ? `file${extByContent[sniffed]}` : file.name.trim()).toLowerCase();
   const mime = file.type || "";
 
   if (name.endsWith(".docx")) {
@@ -221,7 +241,7 @@ export async function extractProtocolSource(file: File): Promise<ExtractedSource
     // Хранилище недоступно — отправляем файл в теле запроса (как раньше).
     return { fileData: await readAsDataUrl(file), fileName: file.name, kind };
   }
-  throw new Error("Поддерживаются Word (.docx), PDF, изображения и текстовые файлы");
+  throw new Error("Поддерживаются Word (.doc, .docx), OpenOffice (.odt, .ods, .odp), RTF, PDF, изображения и текстовые файлы");
 }
 
 /** Распознавание протокола: текст и/или файл → структурированные поля. */
