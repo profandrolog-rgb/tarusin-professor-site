@@ -121,9 +121,8 @@ function odfXmlToText(xml: string): string {
       }
       if (ln === "p" || ln === "h") {
         const buf: string[] = []; walk(c, buf);
-        if (line === out) return;
         const t = buf.join("");
-        if (t.trim()) (line.length || line !== (null as any) ? out.push(t) : null);
+        if (t.trim()) out.push(t);
         return;
       }
       walk(c, line);

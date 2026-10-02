@@ -74,7 +74,7 @@ export default function AdminVisitImport() {
                 type="file"
                 multiple
                 className="hidden"
-                accept=".docx,.pdf,.txt,.md,.rtf,image/*"
+                accept=".docx,.odt,.ods,.odp,.ott,.fodt,.pdf,.txt,.md,.rtf,image/*"
                 onChange={(e) => addFiles(e.target.files)}
               />
               <Upload className="h-7 w-7 mx-auto text-muted-foreground" />
