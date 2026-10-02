@@ -4,6 +4,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { PRIMARY_BASE } from "@/lib/backendEndpoints";
 
+// Понятное сообщение вместо внутреннего AbortError «замка» сессии.
+const LOCKED_SESSION_HINT =
+  "Сессия заблокирована ожидающим обновлением — закройте вкладки сайта и повторите проверку";
+const humanizeAbort = (msg: string) =>
+  msg && msg.includes("signal is aborted") ? LOCKED_SESSION_HINT : msg;
+
+
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 
 export interface ReadinessCheck {
@@ -62,7 +69,7 @@ export async function runSystemReadinessCheck(): Promise<ReadinessReport> {
   checks.push(
     await timed("Вход в систему (сессия)", async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(humanizeAbort(error.message));
       let session = data.session;
       const expiresSoon = !session?.expires_at || session.expires_at * 1000 < Date.now() + 60_000;
       if (expiresSoon) {
@@ -82,7 +89,7 @@ export async function runSystemReadinessCheck(): Promise<ReadinessReport> {
       const { error, count } = await supabase
         .from("patient_visits")
         .select("id", { count: "exact", head: true });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(humanizeAbort(error.message));
       return typeof count === "number" ? `${count} записей` : undefined;
     }),
   );
@@ -93,7 +100,7 @@ export async function runSystemReadinessCheck(): Promise<ReadinessReport> {
       const { error } = await supabase.storage
         .from("patient-lab-docs")
         .upload(path, new Blob(["ok"], { type: "text/plain" }), { upsert: true });
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(humanizeAbort(error.message));
       await supabase.storage.from("patient-lab-docs").remove([path]);
     }),
   );
