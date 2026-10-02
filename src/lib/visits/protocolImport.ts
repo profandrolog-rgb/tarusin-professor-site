@@ -151,7 +151,7 @@ async function docToText(file: File): Promise<string> {
     .map((s) => s.replace(/[\x00-\x1f]+/g, " ").replace(/\s+/g, " ").trim())
     .filter((s) => s.length >= 4 && /[\p{L}]{2,}/u.test(s))
     .join("\n");
-  if (!/[\p{Cyrillic}]{4,}/u.test(text)) {
+  if (!/[А-Яа-яЁё]{4,}/.test(text)) {
     // Однобайтовая кодировка (cp1251) — пробуем как латиницу/кириллицу 8-бит.
     const u8 = new TextDecoder("windows-1251").decode(buf);
     const r8 = u8.match(/[\p{L}\p{N}][\p{L}\p{N} .,;:!?()«»"“”'’%№+\-–—/\\@#&*=<>[\]{}]{2,}/gu) || [];
