@@ -186,8 +186,10 @@ export async function extractProtocolSource(file: File): Promise<ExtractedSource
     if (!text) throw new Error("В документе Word не найден текст");
     return { text, fileName: file.name, kind: "docx" };
   }
-  if (name.endsWith(".doc")) {
-    throw new Error("Старый формат .doc не поддерживается — сохраните файл как .docx, .odt или PDF");
+  if (name.endsWith(".doc") || mime === "application/msword") {
+    const text = await docToText(file);
+    if (!text) throw new Error("В документе Word (.doc) не найден текст — сохраните файл как .docx или PDF");
+    return { text, fileName: file.name, kind: "text" };
   }
   if (/\.(odt|ods|odp|odg|ott)$/.test(name) || mime.includes("opendocument")) {
     const text = await openDocumentToText(file);
