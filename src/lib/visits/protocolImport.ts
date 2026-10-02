@@ -141,6 +141,25 @@ async function openDocumentToText(file: File): Promise<string> {
   return odfXmlToText(await entry.async("string"));
 }
 
+/** Извлечение текста из старого бинарного .doc (OLE2): читаем печатные фрагменты UTF-16LE. */
+async function docToText(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const u16 = new TextDecoder("utf-16le").decode(buf);
+  // Печатные последовательности (буквы/цифры/пунктуация), от 4 символов.
+  const runs = u16.match(/[\p{L}\p{N}][\p{L}\p{N} .,;:!?()«»"“”'’%№+\-–—/\\@#&*=<>[\]{}\n\r\t]{2,}/gu) || [];
+  let text = runs
+    .map((s) => s.replace(/[\x00-\x1f]+/g, " ").replace(/\s+/g, " ").trim())
+    .filter((s) => s.length >= 4 && /[\p{L}]{2,}/u.test(s))
+    .join("\n");
+  if (!/[А-Яа-яЁё]{4,}/.test(text)) {
+    // Однобайтовая кодировка (cp1251) — пробуем как латиницу/кириллицу 8-бит.
+    const u8 = new TextDecoder("windows-1251").decode(buf);
+    const r8 = u8.match(/[\p{L}\p{N}][\p{L}\p{N} .,;:!?()«»"“”'’%№+\-–—/\\@#&*=<>[\]{}]{2,}/gu) || [];
+    text = r8.map((s) => s.trim()).filter((s) => s.length >= 4 && /[\p{L}]{2,}/u.test(s)).join("\n");
+  }
+  return text.replace(/\n{3,}/g, "\n\n").trim().slice(0, 200_000);
+}
+
 /** Простое извлечение текста из RTF (с поддержкой \'hh в cp1251 и \uN). */
 function rtfToText(rtf: string): string {
   if (!rtf.startsWith("{\\rtf")) return rtf.trim();
@@ -167,8 +186,10 @@ export async function extractProtocolSource(file: File): Promise<ExtractedSource
     if (!text) throw new Error("В документе Word не найден текст");
     return { text, fileName: file.name, kind: "docx" };
   }
-  if (name.endsWith(".doc")) {
-    throw new Error("Старый формат .doc не поддерживается — сохраните файл как .docx, .odt или PDF");
+  if (name.endsWith(".doc") || mime === "application/msword") {
+    const text = await docToText(file);
+    if (!text) throw new Error("В документе Word (.doc) не найден текст — сохраните файл как .docx или PDF");
+    return { text, fileName: file.name, kind: "text" };
   }
   if (/\.(odt|ods|odp|odg|ott)$/.test(name) || mime.includes("opendocument")) {
     const text = await openDocumentToText(file);

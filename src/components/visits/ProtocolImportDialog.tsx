@@ -348,7 +348,7 @@ export function ProtocolImportDialog({
                 ref={fileRef}
                 type="file"
                 className="hidden"
-                accept=".docx,.odt,.ods,.odp,.ott,.fodt,.pdf,.txt,.md,.rtf,image/*"
+                accept=".doc,.docx,.odt,.ods,.odp,.ott,.fodt,.pdf,.txt,.md,.rtf,image/*"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
               />
               {file ? (
