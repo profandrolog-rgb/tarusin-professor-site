@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { formatSexualConstitution } from "./sections/SexualConstitution";
@@ -916,12 +917,11 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
 
   if (visit.next_visit_date) {
     rows.push(
-      <Field
-        key="nv"
-        label="Контрольный осмотр"
-        value={format(new Date(visit.next_visit_date), "dd MMMM yyyy", { locale: ru }) + " г."}
-      />
+      <Field key="nv" label="Контрольный осмотр" value={formatNextVisitDate(visit.next_visit_date, d)} />
     );
+    if (d.next_visit_duration) {
+      rows.push(<Field key="nvd" label="Рекомендованное время приёма" value={d.next_visit_duration} />);
+    }
   }
 
   return (
@@ -1173,9 +1173,9 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           <div className="sub">Протокол медицинского осмотра</div>
           <div className="main">{(() => {
             const base = def?.title || visit.protocol_type;
-            if (visit.protocol_type === "postop_day7") {
+            if (visit.protocol_type === "postop_day7" || visit.protocol_type === "postop_day3") {
               const n = (visit.protocol_data as any)?.day_number;
-              if (typeof n === "number" && n > 0 && n !== 7) {
+              if (typeof n === "number" && n >= 0) {
                 return `Контрольный осмотр на ${n} сутки после операции`;
               }
             }
