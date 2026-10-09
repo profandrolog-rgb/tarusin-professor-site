@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 
 interface VisitForPrint {
@@ -60,9 +61,9 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
       <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "13pt", marginBottom: "4mm" }}>
         {(() => {
           const base = def?.title || visit.protocol_type;
-          if (visit.protocol_type === "postop_day7") {
+          if (visit.protocol_type === "postop_day7" || visit.protocol_type === "postop_day3") {
             const n = (visit.protocol_data as any)?.day_number;
-            if (typeof n === "number" && n > 0 && n !== 7) {
+            if (typeof n === "number" && n >= 0) {
               return `Контрольный осмотр на ${n} сутки после операции`;
             }
           }
@@ -256,10 +257,10 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
       )}
 
       {visit.next_visit_date && (
-        <Row
-          label="Контрольный осмотр"
-          value={format(new Date(visit.next_visit_date), "dd MMMM yyyy", { locale: ru }) + " г."}
-        />
+        <>
+          <Row label="Контрольный осмотр" value={formatNextVisitDate(visit.next_visit_date, data)} />
+          <Row label="Рекомендованное время приёма" value={data.next_visit_duration} />
+        </>
       )}
 
       <div style={{ marginTop: "15mm", display: "flex", justifyContent: "space-between", fontSize: "10pt" }}>
