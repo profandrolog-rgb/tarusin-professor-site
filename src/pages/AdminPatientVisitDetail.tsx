@@ -34,7 +34,7 @@ import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssi
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
-
+import { NEXT_VISIT_DURATIONS, nextVisitMissing } from "@/lib/visits/nextVisit";
 import type { ParsedProtocol } from "@/lib/visits/protocolImport";
 
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
@@ -567,7 +567,14 @@ export default function AdminPatientVisitDetail() {
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const missing = nextVisitMissing(visit.next_visit_date, visit.protocol_data);
+                    if (missing.length) {
+                      toast({ title: "Заполните перед просмотром", description: "Не указано: " + missing.join(", "), variant: "destructive" });
+                      return;
+                    }
+                    setPreviewOpen(true);
+                  }}>
                     <Eye className="h-4 w-4 md:mr-1" />
                     <span className="hidden md:inline">Предпросмотр</span>
                   </Button>
@@ -670,10 +677,46 @@ export default function AdminPatientVisitDetail() {
                 <Label>Дата визита</Label>
                 <Input type="date" value={visit.visit_date} onChange={(e) => update({ visit_date: e.target.value })} />
               </div>
-              <div className="space-y-1">
-                <Label>Контрольный осмотр</Label>
-                <Input type="date" value={visit.next_visit_date || ""} onChange={(e) => update({ next_visit_date: e.target.value || null })} />
-              </div>
+              {(() => {
+                const pd: any = isProtocolRecord(visit.protocol_data) ? visit.protocol_data : {};
+                const setPd = (p: Record<string, any>) => update({ protocol_data: { ...pd, ...p } });
+                const range = !!pd.next_visit_range;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label>Контрольный осмотр *</Label>
+                      <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={range}
+                          onChange={(e) => setPd({ next_visit_range: e.target.checked, ...(e.target.checked ? {} : { next_visit_date_to: null }) })}
+                        />
+                        Интервал дат
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input type="date" value={visit.next_visit_date || ""} onChange={(e) => update({ next_visit_date: e.target.value || null })} />
+                      {range && (
+                        <>
+                          <span className="text-muted-foreground">—</span>
+                          <Input type="date" value={pd.next_visit_date_to || ""} min={visit.next_visit_date || undefined} onChange={(e) => setPd({ next_visit_date_to: e.target.value || null })} />
+                        </>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Рекомендованное время приёма *</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                        value={pd.next_visit_duration || ""}
+                        onChange={(e) => setPd({ next_visit_duration: e.target.value || null })}
+                      >
+                        <option value="">— выберите —</option>
+                        {NEXT_VISIT_DURATIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="space-y-1">
                 <Label>Код МКБ-10</Label>
                 <IcdAutocomplete
