@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
+import { calcPostOpDay } from "@/lib/visits/nextVisit";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PostOpDay3Data } from "@/lib/visits/protocolSchemas";
@@ -11,9 +13,38 @@ interface Props {
   onChange: (patch: Partial<PostOpDay3Data>) => void;
   patientId?: string | null;
   currentVisitId?: string | null;
+  visitDate?: string | null;
 }
 
-export function PostOpDay3Form({ data, onChange, patientId, currentVisitId }: Props) {
+export function PostOpDay3Form({ data, onChange, patientId, currentVisitId, visitDate }: Props) {
+  // Сутки считаются от даты операции (день операции = 0), пока врач не ввёл число вручную.
+  const autoDay = calcPostOpDay(visitDate, data.operation_date);
+  useEffect(() => {
+    if (!data.day_number_manual && autoDay !== undefined && autoDay !== data.day_number) {
+      onChange({ day_number: autoDay });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDay, data.day_number_manual]);
+  const dayField = (
+    <div className="space-y-1">
+      <Label>Срок осмотра (сутки)</Label>
+      <Input
+        type="number"
+        min={0}
+        max={365}
+        value={data.day_number ?? ""}
+        onChange={(e) => {
+          const v = parseInt(e.target.value, 10);
+          onChange({ day_number: Number.isFinite(v) && v >= 0 ? v : undefined, day_number_manual: true });
+        }}
+      />
+      {data.day_number_manual && autoDay !== undefined && autoDay !== data.day_number && (
+        <button type="button" className="text-xs text-primary underline" onClick={() => onChange({ day_number: autoDay, day_number_manual: false })}>
+          Пересчитать от даты операции ({autoDay})
+        </button>
+      )}
+    </div>
+  );
   return (
     <div className="space-y-4">
       <ClinicalHistorySection
@@ -24,7 +55,7 @@ export function PostOpDay3Form({ data, onChange, patientId, currentVisitId }: Pr
         patientId={patientId}
         currentVisitId={currentVisitId}
       />
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1">
           <Label>Название операции</Label>
           <Input value={data.operation_name || ""} onChange={(e) => onChange({ operation_name: e.target.value })} />
@@ -33,6 +64,7 @@ export function PostOpDay3Form({ data, onChange, patientId, currentVisitId }: Pr
           <Label>Дата операции</Label>
           <Input type="date" value={data.operation_date || ""} onChange={(e) => onChange({ operation_date: e.target.value })} />
         </div>
+        {dayField}
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1">
