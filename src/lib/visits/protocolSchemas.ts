@@ -34,12 +34,15 @@ export interface PostOpDay3Data {
   complaints?: string;
   uzi_express?: string;
   recommendations?: string;
+  day_number?: number;
+  day_number_manual?: boolean;
 }
 
 export interface PostOpDay7Data {
   operation_name?: string;
   operation_date?: string;
   day_number?: number;
+  day_number_manual?: boolean;
   general_status?: string;
   wound_status?: string;
   sutures_removed?: boolean;
@@ -189,7 +192,7 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     pain: "Умеренный болевой синдром в зоне операции.",
     temperature: "36,6 °C",
     recommendations:
-      "Перевязки 1 раз в день. Туалет послеоперационной раны. Ограничение физических нагрузок. Контрольный осмотр на 7-е сутки.\nКонтрольный осмотр: ____________ 2026 г.\nКонтрольное УЗИ исследование — по назначению профессора.",
+      "Перевязки 1 раз в день. Туалет послеоперационной раны. Ограничение физических нагрузок. Контрольный осмотр на 7-е сутки.\nКонтрольное УЗИ исследование — по назначению профессора.",
   },
   postop_day7: {
     day_number: 7,
@@ -198,7 +201,7 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     sutures_removed: true,
     healing: "Заживление первичным натяжением.",
     recommendations:
-      "Ограничение физических нагрузок 1 месяц. При появлении жалоб — обращение к лечащему врачу.\nКонтрольный осмотр: ____________ 2026 г.\nКонтрольное УЗИ исследование — по назначению профессора.",
+      "Ограничение физических нагрузок 1 месяц. При появлении жалоб — обращение к лечащему врачу.\nКонтрольное УЗИ исследование — по назначению профессора.",
   },
   primary_short: {
     complaints: "",

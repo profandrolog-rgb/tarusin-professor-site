@@ -34,11 +34,12 @@ interface Props {
   patientId?: string | null;
   patientName?: string | null;
   currentVisitId?: string | null;
+  visitDate?: string | null;
 }
 
 import { MetabolicMapChecklistDialog } from "@/components/metabolic/MetabolicMapChecklistDialog";
 
-export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, patientName, currentVisitId }: Props) {
+export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, patientName, currentVisitId, visitDate }: Props) {
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
   const patchCycle = (p: Partial<CycleContextData>) => patch(p);
   const includeConsent = (data?.include_consent as boolean) === true;
@@ -50,9 +51,9 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
       case "ultrashort":
         return <UltrashortForm data={data || {}} onChange={patch} {...historyProps} />;
       case "postop_day3":
-        return <PostOpDay3Form data={data || {}} onChange={patch} {...historyProps} />;
+        return <PostOpDay3Form data={data || {}} onChange={patch} visitDate={visitDate} {...historyProps} />;
       case "postop_day7":
-        return <PostOpDay7Form data={data || {}} onChange={patch} {...historyProps} />;
+        return <PostOpDay7Form data={data || {}} onChange={patch} visitDate={visitDate} {...historyProps} />;
       case "primary_short":
         return <PrimaryShortForm data={data || {}} onChange={patch} birthDate={birthDate} {...historyProps} />;
       case "repeat_with_labs":

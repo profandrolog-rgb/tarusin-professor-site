@@ -743,6 +743,7 @@ export default function AdminPatientVisitDetail() {
                 patientId={visit.patient_id}
                 patientName={visit.patient?.full_name}
                 currentVisitId={visit.id}
+                visitDate={visit.visit_date}
               />
 
             </CardContent>
