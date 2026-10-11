@@ -33,6 +33,7 @@ import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+import { PatientHistoryPanel } from "@/components/visits/PatientHistoryPanel";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
 import { NEXT_VISIT_DURATIONS, nextVisitMissing } from "@/lib/visits/nextVisit";
 import type { ParsedProtocol } from "@/lib/visits/protocolImport";
@@ -85,6 +86,47 @@ export default function AdminPatientVisitDetail() {
   const [importOpen, setImportOpen] = useState(false);
 
   const [labsRefresh, setLabsRefresh] = useState(0);
+  const [previewLabs, setPreviewLabs] = useState<{ labs: any[]; dynamics: any[] }>({ labs: [], dynamics: [] });
+
+  // Для окна «Предпросмотр»: та же таблица анализов и динамика, что на странице печати
+  useEffect(() => {
+    if (!previewOpen || !id) return;
+    (async () => {
+      const { data: v } = await supabase.from("patient_visits").select("id, patient_id").eq("id", id).maybeSingle();
+      if (!v?.id) return;
+      const { data: labRows } = await supabase
+        .from("lab_results")
+        .select("test_name, value, unit, reference_min, reference_max, test_date")
+        .eq("visit_id", v.id)
+        .order("test_name");
+      const labs = labRows || [];
+      let dynamics: any[] = [];
+      if (v.patient_id && labs.length) {
+        const { data: prevRows } = await supabase
+          .from("lab_results")
+          .select("test_name, value, unit, reference_min, reference_max, test_date, visit_id")
+          .eq("patient_id", v.patient_id)
+          .neq("visit_id", v.id)
+          .order("test_date", { ascending: false });
+        const prevByName = new Map<string, any>();
+        for (const r of prevRows || []) if (!prevByName.has(r.test_name)) prevByName.set(r.test_name, r);
+        dynamics = labs.filter((c) => prevByName.has(c.test_name)).map((c) => {
+          const p = prevByName.get(c.test_name);
+          return {
+            test_name: c.test_name,
+            unit: c.unit ?? p.unit ?? null,
+            prev_value: p.value ?? null,
+            prev_date: p.test_date ?? null,
+            curr_value: c.value ?? null,
+            curr_date: c.test_date ?? null,
+            reference_min: c.reference_min ?? p.reference_min ?? null,
+            reference_max: c.reference_max ?? p.reference_max ?? null,
+          };
+        });
+      }
+      setPreviewLabs({ labs, dynamics });
+    })();
+  }, [previewOpen, id]);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -731,6 +773,19 @@ export default function AdminPatientVisitDetail() {
             </CardContent>
           </Card>
 
+          <PatientHistoryPanel
+            patientId={visit.patient_id}
+            currentVisitId={visit.id}
+            anamnesis={isProtocolRecord(visit.protocol_data) ? ((visit.protocol_data as any).anamnesis || "") : ""}
+            onAnamnesis={(text) => {
+              const base = isProtocolRecord(visit.protocol_data) ? { ...(visit.protocol_data as any) } : {};
+              base.anamnesis = text;
+              update({ protocol_data: base as Json });
+            }}
+            onImport={() => setImportOpen(true)}
+            refreshToken={labsRefresh}
+          />
+
           <Card>
             <CardHeader><CardTitle className="text-base">Содержание протокола</CardTitle></CardHeader>
             <CardContent>
@@ -749,6 +804,7 @@ export default function AdminPatientVisitDetail() {
             </CardContent>
           </Card>
 
+          <div id="visit-labs-upload" className="scroll-mt-24">
           <PdfBatchUpload
             patientId={visit.patient_id}
             visitId={visit.id}
@@ -759,6 +815,7 @@ export default function AdminPatientVisitDetail() {
               update({ protocol_data: base as Json });
             }}
           />
+          </div>
           <VisitRecognizedLabs
             visitId={visit.id}
             refreshToken={labsRefresh}
@@ -917,7 +974,7 @@ export default function AdminPatientVisitDetail() {
               </div>
               <div className="preview-container flex-1 min-h-0">
                 <div id="protocol-print-content" className="preview-wrapper">
-                  <ProtocolPrintLayout visit={visit as any} />
+                  <ProtocolPrintLayout visit={{ ...(visit as any), recognizedLabs: previewLabs.labs, labsDynamics: previewLabs.dynamics } as any} />
                 </div>
               </div>
             </div>
