@@ -36,7 +36,7 @@ import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
 import { PatientHistoryPanel } from "@/components/visits/PatientHistoryPanel";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
 import { NEXT_VISIT_DURATIONS, nextVisitMissing } from "@/lib/visits/nextVisit";
-import type { ParsedProtocol } from "@/lib/visits/protocolImport";
+import { flattenProtocolData, type ParsedProtocol } from "@/lib/visits/protocolImport";
 
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
 
@@ -221,34 +221,36 @@ export default function AdminPatientVisitDetail() {
   const update = (patch: Partial<Visit>) => setVisit((v) => (v ? { ...v, ...patch } : v));
 
   /** Заполнение открытой формы данными, распознанными из документа старого формата. */
+  // Старый документ — это история наблюдения: поля сегодняшнего визита не трогаем,
+  // всё распознанное дописываем отдельным абзацем в «Анамнез».
   const applyImportedProtocol = (parsed: ParsedProtocol) => {
+    const fmt = (d?: string) => {
+      if (!d) return "";
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d);
+      return m ? `${m[3]}.${m[2]}.${m[1]}` : d;
+    };
+    const lines: string[] = [];
+    const head = `Из документа${parsed.visit_date ? ` от ${fmt(parsed.visit_date)}` : ""}:`;
+    if (parsed.diagnosis) lines.push(`Диагноз: ${parsed.diagnosis}${parsed.icd_code ? ` (${parsed.icd_code})` : ""}.`);
+    for (const f of flattenProtocolData((parsed.protocol_data || {}) as Record<string, any>)) {
+      if (/^(_|day_number|next_visit)/.test(f.path)) continue;
+      lines.push(`${f.label}: ${f.value}`);
+    }
+    if (parsed.unmapped?.trim()) lines.push(parsed.unmapped.trim());
+    if (!lines.length) {
+      toast({ title: "В документе нет данных для анамнеза", variant: "destructive" });
+      return;
+    }
+    const block = `${head}\n${lines.join("\n")}`;
     setVisit((v) => {
       if (!v) return v;
       const base: Record<string, any> = isProtocolRecord(v.protocol_data)
         ? { ...(v.protocol_data as any) } : {};
-      const incoming = (parsed.protocol_data || {}) as Record<string, any>;
-      for (const [key, value] of Object.entries(incoming)) {
-        if (value === null || value === undefined || value === "") continue;
-        if (
-          typeof value === "object" && !Array.isArray(value) &&
-          typeof base[key] === "object" && base[key] !== null && !Array.isArray(base[key])
-        ) {
-          base[key] = { ...base[key], ...value };
-        } else {
-          base[key] = value;
-        }
-      }
-      if (parsed.unmapped?.trim()) base._imported_unmapped = parsed.unmapped.trim();
-      return {
-        ...v,
-        protocol_data: base as Json,
-        visit_date: parsed.visit_date || v.visit_date,
-        diagnosis: parsed.diagnosis || v.diagnosis,
-        icd_code: parsed.icd_code || v.icd_code,
-        next_visit_date: parsed.next_visit_date || v.next_visit_date,
-      };
+      const prev = typeof base.anamnesis === "string" ? base.anamnesis.trim() : "";
+      base.anamnesis = prev ? `${prev}\n\n${block}` : block;
+      return { ...v, protocol_data: base as Json };
     });
-    toast({ title: "Форма заполнена из документа", description: "Проверьте поля и сохраните протокол." });
+    toast({ title: "Старый документ добавлен в анамнез", description: "Поля сегодняшнего осмотра не изменены. Проверьте и сохраните." });
   };
 
 
