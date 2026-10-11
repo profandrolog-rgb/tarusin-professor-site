@@ -437,7 +437,7 @@ export function ProtocolImportDialog({
               <Select value={target} onValueChange={(v) => setTarget(v as Target)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {currentVisitId && <SelectItem value="current">В открытый протокол (заполнить форму)</SelectItem>}
+                  {currentVisitId && <SelectItem value="current">В анамнез открытого протокола (как история)</SelectItem>}
                   <SelectItem value="new">Новый визит</SelectItem>
                   <SelectItem value="existing">Дописать в существующий визит</SelectItem>
                 </SelectContent>
@@ -555,7 +555,7 @@ export function ProtocolImportDialog({
               <Button variant="outline" onClick={() => setStep("source")}>Назад</Button>
               <Button onClick={handleSave} disabled={saving}>
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {target === "current" ? "Заполнить форму" : target === "existing" ? "Дописать в визит" : "Создать визит"}
+                {target === "current" ? "Добавить в анамнез" : target === "existing" ? "Дописать в визит" : "Создать визит"}
               </Button>
             </DialogFooter>
           </div>
