@@ -238,11 +238,12 @@ export default function AdminPatientVisitDetail() {
     for (const f of flattenProtocolData((parsed.protocol_data || {}) as Record<string, any>)) {
       if (/^(_|day_number|next_visit)/.test(f.path)) continue;
       if (isTemplateStub(f.value)) continue;
+      if (/^sexual_formula\./.test(f.path) && f.value.trim() === "0") continue;
       const parts = f.path.split(".");
       const top = fieldLabel(parts[0]);
       if (parts.length === 1) { lines.push(`${top}: ${f.value}`); continue; }
       const sub = fieldLabel(parts[parts.length - 1]);
-      const item = `${sub.charAt(0).toLowerCase()}${sub.slice(1)} — ${f.value}`;
+      const item = /^[А-ЯЁ][а-яё]/.test(sub) ? `${sub.charAt(0).toLowerCase()}${sub.slice(1)} — ${f.value}` : `${sub} ${f.value}`;
       if (!groups.has(top)) groups.set(top, []);
       groups.get(top)!.push(item);
     }
