@@ -233,10 +233,20 @@ export default function AdminPatientVisitDetail() {
     const lines: string[] = [];
     const head = `Из документа${parsed.visit_date ? ` от ${fmt(parsed.visit_date)}` : ""}:`;
     if (parsed.diagnosis) lines.push(`Диагноз: ${parsed.diagnosis}${parsed.icd_code ? ` (${parsed.icd_code})` : ""}.`);
+    // Группируем по разделам: «Соматический статус: общее состояние — …; живот — …»
+    const groups = new Map<string, string[]>();
     for (const f of flattenProtocolData((parsed.protocol_data || {}) as Record<string, any>)) {
       if (/^(_|day_number|next_visit)/.test(f.path)) continue;
-      lines.push(`${f.label}: ${f.value}`);
+      if (isTemplateStub(f.value)) continue;
+      const parts = f.path.split(".");
+      const top = fieldLabel(parts[0]);
+      if (parts.length === 1) { lines.push(`${top}: ${f.value}`); continue; }
+      const sub = fieldLabel(parts[parts.length - 1]);
+      const item = `${sub.charAt(0).toLowerCase()}${sub.slice(1)} — ${f.value}`;
+      if (!groups.has(top)) groups.set(top, []);
+      groups.get(top)!.push(item);
     }
+    for (const [top, items] of groups) lines.push(`${top}: ${items.join("; ")}.`);
     if (parsed.unmapped?.trim()) lines.push(parsed.unmapped.trim());
     if (!lines.length) {
       toast({ title: "В документе нет данных для анамнеза", variant: "destructive" });
