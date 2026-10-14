@@ -36,7 +36,8 @@ import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
 import { PatientHistoryPanel } from "@/components/visits/PatientHistoryPanel";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
 import { NEXT_VISIT_DURATIONS, nextVisitMissing } from "@/lib/visits/nextVisit";
-import { flattenProtocolData, type ParsedProtocol } from "@/lib/visits/protocolImport";
+import { flattenProtocolData, fieldLabel, type ParsedProtocol } from "@/lib/visits/protocolImport";
+import { handleFormatHotkey, isTemplateStub } from "@/lib/visits/richText";
 
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
 
@@ -790,7 +791,7 @@ export default function AdminPatientVisitDetail() {
 
           <Card>
             <CardHeader><CardTitle className="text-base">Содержание протокола</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent onKeyDown={handleFormatHotkey}>
               <ProtocolForm
                 type={visit.protocol_type}
                 data={visit.protocol_data}
