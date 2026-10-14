@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
+import { RichText, hasAnyValue, isTemplateStub } from "@/lib/visits/richText";
 
 interface VisitForPrint {
   visit_date: string;
@@ -26,7 +27,7 @@ function Row({ label, value }: { label: string; value?: string | null | boolean 
   const display = typeof value === "boolean" ? "Да" : value;
   return (
     <div style={{ marginBottom: "2mm" }}>
-      <strong>{label}:</strong> <span style={{ whiteSpace: "pre-wrap" }}>{display}</span>
+      <strong>{label}:</strong> <span style={{ whiteSpace: "pre-wrap" }}><RichText text={String(display)} /></span>
     </div>
   );
 }
@@ -131,7 +132,7 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
         <>
           <Row label="Жалобы" value={data.complaints} />
           <Row label="Анамнез" value={data.anamnesis} />
-          {data.somatic && (
+          {data.somatic && hasAnyValue(data.somatic) && (
             <>
               <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Соматический статус</div>
               {(data.somatic.height_cm || data.somatic.weight_kg || data.somatic.bp || data.somatic.pulse) && (
@@ -153,13 +154,13 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
               <Row label="Живот" value={data.somatic.abdomen} />
             </>
           )}
-          {data.sexual_formula && (
+          {data.sexual_formula && (["P","Ax","F","L","G"].some((k) => Number(data.sexual_formula[k]) > 0) || (data.sexual_formula.formula_note && !isTemplateStub(data.sexual_formula.formula_note))) && (
             <Row
               label="Половая формула"
-              value={`P${data.sexual_formula.P ?? 0} Ax${data.sexual_formula.Ax ?? 0} F${data.sexual_formula.F ?? 0} L${data.sexual_formula.L ?? 0} G${data.sexual_formula.G ?? 0}${data.sexual_formula.formula_note ? ` — ${data.sexual_formula.formula_note}` : ""}`}
+              value={`P${data.sexual_formula.P ?? 0} Ax${data.sexual_formula.Ax ?? 0} F${data.sexual_formula.F ?? 0} L${data.sexual_formula.L ?? 0} G${data.sexual_formula.G ?? 0}${data.sexual_formula.formula_note && !isTemplateStub(data.sexual_formula.formula_note) ? ` — ${data.sexual_formula.formula_note}` : ""}`}
             />
           )}
-          {data.local_status && (
+          {data.local_status && hasAnyValue(data.local_status) && (
             <>
               <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Локальный статус</div>
               <Row label="Наружные половые органы" value={data.local_status.external_genitalia} />
@@ -192,7 +193,7 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
           <Row label="Биохимия" value={data.biochem} />
           <Row label="Гормоны" value={data.hormones} />
           <Row label="Другие исследования" value={data.other_labs} />
-          {data.local_status && (
+          {data.local_status && hasAnyValue(data.local_status) && (
             <>
               <div style={{ marginTop: "2mm", fontWeight: "bold" }}>Локальный статус</div>
               <Row label="Наружные половые органы" value={data.local_status.external_genitalia} />

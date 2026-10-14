@@ -36,7 +36,8 @@ import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
 import { PatientHistoryPanel } from "@/components/visits/PatientHistoryPanel";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
 import { NEXT_VISIT_DURATIONS, nextVisitMissing } from "@/lib/visits/nextVisit";
-import { flattenProtocolData, type ParsedProtocol } from "@/lib/visits/protocolImport";
+import { flattenProtocolData, fieldLabel, type ParsedProtocol } from "@/lib/visits/protocolImport";
+import { handleFormatHotkey, isTemplateStub } from "@/lib/visits/richText";
 
 import VisitRecognizedLabs from "@/components/medical/VisitRecognizedLabs";
 
@@ -232,10 +233,21 @@ export default function AdminPatientVisitDetail() {
     const lines: string[] = [];
     const head = `Из документа${parsed.visit_date ? ` от ${fmt(parsed.visit_date)}` : ""}:`;
     if (parsed.diagnosis) lines.push(`Диагноз: ${parsed.diagnosis}${parsed.icd_code ? ` (${parsed.icd_code})` : ""}.`);
+    // Группируем по разделам: «Соматический статус: общее состояние — …; живот — …»
+    const groups = new Map<string, string[]>();
     for (const f of flattenProtocolData((parsed.protocol_data || {}) as Record<string, any>)) {
       if (/^(_|day_number|next_visit)/.test(f.path)) continue;
-      lines.push(`${f.label}: ${f.value}`);
+      if (isTemplateStub(f.value)) continue;
+      if (/^sexual_formula\./.test(f.path) && f.value.trim() === "0") continue;
+      const parts = f.path.split(".");
+      const top = fieldLabel(parts[0]);
+      if (parts.length === 1) { lines.push(`${top}: ${f.value}`); continue; }
+      const sub = fieldLabel(parts[parts.length - 1]);
+      const item = /^[А-ЯЁ][а-яё]/.test(sub) ? `${sub.charAt(0).toLowerCase()}${sub.slice(1)} — ${f.value}` : `${sub} ${f.value}`;
+      if (!groups.has(top)) groups.set(top, []);
+      groups.get(top)!.push(item);
     }
+    for (const [top, items] of groups) lines.push(`${top}: ${items.join("; ")}.`);
     if (parsed.unmapped?.trim()) lines.push(parsed.unmapped.trim());
     if (!lines.length) {
       toast({ title: "В документе нет данных для анамнеза", variant: "destructive" });
@@ -790,7 +802,7 @@ export default function AdminPatientVisitDetail() {
 
           <Card>
             <CardHeader><CardTitle className="text-base">Содержание протокола</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent onKeyDown={handleFormatHotkey}>
               <ProtocolForm
                 type={visit.protocol_type}
                 data={visit.protocol_data}
