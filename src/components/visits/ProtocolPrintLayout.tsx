@@ -3,6 +3,7 @@ import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { formatSexualConstitution } from "./sections/SexualConstitution";
+import { RichText, hasAnyValue, isTemplateStub } from "@/lib/visits/richText";
 
 interface RecognizedLab {
   test_name: string;
@@ -50,7 +51,7 @@ function Field({ label, value }: { label: string; value?: string | number | null
   return (
     <tr>
       <td className="ppl-label">{label}</td>
-      <td className="ppl-value">{display}</td>
+      <td className="ppl-value"><RichText text={display} /></td>
     </tr>
   );
 }
@@ -351,7 +352,7 @@ function pushPsychBlocks(rows: React.ReactNode[], d: any) {
 }
 
 function pushSomatic(rows: React.ReactNode[], d: any) {
-  if (!d.somatic) return;
+  if (!d.somatic || !hasAnyValue(d.somatic)) return;
   const anth = [
     d.somatic.height_cm ? `рост ${d.somatic.height_cm} см` : null,
     d.somatic.weight_kg ? `вес ${d.somatic.weight_kg} кг` : null,
@@ -372,21 +373,24 @@ function pushSomatic(rows: React.ReactNode[], d: any) {
 }
 
 function pushSexual(rows: React.ReactNode[], d: any) {
-  if (d.sexual_formula) {
-    const f = d.sexual_formula;
+  const f0 = d.sexual_formula;
+  const noteOk = f0?.formula_note && !isTemplateStub(f0.formula_note);
+  if (f0 && (["P","Ax","F","L","G"].some((k) => Number(f0[k]) > 0) || noteOk)) {
+    const f = { ...f0, formula_note: noteOk ? f0.formula_note : "" };
     rows.push(
       <Field key="sf" label="Половая формула"
         value={`P${f.P ?? 0} Ax${f.Ax ?? 0} F${f.F ?? 0} L${f.L ?? 0} G${f.G ?? 0}${f.formula_note ? ` — ${f.formula_note}` : ""}`}
       />
     );
   }
-  if (d.sexual_formula_text) rows.push(<Field key="sft" label="Половая формула (текст)" value={d.sexual_formula_text} />);
-  const sc = formatSexualConstitution(d.sexual_constitution);
-  if (sc) rows.push(<Field key="sc" label="Половая конституция" value={sc} />);
+  if (d.sexual_formula_text && !isTemplateStub(d.sexual_formula_text)) rows.push(<Field key="sft" label="Половая формула (текст)" value={d.sexual_formula_text} />);
+  const scRaw = d.sexual_constitution;
+  const sc = scRaw && typeof scRaw === "object" && scRaw.no_interview ? "" : formatSexualConstitution(scRaw);
+  if (sc && !isTemplateStub(sc)) rows.push(<Field key="sc" label="Половая конституция" value={sc} />);
 }
 
 function pushLocalStatus(rows: React.ReactNode[], d: any) {
-  if (!d.local_status) return;
+  if (!d.local_status || !hasAnyValue(d.local_status)) return;
   const ls = d.local_status;
   rows.push(
     <Section key="ls" title="Локальный статус">
