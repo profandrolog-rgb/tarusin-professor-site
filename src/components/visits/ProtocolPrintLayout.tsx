@@ -4,6 +4,7 @@ import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { formatSexualConstitution } from "./sections/SexualConstitution";
 import { RichText, hasAnyValue, isTemplateStub } from "@/lib/visits/richText";
+import { calcDiary, fmtMin, isNight, type DiaryRow } from "@/lib/visits/voidingDiary";
 import { GIRL_LOCAL_FIELDS, GIRL_PELVIS_FIELDS } from "@/lib/visits/girlExam";
 
 interface RecognizedLab {
@@ -433,7 +434,7 @@ const KNOWN_KEYS = new Set([
   "somatic","sexual_formula","sexual_formula_text","sexual_constitution","local_status",
   "ortho_status","neuro_status","neuro_status_full","psych_status","psych_status_full","psych_conclusion",
   "proj_person","proj_htp","proj_family","proj_animal","proj_free",
-  "uzi","assignments","fields",
+  "uzi","assignments","fields","voiding_diary","no_uzi","gyn_exam","girl_local","pelvis_uzi",
   "cbc","urinalysis","biochem","hormones","other_labs",
   "operation_name","operation_date","temperature","general_status","wound_status","dressing","pain","healing","sutures_removed",
   // online_consult
@@ -868,6 +869,39 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     );
   }
 
+
+  // Дневник ритма микций — перед заключением
+  const vd = d.voiding_diary;
+  if (vd?.enabled) {
+    const st = calcDiary(vd);
+    const days: DiaryRow[][] = (vd.days || []).map((r: DiaryRow[]) => (r || []).filter((x) => x && (x.time || x.drank || x.voided)));
+    const block = (
+      <Section key="vd" title="Дневник ритма микций">
+        {days.map((r, i) => r.length ? (
+          <tr key={`vd-${i}`} className="ppl-long">
+            <td className="ppl-label">Сутки {i + 1}</td>
+            <td className="ppl-value">
+              <table className="ppl-side"><tbody>
+                <tr><td><strong>Время</strong></td><td><strong>Выпито, мл</strong></td><td><strong>Выделено, мл</strong></td></tr>
+                {r.map((x, j) => <tr key={j}><td>{x.time || ""}{isNight(x) ? " (ночь)" : ""}</td><td>{x.drank || ""}</td><td>{x.voided || ""}</td></tr>)}
+              </tbody></table>
+            </td>
+          </tr>
+        ) : null)}
+        <Field label="Число микций" value={`${st.voidsPerDay.join(" / ")} (всего ${st.voidsTotal})`} />
+        <Field label="Интервал между микциями" value={`мин ${fmtMin(st.voidMin)}, макс ${fmtMin(st.voidMax)}`} />
+        <Field label="Интервал между приёмами жидкости" value={`мин ${fmtMin(st.drinkMin)}, макс ${fmtMin(st.drinkMax)}`} />
+        <Field label="Средняя порция за сутки" value={`${st.avgPortionPerDay.map((v) => v ?? "—").join(" / ")} мл`} />
+        <Field label="Средняя порция за 3 суток" value={st.avgPortion3 !== null ? `${st.avgPortion3} мл` : null} />
+        <Field label="Моча днём / ночью" value={`${st.dayVolume} / ${st.nightVolume} мл`} />
+        <Field label="Выпито / выделено всего" value={`${st.drankTotal} / ${st.voidedTotal} мл`} />
+        <Field label="Суточный диурез" value={st.dailyDiuresis !== null ? `${st.dailyDiuresis} мл` : null} />
+        <Field label="Заключение по ритму микций" value={vd.conclusion} />
+      </Section>
+    );
+    const zi = rows.findIndex((r: any) => r && r.key === "z");
+    if (zi >= 0) rows.splice(zi, 0, block); else rows.push(block);
+  }
 
   // Catch-all: render any extra scalar fields in protocol_data not yet output
   pushUnknownScalars(rows, d);

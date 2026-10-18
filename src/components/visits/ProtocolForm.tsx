@@ -11,6 +11,7 @@ import { GenericFieldsForm } from "./forms/GenericFieldsForm";
 import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import { PeptideProgramForm } from "./forms/PeptideProgramForm";
 import { GirlUrologyForm } from "./forms/GirlUrologyForm";
+import { VoidingDiarySection } from "./sections/VoidingDiarySection";
 import {
   SmartTemplatesProvider,
   FillStandardButton,
@@ -156,6 +157,9 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
             />
           </>
         ) : null}
+
+        {/* Дневник ритма микций — во всех протоколах, по желанию */}
+        <VoidingDiarySection data={data?.voiding_diary} onChange={(v) => patch({ voiding_diary: v })} />
 
         {/* Универсальное поле «Дополнительно» — во всех протоколах */}
         <AdditionalNotesField
