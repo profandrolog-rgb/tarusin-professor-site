@@ -48,8 +48,9 @@ function calcAge(birth: string, ref: Date) {
 function Field({ label, value }: { label: string; value?: string | number | null | boolean }) {
   if (value === undefined || value === null || value === "" || value === false) return null;
   const display = typeof value === "boolean" ? "Да" : String(value);
+  // Длинный текст (анамнез и т.п.) разрешаем разрывать между страницами
   return (
-    <tr>
+    <tr className={display.length > 400 ? "ppl-long" : undefined}>
       <td className="ppl-label">{label}</td>
       <td className="ppl-value"><RichText text={display} /></td>
     </tr>
@@ -1093,6 +1094,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         .ppl-table tr,
         .ppl-footer,
         .ppl-consent { break-inside: avoid; page-break-inside: avoid; }
+        .ppl-table tr.ppl-long { break-inside: auto; page-break-inside: auto; }
 
         @media print {
           .no-print { display: none !important; }
@@ -1119,6 +1121,7 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
           .ppl-section, .ppl-subsection { page-break-after: avoid; break-after: avoid; }
           .ppl-table { width: 100% !important; table-layout: fixed; }
           .ppl-table tr { page-break-inside: avoid; break-inside: avoid; }
+          .ppl-table tr.ppl-long { page-break-inside: auto; break-inside: auto; }
           .ppl-footer, .ppl-consent { page-break-inside: avoid; break-inside: avoid; break-before: avoid; }
           .ppl-extra-sheet { break-before: page; page-break-before: always; }
           .ppl-extra-sheet .ppl-consent { break-before: auto; page-break-before: auto; }
