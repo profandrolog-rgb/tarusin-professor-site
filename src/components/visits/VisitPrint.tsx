@@ -207,7 +207,7 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
         </>
       )}
 
-      {(visit.protocol_type === "uzi_reproductive" || visit.protocol_type === "dynamic_with_uzi" || visit.protocol_type === "repeat_with_uzi") && data.uzi && (
+      {(visit.protocol_type === "uzi_reproductive" || ((visit.protocol_type === "dynamic_with_uzi" || visit.protocol_type === "repeat_with_uzi") && data.no_uzi !== true)) && data.uzi && (
         <>
           {visit.protocol_type !== "uzi_reproductive" && data.complaints && <Row label="Жалобы" value={data.complaints} />}
           {data.indications && <Row label="Показания" value={data.indications} />}

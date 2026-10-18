@@ -6,6 +6,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UziReproductiveOnlyData, UziUrinaryOnlyData, UziBladderData, DynamicWithUziData, RepeatWithUziData } from "@/lib/visits/protocolSchemas";
 
 import { UziReproductiveSection } from "../sections/UziReproductive";
+
+/** Блок УЗИ с переключателем «Без УЗИ (только консультация)». */
+function NoUziCard({ data, onChange }: { data: any; onChange: (p: any) => void }) {
+  const noUzi = data?.no_uzi === true;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+        <CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox checked={noUzi} onCheckedChange={(v) => onChange({ no_uzi: v === true })} />
+          Без УЗИ (только консультация)
+        </label>
+      </CardHeader>
+      {noUzi ? (
+        <CardContent className="text-xs text-muted-foreground">УЗИ не проводилось — раздел не печатается.</CardContent>
+      ) : (
+        <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
+      )}
+    </Card>
+  );
+}
 import { UziUrinarySection } from "../sections/UziUrinary";
 import { LocalStatusAndrologySection } from "../sections/LocalStatusAndrology";
 import { OrthoStatusSection } from "../sections/OrthoStatus";
@@ -146,9 +167,8 @@ export function DynamicWithUziForm({ data, onChange, birthDate, patientId, curre
       <NeuroStatusSection value={(data as any).neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v } as any)} />
       <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
 
-      <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
-        <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
-      </Card>
+      <NoUziCard data={data} onChange={onChange} />
+
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1"><SmartFieldLabel fieldKey="conclusion">Заключение</SmartFieldLabel>
           <Textarea rows={4} value={data.conclusion || ""} onChange={(e) => onChange({ conclusion: e.target.value })} />
@@ -176,9 +196,8 @@ export function RepeatWithUziForm({ data, onChange, birthDate, patientId, curren
       <NeuroStatusSection value={(data as any).neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v } as any)} />
       <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
 
-      <Card><CardHeader><CardTitle className="text-sm">УЗИ репродуктивной системы</CardTitle></CardHeader>
-        <CardContent><UziReproductiveSection data={data.uzi || {}} onChange={(p) => onChange({ uzi: { ...(data.uzi || {}), ...p } })} /></CardContent>
-      </Card>
+      <NoUziCard data={data} onChange={onChange} />
+
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1"><SmartFieldLabel fieldKey="conclusion">Заключение / динамика</SmartFieldLabel>
           <Textarea rows={4} value={data.conclusion || ""} onChange={(e) => onChange({ conclusion: e.target.value })} />

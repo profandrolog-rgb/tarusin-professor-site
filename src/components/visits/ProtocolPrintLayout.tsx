@@ -642,7 +642,7 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
       pushLocalStatus(rows, d);
       pushClinical(rows, d);
     }
-    if (d.uzi && isPlainObject(d.uzi)) {
+    if (d.uzi && isPlainObject(d.uzi) && !(t !== "uzi_reproductive" && d.no_uzi === true)) {
       rows.push(<UziRenderer key="uzi" uzi={d.uzi}
         title={t === "uzi_reproductive" ? "УЗИ органов репродуктивной системы" : "УЗИ органов мошонки"} />);
     }
