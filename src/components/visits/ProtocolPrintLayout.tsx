@@ -4,6 +4,7 @@ import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
 import { formatSexualConstitution } from "./sections/SexualConstitution";
 import { RichText, hasAnyValue, isTemplateStub } from "@/lib/visits/richText";
+import { GIRL_LOCAL_FIELDS, GIRL_PELVIS_FIELDS } from "@/lib/visits/girlExam";
 
 interface RecognizedLab {
   test_name: string;
@@ -684,6 +685,22 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     }
   }
 
+
+  if (t === "girl_urology") {
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="g" label="Результаты осмотра гинеколога" value={d.gyn_exam} />);
+    pushSomatic(rows, d);
+    const gl = d.girl_local || {};
+    if (GIRL_LOCAL_FIELDS.some(([k]) => gl[k])) {
+      rows.push(<Section key="gl" title="Локальный осмотр">{GIRL_LOCAL_FIELDS.map(([k, l]) => <Field key={k} label={l} value={gl[k]} />)}</Section>);
+    }
+    const pu = d.pelvis_uzi || {};
+    if (d.no_uzi !== true && GIRL_PELVIS_FIELDS.some(([k]) => pu[k])) {
+      rows.push(<Section key="pu" title="УЗИ органов малого таза">{GIRL_PELVIS_FIELDS.map(([k, l]) => <Field key={k} label={l} value={pu[k]} />)}</Section>);
+    }
+    rows.push(<Field key="z" label="Заключение" value={d.conclusion} />);
+  }
 
   if (t === "online_consult") {
     // Сведения о консультации

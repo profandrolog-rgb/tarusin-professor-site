@@ -1,3 +1,4 @@
+import { GIRL_LOCAL_FIELDS, GIRL_PELVIS_FIELDS, defaultsOf } from "./girlExam";
 import { ProtocolType } from "./protocolTypes";
 import { DEFAULT_SOMATIC, SomaticStatusData } from "@/components/visits/sections/SomaticStatus";
 import { DEFAULT_LOCAL_STATUS, LocalStatusData } from "@/components/visits/sections/LocalStatusAndrology";
@@ -265,4 +266,10 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     recommendations: "Контрольный осмотр / повторная консультация по согласованию.",
   } as OnlineConsultData,
   peptide_program: DEFAULT_PEPTIDE_PROGRAM,
+  girl_urology: {
+    somatic: DEFAULT_SOMATIC,
+    girl_local: defaultsOf(GIRL_LOCAL_FIELDS),
+    pelvis_uzi: defaultsOf(GIRL_PELVIS_FIELDS),
+    recommendations: "Динамическое наблюдение.",
+  },
 };

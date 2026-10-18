@@ -10,7 +10,8 @@ export type ProtocolType =
   | "postop_day7"
   | "repeat_with_uzi"
   | "online_consult"
-  | "peptide_program";
+  | "peptide_program"
+  | "girl_urology";
 
 
 export interface ProtocolDef {
@@ -39,6 +40,7 @@ export const PROTOCOL_LABELS: Record<string, string> = {
   ultrashort: "Краткий осмотр",
   online_consult: "ONLINE консультация",
   peptide_program: "Пептидная программа",
+  girl_urology: "Урологический осмотр (девочки)",
   dynamic: "Динамический осмотр",
   unknown: "Осмотр",
 };
@@ -62,6 +64,7 @@ const PROTOCOL_SHORT: Record<string, string> = {
   ultrashort: "Краткий",
   online_consult: "ONLINE",
   peptide_program: "Пептидная программа",
+  girl_urology: "Осмотр девочки",
   dynamic: "Динамический",
   unknown: "Осмотр",
 };
@@ -69,6 +72,7 @@ const PROTOCOL_SHORT: Record<string, string> = {
 export const PROTOCOL_TYPES: ProtocolDef[] = [
   "ultrashort",
   "primary_short",
+  "girl_urology",
   "online_consult",
   "dynamic_with_uzi",
   "repeat_with_labs",
