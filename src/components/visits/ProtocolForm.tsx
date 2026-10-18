@@ -10,6 +10,7 @@ import { UziReproductiveForm, UziUrinaryForm, UziBladderForm, DynamicWithUziForm
 import { GenericFieldsForm } from "./forms/GenericFieldsForm";
 import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import { PeptideProgramForm } from "./forms/PeptideProgramForm";
+import { GirlUrologyForm } from "./forms/GirlUrologyForm";
 import {
   SmartTemplatesProvider,
   FillStandardButton,
@@ -73,6 +74,8 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
         return <OnlineConsultForm data={data || {}} onChange={patch} {...historyProps} />;
       case "peptide_program":
         return <PeptideProgramForm data={data || {}} onChange={patch} {...historyProps} />;
+      case "girl_urology":
+        return <GirlUrologyForm data={data || {}} onChange={patch} {...historyProps} />;
 
 
       default:
@@ -132,7 +135,7 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
         ) : null}
         {renderForm()}
         {/* Универсальный опциональный блок УЗДГ органов МПС */}
-        {!["uzi_reproductive", "uzi_urinary", "uzi_bladder", "dynamic_with_uzi", "repeat_with_uzi"].includes(type) ? (
+        {!["uzi_reproductive", "uzi_urinary", "uzi_bladder", "dynamic_with_uzi", "repeat_with_uzi", "girl_urology"].includes(type) ? (
           <ExtraUziMpsSection
             data={data?.extra_uzi_mps}
             onChange={(p) => patch({ extra_uzi_mps: { ...(data?.extra_uzi_mps || {}), ...p } })}
