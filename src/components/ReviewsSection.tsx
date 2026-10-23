@@ -23,6 +23,26 @@ interface Review {
 
 const reviews: Review[] = [
   {
+    name: "Отзыв родителя",
+    nameEn: "Parent's review",
+    date: "20 мая 2026",
+    dateEn: "May 20, 2026",
+    rating: 5,
+    text: "Долго мы искали доктора, и были на приемах у других врачей, но что-то не нравилось. У ребенка был крипторхизм. Доктор Тарусин Д. И. сделал операцию, еще и заметил, что у ребенка была паховая грыжа, мы о ней знали, но нам сказали раз все прошло, значит все хорошо. Но доктор увидел это и все сразу прооперировал. Оказывается это могло бы привести к серьезным проблемам. Большая благодарность доктору Тарусину Д. И., все объяснит, покажет, нарисует. Не запугивает. Теперь у нас плановые осмотры, наблюдаемся. Мы очень рады, что нашли своего доктора! Спасибо доктору.",
+    textEn: "We searched for a doctor for a long time and visited other physicians, but something always felt wrong. Our child had cryptorchidism. Dr. Tarusin performed the surgery and also noticed an inguinal hernia — we knew about it, but had been told that since it had resolved, everything was fine. The doctor saw it and operated on it right away. It turns out it could have led to serious problems. Many thanks to Dr. Tarusin — he explains, shows and draws everything. He doesn't frighten you. Now we have scheduled check-ups. We are very glad we found our doctor! Thank you, doctor.",
+    source: "ПроДокторов",
+  },
+  {
+    name: "Мама пациента",
+    nameEn: "Patient's mother",
+    date: "6 мая 2026",
+    dateEn: "May 6, 2026",
+    rating: 5,
+    text: "Дмитрий Игоревич, безмерно благодарна за все (операция прошла легко, быстро, шов незаметный, за все рекомендации по другому лечению). Когда везла ребёнка на операцию, не сомневалась и не волновалась, знала, что ребёнок в надёжных руках! Вы замечательный человек и великолепный хирург! Спасибо Вам!",
+    textEn: "Dmitry Igorevich, I am endlessly grateful for everything (the surgery went easily and quickly, the scar is invisible, and thank you for all the recommendations on other treatment). When I was taking my child to surgery, I had no doubts and no worries — I knew my child was in safe hands! You are a wonderful person and a brilliant surgeon! Thank you!",
+    source: "ПроДокторов",
+  },
+  {
     name: "Мама 12-летнего сына",
     nameEn: "Mother of a 12-year-old son",
     date: "Март 2026",
