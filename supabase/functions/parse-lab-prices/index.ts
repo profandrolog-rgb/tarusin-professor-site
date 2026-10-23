@@ -100,6 +100,11 @@ async function parseOne(supabase: any, apiKey: string, row: any) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Paused by owner: no external requests or price updates while disabled.
+  return new Response(JSON.stringify({ disabled: true, processed: 0, error: "Парсинг цен отключён" }), {
+    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;

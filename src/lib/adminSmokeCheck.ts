@@ -48,7 +48,7 @@ const probes: Probe[] = [
     route: "/admin/system-settings",
     label: "Настройки системы",
     run: async () => {
-      const { error } = await supabase.functions.invoke("timeweb-deploy-status", { method: "GET" });
+      const { error } = await supabase.from("price_parse_log").select("id", { count: "exact", head: true }).limit(1);
       if (error) throw error;
     },
   },

@@ -60,9 +60,9 @@ const AdminSystemSettings = () => {
   const [exporting, setExporting] = useState(false);
   const [lastExportAt, setLastExportAt] = useState<string | null>(null);
   const [counts, setCounts] = useState<{ patients: number | null; visits: number | null }>({ patients: null, visits: null });
-  const [deploying, setDeploying] = useState(false);
   const [deployStatus, setDeployStatus] = useState<{ app: any; deploys: any[] } | null>(null);
   const [deployStatusLoading, setDeployStatusLoading] = useState(false);
+  const [deployStatusError, setDeployStatusError] = useState<string | null>(null);
   const [githubHead, setGithubHead] = useState<{ sha: string; message: string; date: string } | null>(null);
   const [smokeRunning, setSmokeRunning] = useState(false);
   const [smokeResults, setSmokeResults] = useState<SmokeResult[] | null>(null);
@@ -119,11 +119,24 @@ const AdminSystemSettings = () => {
   const loadDeployStatus = async () => {
     setDeployStatusLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("timeweb-deploy-status", { method: "GET" });
-      if (error) throw error;
-      setDeployStatus(data as any);
+      const response = await fetch("https://api.github.com/repos/profandrolog-rgb/tarusin-professor-site/actions/workflows/deploy-minsk.yml/runs?per_page=5", {
+        headers: { Accept: "application/vnd.github+json" },
+      });
+      if (!response.ok) throw new Error(`GitHub: HTTP ${response.status}`);
+      const data = await response.json();
+      const deploys = (data.workflow_runs || []).map((run: any) => ({
+        id: run.id,
+        status: run.status === "completed" ? (run.conclusion === "success" ? "deployed" : run.conclusion || "unknown") : run.status,
+        started_at: run.run_started_at || run.created_at,
+        commit_sha: run.head_sha,
+        commit_msg: run.head_commit?.message || run.display_title || "",
+        html_url: run.html_url,
+      }));
+      setDeployStatus({ app: null, deploys });
+      setDeployStatusError(null);
     } catch (e: any) {
       console.error("deploy status error", e);
+      setDeployStatusError(e?.message || "Нет связи с GitHub Actions");
     } finally {
       setDeployStatusLoading(false);
     }
@@ -134,7 +147,7 @@ const AdminSystemSettings = () => {
       loadDeployStatus();
       loadGithubHead();
       fetchLatestSmokeChecks(10).then(setSmokeHistory).catch(() => {});
-      const t = setInterval(loadDeployStatus, 10000);
+      const t = setInterval(loadDeployStatus, 60000);
       return () => clearInterval(t);
     }
   }, [user, isAdmin]);
@@ -157,21 +170,6 @@ const AdminSystemSettings = () => {
     runSmoke({ deployId, deployStatus: status, silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deployStatus]);
-
-  const triggerTimewebDeploy = async () => {
-    setDeploying(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("trigger-timeweb-deploy", { method: "POST" });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      toast.success("🚀 Деплой на Timeweb запущен");
-      setTimeout(loadDeployStatus, 2000);
-    } catch (e: any) {
-      toast.error(`Не удалось запустить деплой: ${e?.message || "ошибка"}`);
-    } finally {
-      setDeploying(false);
-    }
-  };
 
   useEffect(() => {
     setLastExportAt(localStorage.getItem(LAST_EXPORT_KEY));
@@ -241,24 +239,6 @@ const AdminSystemSettings = () => {
     if (user && isAdmin) loadStatus();
   }, [user, isAdmin]);
 
-  const runNow = async (kind: "drug" | "lab") => {
-    setRunning(kind);
-    try {
-      const fn = kind === "drug" ? "parse-drug-prices" : "parse-lab-prices";
-      const { data, error } = await supabase.functions.invoke(fn, {
-        body: { batch: true, limit: 3 },
-      });
-      if (error) throw error;
-      const processed = (data as any)?.processed ?? 0;
-      toast.success(`Тестовый прогон завершён: обработано ${processed}`);
-      await loadStatus();
-    } catch (e: any) {
-      toast.error(`Ошибка: ${e?.message || "не удалось запустить"}`);
-    } finally {
-      setRunning(null);
-    }
-  };
-
   if (loading || !user || !isAdmin) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -270,7 +250,7 @@ const AdminSystemSettings = () => {
   const StatusBadge = ({ ok }: { ok: boolean | null }) => (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${ok ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
       {ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-      {ok ? "Работает" : "Требует настройки"}
+      Парсинг отключён
     </span>
   );
 
@@ -294,7 +274,7 @@ const AdminSystemSettings = () => {
                 const lastS = String(last?.status || "").toLowerCase();
                 const OK = ["deployed", "success", "active", "online", "running", "ok", "ready"];
                 const PROGRESS = ["deploy", "deploying", "building", "build", "pending", "queued", "in_progress", "processing"];
-                const FAIL = ["failed", "failure", "stopped", "error", "cancelled", "canceled", "timeout"];
+                const FAIL = ["failed", "failure", "stopped", "error", "cancelled", "canceled", "timeout", "timed_out", "action_required", "startup_failure"];
 
                 let color = "bg-gray-400";
                 let label = "нет данных";
@@ -303,13 +283,13 @@ const AdminSystemSettings = () => {
 
                 if (!deployStatus) {
                   if (deployStatusLoading) { label = "загрузка…"; }
-                  else { label = "нет связи с Timeweb"; }
+                  else { label = "нет связи с GitHub Actions"; }
                 } else if (PROGRESS.includes(lastS) || PROGRESS.includes(appS)) {
                   color = "bg-amber-400"; glow = "#f59e0b"; label = "деплой идёт"; pulse = "animate-pulse";
                 } else if (FAIL.includes(lastS) || FAIL.includes(appS)) {
                   color = "bg-red-500"; glow = "#ef4444"; label = "ошибка — нужен ручной запуск";
                 } else if (OK.includes(lastS) || OK.includes(appS)) {
-                  color = "bg-emerald-500"; glow = "#10b981"; label = "сайт активен";
+                  color = "bg-emerald-500"; glow = "#10b981"; label = "обновление завершено";
                 } else {
                   // данные пришли, но статус неизвестен — показываем сырое значение
                   color = "bg-amber-400"; glow = "#f59e0b";
@@ -325,19 +305,20 @@ const AdminSystemSettings = () => {
                 );
               })()}
 
-              <span>Деплой на Timeweb</span>
+              <span>Обновления сайта · Минск, Беларусь</span>
             </CardTitle>
             <CardDescription>
-              Обычно деплой запускается автоматически после Publish из Lovable. Эта кнопка — на случай,
-              если автодеплой не сработал.
+              GitHub Actions · Deploy to Minsk VPS
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
 
-            <Button onClick={triggerTimewebDeploy} disabled={deploying} className="gap-2">
-              {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-              🚀 Запустить деплой вручную
+            <Button asChild variant="outline" className="gap-2">
+              <a href="https://github.com/profandrolog-rgb/tarusin-professor-site/actions/workflows/deploy-minsk.yml" target="_blank" rel="noreferrer">
+                <Rocket className="w-4 h-4" /> Открыть журнал и ручной запуск <ExternalLink className="w-4 h-4" />
+              </a>
             </Button>
+            {deployStatusError && <p role="alert" className="text-sm text-destructive">{deployStatusError}</p>}
 
             <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -355,9 +336,15 @@ const AdminSystemSettings = () => {
                     const app = deployStatus.app;
                     const last = deployStatus.deploys?.[0];
                     const statusMap: Record<string, { label: string; cls: string }> = {
-                      deployed: { label: "Развёрнуто", cls: "bg-green-100 text-green-700" },
+                      deployed: { label: "Обновление завершено", cls: "bg-green-100 text-green-700" },
                       deploy: { label: "Деплой идёт", cls: "bg-blue-100 text-blue-700" },
                       building: { label: "Сборка", cls: "bg-blue-100 text-blue-700" },
+                      queued: { label: "В очереди", cls: "bg-amber-100 text-amber-700" },
+                      in_progress: { label: "Обновление идёт", cls: "bg-blue-100 text-blue-700" },
+                      failure: { label: "Ошибка", cls: "bg-red-100 text-red-700" },
+                      cancelled: { label: "Отменено", cls: "bg-red-100 text-red-700" },
+                      timed_out: { label: "Время истекло", cls: "bg-red-100 text-red-700" },
+                      skipped: { label: "Пропущено", cls: "bg-gray-100 text-gray-700" },
                       pending: { label: "В очереди", cls: "bg-amber-100 text-amber-700" },
                       stopped: { label: "Остановлен", cls: "bg-red-100 text-red-700" },
                       failed: { label: "Ошибка", cls: "bg-red-100 text-red-700" },
@@ -366,10 +353,7 @@ const AdminSystemSettings = () => {
                     const lastS = last ? (statusMap[last.status] || { label: last.status, cls: "bg-gray-100 text-gray-700" }) : null;
                     return (
                       <>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="text-muted-foreground">Приложение:</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${appS.cls}`}>{appS.label}</span>
-                        </div>
+                        <div className="text-sm text-muted-foreground">Сервер: Минск, Беларусь</div>
                         {last && (
                           <div className="text-sm space-y-1.5">
                             <div className="flex items-center gap-2">
@@ -395,7 +379,7 @@ const AdminSystemSettings = () => {
                               </span>
                               {last.commit_sha && last.commit_sha !== githubHead.sha && (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-700">
-                                  рассинхрон — нажмите «Запустить деплой»
+                                  версия main отличается от последнего запуска
                                 </span>
                               )}
                               {last.commit_sha === githubHead.sha && last.status === "deployed" && (
@@ -420,7 +404,7 @@ const AdminSystemSettings = () => {
                         {deployStatus.deploys && deployStatus.deploys.length > 0 && (
                           <div className="pt-3 mt-2 border-t">
                             <div className="text-xs font-medium text-muted-foreground mb-2">
-                              История деплоев (как в Timeweb)
+                              История обновлений · Минск
                             </div>
                             <div className="space-y-1.5">
                               {deployStatus.deploys.slice(0, 5).map((d: any) => {
@@ -428,6 +412,7 @@ const AdminSystemSettings = () => {
                                 return (
                                   <div key={d.id} className="flex items-center gap-2 text-xs">
                                     <span className={`px-2 py-0.5 rounded-full font-medium ${s.cls}`}>{s.label}</span>
+                                    <a href={d.html_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">#{d.id} <ExternalLink className="inline w-3 h-3" /></a>
                                     <code className="bg-background px-1.5 py-0.5 rounded border">{d.commit_sha?.slice(0, 7) || "—"}</code>
                                     <span className="text-muted-foreground truncate flex-1" title={d.commit_msg}>
                                       {(d.commit_msg || "").split("\n")[0]}
@@ -561,16 +546,16 @@ const AdminSystemSettings = () => {
               <span>Авто-парсинг цен на препараты</span>
               <StatusBadge ok={isHealthyDrug} />
             </CardTitle>
-            <CardDescription>Еженедельно по воскресеньям в 04:00 МСК через cron. Источники: apteka.ru, eapteka.ru, megapteka.ru</CardDescription>
+            <CardDescription>Автоматические и ручные запуски отключены. Сохранённые цены не изменены.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm">
               <span className="text-muted-foreground">Последний успешный запуск: </span>
               <span className="font-medium">{fmt(lastOkDrug)}</span>
             </div>
-            <Button onClick={() => runNow("drug")} disabled={running !== null} size="sm" variant="outline" className="gap-2">
+            <Button disabled size="sm" variant="outline" className="gap-2">
               {running === "drug" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Запустить вручную (тест, 3 позиции)
+              Парсинг отключён
             </Button>
           </CardContent>
         </Card>
@@ -581,16 +566,16 @@ const AdminSystemSettings = () => {
               <span>Авто-парсинг цен на анализы</span>
               <StatusBadge ok={isHealthyLab} />
             </CardTitle>
-            <CardDescription>Еженедельно по воскресеньям в 04:15 МСК через cron. Источник: kdlmed.ru</CardDescription>
+            <CardDescription>Автоматические и ручные запуски отключены. Сохранённые цены не изменены.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm">
               <span className="text-muted-foreground">Последний успешный запуск: </span>
               <span className="font-medium">{fmt(lastOkLab)}</span>
             </div>
-            <Button onClick={() => runNow("lab")} disabled={running !== null} size="sm" variant="outline" className="gap-2">
+            <Button disabled size="sm" variant="outline" className="gap-2">
               {running === "lab" ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Запустить вручную (тест, 3 позиции)
+              Парсинг отключён
             </Button>
           </CardContent>
         </Card>
