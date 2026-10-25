@@ -87,6 +87,39 @@ export default function ChecklistBuilder() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const [initial, setInitial] = useState("");
+  const draftKey = (id?: string) => `checklist-draft:${id || "new"}`;
+  const dirty = !!draft && JSON.stringify(draft) !== initial;
+
+  const openDraft = (dr: Draft) => {
+    const key = draftKey(dr.id);
+    const snap = JSON.stringify(dr);
+    const saved = localStorage.getItem(key);
+    if (saved && saved !== snap && confirm("Найден несохранённый черновик этого теста. Восстановить его?")) {
+      try { setDraft(JSON.parse(saved)); } catch { setDraft(dr); }
+    } else {
+      localStorage.removeItem(key);
+      setDraft(dr);
+    }
+    setInitial(snap);
+  };
+
+  const cancelEdit = () => {
+    if (dirty && !confirm("Есть несохранённые изменения. Выйти без сохранения?")) return;
+    if (draft) localStorage.removeItem(draftKey(draft.id));
+    setDraft(null);
+  };
+
+  useEffect(() => {
+    if (draft && dirty) localStorage.setItem(draftKey(draft.id), JSON.stringify(draft));
+  }, [draft, dirty]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
 
   const load = async () => {
     setLoading(true);
@@ -134,6 +167,7 @@ export default function ChecklistBuilder() {
     setSaving(false);
     if (res.error) return toast({ title: "Ошибка сохранения", description: res.error.message, variant: "destructive" });
     toast({ title: "Тест сохранён" });
+    localStorage.removeItem(draftKey(draft.id));
     setDraft(null);
     load();
   };
