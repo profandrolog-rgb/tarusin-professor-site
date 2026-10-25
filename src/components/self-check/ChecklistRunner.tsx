@@ -8,6 +8,8 @@ import { ArrowRight, ArrowLeft, RotateCcw, CheckCircle, AlertTriangle, Info, Cal
 import { ChecklistDefinition, ChecklistResultRule, scoreAnswers } from "@/data/checklists/types";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import ScoreScale from "./ScoreScale";
+import { levelInfo } from "@/data/checklists/levels";
 
 function getAnonymousId(): string {
   const KEY = "anonymous_id";
@@ -198,9 +200,10 @@ export default function ChecklistRunner({ checklist }: Props) {
           <motion.div key="result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
             <Card className="border-border shadow-lg">
               <CardContent className="p-6 md:p-8 space-y-6">
-                <div className={`p-5 rounded-xl border ${resultColors[resultRule.level]}`}>
+                <ScoreScale rules={checklist.results} score={totalScore} />
+                <div className="p-5 rounded-xl border-2 text-foreground" style={{ borderColor: levelInfo(resultRule.level).color, background: `${levelInfo(resultRule.level).color}14` }}>
                   <div className="flex items-center gap-3 mb-3">
-                    {resultIcons[resultRule.level]}
+                    <span style={{ color: levelInfo(resultRule.level).color }}>{resultRule.level === "low" ? <Info className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}</span>
                     <h3 className="text-xl font-bold">{resultRule.title}</h3>
                   </div>
                   <p className="text-sm leading-relaxed">{resultRule.text}</p>

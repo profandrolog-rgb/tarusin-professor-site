@@ -14,6 +14,7 @@ import { format, subDays, startOfDay, isAfter } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChecklistBuilder from "@/components/admin/ChecklistBuilder";
+import { CHECKLIST_LEVELS } from "@/data/checklists/levels";
 
 const LEVEL_COLORS: Record<string, string> = Object.fromEntries(CHECKLIST_LEVELS.map(l => [l.v, l.color]));
 const LEVEL_LABELS: Record<string, string> = Object.fromEntries(CHECKLIST_LEVELS.map(l => [l.v, l.label]));
