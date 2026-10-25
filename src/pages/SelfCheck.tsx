@@ -1,16 +1,20 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, HeartPulse } from "lucide-react";
-import { allChecklists } from "@/data/checklists";
+import { ArrowRight, HeartPulse, Droplets, Activity, ClipboardCheck, Loader2 } from "lucide-react";
+import { usePublicChecklists } from "@/hooks/useChecklists";
 import PageMeta from "@/components/PageMeta";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 const iconMap: Record<string, React.ElementType> = {
   HeartPulse,
+  Droplets,
+  Activity,
+  ClipboardCheck,
 };
 
 const SelfCheck = () => {
+  const { data: allChecklists = [], isLoading } = usePublicChecklists();
   return (
     <>
       <PageMeta
@@ -30,6 +34,7 @@ const SelfCheck = () => {
               </p>
             </div>
 
+            {isLoading && <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
               {allChecklists.map(cl => {
                 const Icon = iconMap[cl.icon] || HeartPulse;

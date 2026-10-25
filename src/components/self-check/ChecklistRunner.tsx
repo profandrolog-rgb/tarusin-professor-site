@@ -5,7 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, ArrowLeft, RotateCcw, CheckCircle, AlertTriangle, Info, Calendar } from "lucide-react";
-import { ChecklistDefinition, ChecklistResultRule } from "@/data/checklists/types";
+import { ChecklistDefinition, ChecklistResultRule, scoreAnswers } from "@/data/checklists/types";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 function getAnonymousId(): string {
@@ -27,6 +28,7 @@ type Phase = "intro" | "questions" | "result";
 export default function ChecklistRunner({ checklist }: Props) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [consent, setConsent] = useState(false);
+  const [respondentName, setRespondentName] = useState("");
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<Record<string, { value: string; score: number }>>({});
   const [resultRule, setResultRule] = useState<ChecklistResultRule | null>(null);
@@ -50,7 +52,7 @@ export default function ChecklistRunner({ checklist }: Props) {
       setCurrentQ(c => c + 1);
     } else {
       // Calculate result
-      const score = Object.values(answers).reduce((s, a) => s + a.score, 0);
+      const score = scoreAnswers(questions, answers);
       setTotalScore(score);
       const rule = checklist.results.find(r => score >= r.minScore && score <= r.maxScore) || checklist.results[checklist.results.length - 1];
       setResultRule(rule);
@@ -66,12 +68,13 @@ export default function ChecklistRunner({ checklist }: Props) {
         duration_sec: durationSec,
         anonymous_id: getAnonymousId(),
         user_agent: navigator.userAgent,
+        respondent_name: respondentName.trim().slice(0, 120) || null,
       };
       supabase.from("checklist_responses").insert(payload).then(({ error }) => {
         if (error) console.error("Failed to save checklist response:", error);
       });
     }
-  }, [currentQ, questions.length, answers, checklist]);
+  }, [currentQ, questions, answers, checklist, respondentName]);
 
   const handleBack = useCallback(() => {
     if (currentQ > 0) setCurrentQ(c => c - 1);
@@ -111,12 +114,23 @@ export default function ChecklistRunner({ checklist }: Props) {
                 <h2 className="text-2xl font-bold text-foreground">{checklist.title}</h2>
                 <p className="text-muted-foreground leading-relaxed">{checklist.intro}</p>
                 <p className="text-sm text-muted-foreground">Тест содержит {questions.length} вопросов и займёт около 2 минут.</p>
+                <div className="space-y-2 p-4 rounded-lg border border-border bg-muted/30">
+                  <label htmlFor="respondent-name" className="text-sm font-medium text-foreground">Фамилия и инициалы или псевдоним</label>
+                  <Input id="respondent-name" value={respondentName} maxLength={120} onChange={e => setRespondentName(e.target.value)} placeholder="Например: Иванов И. И. или «Пациент-77»" />
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    Чтобы профессор мог найти и оценить ваш результат, укажите фамилию и инициалы или придуманный псевдоним — и запомните его, чтобы назвать при обращении. Поле можно оставить пустым: тогда результат сохранится анонимно.
+                  </p>
+                </div>
                 <label className="flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/30 cursor-pointer">
                   <Checkbox checked={consent} onCheckedChange={(v) => setConsent(!!v)} className="mt-0.5" />
-                  <span className="text-sm text-foreground leading-snug">{checklist.consentLabel}</span>
+                  <span className="text-sm text-foreground leading-snug">
+                    {respondentName.trim()
+                      ? "Я хочу, чтобы профессор оценил результат теста, и даю согласие на обработку указанных мной данных (имя или псевдоним и ответы) в соответствии с Политикой конфиденциальности."
+                      : "Я согласен на сохранение обезличенных ответов в исследовательских целях."}
+                  </span>
                 </label>
                 <Button onClick={handleStart} disabled={!consent} className="w-full" size="lg">
-                  Начать проверку <ArrowRight className="w-4 h-4 ml-2" />
+                  Начать тест <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </CardContent>
             </Card>
