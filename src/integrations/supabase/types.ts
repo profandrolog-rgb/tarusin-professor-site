@@ -948,6 +948,7 @@ export type Database = {
           created_at: string
           duration_sec: number | null
           id: string
+          respondent_name: string | null
           result_level: string
           result_score: number | null
           user_agent: string | null
@@ -959,6 +960,7 @@ export type Database = {
           created_at?: string
           duration_sec?: number | null
           id?: string
+          respondent_name?: string | null
           result_level: string
           result_score?: number | null
           user_agent?: string | null
@@ -970,9 +972,58 @@ export type Database = {
           created_at?: string
           duration_sec?: number | null
           id?: string
+          respondent_name?: string | null
           result_level?: string
           result_score?: number | null
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      checklists: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          intro: string
+          is_active: boolean
+          questions: Json
+          results: Json
+          short_title: string
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          intro?: string
+          is_active?: boolean
+          questions?: Json
+          results?: Json
+          short_title?: string
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          intro?: string
+          is_active?: boolean
+          questions?: Json
+          results?: Json
+          short_title?: string
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
