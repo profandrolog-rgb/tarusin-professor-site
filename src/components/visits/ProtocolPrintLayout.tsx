@@ -365,6 +365,7 @@ function pushSomatic(rows: React.ReactNode[], d: any) {
   rows.push(
     <Section key="som" title="Соматический статус">
       <Field label="Антропометрия / витальные" value={anth} />
+      {d.somatic.who_enabled && d.somatic.who_line ? <Field label="Перцентили / SDS (ВОЗ)" value={d.somatic.who_line} /> : null}
       <Field label="Общее состояние" value={d.somatic.general} />
       <Field label="Кожные покровы" value={d.somatic.skin} />
       <Field label="Лимфоузлы" value={d.somatic.lymph_nodes} />

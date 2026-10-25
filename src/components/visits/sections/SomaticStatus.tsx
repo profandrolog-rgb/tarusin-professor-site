@@ -1,7 +1,10 @@
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SmartFieldLabel } from "../SmartTemplates";
+import { useAnthroPatient, computeWho, whoTone, fmtP, fmtZ } from "./whoAnthro";
 
 export interface SomaticStatusData {
   full_text?: string;
@@ -17,6 +20,8 @@ export interface SomaticStatusData {
   weight_kg?: string;
   bp?: string;
   pulse?: string;
+  who_enabled?: boolean;
+  who_line?: string;
 }
 
 interface Props {
@@ -44,6 +49,14 @@ export const DEFAULT_SOMATIC: SomaticStatusData = {
 };
 
 export function SomaticStatusSection({ data, onChange }: Props) {
+  const pt = useAnthroPatient();
+  const whoOn = data.who_enabled === true;
+  const who = whoOn ? computeWho(pt, data.height_cm, data.weight_kg) : null;
+  const nextLine = who?.ok ? who.line : "";
+  useEffect(() => {
+    if (whoOn && (data.who_line || "") !== nextLine) onChange({ who_line: nextLine });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [whoOn, nextLine]);
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -51,6 +64,25 @@ export function SomaticStatusSection({ data, onChange }: Props) {
         <div className="space-y-1"><Label>Вес, кг</Label><Input value={data.weight_kg || ""} onChange={(e) => onChange({ weight_kg: e.target.value })} /></div>
         <div className="space-y-1"><Label>АД</Label><Input value={data.bp || ""} onChange={(e) => onChange({ bp: e.target.value })} placeholder="120/80" /></div>
         <div className="space-y-1"><Label>Пульс</Label><Input value={data.pulse || ""} onChange={(e) => onChange({ pulse: e.target.value })} /></div>
+      </div>
+      <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2 space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer text-sm">
+          <Checkbox checked={whoOn} onCheckedChange={(v) => onChange({ who_enabled: v === true })} />
+          Перцентили и SDS по ВОЗ
+        </label>
+        {who ? (
+          who.ok ? (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {who.items.map((i) => (
+                <span key={i.label} className={whoTone(i.p)}>
+                  {i.label}: {i.p != null ? `P${fmtP(i.p)}` : "—"}{i.z != null ? ` (SDS ${fmtZ(i.z)})` : ""}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">{who.reason}</div>
+          )
+        ) : null}
       </div>
       {data.full_text ? (
         <div className="space-y-1">

@@ -146,6 +146,9 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
                   ].filter(Boolean).join(", ")}
                 />
               )}
+              {data.somatic.who_enabled && data.somatic.who_line ? (
+                <Row label="Перцентили / SDS (ВОЗ)" value={data.somatic.who_line} />
+              ) : null}
               <Row label="Общее состояние" value={data.somatic.general} />
               <Row label="Кожные покровы" value={data.somatic.skin} />
               <Row label="Лимфоузлы" value={data.somatic.lymph_nodes} />

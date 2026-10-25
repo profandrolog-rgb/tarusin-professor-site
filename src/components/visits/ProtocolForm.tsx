@@ -25,6 +25,7 @@ import { AdditionalNotesField } from "./AdditionalNotesField";
 import { VisitNotesField } from "./VisitNotesField";
 import { OperationHistoryBanner } from "./OperationHistoryBanner";
 import { SurgeryReferralDialog } from "./SurgeryReferralDialog";
+import { AnthroPatientContext } from "./sections/whoAnthro";
 
 
 interface Props {
@@ -85,6 +86,7 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
   };
 
   return (
+    <AnthroPatientContext.Provider value={{ birthDate, sex: patientSex, visitDate }}>
     <SmartTemplatesProvider protocolType={type} data={data} onChange={patch}>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -233,5 +235,6 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
         </div>
       </div>
     </SmartTemplatesProvider>
+    </AnthroPatientContext.Provider>
   );
 }
