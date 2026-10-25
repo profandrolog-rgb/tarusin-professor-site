@@ -37,14 +37,14 @@ export default function ScoreScale({ rules, score }: { rules: ChecklistResultRul
           <span className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[9px] border-l-transparent border-r-transparent border-t-foreground" />
         </motion.div>
         <div className="relative h-4 rounded-full overflow-hidden flex">
-          {zones.map((z, i) => (
-            <div key={i} style={{ width: `${Math.max(z.to - z.from, 2)}%`, background: levelInfo(z.r.level).color }} className="h-full border-r border-background/60 last:border-r-0" />
+          {zones.map((zz, i) => (
+            <div key={i} style={{ width: `${zz.width}%`, background: levelInfo(zz.r.level).color }} className="h-full border-r border-background/60 last:border-r-0" />
           ))}
         </div>
         <div className="flex mt-1">
-          {zones.map((z, i) => (
-            <div key={i} style={{ width: `${Math.max(z.to - z.from, 2)}%` }} className="text-[10px] leading-tight text-muted-foreground text-center px-0.5">
-              {z.r.minScore}–{z.r.maxScore}
+          {zones.map((zz, i) => (
+            <div key={i} style={{ width: `${zz.width}%` }} className="text-[10px] leading-tight text-muted-foreground text-center px-0.5">
+              {zz.r.minScore}–{zz.r.maxScore}
             </div>
           ))}
         </div>
