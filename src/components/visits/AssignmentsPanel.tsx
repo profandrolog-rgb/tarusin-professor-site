@@ -18,6 +18,7 @@ import { Plus, X, Phone, ClipboardList, Salad, Scissors, Activity } from "lucide
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { LibraryPicker } from "@/components/visits/LibraryPicker";
+import { ExamCatalogPicker } from "@/components/visits/ExamCatalogPicker";
 import type { AssignmentCategory } from "@/lib/visits/assignmentLibrary";
 
 function AutoTextarea({ value, onChange, onRemove }: { value: string; onChange: (v: string) => void; onRemove: () => void }) {
@@ -782,9 +783,7 @@ export function AssignmentsPanel({ value, onChange }: PanelProps) {
               category="examinations"
               addPlaceholder="Добавить своё обследование…"
               picker={
-                <ItemPicker
-                  title="Обследования"
-                  categories={["обследование"]}
+                <ExamCatalogPicker
                   onAdd={(texts) => patch({ examinations: [...data.examinations, ...texts] })}
                 />
               }
