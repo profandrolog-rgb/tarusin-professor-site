@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { ExaminationsCatalogEditor } from "@/components/admin/ExaminationsCatalogEditor";
 
 type FieldSpec = {
   key: string;
@@ -396,7 +397,7 @@ export default function AdminMedicalReferences() {
               </TabsList>
               {CATALOGS.map((c) => (
                 <TabsContent key={c.key} value={c.key}>
-                  <CatalogEditor cfg={c} />
+                  {c.key === "examinations" ? <ExaminationsCatalogEditor /> : <CatalogEditor cfg={c} />}
                 </TabsContent>
               ))}
             </Tabs>
