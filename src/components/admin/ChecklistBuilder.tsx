@@ -8,7 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ArrowUp, ArrowDown, Save, Loader2, Pencil, ExternalLink, X } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Save, Loader2, Pencil, ExternalLink, X, GripVertical } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { ChecklistQuestion, ChecklistResultRule } from "@/data/checklists/types";
 import type { ChecklistRow } from "@/hooks/useChecklists";
 
@@ -31,6 +34,19 @@ const emptyDraft = (order: number): Draft => ({
   questions: [{ id: "q1", text: "", options: [{ label: "", value: "0", score: 0 }] }],
   results: [{ level: "low", minScore: 0, maxScore: 10, title: "", text: "" }],
 });
+
+function SortableOption({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-card">
+      <button type="button" {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground touch-none" title="Перетащите, чтобы изменить порядок">
+        <GripVertical className="w-4 h-4" />
+      </button>
+      {children}
+    </div>
+  );
+}
 
 function move<T>(arr: T[], i: number, d: number): T[] {
   const j = i + d;
@@ -73,6 +89,7 @@ export default function ChecklistBuilder() {
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   const load = async () => {
     setLoading(true);
@@ -213,14 +230,23 @@ export default function ChecklistBuilder() {
               </div>
             </div>
             <div className="space-y-2 pl-8">
-              {q.options.map((o, j) => (
-                <div key={j} className="flex items-center gap-2">
-                  <Input className="flex-1" placeholder="Вариант ответа" value={o.label} onChange={e => setQ(i, { options: q.options.map((x, k) => (k === j ? { ...x, label: e.target.value } : x)) })} />
-                  <Input type="number" className="w-20" title="Баллы" value={o.score} onChange={e => setQ(i, { options: q.options.map((x, k) => (k === j ? { ...x, score: Number(e.target.value) } : x)) })} />
-                  <span className="text-xs text-muted-foreground">балл.</span>
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setQ(i, { options: q.options.filter((_, k) => k !== j) })}><Trash2 className="w-3 h-3" /></Button>
-                </div>
-              ))}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e: DragEndEvent) => {
+                if (!e.over || e.active.id === e.over.id) return;
+                const from = Number(String(e.active.id).split("::")[1]);
+                const to = Number(String(e.over.id).split("::")[1]);
+                setQ(i, { options: arrayMove(q.options, from, to) });
+              }}>
+                <SortableContext items={q.options.map((_, j) => `${i}::${j}`)} strategy={verticalListSortingStrategy}>
+                  {q.options.map((o, j) => (
+                    <SortableOption key={`${i}::${j}`} id={`${i}::${j}`}>
+                      <Input className="flex-1" placeholder="Вариант ответа" value={o.label} onChange={e => setQ(i, { options: q.options.map((x, k) => (k === j ? { ...x, label: e.target.value } : x)) })} />
+                      <Input type="number" className="w-20" title="Баллы" value={o.score} onChange={e => setQ(i, { options: q.options.map((x, k) => (k === j ? { ...x, score: Number(e.target.value) } : x)) })} />
+                      <span className="text-xs text-muted-foreground">балл.</span>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setQ(i, { options: q.options.filter((_, k) => k !== j) })}><Trash2 className="w-3 h-3" /></Button>
+                    </SortableOption>
+                  ))}
+                </SortableContext>
+              </DndContext>
               <Button size="sm" variant="ghost" onClick={() => setQ(i, { options: [...q.options, { label: "", value: String(q.options.length), score: q.options.length }] })}><Plus className="w-3 h-3 mr-1" />Вариант</Button>
             </div>
           </CardContent></Card>
