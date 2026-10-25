@@ -15,8 +15,8 @@ import { ru } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChecklistBuilder from "@/components/admin/ChecklistBuilder";
 
-const LEVEL_COLORS: Record<string, string> = { low: "#22c55e", medium: "#eab308", high: "#ef4444" };
-const LEVEL_LABELS: Record<string, string> = { low: "Низкий", medium: "Умеренный", high: "Высокий" };
+const LEVEL_COLORS: Record<string, string> = Object.fromEntries(CHECKLIST_LEVELS.map(l => [l.v, l.color]));
+const LEVEL_LABELS: Record<string, string> = Object.fromEntries(CHECKLIST_LEVELS.map(l => [l.v, l.label]));
 
 type Response = {
   id: string;
@@ -86,7 +86,7 @@ const AdminSelfCheck = () => {
 
   // Pie data
   const pieData = useMemo(() => {
-    const counts: Record<string, number> = { low: 0, medium: 0, high: 0 };
+    const counts: Record<string, number> = Object.fromEntries(CHECKLIST_LEVELS.map(l => [l.v, 0]));
     filtered.forEach(r => { if (counts[r.result_level] !== undefined) counts[r.result_level]++; });
     return Object.entries(counts).map(([k, v]) => ({ name: LEVEL_LABELS[k], value: v, fill: LEVEL_COLORS[k] }));
   }, [filtered]);
@@ -181,9 +181,7 @@ const AdminSelfCheck = () => {
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Все уровни</SelectItem>
-              <SelectItem value="low">Низкий</SelectItem>
-              <SelectItem value="medium">Умеренный</SelectItem>
-              <SelectItem value="high">Высокий</SelectItem>
+              {CHECKLIST_LEVELS.map(l => <SelectItem key={l.v} value={l.v}>{l.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
