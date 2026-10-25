@@ -12,6 +12,8 @@ import { ArrowLeft, Loader2, Trash2, Users, CalendarDays, BarChart3, Hash } from
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from "recharts";
 import { format, subDays, startOfDay, isAfter } from "date-fns";
 import { ru } from "date-fns/locale";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ChecklistBuilder from "@/components/admin/ChecklistBuilder";
 
 const LEVEL_COLORS: Record<string, string> = { low: "#22c55e", medium: "#eab308", high: "#ef4444" };
 const LEVEL_LABELS: Record<string, string> = { low: "Низкий", medium: "Умеренный", high: "Высокий" };
@@ -25,6 +27,7 @@ type Response = {
   duration_sec: number | null;
   anonymous_id: string | null;
   user_agent: string | null;
+  respondent_name: string | null;
   created_at: string;
 };
 
@@ -129,7 +132,11 @@ const AdminSelfCheck = () => {
         <Link to="/admin" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Админ-панель
         </Link>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Самодиагностика — Статистика</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-4">Самодиагностика</h1>
+        <Tabs defaultValue="builder">
+          <TabsList className="mb-6"><TabsTrigger value="builder">Конструктор тестов</TabsTrigger><TabsTrigger value="stats">Журнал прохождений</TabsTrigger></TabsList>
+          <TabsContent value="builder"><ChecklistBuilder /></TabsContent>
+          <TabsContent value="stats">
         <p className="text-muted-foreground mb-8">Результаты прохождений тестов</p>
 
         {/* Metric cards */}
@@ -235,6 +242,7 @@ const AdminSelfCheck = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Дата</TableHead>
+                    <TableHead>Пациент</TableHead>
                     <TableHead>Чек-лист</TableHead>
                     <TableHead>Уровень</TableHead>
                     <TableHead>Баллы</TableHead>
@@ -246,6 +254,7 @@ const AdminSelfCheck = () => {
                   {paged.map(r => (
                     <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedRow(r)}>
                       <TableCell className="text-sm">{format(new Date(r.created_at), "dd.MM.yyyy HH:mm", { locale: ru })}</TableCell>
+                      <TableCell className="text-sm font-medium">{r.respondent_name || <span className="text-muted-foreground">аноним</span>}</TableCell>
                       <TableCell className="text-sm">{r.checklist_slug}</TableCell>
                       <TableCell>
                         <Badge variant="outline" style={{ borderColor: LEVEL_COLORS[r.result_level], color: LEVEL_COLORS[r.result_level] }}>
@@ -258,7 +267,7 @@ const AdminSelfCheck = () => {
                     </TableRow>
                   ))}
                   {paged.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет данных</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет данных</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -273,6 +282,9 @@ const AdminSelfCheck = () => {
           </CardContent>
         </Card>
 
+          </TabsContent>
+        </Tabs>
+
         {/* Detail sheet */}
         <Sheet open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
           <SheetContent className="overflow-y-auto">
@@ -283,6 +295,7 @@ const AdminSelfCheck = () => {
               <div className="space-y-4 mt-4">
                 <div className="space-y-2 text-sm">
                   <p><span className="text-muted-foreground">Дата:</span> {format(new Date(selectedRow.created_at), "dd.MM.yyyy HH:mm:ss")}</p>
+                  <p><span className="text-muted-foreground">Пациент:</span> {selectedRow.respondent_name || "аноним"}</p>
                   <p><span className="text-muted-foreground">Чек-лист:</span> {selectedRow.checklist_slug}</p>
                   <p><span className="text-muted-foreground">Уровень:</span> <Badge variant="outline" style={{ borderColor: LEVEL_COLORS[selectedRow.result_level], color: LEVEL_COLORS[selectedRow.result_level] }}>{LEVEL_LABELS[selectedRow.result_level]}</Badge></p>
                   <p><span className="text-muted-foreground">Баллы:</span> {selectedRow.result_score ?? "—"}</p>

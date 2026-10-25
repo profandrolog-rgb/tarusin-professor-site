@@ -1,6 +1,7 @@
 import { useParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { getChecklistBySlug } from "@/data/checklists";
+import { usePublicChecklists } from "@/hooks/useChecklists";
+import { Loader2 } from "lucide-react";
 import ChecklistRunner from "@/components/self-check/ChecklistRunner";
 import PageMeta from "@/components/PageMeta";
 import Header from "@/components/Header";
@@ -8,7 +9,9 @@ import Footer from "@/components/Footer";
 
 const SelfCheckDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const checklist = slug ? getChecklistBySlug(slug) : undefined;
+  const { data: list, isLoading } = usePublicChecklists();
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  const checklist = slug ? list?.find(c => c.slug === slug) : undefined;
 
   if (!checklist) return <Navigate to="/self-check" replace />;
 
