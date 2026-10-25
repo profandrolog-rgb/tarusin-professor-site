@@ -178,7 +178,7 @@ export default function ChecklistBuilder() {
     return (
       <div className="space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => setDraft(emptyDraft((list.length + 1) * 10))}><Plus className="w-4 h-4 mr-2" />Новый тест</Button>
+          <Button onClick={() => openDraft(emptyDraft((list.length + 1) * 10))}><Plus className="w-4 h-4 mr-2" />Новый тест</Button>
         </div>
         {list.map((r, i) => (
           <Card key={r.id}>
@@ -196,7 +196,7 @@ export default function ChecklistBuilder() {
                 {r.is_active ? "Опубликован" : "Скрыт"}
               </label>
               <Button size="sm" variant="outline" asChild><a href={`/self-check/${r.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /></a></Button>
-              <Button size="sm" variant="outline" onClick={() => setDraft({ ...r, questions: (r.questions as any) || [], results: (r.results as any) || [] })}><Pencil className="w-4 h-4 mr-1" />Редактировать</Button>
+              <Button size="sm" variant="outline" onClick={() => openDraft({ ...r, questions: (r.questions as any) || [], results: (r.results as any) || [] })}><Pencil className="w-4 h-4 mr-1" />Редактировать</Button>
               <Button size="sm" variant="ghost" onClick={() => remove(r)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             </CardContent>
           </Card>
@@ -217,7 +217,7 @@ export default function ChecklistBuilder() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-semibold">{d.id ? "Редактирование теста" : "Новый тест"}</h2>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setDraft(null)}><X className="w-4 h-4 mr-1" />Отмена</Button>
+          <Button variant="outline" onClick={cancelEdit}><X className="w-4 h-4 mr-1" />Отмена</Button>
           <Button onClick={save} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}Сохранить</Button>
         </div>
       </div>
