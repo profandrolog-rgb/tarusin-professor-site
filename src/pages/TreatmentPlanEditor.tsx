@@ -33,6 +33,8 @@ import { fetchIrtForCatalogIds } from "@/lib/treatment/acupunctureExpand";
 import { setActiveContext, clearActiveContextIfMatches, subscribePlanItems, popQueuedPlanItems, type ParsedPlanItem } from "@/lib/protocolBridge";
 import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver";
 import { WritePrescriptionsButton } from "@/components/treatment/WritePrescriptionsButton";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { UnsavedChangesBar } from "@/components/common/UnsavedChangesBar";
 
 import type { CostCatalog } from "@/lib/treatment/cost";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -353,6 +355,20 @@ export default function TreatmentPlanEditor() {
     toast({ title: strategy === "replace" ? "Лист заменён шаблоном" : `Добавлено ${newItems.length} позиций` });
   };
 
+  const unsaved = useUnsavedChanges({
+    key: `treatment_plan_${id || "new"}`,
+    data: { patient, issuedAt, durationDays, mode, diagnosis, summary, items, showCostInPrint, labControlEnabled, labPoints },
+    ready: !loading && !busy,
+  });
+  const restoreDraft = () => {
+    const d: any = unsaved.draft?.data; if (!d) return;
+    setPatient(d.patient ?? null); setIssuedAt(d.issuedAt); setDurationDays(d.durationDays); setMode(d.mode);
+    setDiagnosis(d.diagnosis || ""); setSummary(d.summary || ""); setItems(d.items || []);
+    setShowCostInPrint(!!d.showCostInPrint); setLabControlEnabled(!!d.labControlEnabled); setLabPoints(d.labPoints || []);
+    unsaved.discardDraft();
+    toast({ title: "Черновик восстановлен" });
+  };
+
   const save = async (newStatus?: typeof status) => {
     if (!patient) { toast({ title: "Выберите пациента", variant: "destructive" }); return; }
     if (!user) return;
@@ -404,6 +420,7 @@ export default function TreatmentPlanEditor() {
         if (e3) throw e3;
       }
       if (newStatus) setStatus(newStatus);
+      unsaved.markSaved();
       toast({ title: "Сохранено" });
       if (isNew && planId) navigate(`/admin/treatment-plans/${planId}`, { replace: true });
     } catch (e: any) {
@@ -609,9 +626,10 @@ export default function TreatmentPlanEditor() {
           hasPlan={items.length > 0}
         />
         <div className="flex-1 min-w-0 max-w-5xl">
-        <Link to="/admin/treatment-plans" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors">
+        <Link to="/admin/treatment-plans" onClick={(e) => { if (!unsaved.confirmLeave()) e.preventDefault(); }} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4"/>К списку листов
         </Link>
+        <UnsavedChangesBar isDirty={unsaved.isDirty} draftSavedAt={unsaved.draft?.savedAt} onRestore={restoreDraft} onDiscard={unsaved.discardDraft} />
 
 
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
