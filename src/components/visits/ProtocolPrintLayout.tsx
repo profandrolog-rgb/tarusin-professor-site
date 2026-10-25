@@ -446,6 +446,8 @@ const KNOWN_KEYS = new Set([
   "program_title","goal","start_date","control_date","items",
   // служебные поля — никогда не печатаются
   "ai_reasoning","visit_notes","_normalized","_normalized_version","_normalized_at",
+  // служебные поля контроля следующего визита и психиатрического статуса
+  "psych_age_group","next_visit_range","next_visit_date_to","next_visit_duration",
   // флаги печати
   "print_labs_table","print_labs_dynamics","include_consent","metabolic_map_checklist",
   "testis_asymmetry_percent","epididymis_asymmetry_percent",
