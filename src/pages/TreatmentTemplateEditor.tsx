@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { UnsavedChangesBar } from "@/components/common/UnsavedChangesBar";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -121,6 +123,28 @@ export default function TreatmentTemplateEditor() {
     });
   };
 
+  const saveRef = useRef<() => void>(() => {});
+  const unsaved = useUnsavedChanges({
+    key: `treatment_template_${id || "new"}`,
+    data: { name, description, target, mode, durationDays, tags, items },
+    ready: !loading && !busy,
+  });
+  const restoreDraft = () => {
+    const d: any = unsaved.draft?.data; if (!d) return;
+    setName(d.name || ""); setDescription(d.description || ""); setTarget(d.target || "");
+    setMode(d.mode || "flat"); setDurationDays(d.durationDays || 10); setTags(d.tags || []); setItems(d.items || []);
+    unsaved.discardDraft();
+    toast({ title: "Черновик восстановлен" });
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); saveRef.current(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const save = async () => {
     if (!user) return;
     if (!name.trim()) { toast({ title: "Введите название", variant: "destructive" }); return; }
@@ -155,12 +179,15 @@ export default function TreatmentTemplateEditor() {
         const { error } = await supabase.from("protocol_template_items").insert(rows as any);
         if (error) throw error;
       }
+      unsaved.markSaved();
       toast({ title: "Шаблон сохранён" });
       if (isNew && useId) navigate(`/admin/treatment-templates/${useId}`, { replace: true });
     } catch (e: any) {
       toast({ title: "Ошибка", description: e.message, variant: "destructive" });
     } finally { setSaving(false); }
   };
+
+  saveRef.current = save;
 
   if (loading || busy) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>;
   if (!user) return null;
@@ -170,9 +197,12 @@ export default function TreatmentTemplateEditor() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <Link to="/admin/treatment-templates" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"><ArrowLeft className="w-4 h-4"/>К списку шаблонов</Link>
+        <Link to="/admin/treatment-templates" onClick={(e) => { if (!unsaved.confirmLeave()) e.preventDefault(); }} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4"><ArrowLeft className="w-4 h-4"/>К списку шаблонов</Link>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h1 className="text-2xl font-bold">{isNew ? "Новый шаблон" : "Редактирование шаблона"}</h1>
+          <div>
+            <h1 className="text-2xl font-bold">{isNew ? "Новый шаблон" : "Редактирование шаблона"}</h1>
+            <UnsavedChangesBar isDirty={unsaved.isDirty} draftSavedAt={unsaved.draft?.savedAt} onRestore={restoreDraft} onDiscard={unsaved.discardDraft} />
+          </div>
           <Button onClick={save} disabled={saving} className="gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}Сохранить
           </Button>
