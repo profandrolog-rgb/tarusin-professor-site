@@ -87,6 +87,39 @@ export default function ChecklistBuilder() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const [initial, setInitial] = useState("");
+  const draftKey = (id?: string) => `checklist-draft:${id || "new"}`;
+  const dirty = !!draft && JSON.stringify(draft) !== initial;
+
+  const openDraft = (dr: Draft) => {
+    const key = draftKey(dr.id);
+    const snap = JSON.stringify(dr);
+    const saved = localStorage.getItem(key);
+    if (saved && saved !== snap && confirm("Найден несохранённый черновик этого теста. Восстановить его?")) {
+      try { setDraft(JSON.parse(saved)); } catch { setDraft(dr); }
+    } else {
+      localStorage.removeItem(key);
+      setDraft(dr);
+    }
+    setInitial(snap);
+  };
+
+  const cancelEdit = () => {
+    if (dirty && !confirm("Есть несохранённые изменения. Выйти без сохранения?")) return;
+    if (draft) localStorage.removeItem(draftKey(draft.id));
+    setDraft(null);
+  };
+
+  useEffect(() => {
+    if (draft && dirty) localStorage.setItem(draftKey(draft.id), JSON.stringify(draft));
+  }, [draft, dirty]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
 
   const load = async () => {
     setLoading(true);
@@ -134,6 +167,7 @@ export default function ChecklistBuilder() {
     setSaving(false);
     if (res.error) return toast({ title: "Ошибка сохранения", description: res.error.message, variant: "destructive" });
     toast({ title: "Тест сохранён" });
+    localStorage.removeItem(draftKey(draft.id));
     setDraft(null);
     load();
   };
@@ -144,7 +178,7 @@ export default function ChecklistBuilder() {
     return (
       <div className="space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => setDraft(emptyDraft((list.length + 1) * 10))}><Plus className="w-4 h-4 mr-2" />Новый тест</Button>
+          <Button onClick={() => openDraft(emptyDraft((list.length + 1) * 10))}><Plus className="w-4 h-4 mr-2" />Новый тест</Button>
         </div>
         {list.map((r, i) => (
           <Card key={r.id}>
@@ -162,7 +196,7 @@ export default function ChecklistBuilder() {
                 {r.is_active ? "Опубликован" : "Скрыт"}
               </label>
               <Button size="sm" variant="outline" asChild><a href={`/self-check/${r.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="w-4 h-4" /></a></Button>
-              <Button size="sm" variant="outline" onClick={() => setDraft({ ...r, questions: (r.questions as any) || [], results: (r.results as any) || [] })}><Pencil className="w-4 h-4 mr-1" />Редактировать</Button>
+              <Button size="sm" variant="outline" onClick={() => openDraft({ ...r, questions: (r.questions as any) || [], results: (r.results as any) || [] })}><Pencil className="w-4 h-4 mr-1" />Редактировать</Button>
               <Button size="sm" variant="ghost" onClick={() => remove(r)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             </CardContent>
           </Card>
@@ -183,7 +217,7 @@ export default function ChecklistBuilder() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-semibold">{d.id ? "Редактирование теста" : "Новый тест"}</h2>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setDraft(null)}><X className="w-4 h-4 mr-1" />Отмена</Button>
+          <Button variant="outline" onClick={cancelEdit}><X className="w-4 h-4 mr-1" />Отмена</Button>
           <Button onClick={save} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}Сохранить</Button>
         </div>
       </div>
