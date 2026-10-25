@@ -1,0 +1,3 @@
+ALTER TABLE public.patient_visits DROP CONSTRAINT patient_visits_protocol_type_check;
+ALTER TABLE public.patient_visits ADD CONSTRAINT patient_visits_protocol_type_check
+  CHECK (protocol_type IN ('ultrashort','primary_short','dynamic','dynamic_with_uzi','repeat_with_labs','uzi_reproductive','uzi_urinary','uzi_bladder','postop_day3','postop_day7','postop_day10','repeat_with_uzi','online_consult','peptide_program','unknown','girl_urology'));
