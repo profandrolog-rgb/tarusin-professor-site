@@ -14,7 +14,8 @@ export interface ChecklistQuestion {
 }
 
 export interface ChecklistResultRule {
-  level: 'low' | 'medium' | 'high';
+  /** low=зелёный, mild=салатовый, medium=жёлтый, marked=оранжевый, high=красный */
+  level: 'low' | 'mild' | 'medium' | 'marked' | 'high';
   minScore: number;
   maxScore: number;
   title: string;

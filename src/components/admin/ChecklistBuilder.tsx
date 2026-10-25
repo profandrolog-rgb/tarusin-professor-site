@@ -14,13 +14,10 @@ import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, s
 import { CSS } from "@dnd-kit/utilities";
 import type { ChecklistQuestion, ChecklistResultRule } from "@/data/checklists/types";
 import type { ChecklistRow } from "@/hooks/useChecklists";
+import { CHECKLIST_LEVELS } from "@/data/checklists/levels";
 
 const ICONS = ["HeartPulse", "Droplets", "Activity", "ClipboardCheck"];
-const LEVELS = [
-  { v: "low", l: "Низкий (зелёный)" },
-  { v: "medium", l: "Умеренный (жёлтый)" },
-  { v: "high", l: "Высокий (красный)" },
-];
+const LEVELS = CHECKLIST_LEVELS.map(x => ({ v: x.v, l: x.label, c: x.color }));
 
 type Draft = Omit<ChecklistRow, "id" | "questions" | "results"> & {
   id?: string;
@@ -227,6 +224,7 @@ export default function ChecklistBuilder() {
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => set({ questions: move(d.questions, i, -1) })}><ArrowUp className="w-3 h-3" /></Button>
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => set({ questions: move(d.questions, i, 1) })}><ArrowDown className="w-3 h-3" /></Button>
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => set({ questions: d.questions.filter((_, k) => k !== i) })}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                <Button size="icon" variant="ghost" className="h-7 w-7" title="Добавить вопрос ниже" onClick={() => { const nq = { id: `q${Date.now().toString(36)}`, text: "", options: [{ label: "", value: "0", score: 0 }, { label: "", value: "1", score: 1 }] }; const qs = [...d.questions]; qs.splice(i + 1, 0, nq); set({ questions: qs }); }}><Plus className="w-3 h-3 text-primary" /></Button>
               </div>
             </div>
             <div className="space-y-2 pl-8">
@@ -267,7 +265,7 @@ export default function ChecklistBuilder() {
               <Input type="number" className="w-20" value={r.maxScore} onChange={e => setR(i, { maxScore: Number(e.target.value) })} />
               <Select value={r.level} onValueChange={v => setR(i, { level: v as any })}>
                 <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{LEVELS.map(l => <SelectItem key={l.v} value={l.v}>{l.l}</SelectItem>)}</SelectContent>
+                <SelectContent>{LEVELS.map(l => <SelectItem key={l.v} value={l.v}><span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: l.c }} />{l.l}</span></SelectItem>)}</SelectContent>
               </Select>
               <Button size="icon" variant="ghost" className="ml-auto" onClick={() => set({ results: d.results.filter((_, k) => k !== i) })}><Trash2 className="w-4 h-4 text-destructive" /></Button>
             </div>
