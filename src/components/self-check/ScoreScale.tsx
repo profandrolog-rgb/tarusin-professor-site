@@ -5,23 +5,22 @@ import { levelInfo } from "@/data/checklists/levels";
 /** Цветная шкала: слева зелёный (0%), справа красный (100%), стрелка указывает балл. */
 export default function ScoreScale({ rules, score }: { rules: ChecklistResultRule[]; score: number }) {
   if (!rules.length) return null;
-  const min = Math.min(...rules.map(r => r.minScore));
-  const max = Math.max(...rules.map(r => r.maxScore));
-  const span = Math.max(1, max - min);
   // Направление: если у «лёгких» уровней баллы выше, чем у тяжёлых — разворачиваем.
-  const sorted = [...rules].sort((a, b) => levelInfo(a.level).severity - levelInfo(b.level).severity);
-  const inverted = sorted[0].minScore > sorted[sorted.length - 1].minScore;
-  const pos = (v: number) => {
-    const p = ((v - min) / span) * 100;
-    return Math.min(100, Math.max(0, inverted ? 100 - p : p));
-  };
-  const zones = [...rules]
-    .map(r => {
-      const a = pos(r.minScore), b = pos(r.maxScore);
-      return { r, from: Math.min(a, b), to: Math.max(a, b) };
-    })
-    .sort((x, y) => x.from - y.from);
-  const arrow = pos(score);
+  const bySeverity = [...rules].sort((a, b) => levelInfo(a.level).severity - levelInfo(b.level).severity);
+  const inverted = bySeverity[0].minScore > bySeverity[bySeverity.length - 1].minScore;
+  const ordered = [...rules].sort((a, b) => (inverted ? b.minScore - a.minScore : a.minScore - b.minScore));
+  const lens = ordered.map(r => Math.max(1, r.maxScore - r.minScore + 1));
+  const total = lens.reduce((s, x) => s + x, 0);
+  let acc = 0;
+  const zones = ordered.map((r, i) => {
+    const from = (acc / total) * 100;
+    acc += lens[i];
+    return { r, from, width: (lens[i] / total) * 100 };
+  });
+  const z = zones.find(x => score >= x.r.minScore && score <= x.r.maxScore) ?? (score < Math.min(...rules.map(r => r.minScore)) ? (inverted ? zones[zones.length - 1] : zones[0]) : (inverted ? zones[0] : zones[zones.length - 1]));
+  const len = Math.max(1, z.r.maxScore - z.r.minScore + 1);
+  const offset = Math.min(len - 0.5, Math.max(0.5, (inverted ? z.r.maxScore - score : score - z.r.minScore) + 0.5));
+  const arrow = z.from + (offset / len) * z.width;
 
   return (
     <div className="pt-10 pb-2">
