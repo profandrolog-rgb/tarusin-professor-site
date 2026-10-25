@@ -1314,6 +1314,35 @@ export type Database = {
         }
         Relationships: []
       }
+      diagnosis_examinations: {
+        Row: {
+          created_at: string
+          diagnosis_group: string
+          examination_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          diagnosis_group: string
+          examination_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          diagnosis_group?: string
+          examination_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnosis_examinations_examination_id_fkey"
+            columns: ["examination_id"]
+            isOneToOne: false
+            referencedRelation: "examinations_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diagnosis_recommendations: {
         Row: {
           category: string
@@ -1658,6 +1687,36 @@ export type Database = {
           status?: string
           subbatch_size?: number
           total_rubrics?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      examinations_catalog: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
