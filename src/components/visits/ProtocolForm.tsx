@@ -25,7 +25,9 @@ import { AdditionalNotesField } from "./AdditionalNotesField";
 import { VisitNotesField } from "./VisitNotesField";
 import { OperationHistoryBanner } from "./OperationHistoryBanner";
 import { SurgeryReferralDialog } from "./SurgeryReferralDialog";
-import { AnthroPatientContext } from "./sections/whoAnthro";
+import { AnthroPatientContext, inferSex } from "./sections/whoAnthro";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 
 interface Props {
@@ -43,6 +45,7 @@ interface Props {
 import { MetabolicMapChecklistDialog } from "@/components/metabolic/MetabolicMapChecklistDialog";
 
 export function ProtocolForm({ type, data, onChange, birthDate, patientSex, patientId, patientName, currentVisitId, visitDate }: Props) {
+  const [chosenSex, setChosenSex] = useState<"M" | "F" | null>(null);
   const patch = (p: any) => onChange({ ...(data || {}), ...p });
   const patchCycle = (p: Partial<CycleContextData>) => patch(p);
   const includeConsent = (data?.include_consent as boolean) === true;
@@ -85,8 +88,16 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
     }
   };
 
+  const anthroSex = chosenSex ?? patientSex ?? inferSex(patientName, type);
+  const anthroSource = chosenSex || patientSex ? "card" : anthroSex ? "guess" : null;
+  const setAnthroSex = (s: "M" | "F") => {
+    setChosenSex(s);
+    if (patientId) supabase.from("patients").update({ sex: s }).eq("id", patientId)
+      .then(({ error }) => { if (error) console.warn("[who] sex save failed:", error.message); });
+  };
+
   return (
-    <AnthroPatientContext.Provider value={{ birthDate, sex: patientSex, visitDate }}>
+    <AnthroPatientContext.Provider value={{ birthDate, sex: anthroSex, visitDate, sexSource: anthroSource, setSex: setAnthroSex }}>
     <SmartTemplatesProvider protocolType={type} data={data} onChange={patch}>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">

@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SmartFieldLabel } from "../SmartTemplates";
-import { useAnthroPatient, computeWho, whoTone, fmtP, fmtZ } from "./whoAnthro";
+import { useAnthroPatient, computeWho, whoTone, fmtP, fmtZ, ageLabel } from "./whoAnthro";
+import { Button } from "@/components/ui/button";
 
 export interface SomaticStatusData {
   full_text?: string;
@@ -70,6 +71,18 @@ export function SomaticStatusSection({ data, onChange }: Props) {
           <Checkbox checked={whoOn} onCheckedChange={(v) => onChange({ who_enabled: v === true })} />
           Перцентили и SDS по ВОЗ
         </label>
+        {whoOn ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>Возраст: {ageLabel(pt.birthDate, pt.visitDate) || "нет даты рождения"}</span>
+            <span>· Пол:</span>
+            {(["M", "F"] as const).map((s) => (
+              <Button key={s} type="button" size="sm" className="h-6 px-2"
+                variant={pt.sex === s ? "default" : "outline"}
+                onClick={() => pt.setSex?.(s)}>{s === "M" ? "М" : "Ж"}</Button>
+            ))}
+            {pt.sexSource === "guess" ? <span>(определён по ФИО — нажмите, чтобы подтвердить)</span> : null}
+          </div>
+        ) : null}
         {who ? (
           who.ok ? (
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
