@@ -29,6 +29,13 @@
       "when": 1792947327604,
       "tag": "0003_restrict_catalog_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793198409404,
+      "tag": "0004_restore_public_published_questions",
+      "breakpoints": true
     }
   ]
 }
