@@ -77,7 +77,8 @@ async function extractTextFromFile(ext: string, bytes: Uint8Array): Promise<stri
   if (e === "rtf") {
     const raw = new TextDecoder("utf-8").decode(bytes);
     return raw
-      .replace(/\\'([0-9a-fA-F]{2})/g, (_m, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/\\u(-?\d+) ?\??/g, (_m, n) => String.fromCharCode((parseInt(n, 10) + 65536) % 65536))
+      .replace(/\\'([0-9a-fA-F]{2})/g, (_m, h) => new TextDecoder("windows-1251").decode(new Uint8Array([parseInt(h, 16)])))
       .replace(/\\[a-zA-Z]+-?\d* ?/g, " ")
       .replace(/[{}]/g, "")
       .replace(/[ \t]{2,}/g, " ");

@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { stripMarkers } from '@/lib/research/markers';
 import { splitContentByGallery } from '@/lib/markdown/galleryMarkers';
 import { publicStorageUrl } from '@/lib/storageFallback';
+import { splitFilenameCrop } from '@/lib/gallery/cropSpec';
 
 interface Props {
   title: string;
@@ -14,7 +15,7 @@ interface Props {
 const BUCKET = 'disease-media';
 
 function publicUrl(filename: string) {
-  return publicStorageUrl(BUCKET, `article-images/${filename}`) || '';
+  return publicStorageUrl(BUCKET, `article-images/${splitFilenameCrop(filename).filename}`) || '';
 }
 
 function parseEntry(raw: string): { filename: string; caption: string } {

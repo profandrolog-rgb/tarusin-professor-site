@@ -1,0 +1,1 @@
+CREATE POLICY "Public can view published questions" ON public.questions FOR SELECT TO anon, authenticated USING (is_published = true);

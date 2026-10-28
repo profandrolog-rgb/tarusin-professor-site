@@ -50,7 +50,8 @@ export function PatientNameAutocomplete({
   const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const skipRef = useRef(false);
+  // Не искать по уже заполненному ФИО при открытии (режим правки) — только после ввода.
+  const skipRef = useRef(value.trim().length >= 2);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

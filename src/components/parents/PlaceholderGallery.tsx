@@ -581,7 +581,11 @@ const PlaceholderGallery = ({
       toast.error("Не удалось прочитать запись: " + (fetchErr?.message || "нет данных"));
       return false;
     }
-    const baseContent = (fresh as any)[contentColumn] || fullContent;
+    // Если открыт редактор, берём его текущий текст (с несохранёнными правками).
+    const baseContent =
+      onContentChange && fullContent && fullContent.includes(marker)
+        ? fullContent
+        : (fresh as any)[contentColumn] || fullContent;
     const res = transform(baseContent);
     if (!res.ok) {
       toast.warning(res.warn || "Изменение не применено");
