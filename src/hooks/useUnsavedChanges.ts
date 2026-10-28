@@ -8,7 +8,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 export function useUnsavedChanges<T>({ key, data, ready }: { key: string; data: T; ready: boolean }) {
   const storageKey = `unsaved_${key}`;
-  const serialized = JSON.stringify(data);
+  const raw = JSON.stringify(data);
+  // Служебные client_id строк пересоздаются при каждой загрузке — не считаем их изменением.
+  const serialized = JSON.stringify(data, (k, v) => (k === "client_id" ? undefined : v));
   const baselineRef = useRef<string | null>(null);
   const [baseline, setBaseline] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ data: T; savedAt: number } | null>(null);
@@ -22,14 +24,14 @@ export function useUnsavedChanges<T>({ key, data, ready }: { key: string; data: 
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && JSON.stringify(parsed.data) !== serialized) setDraft(parsed);
+        if (parsed && JSON.stringify(parsed.data, (k, v) => (k === "client_id" ? undefined : v)) !== serialized) setDraft(parsed);
         else localStorage.removeItem(storageKey);
       }
     } catch { /* ignore */ }
   }, [ready, serialized, storageKey]);
 
   // Reset when switching to another record.
-  useEffect(() => () => { baselineRef.current = null; }, [storageKey]);
+  useEffect(() => () => { baselineRef.current = null; setBaseline(null); }, [storageKey]);
 
   const isDirty = baseline !== null && serialized !== baseline;
   const dirtyRef = useRef(isDirty);
@@ -39,21 +41,21 @@ export function useUnsavedChanges<T>({ key, data, ready }: { key: string; data: 
   useEffect(() => {
     if (!isDirty) return;
     const t = setTimeout(() => {
-      try { localStorage.setItem(storageKey, JSON.stringify({ data: JSON.parse(serialized), savedAt: Date.now() })); } catch { /* quota */ }
+      try { localStorage.setItem(storageKey, JSON.stringify({ data: JSON.parse(raw), savedAt: Date.now() })); } catch { /* quota */ }
     }, 800);
     return () => clearTimeout(t);
-  }, [isDirty, serialized, storageKey]);
+  }, [isDirty, raw, storageKey]);
 
   useEffect(() => {
     const h = (e: BeforeUnloadEvent) => {
       if (dirtyRef.current) {
-        try { localStorage.setItem(storageKey, JSON.stringify({ data: JSON.parse(serialized), savedAt: Date.now() })); } catch { /* */ }
+        try { localStorage.setItem(storageKey, JSON.stringify({ data: JSON.parse(raw), savedAt: Date.now() })); } catch { /* */ }
         e.preventDefault(); e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", h);
     return () => window.removeEventListener("beforeunload", h);
-  }, [serialized, storageKey]);
+  }, [raw, storageKey]);
 
   /** Call after a successful save. */
   const markSaved = useCallback(() => {

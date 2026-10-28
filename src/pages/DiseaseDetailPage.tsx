@@ -106,12 +106,20 @@ const DiseaseDetailPage = () => {
 
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
-    const early = (window as any).__earlyArticle as { slug?: string } | undefined;
-    if (loaderData?.article || early?.slug === slug) return;
+    const early = (window as any).__earlyArticle as
+      | { slug?: string; promise?: Promise<any> }
+      | undefined;
+    if (loaderData?.article) return;
 
     let cancelled = false;
 
     (async () => {
+      // Если ранний запрос уже нашёл статью — повторно не грузим;
+      // если нет (ошибка/пусто) — обычная загрузка или «не найдено».
+      if (early?.slug === slug && early.promise) {
+        const earlyArt = await early.promise.catch(() => null);
+        if (cancelled || earlyArt) return;
+      }
       const { data: art, error } = await supabase
         .from("disease_articles")
         .select("*")

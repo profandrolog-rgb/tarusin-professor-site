@@ -71,7 +71,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
     setLoadingContent(false);
     if (error) {
       toast.error("Не удалось загрузить текст статьи");
-      return "";
+      return null as unknown as string;
     }
     const text = data?.article_content || "";
     setFullContent(text);
@@ -84,7 +84,8 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
     setIsEditing(true);
     setIsArticleOpen(true);
     setActiveTab("text");
-    setEditContent(await ensureContent());
+    const text = await ensureContent();
+    if (text !== null) setEditContent(text);
   };
 
   const handleArticleOpenChange = (open: boolean) => {
@@ -98,15 +99,18 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
 
 
   const handleSave = async () => {
+    if (loadingContent) return;
     setSaving(true);
+    const payload: Record<string, any> = {
+      title: editTitle,
+      description: editDescription || null,
+      updated_at: new Date().toISOString(),
+    };
+    // Текст статьи пишем только если он был успешно загружен.
+    if (fullContent !== null) payload.article_content = editContent || null;
     const { error } = await supabase
       .from("disease_articles")
-      .update({
-        title: editTitle,
-        description: editDescription || null,
-        article_content: editContent || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq("id", article.id);
 
     setSaving(false);
@@ -130,7 +134,7 @@ const DiseaseArticleCard = ({ article, isAdmin, onArticleUpdated }: DiseaseArtic
                 <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving}>
                   <X className="w-4 h-4 mr-1" /> Отмена
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={saving}>
+                <Button size="sm" onClick={handleSave} disabled={saving || loadingContent}>
                   <Save className="w-4 h-4 mr-1" /> {saving ? "Сохранение..." : "Сохранить"}
                 </Button>
               </>
