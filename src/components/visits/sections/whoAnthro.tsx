@@ -1,9 +1,33 @@
 import { createContext, useContext } from "react";
 import { calculateAnthropometry } from "@/utils/anthropometry/who-reference";
 
-export interface AnthroPatient { birthDate?: string | null; sex?: "M" | "F" | null; visitDate?: string | null }
+export interface AnthroPatient {
+  birthDate?: string | null; sex?: "M" | "F" | null; visitDate?: string | null;
+  sexSource?: "card" | "guess" | null; setSex?: (s: "M" | "F") => void;
+}
 export const AnthroPatientContext = createContext<AnthroPatient>({});
 export const useAnthroPatient = () => useContext(AnthroPatientContext);
+
+/** Пол по отчеству (-вич/-вна) или по типу протокола; null — не определить. */
+export function inferSex(fullName?: string | null, protocolType?: string | null): "M" | "F" | null {
+  if (protocolType === "girl_urology") return "F";
+  const words = String(fullName || "").trim().toLowerCase().split(/\s+/);
+  for (const w of words) {
+    if (/(вич|ич|оглы|улы)$/.test(w) && w.length > 4) return "M";
+    if (/(вна|чна|кызы|гызы)$/.test(w) && w.length > 4) return "F";
+  }
+  return null;
+}
+
+export function ageLabel(birthDate?: string | null, at?: string | null): string {
+  if (!birthDate) return "";
+  const b = new Date(birthDate), d = at ? new Date(at) : new Date();
+  if (isNaN(+b) || isNaN(+d)) return "";
+  let m = (d.getFullYear() - b.getFullYear()) * 12 + (d.getMonth() - b.getMonth());
+  if (d.getDate() < b.getDate()) m--;
+  if (m < 0) return "";
+  return `${Math.floor(m / 12)} л. ${m % 12} мес.`;
+}
 
 export interface WhoItem { label: string; p: number | null; z: number | null }
 export interface WhoCalc { ok: boolean; reason?: string; items: WhoItem[]; line: string }
