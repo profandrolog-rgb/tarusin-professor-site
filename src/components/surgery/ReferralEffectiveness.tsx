@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,13 @@ import { effectivenessStats, matchReferrals, type JournalLite } from "@/lib/surg
 
 type Filter = "all" | "over30" | "fresh";
 
-export function ReferralEffectiveness({ referrals }: { referrals: any[] }) {
+export function ReferralEffectiveness({
+  referrals,
+  onDelete,
+}: {
+  referrals: any[];
+  onDelete?: (row: any) => void;
+}) {
   const [journal, setJournal] = useState<JournalLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +103,7 @@ export function ReferralEffectiveness({ referrals }: { referrals: any[] }) {
                   <TableHead>Прошло дней</TableHead>
                   <TableHead>Плановый срок</TableHead>
                   <TableHead>Статус</TableHead>
+                  {onDelete && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -118,6 +125,20 @@ export function ReferralEffectiveness({ referrals }: { referrals: any[] }) {
                     <TableCell>
                       <Badge variant="outline">{statusLabel(r.status)}</Badge>
                     </TableCell>
+                    {onDelete && (
+                      <TableCell>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Удалить путёвку"
+                          aria-label="Удалить путёвку"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => onDelete(r)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
