@@ -449,7 +449,7 @@ const KNOWN_KEYS = new Set([
   // служебные поля контроля следующего визита и психиатрического статуса
   "psych_age_group","next_visit_range","next_visit_date_to","next_visit_duration",
   // флаги печати
-  "print_labs_table","print_labs_dynamics","include_consent","metabolic_map_checklist",
+  "print_labs_table","print_labs_dynamics","include_consent","include_understanding","metabolic_map_checklist",
   "testis_asymmetry_percent","epididymis_asymmetry_percent",
 ]);
 
@@ -1068,7 +1068,16 @@ function ConsentBlock({ patient }: { patient: VisitForPrint["patient"] }) {
 
 const CONSENT_TEXT = "";
 
-export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
+export function ProtocolPrintLayout({
+  visit,
+  includeUnderstanding,
+}: {
+  visit: VisitForPrint;
+  /** Лист «Разъяснение результатов визита». Если не передано — берётся из протокола (по умолчанию не печатается). */
+  includeUnderstanding?: boolean;
+}) {
+  const showUnderstanding =
+    includeUnderstanding ?? (visit.protocol_data as any)?.include_understanding === true;
   const def = PROTOCOL_TYPE_MAP[visit.protocol_type];
   const visitDate = new Date(visit.visit_date);
   const age = visit.patient?.birth_date ? calcAge(visit.patient.birth_date, visitDate) : null;
@@ -1268,10 +1277,12 @@ export function ProtocolPrintLayout({ visit }: { visit: VisitForPrint }) {
         </div>
       )}
 
-      {/* РАЗЪЯСНЕНИЕ РЕЗУЛЬТАТОВ ВИЗИТА — всегда, отдельным листом в конце */}
-      <div className="print-page ppl-extra-sheet">
-        <VisitUnderstandingBlock patient={visit.patient} visitDate={visit.visit_date} />
-      </div>
+      {/* РАЗЪЯСНЕНИЕ РЕЗУЛЬТАТОВ ВИЗИТА — по запросу, отдельным листом в конце */}
+      {showUnderstanding && (
+        <div className="print-page ppl-extra-sheet">
+          <VisitUnderstandingBlock patient={visit.patient} visitDate={visit.visit_date} />
+        </div>
+      )}
 
     </>
   );

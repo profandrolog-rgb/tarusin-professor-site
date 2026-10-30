@@ -244,6 +244,23 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
             </span>
           </label>
         </div>
+
+        {/* Лист «Разъяснение результатов визита» — по умолчанию выключен */}
+        <div className="rounded-md border border-dashed bg-muted/20 px-3 py-2">
+          <label className="flex items-start gap-2 cursor-pointer text-sm">
+            <Checkbox
+              checked={(data?.include_understanding as boolean) === true}
+              onCheckedChange={(v) => patch({ include_understanding: v === true })}
+              className="mt-0.5"
+            />
+            <span>
+              Печатать лист «Разъяснение результатов визита» (согласование назначений)
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                По умолчанию не печатается. Можно также включить на странице печати.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
     </SmartTemplatesProvider>
     </AnthroPatientContext.Provider>
