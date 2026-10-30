@@ -27,6 +27,9 @@
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+    --censor-none: 0 80% 52%;
+    --censor-mid: 45 95% 50%;
+    --censor-full: 142 65% 40%;
 
     --border: 210 30% 88%;
     --input: 210 30% 88%;
@@ -68,6 +71,9 @@
 
     --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
+    --censor-none: 0 80% 52%;
+    --censor-mid: 45 95% 50%;
+    --censor-full: 142 65% 40%;
 
     --border: 210 35% 22%;
     --input: 210 35% 22%;
