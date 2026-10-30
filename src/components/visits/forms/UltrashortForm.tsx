@@ -95,7 +95,18 @@ export function UltrashortForm({ data, onChange, patientId, currentVisitId }: Pr
 
       {/* Локальный статус — как в основном протоколе */}
       <Card>
-        <CardHeader><CardTitle className="text-sm">Локальный осмотр</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="text-sm">Локальный осмотр</CardTitle>
+          <label className="flex items-center gap-2 text-xs font-normal cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!(data as any).skip_genital_exam}
+              onChange={(e) => onChange({ skip_genital_exam: e.target.checked } as any)}
+            />
+            Не осматривать и не печатать (напр., девочка)
+          </label>
+        </CardHeader>
+        {!(data as any).skip_genital_exam && (
         <CardContent className="space-y-4">
           {legacyLsText && (
             <div className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
@@ -187,6 +198,7 @@ export function UltrashortForm({ data, onChange, patientId, currentVisitId }: Pr
             />
           </div>
         </CardContent>
+        )}
       </Card>
 
       {/* Заключение и рекомендации */}

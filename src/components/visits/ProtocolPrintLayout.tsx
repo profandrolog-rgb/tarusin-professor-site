@@ -435,7 +435,7 @@ const KNOWN_KEYS = new Set([
   "somatic","sexual_formula","sexual_formula_text","sexual_constitution","local_status",
   "ortho_status","neuro_status","neuro_status_full","psych_status","psych_status_full","psych_conclusion",
   "proj_person","proj_htp","proj_family","proj_animal","proj_free",
-  "uzi","assignments","fields","voiding_diary","no_uzi","gyn_exam","girl_local","pelvis_uzi",
+  "uzi","assignments","fields","voiding_diary","no_uzi","gyn_exam","girl_local","pelvis_uzi","skip_genital_exam",
   "cbc","urinalysis","biochem","hormones","other_labs",
   "operation_name","operation_date","temperature","general_status","wound_status","dressing","pain","healing","sutures_removed",
   // online_consult
@@ -562,7 +562,9 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     if (d.consultation_notes) {
       rows.push(<Field key="cn" label="Сведения о консультации" value={d.consultation_notes} />);
     }
-    if (typeof d.local_status === "string" && d.local_status) {
+    if (d.skip_genital_exam) {
+      // Осмотр мужских половых органов не проводился — не печатаем
+    } else if (typeof d.local_status === "string" && d.local_status) {
       rows.push(<Field key="ls-legacy" label="Локальный статус" value={d.local_status} />);
     } else {
       pushLocalStatus(rows, d);
