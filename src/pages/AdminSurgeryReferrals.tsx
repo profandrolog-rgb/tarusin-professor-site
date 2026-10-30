@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReferralEffectiveness } from "@/components/surgery/ReferralEffectiveness";
 import {
   Select,
   SelectContent,
@@ -198,6 +200,16 @@ export default function AdminSurgeryReferrals() {
           </p>
         </div>
 
+        <Tabs defaultValue="list">
+          <TabsList>
+            <TabsTrigger value="list">Все путёвки</TabsTrigger>
+            <TabsTrigger value="effectiveness">Анализ эффективности</TabsTrigger>
+          </TabsList>
+          <TabsContent value="effectiveness" className="mt-4">
+            {loading ? null : <ReferralEffectiveness referrals={rows} />}
+          </TabsContent>
+          <TabsContent value="list" className="mt-4 space-y-4">
+
         <div className="grid gap-3 sm:grid-cols-4">
           {[
             { label: "Активные путёвки", value: stats.active, icon: CheckCircle2 },
@@ -306,6 +318,8 @@ export default function AdminSurgeryReferrals() {
             })}
           </div>
         )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
