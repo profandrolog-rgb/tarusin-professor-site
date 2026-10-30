@@ -206,7 +206,7 @@ export default function AdminSurgeryReferrals() {
             <TabsTrigger value="effectiveness">Анализ эффективности</TabsTrigger>
           </TabsList>
           <TabsContent value="effectiveness" className="mt-4">
-            {loading ? null : <ReferralEffectiveness referrals={rows} />}
+            {loading ? null : <ReferralEffectiveness referrals={rows} onDelete={removeReferral} />}
           </TabsContent>
           <TabsContent value="list" className="mt-4 space-y-4">
 
