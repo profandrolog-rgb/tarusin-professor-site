@@ -3817,6 +3817,104 @@ export type Database = {
         }
         Relationships: []
       }
+      private_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      private_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          meta: Json
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          meta?: Json
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          meta?: Json
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "private_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_vault: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          locked_until: string | null
+          models: Json
+          phrase_hash: string
+          pin_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          models?: Json
+          phrase_hash: string
+          pin_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          models?: Json
+          phrase_hash?: string
+          pin_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -7134,6 +7232,7 @@ export type Database = {
       }
       increment_video_view: { Args: { _slug: string }; Returns: undefined }
       is_guardian_of: { Args: { _patient_id: string }; Returns: boolean }
+      is_private_vault_owner: { Args: { _uid: string }; Returns: boolean }
       mark_public_referral_item: {
         Args: { _done: boolean; _hash: string; _item_id: string }
         Returns: boolean
@@ -7158,6 +7257,26 @@ export type Database = {
         Returns: number
       }
       next_history_number: { Args: never; Returns: string }
+      private_vault_change: {
+        Args: {
+          _old_phrase: string
+          _old_pin: string
+          _phrase: string
+          _pin: string
+        }
+        Returns: boolean
+      }
+      private_vault_set_models: { Args: { _models: Json }; Returns: boolean }
+      private_vault_setup: {
+        Args: { _phrase: string; _pin: string }
+        Returns: boolean
+      }
+      private_vault_status: { Args: never; Returns: Json }
+      private_vault_verify: {
+        Args: { _phrase: string; _pin: string }
+        Returns: Json
+      }
+      private_vault_wipe: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
