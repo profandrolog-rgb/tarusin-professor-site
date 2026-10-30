@@ -17,6 +17,7 @@ import { getOpenRouterModelTags } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import {
   PRESET_MODELS, DEFAULT_ENABLED, isValidModelId, GENERAL_SYSTEM_PROMPT, GENERAL_SUMMARIZER_PROMPT,
+  CENSOR_LABELS, type CensorLevel,
 } from "@/lib/privateOrchestrator/models";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
@@ -115,23 +116,46 @@ function ModelsDialog({ open, onOpenChange, enabled, onSave }: {
     return list.filter((m) => m.id.toLowerCase().includes(t) || (m.name || "").toLowerCase().includes(t)).slice(0, 40);
   }, [q, list]);
 
-  const Row = ({ id, label, note }: { id: string; label: string; note?: string }) => (
-    <label className="flex items-center gap-2 py-1 text-sm cursor-pointer">
-      <Checkbox checked={sel.includes(id)} onCheckedChange={() => toggle(id)} />
-      <span className="flex-1">{label} <span className="text-xs text-muted-foreground">{id}</span></span>
-      {note && <Badge variant="outline" className="text-[10px]">{note}</Badge>}
-    </label>
-  );
+  const censorDot: Record<CensorLevel, string> = { none: "bg-censor-none", mid: "bg-censor-mid", full: "bg-censor-full" };
+  const Row = ({ id, label, note }: { id: string; label: string; note?: string }) => {
+    const p = PRESET_MODELS.find((m) => m.id === id);
+    return (
+      <label className="flex items-center gap-2 py-1 text-sm cursor-pointer">
+        <Checkbox checked={sel.includes(id)} onCheckedChange={() => toggle(id)} />
+        {p && <span className={`h-3 w-3 rounded-full shrink-0 ${censorDot[p.censor]}`} title={CENSOR_LABELS[p.censor]} />}
+        <span className="flex-1">{label} <span className="text-xs text-muted-foreground">{id}</span></span>
+        {p && <Badge variant="secondary" className="text-[10px] tabular-nums" title="Сила модели (10 — самая сильная)">{p.power}/10</Badge>}
+        {note && <Badge variant="outline" className="text-[10px]">{note}</Badge>}
+      </label>
+    );
+  };
+  const presetNote = (id: string) => (!loading && !id.startsWith("venice/") && !liveIds.has(id) ? "нет в каталоге" : undefined);
+  const uncensoredIds = PRESET_MODELS.filter((m) => m.censor === "none").map((m) => m.id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Подключённые модели</DialogTitle></DialogHeader>
         <div className="space-y-4">
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-censor-none" />без цензуры</span>
+            <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-censor-mid" />умеренная цензура</span>
+            <span className="flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-censor-full" />обычная цензура</span>
+            <span>· балл — сила модели (10 — самая сильная, 1 — слабая)</span>
+          </div>
           <div>
             <h4 className="font-semibold text-sm mb-1">Флагманы</h4>
             {PRESET_MODELS.filter((m) => m.group === "flagship").map((m) => (
-              <Row key={m.id} id={m.id} label={m.label} note={!loading && !m.id.startsWith("venice/") && !liveIds.has(m.id) ? "нет в каталоге" : undefined} />
+              <Row key={m.id} id={m.id} label={m.label} note={presetNote(m.id)} />
+            ))}
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="font-semibold text-sm">Без цензуры / Instruct</h4>
+              <Button size="sm" variant="outline" onClick={() => setSel((s) => Array.from(new Set([...s, ...uncensoredIds])))}>Отметить все без цензуры</Button>
+            </div>
+            {PRESET_MODELS.filter((m) => m.group === "uncensored").map((m) => (
+              <Row key={m.id} id={m.id} label={m.label} note={presetNote(m.id)} />
             ))}
           </div>
           {error && <p className="text-sm text-destructive">Не удалось проверить каталог OpenRouter: {error}</p>}
@@ -145,12 +169,6 @@ function ModelsDialog({ open, onOpenChange, enabled, onSave }: {
               </details>
             );
           })}
-          <div>
-            <h4 className="font-semibold text-sm mb-1">Другие предустановленные модели / Venice</h4>
-            {PRESET_MODELS.filter((m) => m.group === "uncensored").map((m) => (
-              <Row key={m.id} id={m.id} label={m.label} note={!loading && !m.id.startsWith("venice/") && !liveIds.has(m.id) ? "нет в каталоге" : undefined} />
-            ))}
-          </div>
           <div>
             <h4 className="font-semibold text-sm mb-1">Поиск по каталогу OpenRouter {loading && <Loader2 className="inline h-3 w-3 animate-spin" />}</h4>
             <Input placeholder="например: abliterated, hermes, llama, instruct…" value={q} onChange={(e) => setQ(e.target.value)} />

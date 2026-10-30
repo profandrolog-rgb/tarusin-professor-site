@@ -27,6 +27,11 @@ export default {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
         },
+        censor: {
+          none: "hsl(var(--censor-none))",
+          mid: "hsl(var(--censor-mid))",
+          full: "hsl(var(--censor-full))",
+        },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
