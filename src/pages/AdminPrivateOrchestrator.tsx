@@ -295,7 +295,7 @@ function Workspace({ userId, models, setModels, onLock }: {
       if (!resp.ok || !resp.body) throw new Error((await resp.text().catch(() => "")) || `HTTP ${resp.status}`);
       usedModel = resp.headers.get("x-used-model");
       const reader = resp.body.getReader(); const dec = new TextDecoder();
-      let buf = ""; let ev: string | null = null;
+      let buf = ""; let ev: string | null = null; let reasoningLen = 0;
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -313,13 +313,20 @@ function Workspace({ userId, models, setModels, onLock }: {
           if (ev === "progress") { if (p.stage === "fanout") setStatus(`Ответили ${p.done} из ${p.total}…`); continue; }
           if (ev === "error") throw new Error(p?.error || p?.message || "Ошибка модели");
           if (ev) continue;
+          const r = p?.choices?.[0]?.delta?.reasoning ?? p?.choices?.[0]?.delta?.reasoning_content;
+          if (typeof r === "string" && r && !answer) {
+            reasoningLen += r.length;
+            setStatus(`Модель рассуждает… (${reasoningLen} симв.)`);
+          }
           const d = p?.delta ?? p?.choices?.[0]?.delta?.content;
           if (typeof d === "string" && d) {
+            if (!answer) setStatus("Пишу ответ…");
             answer += d;
             setMsgs((m) => { const c = [...m]; c[c.length - 1] = { role: "assistant", content: answer }; return c; });
           }
         }
       }
+      if (!answer) answer = reasoningLen ? "⚠️ Модель только рассуждала и не выдала текст ответа. Попробуйте ещё раз." : "⚠️ Модель не вернула ответ.";
     } catch (e: any) {
       const msg = e?.name === "AbortError" ? "⏹ Остановлено" : `⚠️ Ошибка: ${String(e?.message || e).slice(0, 400)}`;
       answer = answer ? `${answer}\n\n${msg}` : msg;
