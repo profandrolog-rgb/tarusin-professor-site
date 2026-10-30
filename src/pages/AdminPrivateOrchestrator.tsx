@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ChatMarkdown } from "@/components/cabinet/ChatMarkdown";
+import { getOpenRouterModelTags } from "@/config/aiModels";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import {
   PRESET_MODELS, DEFAULT_ENABLED, isValidModelId, GENERAL_SYSTEM_PROMPT, GENERAL_SUMMARIZER_PROMPT,
@@ -100,7 +101,7 @@ function Gate({ mode, onUnlocked }: { mode: "setup" | "locked"; onUnlocked: (mod
 function ModelsDialog({ open, onOpenChange, enabled, onSave }: {
   open: boolean; onOpenChange: (v: boolean) => void; enabled: string[]; onSave: (ids: string[]) => void;
 }) {
-  const { list, loading } = useOpenRouterModels();
+  const { list, loading, error } = useOpenRouterModels();
   const [sel, setSel] = useState<string[]>(enabled);
   const [q, setQ] = useState("");
   const [custom, setCustom] = useState("");
@@ -133,8 +134,19 @@ function ModelsDialog({ open, onOpenChange, enabled, onSave }: {
               <Row key={m.id} id={m.id} label={m.label} note={!loading && !m.id.startsWith("venice/") && !liveIds.has(m.id) ? "нет в каталоге" : undefined} />
             ))}
           </div>
+          {error && <p className="text-sm text-destructive">Не удалось проверить каталог OpenRouter: {error}</p>}
+          {["Instruct", "Abliterated", "Uncensored"].map((tag) => {
+            const models = list.filter((m) => getOpenRouterModelTags(m).includes(tag));
+            return (
+              <details key={tag}>
+                <summary className="cursor-pointer font-semibold text-sm">OpenRouter · {tag} ({models.length})</summary>
+                {models.map((m) => <Row key={m.id} id={m.id} label={m.name || m.id} note={tag} />)}
+                {!loading && !error && !models.length && <p className="text-sm text-muted-foreground">В текущем каталоге не найдены</p>}
+              </details>
+            );
+          })}
           <div>
-            <h4 className="font-semibold text-sm mb-1">🌶 Instruct / Abliterated / Uncensored</h4>
+            <h4 className="font-semibold text-sm mb-1">Другие предустановленные модели / Venice</h4>
             {PRESET_MODELS.filter((m) => m.group === "uncensored").map((m) => (
               <Row key={m.id} id={m.id} label={m.label} note={!loading && !m.id.startsWith("venice/") && !liveIds.has(m.id) ? "нет в каталоге" : undefined} />
             ))}
@@ -142,7 +154,7 @@ function ModelsDialog({ open, onOpenChange, enabled, onSave }: {
           <div>
             <h4 className="font-semibold text-sm mb-1">Поиск по каталогу OpenRouter {loading && <Loader2 className="inline h-3 w-3 animate-spin" />}</h4>
             <Input placeholder="например: abliterated, hermes, llama, instruct…" value={q} onChange={(e) => setQ(e.target.value)} />
-            <div className="mt-1">{found.map((m) => <Row key={m.id} id={m.id} label={m.name || m.id} />)}</div>
+            <div className="mt-1">{found.map((m) => <Row key={m.id} id={m.id} label={m.name || m.id} note={getOpenRouterModelTags(m).join(" · ") || undefined} />)}</div>
           </div>
           <div>
             <h4 className="font-semibold text-sm mb-1">Добавить по ID вручную</h4>
