@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Loader2, Printer, ArrowLeft, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProtocolPrintLayout } from "@/components/visits/ProtocolPrintLayout";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,7 @@ export default function AdminPatientVisitPrint() {
   const [visit, setVisit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [understanding, setUnderstanding] = useState<boolean | undefined>(undefined);
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -91,7 +93,14 @@ export default function AdminPatientVisitPrint() {
         <Button variant="ghost" size="sm" asChild>
           <Link to={`/admin/visits/${id}`}><ArrowLeft className="h-4 w-4 mr-1" /> Назад</Link>
         </Button>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <label className="flex items-center gap-2 text-sm cursor-pointer mr-2">
+            <Checkbox
+              checked={understanding ?? visit?.protocol_data?.include_understanding === true}
+              onCheckedChange={(v) => setUnderstanding(v === true)}
+            />
+            Лист разъяснения результатов
+          </label>
           <Button variant="outline" onClick={handlePdf} disabled={pdfBusy}>
             {pdfBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
             Скачать PDF
@@ -101,7 +110,7 @@ export default function AdminPatientVisitPrint() {
       </div>
 
       <div ref={printRef} className="max-w-5xl mx-auto bg-white shadow-md">
-        <ProtocolPrintLayout visit={visit} />
+        <ProtocolPrintLayout visit={visit} includeUnderstanding={understanding} />
       </div>
     </div>
   );
