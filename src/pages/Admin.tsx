@@ -263,6 +263,13 @@ const siteSections = [
     color: "text-amber-600",
   },
   {
+    title: "🔒 Личный советник / Оркестратор",
+    description: "Закрытая беседа с ИИ и консилиум моделей на любые темы (PIN + секретная фраза)",
+    icon: Settings,
+    href: "/admin/private-orchestrator",
+    color: "text-rose-600",
+  },
+  {
     title: "Серверы и VPN",
     description: "Переход к панели 3x-ui и консоли VPS netcup",
     icon: Server,
