@@ -43,6 +43,13 @@
       "when": 1793362984721,
       "tag": "0005_private_orchestrator",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793363000450,
+      "tag": "0006_private_vault_verify_fix",
+      "breakpoints": true
     }
   ]
 }
