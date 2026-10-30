@@ -326,6 +326,7 @@ function Workspace({ userId, models, setModels, onLock }: {
           }
         }
       }
+      if (!answer) answer = reasoningLen ? "⚠️ Модель только рассуждала и не выдала текст ответа. Попробуйте ещё раз." : "⚠️ Модель не вернула ответ.";
     } catch (e: any) {
       const msg = e?.name === "AbortError" ? "⏹ Остановлено" : `⚠️ Ошибка: ${String(e?.message || e).slice(0, 400)}`;
       answer = answer ? `${answer}\n\n${msg}` : msg;
