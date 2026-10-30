@@ -1,12 +1,14 @@
 // Pick any OpenRouter model (search) — for one-off use beyond the curated list.
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search } from "lucide-react";
 import { useOpenRouterModels } from "@/hooks/useOpenRouterModels";
 import { useVeniceModels } from "@/hooks/useVeniceModels";
-import { formatPricePerMtok } from "@/config/aiModels";
+import { getOpenRouterModelTags, formatPricePerMtok } from "@/config/aiModels";
 
 export function ExtendedModelPicker({
   open,
@@ -22,6 +24,7 @@ export function ExtendedModelPicker({
   const { list, loading, error } = useOpenRouterModels();
   const { list: veniceList, loading: veniceLoading } = useVeniceModels();
   const [q, setQ] = useState("");
+  const [category, setCategory] = useState("Все");
 
   const combined = useMemo(() => {
     // Venice сверху, чтобы было заметно
@@ -36,8 +39,8 @@ export function ExtendedModelPicker({
           (m.name || "").toLowerCase().includes(needle),
         )
       : combined;
-    return base.slice(0, 400);
-  }, [combined, q]);
+    return category === "Все" ? base : base.filter((m) => !m.id.startsWith("venice/") && getOpenRouterModelTags(m).includes(category));
+  }, [combined, q, category]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,6 +62,14 @@ export function ExtendedModelPicker({
             className="pl-8"
           />
         </div>
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger aria-label="Категория моделей"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {["Все", "Instruct", "Abliterated", "Uncensored"].map((tag) => (
+              <SelectItem key={tag} value={tag}>{tag === "Все" ? "Все модели" : `OpenRouter · ${tag} (${list.filter((m) => getOpenRouterModelTags(m).includes(tag)).length})`}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" /> Загружаем список моделей…
@@ -87,6 +98,7 @@ export function ExtendedModelPicker({
                                 Venice · 🌶
                               </span>
                             )}
+                            {!m.id.startsWith("venice/") && getOpenRouterModelTags(m).map((tag) => <Badge key={tag} variant="outline">{tag}</Badge>)}
                             <span className="truncate">{m.name || m.id}</span>
                           </div>
                           <div className="text-[11px] font-mono text-muted-foreground truncate">{m.id}</div>

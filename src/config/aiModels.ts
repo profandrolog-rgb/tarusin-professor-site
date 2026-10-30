@@ -24,10 +24,10 @@ export const CURATED_MODELS: CuratedModel[] = [
   // ─── Быстрые ───────────────────────────────────────────────────────────
   {
     key: "gemini-flash",
-    label: "Gemini 3.7 Flash",
+    label: "Gemini 3.8 Flash",
     tier: "fast",
     candidates: [
-      "google/gemini-3.7-flash",
+      "google/gemini-3.8-flash", "google/gemini-3.7-flash",
       "google/gemini-3.6-flash",
       "google/gemini-3-flash-preview",
       "google/gemini-2.5-flash",
@@ -36,11 +36,11 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "claude-sonnet",
-    label: "Claude Sonnet 5",
+    label: "Claude Sonnet 5.5",
     tier: "fast",
     // Take the latest Sonnet from the live list. Candidates first, then family fallback.
     candidates: [
-      "anthropic/claude-sonnet-5",
+      "anthropic/claude-sonnet-5.5", "anthropic/claude-sonnet-5",
       "anthropic/claude-sonnet-4.7",
       "anthropic/claude-sonnet-4.6",
       "anthropic/claude-sonnet-4.5",
@@ -55,18 +55,18 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "grok-fast",
-    label: "Grok 4",
+    label: "Grok 4.7",
     tier: "fast",
     // grok-4.5 недоступен в нашем регионе (xAI отдаёт 403 permission-denied) — используем 4.3 как основной
-    candidates: ["x-ai/grok-4.6", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
+    candidates: ["x-ai/grok-4.7", "x-ai/grok-4.6", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
     familyRegex: /^x-ai\/grok-4/i,
   },
   {
     key: "qwen-flash",
-    label: "Qwen 3.7 Flash",
+    label: "Qwen 3.8 Flash",
     tier: "fast",
     candidates: [
-      "qwen/qwen3.7-flash",
+      "qwen/qwen3.8-flash", "qwen/qwen3.7-flash",
       "qwen/qwen3.6-flash",
       "qwen/qwen-3.6-flash",
       "qwen/qwen3-flash",
@@ -76,10 +76,10 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "kimi-k2",
-    label: "Kimi K3",
+    label: "Kimi K3.1 Pro",
     tier: "fast",
     candidates: [
-      "moonshotai/kimi-k3",
+      "moonshotai/kimi-k3.1-pro", "moonshotai/kimi-k3",
       "moonshotai/kimi-k2.7-code",
       "moonshotai/kimi-k2.6",
       "moonshotai/kimi-k2.5",
@@ -93,17 +93,17 @@ export const CURATED_MODELS: CuratedModel[] = [
   // ─── Глубокие ─────────────────────────────────────────────────────────
   {
     key: "gemini-pro",
-    label: "Gemini 3.1 Pro",
+    label: "Gemini 4 Argon",
     tier: "deep",
-    candidates: ["google/gemini-3.1-pro-preview", "google/gemini-2.5-pro"],
+    candidates: ["google/gemini-4-argon", "google/gemini-3.1-pro-preview", "google/gemini-2.5-pro"],
     familyRegex: /^google\/gemini-(?:2\.5|3|3\.1)[^/]*pro(?!-image)/i,
   },
   {
     key: "claude-opus",
-    label: "Claude Opus 5",
+    label: "Claude Opus 5.5",
     tier: "deep",
     candidates: [
-      "anthropic/claude-opus-5",
+      "anthropic/claude-opus-5.5", "anthropic/claude-opus-5",
       "anthropic/claude-opus-5-fast",
       "anthropic/claude-opus-4.8",
       "anthropic/claude-opus-4.7",
@@ -119,10 +119,10 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "gpt56-terra-pro",
-    label: "GPT-5.6 Luna Pro",
+    label: "GPT-6.1 Terra Pro",
     tier: "deep",
     candidates: [
-      "openai/gpt-5.6-luna-pro",
+      "openai/gpt-6.1-terra-pro", "openai/gpt-5.6-luna-pro",
       "openai/gpt-5.6-terra-pro",
       "openai/gpt-5.6-sol-pro",
       "openai/gpt-5.6-luna",
@@ -154,9 +154,9 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "mistral-large",
-    label: "Mistral Large 3",
+    label: "Mistral Large 4",
     tier: "deep",
-    candidates: ["mistralai/mistral-large-2512", "mistralai/mistral-large"],
+    candidates: ["mistralai/mistral-large-4-0", "mistralai/mistral-large-2512", "mistralai/mistral-large"],
     familyRegex: /^mistralai\/mistral-large/i,
   },
   {
@@ -181,17 +181,17 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "glm-5",
-    label: "GLM-5.2 (Zhipu AI)",
+    label: "GLM-5.3 Prime (Zhipu AI)",
     tier: "deep",
-    candidates: ["z-ai/glm-5.2", "z-ai/glm-5"],
+    candidates: ["z-ai/glm-5.3-prime", "z-ai/glm-5.2", "z-ai/glm-5"],
     familyRegex: /^z-ai\/glm-/i,
   },
   {
     key: "qwen-max",
-    label: "Qwen 3.8 Max",
+    label: "Qwen 3.8 Max Prime",
     tier: "deep",
     candidates: [
-      "qwen/qwen3.8-max",
+      "qwen/qwen3.8-max-prime", "qwen/qwen3.8-max",
       "qwen/qwen3.7-max",
       "qwen/qwen3-max",
       "qwen/qwen-max",
@@ -200,9 +200,9 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "mimo-v25-pro",
-    label: "MiMo 2.5 Pro (Xiaomi)",
+    label: "MiMo 2.6 Pro (Xiaomi)",
     tier: "deep",
-    candidates: ["xiaomi/mimo-v2.5-pro", "xiaomi/mimo-2.5-pro", "xiaomi/mimo-pro"],
+    candidates: ["xiaomi/mimo-v2.6-pro", "xiaomi/mimo-v2.5-pro", "xiaomi/mimo-2.5-pro", "xiaomi/mimo-pro"],
     familyRegex: /^xiaomi\/mimo-/i,
   },
 
@@ -467,4 +467,16 @@ export function buildModelTooltip(r: ResolvedModel): string {
   const outP = formatPricePerMtok(li?.pricing?.completion);
   if (inP || outP) lines.push(`Цена: вход ${inP ?? "—"}, выход ${outP ?? "—"}`);
   return lines.join("\n");
+}
+
+/** Explicit catalog labels only: Instruct does not imply Abliterated. */
+export function getOpenRouterModelTags(model: LiveModelInfo): string[] {
+  const output = model.architecture?.output_modalities;
+  if (output?.length && !output.includes("text")) return [];
+  const text = `${model.id} ${model.name ?? ""}`;
+  const tags: string[] = [];
+  if (/\binstruct\b/i.test(text)) tags.push("Instruct");
+  if (/\babliterated\b/i.test(text)) tags.push("Abliterated");
+  if (/\buncensored\b/i.test(text)) tags.push("Uncensored");
+  return tags;
 }
