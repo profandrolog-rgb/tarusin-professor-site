@@ -37,7 +37,10 @@ export function VoidingDiarySection({ data, onChange }: { data?: VoidingDiary; o
                 </div>
                 {rows.map((r, j) => (
                   <div key={j} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-1 items-center">
-                    <Input className="h-7 text-xs px-1" placeholder="чч:мм" value={r.time || ""} onChange={(e) => setRow(i, j, { time: e.target.value })} />
+                    <Input className="h-7 text-xs px-1" placeholder="чч:мм" inputMode="numeric" value={r.time || ""} onChange={(e) => {
+                      const dg = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      setRow(i, j, { time: dg.length > 2 ? `${dg.slice(0, 2)}:${dg.slice(2)}` : dg });
+                    }} />
                     <Input className="h-7 text-xs px-1" inputMode="decimal" value={r.drank || ""} onChange={(e) => setRow(i, j, { drank: e.target.value })} />
                     <Input className="h-7 text-xs px-1" inputMode="decimal" value={r.voided || ""} onChange={(e) => setRow(i, j, { voided: e.target.value })} />
                     <Checkbox checked={isNight(r)} onCheckedChange={(v) => setRow(i, j, { night: v === true })} />
