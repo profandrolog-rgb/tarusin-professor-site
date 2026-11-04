@@ -1,9 +1,9 @@
-/** Дневник ритма микций: 3 суток × 12 строк. Ночь по умолчанию 22:00–06:00, можно отметить вручную. */
+/** Дневник ритма микций: 3 суток × 20 строк. Ночь по умолчанию 22:00–06:00, можно отметить вручную. */
 export interface DiaryRow { time?: string; drank?: string; voided?: string; night?: boolean }
 export interface VoidingDiary { enabled?: boolean; days?: DiaryRow[][]; conclusion?: string }
 
 export const DIARY_DAYS = 3;
-export const DIARY_ROWS = 12;
+export const DIARY_ROWS = 20;
 
 const toMin = (t?: string): number | null => {
   const m = /^(\d{1,2})[:.,](\d{2})$/.exec((t || "").trim());
