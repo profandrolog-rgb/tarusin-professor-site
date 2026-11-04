@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown, FileUp } from "lucide-react";
+import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown, FileUp, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { exportNodeToPdf } from "@/lib/exportPdf";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -750,14 +754,38 @@ export default function AdminPatientVisitDetail() {
                         Интервал дат
                       </label>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input type="date" value={visit.next_visit_date || ""} onChange={(e) => update({ next_visit_date: e.target.value || null })} />
-                      {range && (
-                        <>
-                          <span className="text-muted-foreground">—</span>
-                          <Input type="date" value={pd.next_visit_date_to || ""} min={visit.next_visit_date || undefined} onChange={(e) => setPd({ next_visit_date_to: e.target.value || null })} />
-                        </>
-                      )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(() => {
+                        const toD = (s?: string | null) => (s ? new Date(s.slice(0, 10) + "T00:00:00") : undefined);
+                        const toS = (d?: Date) => (d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : null);
+                        const from = toD(visit.next_visit_date);
+                        const to = toD(pd.next_visit_date_to);
+                        const label = visit.next_visit_date ? formatNextVisitDate(visit.next_visit_date, range ? pd : {}) : "Выберите дату";
+                        return (
+                          <>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="outline" className={cn("justify-start gap-2", !from && "text-muted-foreground")}>
+                                  <CalendarIcon className="h-4 w-4" />{label}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                {range ? (
+                                  <Calendar mode="range" selected={{ from, to }} numberOfMonths={2} initialFocus className="p-3 pointer-events-auto"
+                                    onSelect={(r: any) => update({ next_visit_date: toS(r?.from), protocol_data: { ...pd, next_visit_date_to: toS(r?.to) } })} />
+                                ) : (
+                                  <Calendar mode="single" selected={from} initialFocus className="p-3 pointer-events-auto"
+                                    onSelect={(d: any) => update({ next_visit_date: toS(d) })} />
+                                )}
+                              </PopoverContent>
+                            </Popover>
+                            {from && (
+                              <Button type="button" variant="ghost" size="sm"
+                                onClick={() => update({ next_visit_date: null, protocol_data: { ...pd, next_visit_date_to: null } })}>Сбросить</Button>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Рекомендованное время приёма *</Label>
