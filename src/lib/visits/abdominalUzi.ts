@@ -36,6 +36,15 @@ export const ABDOMINAL_GROUPS: { title: string; fields: AbdominalField[] }[] = [
     { key: "spleen_width", label: "Ширина, мм", numeric: true },
     { key: "spleen_thickness", label: "Толщина, мм", numeric: true },
   ] },
+  { title: "Желудок и пилорический отдел", fields: [
+    { key: "stomach", label: "Желудок (визуализируемые отделы)" },
+    { key: "stomach_wall", label: "Толщина стенки желудка, мм", numeric: true },
+    { key: "stomach_contents", label: "Содержимое желудка и перистальтика" },
+    { key: "pylorus", label: "Пилорический отдел" },
+    { key: "pylorus_muscle", label: "Толщина мышечного слоя привратника, мм", numeric: true },
+    { key: "pylorus_length", label: "Длина пилорического канала, мм", numeric: true },
+    { key: "pylorus_passage", label: "Раскрытие привратника и пассаж содержимого (если оценивались)" },
+  ] },
   { title: "Лимфатические узлы и кишечник", fields: [
     { key: "lymph_nodes", label: "Лимфатические узлы брыжейки", standard: "Визуализируются единичные лимфатические узлы брыжейки." },
     { key: "lymph_max", label: "Максимальный размер лимфоузла, мм", numeric: true },
