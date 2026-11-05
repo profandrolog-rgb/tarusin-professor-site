@@ -19,7 +19,8 @@ export function HistoryDocumentsDialog({ open, onOpenChange, patientId, anamnesi
   const patch = (id: string, changes: Partial<Item>) => setItems((current) => current.map((item) => item.id === id ? { ...item, ...changes } : item));
   const add = (files: FileList | null) => {
     if (!files) return;
-    setItems((current) => [...current, ...Array.from(files).map((file): Item => ({ id: crypto.randomUUID(), file, text: "", state: "waiting", confirmed: false }))]);
+    const added = Array.from(files).map((file): Item => ({ id: crypto.randomUUID(), file, text: "", state: "waiting", confirmed: false }));
+    setItems((current) => [...current, ...added]);
   };
   const recognize = async (queue: Item[]) => {
     setBusy(true);
