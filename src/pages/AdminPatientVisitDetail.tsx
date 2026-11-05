@@ -92,6 +92,7 @@ export default function AdminPatientVisitDetail() {
 
   const [labsRefresh, setLabsRefresh] = useState(0);
   const [previewLabs, setPreviewLabs] = useState<{ labs: any[]; dynamics: any[] }>({ labs: [], dynamics: [] });
+  const [calendarMonth, setCalendarMonth] = useState<Date | undefined>(undefined);
 
   // Для окна «Предпросмотр»: та же таблица анализов и динамика, что на странице печати
   useEffect(() => {
@@ -760,21 +761,50 @@ export default function AdminPatientVisitDetail() {
                         const toS = (d?: Date) => (d ? new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10) : null);
                         const from = toD(visit.next_visit_date);
                         const to = toD(pd.next_visit_date_to);
-                        const label = visit.next_visit_date ? formatNextVisitDate(visit.next_visit_date, range ? pd : {}) : "Выберите дату";
+                        const activeMonth = calendarMonth || from || new Date();
                         return (
                           <>
+                            <div className="flex items-center gap-1.5">
+                              <Input
+                                type="date"
+                                className="h-9 w-[150px] text-sm bg-background"
+                                value={visit.next_visit_date || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value || null;
+                                  update({ next_visit_date: val });
+                                  const d = toD(val);
+                                  if (d && !isNaN(d.getTime())) setCalendarMonth(d);
+                                }}
+                              />
+                              {range && (
+                                <>
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                  <Input
+                                    type="date"
+                                    className="h-9 w-[150px] text-sm bg-background"
+                                    value={pd.next_visit_date_to || ""}
+                                    onChange={(e) => setPd({ next_visit_date_to: e.target.value || null })}
+                                  />
+                                </>
+                              )}
+                            </div>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button type="button" variant="outline" className={cn("justify-start gap-2", !from && "text-muted-foreground")}>
-                                  <CalendarIcon className="h-4 w-4" />{label}
+                                <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 px-3">
+                                  <CalendarIcon className="h-4 w-4" />
+                                  Календарь
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
+                              <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
                                 {range ? (
-                                  <Calendar mode="range" selected={{ from, to }} numberOfMonths={2} initialFocus className="p-3 pointer-events-auto"
+                                  <Calendar mode="range" selected={{ from, to }} numberOfMonths={2} fixedWeeks
+                                    month={activeMonth} onMonthChange={setCalendarMonth}
+                                    initialFocus className="p-3 pointer-events-auto"
                                     onSelect={(r: any) => update({ next_visit_date: toS(r?.from), protocol_data: { ...pd, next_visit_date_to: toS(r?.to) } })} />
                                 ) : (
-                                  <Calendar mode="single" selected={from} initialFocus className="p-3 pointer-events-auto"
+                                  <Calendar mode="single" selected={from} fixedWeeks
+                                    month={activeMonth} onMonthChange={setCalendarMonth}
+                                    initialFocus className="p-3 pointer-events-auto"
                                     onSelect={(d: any) => update({ next_visit_date: toS(d) })} />
                                 )}
                               </PopoverContent>
