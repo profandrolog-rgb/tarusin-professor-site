@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement, ReactElement } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProtocolType } from "@/lib/visits/protocolTypes";
 import { UltrashortForm } from "./forms/UltrashortForm";
 import { PostOpDay3Form } from "./forms/PostOpDay3Form";
@@ -11,6 +12,8 @@ import { GenericFieldsForm } from "./forms/GenericFieldsForm";
 import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import { PeptideProgramForm } from "./forms/PeptideProgramForm";
 import { GirlUrologyForm } from "./forms/GirlUrologyForm";
+import { AbdominalUziForm } from "./forms/AbdominalUziForm";
+import { AbdominalUziSection } from "./sections/AbdominalUziSection";
 import { VoidingDiarySection } from "./sections/VoidingDiarySection";
 import {
   SmartTemplatesProvider,
@@ -79,6 +82,8 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
         return <OnlineConsultForm data={data || {}} onChange={patch} {...historyProps} />;
       case "peptide_program":
         return <PeptideProgramForm data={data || {}} onChange={patch} {...historyProps} />;
+      case "uzi_abdominal":
+        return <AbdominalUziForm data={data || {}} onChange={patch} {...historyProps} />;
       case "girl_urology":
         return <GirlUrologyForm data={data || {}} onChange={patch} {...historyProps} />;
 
@@ -147,7 +152,21 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
             onChange={patchCycle}
           />
         ) : null}
-        {renderForm()}
+        {type === "uzi_abdominal" ? renderForm() : (
+          <Tabs defaultValue="main">
+            <TabsList className="h-auto flex-wrap">
+              <TabsTrigger value="main">Основной протокол</TabsTrigger>
+              <TabsTrigger value="abdominal">УЗИ брюшной полости</TabsTrigger>
+            </TabsList>
+            <TabsContent value="main" forceMount className="data-[state=inactive]:hidden">{renderForm()}</TabsContent>
+            <TabsContent value="abdominal" forceMount className="data-[state=inactive]:hidden">
+              <AbdominalUziSection
+                data={data?.abdominal_uzi}
+                onChange={(v) => patch({ abdominal_uzi: v })}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
         {/* Универсальный опциональный блок УЗДГ органов МПС */}
         {!["uzi_reproductive", "uzi_urinary", "uzi_bladder", "dynamic_with_uzi", "repeat_with_uzi", "girl_urology"].includes(type) ? (
           <ExtraUziMpsSection

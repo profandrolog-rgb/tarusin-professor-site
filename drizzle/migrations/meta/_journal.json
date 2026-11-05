@@ -50,6 +50,13 @@
       "when": 1793363000450,
       "tag": "0006_private_vault_verify_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793874721146,
+      "tag": "0007_add_abdominal_uzi_protocol",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { formatSexualConstitution } from "./sections/SexualConstitution";
 import { RichText, hasAnyValue, isTemplateStub } from "@/lib/visits/richText";
 import { calcDiary, fmtMin, isNight, type DiaryRow } from "@/lib/visits/voidingDiary";
 import { GIRL_LOCAL_FIELDS, GIRL_PELVIS_FIELDS } from "@/lib/visits/girlExam";
+import { abdominalPrintFields } from "@/lib/visits/abdominalUzi";
 
 interface RecognizedLab {
   test_name: string;
@@ -435,7 +436,7 @@ const KNOWN_KEYS = new Set([
   "somatic","sexual_formula","sexual_formula_text","sexual_constitution","local_status",
   "ortho_status","neuro_status","neuro_status_full","psych_status","psych_status_full","psych_conclusion",
   "proj_person","proj_htp","proj_family","proj_animal","proj_free",
-  "uzi","assignments","fields","voiding_diary","no_uzi","gyn_exam","girl_local","pelvis_uzi","skip_genital_exam",
+  "uzi","assignments","fields","abdominal_uzi","voiding_diary","no_uzi","gyn_exam","girl_local","pelvis_uzi","skip_genital_exam",
   "cbc","urinalysis","biochem","hormones","other_labs",
   "operation_name","operation_date","temperature","general_status","wound_status","dressing","pain","healing","sutures_removed",
   // online_consult
@@ -692,6 +693,14 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
 
+  if (t === "uzi_abdominal") {
+    rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
+    rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
+    rows.push(<Field key="i" label="Показания к исследованию" value={d.indications} />);
+    rows.push(<Field key="dev" label="Аппарат / датчик" value={d.device} />);
+  }
+
   if (t === "girl_urology") {
     rows.push(<Field key="c" label="Жалобы" value={d.complaints} />);
     rows.push(<Field key="a" label="Анамнез" value={d.anamnesis} />);
@@ -874,6 +883,18 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     );
   }
 
+
+  const abdominalFields = abdominalPrintFields(d.abdominal_uzi);
+  if (abdominalFields.length > 0) {
+    const abdominalBlock = (
+      <Section key="abdominal-uzi" title="УЗИ органов брюшной полости">
+        {abdominalFields.map(({ label, value }) => <Field key={label} label={label} value={value} />)}
+      </Section>
+    );
+    const conclusionIndex = rows.findIndex((r: any) => r && r.key === "z");
+    if (conclusionIndex >= 0) rows.splice(conclusionIndex, 0, abdominalBlock);
+    else rows.push(abdominalBlock);
+  }
 
   // Дневник ритма микций — перед заключением
   const vd = d.voiding_diary;
