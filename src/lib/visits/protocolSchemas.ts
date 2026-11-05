@@ -266,6 +266,9 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     recommendations: "Контрольный осмотр / повторная консультация по согласованию.",
   } as OnlineConsultData,
   peptide_program: DEFAULT_PEPTIDE_PROGRAM,
+  uzi_abdominal: {
+    abdominal_uzi: { enabled: true, values: {}, conclusion: "" },
+  },
   girl_urology: {
     somatic: DEFAULT_SOMATIC,
     girl_local: defaultsOf(GIRL_LOCAL_FIELDS),

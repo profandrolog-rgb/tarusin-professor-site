@@ -11,7 +11,8 @@ export type ProtocolType =
   | "repeat_with_uzi"
   | "online_consult"
   | "peptide_program"
-  | "girl_urology";
+  | "girl_urology"
+  | "uzi_abdominal";
 
 
 export interface ProtocolDef {
@@ -41,6 +42,7 @@ export const PROTOCOL_LABELS: Record<string, string> = {
   online_consult: "ONLINE консультация",
   peptide_program: "Пептидная программа",
   girl_urology: "Урологический осмотр (девочки)",
+  uzi_abdominal: "Ультразвуковое исследование органов брюшной полости",
   dynamic: "Динамический осмотр",
   unknown: "Осмотр",
 };
@@ -65,6 +67,7 @@ const PROTOCOL_SHORT: Record<string, string> = {
   online_consult: "ONLINE",
   peptide_program: "Пептидная программа",
   girl_urology: "Осмотр девочки",
+  uzi_abdominal: "УЗИ брюшной полости",
   dynamic: "Динамический",
   unknown: "Осмотр",
 };
@@ -79,6 +82,7 @@ export const PROTOCOL_TYPES: ProtocolDef[] = [
   "uzi_reproductive",
   "uzi_urinary",
   "uzi_bladder",
+  "uzi_abdominal",
 
   "postop_day3",
   "postop_day7",
