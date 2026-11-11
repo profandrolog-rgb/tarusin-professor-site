@@ -13,6 +13,7 @@ interface PrescriptionPreviewProps {
 }
 
 export function PrescriptionPreview({ prescription, trigger }: PrescriptionPreviewProps) {
+  const [revision, setRevision] = useState(0);
   const printRef = useRef<HTMLDivElement>(null);
   const [lang, setLang] = useState<PrescriptionLang>("ru");
 
@@ -56,7 +57,7 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
   };
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => { if (open) setRevision((v) => v + 1); }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline">
@@ -89,6 +90,7 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
               EN
             </button>
           </div>
+          <Button variant="outline" onClick={() => setRevision((v) => v + 1)}>Сбросить к оригиналу</Button>
           <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             {lang === "en" ? "Print" : "Печать"}
@@ -128,7 +130,7 @@ export function PrescriptionPreview({ prescription, trigger }: PrescriptionPrevi
           </div>
         )}
         <div ref={printRef} className="flex justify-center">
-          <PrescriptionPrint prescription={prescriptionForPrint} lang={lang} />
+          <PrescriptionPrint key={`${prescription.id || "draft"}-${lang}-${revision}`} prescription={prescriptionForPrint} lang={lang} editable />
         </div>
       </DialogContent>
     </Dialog>

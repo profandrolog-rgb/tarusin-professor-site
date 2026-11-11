@@ -1,15 +1,20 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
+import { ru } from "date-fns/locale";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
-function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
+function Calendar({ className, classNames, showOutsideDays = true, modifiers, modifiersClassNames, ...props }: CalendarProps) {
   return (
     <DayPicker
+      locale={ru}
+      weekStartsOn={1}
+      modifiers={{ ...modifiers, reception: { dayOfWeek: [3, 4] } }}
+      modifiersClassNames={{ ...modifiersClassNames, reception: "bg-primary/10 [&:not([aria-selected=true])]:text-primary" }}
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
