@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Printer, Copy, Search, Loader2, Trash2, UserPlus } from "lucide-react";
-import { PrescriptionPrint } from "./PrescriptionPrint";
+import { PrescriptionPreview } from "./PrescriptionPreview";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,10 +27,8 @@ export function PrescriptionHistory({ onRepeat, onRepeatForOther }: Prescription
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [printPrescription, setPrintPrescription] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
 
   const fetchPrescriptions = async () => {
     setLoading(true);
@@ -83,24 +81,6 @@ export function PrescriptionHistory({ onRepeat, onRepeatForOther }: Prescription
   useEffect(() => {
     fetchPrescriptions();
   }, [search]);
-
-  const handlePrint = (prescription: any) => {
-    setPrintPrescription(prescription);
-    setTimeout(() => {
-      const printContent = printRef.current;
-      if (!printContent) return;
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) return;
-      printWindow.document.write(`
-        <html><head><title>Рецепт</title>
-        <style>@page{size:A4 portrait;margin:0}body{margin:0;padding:0;display:flex;justify-content:flex-end}*{box-sizing:border-box}</style>
-        </head><body>${printContent.innerHTML}</body></html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-    }, 100);
-  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -181,9 +161,9 @@ export function PrescriptionHistory({ onRepeat, onRepeatForOther }: Prescription
                   )}
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button variant="outline" size="sm" onClick={() => handlePrint(p)} title="Печать">
+                  <PrescriptionPreview prescription={p} trigger={<Button variant="outline" size="sm" title="Печать">
                     <Printer className="h-4 w-4" />
-                  </Button>
+                  </Button>} />
                   <Button variant="outline" size="sm" onClick={() => onRepeat(p.id)} title="Повторить тому же пациенту">
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -199,13 +179,6 @@ export function PrescriptionHistory({ onRepeat, onRepeatForOther }: Prescription
           </Card>
         ))
       )}
-
-      {/* Hidden print area */}
-      <div className="hidden">
-        <div ref={printRef}>
-          {printPrescription && <PrescriptionPrint prescription={printPrescription} />}
-        </div>
-      </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

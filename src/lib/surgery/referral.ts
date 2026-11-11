@@ -2,7 +2,7 @@ export const REFERRAL_STATUSES = [
   { value: "issued", label: "Путёвка выдана", color: "bg-sky-500" },
   { value: "labs_in_progress", label: "Сдаёт анализы", color: "bg-amber-500" },
   { value: "labs_ready", label: "Анализы готовы", color: "bg-lime-600" },
-  { value: "date_set", label: "Дата назначена", color: "bg-indigo-500" },
+  { value: "date_set", label: "Дата операции определена", color: "bg-indigo-500" },
   { value: "hospitalized", label: "Госпитализирован", color: "bg-violet-600" },
   { value: "operated", label: "Оперирован", color: "bg-emerald-600" },
   { value: "postponed", label: "Перенесена", color: "bg-orange-600" },

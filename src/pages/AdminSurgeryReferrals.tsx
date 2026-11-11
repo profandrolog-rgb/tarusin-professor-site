@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Loader2,
   Phone,
+  Pencil,
   Printer,
   RefreshCw,
   Search,
@@ -17,6 +18,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { calcAgeText } from "@/lib/surgery/referral";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -291,6 +295,7 @@ export default function AdminSurgeryReferrals() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <ReferralEditDialog row={r} onSaved={(updated) => setRows((prev) => prev.map((item) => item.id === r.id ? { ...item, ...updated } : item))} />
                     <CallDialog onSave={(c) => logCall(r, c)} />
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/admin/surgery-referrals/${r.id}/print`}>
@@ -354,4 +359,51 @@ function CallDialog({ onSave }: { onSave: (comment: string) => void }) {
       </DialogContent>
     </Dialog>
   );
+}
+
+function ReferralEditDialog({ row, onSaved }: { row: any; onSaved: (updated: any) => void }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+  const fields = [
+    ["full_name", "ФИО пациента"], ["birth_date", "Дата рождения"],
+    ["diagnosis", "Диагноз"], ["operation_name", "Планируемая операция"],
+    ["coordinator_name", "Координатор"], ["coordinator_phone", "Телефон координатора"],
+    ["patient_email", "Электронная почта пациента"], ["coordinator_instruction", "Инструкция для связи"],
+    ["internal_notes", "Внутренние примечания"],
+  ];
+  const save = async () => {
+    if (!draft.full_name?.trim()) { toast.error("Укажите ФИО пациента"); return; }
+    if (draft.planned_date_to && (!draft.planned_date_from || draft.planned_date_to < draft.planned_date_from)) {
+      toast.error("Конец интервала не может быть раньше начала"); return;
+    }
+    setSaving(true);
+    try {
+      const update: Record<string, any> = Object.fromEntries(fields.map(([key]) => [key, draft[key]?.trim() || null]));
+      update.age_text = calcAgeText(draft.birth_date);
+      update.status = draft.status;
+      update.planned_date_from = draft.planned_date_from || null;
+      update.planned_date_to = draft.planned_date_to || null;
+      const { data, error } = await supabase.from("surgery_referrals").update(update).eq("id", row.id).select().single();
+      if (error) throw error;
+      onSaved(data); setOpen(false); toast.success("Путёвка сохранена");
+    } catch { toast.error("Не удалось сохранить путёвку"); }
+    finally { setSaving(false); }
+  };
+  return <Dialog open={open} onOpenChange={(value) => { if (saving) return; if (value) setDraft({ ...row }); setOpen(value); }}>
+    <DialogTrigger asChild><Button variant="outline" size="sm" title="Редактировать путёвку" aria-label={`Редактировать путёвку ${row.full_name}`}><Pencil className="h-4 w-4" /></Button></DialogTrigger>
+    <DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>Редактировать путёвку</DialogTitle></DialogHeader>
+      {fields.map(([key, label]) => <label key={key} className="grid gap-1 text-sm">{label}
+        {["diagnosis", "internal_notes", "coordinator_instruction"].includes(key)
+          ? <Textarea value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />
+          : <Input type={key === "birth_date" ? "date" : key === "patient_email" ? "email" : "text"} value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />}
+      </label>)}
+      <label className="grid gap-1 text-sm">Статус<Select value={draft.status} onValueChange={(status) => setDraft({ ...draft, status })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{REFERRAL_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent></Select></label>
+      {[['planned_date_from', 'Дата операции / начало интервала'], ['planned_date_to', 'Конец интервала']].map(([key, label]) => <div key={key} className="grid gap-1 text-sm">{label}<div className="flex gap-2">
+        <Input aria-label={label} type="date" value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />
+        <Popover><PopoverTrigger asChild><Button variant="outline" size="sm" aria-label={`Календарь: ${label}`}>{draft[key] ? formatRuDate(draft[key]) : "Дата"}</Button></PopoverTrigger><PopoverContent className="w-auto p-0" align="end" side="bottom" collisionPadding={12}><Calendar mode="single" fixedWeeks selected={draft[key] ? new Date(draft[key] + "T00:00:00") : undefined} defaultMonth={draft.planned_date_from ? new Date(draft.planned_date_from + "T00:00:00") : undefined} onSelect={(date) => setDraft({ ...draft, [key]: date ? `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}` : "" })} /></PopoverContent></Popover>
+      </div></div>)}
+      <DialogFooter><Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>Отмена</Button><Button disabled={saving} onClick={save}>{saving ? "Сохранение…" : "Сохранить"}</Button></DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }

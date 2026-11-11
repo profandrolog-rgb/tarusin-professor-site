@@ -1,3 +1,4 @@
+import type React from "react";
 import { format } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 
@@ -29,6 +30,7 @@ interface PrescriptionPrintProps {
     }>;
   };
   lang?: PrescriptionLang;
+  editable?: boolean;
 }
 
 // ---- i18n dictionary for the printable form (Form 107-1/у) ----
@@ -212,7 +214,8 @@ function renderIngredientName(
   return ing.ingredient_name;
 }
 
-export function PrescriptionPrint({ prescription, lang = "ru" }: PrescriptionPrintProps) {
+export function PrescriptionPrint({ prescription, lang = "ru", editable = false }: PrescriptionPrintProps) {
+  const edit = (label: string) => ({ contentEditable: editable, suppressContentEditableWarning: true, role: editable ? "textbox" : undefined, "aria-label": editable ? label : undefined, onPaste: editable ? (e: React.ClipboardEvent<HTMLElement>) => { e.preventDefault(); document.execCommand("insertText", false, e.clipboardData.getData("text/plain")); } : undefined });
   const t = T[lang];
   const locale = lang === "en" ? enUS : ru;
   const date = new Date(prescription.prescription_date);
@@ -273,25 +276,25 @@ export function PrescriptionPrint({ prescription, lang = "ru" }: PrescriptionPri
 
       {/* === DATE === */}
       <div style={s.fieldRow}>
-        «<span style={{ ...s.line, minWidth: "8mm", textAlign: "center" }}>{dateDayPart}</span>»{" "}
-        <span style={{ ...s.line, minWidth: "30mm", textAlign: "center" }}>{dateMonthPart}</span>{" "}
-        <span style={{ ...s.line, minWidth: "15mm", textAlign: "center" }}>{dateYearPart}</span>
+        «<span style={{ ...s.line, minWidth: "8mm", textAlign: "center" }} {...edit("День выписки")}>{dateDayPart}</span>»{" "}
+        <span style={{ ...s.line, minWidth: "30mm", textAlign: "center" }} {...edit("Месяц выписки")}>{dateMonthPart}</span>{" "}
+        <span style={{ ...s.line, minWidth: "15mm", textAlign: "center" }} {...edit("Год выписки")}>{dateYearPart}</span>
         {t.yearAbbr ? ` ${t.yearAbbr}` : ""}
       </div>
 
       {/* === PATIENT === */}
       <div style={s.fieldRow}>
         {t.patientFio}{" "}
-        <span style={{ ...s.line, minWidth: "85mm" }}>{patientName}</span>
+        <span style={{ ...s.line, minWidth: "85mm" }} {...edit("ФИО пациента")}>{patientName}</span>
       </div>
 
       <div style={s.fieldRow}>
         {t.birthDate}{" "}
-        <span style={{ ...s.line, minWidth: "25mm" }}>
+        <span style={{ ...s.line, minWidth: "25mm" }} {...edit("Дата рождения")}>
           {lang === "en" ? format(birthDate, "d MMMM yyyy", { locale }) : format(birthDate, "dd.MM.yyyy")}
         </span>
         {" "}{t.age}{" "}
-        <span style={{ ...s.line, minWidth: "15mm" }}>
+        <span style={{ ...s.line, minWidth: "15mm" }} {...edit("Возраст")}>
           {age} {t.ageYearWord(age)}
         </span>
       </div>
@@ -299,7 +302,7 @@ export function PrescriptionPrint({ prescription, lang = "ru" }: PrescriptionPri
       {/* === DOCTOR === */}
       <div style={s.fieldRow}>
         {t.doctorFio}{" "}
-        <span style={{ ...s.line, minWidth: "60mm" }}>{prescription.doctor_name}</span>
+        <span style={{ ...s.line, minWidth: "60mm" }} {...edit("ФИО врача")}>{prescription.doctor_name}</span>
       </div>
 
       <div style={s.separator}></div>
@@ -309,16 +312,14 @@ export function PrescriptionPrint({ prescription, lang = "ru" }: PrescriptionPri
         <div key={idx} style={s.rpBlock}>
           <div>
             <strong>Rp:</strong>{" "}
-            {renderMedName(item, lang)}
-            {item.dosage_form ? ` (${item.dosage_form})` : ""}
-            {item.dose ? ` ${item.dose}` : ""}
+            <span {...edit(`Препарат ${idx + 1}`)}>{renderMedName(item, lang)}{item.dosage_form ? ` (${item.dosage_form})` : ""}{item.dose ? ` ${item.dose}` : ""}</span>
           </div>
           <div style={{ paddingLeft: "8mm" }}>
-            D.t.d. N {item.quantity}
+            D.t.d. N <span {...edit(`Количество ${idx + 1}`)}>{item.quantity}</span>
           </div>
-          {(item.frequency || item.duration) && (
+          {(editable || item.frequency || item.duration) && (
             <div style={{ paddingLeft: "8mm" }}>
-              S. {item.frequency}{item.frequency && item.duration ? ", " : ""}{item.duration}
+              S. <span {...edit(`Способ применения ${idx + 1}`)}>{item.frequency}{item.frequency && item.duration ? ", " : ""}{item.duration}</span>
             </div>
           )}
           <div style={{ textAlign: "right", fontSize: "8pt", marginTop: "0.5mm" }}>
@@ -332,17 +333,17 @@ export function PrescriptionPrint({ prescription, lang = "ru" }: PrescriptionPri
           <div><strong>Rp:</strong></div>
           {prescription.ingredients.map((ing, idx) => (
             <div key={idx} style={{ paddingLeft: "8mm" }}>
-              {renderIngredientName(ing, lang)} {ing.amount} {ing.unit}
+              <span {...edit(`Ингредиент ${idx + 1}`)}>{renderIngredientName(ing, lang)} {ing.amount} {ing.unit}</span>
             </div>
           ))}
           <div style={{ paddingLeft: "8mm", marginTop: "1mm", fontStyle: "italic" }}>
-            M.f. {getMisceFormLabel(prescription.extemporaneous_form_type)}
+            M.f. <span {...edit("Форма смеси")}>{getMisceFormLabel(prescription.extemporaneous_form_type)}</span>
           </div>
           <div style={{ paddingLeft: "8mm", fontSize: "7pt", color: "#555" }}>
             {t.misceHint}
           </div>
           <div style={{ paddingLeft: "8mm", marginTop: "1mm" }}>
-            D.S. {prescription.signa || t.directionsDefault}
+            D.S. <span {...edit("Способ применения смеси")}>{prescription.signa || t.directionsDefault}</span>
           </div>
           <div style={{ textAlign: "right", fontSize: "8pt", marginTop: "0.5mm" }}>
             {t.rubles}
