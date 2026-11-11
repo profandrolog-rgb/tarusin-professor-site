@@ -6,7 +6,7 @@ describe('medical import page normalization', () => {
     const catalog = [{ name: 'free', _norm: ['тестостеронсвободный'] }, { name: 'total', _norm: ['тестостерон'] }];
     expect(findLabMatch(catalog, 'тестостерон')?.name).toBe('total');
     expect(findLabMatch(catalog, 'тестостеронсвободный')?.name).toBe('free');
-    expect(findLabMatch(catalog, 'свободныйтестостерон')).toBeUndefined();
+    expect(findLabMatch(catalog, 'свободныйтестостерон')?.name).toBe('free');
   });
   it('retains all nine parameters returned inside a document array', () => {
     const labs = Array.from({ length: 9 }, (_, i) => ({ analyte: `Parameter ${i}`, value: i }));
