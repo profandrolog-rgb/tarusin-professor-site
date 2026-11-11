@@ -111,7 +111,7 @@ export async function fetchPatientHistory(patientId: string, patientName?: strin
     Promise.resolve({ data: [] as any[] }),
     fetchAll("metabolic_map_snapshots", "created_at"),
     // В таблице patients нет колонки sex — не запрашиваем.
-    sb.from("patients").select("full_name, birth_date, history_number, notes").eq("id", patientId).maybeSingle(),
+    sb.from("patients").select("full_name, birth_date, history_number").eq("id", patientId).maybeSingle(),
   ]);
   const [visitsRes, uzRes, labsRes, anthroRes, plansRes, diagRes, docsRes, mapRes, patientRes] = results;
 
