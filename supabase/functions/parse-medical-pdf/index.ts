@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { normalizeExtraction } from './normalizeExtraction.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,8 +8,8 @@ const corsHeaders = {
 };
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 const DEFAULT_EXTRACTION_MODELS =
   'google/gemini-3-flash-preview,google/gemini-3.1-pro-preview,openai/gpt-5-mini,google/gemini-2.5-flash,google/gemini-2.5-pro';
@@ -238,6 +239,12 @@ function isValidPastDate(s: string | null | undefined): string | null {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
+    const authHeader = req.headers.get('Authorization');
+    const authed = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY') || '', { global: { headers: { Authorization: authHeader || '' } } });
+    const { data: auth, error: authError } = await authed.auth.getUser(authHeader?.replace(/^Bearer /, '') || '');
+    if (authError || !auth.user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const { data: roles } = await authed.from('user_roles').select('role').eq('user_id', auth.user.id);
+    if (!roles?.some((r) => ['admin', 'editor', 'surgeon'].includes(r.role))) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     const body = await req.json();
     const {
       file_data,
@@ -335,13 +342,14 @@ Deno.serve(async (req) => {
     }
 
     if (!parsed) {
-      parsed = await extractWithFallback(sourceData, file_name, kind, textContent);
-      if (patient_id) {
+      parsed = normalizeExtraction(await extractWithFallback(sourceData, file_name, kind, textContent));
+      if (patient_id && (parsed.lab_results.length || parsed.diagnoses.length || parsed.conclusion_text)) {
         await supabase
           .from('parsed_pdf_cache')
           .upsert({ patient_id, file_hash: fileHash, result: parsed }, { onConflict: 'patient_id,file_hash' });
       }
     }
+    parsed = normalizeExtraction(parsed);
 
     const docDate: string | null = isValidPastDate(parsed.document_date);
     const testDate = docDate || new Date().toISOString().slice(0, 10);
@@ -367,6 +375,7 @@ Deno.serve(async (req) => {
 
     for (const lr of parsed.lab_results || []) {
       if (typeof lr.value !== 'number' || !lr.analyte) continue;
+      const testDate = isValidPastDate(lr.document_date) || docDate || new Date().toISOString().slice(0, 10);
       const target = normalize(lr.analyte);
       const match = cat.find((c: any) => c._norm.some((n: string) => {
         if (!n) return false;
