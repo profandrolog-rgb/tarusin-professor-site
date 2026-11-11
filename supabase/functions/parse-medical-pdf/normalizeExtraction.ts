@@ -2,7 +2,7 @@
 export function findLabMatch<T extends { _norm: string[] }>(catalog: T[], target: string): T | undefined {
   const exact = catalog.find((c) => c._norm.includes(target));
   if (exact) return exact;
-  const qualifier = (s: string) => /свободн|free/.test(s) ? 'free' : /общий|общего|total/.test(s) ? 'total' : '';
+  const qualifier = (s: string) => /тестостерон|testosterone/.test(s) ? (/свободн|free/.test(s) ? 'free' : 'total') : '';
   const base = (s: string) => s.replace(/свободный|свободного|free|общий|общего|total/g, '');
   const qualified = catalog.find((c) => c._norm.some((n) => qualifier(target) !== '' && qualifier(n) === qualifier(target) && base(n) === base(target)));
   if (qualified) return qualified;
