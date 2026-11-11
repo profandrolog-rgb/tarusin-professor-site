@@ -6,8 +6,8 @@ export function findLabMatch<T extends { _norm: string[] }>(catalog: T[], target
   const base = (s: string) => s.replace(/свободный|свободного|free|общий|общего|total/g, '');
   const qualified = catalog.find((c) => c._norm.some((n) => qualifier(target) !== '' && qualifier(n) === qualifier(target) && base(n) === base(target)));
   if (qualified) return qualified;
-  const candidates = catalog.filter((c) => c._norm.some((n) => qualifier(n) === qualifier(target) && n.length > 3 && target.length > 3 && (target.includes(n) || n.includes(target))));
-  return candidates.length === 1 ? candidates[0] : undefined;
+  const candidates = catalog.map((item) => ({ item, score: Math.max(0, ...item._norm.map((n) => qualifier(n) === qualifier(target) && n.length > 3 && target.length > 3 && (target.includes(n) || n.includes(target)) ? Math.min(n.length, target.length) : 0)) })).filter((c) => c.score > 0).sort((a, b) => b.score - a.score);
+  return candidates[0] && candidates[0].score !== candidates[1]?.score ? candidates[0].item : undefined;
 }
 
 export function normalizeExtraction(input: unknown) {
