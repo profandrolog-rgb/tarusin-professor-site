@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeExtraction } from '../../supabase/functions/parse-medical-pdf/normalizeExtraction';
+import { findLabMatch, normalizeExtraction } from '../../supabase/functions/parse-medical-pdf/normalizeExtraction';
 
 describe('medical import page normalization', () => {
+  it('does not overwrite total testosterone with free testosterone through fuzzy matching', () => {
+    const catalog = [{ name: 'free', _norm: ['тестостеронсвободный'] }, { name: 'total', _norm: ['тестостерон'] }];
+    expect(findLabMatch(catalog, 'тестостерон')?.name).toBe('total');
+    expect(findLabMatch(catalog, 'тестостеронсвободный')?.name).toBe('free');
+    expect(findLabMatch(catalog, 'свободныйтестостерон')).toBeUndefined();
+  });
   it('retains all nine parameters returned inside a document array', () => {
     const labs = Array.from({ length: 9 }, (_, i) => ({ analyte: `Parameter ${i}`, value: i }));
     expect(normalizeExtraction([{ document_type: 'lab', lab_results: labs }]).lab_results).toEqual(labs.map((v) => ({ ...v, document_date: null })));

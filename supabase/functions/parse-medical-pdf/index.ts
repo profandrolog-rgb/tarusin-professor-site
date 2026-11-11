@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { normalizeExtraction } from './normalizeExtraction.ts';
+import { findLabMatch, normalizeExtraction } from './normalizeExtraction.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -377,18 +377,7 @@ Deno.serve(async (req) => {
       if (typeof lr.value !== 'number' || !lr.analyte) continue;
       const testDate = isValidPastDate(lr.document_date) || docDate || new Date().toISOString().slice(0, 10);
       const target = normalize(lr.analyte);
-      const match = cat.find((c: any) => c._norm.some((n: string) => {
-        if (!n) return false;
-        if (n === target) return true;
-        // Short abbreviations (<=3 chars, e.g. ТТГ, АЛТ) — token-level equality only.
-        if (n.length <= 3) {
-          return new RegExp(`(^|[^a-zа-я0-9])${n}([^a-zа-я0-9]|$)`, 'i').test(target);
-        }
-        if (target.length <= 3) {
-          return new RegExp(`(^|[^a-zа-я0-9])${target}([^a-zа-я0-9]|$)`, 'i').test(n);
-        }
-        return (n.length > 3 && target.includes(n)) || (target.length > 3 && n.includes(target));
-      }));
+      const match = findLabMatch(cat, target);
 
       // Reference: prefer AI numeric; fallback — parse ref_text
       let refMin: number | null = typeof lr.ref_low === 'number' ? lr.ref_low : null;
