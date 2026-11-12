@@ -70,7 +70,7 @@ export default function PublicSurgeryReferral() {
               {data.birth_date ? `, ${formatRuDate(data.birth_date)}` : ""}
             </div>
             {data.operation_name ? (
-              <div>
+              <div className="whitespace-pre-line">
                 <span className="text-muted-foreground">Операция: </span>
                 {data.operation_name}
               </div>

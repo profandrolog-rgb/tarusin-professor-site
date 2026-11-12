@@ -110,7 +110,7 @@ export default function AdminSurgeryReferralPrint() {
             {field("Дата рождения", formatRuDate(ref.birth_date))}
             {field("Возраст", ref.age_text)}
             {field("Диагноз / заключение", ref.diagnosis)}
-            {field("Планируемая операция", ref.operation_name)}
+            {field(String(ref.operation_name || "").includes("\n") ? "Планируемые операции" : "Планируемая операция", ref.operation_name)}
             {field("Ориентировочный срок операции", plannedDateText(ref.planned_date_from, ref.planned_date_to))}
             {field("Дата выдачи путёвки", formatRuDate(ref.created_at))}
           </div>
