@@ -1,3 +1,4 @@
+import { calcAgeText } from "@/lib/surgery/referral";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -147,7 +148,7 @@ export default function AdminPatientDetail() {
           <div>
             <h1 className="text-3xl font-bold mb-1">📋 Курсы лечения: {patient.full_name}</h1>
             <p className="text-muted-foreground text-sm">
-              ДР: {patient.birth_date ? format(parseISO(patient.birth_date), "d MMMM yyyy", { locale: ru }) : "—"}
+              ДР: {patient.birth_date ? format(parseISO(patient.birth_date), "d MMMM yyyy", { locale: ru }) : "—"}{patient.birth_date ? ` (${calcAgeText(patient.birth_date)})` : ""}
               {" · "}Телефон: {patient.phone || "—"}
               {" · "}№ ИБ: {patient.history_number || "—"}
             </p>

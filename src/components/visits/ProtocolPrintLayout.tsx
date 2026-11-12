@@ -41,6 +41,7 @@ interface VisitForPrint {
   labsDynamics?: LabDynamicsRow[];
 }
 
+import { calcAgeText } from "@/lib/surgery/referral";
 function calcAge(birth: string, ref: Date) {
   const b = new Date(birth);
   let age = ref.getFullYear() - b.getFullYear();
@@ -1274,7 +1275,7 @@ export function ProtocolPrintLayout({
               <strong>Дата рождения:</strong>{" "}
               {visit.patient?.birth_date ? format(new Date(visit.patient.birth_date), "dd.MM.yyyy") : "—"}
             </span>
-            <span><strong>Возраст:</strong> {age !== null ? `${age} лет` : "—"}</span>
+            <span><strong>Возраст:</strong> {calcAgeText(visit.patient?.birth_date, visitDate) || "—"}</span>
           </div>
         </div>
 

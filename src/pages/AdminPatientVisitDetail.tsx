@@ -1,3 +1,4 @@
+import { calcAgeText } from "@/lib/surgery/referral";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { physioCopyDate, physioFromAssignments } from "@/lib/visits/physio";
 import { Link, useParams, useNavigate } from "react-router-dom";
@@ -780,6 +781,7 @@ export default function AdminPatientVisitDetail() {
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Дата рождения:</span>
                 {visit.patient?.birth_date ? format(new Date(visit.patient.birth_date), "dd.MM.yyyy") : "—"}
+                {visit.patient?.birth_date && <span className="text-muted-foreground">(возраст: {calcAgeText(visit.patient.birth_date, visit.visit_date)})</span>}
                 {visit.patient_id && (
                   <Link
                     to={`/admin/patients/${visit.patient_id}/edit`}
