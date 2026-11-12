@@ -13,6 +13,7 @@ import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import { PeptideProgramForm } from "./forms/PeptideProgramForm";
 import { GirlUrologyForm } from "./forms/GirlUrologyForm";
 import { AbdominalUziForm } from "./forms/AbdominalUziForm";
+import { PhysioSessionForm } from "./forms/PhysioSessionForm";
 import { AbdominalUziSection } from "./sections/AbdominalUziSection";
 import { VoidingDiarySection } from "./sections/VoidingDiarySection";
 import {
@@ -54,6 +55,10 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
   const includeConsent = (data?.include_consent as boolean) === true;
 
   const historyProps = { patientId, currentVisitId };
+
+  if (type === "physio_session") {
+    return <PhysioSessionForm data={data || {}} onChange={patch} patientName={patientName} birthDate={birthDate} visitDate={visitDate} />;
+  }
 
   const renderForm = () => {
     switch (type) {

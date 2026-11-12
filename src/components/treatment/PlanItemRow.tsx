@@ -123,6 +123,20 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+        {item.section_category === "physiotherapy" ? (
+          <>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Число процедур</label>
+              <Input type="number" min={1} value={item.dose ?? ""} onChange={e=>update({dose: e.target.value === "" ? null : Number(e.target.value), dose_unit: "процедур"})} className="h-8"/>
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground">Раз в неделю</label>
+              <Input type="number" min={1} max={14} value={(item.frequency || "").match(/^(\d+)\s*раз[а]?\s+в\s+неделю/)?.[1] ?? ""}
+                onChange={e=>update({frequency: e.target.value === "" ? null : `${e.target.value} ${[2,3,4].includes(Number(e.target.value) % 10) && ![12,13,14].includes(Number(e.target.value)) ? "раза" : "раз"} в неделю`})} className="h-8"/>
+            </div>
+          </>
+        ) : (
+          <>
         <div>
           <label className="text-[11px] text-muted-foreground">Доза</label>
           <Input type="number" step="any" value={item.dose ?? ""} onChange={e=>update({dose: e.target.value === "" ? null : Number(e.target.value)})} className="h-8"/>
@@ -131,6 +145,8 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
           <label className="text-[11px] text-muted-foreground">Ед.</label>
           <Input value={item.dose_unit ?? ""} onChange={e=>update({dose_unit: e.target.value})} className="h-8"/>
         </div>
+          </>
+        )}
         {showInfusion(item.section_category) && (
           <>
             <div>
@@ -153,11 +169,11 @@ export function PlanItemRow({ item, update, remove, duplicateInn, mode = "flat",
             </div>
           </>
         )}
-        <div>
+        {item.section_category !== "physiotherapy" && <div>
           <label className="text-[11px] text-muted-foreground">Кратность</label>
           <Input list={`freq-presets`} value={item.frequency ?? ""} onChange={e=>update({frequency: e.target.value})} className="h-8"/>
           <datalist id="freq-presets">{FREQUENCY_PRESETS.map(f => <option key={f} value={f}/>)}</datalist>
-        </div>
+        </div>}
         <div>
           <label className="text-[11px] text-muted-foreground">Дней</label>
           <Input type="number" min={1} value={item.duration_days ?? ""} onChange={e=>update({duration_days: e.target.value === "" ? null : Number(e.target.value)})} className="h-8"/>

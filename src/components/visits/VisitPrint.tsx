@@ -220,6 +220,8 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
           <Row label="Правый придаток" value={data.uzi.right_epididymis} />
           <Row label="Левое яичко" value={[data.uzi.left_testis_size, data.uzi.left_testis_volume ? `V ${data.uzi.left_testis_volume} мл` : null, data.uzi.left_testis_structure].filter(Boolean).join("; ")} />
           <Row label="Левый придаток" value={data.uzi.left_epididymis} />
+          <Row label="Асимметрия яичек, %" value={data.uzi.testis_asymmetry_percent} />
+          <Row label="Асимметрия придатков, %" value={data.uzi.epididymis_asymmetry_percent} />
           <Row label="Сосуды" value={data.uzi.vessels} />
           <Row label="ЦДК" value={data.uzi.doppler} />
           <Row label="Свободная жидкость" value={data.uzi.free_fluid} />

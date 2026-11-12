@@ -275,4 +275,5 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     pelvis_uzi: defaultsOf(GIRL_PELVIS_FIELDS),
     recommendations: "Динамическое наблюдение.",
   },
+  physio_session: { indications: "", procedures: [{}], sessions_total: 10, per_week: 2 },
 };

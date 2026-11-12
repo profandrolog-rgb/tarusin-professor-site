@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { filledPhysioRows } from "@/lib/visits/physio";
 import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { ru } from "date-fns/locale";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
@@ -269,6 +270,7 @@ const UZI_FIELD_ORDER = [
   "left_testis_size", "left_testis_volume", "left_testis_structure",
   "right_epididymis", "right_epididymis_volume",
   "left_epididymis", "left_epididymis_volume",
+  "testis_asymmetry_percent", "epididymis_asymmetry_percent",
   "arterial_flow",
   "venous_flow",
   "prostate",
@@ -451,7 +453,8 @@ const KNOWN_KEYS = new Set([
   "psych_age_group","next_visit_range","next_visit_date_to","next_visit_duration",
   // флаги печати
   "print_labs_table","print_labs_dynamics","include_consent","include_understanding","metabolic_map_checklist",
-  "testis_asymmetry_percent","epididymis_asymmetry_percent",
+  "testis_asymmetry_percent","epididymis_asymmetry_percent","show_sexual_formula","show_sexual_constitution",
+  "procedures","sessions_total","per_week",
 ]);
 
 function pushUnknownScalars(rows: React.ReactNode[], d: any) {
@@ -646,7 +649,12 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     // Сначала осмотр, затем УЗИ
     if (t !== "uzi_reproductive") {
       pushSomatic(rows, d);
-      pushSexual(rows, d);
+      if (t !== "repeat_with_uzi") pushSexual(rows, d);
+      else pushSexual(rows, {
+        sexual_formula: d.show_sexual_formula === true ? d.sexual_formula : undefined,
+        sexual_formula_text: d.show_sexual_formula === true ? d.sexual_formula_text : undefined,
+        sexual_constitution: d.show_sexual_constitution === true ? d.sexual_constitution : undefined,
+      });
       pushLocalStatus(rows, d);
       pushClinical(rows, d);
     }
@@ -699,6 +707,15 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания к исследованию" value={d.indications} />);
     rows.push(<Field key="dev" label="Аппарат / датчик" value={d.device} />);
+  }
+
+  if (t === "physio_session") {
+    rows.push(<Field key="pi" label="Показания к проведению процедур" value={d.indications} />);
+    filledPhysioRows(d.procedures).forEach((r: any, i: number) => {
+      rows.push(<Field key={`ph${i}`} label={`${i + 1}. ${r.name}`}
+        value={[r.duration && `продолжительность: ${r.duration}`, r.params && `параметры: ${r.params}`, r.notes && `примечания: ${r.notes}`].filter(Boolean).join("; ") || "—"} />);
+    });
+    if (d.sessions_total) rows.push(<Field key="pst" label="Курс" value={`${d.sessions_total} сеансов${d.per_week ? `, ${d.per_week} раз(а) в неделю` : ""}`} />);
   }
 
   if (t === "girl_urology") {

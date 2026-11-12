@@ -274,7 +274,7 @@ export default function AdminSurgeryReferrals() {
                     <div className="flex-1 min-w-[220px]">
                       <div className="font-medium">{r.full_name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {r.operation_name || "операция не указана"} · срок:{" "}
+                        {(r.operation_name || "операция не указана").replace(/\n/g, "; ")} · срок:{" "}
                         {plannedDateText(r.planned_date_from, r.planned_date_to)}
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -367,7 +367,7 @@ function ReferralEditDialog({ row, onSaved }: { row: any; onSaved: (updated: any
   const [saving, setSaving] = useState(false);
   const fields = [
     ["full_name", "ФИО пациента"], ["birth_date", "Дата рождения"],
-    ["diagnosis", "Диагноз"], ["operation_name", "Планируемая операция"],
+    ["diagnosis", "Диагноз"], ["operation_name", "Планируемые операции (каждая с новой строки)"],
     ["coordinator_name", "Координатор"], ["coordinator_phone", "Телефон координатора"],
     ["patient_email", "Электронная почта пациента"], ["coordinator_instruction", "Инструкция для связи"],
     ["internal_notes", "Внутренние примечания"],
@@ -394,7 +394,7 @@ function ReferralEditDialog({ row, onSaved }: { row: any; onSaved: (updated: any
     <DialogTrigger asChild><Button variant="outline" size="sm" title="Редактировать путёвку" aria-label={`Редактировать путёвку ${row.full_name}`}><Pencil className="h-4 w-4" /></Button></DialogTrigger>
     <DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>Редактировать путёвку</DialogTitle></DialogHeader>
       {fields.map(([key, label]) => <label key={key} className="grid gap-1 text-sm">{label}
-        {["diagnosis", "internal_notes", "coordinator_instruction"].includes(key)
+        {["diagnosis", "operation_name", "internal_notes", "coordinator_instruction"].includes(key)
           ? <Textarea value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />
           : <Input type={key === "birth_date" ? "date" : key === "patient_email" ? "email" : "text"} value={draft[key] || ""} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} />}
       </label>)}
