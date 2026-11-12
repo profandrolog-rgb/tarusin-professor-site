@@ -57,6 +57,13 @@
       "when": 1793874721146,
       "tag": "0007_add_abdominal_uzi_protocol",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794478086233,
+      "tag": "0008_add_physio_session_protocol_type",
+      "breakpoints": true
     }
   ]
 }
