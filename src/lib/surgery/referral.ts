@@ -83,3 +83,17 @@ export const DEFAULT_MEMO_BODY = `1. Обследование перед опе�
 6. При острых заболеваниях (температура, насморк, кашель, кишечная инфекция) операция переносится — заранее сообщите координатору.
 7. Ребёнка сопровождает один законный представитель с документами, подтверждающими родство.
 8. О любых изменениях состояния и планов сообщайте координатору по телефону, указанному в путёвке.`;
+
+/** Несколько операций хранятся в одном поле: одна — как есть, несколько — «1. …\n2. …». */
+export function joinOperations(list: string[]): string {
+  const clean = list.map((s) => s.trim()).filter(Boolean);
+  if (clean.length <= 1) return clean[0] || "";
+  return clean.map((s, i) => `${i + 1}. ${s}`).join("\n");
+}
+
+export function splitOperations(text?: string | null): string[] {
+  return (text || "")
+    .split("\n")
+    .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
+    .filter(Boolean);
+}

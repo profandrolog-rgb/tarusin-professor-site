@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { calcAgeText, DEFAULT_MEMO_BODY, plannedDateText } from "@/lib/surgery/referral";
+import { calcAgeText, DEFAULT_MEMO_BODY, plannedDateText, joinOperations } from "@/lib/surgery/referral";
 
 interface Props {
   patientId?: string | null;
@@ -56,7 +56,8 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
   const [bd, setBd] = useState(birthDate || "");
   const [ageText, setAgeText] = useState(calcAgeText(birthDate));
   const [diagnosis, setDiagnosis] = useState("");
-  const [operationName, setOperationName] = useState("");
+  const [opList, setOpList] = useState<string[]>([""]);
+  const operationName = joinOperations(opList);
   const [rangeMode, setRangeMode] = useState(false);
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
@@ -83,7 +84,11 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
     const d = protocolData || {};
     const direct = [d.operation_name, d.planned_operation, d.surgery_name, d.operation]
       .find((x) => typeof x === "string" && x.trim());
-    return (direct as string | undefined)?.trim() || "";
+    const fromAssignments = Array.isArray(d.assignments?.surgeries)
+      ? (d.assignments.surgeries as any[]).filter((x) => typeof x === "string" && x.trim()).map((x: string) => x.trim())
+      : [];
+    const list = [((direct as string | undefined) || "").trim(), ...fromAssignments].filter(Boolean);
+    return Array.from(new Set(list));
   }, [protocolData]);
 
   /** Текст протокола, в котором ищем операцию из каталога (план, рекомендации, заключение) */
@@ -103,7 +108,7 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
     setDiagnosis(protocolDiagnosis);
     // Путёвка обычно выдаётся в день консультации — подставляем сегодняшнюю дату
     setDateFrom((prev) => prev || new Date());
-    if (protocolOperation) setOperationName(protocolOperation);
+    if (protocolOperation.length) setOpList(protocolOperation);
     (async () => {
       const [{ data: catalog }, { data: memo }, { data: ops }] = await Promise.all([
         supabase.from("surgery_exam_catalog").select("*").eq("is_active", true).order("sort_order"),
@@ -133,11 +138,11 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
       setOperations(opNames);
       // Синхронизация с консультацией: если операция явно не указана,
       // ищем в тексте протокола название операции из каталога (берём самое длинное совпадение)
-      if (!protocolOperation && protocolText) {
+      if (!protocolOperation.length && protocolText) {
         const match = opNames
           .filter((n) => n.length > 3 && protocolText.includes(n.toLowerCase()))
           .sort((a, b) => b.length - a.length)[0];
-        if (match) setOperationName(match);
+        if (match) setOpList([match]);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -298,33 +303,49 @@ export function SurgeryReferralDialog({ patientId, patientName, birthDate, visit
               <Label>Возраст</Label>
               <Input value={ageText} onChange={(e) => setAgeText(e.target.value)} />
             </div>
-            <div className="md:col-span-2 space-y-1">
-              <Label>Название операции <span className="text-destructive">*</span></Label>
-              <Input
-                value={operationName}
-                onChange={(e) => setOperationName(e.target.value)}
-                list="surgery-ops-list"
-                placeholder="например, лапароскопическая варикоцелэктомия"
-              />
+            <div className="md:col-span-2 space-y-2">
+              <Label>Операции <span className="text-destructive">*</span></Label>
               <datalist id="surgery-ops-list">
                 {operations.map((o) => (
                   <option key={o} value={o} />
                 ))}
               </datalist>
-              {operations.length ? (
-                <Select value={operations.includes(operationName) ? operationName : ""} onValueChange={setOperationName}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Выбрать из каталога операций" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {operations.map((o) => (
-                      <SelectItem key={o} value={o} className="text-xs">
-                        {o}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : null}
+              {opList.map((op, i) => (
+                <div key={i} className="space-y-1 rounded-md border p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">Операция {i + 1}</span>
+                    {opList.length > 1 ? (
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label={`Удалить операцию ${i + 1}`}
+                        onClick={() => setOpList((prev) => prev.filter((_, j) => j !== i))}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : null}
+                  </div>
+                  <Input
+                    value={op}
+                    onChange={(e) => setOpList((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
+                    list="surgery-ops-list"
+                    placeholder="например, лапароскопическая варикоцелэктомия"
+                  />
+                  {operations.length ? (
+                    <Select value={operations.includes(op) ? op : ""} onValueChange={(v) => setOpList((prev) => prev.map((x, j) => (j === i ? v : x)))}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Выбрать из каталога операций" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {operations.map((o) => (
+                          <SelectItem key={o} value={o} className="text-xs">
+                            {o}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setOpList((prev) => [...prev, ""])}>
+                <Plus className="h-3.5 w-3.5" /> Добавить операцию
+              </Button>
             </div>
           </div>
 
