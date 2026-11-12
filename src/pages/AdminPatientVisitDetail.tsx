@@ -764,38 +764,14 @@ export default function AdminPatientVisitDetail() {
                         const activeMonth = calendarMonth || from || new Date();
                         return (
                           <>
-                            <div className="flex items-center gap-1.5">
-                              <Input
-                                type="date"
-                                className="h-9 w-[150px] text-sm bg-background"
-                                value={visit.next_visit_date || ""}
-                                onChange={(e) => {
-                                  const val = e.target.value || null;
-                                  update({ next_visit_date: val });
-                                  const d = toD(val);
-                                  if (d && !isNaN(d.getTime())) setCalendarMonth(d);
-                                }}
-                              />
-                              {range && (
-                                <>
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                  <Input
-                                    type="date"
-                                    className="h-9 w-[150px] text-sm bg-background"
-                                    value={pd.next_visit_date_to || ""}
-                                    onChange={(e) => setPd({ next_visit_date_to: e.target.value || null })}
-                                  />
-                                </>
-                              )}
-                            </div>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 px-3">
                                   <CalendarIcon className="h-4 w-4" />
-                                  Календарь
+                                  {from ? from.toLocaleDateString("ru-RU") + (range ? " — " + (to ? to.toLocaleDateString("ru-RU") : "…") : "") : "Выбрать дату"}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
+                              <PopoverContent className="w-auto p-0" align="start" side="bottom" collisionPadding={12}>
                                 {range ? (
                                   <Calendar mode="range" selected={{ from, to }} numberOfMonths={2} fixedWeeks
                                     month={activeMonth} onMonthChange={setCalendarMonth}
