@@ -1,15 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { physioSessionNumbers, filledPhysioRows, PHYSIO_PROCEDURES, nextPhysioDate } from "./physio";
+import { physioSessionNumbers, filledPhysioRows, PHYSIO_PROCEDURES, physioCopyDate } from "./physio";
 
-describe("дата повторного физиопротокола", () => {
-  it.each([
-    ["2026-11-12", "2026-11-13"],
-    ["2026-11-30", "2026-12-01"],
-    ["2026-12-31", "2027-01-01"],
-    ["2028-02-28", "2028-02-29"],
-    ["2028-02-29", "2028-03-01"],
-  ])("следующий календарный день после %s — %s", (source, expected) => {
-    expect(nextPhysioDate(source)).toBe(expected);
+describe("дата копии физиопротокола", () => {
+  it("по умолчанию использует день заполнения", () => {
+    expect(physioCopyDate(undefined, new Date(2026, 10, 12, 14, 27))).toBe("2026-11-12");
+  });
+  it.each(["2026-10-01", "2026-11-12", "2026-12-25"])("сохраняет произвольную выбранную дату %s", (selected) => {
+    expect(physioCopyDate(new Date(selected + "T00:00:00"), new Date(2026, 10, 12))).toBe(selected);
   });
 });
 

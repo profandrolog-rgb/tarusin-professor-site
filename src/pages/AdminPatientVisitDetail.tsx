@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { nextPhysioDate, physioFromAssignments } from "@/lib/visits/physio";
+import { physioCopyDate, physioFromAssignments } from "@/lib/visits/physio";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown, FileUp, CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -94,6 +94,8 @@ export default function AdminPatientVisitDetail() {
   const [labsRefresh, setLabsRefresh] = useState(0);
   const [previewLabs, setPreviewLabs] = useState<{ labs: any[]; dynamics: any[] }>({ labs: [], dynamics: [] });
   const [calendarMonth, setCalendarMonth] = useState<Date | undefined>(undefined);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [duplicateDate, setDuplicateDate] = useState<Date | undefined>(undefined);
 
   // Для окна «Предпросмотр»: та же таблица анализов и динамика, что на странице печати
   useEffect(() => {
@@ -419,15 +421,15 @@ export default function AdminPatientVisitDetail() {
     else navigate("/admin/visits");
   };
 
-  const handleDuplicate = async () => {
+  const handleDuplicate = async (selectedDate?: Date) => {
     if (!visit) return;
     const proceed = () => true;
     const isPhysio = visit.protocol_type === "physio_session";
     const confirmation = isPhysio
-      ? "Есть несохранённые изменения. Перенести их в копию на следующий день, не сохраняя исходный протокол?"
+      ? "Есть несохранённые изменения. Перенести их в копию на выбранную дату, не сохраняя исходный протокол?"
       : "Есть несохранённые изменения. Дублировать без сохранения?";
     if (isDirty && !window.confirm(confirmation)) return;
-    const copyDate = isPhysio ? nextPhysioDate(visit.visit_date) : format(new Date(), "yyyy-MM-dd");
+    const copyDate = isPhysio ? physioCopyDate(selectedDate) : format(new Date(), "yyyy-MM-dd");
     const { data, error } = await supabase
       .from("patient_visits")
       .insert({
@@ -594,15 +596,41 @@ export default function AdminPatientVisitDetail() {
               <TooltipContent>Создать новый протокол для этого пациента</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" onClick={handleDuplicate}>
-                  <Copy className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">{visit.protocol_type === "physio_session" ? "Повторить на следующий день" : "Дублировать"}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{visit.protocol_type === "physio_session" ? "Повторить физиопротокол на следующий день после его даты" : "Создать копию этого протокола (сегодняшняя дата)"}</TooltipContent>
-            </Tooltip>
+            {visit.protocol_type === "physio_session" ? (
+              <Popover open={duplicateOpen} onOpenChange={(open) => {
+                if (open) setDuplicateDate(new Date());
+                setDuplicateOpen(open);
+              }}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" aria-label="Дублировать протокол датой">
+                    <Copy className="h-4 w-4 md:mr-1" />
+                    <span className="hidden md:inline">Дублировать протокол датой</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-3" align="start" collisionPadding={12}>
+                  <div className="space-y-2">
+                    <Label>Дата копии</Label>
+                    <div className="text-sm">{duplicateDate ? format(duplicateDate, "dd.MM.yyyy") : "Выберите дату"}</div>
+                    <Calendar mode="single" selected={duplicateDate} onSelect={setDuplicateDate}
+                      defaultMonth={duplicateDate} fixedWeeks initialFocus className="pointer-events-auto" />
+                    <Button type="button" className="w-full gap-1" disabled={!duplicateDate}
+                      onClick={() => handleDuplicate(duplicateDate)}>
+                      <Copy className="h-4 w-4" /> Создать копию
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => handleDuplicate()}>
+                    <Copy className="h-4 w-4 md:mr-1" />
+                    <span className="hidden md:inline">Дублировать</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
+              </Tooltip>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>
