@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { physioFromAssignments } from "@/lib/visits/physio";
+import { nextPhysioDate, physioFromAssignments } from "@/lib/visits/physio";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown, FileUp, CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -422,13 +422,17 @@ export default function AdminPatientVisitDetail() {
   const handleDuplicate = async () => {
     if (!visit) return;
     const proceed = () => true;
-    if (isDirty && !window.confirm("Есть несохранённые изменения. Дублировать без сохранения?")) return;
-    const today = format(new Date(), "yyyy-MM-dd");
+    const isPhysio = visit.protocol_type === "physio_session";
+    const confirmation = isPhysio
+      ? "Есть несохранённые изменения. Перенести их в копию на следующий день, не сохраняя исходный протокол?"
+      : "Есть несохранённые изменения. Дублировать без сохранения?";
+    if (isDirty && !window.confirm(confirmation)) return;
+    const copyDate = isPhysio ? nextPhysioDate(visit.visit_date) : format(new Date(), "yyyy-MM-dd");
     const { data, error } = await supabase
       .from("patient_visits")
       .insert({
         patient_id: visit.patient_id,
-        visit_date: today,
+        visit_date: copyDate,
         protocol_type: visit.protocol_type,
         protocol_data: visit.protocol_data,
         diagnosis: visit.diagnosis,
@@ -441,7 +445,7 @@ export default function AdminPatientVisitDetail() {
       toast({ title: "Не удалось дублировать", description: error?.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Протокол продублирован", description: "Измените динамические поля." });
+    toast({ title: "Протокол продублирован", description: isPhysio ? `Дата копии: ${format(new Date(copyDate + "T00:00:00"), "dd.MM.yyyy")}` : "Измените динамические поля." });
     navigate(`/admin/visits/${data.id}`);
     void proceed;
   };
@@ -594,10 +598,10 @@ export default function AdminPatientVisitDetail() {
               <TooltipTrigger asChild>
                 <Button variant="outline" size="sm" onClick={handleDuplicate}>
                   <Copy className="h-4 w-4 md:mr-1" />
-                  <span className="hidden md:inline">Дублировать</span>
+                  <span className="hidden md:inline">{visit.protocol_type === "physio_session" ? "Повторить на следующий день" : "Дублировать"}</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Создать копию этого протокола (сегодняшняя дата)</TooltipContent>
+              <TooltipContent>{visit.protocol_type === "physio_session" ? "Повторить физиопротокол на следующий день после его даты" : "Создать копию этого протокола (сегодняшняя дата)"}</TooltipContent>
             </Tooltip>
 
             <Tooltip>

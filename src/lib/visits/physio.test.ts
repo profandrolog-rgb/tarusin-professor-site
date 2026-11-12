@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { physioSessionNumbers, filledPhysioRows, PHYSIO_PROCEDURES } from "./physio";
+import { physioSessionNumbers, filledPhysioRows, PHYSIO_PROCEDURES, nextPhysioDate } from "./physio";
+
+describe("дата повторного физиопротокола", () => {
+  it.each([
+    ["2026-11-12", "2026-11-13"],
+    ["2026-11-30", "2026-12-01"],
+    ["2026-12-31", "2027-01-01"],
+    ["2028-02-28", "2028-02-29"],
+    ["2028-02-29", "2028-03-01"],
+  ])("следующий календарный день после %s — %s", (source, expected) => {
+    expect(nextPhysioDate(source)).toBe(expected);
+  });
+});
 
 describe("протокол физиолечения", () => {
   it("на каждый сеанс — отдельный лист", () => {

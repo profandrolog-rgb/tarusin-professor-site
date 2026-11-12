@@ -1,3 +1,5 @@
+import { addDays, format, parseISO } from "date-fns";
+
 /** Протокол физиолечения: перечень процедур и расчёт листов по сеансам. */
 export const PHYSIO_PROCEDURES = [
   "Высокоинтенсивная магнитная стимуляция мышц тазового дна",
@@ -23,6 +25,11 @@ export interface PhysioData {
   sessions_total?: number | string;
   per_week?: number | string;
   recommendations?: string;
+}
+
+/** Следующий календарный день после даты исходного физиопротокола. */
+export function nextPhysioDate(visitDate: string): string {
+  return format(addDays(parseISO(visitDate.slice(0, 10)), 1), "yyyy-MM-dd");
 }
 
 /** Номера сеансов для печати: все или один выбранный (1..N). */
