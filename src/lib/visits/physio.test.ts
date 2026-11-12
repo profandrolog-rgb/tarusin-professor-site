@@ -15,3 +15,16 @@ describe("протокол физиолечения", () => {
     expect(filledPhysioRows([{ name: "А" }, { name: " " }])).toHaveLength(1);
   });
 });
+
+import { physioFromAssignments as pfa } from "./physio";
+describe("physioFromAssignments", () => {
+  it("переносит физиопроцедуры с числом и кратностью", () => {
+    const r = pfa(["Тамсулозин 0,4 мг", "Магнитотерапия передней брюшной стенки — 12 процедур, 3 раза в неделю"]);
+    expect(r?.procedures?.map((p) => p.name)).toEqual(["Магнитотерапия передней брюшной стенки"]);
+    expect(r?.sessions_total).toBe(12);
+    expect(r?.per_week).toBe(3);
+  });
+  it("без физиопроцедур — null", () => {
+    expect(pfa(["Тамсулозин"])).toBeNull();
+  });
+});

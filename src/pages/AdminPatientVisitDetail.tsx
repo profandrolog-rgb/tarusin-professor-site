@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { physioFromAssignments } from "@/lib/visits/physio";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Printer, Trash2, RotateCcw, Eye, Plus, ChevronDown, Save, X, Copy, Stethoscope, Pencil, FileDown, FileUp, CalendarIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -483,6 +484,35 @@ export default function AdminPatientVisitDetail() {
 
 
 
+  /** Одной кнопкой: физиопроцедуры из назначений → новый протокол физиолечения. */
+  const handleCreatePhysio = async (treatments: string[]) => {
+    if (!visit) return;
+    const physio = physioFromAssignments(treatments);
+    if (!physio) {
+      toast({ title: "В назначениях нет физиопроцедур", variant: "destructive" });
+      return;
+    }
+    if (isDirty && !window.confirm("Есть несохранённые изменения в текущем протоколе. Продолжить?")) return;
+    const { data, error } = await supabase
+      .from("patient_visits")
+      .insert({
+        patient_id: visit.patient_id,
+        visit_date: format(new Date(), "yyyy-MM-dd"),
+        protocol_type: "physio_session" as any,
+        protocol_data: { ...((DEFAULT_PROTOCOL_DATA as any)["physio_session"] || {}), ...physio } as any,
+        diagnosis: visit.diagnosis,
+        icd_code: visit.icd_code,
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      toast({ title: "Не удалось создать протокол физиолечения", description: error?.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Протокол физиолечения создан", description: `Перенесено процедур: ${physio.procedures?.length}` });
+    navigate(`/admin/visits/${data.id}`);
+  };
+
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   if (!visit) return <div className="p-8 text-center">Визит не найден</div>;
 
@@ -893,7 +923,12 @@ export default function AdminPatientVisitDetail() {
               : null;
             if (!a || a.treatments.length === 0) return null;
             return (
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                {visit.protocol_type !== "physio_session" && physioFromAssignments(a.treatments) && (
+                  <Button variant="outline" size="sm" onClick={() => handleCreatePhysio(a.treatments)}>
+                    Создать протокол физиолечения
+                  </Button>
+                )}
                 <WriteRxFromAssignments
                   treatments={a.treatments}
                   patientId={visit.patient_id}
