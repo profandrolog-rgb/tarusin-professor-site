@@ -34,6 +34,8 @@ import { NeuroStatusSection } from "../sections/NeuroStatus";
 import { PsychStatusSection } from "../sections/PsychStatus";
 import { SmartFieldLabel } from "../SmartTemplates";
 import { ClinicalHistorySection } from "../sections/ClinicalHistorySection";
+import { SexualFormulaSection } from "../sections/SexualFormula";
+import { SexualConstitutionSection } from "../sections/SexualConstitution";
 
 
 export function UziReproductiveForm({ data, onChange, patientId, currentVisitId }: { data: UziReproductiveOnlyData; onChange: (p: Partial<UziReproductiveOnlyData>) => void; patientId?: string | null; currentVisitId?: string | null }) {
@@ -195,6 +197,43 @@ export function RepeatWithUziForm({ data, onChange, birthDate, patientId, curren
       </div>
       <NeuroStatusSection value={(data as any).neuro_status_full} onChange={(v) => onChange({ neuro_status_full: v } as any)} />
       <PsychStatusSection value={data} onChange={onChange} birthDate={birthDate} />
+
+      {(() => {
+        const d: any = data;
+        const showF = d.show_sexual_formula === true;
+        const showC = d.show_sexual_constitution === true;
+        return (
+          <>
+            <Card><CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+              <CardTitle className="text-sm">Половая формула</CardTitle>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={showF} onCheckedChange={(v) => onChange({ show_sexual_formula: v === true } as any)} />
+                Заполнить половую формулу
+              </label>
+            </CardHeader>
+              {showF ? (
+                <CardContent className="space-y-3">
+                  <SexualFormulaSection data={d.sexual_formula || {}} onChange={(p) => onChange({ sexual_formula: { ...(d.sexual_formula || {}), ...p } } as any)} />
+                  <div className="space-y-1"><SmartFieldLabel value={d.sexual_formula_text || ""} onSet={(v) => onChange({ sexual_formula_text: v } as any)}>Половая формула (текст)</SmartFieldLabel>
+                    <Textarea rows={2} value={d.sexual_formula_text || ""} onChange={(e) => onChange({ sexual_formula_text: e.target.value } as any)} />
+                  </div>
+                </CardContent>
+              ) : null}
+            </Card>
+            <Card><CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+              <CardTitle className="text-sm">Сексологический профиль (половая конституция)</CardTitle>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={showC} onCheckedChange={(v) => onChange({ show_sexual_constitution: v === true } as any)} />
+                Заполнить сексологический профиль
+              </label>
+            </CardHeader>
+              {showC ? (
+                <CardContent><SexualConstitutionSection value={d.sexual_constitution} onChange={(v) => onChange({ sexual_constitution: v } as any)} /></CardContent>
+              ) : null}
+            </Card>
+          </>
+        );
+      })()}
 
       <NoUziCard data={data} onChange={onChange} />
 

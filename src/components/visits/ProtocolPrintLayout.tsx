@@ -269,6 +269,7 @@ const UZI_FIELD_ORDER = [
   "left_testis_size", "left_testis_volume", "left_testis_structure",
   "right_epididymis", "right_epididymis_volume",
   "left_epididymis", "left_epididymis_volume",
+  "testis_asymmetry_percent", "epididymis_asymmetry_percent",
   "arterial_flow",
   "venous_flow",
   "prostate",
@@ -451,7 +452,7 @@ const KNOWN_KEYS = new Set([
   "psych_age_group","next_visit_range","next_visit_date_to","next_visit_duration",
   // флаги печати
   "print_labs_table","print_labs_dynamics","include_consent","include_understanding","metabolic_map_checklist",
-  "testis_asymmetry_percent","epididymis_asymmetry_percent",
+  "testis_asymmetry_percent","epididymis_asymmetry_percent","show_sexual_formula","show_sexual_constitution",
 ]);
 
 function pushUnknownScalars(rows: React.ReactNode[], d: any) {
@@ -646,7 +647,12 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     // Сначала осмотр, затем УЗИ
     if (t !== "uzi_reproductive") {
       pushSomatic(rows, d);
-      pushSexual(rows, d);
+      if (t !== "repeat_with_uzi") pushSexual(rows, d);
+      else pushSexual(rows, {
+        sexual_formula: d.show_sexual_formula === true ? d.sexual_formula : undefined,
+        sexual_formula_text: d.show_sexual_formula === true ? d.sexual_formula_text : undefined,
+        sexual_constitution: d.show_sexual_constitution === true ? d.sexual_constitution : undefined,
+      });
       pushLocalStatus(rows, d);
       pushClinical(rows, d);
     }
