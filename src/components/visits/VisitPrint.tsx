@@ -14,6 +14,7 @@ interface VisitForPrint {
   patient: { full_name: string; birth_date: string; history_number: string | null } | null;
 }
 
+import { calcAgeText } from "@/lib/surgery/referral";
 function calcAge(birth: string, ref: Date) {
   const b = new Date(birth);
   let age = ref.getFullYear() - b.getFullYear();
@@ -83,7 +84,7 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
       {visit.patient?.birth_date && (
         <Row
           label="Дата рождения"
-          value={`${format(new Date(visit.patient.birth_date), "dd.MM.yyyy")}${age !== null ? ` (${age} лет)` : ""}`}
+          value={`${format(new Date(visit.patient.birth_date), "dd.MM.yyyy")}${age !== null ? ` (${calcAgeText(visit.patient.birth_date, visitDate)})` : ""}`}
         />
       )}
 

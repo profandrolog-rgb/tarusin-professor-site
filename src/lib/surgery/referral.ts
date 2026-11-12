@@ -28,11 +28,12 @@ export function statusColor(v?: string | null) {
   return REFERRAL_STATUSES.find((s) => s.value === v)?.color || "bg-muted";
 }
 
-export function calcAgeText(birthDate?: string | null): string {
+export function calcAgeText(birthDate?: string | null, refDate?: Date | string | null): string {
   if (!birthDate) return "";
   const b = new Date(birthDate);
   if (Number.isNaN(b.getTime())) return "";
-  const now = new Date();
+  const r = refDate ? new Date(refDate) : new Date();
+  const now = Number.isNaN(r.getTime()) ? new Date() : r;
   let years = now.getFullYear() - b.getFullYear();
   let months = now.getMonth() - b.getMonth();
   if (now.getDate() < b.getDate()) months -= 1;
