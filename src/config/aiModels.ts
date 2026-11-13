@@ -49,16 +49,16 @@ export const CURATED_MODELS: CuratedModel[] = [
   },
   {
     key: "gpt5-mini",
-    label: "GPT-5 mini",
+    label: "GPT-5.4 mini",
     tier: "fast",
-    candidates: ["openai/gpt-5-mini"],
+    candidates: ["openai/gpt-5.4-mini", "openai/gpt-5-mini"],
   },
   {
     key: "grok-fast",
-    label: "Grok 4.7",
+    label: "Grok 4.20",
     tier: "fast",
     // grok-4.5 недоступен в нашем регионе (xAI отдаёт 403 permission-denied) — используем 4.3 как основной
-    candidates: ["x-ai/grok-4.7", "x-ai/grok-4.6", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
+    candidates: ["x-ai/grok-4.20", "x-ai/grok-4.7", "x-ai/grok-4.6", "x-ai/grok-4.3", "x-ai/grok-4.2", "x-ai/grok-4.1", "x-ai/grok-4"],
     familyRegex: /^x-ai\/grok-4/i,
   },
   {
@@ -92,6 +92,13 @@ export const CURATED_MODELS: CuratedModel[] = [
 
   // ─── Глубокие ─────────────────────────────────────────────────────────
   {
+    key: "gemini-carbon",
+    label: "Gemini 4 Carbon",
+    tier: "deep",
+    candidates: ["google/gemini-4-carbon", "google/gemini-4-argon"],
+    familyRegex: /^google\/gemini-4-carbon/i,
+  },
+  {
     key: "gemini-pro",
     label: "Gemini 4 Argon",
     tier: "deep",
@@ -111,11 +118,32 @@ export const CURATED_MODELS: CuratedModel[] = [
     familyRegex: /^anthropic\/claude-opus-(?:5|4\.8)/i,
   },
   {
+    key: "claude-fable",
+    label: "Claude Fable 5.2",
+    tier: "deep",
+    candidates: [
+      "anthropic/claude-fable-5.2", "anthropic/claude-fable-5.1",
+      "anthropic/claude-fable-5",
+    ],
+    familyRegex: /^anthropic\/claude-fable-/i,
+  },
+  {
     key: "sakana-fugu",
     label: "Namazu (Sakana AI)",
     tier: "deep",
-    candidates: ["sakana/sakana-namazu", "sakana/fugu-ultra"],
+    candidates: ["sakana/sakana-namazu", "sakana/fugu-ultra-v2", "sakana/fugu-ultra"],
     hint: "Мета-оркестратор, сам маршрутизирует по пулу моделей",
+  },
+  {
+    key: "gpt6-astra-pro",
+    label: "GPT-6 Astra Pro",
+    tier: "deep",
+    candidates: [
+      "openai/gpt-6-astra-pro", "openai/gpt-6-astra",
+      "openai/gpt-6-luna-pro",
+      "openai/gpt-6-sol-pro",
+    ],
+    familyRegex: /^openai\/gpt-6(?:\.\d)?-(?:astra|luna|sol)(?:-pro)?/i,
   },
   {
     key: "gpt56-terra-pro",
@@ -133,7 +161,7 @@ export const CURATED_MODELS: CuratedModel[] = [
     key: "gpt5",
     label: "GPT-5",
     tier: "deep",
-    candidates: ["openai/gpt-5.5", "openai/gpt-5.4-pro", "openai/gpt-5"],
+    candidates: ["openai/gpt-5.5-pro", "openai/gpt-5.5", "openai/gpt-5.4-pro", "openai/gpt-5"],
     familyRegex: /^openai\/gpt-5(?:\.\d)?(?:-pro)?(?!-mini|-nano|-chat)/i,
   },
   {
