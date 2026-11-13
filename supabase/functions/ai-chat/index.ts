@@ -25,19 +25,26 @@ const DEFAULT_SYSTEM_PROMPT =
   "Противопоказания, мониторинг, взаимодействия, правовые нюансы давай по существу — как коллега коллеге.";
 
 const CHAT_FALLBACK_MODELS = [
-  "google/gemini-3-flash-preview",
-  "anthropic/claude-sonnet-4.5",
-  "openai/gpt-5-mini",
-  "deepseek/deepseek-v4-flash",
-  "qwen/qwen3.6-flash",
+  "google/gemini-3.8-flash",
+  "anthropic/claude-sonnet-5.5",
+  "openai/gpt-5.4-mini",
+  "deepseek/deepseek-v4.1-flash",
+  "qwen/qwen3.8-flash",
 ];
 
 const CHAT_MODEL_FALLBACKS: Record<string, string[]> = {
+  "google/gemini-4-carbon": ["google/gemini-4-argon", "google/gemini-3.1-pro-preview"],
+  "google/gemini-4-argon": ["google/gemini-3.1-pro-preview", "google/gemini-3.8-flash"],
   "google/gemini-2.5-pro": ["google/gemini-3.1-pro-preview", "google/gemini-3-flash-preview"],
   "google/gemini-3.1-pro-preview": ["google/gemini-3-flash-preview"],
+  "openai/gpt-6-astra-pro": ["openai/gpt-6.1-terra-pro", "openai/gpt-5.5"],
+  "openai/gpt-6.1-terra-pro": ["openai/gpt-5.5", "openai/gpt-5-mini"],
   "openai/gpt-5": ["openai/gpt-5-mini", "openai/gpt-5-chat"],
+  "anthropic/claude-opus-5.5": ["anthropic/claude-sonnet-5.5"],
+  "anthropic/claude-fable-5.2": ["anthropic/claude-sonnet-5.5"],
   "anthropic/claude-opus-4.8": ["anthropic/claude-sonnet-4.5"],
   "anthropic/claude-opus-5": ["anthropic/claude-sonnet-4.5"],
+  "moonshotai/kimi-k3.1-pro": ["moonshotai/kimi-k2-thinking", "qwen/qwen3.8-flash"],
   "moonshotai/kimi-k2-thinking": ["qwen/qwen3.6-flash", "z-ai/glm-5"],
   "deepseek/deepseek-v4-pro": ["deepseek/deepseek-v4-flash", "deepseek/deepseek-v3.2"],
 };

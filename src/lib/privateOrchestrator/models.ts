@@ -13,11 +13,14 @@ export const CENSOR_LABELS: Record<CensorLevel, string> = {
 };
 
 export const PRESET_MODELS: PresetModel[] = [
+  { id: "openai/gpt-6-astra-pro", label: "GPT-6 Astra Pro", group: "flagship", censor: "full", power: 10 },
   { id: "openai/gpt-6.1-terra-pro", label: "GPT-6.1 Terra Pro", group: "flagship", censor: "full", power: 10 },
   { id: "anthropic/claude-opus-5.5", label: "Claude Opus 5.5", group: "flagship", censor: "full", power: 10 },
   { id: "google/gemini-4-argon", label: "Gemini 4 Argon", group: "flagship", censor: "full", power: 10 },
+  { id: "google/gemini-4-carbon", label: "Gemini 4 Carbon", group: "flagship", censor: "full", power: 10 },
   { id: "anthropic/claude-sonnet-5.5", label: "Claude Sonnet 5.5", group: "flagship", censor: "full", power: 9 },
-  { id: "x-ai/grok-4.7", label: "Grok 4.7", group: "flagship", censor: "mid", power: 9 },
+  { id: "anthropic/claude-fable-5.2", label: "Claude Fable 5.2", group: "flagship", censor: "full", power: 9 },
+  { id: "x-ai/grok-4.20", label: "Grok 4.20", group: "flagship", censor: "mid", power: 9 },
   { id: "deepseek/deepseek-v4-pro-0813", label: "DeepSeek V4 Pro", group: "flagship", censor: "mid", power: 9 },
   { id: "qwen/qwen3.8-max-prime", label: "Qwen 3.8 Max Prime", group: "flagship", censor: "full", power: 8 },
   { id: "moonshotai/kimi-k3.1-pro", label: "Kimi K3.1 Pro", group: "flagship", censor: "full", power: 8 },
@@ -41,10 +44,11 @@ export const PRESET_MODELS: PresetModel[] = [
 ];
 
 export const DEFAULT_ENABLED = [
+  "openai/gpt-6-astra-pro",
   "openai/gpt-6.1-terra-pro",
   "anthropic/claude-opus-5.5",
-  "google/gemini-4-argon",
-  "x-ai/grok-4.7",
+  "google/gemini-4-carbon",
+  "x-ai/grok-4.20",
   "nousresearch/hermes-4-405b",
 ];
 
