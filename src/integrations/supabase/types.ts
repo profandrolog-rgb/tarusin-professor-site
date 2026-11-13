@@ -7231,6 +7231,7 @@ export type Database = {
         Returns: undefined
       }
       increment_video_view: { Args: { _slug: string }; Returns: undefined }
+      is_clinical_staff: { Args: { _uid: string }; Returns: boolean }
       is_guardian_of: { Args: { _patient_id: string }; Returns: boolean }
       is_private_vault_owner: { Args: { _uid: string }; Returns: boolean }
       mark_public_referral_item: {
