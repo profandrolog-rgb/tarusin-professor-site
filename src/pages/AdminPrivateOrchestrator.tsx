@@ -64,7 +64,6 @@ function Gate({ mode, onUnlocked }: { mode: "setup" | "locked"; onUnlocked: (mod
       setErr(e?.message || "Ошибка");
     } finally {
       setBusy(false);
-      setPin(""); setPin2(""); setPhrase("");
     }
   };
 
@@ -75,7 +74,7 @@ function Gate({ mode, onUnlocked }: { mode: "setup" | "locked"; onUnlocked: (mod
           <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5 text-primary" /> Личный советник</CardTitle>
           <CardDescription>
             {mode === "setup"
-              ? "Первый вход: задайте PIN (4–12 цифр) и секретную фразу (от 8 символов). Восстановить их нельзя."
+              ? "Первый вход: задайте PIN (4–12 цифр) и секретную фразу (от 8 символов, можно только цифры). Восстановить их нельзя."
               : "Второй уровень защиты: введите PIN и секретную фразу. После 5 ошибок — блокировка на 15 минут."}
           </CardDescription>
         </CardHeader>
@@ -86,7 +85,7 @@ function Gate({ mode, onUnlocked }: { mode: "setup" | "locked"; onUnlocked: (mod
             {mode === "setup" && (
               <Input type="password" inputMode="numeric" placeholder="Повторите PIN" value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ""))} />
             )}
-            <Input type="password" placeholder="Секретная фраза" value={phrase} onChange={(e) => setPhrase(e.target.value)} />
+            <Input type="password" placeholder="Секретная фраза — от 8 символов или цифр" value={phrase} onChange={(e) => setPhrase(e.target.value)} />
             <p className="text-xs text-muted-foreground -mt-2">Подсказка: ВД</p>
             {err && <p className="text-sm text-destructive">{err}</p>}
             <Button type="submit" className="w-full" disabled={busy || pin.length < 4 || phrase.length < 8}>
