@@ -263,10 +263,10 @@ export function VisitPrint({ visit }: { visit: VisitForPrint }) {
         </>
       )}
 
-      {visit.next_visit_date && (
+      {(data.next_visit_none === true || visit.next_visit_date) && (
         <>
           <Row label="Контрольный осмотр" value={formatNextVisitDate(visit.next_visit_date, data)} />
-          <Row label="Рекомендованное время приёма" value={data.next_visit_duration} />
+          {data.next_visit_none !== true && <Row label="Рекомендованное время приёма" value={data.next_visit_duration} />}
         </>
       )}
 

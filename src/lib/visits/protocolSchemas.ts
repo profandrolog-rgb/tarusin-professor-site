@@ -1,4 +1,5 @@
 import { GIRL_LOCAL_FIELDS, GIRL_PELVIS_FIELDS, defaultsOf } from "./girlExam";
+import { DEFAULT_POSTOP_DRESSING } from "./postopDressing";
 import { ProtocolType } from "./protocolTypes";
 import { DEFAULT_SOMATIC, SomaticStatusData } from "@/components/visits/sections/SomaticStatus";
 import { DEFAULT_LOCAL_STATUS, LocalStatusData } from "@/components/visits/sections/LocalStatusAndrology";
@@ -276,4 +277,5 @@ export const DEFAULT_PROTOCOL_DATA: Partial<Record<ProtocolType, AnyProtocolData
     recommendations: "Динамическое наблюдение.",
   },
   physio_session: { indications: "", procedures: [{}], sessions_total: 10, per_week: 2 },
+  postop_dressing: DEFAULT_POSTOP_DRESSING,
 };

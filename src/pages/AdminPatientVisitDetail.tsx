@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPE_MAP, ProtocolType } from "@/lib/visits/protocolTypes";
@@ -806,8 +807,17 @@ export default function AdminPatientVisitDetail() {
                 const pd: any = isProtocolRecord(visit.protocol_data) ? visit.protocol_data : {};
                 const setPd = (p: Record<string, any>) => update({ protocol_data: { ...pd, ...p } });
                 const range = !!pd.next_visit_range;
+                const noNextVisit = pd.next_visit_none === true;
                 return (
                   <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={noNextVisit} onCheckedChange={(value) => update({
+                        next_visit_date: null,
+                        protocol_data: { ...pd, next_visit_none: value === true, next_visit_range: false, next_visit_date_to: null, next_visit_duration: null },
+                      })} />
+                      Нет повторного визита
+                    </label>
+                    {!noNextVisit && <>
                     <div className="flex items-center justify-between gap-2">
                       <Label>Контрольный осмотр *</Label>
                       <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
@@ -868,6 +878,7 @@ export default function AdminPatientVisitDetail() {
                         {NEXT_VISIT_DURATIONS.map((d) => <option key={d} value={d}>{d}</option>)}
                       </select>
                     </div>
+                    </>}
                   </div>
                 );
               })()}

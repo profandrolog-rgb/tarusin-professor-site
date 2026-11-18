@@ -71,6 +71,13 @@
       "when": 1794599168825,
       "tag": "0009_tighten_permissive_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795019408383,
+      "tag": "0010_allow_postop_dressing_protocol",
+      "breakpoints": true
     }
   ]
 }

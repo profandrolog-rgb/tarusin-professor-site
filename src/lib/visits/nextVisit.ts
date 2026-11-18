@@ -8,6 +8,7 @@ const fmt = (iso: string) => format(new Date(iso), "dd MMMM yyyy", { locale: ru 
 
 /** Текст даты контрольного осмотра: конкретная дата или интервал (конец интервала — protocol_data.next_visit_date_to). */
 export function formatNextVisitDate(from: string | null | undefined, data: any): string | null {
+  if (data?.next_visit_none === true) return "Повторный визит не назначен";
   if (!from) return null;
   const to = data?.next_visit_date_to;
   if (to && to !== from) return `с ${fmt(from)} по ${fmt(to)}`;
@@ -16,6 +17,7 @@ export function formatNextVisitDate(from: string | null | undefined, data: any):
 
 /** Что не заполнено для повторного приёма (пусто — всё в порядке). */
 export function nextVisitMissing(from: string | null | undefined, data: any): string[] {
+  if (data?.next_visit_none === true) return [];
   const missing: string[] = [];
   if (!from) missing.push("дата контрольного осмотра");
   else if (data?.next_visit_range && !data?.next_visit_date_to) missing.push("конец интервала дат");

@@ -13,6 +13,7 @@ import { OnlineConsultForm } from "./forms/OnlineConsultForm";
 import { PeptideProgramForm } from "./forms/PeptideProgramForm";
 import { GirlUrologyForm } from "./forms/GirlUrologyForm";
 import { AbdominalUziForm } from "./forms/AbdominalUziForm";
+import { PostopDressingForm } from "./forms/PostopDressingForm";
 import { PhysioSessionForm } from "./forms/PhysioSessionForm";
 import { AbdominalUziSection } from "./sections/AbdominalUziSection";
 import { VoidingDiarySection } from "./sections/VoidingDiarySection";
@@ -58,6 +59,15 @@ export function ProtocolForm({ type, data, onChange, birthDate, patientSex, pati
 
   if (type === "physio_session") {
     return <PhysioSessionForm data={data || {}} onChange={patch} patientName={patientName} birthDate={birthDate} visitDate={visitDate} />;
+  }
+
+  if (type === "postop_dressing") {
+    return <div className="space-y-4">
+      <OperationHistoryBanner patientName={patientName} birthDate={birthDate} patientId={patientId}
+        currentVisitId={currentVisitId} currentName={data?.operation_name || ""} currentDate={data?.operation_date || ""}
+        onApply={patch} />
+      <PostopDressingForm data={data || {}} onChange={patch} />
+    </div>;
   }
 
   const renderForm = () => {

@@ -13,7 +13,8 @@ export type ProtocolType =
   | "peptide_program"
   | "girl_urology"
   | "uzi_abdominal"
-  | "physio_session";
+  | "physio_session"
+  | "postop_dressing";
 
 
 export interface ProtocolDef {
@@ -45,6 +46,7 @@ export const PROTOCOL_LABELS: Record<string, string> = {
   girl_urology: "Урологический осмотр (девочки)",
   uzi_abdominal: "Ультразвуковое исследование органов брюшной полости",
   physio_session: "Протокол физиолечения",
+  postop_dressing: "Послеоперационная перевязка",
   dynamic: "Динамический осмотр",
   unknown: "Осмотр",
 };
@@ -71,6 +73,7 @@ const PROTOCOL_SHORT: Record<string, string> = {
   girl_urology: "Осмотр девочки",
   uzi_abdominal: "УЗИ брюшной полости",
   physio_session: "Физиолечение",
+  postop_dressing: "Перевязка",
   dynamic: "Динамический",
   unknown: "Осмотр",
 };
@@ -92,6 +95,7 @@ export const PROTOCOL_TYPES: ProtocolDef[] = [
   "repeat_with_uzi",
   "peptide_program",
   "physio_session",
+  "postop_dressing",
 ].map((key) => ({
   key: key as ProtocolType,
   title: PROTOCOL_LABELS[key],

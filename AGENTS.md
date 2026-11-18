@@ -6,4 +6,5 @@
 - Keep batch document import scoped to the current visit's anamnesis and require review before applying AI condensation, so historical records cannot overwrite today's clinical fields.
 - Normalize laboratory extraction in a function-local helper before caching or saving, preserving per-page dates so multi-document replies cannot silently lose results.
 - Prescription preview edits remain local to the printable form; print and PDF read that exact edited DOM so existing stored prescriptions remain unchanged.- Store multiple referral operations in the existing `operation_name` text as numbered lines (`joinOperations`/`splitOperations`), avoiding a schema change that would break old referrals and effectiveness matching.
+- Store postoperative dressing fields in visit protocol JSON and reuse the operation history lookup and shared print layout, so existing visits and operation records remain unchanged.
 - Physiotherapy session protocol (`physio_session`) keeps procedures in visit protocol JSON and prints per-session sheets from its own form, so the shared protocol print layout stays unchanged.

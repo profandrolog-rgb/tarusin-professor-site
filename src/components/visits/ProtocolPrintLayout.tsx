@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { DRESSING_LOCAL_FIELDS, DRESSING_ACTION_FIELDS, dressingActionText } from "@/lib/visits/postopDressing";
 import { filledPhysioRows } from "@/lib/visits/physio";
 import { formatNextVisitDate } from "@/lib/visits/nextVisit";
 import { ru } from "date-fns/locale";
@@ -456,6 +457,7 @@ const KNOWN_KEYS = new Set([
   "print_labs_table","print_labs_dynamics","include_consent","include_understanding","metabolic_map_checklist",
   "testis_asymmetry_percent","epididymis_asymmetry_percent","show_sexual_formula","show_sexual_constitution",
   "procedures","sessions_total","per_week",
+  "next_visit_none","dressing_number","dressing_local","dressing_actions",
 ]);
 
 function pushUnknownScalars(rows: React.ReactNode[], d: any) {
@@ -708,6 +710,22 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
     rows.push(<Field key="dy" label="Динамика" value={d.dynamics} />);
     rows.push(<Field key="i" label="Показания к исследованию" value={d.indications} />);
     rows.push(<Field key="dev" label="Аппарат / датчик" value={d.device} />);
+  }
+
+  if (t === "postop_dressing") {
+    rows.push(<Field key="dn" label="№ перевязки по счёту" value={d.dressing_number} />);
+    rows.push(<Field key="do" label="Название операции" value={d.operation_name} />);
+    rows.push(<Field key="dc" label="Жалобы" value={d.complaints} />);
+    rows.push(<Field key="ds" label="Соматический статус" value={d.general_status} />);
+    rows.push(<Section key="dl" title="Локальный статус">
+      {DRESSING_LOCAL_FIELDS.map(([key, label]) => <Field key={key} label={label} value={d.dressing_local?.[key]} />)}
+    </Section>);
+    rows.push(<Section key="da" title="Выполнено">
+      {DRESSING_ACTION_FIELDS.filter(([key]) => key !== "recommendations").map(([key, label]) =>
+        <Field key={key} label={label} value={dressingActionText(d.dressing_actions || {}, key)} />)}
+    </Section>);
+    rows.push(<Field key="dz" label="Заключение" value={d.conclusion} />);
+    rows.push(<Field key="dr" label="Рекомендовано" value={dressingActionText(d.dressing_actions || {}, "recommendations")} />);
   }
 
   if (t === "physio_session") {
@@ -1015,11 +1033,11 @@ function ProtocolBody({ visit }: { visit: VisitForPrint }) {
   }
 
 
-  if (visit.next_visit_date) {
+  if (d.next_visit_none === true || visit.next_visit_date) {
     rows.push(
       <Field key="nv" label="Контрольный осмотр" value={formatNextVisitDate(visit.next_visit_date, d)} />
     );
-    if (d.next_visit_duration) {
+    if (d.next_visit_none !== true && d.next_visit_duration) {
       rows.push(<Field key="nvd" label="Рекомендованное время приёма" value={d.next_visit_duration} />);
     }
   }
