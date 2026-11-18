@@ -82,10 +82,12 @@ function Gate({ mode, onUnlocked }: { mode: "setup" | "locked"; onUnlocked: (mod
         <CardContent>
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); submit(); }} autoComplete="off">
             <Input type="password" inputMode="numeric" placeholder="PIN-код" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} autoFocus />
+            <p className="text-xs text-muted-foreground -mt-2">Подсказка: ИИ</p>
             {mode === "setup" && (
               <Input type="password" inputMode="numeric" placeholder="Повторите PIN" value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ""))} />
             )}
             <Input type="password" placeholder="Секретная фраза" value={phrase} onChange={(e) => setPhrase(e.target.value)} />
+            <p className="text-xs text-muted-foreground -mt-2">Подсказка: ВД</p>
             {err && <p className="text-sm text-destructive">{err}</p>}
             <Button type="submit" className="w-full" disabled={busy || pin.length < 4 || phrase.length < 8}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
