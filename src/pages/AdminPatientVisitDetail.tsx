@@ -40,6 +40,8 @@ import { useProtocolFragmentReceiver } from "@/hooks/useProtocolFragmentReceiver
 import { mergePlanItemsIntoAssignments } from "@/lib/visits/applyPlanItemsToAssignments";
 import PdfBatchUpload from "@/components/medical/PdfBatchUpload";
 import { ProtocolImportDialog } from "@/components/visits/ProtocolImportDialog";
+import { SchoolCertificateDialog } from "@/components/visits/SchoolCertificateDialog";
+import type { SchoolCertificate } from "@/lib/visits/schoolCertificate";
 import { PatientHistoryPanel } from "@/components/visits/PatientHistoryPanel";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
 import { NEXT_VISIT_DURATIONS, nextVisitMissing } from "@/lib/visits/nextVisit";
@@ -92,6 +94,7 @@ export default function AdminPatientVisitDetail() {
   const [siblings, setSiblings] = useState<SiblingVisit[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [certificateOpen, setCertificateOpen] = useState(false);
 
   const [labsRefresh, setLabsRefresh] = useState(0);
   const [previewLabs, setPreviewLabs] = useState<{ labs: any[]; dynamics: any[] }>({ labs: [], dynamics: [] });
@@ -643,6 +646,18 @@ export default function AdminPatientVisitDetail() {
               </TooltipTrigger>
               <TooltipContent>Распознать протокол старого формата (Word, PDF, скан, текст) и заполнить форму</TooltipContent>
             </Tooltip>
+
+            <Button variant="outline" size="sm" onClick={() => setCertificateOpen(true)} aria-label="Справка о прохождении лечения">
+              <FileDown className="h-4 w-4 md:mr-1" />Справка
+            </Button>
+            <SchoolCertificateDialog open={certificateOpen} onOpenChange={setCertificateOpen} visitId={visit.id}
+              visitDate={visit.visit_date} patientName={visit.patient?.full_name} birthDate={visit.patient?.birth_date}
+              diagnosis={visit.diagnosis}
+              saved={isProtocolRecord(visit.protocol_data) ? (visit.protocol_data.school_certificate as SchoolCertificate | undefined) : undefined}
+              onApply={(certificate) => {
+                const base = isProtocolRecord(visit.protocol_data) ? { ...visit.protocol_data } : {};
+                update({ protocol_data: { ...base, school_certificate: certificate as unknown as Json } });
+              }} />
 
             <ProtocolImportDialog
               open={importOpen}
