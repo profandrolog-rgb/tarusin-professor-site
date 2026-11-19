@@ -130,7 +130,7 @@ function odfXmlToText(xml: string): string {
   };
   const body = doc.getElementsByTagNameNS("*", "body")[0] || doc.documentElement;
   walk(body, []);
-  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim().slice(0, 200_000);
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 async function openDocumentToText(file: File): Promise<string> {
@@ -157,7 +157,7 @@ async function docToText(file: File): Promise<string> {
     const r8 = u8.match(/[\p{L}\p{N}][\p{L}\p{N} .,;:!?()«»"“”'’%№+\-–—/\\@#&*=<>[\]{}]{2,}/gu) || [];
     text = r8.map((s) => s.trim()).filter((s) => s.length >= 4 && /[\p{L}]{2,}/u.test(s)).join("\n");
   }
-  return text.replace(/\n{3,}/g, "\n\n").trim().slice(0, 200_000);
+  return text.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /** Простое извлечение текста из RTF (с поддержкой \'hh в cp1251 и \uN). */
@@ -251,7 +251,11 @@ export async function parseProtocolDocument(source: {
   storageBucket?: string;
   storagePath?: string;
   fileName?: string;
-}): Promise<ParsedProtocol> {
+  /** Только после локальной оценки и подготовки безопасной части. */
+  assessed?: boolean;
+}, signal?: AbortSignal): Promise<ParsedProtocol> {
+  if (!source.assessed) throw new Error("Сначала требуется оценка документа");
+  if (signal?.aborted) throw new DOMException("Распознавание остановлено", "AbortError");
   // functions.invoke иногда успевает взять anon-key во время восстановления
   // сохранённой сессии после открытия вкладки. Для защищённого медицинского
   // парсера всегда передаём явно проверенный пользовательский access token.
@@ -267,36 +271,23 @@ export async function parseProtocolDocument(source: {
     throw new Error("Нет активной сессии. Войдите в систему ещё раз.");
   }
 
-  let lastErr: any = null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const { data, error } = await supabase.functions.invoke("parse-visit-protocol", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: {
-          text: source.text || "",
-          file_data: source.fileData || "",
-          storage_bucket: source.storageBucket || "",
-          storage_path: source.storagePath || "",
-          file_name: source.fileName || "protocol",
-        },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data as ParsedProtocol;
-    } catch (e: any) {
-      lastErr = e;
-      const msg = String(e?.message || e);
-      // Повторяем сетевые сбои и шлюзовые ошибки прокси, не ошибки разбора.
-      if (!/failed to (send|fetch)|network|abort|timeout|502|504|non-2xx/i.test(msg)) break;
-      await new Promise((r) => setTimeout(r, 1500 * attempt));
-    }
-  }
-  const msg = String(lastErr?.message || lastErr || "Не удалось распознать документ");
-  throw new Error(
-    /failed to (send|fetch)|network|abort/i.test(msg)
-      ? "Не удалось отправить документ на сервер (сеть). Попробуйте ещё раз."
-      : msg,
-  );
+  // Один вызов на часть: повтор выполняется пользователем, не всей очередью.
+  const { data, error } = await supabase.functions.invoke("parse-visit-protocol", {
+    signal,
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: {
+      text: source.text || "",
+      file_data: source.fileData || "",
+      storage_bucket: source.storageBucket || "",
+      storage_path: source.storagePath || "",
+      file_name: source.fileName || "protocol",
+    },
+  });
+  if (signal?.aborted) throw new DOMException("Распознавание остановлено", "AbortError");
+  if (error) throw new Error("Не удалось распознать часть. Можно повторить её отдельно.");
+  if (data?.error) throw new Error(data.error);
+  if (!data || typeof data !== "object") throw new Error("Пустой ответ распознавания");
+  return data as ParsedProtocol;
 }
 
 

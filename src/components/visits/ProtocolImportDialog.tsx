@@ -15,10 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { PROTOCOL_TYPES, getProtocolLabel, type ProtocolType } from "@/lib/visits/protocolTypes";
 import { normalizeImportedProtocolData } from "@/lib/visits/normalizeProtocolData";
+import { useDocumentRecognition } from "@/hooks/useDocumentRecognition";
+import { DocumentRecognitionStatus } from "./DocumentRecognitionStatus";
 import { SystemReadinessButton } from "@/components/admin/SystemReadinessButton";
 
 import {
-  extractProtocolSource, parseProtocolDocument, flattenProtocolData,
+  flattenProtocolData,
   setByPath, deleteByPath, type ParsedProtocol, type FlatField,
 } from "@/lib/visits/protocolImport";
 
@@ -58,7 +60,9 @@ export function ProtocolImportDialog({
   open, onOpenChange, patientId, patientName, currentVisitId, onApply, onSaved, initialFile,
 }: Props) {
   const [step, setStep] = useState<Step>("source");
-  const [busy, setBusy] = useState(false);
+  const recognition = useDocumentRecognition();
+  const busy = recognition.busy;
+  const [selectedPartId, setSelectedPartId] = useState("");
   const [saving, setSaving] = useState(false);
   const [pastedText, setPastedText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -139,55 +143,27 @@ export function ProtocolImportDialog({
   }, [effectivePatientId, target]);
 
   const handleParse = async () => {
-    if (!file && !pastedText.trim()) {
-      toast({ title: "Добавьте файл или вставьте текст протокола", variant: "destructive" });
-      return;
-    }
-    setBusy(true);
-    try {
-      let payload: {
-        text?: string;
-        fileData?: string;
-        storageBucket?: string;
-        storagePath?: string;
-        fileName?: string;
-      } = {};
-      if (file) {
-        const src = await extractProtocolSource(file);
-        payload = {
-          text: src.text,
-          fileData: src.fileData,
-          storageBucket: src.storageBucket,
-          storagePath: src.storagePath,
-          fileName: src.fileName,
-        };
-        if (pastedText.trim()) {
-          payload.text = [payload.text, pastedText.trim()].filter(Boolean).join("\n\n");
-        }
-
-      } else {
-        payload = { text: pastedText.trim(), fileName: "Вставленный текст" };
-      }
-
-      const result = await parseProtocolDocument(payload);
-      setParsed(result);
-      setProtocolType((result.protocol_type as ProtocolType) || "primary_short");
-      setVisitDate(result.visit_date || format(new Date(), "yyyy-MM-dd"));
-      setDiagnosis(result.diagnosis || "");
-      setIcdCode(result.icd_code || "");
-      setNextVisitDate(result.next_visit_date || "");
-      setData(result.protocol_data || {});
-      setUnmapped(result.unmapped || "");
-      if (!patientId && result.patient?.full_name) {
-        setPatientSearch(result.patient.full_name);
-      }
-      setStep("review");
-    } catch (e) {
-      toast({ title: "Не удалось распознать", description: (e as Error).message, variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
+    if (!file && !pastedText.trim()) { toast({ title: "Добавьте файл или текст", variant: "destructive" }); return; }
+    await recognition.start(file, pastedText);
   };
+  const reviewPart = (result: ParsedProtocol, id: string) => {
+    setSelectedPartId(id);
+    setParsed(result);
+    setProtocolType((result.protocol_type as ProtocolType) || "primary_short");
+    setVisitDate(result.visit_date || format(new Date(), "yyyy-MM-dd"));
+    setDiagnosis(result.diagnosis || "");
+    setIcdCode(result.icd_code || "");
+    setNextVisitDate(result.next_visit_date || "");
+    setData(result.protocol_data || {});
+    setUnmapped(result.unmapped || "");
+    if (!patientId && result.patient?.full_name) setPatientSearch(result.patient.full_name);
+    setStep("review");
+  };
+  useEffect(() => {
+    if (recognition.phase !== "results" || recognition.parts.length !== 1) return;
+    const part = recognition.parts[0];
+    if (part.parsed && part.id !== selectedPartId) reviewPart(part.parsed, part.id);
+  }, [recognition.phase, recognition.parts, selectedPartId]);
 
   const fields: FlatField[] = useMemo(() => flattenProtocolData(data), [data]);
 
@@ -249,7 +225,8 @@ export function ProtocolImportDialog({
         protocol_data: normalized,
         unmapped,
       });
-      onOpenChange(false);
+      if (recognition.parts.length > 1) setStep("source");
+      else onOpenChange(false);
       return;
     }
 
@@ -305,7 +282,8 @@ export function ProtocolImportDialog({
         toast({ title: "Визит создан из документа" });
         onSaved?.((created as any).id);
       }
-      onOpenChange(false);
+      if (recognition.parts.length > 1) setStep("source");
+      else onOpenChange(false);
     } catch (e) {
       toast({ title: "Не удалось сохранить", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -316,7 +294,7 @@ export function ProtocolImportDialog({
   const confidence = parsed?.confidence ?? null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!busy) onOpenChange(next); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -337,9 +315,9 @@ export function ProtocolImportDialog({
                 e.preventDefault();
                 setDragOver(false);
                 const f = e.dataTransfer.files?.[0];
-                if (f) setFile(f);
+                if (f && !busy) { recognition.reset(); setSelectedPartId(""); setFile(f); }
               }}
-              onClick={() => fileRef.current?.click()}
+              onClick={() => { if (!busy) fileRef.current?.click(); }}
               className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
                 dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
               }`}
@@ -349,7 +327,7 @@ export function ProtocolImportDialog({
                 type="file"
                 className="hidden"
                 accept=".doc,.docx,.odt,.ods,.odp,.ott,.fodt,.pdf,.txt,.md,.rtf,image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                disabled={busy} onChange={(e) => { recognition.reset(); setSelectedPartId(""); setFile(e.target.files?.[0] || null); }}
               />
               {file ? (
                 <div className="flex items-center justify-center gap-2 text-sm">
@@ -372,17 +350,19 @@ export function ProtocolImportDialog({
                 rows={8}
                 placeholder="Вставьте текст старого протокола (можно вместе с таблицами)"
                 value={pastedText}
-                onChange={(e) => setPastedText(e.target.value)}
+                disabled={busy} onChange={(e) => { recognition.reset(); setSelectedPartId(""); setPastedText(e.target.value); }}
               />
             </div>
 
+            <DocumentRecognitionStatus recognition={recognition} />
+            {recognition.parts.length > 1 && recognition.parts.filter((part) => part.parsed).map((part) => <Button key={part.id} variant="outline" disabled={busy} onClick={() => { if (part.parsed) reviewPart(part.parsed, part.id); }}>Проверить {part.label}</Button>)}
             <SystemReadinessButton label="Проверить готовность системы" />
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Отмена</Button>
-              <Button onClick={handleParse} disabled={busy}>
+              <Button variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>Отмена</Button>
+              <Button onClick={handleParse} disabled={busy || recognition.phase === "fragmentation" || (recognition.parts.length > 0 && recognition.phase === "results")}>
                 {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                Распознать
+                {recognition.phase === "assessment" ? "Оцениваю документ" : "Распознать"}
               </Button>
             </DialogFooter>
 

@@ -10,3 +10,5 @@
 - Physiotherapy session protocol (`physio_session`) keeps procedures in visit protocol JSON and prints per-session sheets from its own form, so the shared protocol print layout stays unchanged.
 
 - Store school certificates inside the current visit protocol JSON and print a dedicated sheet, so no schema or shared protocol printing changes are required.
+
+- Assess document workload locally before medical protocol recognition; require explicit fragmentation approval for long sources and retain per-part results, so oversized requests and silent cross-document merges are avoided.
