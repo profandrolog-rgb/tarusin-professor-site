@@ -1,0 +1,89 @@
+name: Check Minsk remote browser readiness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-minsk
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Prepare existing Minsk SSH key
+        env:
+          SSH_KEY_B64: ${{ secrets.MINSK_SSH_KEY_B64 }}
+        run: |
+          set -eu
+          test -n "$SSH_KEY_B64"
+          umask 077
+          printf '%s' "$SSH_KEY_B64" | base64 -d > /tmp/minsk_browser_check_key
+
+      - name: Read-only server readiness check
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.MINSK_HOST }}
+          username: ${{ secrets.MINSK_USER }}
+          key_path: /tmp/minsk_browser_check_key
+          script_stop: true
+          command_timeout: 5m
+          script: |
+            set -eu
+            printf '\n=== CPU architecture and count ===\n'
+            uname -m
+            getconf _NPROCESSORS_ONLN
+            printf '\n=== Memory (MiB) ===\n'
+            free -m
+            printf '\n=== Load average ===\n'
+            cut -d ' ' -f 1-3 /proc/loadavg
+            printf '\n=== Disk capacity only (MiB) ===\n'
+            for location in / /opt/tarusin; do
+              if test -d "$location"; then
+                df -Pm "$location" | awk 'NR==2 {printf "total=%s used=%s available=%s usage=%s\n", $2, $3, $4, $5}'
+              fi
+            done
+            printf '\n=== Container tools ===\n'
+            if command -v docker >/dev/null 2>&1; then
+              docker --version
+              if docker info >/dev/null 2>&1; then
+                printf 'Docker daemon: accessible\n'
+              else
+                printf 'Docker daemon: unavailable or permission required\n'
+              fi
+              docker compose version 2>/dev/null || true
+            else
+              printf 'Docker: not installed\n'
+            fi
+            if command -v podman >/dev/null 2>&1; then podman --version; fi
+            printf '\n=== Existing service state (no restart) ===\n'
+            for service in tarusin nginx; do
+              if systemctl is-active --quiet "$service"; then
+                printf '%s: active\n' "$service"
+              else
+                printf '%s: not active or not found\n' "$service"
+              fi
+            done
+            printf '\n=== Messenger HTTPS reachability (no login, no response bodies) ===\n'
+            if command -v curl >/dev/null 2>&1; then
+              for url in https://web.whatsapp.com/ https://web.telegram.org/ https://web.max.ru/; do
+                printf '%s ' "$url"
+                if curl --silent --location --output /dev/null --connect-timeout 8 --max-time 20 --proto '=https' --proto-redir '=https' --write-out 'http=%{http_code} seconds=%{time_total}\n' "$url"; then
+                  :
+                else
+                  printf 'Connection failed; browser access remains unverified\n'
+                fi
+              done
+            else
+              printf 'curl unavailable; reachability not checked\n'
+            fi
+            printf '\nRead-only check completed. No browser installed; no configuration changed.\n'
+            printf 'HTTPS responses do not verify QR login, messaging or persistent sessions.\n'
+
+      - name: Remove temporary SSH key
+        if: always()
+        run: rm -f /tmp/minsk_browser_check_key

@@ -12,3 +12,4 @@
 - Store school certificates inside the current visit protocol JSON and print a dedicated sheet, so no schema or shared protocol printing changes are required.
 
 - Assess document workload locally before medical protocol recognition; require explicit fragmentation approval for long sources and retain per-part results, so oversized requests and silent cross-document merges are avoided.
+- Keep remote-browser readiness checks in a manual, read-only GitHub Actions workflow sharing the Minsk deployment queue, so inspection cannot install services or overlap deployment.
