@@ -154,7 +154,7 @@ const AdminServers = () => {
               <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
                 <Server className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Панель 3x-ui</CardTitle>
+              <CardTitle>3x-ui Nuremberg (Netcup)</CardTitle>
               <CardDescription>
                 Клиенты VPN, QR-коды, ссылки подписки, трафик и настройки VLESS Reality.
               </CardDescription>
@@ -256,17 +256,17 @@ const AdminServers = () => {
                 <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
                   <Server className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle>VPS nano G11s</CardTitle>
-                <CardDescription>Основной VPN-сервер.</CardDescription>
+                <CardTitle>Nuremberg-Dmitry</CardTitle>
+                <CardDescription>Резервный персональный VPN.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
                 <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                  <div><span className="text-muted-foreground">Локация:</span> Nuremberg, Германия</div>
+                  <div><span className="text-muted-foreground">Локация:</span> Нюрнберг, Германия</div>
                   <div><span className="text-muted-foreground">Провайдер:</span> Netcup</div>
                   <div className="font-mono text-muted-foreground">185.194.142.204 · VLESS + REALITY · 443/tcp</div>
                   <div className="flex items-center gap-2 pt-1">
                     <Badge variant="secondary">Работает</Badge>
-                    <span className="text-muted-foreground">основной персональный VPN</span>
+                    <span className="text-muted-foreground">резервный персональный VPN</span>
                   </div>
                 </div>
               </CardContent>
