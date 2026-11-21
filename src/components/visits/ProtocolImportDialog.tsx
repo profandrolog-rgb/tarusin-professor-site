@@ -102,7 +102,11 @@ export function ProtocolImportDialog({
     setTarget(currentVisitId ? "current" : "new");
   }, [currentVisitId]);
 
+  const recognitionResetRef = useRef(recognition.reset);
+  recognitionResetRef.current = recognition.reset;
   useEffect(() => {
+    recognitionResetRef.current();
+    setSelectedPartId("");
     if (!open) reset();
     else if (initialFile) setFile(initialFile);
   }, [open, reset, initialFile]);
