@@ -175,6 +175,30 @@ const AdminServers = () => {
 
           <Card>
             <CardHeader>
+              <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
+                <Server className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle>3x-ui Amsterdam (Netcup)</CardTitle>
+              <CardDescription>
+                Панель управления резервным VPN-сервером Amsterdam-Dmitry.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div className="font-medium">Amsterdam-Dmitry · Netcup</div>
+                <div className="mt-1 font-mono text-muted-foreground">152.53.106.204 · панель 52817/tcp</div>
+              </div>
+              <Button asChild className="w-full">
+                <a href="http://152.53.106.204:52817/" target="_blank" rel="noopener noreferrer">
+                  Открыть 3x-ui Amsterdam
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10">
                 <Terminal className="h-6 w-6 text-emerald-600" />
               </div>
@@ -222,6 +246,53 @@ const AdminServers = () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Резервные VPN</h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
+                  <Server className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>VPS nano G11s</CardTitle>
+                <CardDescription>Основной VPN-сервер.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                  <div><span className="text-muted-foreground">Локация:</span> Nuremberg, Германия</div>
+                  <div><span className="text-muted-foreground">Провайдер:</span> Netcup</div>
+                  <div className="font-mono text-muted-foreground">185.194.142.204 · VLESS + REALITY · 443/tcp</div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Badge variant="secondary">Работает</Badge>
+                    <span className="text-muted-foreground">основной персональный VPN</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
+                  <Server className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle>Amsterdam-Dmitry</CardTitle>
+                <CardDescription>Резервный персональный VPN.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                  <div><span className="text-muted-foreground">Локация:</span> Амстердам, Нидерланды</div>
+                  <div><span className="text-muted-foreground">Провайдер:</span> Netcup</div>
+                  <div className="font-mono text-muted-foreground">152.53.106.204 · VLESS + REALITY · 443/tcp</div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Badge variant="secondary">Работает</Badge>
+                    <span className="text-muted-foreground">резервный персональный VPN</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
