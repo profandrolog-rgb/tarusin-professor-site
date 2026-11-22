@@ -84,72 +84,62 @@ const DiseaseDetailPage = () => {
     }
   }, [slug]);
 
-  // Ранний результат из inline-скрипта в index.html: запрос стартует до загрузки
-  // бандла, поэтому свежая версия статьи (в т.ч. новые галереи) появляется сразу,
-  // не дожидаясь инициализации клиента и маршрутизатора бэкенда.
+  // Первоначальная разметка — первый кадр, сохранённая статья — источник
+  // актуального текста и галерей. Несохранённый ввод редактора не обновляем.
   useEffect(() => {
-    if (typeof window === "undefined" || !slug) return;
-    const early = (window as any).__earlyArticle as
-      | { slug: string; promise: Promise<any> }
-      | undefined;
-    if (!early || early.slug !== slug) return;
+    if (typeof window === "undefined" || !slug || editing) return;
     let cancelled = false;
-    early.promise
-      .then((art) => {
-        if (!cancelled && art) setArticle(art);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
+    let refreshing = false;
+
+    const loadData = async (withRelated = false) => {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        const { data: art, error } = await supabase
+          .from("disease_articles")
+          .select("*")
+          .eq("slug", slug)
+          .eq("is_published", true)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (error) return;
+        if (!art) {
+          setNotFound(true);
+          return;
+        }
+        setNotFound(false);
+        setArticle(art);
+
+        if (!withRelated) return;
+        const { data: rel } = await supabase
+          .from("disease_articles")
+          .select("id,slug,title,description,category")
+          .eq("category", (art as any).category)
+          .eq("is_published", true)
+          .neq("id", (art as any).id)
+          .limit(3);
+        if (cancelled) return;
+        setRelated((rel as any[]) || []);
+      } finally {
+        refreshing = false;
+      }
     };
-  }, [slug]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !slug) return;
-    const early = (window as any).__earlyArticle as
-      | { slug?: string; promise?: Promise<any> }
-      | undefined;
-    if (loaderData?.article) return;
-
-    let cancelled = false;
-
-    (async () => {
-      // Если ранний запрос уже нашёл статью — повторно не грузим;
-      // если нет (ошибка/пусто) — обычная загрузка или «не найдено».
-      if (early?.slug === slug && early.promise) {
-        const earlyArt = await early.promise.catch(() => null);
-        if (cancelled || earlyArt) return;
-      }
-      const { data: art, error } = await supabase
-        .from("disease_articles")
-        .select("*")
-        .eq("slug", slug)
-        .eq("is_published", true)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (error || !art) {
-        if (!article) setNotFound(true);
-        return;
-      }
-      setArticle(art);
-
-      const { data: rel } = await supabase
-        .from("disease_articles")
-        .select("id,slug,title,description,category")
-        .eq("category", (art as any).category)
-        .eq("is_published", true)
-        .neq("id", (art as any).id)
-        .limit(3);
-      if (cancelled) return;
-      setRelated((rel as any[]) || []);
-    })();
+    void loadData(true);
+    const onFocus = () => { void loadData(); };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void loadData();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+  }, [slug, editing]);
 
   if (notFound) {
     return (
