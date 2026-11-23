@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,46 @@ const InlineArticlePageEditor = ({ article, onSaved, onClose }: Props) => {
   const [description, setDescription] = useState(article.description || "");
   const [content, setContent] = useState(article.article_content || "");
   const [saving, setSaving] = useState(false);
+  const lastSaved = useRef({
+    title: (article.title || "").trim(),
+    description: (article.description || "").trim(),
+    content: article.article_content || "",
+  });
+  const [autoState, setAutoState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const isDirty = () =>
+    title.trim() !== lastSaved.current.title ||
+    description.trim() !== lastSaved.current.description ||
+    content !== lastSaved.current.content;
+
+  const autoSave = async () => {
+    const t = title.trim();
+    const d = description.trim();
+    if (!t || !isDirty()) return true;
+    setAutoState("saving");
+    const { data, error } = await supabase
+      .from("disease_articles")
+      .update({ title: t, description: d || null, article_content: content })
+      .eq("id", article.id)
+      .select("id");
+    if (error || !data?.length) { setAutoState("error"); return false; }
+    lastSaved.current = { title: t, description: d, content };
+    onSaved({ title: t, description: d || null, article_content: content });
+    setAutoState("saved");
+    return true;
+  };
+
+  useEffect(() => {
+    if (!isDirty()) return;
+    const timer = window.setTimeout(() => { void autoSave(); }, 2000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, description, content]);
+
+  const handleClose = async () => {
+    await autoSave();
+    onClose();
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -52,6 +92,8 @@ const InlineArticlePageEditor = ({ article, onSaved, onClose }: Props) => {
         .eq("id", article.id);
       if (error) throw error;
       setContent(nextContent);
+      lastSaved.current = { title: title.trim(), description: description.trim(), content: nextContent };
+      setAutoState("saved");
       onSaved({
         title: title.trim(),
         description: description.trim() || null,
@@ -73,11 +115,14 @@ const InlineArticlePageEditor = ({ article, onSaved, onClose }: Props) => {
           <span className="ml-2 text-xs text-muted-foreground">/for-parents/{article.slug}</span>
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {autoState === "saving" ? "Сохраняю…" : autoState === "saved" ? "Сохранено автоматически" : autoState === "error" ? "Ошибка автосохранения" : ""}
+          </span>
           <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? "Сохраняю…" : "Сохранить изменения"}
           </Button>
-          <Button size="sm" variant="outline" onClick={onClose} className="gap-1.5">
+          <Button size="sm" variant="outline" onClick={handleClose} className="gap-1.5">
             <X className="w-4 h-4" /> Закрыть
           </Button>
         </div>
@@ -126,8 +171,8 @@ const InlineArticlePageEditor = ({ article, onSaved, onClose }: Props) => {
 
 
       <div className="flex justify-end gap-2 border-t pt-4">
-        <Button variant="outline" onClick={onClose} className="gap-1.5">
-          <X className="w-4 h-4" /> Закрыть без сохранения
+        <Button variant="outline" onClick={handleClose} className="gap-1.5">
+          <X className="w-4 h-4" /> Закрыть
         </Button>
         <Button onClick={handleSave} disabled={saving} className="gap-1.5">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
