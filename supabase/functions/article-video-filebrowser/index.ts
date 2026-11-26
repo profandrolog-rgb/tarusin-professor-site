@@ -1,7 +1,7 @@
 // Второй диск для видео статей: File Browser на сервере Honest Lacerta
 // (https://video.tarusin.pro). Загрузка, список и удаление — только admin/editor.
 // raw — отдача файла читателю с поддержкой Range (для перемотки <video>).
-// Логин и пароль хранятся в секретах FILEBROWSER_USERNAME / FILEBROWSER_PASSWORD.
+// Логин и пароль — секреты VIDEO_UPLOADER_USERNAME / VIDEO_UPLOADER_PASSWORD.
 
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -19,9 +19,10 @@ const json = (body: unknown, status = 200) =>
   });
 
 function cfg(): { user: string; pass: string } {
-  const user = Deno.env.get('FILEBROWSER_USERNAME');
-  const pass = Deno.env.get('FILEBROWSER_PASSWORD');
-  if (!user || !pass) throw new Error('filebrowser_config_missing');
+  // Отдельная служебная учётная запись lovable-uploader (корень — /v).
+  const user = Deno.env.get('VIDEO_UPLOADER_USERNAME') || 'lovable-uploader';
+  const pass = Deno.env.get('VIDEO_UPLOADER_PASSWORD');
+  if (!pass) throw new Error('timeweb_auth_failed');
   return { user, pass };
 }
 

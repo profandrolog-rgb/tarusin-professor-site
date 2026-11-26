@@ -92,7 +92,7 @@ export async function uploadArticleVideo(params: {
         let parsed: { path?: string; error?: string } = {};
         try { parsed = JSON.parse(xhr.responseText); } catch { /* пусто */ }
         if (xhr.status >= 200 && xhr.status < 300 && parsed.path) resolve(parsed);
-        else if (parsed.error === "timeweb_auth_failed") reject(new Error("Timeweb: сервер не принял служебную учётную запись — проверьте FILEBROWSER_USERNAME/FILEBROWSER_PASSWORD"));
+        else if (parsed.error === "timeweb_auth_failed") reject(new Error("Timeweb: сервер не принял служебную учётную запись — проверьте секрет VIDEO_UPLOADER_PASSWORD"));
         else reject(new Error(`Timeweb: загрузка не удалась (${xhr.status})`));
       };
       xhr.onerror = () => reject(new Error("Timeweb: сеть недоступна"));
