@@ -26,3 +26,5 @@
 - [x] Отзывы: 2 новых с ПроДокторов (май 2026).
 - [x] Деплой на Минск сломан: package-lock.json рассинхрон с package.json (npm ci EUSAGE, упали 2 деплоя). Lockfile обновлён локально (dca0d341); после этого tarusin.pro отдаёт ту же сборку, что и опубликованный сайт (app-CvKIsn0k.js), проверено 19.11.2026. Список запусков GitHub Actions напрямую не читался.
 - [ ] Тест ImageGallery.test.tsx устарел: 5 падений, ожидает md:basis-[calc(33.333%-0.5rem)], компонент отдаёт basis-... без md:. Правки этой сессии не при чём (компонент менялся 01.09.2026, тест — 23.08.2026). Не трогал без команды.
+- [ ] Second video cloud (Honest Lacerta / video.tarusin.pro): found it is a VPS (5.42.102.251, Timeweb ru-3, 51 GB disk, 6 GB used) running File Browser behind nginx — not S3, no buckets in the Timeweb account (0 buckets, 0 storage users). Needs File Browser upload credentials + public-read folder before the Timeweb option can be enabled in the video gallery uploader.
+- [ ] Request File Browser credentials (username + password for https://video.tarusin.pro) via the secure secret form, then wire the second upload cloud (Timeweb VPS) into the video gallery uploader.
