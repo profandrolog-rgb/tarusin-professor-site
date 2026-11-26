@@ -15,6 +15,7 @@ import { htmlToMarkdown, markdownToHtml } from "./galleryMarkers";
 
 export type VideoRatio = "1:1" | "3:4" | "9:16" | "16:9";
 export type VideoMode = "popup" | "overlay";
+export type VideoCloud = "yandex" | "timeweb";
 
 export interface VideoGalleryEntry {
   /** objectKey облака или полный https-URL видеофайла. */
@@ -22,6 +23,8 @@ export interface VideoGalleryEntry {
   caption: string;
   /** Ключ/URL обложки (пусто — обложка не задана). */
   poster: string;
+  /** Облако, где лежит файл; yandex по умолчанию и в маркере не пишется. */
+  cloud: VideoCloud;
 }
 
 export interface VideoGalleryOptions {
@@ -82,26 +85,37 @@ export function unescapeVideoGalleryMarkers(content: string): string {
   );
 }
 
-function splitPoster(token: string): { key: string; poster: string } {
-  const i = token.toLowerCase().indexOf("@poster=");
-  if (i < 0) return { key: token.trim(), poster: "" };
-  return { key: token.slice(0, i).trim(), poster: token.slice(i + 8).trim() };
+/** Разбирает `key@cloud=timeweb@poster=...`: ключ + служебные метки в любом порядке. */
+function splitToken(token: string): { key: string; poster: string; cloud: VideoCloud } {
+  const parts = token.split("@");
+  const key = (parts.shift() || "").trim();
+  let poster = "";
+  let cloud: VideoCloud = "yandex";
+  for (const p of parts) {
+    const i = p.indexOf("=");
+    if (i < 0) continue;
+    const name = p.slice(0, i).toLowerCase();
+    const value = p.slice(i + 1).trim();
+    if (name === "poster") poster = value;
+    else if (name === "cloud") cloud = value === "timeweb" ? "timeweb" : "yandex";
+  }
+  return { key, poster, cloud };
 }
 
 function parseVideoEntry(raw: string): VideoGalleryEntry {
   const s = raw.trim();
   const quoted = s.match(/^(\S+)\s+["'“”]([\s\S]*)["'“”]\s*$/);
   if (quoted) {
-    const { key, poster } = splitPoster(quoted[1]);
-    return { key, poster, caption: quoted[2].replace(/["'“”]/g, "").trim() };
+    const { key, poster, cloud } = splitToken(quoted[1]);
+    return { key, poster, cloud, caption: quoted[2].replace(/["'“”]/g, "").trim() };
   }
   const sp = s.indexOf(" ");
   if (sp > 0) {
-    const { key, poster } = splitPoster(s.slice(0, sp));
-    return { key, poster, caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
+    const { key, poster, cloud } = splitToken(s.slice(0, sp));
+    return { key, poster, cloud, caption: s.slice(sp + 1).replace(/["'“”]/g, "").trim() };
   }
-  const { key, poster } = splitPoster(s);
-  return { key, poster, caption: "" };
+  const { key, poster, cloud } = splitToken(s);
+  return { key, poster, cloud, caption: "" };
 }
 
 /** Разбирает «хвост» маркера в записи, отбрасывая служебные и повторяющиеся. */
@@ -155,28 +169,28 @@ export function withVideoGalleryOptions(
 ): VideoGalleryEntry[] {
   const clean = extractVideoGalleryOptions(entries).entries;
   const service: VideoGalleryEntry[] = [
-    { key: `ratio=${options.ratio}`, caption: "", poster: "" },
-    { key: `mode=${options.mode}`, caption: "", poster: "" },
+    { key: `ratio=${options.ratio}`, caption: "", poster: "", cloud: "yandex" },
+    { key: `mode=${options.mode}`, caption: "", poster: "", cloud: "yandex" },
   ];
   if (options.restricted) {
-    service.push({ key: "clinical=restricted", caption: "", poster: "" });
+    service.push({ key: "clinical=restricted", caption: "", poster: "", cloud: "yandex" });
   }
   return [...service, ...clean];
 }
 
 function formatVideoEntry(e: VideoGalleryEntry): string {
   const safeCaption = (e.caption || "").replace(/["'“”]/g, "").replace(/\|/g, "／").trim();
-  const token = e.poster ? `${e.key}@poster=${e.poster}` : e.key;
+  const cloud = e.cloud && e.cloud !== "yandex" ? `@cloud=${e.cloud}` : "";
+  const poster = e.poster ? `@poster=${e.poster}` : "";
+  const token = `${e.key}${cloud}${poster}`;
   return safeCaption ? `${token} "${safeCaption}"` : token;
 }
 
-/** Собирает строку маркера из подписи, записей и параметров показа. */
-export function buildVideoGalleryMarker(
-  caption: string,
+/** Собирает «тело» маркера: служебные записи + список видео, разделённые « | ». */
+export function formatVideoGalleryBody(
   entries: VideoGalleryEntry[],
   options?: VideoGalleryOptions,
 ): string {
-  const safeCaption = (caption || "").replace(/["'“”]/g, "'");
   const list = options ? withVideoGalleryOptions(entries, options) : entries;
   const seen = new Set<string>();
   const unique = list.filter((e) => {
@@ -186,8 +200,18 @@ export function buildVideoGalleryMarker(
     seen.add(k);
     return true;
   });
-  const body = unique.map(formatVideoEntry);
-  return `[[VIDEO_GALLERY: caption="${safeCaption}"${body.length ? ` | ${body.join(" | ")}` : ""}]]`;
+  return unique.map(formatVideoEntry).join(" | ");
+}
+
+/** Собирает строку маркера из подписи, записей и параметров показа. */
+export function buildVideoGalleryMarker(
+  caption: string,
+  entries: VideoGalleryEntry[],
+  options?: VideoGalleryOptions,
+): string {
+  const safeCaption = (caption || "").replace(/["'“”]/g, "'");
+  const body = formatVideoGalleryBody(entries, options);
+  return `[[VIDEO_GALLERY: caption="${safeCaption}"${body ? ` | ${body}` : ""}]]`;
 }
 
 /* ------------------------------------------------------------------ *

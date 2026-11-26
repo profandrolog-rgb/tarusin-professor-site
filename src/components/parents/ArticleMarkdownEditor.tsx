@@ -38,6 +38,7 @@ import {
   Link as LinkIcon,
   Undo,
   Redo,
+  Film,
   Plug,
   Save,
   NotebookPen,
@@ -47,8 +48,9 @@ import MarkdownArticle from "./MarkdownArticle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GalleryPlaceholder } from "./tiptap/GalleryPlaceholderNode";
+import { VideoGalleryPlaceholder } from "./tiptap/VideoGalleryPlaceholderNode";
 import ProfessorNote from "./tiptap/ProfessorNoteNode";
-import { markdownToHtml, htmlToMarkdown } from "@/lib/markdown/galleryMarkers";
+import { videoMarkdownToHtml, videoHtmlToMarkdown } from "@/lib/markdown/videoGalleryMarkers";
 
 interface Props {
   value: string;
@@ -110,6 +112,8 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   const [formatting, setFormatting] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [videoCaption, setVideoCaption] = useState("");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [previewCtx, setPreviewCtx] = useState<"parents" | "doctors">("parents");
   const [testingConn, setTestingConn] = useState(false);
@@ -169,9 +173,10 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       TableHeader,
       TableCell,
       GalleryPlaceholder,
+      VideoGalleryPlaceholder.configure({ ownerSlug: draftKey || "article" }),
       ProfessorNote.configure({ onSave: onSaveAsIs }),
     ],
-    content: markdownToHtml(value),
+    content: videoMarkdownToHtml(value),
     editorProps: {
       attributes: {
         class:
@@ -179,7 +184,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
       },
     },
     onUpdate: ({ editor }) => {
-      const md = htmlToMarkdown(editor.getHTML());
+      const md = videoHtmlToMarkdown(editor.getHTML());
       lastSyncedMd.current = md;
       isInternalUpdate.current = true;
       onChange(md);
@@ -187,7 +192,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
   });
 
   useImperativeHandle(ref, () => ({
-    getMarkdown: () => (editor ? htmlToMarkdown(editor.getHTML()) : value),
+    getMarkdown: () => (editor ? videoHtmlToMarkdown(editor.getHTML()) : value),
   }), [editor, value]);
 
   // External value changes (e.g., format, .docx import, initial load) → reload editor content.
@@ -199,7 +204,7 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     }
     if (value === lastSyncedMd.current) return;
     lastSyncedMd.current = value;
-    const html = markdownToHtml(value);
+    const html = videoMarkdownToHtml(value);
     editor.commands.setContent(html, { emitUpdate: false });
   }, [value, editor]);
 
@@ -501,6 +506,22 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
     toast.success("Блок галереи вставлен");
   };
 
+  const insertVideoGallery = () => {
+    if (!videoCaption.trim()) {
+      toast.error("Введите подпись");
+      return;
+    }
+    if (!editor) return;
+    editor
+      .chain()
+      .focus()
+      .insertVideoGalleryPlaceholder(videoCaption.trim().replace(/"/g, "'"))
+      .run();
+    setVideoCaption("");
+    setVideoOpen(false);
+    toast.success("Блок видеогалереи вставлен");
+  };
+
   const promptLink = useCallback(() => {
     if (!editor) return;
     const prev = editor.getAttributes("link").href as string | undefined;
@@ -634,6 +655,17 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
           >
             <ImagePlus className="w-3.5 h-3.5" />
             Галерея
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => { setConnStatus(null); setVideoOpen(true); }}
+            className="gap-1.5"
+          >
+            <Film className="w-3.5 h-3.5" />
+            Видео
           </Button>
 
           <Button
@@ -797,6 +829,38 @@ const ArticleMarkdownEditor = forwardRef<ArticleMarkdownEditorHandle, Props>(({ 
               Отмена
             </Button>
             <Button onClick={insertGallery}>Вставить</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Вставить блок видеогалереи</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Подпись к видеогалерее</Label>
+            <Input
+              value={videoCaption}
+              onChange={(e) => setVideoCaption(e.target.value)}
+              placeholder="Например: Видео: как проходит консультация"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  insertVideoGallery();
+                }
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Блок вставится в позицию курсора. Видео можно добавить позже в окне редактирования блока.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVideoOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={insertVideoGallery}>Вставить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

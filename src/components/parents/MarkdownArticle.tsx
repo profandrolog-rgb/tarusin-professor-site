@@ -1,10 +1,19 @@
 import { unescapeGalleryMarkers } from "@/lib/markdown/galleryMarkers";
+import {
+  VIDEO_GALLERY_RE,
+  extractVideoGalleryOptions,
+  parseVideoGalleryEntries,
+  unescapeVideoGalleryMarkers,
+  type VideoGalleryEntry,
+  type VideoGalleryOptions,
+} from "@/lib/markdown/videoGalleryMarkers";
 import { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import PlaceholderGallery from "./PlaceholderGallery";
 import ImageGallery from "./ImageGallery";
+import VideoGallery from "./VideoGallery";
 import {
   splitByProfessorNotes,
   ProfessorNoteBlock,
@@ -17,6 +26,13 @@ interface ParsedGallery {
   files: string[];
 }
 
+interface ParsedVideoGallery {
+  marker: string;
+  caption: string;
+  entries: VideoGalleryEntry[];
+  options: VideoGalleryOptions;
+}
+
 type Segment =
   | { type: "md"; content: string }
   | {
@@ -27,7 +43,8 @@ type Segment =
       width?: string;
       side?: string;
     }
-  | { type: "gallery"; gallery: ParsedGallery };
+  | { type: "gallery"; gallery: ParsedGallery }
+  | { type: "video-gallery"; gallery: ParsedVideoGallery };
 
 const GALLERY_RE = /\[\[GALLERY:\s*caption\s*=\s*["'“”]([^\]]*?)["'“”]\s*((?:\|[^\]]*)?)\]\]/g;
 
@@ -40,13 +57,53 @@ function parseGalleryFiles(rest: string): string[] {
 }
 
 export function parseArticleContent(content: string, title?: string): Segment[] {
-  const prepared = unescapeGalleryMarkers(
-    normalizeHorizontalRules(stripDuplicateTitle(content, title)),
+  const prepared = unescapeVideoGalleryMarkers(
+    unescapeGalleryMarkers(
+      normalizeHorizontalRules(stripDuplicateTitle(content, title)),
+    ),
   );
   const segments: Segment[] = [];
   let lastIndex = 0;
-  const re = new RegExp(GALLERY_RE.source, "g");
+
+  // Собираем маркеры фото- и видеогалерей в одно упорядоченное по позиции поле.
+  const hits: Array<{ start: number; end: number; seg: Segment }> = [];
+
+  const photoRe = new RegExp(GALLERY_RE.source, "g");
   let m: RegExpExecArray | null;
+  while ((m = photoRe.exec(prepared)) !== null) {
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      seg: {
+        type: "gallery",
+        gallery: {
+          marker: m[0],
+          caption: m[1] || "",
+          files: parseGalleryFiles(m[2] || ""),
+        },
+      },
+    });
+  }
+
+  const videoRe = new RegExp(VIDEO_GALLERY_RE.source, "g");
+  while ((m = videoRe.exec(prepared)) !== null) {
+    const parsed = extractVideoGalleryOptions(parseVideoGalleryEntries(m[2] || ""));
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      seg: {
+        type: "video-gallery",
+        gallery: {
+          marker: m[0],
+          caption: m[1] || "",
+          entries: parsed.entries,
+          options: parsed.options,
+        },
+      },
+    });
+  }
+
+  hits.sort((a, b) => a.start - b.start);
 
   const pushTextSlice = (slice: string) => {
     for (const sub of splitByProfessorNotes(slice)) {
@@ -65,19 +122,11 @@ export function parseArticleContent(content: string, title?: string): Segment[] 
     }
   };
 
-  while ((m = re.exec(prepared)) !== null) {
-    if (m.index > lastIndex) {
-      pushTextSlice(prepared.slice(lastIndex, m.index));
-    }
-    segments.push({
-      type: "gallery",
-      gallery: {
-        marker: m[0],
-        caption: m[1] || "",
-        files: parseGalleryFiles(m[2] || ""),
-      },
-    });
-    lastIndex = m.index + m[0].length;
+  for (const hit of hits) {
+    if (hit.start < lastIndex) continue; // перекрывающийся маркер пропускаем
+    if (hit.start > lastIndex) pushTextSlice(prepared.slice(lastIndex, hit.start));
+    segments.push(hit.seg);
+    lastIndex = hit.end;
   }
   if (lastIndex < prepared.length) {
     pushTextSlice(prepared.slice(lastIndex));
@@ -206,6 +255,28 @@ const MarkdownArticle = ({ content, articleId, articleSlug, isAdmin, title, onCo
               innerHtml={seg.content}
               width={seg.width as never}
               side={seg.side as never}
+            />
+          );
+        }
+        if (seg.type === "video-gallery") {
+          const vg = seg.gallery;
+          if (!vg.entries.length) {
+            if (!isAdmin) return null;
+            return (
+              <div
+                key={i}
+                className="my-6 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500"
+              >
+                Видеогалерея «{vg.caption || "без подписи"}» — видео ещё не добавлены.
+              </div>
+            );
+          }
+          return (
+            <VideoGallery
+              key={i}
+              caption={vg.caption}
+              entries={vg.entries}
+              options={vg.options}
             />
           );
         }
