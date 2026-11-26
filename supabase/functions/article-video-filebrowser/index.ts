@@ -7,7 +7,10 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const BASE = 'https://video.tarusin.pro';
-const DIR = 'article-videos';
+// Учётная запись lovable-uploader ограничена папкой /v: её корень и есть /v.
+// Поэтому пути API — относительно корня учётной записи, без «/v» и без подпапок.
+// Старые ключи вида «article-videos/...» по-прежнему читаются как есть.
+const DIR = '';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -22,16 +25,21 @@ function cfg(): { user: string; pass: string } {
   return { user, pass };
 }
 
+let cachedToken: { value: string; until: number } | null = null;
+
 async function login(): Promise<string> {
+  if (cachedToken && cachedToken.until > Date.now()) return cachedToken.value;
   const { user, pass } = cfg();
   const res = await fetch(`${BASE}/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: user, password: pass }),
   });
-  if (!res.ok) throw new Error(`filebrowser login ${res.status}`);
+  if (!res.ok) throw new Error(res.status === 403 ? 'timeweb_auth_failed' : `filebrowser login ${res.status}`);
   const token = (await res.text()).trim();
-  if (!token || token.startsWith('<')) throw new Error('filebrowser login refused');
+  if (!token || token.startsWith('<')) throw new Error('timeweb_auth_failed');
+  // Токен живёт только в памяти функции и никогда не уходит клиенту.
+  cachedToken = { value: token, until: Date.now() + 60 * 60 * 1000 };
   return token;
 }
 
@@ -75,6 +83,8 @@ Deno.serve(async (req) => {
       const headers: Record<string, string> = {};
       const range = req.headers.get('Range');
       if (range) headers.Range = range;
+      // /api/raw требует входа: читаем от имени служебной учётной записи на сервере.
+      headers.Authorization = `Bearer ${await login()}`;
       const upstream = await fetch(`${BASE}/api/raw/${path.split('/').map(encodeURIComponent).join('/')}`, {
         headers,
         redirect: 'follow',
@@ -90,7 +100,8 @@ Deno.serve(async (req) => {
       return new Response(upstream.body, { status: upstream.status, headers: out });
     }
 
-    const body = await req.json().catch(() => ({}));
+    // put: тело запроса — сами байты видео, имя и тип в query-параметрах.
+    const body = operation === 'put' ? {} : await req.json().catch(() => ({}));
     if (operation === 'probe') {
       const denied = await requireEditor(req);
       if (denied) return json({ error: denied }, denied === 'forbidden' ? 403 : 401);
@@ -98,8 +109,7 @@ Deno.serve(async (req) => {
       const res = await fetch(resourceUrl(DIR, '?content=1'), {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const text = await res.text();
-      return json({ ok: true, status: res.status, body: text.slice(0, 4000) });
+      return json({ ok: true, login: 'ok', listStatus: res.status });
     }
 
     const denied = await requireEditor(req);
@@ -107,7 +117,7 @@ Deno.serve(async (req) => {
     const token = await login();
 
     if (operation === 'list') {
-      const dir = safePath(String(body.dir || DIR));
+      const dir = body.dir ? safePath(String(body.dir)) : DIR;
       const res = await fetch(resourceUrl(dir, '?content=1'), {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -119,7 +129,7 @@ Deno.serve(async (req) => {
         dir,
         items: items.map((i: any) => ({
           name: i.name,
-          path: `${dir}/${i.name}`,
+          path: dir ? `${dir}/${i.name}` : i.name,
           size: i.size ?? 0,
           isDir: !!i.is_dir,
           modified: i.modified ?? null,
@@ -128,11 +138,13 @@ Deno.serve(async (req) => {
     }
 
     if (operation === 'put') {
-      const filename = String(body.filename || 'video.mp4').trim().replace(/[^\w.\-]+/g, '_').slice(0, 200);
-      const path = `${DIR}/${Date.now()}-${filename}`;
-      const contentType = String(body.contentType || 'video/mp4');
+      const filename = String(url.searchParams.get('filename') || 'video.mp4').trim().replace(/[^\w.\-]+/g, '_').slice(0, 200) || 'video.mp4';
+      if (!/\.(mp4|m4v|mov|webm|ogv|ogg)$/i.test(filename)) return json({ error: 'invalid file type' }, 400);
+      const path = `${Date.now()}-${filename}`;
+      const contentType = String(url.searchParams.get('contentType') || 'video/mp4');
+      if (!contentType.startsWith('video/') && contentType !== 'application/octet-stream') return json({ error: 'invalid content type' }, 400);
       const bytes = new Uint8Array(await req.arrayBuffer());
-      const res = await fetch(resourceUrl(path, '?override=true&size=' + bytes.length), {
+      const res = await fetch(resourceUrl(path, '?override=false'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': contentType },
         body: bytes,
@@ -159,6 +171,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'internal error';
     console.error('article-video-filebrowser error:', msg);
+    if (msg === 'timeweb_auth_failed') return json({ error: msg }, 502);
     const status = msg.includes('required') || msg.includes('invalid') ? 400 : 500;
     return json({ error: msg }, status);
   }

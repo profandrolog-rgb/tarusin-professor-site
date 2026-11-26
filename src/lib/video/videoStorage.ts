@@ -1,10 +1,14 @@
 // Загрузка и воспроизведение видео статей: выбор облака, presigned-ссылки, обложки.
-// Яндекс Object Storage — рабочий путь. Timeweb (File Browser на Honest Lacerta)
-// помечен как недоступный, пока сервер не разрешит вход приложению.
+// Яндекс Object Storage — presigned-ссылки. Timeweb (File Browser на Honest Lacerta):
+// загрузка и чтение только через серверную функцию; пароль и токен File Browser
+// в браузер не попадают. Ключ Timeweb — путь относительно корня учётной записи (/v).
 
 import { supabase } from "@/integrations/supabase/client";
 import { uploadWithProgress } from "@/lib/research/uploadToYc";
 import { uploadPoster } from "@/lib/video/posters";
+
+const FILEBROWSER_FN = "https://bpbwkizvvythqotcyfii.functions.supabase.co/article-video-filebrowser";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYndraXp2dnl0aHFvdGN5ZmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk1Njc2MTQsImV4cCI6MjA4NTE0MzYxNH0.iv_pLSj27wOMUmfY0HOJ91bPm1u-b4wjiScYrP03bww";
 
 export type VideoCloud = "yandex" | "timeweb";
 
@@ -26,8 +30,8 @@ export const VIDEO_CLOUDS: VideoCloudOption[] = [
   {
     id: "timeweb",
     label: "Timeweb (Honest Lacerta)",
-    hint: "Сервер требует капчу при входе — загрузка из сайта будет доступна после настройки сервера.",
-    ready: false,
+    hint: "Второе хранилище: файл передаётся через сервер сайта в папку /v.",
+    ready: true,
   },
 ];
 
@@ -69,6 +73,35 @@ export async function uploadArticleVideo(params: {
     return { cloud: "yandex", key: String(data.objectKey) };
   }
 
+  if (cloud === "timeweb") {
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) throw new Error("Войдите как администратор, чтобы загрузить видео");
+    const url = new URL(FILEBROWSER_FN);
+    url.searchParams.set("operation", "put");
+    url.searchParams.set("filename", videoFileName(file.name));
+    url.searchParams.set("contentType", file.type || "video/mp4");
+    const result = await new Promise<{ path?: string; error?: string }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url.toString());
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("apikey", SUPABASE_ANON);
+      xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100)); };
+      xhr.onload = () => {
+        let parsed: { path?: string; error?: string } = {};
+        try { parsed = JSON.parse(xhr.responseText); } catch { /* пусто */ }
+        if (xhr.status >= 200 && xhr.status < 300 && parsed.path) resolve(parsed);
+        else if (parsed.error === "timeweb_auth_failed") reject(new Error("Timeweb: сервер не принял служебную учётную запись — проверьте FILEBROWSER_USERNAME/FILEBROWSER_PASSWORD"));
+        else reject(new Error(`Timeweb: загрузка не удалась (${xhr.status})`));
+      };
+      xhr.onerror = () => reject(new Error("Timeweb: сеть недоступна"));
+      xhr.send(file);
+    });
+    onProgress?.(100);
+    return { cloud: "timeweb", key: String(result.path) };
+  }
+
   throw new Error(`${option.label}: ${option.hint}`);
 }
 
@@ -93,7 +126,7 @@ export async function resolveVideoSrc(ref: VideoRef): Promise<string> {
   }
 
   if (ref.cloud === "timeweb") {
-    const url = new URL("https://bpbwkizvvythqotcyfii.functions.supabase.co/article-video-filebrowser");
+    const url = new URL(FILEBROWSER_FN);
     url.searchParams.set("operation", "raw");
     url.searchParams.set("path", ref.key);
     return url.toString();
