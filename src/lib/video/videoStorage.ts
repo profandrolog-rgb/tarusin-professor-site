@@ -147,6 +147,14 @@ export async function deleteArticleVideo(ref: VideoRef): Promise<void> {
     if (!res.ok && res.status !== 404) throw new Error(`delete failed: ${res.status}`);
     return;
   }
+  if (ref.cloud === "timeweb") {
+    const { data, error } = await supabase.functions.invoke(`article-video-filebrowser?operation=delete`, {
+      body: { path: ref.key },
+    });
+    if (error && !String(error.message || "").includes("404")) throw new Error(error.message || "Не удалось удалить видео");
+    if (data?.error && !String(data.error).includes("404")) throw new Error(String(data.error));
+    return;
+  }
   throw new Error("Удаление из этого облака пока недоступно");
 }
 

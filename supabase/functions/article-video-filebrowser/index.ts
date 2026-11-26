@@ -91,6 +91,11 @@ Deno.serve(async (req) => {
         headers,
         redirect: 'follow',
       });
+      // 202 «Accepted» с текстом вместо файла — у учётной записи нет права скачивания.
+      if (upstream.status === 202) {
+        await upstream.body?.cancel();
+        return json({ error: 'timeweb_download_forbidden' }, 403);
+      }
       if (!upstream.ok && upstream.status !== 206) {
         return json({ error: `file unavailable ${upstream.status}` }, upstream.status === 404 ? 404 : 502);
       }
