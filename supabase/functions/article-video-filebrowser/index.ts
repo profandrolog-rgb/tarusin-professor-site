@@ -20,9 +20,9 @@ const json = (body: unknown, status = 200) =>
 
 function cfg(): { user: string; pass: string } {
   // Отдельная служебная учётная запись lovable-uploader (корень — /v).
-  const user = Deno.env.get('VIDEO_UPLOADER_USERNAME') || 'lovable-uploader';
-  const pass = Deno.env.get('VIDEO_UPLOADER_PASSWORD');
-  if (!pass) throw new Error('timeweb_auth_failed');
+  const user = (Deno.env.get('VIDEO_UPLOADER_USERNAME') || 'lovable-uploader').trim();
+  const pass = (Deno.env.get('VIDEO_UPLOADER_PASSWORD') || '').replace(/[\r\n]+$/, '');
+  if (!pass) throw new Error('timeweb_password_missing');
   return { user, pass };
 }
 
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'internal error';
     console.error('article-video-filebrowser error:', msg);
-    if (msg === 'timeweb_auth_failed') return json({ error: msg }, 502);
+    if (msg === 'timeweb_auth_failed' || msg === 'timeweb_password_missing') return json({ error: msg }, 502);
     const status = msg.includes('required') || msg.includes('invalid') ? 400 : 500;
     return json({ error: msg }, status);
   }
