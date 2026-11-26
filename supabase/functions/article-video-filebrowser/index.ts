@@ -85,7 +85,8 @@ Deno.serve(async (req) => {
       const range = req.headers.get('Range');
       if (range) headers.Range = range;
       // /api/raw требует входа: читаем от имени служебной учётной записи на сервере.
-      headers.Authorization = `Bearer ${await login()}`;
+      // File Browser принимает токен только в заголовке X-Auth.
+      headers['X-Auth'] = await login();
       const upstream = await fetch(`${BASE}/api/raw/${path.split('/').map(encodeURIComponent).join('/')}`, {
         headers,
         redirect: 'follow',
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
       if (denied) return json({ error: denied }, denied === 'forbidden' ? 403 : 401);
       const token = await login();
       const res = await fetch(resourceUrl(DIR, '?content=1'), {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'X-Auth': token },
       });
       return json({ ok: true, login: 'ok', listStatus: res.status });
     }
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
     if (operation === 'list') {
       const dir = body.dir ? safePath(String(body.dir)) : DIR;
       const res = await fetch(resourceUrl(dir, '?content=1'), {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'X-Auth': token },
       });
       if (!res.ok) return json({ error: `list ${res.status}` }, res.status === 404 ? 404 : 502);
       const data = await res.json().catch(() => ({}));
@@ -147,7 +148,7 @@ Deno.serve(async (req) => {
       const bytes = new Uint8Array(await req.arrayBuffer());
       const res = await fetch(resourceUrl(path, '?override=false'), {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': contentType },
+        headers: { 'X-Auth': token, 'Content-Type': contentType },
         body: bytes,
       });
       if (!res.ok) {
@@ -162,7 +163,7 @@ Deno.serve(async (req) => {
       const path = safePath(String(body.path || ''));
       const res = await fetch(resourceUrl(path), {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'X-Auth': token },
       });
       if (!res.ok) return json({ error: `delete ${res.status}` }, res.status === 404 ? 404 : 502);
       return json({ ok: true, path });
