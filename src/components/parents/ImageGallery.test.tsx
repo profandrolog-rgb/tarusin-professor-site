@@ -32,12 +32,13 @@ describe("ImageGallery — выравнивание последнего ряд�
       expect(flex, `flex-контейнер с justify-center должен существовать для ${n} фото`).not.toBeNull();
       expect(container.querySelectorAll("img").length).toBe(n);
 
-      // Каждая фотокарточка-обёртка должна иметь basis для 3-колоночной сетки на md.
+      // Каждая фотокарточка-обёртка должна иметь basis для 3-колоночной сетки
+      // на всех размерах экрана (без responsive-префикса).
       // (Класс basis висит на div-обёртке вокруг button — см. ImageGallery.tsx.)
       const items = flex!.querySelectorAll(":scope > div");
       expect(items.length).toBe(n);
       items.forEach((el) => {
-        expect((el as HTMLElement).className).toMatch(/md:basis-\[calc\(33\.333%-0\.5rem\)\]/);
+        expect((el as HTMLElement).className).toMatch(/basis-\[calc\(33\.333%-0\.5rem\)\]/);
       });
     });
   }
